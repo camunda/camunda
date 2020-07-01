@@ -42,8 +42,8 @@ import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.mapper.CustomDeserializer;
-import org.camunda.optimize.service.util.mapper.CustomSerializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.test.util.client.dto.MessageCorrelationDto;
 import org.camunda.optimize.test.util.client.dto.TaskDto;
 import org.camunda.optimize.test.util.client.dto.VariableValue;
@@ -103,8 +103,8 @@ public class SimpleEngineClient {
     objectMapper.setDateFormat(df);
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
     objectMapper.registerModule(javaTimeModule);
-    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(DATE_TIME_FORMATTER));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(DATE_TIME_FORMATTER));
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(DATE_TIME_FORMATTER));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(DATE_TIME_FORMATTER));
   }
 
   @SneakyThrows

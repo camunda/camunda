@@ -8,8 +8,6 @@ package org.camunda.optimize.service.alert;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 
-import java.time.OffsetDateTime;
-
 
 public class AlertUtil {
 
@@ -23,10 +21,5 @@ public class AlertUtil {
     result.setReportId(toCreate.getReportId());
     result.setThreshold(toCreate.getThreshold());
     result.setThresholdOperator(toCreate.getThresholdOperator());
-  }
-
-  public static void updateFromUser(String userId, AlertDefinitionDto result) {
-    result.setLastModified(OffsetDateTime.now());
-    result.setLastModifier(userId);
   }
 }

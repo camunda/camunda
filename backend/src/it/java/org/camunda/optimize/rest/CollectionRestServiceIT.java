@@ -12,18 +12,20 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataD
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class CollectionRestServiceIT extends AbstractIT {
 
@@ -37,7 +39,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -46,12 +48,12 @@ public class CollectionRestServiceIT extends AbstractIT {
     String collectionId = collectionClient.createNewCollection();
 
     // then the status code is okay
-    assertThat(collectionId, is(notNullValue()));
+    assertThat(collectionId).isNotNull();
 
     // and saved Collection has expected properties
     CollectionDefinitionRestDto savedCollectionDto = collectionClient.getCollectionById(collectionId);
-    assertThat(savedCollectionDto.getName(), is(CollectionWriter.DEFAULT_COLLECTION_NAME));
-    assertThat(savedCollectionDto.getData().getConfiguration(), equalTo(Collections.EMPTY_MAP));
+    assertThat(savedCollectionDto.getName()).isEqualTo(CollectionWriter.DEFAULT_COLLECTION_NAME);
+    assertThat(savedCollectionDto.getData().getConfiguration()).isEqualTo(Collections.EMPTY_MAP);
   }
 
   @Test
@@ -70,12 +72,12 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
     // then the status code is okay
-    assertThat(idDto, is(notNullValue()));
+    assertThat(idDto).isNotNull();
 
     // and saved Collection has expected properties
     CollectionDefinitionRestDto savedCollectionDto = collectionClient.getCollectionById(idDto.getId());
-    assertThat(savedCollectionDto.getName(), is(collectionName));
-    assertThat(savedCollectionDto.getData().getConfiguration(), is(configMap));
+    assertThat(savedCollectionDto.getName()).isEqualTo(collectionName);
+    assertThat(savedCollectionDto.getData().getConfiguration()).isEqualTo(configMap);
   }
 
   @Test
@@ -88,7 +90,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -100,7 +102,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // given
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -116,7 +118,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
@@ -129,7 +131,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -142,11 +144,32 @@ public class CollectionRestServiceIT extends AbstractIT {
     List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(id);
 
     // then
-    assertThat(collection, is(notNullValue()));
-    assertThat(collection.getId(), is(id));
-    assertThat(collectionEntities.size(), is(0));
-    assertThat(collection.getOwner(), is(DEFAULT_FULLNAME));
-    assertThat(collection.getLastModifier(), is(DEFAULT_FULLNAME));
+    assertThat(collection).isNotNull();
+    assertThat(collection.getId()).isEqualTo(id);
+    assertThat(collectionEntities).isEmpty();
+    assertThat(collection.getOwner()).isEqualTo(DEFAULT_FULLNAME);
+    assertThat(collection.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
+  }
+
+  @Test
+  public void getCollection_adoptTimezoneFromHeader() {
+    //given
+    OffsetDateTime now = OffsetDateTime.now(TimeZone.getTimeZone("Europe/Berlin").toZoneId());
+    LocalDateUtil.setCurrentTime(now);
+    String collectionId = collectionClient.createNewCollection();
+
+    // when
+    CollectionDefinitionRestDto collection = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetCollectionRequest(collectionId)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .execute(CollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(collection.getCreated()).isEqualTo(now);
+    assertThat(collection.getLastModified()).isEqualTo(now);
+    assertThat(getOffsetDiffInHours(collection.getCreated(), now)).isEqualTo(1.);
+    assertThat(getOffsetDiffInHours(collection.getLastModified(), now)).isEqualTo(1.);
   }
 
   @Test
@@ -158,7 +181,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then the status code is okay
-    assertThat(response.contains("Collection does not exist!"), is(true));
+    assertThat(response).containsSequence("Collection does not exist!");
   }
 
   @Test
@@ -171,7 +194,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -186,13 +209,13 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     final Response getByIdResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetCollectionRequest(id)
       .execute();
-    assertThat(getByIdResponse.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(getByIdResponse.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -204,7 +227,7 @@ public class CollectionRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
 }

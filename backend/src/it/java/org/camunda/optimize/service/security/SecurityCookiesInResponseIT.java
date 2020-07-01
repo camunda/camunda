@@ -13,9 +13,9 @@ import javax.ws.rs.core.Response;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.service.security.AuthCookieService.SAME_SITE_COOKIE_FLAG;
-import static org.camunda.optimize.service.security.AuthCookieService.SAME_SITE_COOKIE_STRICT_VALUE;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_FLAG;
+import static org.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_STRICT_VALUE;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 

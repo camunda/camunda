@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.util.mapper;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 
@@ -18,16 +17,16 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
 
-public class CustomDeserializer extends JsonDeserializer<OffsetDateTime> {
+public class CustomOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
 
-  private DateTimeFormatter formatter;
+  private final DateTimeFormatter formatter;
 
-  public CustomDeserializer(DateTimeFormatter formatter) {
+  public CustomOffsetDateTimeDeserializer(DateTimeFormatter formatter) {
     this.formatter = formatter;
   }
 
   @Override
-  public OffsetDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException, JsonProcessingException {
+  public OffsetDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
 
     OffsetDateTime parsedDate;
     try {

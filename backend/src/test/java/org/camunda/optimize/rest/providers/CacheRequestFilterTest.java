@@ -23,6 +23,7 @@ import java.time.OffsetDateTime;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,14 +60,14 @@ public class CacheRequestFilterTest {
   @Test
   public void filter_doesNotOverwritePreviousCacheControlHeaders() {
     // given
-    responseContext.getHeaders().putSingle(HttpHeaders.CACHE_CONTROL, "no-store");
+    responseContext.getHeaders().putSingle(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE);
 
     // when
     underTest.filter(requestContext, responseContext);
 
     // then
     assertThat(responseContext.getHeaders().get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
-    assertThat(responseContext.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL)).isEqualTo("no-store");
+    assertThat(responseContext.getHeaders().getFirst(HttpHeaders.CACHE_CONTROL)).isEqualTo(CACHE_CONTROL_NO_STORE);
   }
 
   @ParameterizedTest

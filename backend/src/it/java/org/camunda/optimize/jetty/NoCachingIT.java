@@ -15,8 +15,8 @@ import javax.ws.rs.core.Response;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.jetty.NoCachingFilter.NO_STORE;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.NO_CACHE_RESOURCES;
+import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
 
 public class NoCachingIT extends AbstractIT {
 
@@ -28,7 +28,7 @@ public class NoCachingIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
-    assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL)).isEqualTo(NO_STORE);
+    assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL)).isEqualTo(CACHE_CONTROL_NO_STORE);
   }
 
   @Test
@@ -37,7 +37,7 @@ public class NoCachingIT extends AbstractIT {
     Response response = embeddedOptimizeExtension.getRequestExecutor().buildCheckImportStatusRequest().execute();
 
     // then
-    assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL)).isEqualTo(NO_STORE);
+    assertThat(response.getHeaderString(HttpHeaders.CACHE_CONTROL)).isEqualTo(CACHE_CONTROL_NO_STORE);
   }
 
   private static Stream<String> noCacheResources() {

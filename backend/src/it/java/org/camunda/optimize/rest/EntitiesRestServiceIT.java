@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.Lists;
+import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
@@ -26,13 +27,19 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
@@ -80,6 +87,33 @@ public class EntitiesRestServiceIT extends AbstractIT {
       privateEntities.stream().map(EntityDto::getCombined).collect(Collectors.toList()),
       containsInAnyOrder(false, false, true)
     );
+  }
+
+  @Test
+  public void getEntities_adoptTimezoneFromHeader() {
+    //given
+    OffsetDateTime now = OffsetDateTime.now(TimeZone.getTimeZone("Europe/Berlin").toZoneId());
+    LocalDateUtil.setCurrentTime(now);
+
+    addSingleReportToOptimize("My Report", ReportType.PROCESS);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<EntityDto> privateEntities = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetAllEntitiesRequest()
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    Assertions.assertThat(privateEntities)
+      .isNotNull()
+      .hasSize(1);
+    EntityDto entityDto = privateEntities.get(0);
+    Assertions.assertThat(entityDto.getCreated()).isEqualTo(now);
+    Assertions.assertThat(entityDto.getLastModified()).isEqualTo(now);
+    Assertions.assertThat(getOffsetDiffInHours(entityDto.getCreated(), now)).isEqualTo(1.);
+    Assertions.assertThat(getOffsetDiffInHours(entityDto.getLastModified(), now)).isEqualTo(1.);
   }
 
   @Test
@@ -360,7 +394,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final EntityDto combinedReportEntityDto = defaultUserEntities.stream()
       .filter(EntityDto::getCombined)
       .findFirst()
-      .get();
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Should have an entity!"));
     assertThat(combinedReportEntityDto.getData().getSubEntityCounts().size(), is(1));
     assertThat(combinedReportEntityDto.getData().getSubEntityCounts().get(EntityType.REPORT), is(2L));
   }
@@ -494,7 +528,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
 
     final CollectionRoleDto roleDto = new CollectionRoleDto(
       identityType.equals(IdentityType.USER)
-        ? new IdentityDto(identityId, identityType.USER)
+        ? new IdentityDto(identityId, IdentityType.USER)
         : new IdentityDto(identityId, IdentityType.GROUP),
       RoleType.EDITOR
     );
@@ -548,6 +582,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
   }
 
+  @SuppressWarnings("SameParameterValue")
   private String addEventProcessMappingToOptimize(final String eventProcessName) {
     EventProcessMappingCreateRequestDto eventBasedProcessDto = EventProcessMappingCreateRequestDto.eventProcessMappingCreateBuilder()
       .name(eventProcessName)

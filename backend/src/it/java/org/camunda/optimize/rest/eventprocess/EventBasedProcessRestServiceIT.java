@@ -58,6 +58,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -68,6 +69,8 @@ import static javax.ws.rs.HttpMethod.PUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
@@ -118,7 +121,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
 
     // then
-    assertThat(isEnabled).isEqualTo(true);
+    assertThat(isEnabled).isTrue();
   }
 
   @Test
@@ -133,7 +136,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
 
     // then
-    assertThat(isEnabled).isEqualTo(false);
+    assertThat(isEnabled).isFalse();
   }
 
   @ParameterizedTest
@@ -386,6 +389,27 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   }
 
   @Test
+  public void getEventProcessMappingWithId_adoptTimezoneFromHeader() {
+    //given
+    OffsetDateTime now = OffsetDateTime.now(TimeZone.getTimeZone("Europe/Berlin").toZoneId());
+    LocalDateUtil.setCurrentTime(now);
+    EventProcessMappingDto eventProcessMappingDto =
+      createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
+    String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    // when
+    EventProcessMappingResponseDto mapping = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetEventProcessMappingRequest(eventProcessMappingId)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .execute(EventProcessMappingResponseDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(mapping.getLastModified()).isEqualTo(now);
+    assertThat(getOffsetDiffInHours(mapping.getLastModified(), now)).isEqualTo(1.);
+  }
+
+  @Test
   public void getEventProcessMappingWithId_unmappedState() {
     // given
     EventProcessMappingDto eventProcessMappingDto = eventProcessClient
@@ -457,6 +481,31 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
           EventProcessState.UNMAPPED
         )
       );
+  }
+
+  @Test
+  public void getAllEventProcessMappings_adoptTimezoneFromHeader() {
+    //given
+    OffsetDateTime now = OffsetDateTime.now(TimeZone.getTimeZone("Europe/Berlin").toZoneId());
+    LocalDateUtil.setCurrentTime(now);
+    EventProcessMappingDto eventProcessMappingDto = eventProcessClient
+      .buildEventProcessMappingDtoWithMappingsAndExternalEventSource(null, "process name", simpleDiagramXml);
+    eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
+
+    // when
+    List<EventProcessMappingDto> allMappings = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetAllEventProcessMappingsRequests()
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .executeAndReturnList(EventProcessMappingDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(allMappings)
+      .isNotNull()
+      .hasSize(1);
+    final EventProcessMappingDto mappingDto = allMappings.get(0);
+    assertThat(mappingDto.getLastModified()).isEqualTo(now);
+    assertThat(getOffsetDiffInHours(mappingDto.getLastModified(), now)).isEqualTo(1.);
   }
 
   @Test
@@ -778,7 +827,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(errorResponse.getErrorCode()).isEqualTo("invalidEventProcessState");
 
     assertThat(actual.getState()).isEqualTo(EventProcessState.UNMAPPED);
-    assertThat(actual.getPublishingProgress()).isEqualTo(null);
+    assertThat(actual.getPublishingProgress()).isNull();
 
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).isEmpty();
   }
@@ -839,7 +888,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
     // then
     assertThat(actual.getState()).isEqualTo(EventProcessState.MAPPED);
-    assertThat(actual.getPublishingProgress()).isEqualTo(null);
+    assertThat(actual.getPublishingProgress()).isNull();
 
     assertThat(getEventProcessPublishStateDtoFromElasticsearch(eventProcessId)).isEmpty();
   }
@@ -1170,7 +1219,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
-  protected EventSourceEntryResponseDto convertToEventSourceRestEntryDto(EventSourceEntryDto eventSourceEntry) {
+  private EventSourceEntryResponseDto convertToEventSourceRestEntryDto(EventSourceEntryDto eventSourceEntry) {
     return EventSourceEntryResponseDto.builder()
       .id(eventSourceEntry.getId())
       .type(eventSourceEntry.getType())

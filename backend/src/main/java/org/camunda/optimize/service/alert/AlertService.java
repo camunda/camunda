@@ -28,6 +28,7 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.JobDetail;
@@ -197,7 +198,7 @@ public class AlertService implements ReportReferencingService {
     final Set<String> webhooks = configurationService.getConfiguredWebhooks().keySet();
     final Map<String, List<String>> missingWebhookMap = alerts.stream()
       .filter(alert -> StringUtils.isNotEmpty(alert.getWebhook()) && !webhooks.contains(alert.getWebhook()))
-      .collect(groupingBy(alert -> alert.getWebhook(), mapping(alert -> alert.getId(), toList())));
+      .collect(groupingBy(AlertCreationDto::getWebhook, mapping(AlertDefinitionDto::getId, toList())));
     if (!missingWebhookMap.isEmpty()) {
       final String missingWebhookSummary = missingWebhookMap.entrySet()
         .stream()
@@ -225,11 +226,11 @@ public class AlertService implements ReportReferencingService {
     return alertReader.findFirstAlertsForReports(authorizedReportIds);
   }
 
-  public List<AlertDefinitionDto> findFirstAlertsForReport(String reportId) {
+  private List<AlertDefinitionDto> findFirstAlertsForReport(String reportId) {
     return alertReader.findFirstAlertsForReport(reportId);
   }
 
-  public AlertDefinitionDto getAlert(String alertId) {
+  private AlertDefinitionDto getAlert(String alertId) {
     return alertReader.getAlert(alertId);
   }
 
@@ -292,9 +293,11 @@ public class AlertService implements ReportReferencingService {
 
   private static AlertDefinitionDto newAlert(AlertCreationDto toCreate, String userId) {
     AlertDefinitionDto result = new AlertDefinitionDto();
-    result.setCreated(OffsetDateTime.now());
+    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     result.setOwner(userId);
-    AlertUtil.updateFromUser(userId, result);
+    result.setCreated(now);
+    result.setLastModified(now);
+    result.setLastModifier(userId);
 
     AlertUtil.mapBasicFields(toCreate, result);
     return result;
@@ -310,7 +313,8 @@ public class AlertService implements ReportReferencingService {
 
     AlertDefinitionDto toUpdate = alertReader.getAlert(alertId);
     unscheduleJob(toUpdate);
-    AlertUtil.updateFromUser(userId, toUpdate);
+    toUpdate.setLastModified(LocalDateUtil.getCurrentDateTime());
+    toUpdate.setLastModifier(userId);
     AlertUtil.mapBasicFields(toCreate, toUpdate);
     alertWriter.updateAlert(toUpdate);
     scheduleAlert(toUpdate);
@@ -356,7 +360,7 @@ public class AlertService implements ReportReferencingService {
     }
   }
 
-  public void deleteAlertsForReport(String reportId) {
+  private void deleteAlertsForReport(String reportId) {
     List<AlertDefinitionDto> alerts = alertReader.findFirstAlertsForReport(reportId);
 
     for (AlertDefinitionDto alert : alerts) {
@@ -369,7 +373,7 @@ public class AlertService implements ReportReferencingService {
   /**
    * Check if it's still evaluated as number.
    */
-  public void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
+  private void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
     if (reportDefinition instanceof SingleProcessReportDefinitionDto) {
       SingleProcessReportDefinitionDto singleReport = (SingleProcessReportDefinitionDto) reportDefinition;
       if (!validateIfReportIsSuitableForAlert(singleReport)) {
@@ -378,14 +382,14 @@ public class AlertService implements ReportReferencingService {
     }
   }
 
-  public boolean validateIfReportIsSuitableForAlert(SingleProcessReportDefinitionDto report) {
+  private boolean validateIfReportIsSuitableForAlert(SingleProcessReportDefinitionDto report) {
     final ProcessReportDataDto data = report.getData();
     return data != null && data.getGroupBy() != null
       && ProcessGroupByType.NONE.equals(data.getGroupBy().getType())
       && ProcessVisualization.NUMBER.equals(data.getVisualization());
   }
 
-  public boolean validateIfReportIsSuitableForAlert(SingleDecisionReportDefinitionDto report) {
+  private boolean validateIfReportIsSuitableForAlert(SingleDecisionReportDefinitionDto report) {
     final DecisionReportDataDto data = report.getData();
     return data != null && data.getGroupBy() != null
       && DecisionGroupByType.NONE.equals(data.getGroupBy().getType())

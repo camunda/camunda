@@ -15,7 +15,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 

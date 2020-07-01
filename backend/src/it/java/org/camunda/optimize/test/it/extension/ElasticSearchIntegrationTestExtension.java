@@ -35,8 +35,8 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
-import org.camunda.optimize.service.util.mapper.CustomDeserializer;
-import org.camunda.optimize.service.util.mapper.CustomSerializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
@@ -526,8 +526,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   private static ObjectMapper createObjectMapper() {
     DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
     JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(dateTimeFormatter));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(dateTimeFormatter));
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter));
 
     return Jackson2ObjectMapperBuilder
       .json()

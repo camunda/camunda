@@ -79,7 +79,7 @@ import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_SEARCH_SUB_
 import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
-import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 
 public class OptimizeRequestExecutor {
   private static final String ALERT = "alert";

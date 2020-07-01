@@ -5,24 +5,31 @@
  */
 package org.camunda.optimize.rest;
 
+import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
+import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -52,13 +59,37 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
     List<AuthorizedReportDefinitionDto> reports = collectionClient.getReportsForCollection(collectionId1);
 
     // then
-    assertThat(reports).hasSize(expectedReportIds.size());
     assertThat(reports)
-      .allMatch(reportDto -> expectedReportIds.contains(reportDto.getDefinitionDto().getId()));
-    assertThat(reports)
-      .allMatch(reportDto -> reportDto.getDefinitionDto().getOwner().equals(DEFAULT_FULLNAME));
-    assertThat(reports)
+      .hasSize(expectedReportIds.size())
+      .allMatch(reportDto -> expectedReportIds.contains(reportDto.getDefinitionDto().getId()))
+      .allMatch(reportDto -> reportDto.getDefinitionDto().getOwner().equals(DEFAULT_FULLNAME))
       .allMatch(reportDto -> reportDto.getDefinitionDto().getLastModifier().equals(DEFAULT_FULLNAME));
+  }
+
+  @Test
+  public void getStoredReports_adoptTimezoneFromHeader() {
+    //given
+    OffsetDateTime now = OffsetDateTime.now(TimeZone.getTimeZone("Europe/Berlin").toZoneId());
+    LocalDateUtil.setCurrentTime(now);
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    createReportForCollection(collectionId, DefinitionType.PROCESS);
+
+    // when
+    List<AuthorizedReportDefinitionDto> allReports = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetReportsForCollectionRequest(collectionId)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .executeAndReturnList(AuthorizedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    Assertions.assertThat(allReports)
+      .isNotNull()
+      .hasSize(1);
+    ReportDefinitionDto reportDefinitionDto = allReports.get(0).getDefinitionDto();
+    assertThat(reportDefinitionDto.getCreated()).isEqualTo(now);
+    assertThat(reportDefinitionDto.getLastModified()).isEqualTo(now);
+    assertThat(getOffsetDiffInHours(reportDefinitionDto.getCreated(), now)).isEqualTo(1.);
+    assertThat(getOffsetDiffInHours(reportDefinitionDto.getLastModified(), now)).isEqualTo(1.);
   }
 
   @Test
@@ -90,13 +121,10 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
   @MethodSource("definitionTypes")
   public void deleteCollectionAlsoDeletesContainingReports(final DefinitionType definitionType) {
     // given
-    List<String> expectedReportIds = new ArrayList<>();
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
 
     final String reportId1 = createReportForCollection(collectionId, definitionType);
     final String reportId2 = createReportForCollection(collectionId, definitionType);
-    expectedReportIds.add(reportId1);
-    expectedReportIds.add(reportId2);
 
     // when
     collectionClient.deleteCollection(collectionId);

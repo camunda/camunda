@@ -45,6 +45,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
+
 @AllArgsConstructor
 @Slf4j
 @Secured
@@ -221,7 +223,7 @@ public class DefinitionRestService {
   }
 
   private void addNoStoreCacheHeader(final Response.ResponseBuilder processResponse) {
-    processResponse.header(HttpHeaders.CACHE_CONTROL, "no-store");
+    processResponse.header(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE);
   }
 
   private void logAndThrowNotFoundException(@PathParam("type") final DefinitionType type,

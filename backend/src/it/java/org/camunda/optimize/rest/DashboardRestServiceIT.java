@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.ShortVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
@@ -38,11 +39,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.DELETE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_INDEX_NAME;
@@ -137,7 +141,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     // then
     DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
     DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
-    assertThat(dashboard.toString()).isEqualTo(oldDashboard.toString());
+    assertThat(dashboard).hasToString(oldDashboard.toString());
     assertThat(dashboard.getName()).isEqualTo(oldDashboard.getName() + " – Copy");
 
     final List<String> newReportIds = dashboard.getReports()
@@ -149,8 +153,9 @@ public class DashboardRestServiceIT extends AbstractIT {
       .stream()
       .map(ReportLocationDto::getId)
       .collect(Collectors.toList());
-    assertThat(newReportIds).isNotEmpty();
-    assertThat(newReportIds).containsExactlyInAnyOrderElementsOf(oldDashboardReportIds);
+    assertThat(newReportIds)
+      .isNotEmpty()
+      .containsExactlyInAnyOrderElementsOf(oldDashboardReportIds);
   }
 
   @Test
@@ -170,7 +175,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     // then
     DashboardDefinitionDto oldDashboard = dashboardClient.getDashboard(dashboardId);
     DashboardDefinitionDto dashboard = dashboardClient.getDashboard(copyId.getId());
-    assertThat(dashboard.toString()).isEqualTo(oldDashboard.toString());
+    assertThat(dashboard).hasToString(oldDashboard.toString());
     assertThat(dashboard.getName()).isEqualTo(testDashboardCopyName);
   }
 
@@ -205,6 +210,29 @@ public class DashboardRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void getDashboard_adoptTimezoneFromHeader() {
+    //given
+    OffsetDateTime now = OffsetDateTime.now(TimeZone.getTimeZone("Europe/Berlin").toZoneId());
+    LocalDateUtil.setCurrentTime(now);
+    generateDashboardDefinitionDto();
+    String dashboardId = dashboardClient.createDashboard(generateDashboardDefinitionDto());
+
+    // when
+    DashboardDefinitionDto returnedDashboard = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetDashboardRequest(dashboardId)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(returnedDashboard).isNotNull();
+    assertThat(returnedDashboard.getCreated()).isEqualTo(now);
+    assertThat(returnedDashboard.getLastModified()).isEqualTo(now);
+    assertThat(getOffsetDiffInHours(returnedDashboard.getCreated(), now)).isEqualTo(1.);
+    assertThat(getOffsetDiffInHours(returnedDashboard.getLastModified(), now)).isEqualTo(1.);
+  }
+
+  @Test
   public void getDashboardForNonExistingIdThrowsError() {
     // when
     String response = embeddedOptimizeExtension
@@ -213,7 +241,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then the status code is okay
-    assertThat(response.contains("Dashboard does not exist!")).isTrue();
+    assertThat(response).containsSequence("Dashboard does not exist!");
   }
 
   @Test

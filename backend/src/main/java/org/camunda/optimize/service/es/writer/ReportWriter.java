@@ -130,7 +130,7 @@ public class ReportWriter {
     final String id = IdGenerator.getNextId();
     final SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
     reportDefinitionDto.setId(id);
-    final OffsetDateTime now = OffsetDateTime.now();
+    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
     reportDefinitionDto.setLastModified(now);
     reportDefinitionDto.setOwner(userId);

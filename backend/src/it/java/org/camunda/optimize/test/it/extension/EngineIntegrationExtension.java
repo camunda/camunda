@@ -59,8 +59,8 @@ import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.mapper.CustomDeserializer;
-import org.camunda.optimize.service.util.mapper.CustomSerializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.test.engine.EnginePluginClient;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -177,9 +177,9 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern(IntegrationTestConfigurationUtil.getEngineDateFormat());
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(formatter));
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(formatter));
     javaTimeModule.addSerializer(Date.class, new DateSerializer(false, new StdDateFormat().withColonInTimeZone(false)));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(formatter));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(formatter));
 
     return Jackson2ObjectMapperBuilder
       .json()

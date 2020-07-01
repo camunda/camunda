@@ -26,6 +26,7 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
@@ -74,7 +75,7 @@ public class CacheRequestIT extends AbstractIT {
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
     assertThat(headers).isNotNull();
-    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL)).contains("no-store");
+    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL)).contains(CACHE_CONTROL_NO_STORE);
     assertThat(headers.get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
   }
 
@@ -92,7 +93,7 @@ public class CacheRequestIT extends AbstractIT {
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(headers).isNotNull();
-    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL)).contains("no-store");
+    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL)).contains(CACHE_CONTROL_NO_STORE);
     assertThat(headers.get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
   }
 
@@ -111,7 +112,7 @@ public class CacheRequestIT extends AbstractIT {
 
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(headers).isNotNull();
-    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL)).contains("no-store");
+    assertThat((String) headers.getFirst(HttpHeaders.CACHE_CONTROL)).contains(CACHE_CONTROL_NO_STORE);
     assertThat(headers.get(HttpHeaders.CACHE_CONTROL)).hasSize(1);
   }
 

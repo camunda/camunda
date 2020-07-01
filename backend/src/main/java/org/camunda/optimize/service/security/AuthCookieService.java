@@ -22,15 +22,15 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_FLAG;
+import static org.camunda.optimize.rest.constants.RestConstants.SAME_SITE_COOKIE_STRICT_VALUE;
+
 @RequiredArgsConstructor
 @Component
 @Slf4j
 public class AuthCookieService {
-
-  public static final String AUTH_COOKIE_TOKEN_VALUE_PREFIX = "Bearer ";
-  public static String OPTIMIZE_AUTHORIZATION = "X-Optimize-Authorization";
-  public static String SAME_SITE_COOKIE_FLAG = "SameSite";
-  public static String SAME_SITE_COOKIE_STRICT_VALUE = "Strict";
 
   private final ConfigurationService configurationService;
 

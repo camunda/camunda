@@ -18,6 +18,7 @@ import java.io.IOException;
 
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.NO_CACHE_RESOURCES;
 import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH;
+import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
 
 /**
  * After an upgrade of Optimize the browser might load old resources
@@ -25,8 +26,6 @@ import static org.camunda.optimize.jetty.OptimizeResourceConstants.REST_API_PATH
  * cookie to the response to prevent those caching issues after the upgrade.
  */
 public class NoCachingFilter implements Filter {
-
-  public static final String NO_STORE = "no-store";
 
   public NoCachingFilter() {
   }
@@ -45,7 +44,7 @@ public class NoCachingFilter implements Filter {
     boolean isStaticResourceThatShouldNotBeCached =
       NO_CACHE_RESOURCES.stream().anyMatch(requestPath::endsWith);
     if (isStaticResourceThatShouldNotBeCached || isApiRestCall(requestPath)) {
-      ((HttpServletResponse) response).setHeader(HttpHeaders.CACHE_CONTROL, NO_STORE);
+      ((HttpServletResponse) response).setHeader(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE);
     }
     chain.doFilter(request, response);
   }
