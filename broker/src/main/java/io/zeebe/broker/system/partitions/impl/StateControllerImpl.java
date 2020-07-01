@@ -66,7 +66,6 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     this.entrySupplier = entrySupplier;
     this.replication = replication;
     this.metrics = new SnapshotReplicationMetrics(Integer.toString(partitionId));
-    store.addSnapshotListener(this);
   }
 
   @Override
@@ -182,6 +181,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
   @Override
   public void onNewSnapshot(final PersistedSnapshot newPersistedSnapshot) {
+    LOG.debug("New snapshot {} was persisted. Start replicating.", newPersistedSnapshot.getId());
     // replicate snapshots when new snapshot was committed
     try (final var snapshotChunkReader = newPersistedSnapshot.newChunkReader()) {
       while (snapshotChunkReader.hasNext()) {
@@ -231,6 +231,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
   private void markSnapshotAsInvalid(
       final ReplicationContext replicationContext, final SnapshotChunk chunk) {
+    LOG.debug("Abort snapshot {} and mark it as invalid.", chunk.getSnapshotId());
     replicationContext.abort();
     receivedSnapshots.put(chunk.getSnapshotId(), INVALID_SNAPSHOT);
   }
@@ -241,15 +242,17 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
     if (context.incrementCount() == totalChunkCount) {
       LOG.debug(
-          "Received all snapshot chunks ({}/{}), snapshot is valid",
+          "Received all snapshot chunks ({}/{}), snapshot {} is valid",
           context.getChunkCount(),
+          snapshotChunk.getSnapshotId(),
           totalChunkCount);
       if (!tryToMarkSnapshotAsValid(snapshotChunk, context)) {
         LOG.debug("Failed to mark snapshot {} as valid", snapshotChunk.getSnapshotId());
       }
     } else {
       LOG.debug(
-          "Waiting for more snapshot chunks, currently have {}/{}",
+          "Waiting for more snapshot chunks of snapshot {}, currently have {}/{}",
+          snapshotChunk.getSnapshotId(),
           context.getChunkCount(),
           totalChunkCount);
     }
@@ -271,8 +274,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
 
   private ReplicationContext newReplication(
       final long startTimestamp, final ReceivedSnapshot transientSnapshot) {
-    final var context = new ReplicationContext(metrics, startTimestamp, transientSnapshot);
-    return context;
+    return new ReplicationContext(metrics, startTimestamp, transientSnapshot);
   }
 
   private static final class ReplicationContext {
