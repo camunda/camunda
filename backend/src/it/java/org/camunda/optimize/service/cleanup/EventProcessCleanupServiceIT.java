@@ -70,7 +70,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
       .put(
         publishedProcessWithSpecialConfiguration,
         ProcessDefinitionCleanupConfiguration.builder()
-          .processDataCleanupMode(CleanupMode.ALL)
+          .cleanupMode(CleanupMode.ALL)
           // higher ttl than default
           .ttl(getCleanupConfiguration().getTtl().plusYears(5L))
           .build()
@@ -154,7 +154,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
       .put(
         publishedProcessWithSpecialConfiguration,
         // variable mode for specific key
-        ProcessDefinitionCleanupConfiguration.builder().processDataCleanupMode(CleanupMode.VARIABLES).build()
+        ProcessDefinitionCleanupConfiguration.builder().cleanupMode(CleanupMode.VARIABLES).build()
       );
 
     // when
@@ -194,7 +194,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
       .put(
         publishedProcessWithSpecialConfiguration,
         ProcessDefinitionCleanupConfiguration.builder()
-          .processDataCleanupMode(CleanupMode.VARIABLES)
+          .cleanupMode(CleanupMode.VARIABLES)
           // higher ttl than default
           .ttl(getCleanupConfiguration().getTtl().plusYears(5L))
           .build()

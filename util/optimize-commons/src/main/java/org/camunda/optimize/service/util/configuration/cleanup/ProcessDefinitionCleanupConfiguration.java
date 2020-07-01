@@ -23,15 +23,15 @@ public class ProcessDefinitionCleanupConfiguration {
 
   @JsonProperty("ttl")
   private Period ttl;
-  @JsonProperty("processDataCleanupMode")
-  private CleanupMode processDataCleanupMode;
+  @JsonProperty("cleanupMode")
+  private CleanupMode cleanupMode;
 
   public ProcessDefinitionCleanupConfiguration(Period ttl) {
     this(ttl, null);
   }
 
-  public ProcessDefinitionCleanupConfiguration(CleanupMode processDataCleanupMode) {
-    this(null, processDataCleanupMode);
+  public ProcessDefinitionCleanupConfiguration(CleanupMode cleanupMode) {
+    this(null, cleanupMode);
   }
 
 }

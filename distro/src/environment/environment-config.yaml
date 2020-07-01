@@ -215,7 +215,7 @@ historyCleanup:
     perProcessDefinitionConfig:
     # 'myProcessDefinitionKey':
     #   ttl: 'P2M'
-    #    mode: 'variables'
+    #   cleanupMode: 'variables'
   decisionDataCleanup:
     # switch for the Camunda decision data cleanup, defaults to false
     enabled: false

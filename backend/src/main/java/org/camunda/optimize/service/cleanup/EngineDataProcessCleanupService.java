@@ -71,11 +71,11 @@ public class EngineDataProcessCleanupService implements CleanupService {
       "Performing cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
       currentProcessDefinitionKey,
       cleanupConfigurationForKey.getTtl(),
-      cleanupConfigurationForKey.getProcessDataCleanupMode()
+      cleanupConfigurationForKey.getCleanupMode()
     );
 
     final OffsetDateTime endDate = startTime.minus(cleanupConfigurationForKey.getTtl());
-    switch (cleanupConfigurationForKey.getProcessDataCleanupMode()) {
+    switch (cleanupConfigurationForKey.getCleanupMode()) {
       case ALL:
         performInstanceDataCleanup(currentProcessDefinitionKey, endDate, getBatchSize());
         break;
@@ -83,14 +83,14 @@ public class EngineDataProcessCleanupService implements CleanupService {
         performVariableDataCleanup(currentProcessDefinitionKey, endDate, getBatchSize());
         break;
       default:
-        throw new IllegalStateException("Unsupported cleanup mode " + cleanupConfigurationForKey.getProcessDataCleanupMode());
+        throw new IllegalStateException("Unsupported cleanup mode " + cleanupConfigurationForKey.getCleanupMode());
     }
 
     log.info(
       "Finished cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
       currentProcessDefinitionKey,
       cleanupConfigurationForKey.getTtl(),
-      cleanupConfigurationForKey.getProcessDataCleanupMode()
+      cleanupConfigurationForKey.getCleanupMode()
     );
   }
 

@@ -50,7 +50,7 @@ public class EventProcessCleanupService implements CleanupService {
                                             final EventProcessPublishStateDto eventProcess) {
     final ProcessDefinitionCleanupConfiguration cleanupConfiguration = getCleanupConfiguration()
       .getProcessDefinitionCleanupConfigurationForKey(eventProcess.getProcessKey());
-    final CleanupMode cleanupMode = cleanupConfiguration.getProcessDataCleanupMode();
+    final CleanupMode cleanupMode = cleanupConfiguration.getCleanupMode();
     log.info(
       "Performing cleanup on event process instances for processDefinitionKey: {} with ttl: {} and mode:{}",
       eventProcess.getProcessKey(),

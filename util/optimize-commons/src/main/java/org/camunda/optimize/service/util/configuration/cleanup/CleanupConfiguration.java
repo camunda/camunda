@@ -87,7 +87,7 @@ public class CleanupConfiguration {
 
     return new ProcessDefinitionCleanupConfiguration(
       keySpecificConfig.flatMap(config -> Optional.ofNullable(config.getTtl())).orElse(getTtl()),
-      keySpecificConfig.flatMap(config -> Optional.ofNullable(config.getProcessDataCleanupMode()))
+      keySpecificConfig.flatMap(config -> Optional.ofNullable(config.getCleanupMode()))
         .orElse(processDataCleanupConfiguration.getCleanupMode()));
   }
 

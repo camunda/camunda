@@ -257,7 +257,7 @@ public class EngineDataProcessCleanupServiceIT extends AbstractEngineDataCleanup
       .getProcessDefinitionSpecificConfiguration()
       .put(
         instancesOfDefinitionWithVariableMode.get(0).getProcessDefinitionKey(),
-        ProcessDefinitionCleanupConfiguration.builder().processDataCleanupMode(CleanupMode.VARIABLES).build()
+        ProcessDefinitionCleanupConfiguration.builder().cleanupMode(CleanupMode.VARIABLES).build()
       );
 
     importAllEngineEntitiesFromScratch();

@@ -77,7 +77,7 @@ public abstract class AbstractEngineDataCleanupIT extends AbstractIT {
       .put(
         processDefinitionKey,
         ProcessDefinitionCleanupConfiguration.builder()
-          .processDataCleanupMode(CleanupMode.ALL)
+          .cleanupMode(CleanupMode.ALL)
           // higher ttl than default
           .ttl(getCleanupConfiguration().getTtl().plusYears(5L))
           .build()

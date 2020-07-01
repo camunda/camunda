@@ -41,7 +41,7 @@ public class CleanupConfigurationTest {
     final ProcessDefinitionCleanupConfiguration configForUnknownKey = underTest
       .getProcessDefinitionCleanupConfigurationForKey("unknownKey");
 
-    assertThat(configForUnknownKey.getProcessDataCleanupMode(), is(defaultMode));
+    assertThat(configForUnknownKey.getCleanupMode(), is(defaultMode));
     assertThat(configForUnknownKey.getTtl(), is(defaultTtl));
   }
 
@@ -65,7 +65,7 @@ public class CleanupConfigurationTest {
     final ProcessDefinitionCleanupConfiguration configForUnknownKey = underTest
       .getProcessDefinitionCleanupConfigurationForKey(key);
 
-    assertThat(configForUnknownKey.getProcessDataCleanupMode(), is(defaultMode));
+    assertThat(configForUnknownKey.getCleanupMode(), is(defaultMode));
     assertThat(configForUnknownKey.getTtl(), is(customTtl));
   }
 
@@ -89,7 +89,7 @@ public class CleanupConfigurationTest {
     final ProcessDefinitionCleanupConfiguration configForUnknownKey = underTest
       .getProcessDefinitionCleanupConfigurationForKey(key);
 
-    assertThat(configForUnknownKey.getProcessDataCleanupMode(), is(customMode));
+    assertThat(configForUnknownKey.getCleanupMode(), is(customMode));
     assertThat(configForUnknownKey.getTtl(), is(defaultTtl));
   }
 
