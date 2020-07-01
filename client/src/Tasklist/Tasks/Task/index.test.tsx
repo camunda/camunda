@@ -12,12 +12,15 @@ import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Router} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
 
-const historyMock = createMemoryHistory();
-const Wrapper: React.FC = ({children}) => (
-  <Router history={historyMock}>
-    <MockThemeProvider>{children}</MockThemeProvider>
-  </Router>
-);
+const createWrapper = (history = createMemoryHistory()) => {
+  const Wrapper: React.FC = ({children}) => (
+    <Router history={history}>
+      <MockThemeProvider>{children}</MockThemeProvider>
+    </Router>
+  );
+
+  return Wrapper;
+};
 
 describe('<Task />', () => {
   it('should render task', () => {
@@ -30,7 +33,7 @@ describe('<Task />', () => {
         assignee={{firstname: 'Demo', lastname: 'user', username: 'Demouser'}}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper(),
       },
     );
 
@@ -50,7 +53,7 @@ describe('<Task />', () => {
         assignee={null}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper(),
       },
     );
 
@@ -69,7 +72,7 @@ describe('<Task />', () => {
         assignee={{firstname: 'Demo', lastname: 'user', username: 'Demouser'}}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper(),
       },
     );
 
@@ -78,6 +81,7 @@ describe('<Task />', () => {
   });
 
   it('should navigate to task detail on click', () => {
+    const historyMock = createMemoryHistory();
     render(
       <Task
         taskId="1"
@@ -87,11 +91,35 @@ describe('<Task />', () => {
         assignee={{firstname: 'Demo', lastname: 'user', username: 'Demouser'}}
       />,
       {
-        wrapper: Wrapper,
+        wrapper: createWrapper(historyMock),
       },
     );
 
     fireEvent.click(screen.getByText('workflowName'));
     expect(historyMock.location.pathname).toBe('/1');
+  });
+
+  it('should preserve search params', () => {
+    const mockSearchParams = '?filter=all-open';
+    const historyMock = createMemoryHistory({
+      initialEntries: [mockSearchParams],
+    });
+    render(
+      <Task
+        taskId="1"
+        name="name"
+        workflowName="workflowName"
+        creationTime="2020-05-29 14:00:00"
+        assignee={{firstname: 'Demo', lastname: 'user', username: 'Demouser'}}
+      />,
+      {
+        wrapper: createWrapper(historyMock),
+      },
+    );
+
+    fireEvent.click(screen.getByText('workflowName'));
+
+    expect(historyMock.location.pathname).toBe('/1');
+    expect(historyMock.location.search).toBe(mockSearchParams);
   });
 });

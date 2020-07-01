@@ -15,6 +15,7 @@ import {
   CreationTime,
 } from './styled';
 import {useParams} from 'react-router-dom';
+import {Location} from 'history';
 import {Link} from 'react-router-dom';
 import {Pages} from 'modules/constants/pages';
 import {formatDate} from 'modules/utils/formatDate';
@@ -38,7 +39,12 @@ const Task: React.FC<Props> = ({
   const {id} = useParams();
 
   return (
-    <Link to={Pages.TaskDetails(taskId)}>
+    <Link
+      to={(location: Location) => ({
+        ...location,
+        pathname: Pages.TaskDetails(taskId),
+      })}
+    >
       <Entry isSelected={id === taskId} data-testid={`task-${taskId}`}>
         <TaskInfo>
           <TaskName>{name}</TaskName>
