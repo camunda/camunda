@@ -64,9 +64,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
   public void countRunningInstances_instancesFallIntoMultipleBuckets(final GroupByDateUnit unit) {
     // given
     // first instance starts within a bucket (as opposed to on the "edge" of a bucket)
-    final OffsetDateTime startOfFirstInstance = OffsetDateTime
-      .now()
-      .withSecond(10);
+    final OffsetDateTime startOfFirstInstance = OffsetDateTime.parse("2020-06-15T12:00:00+02:00").withSecond(10);
     final Duration bucketWidth = mapToChronoUnit(unit).getDuration();
     final List<ProcessInstanceEngineDto> processInstanceDtos =
       startAndEndProcessInstancesWithGivenRuntime(2, bucketWidth, startOfFirstInstance);

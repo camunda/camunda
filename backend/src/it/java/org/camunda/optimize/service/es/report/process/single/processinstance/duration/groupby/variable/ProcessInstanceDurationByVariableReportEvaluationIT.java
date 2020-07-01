@@ -1538,7 +1538,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final int numberOfInstances = 3;
     final String dateVarName = "dateVar";
     final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcess();
-    OffsetDateTime variableValue = OffsetDateTime.now();
+    OffsetDateTime variableValue = OffsetDateTime.parse("2020-06-15T00:00:00+02:00");
     Map<String, Object> variables = new HashMap<>();
 
     for (int i = 0; i < numberOfInstances; i++) {

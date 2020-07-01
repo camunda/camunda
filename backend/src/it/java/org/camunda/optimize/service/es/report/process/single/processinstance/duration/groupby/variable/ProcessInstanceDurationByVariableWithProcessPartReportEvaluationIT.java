@@ -1177,7 +1177,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     final String dateVarName = "dateVar";
     final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcess();
     Map<String, Object> variables = new HashMap<>();
-    OffsetDateTime dateVariableValue = OffsetDateTime.now();
+    OffsetDateTime dateVariableValue = OffsetDateTime.parse("2020-06-15T00:00:00+02:00");
 
     for (int i = 0; i < numberOfInstances; i++) {
       dateVariableValue = dateVariableValue.plus(1, chronoUnit);
