@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.dispatcher.BlockPeek;
 import io.zeebe.dispatcher.ClaimedFragment;
+import io.zeebe.dispatcher.ClaimedFragmentBatch;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.dispatcher.FragmentHandler;
@@ -215,7 +216,7 @@ public final class DispatcherIntegrationTest {
             .maxFragmentLength(frameLength)
             .bufferSize(frameLength);
 
-    assertThatThrownBy(() -> builder.build())
+    assertThatThrownBy(builder::build)
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessage(
             "Expected the buffer size to be greater than %s, but was %s. The max fragment length is set to %s.",
@@ -237,6 +238,23 @@ public final class DispatcherIntegrationTest {
     assertThat(dispatcher.getLogBuffer().getPartitionSize()).isEqualTo(expectedPartitionSize);
   }
 
+  @Test
+  public void shouldRejectIfFullFrameLengthIsLargerThanMax() {
+    // given
+    final ClaimedFragmentBatch batch = new ClaimedFragmentBatch();
+    final ByteValue maxFragmentLength = ByteValue.ofKilobytes(1);
+    final Dispatcher dispatcher =
+        Dispatchers.create("default")
+            .actorScheduler(actorSchedulerRule.get())
+            .maxFragmentLength(maxFragmentLength)
+            .build();
+
+    // when/then
+    assertThatThrownBy(() -> dispatcher.claim(batch, 2, (int) maxFragmentLength.toBytes() - 1))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("can't claim more than");
+  }
+
   protected void claimFragment(
       final Dispatcher dispatcher, final ClaimedFragment claimedFragment, final int totalWork) {
     for (int i = 1; i <= totalWork; i++) {
@@ -252,22 +270,21 @@ public final class DispatcherIntegrationTest {
   protected void claimFragmentOnDifferentThreads(final Dispatcher dispatcher, final int totalWork) {
     for (int i = 1; i <= totalWork; i++) {
       final int runCount = i;
-      new Thread() {
-        @Override
-        public void run() {
-          final ClaimedFragment claimedFragment = new ClaimedFragment();
-          while (dispatcher.claim(claimedFragment, 59) <= 0) {
-            // spin
-          }
-          final MutableDirectBuffer buffer = claimedFragment.getBuffer();
-          buffer.putInt(claimedFragment.getOffset(), runCount);
-          claimedFragment.commit();
-        }
-      }.start();
+      new Thread(
+              () -> {
+                final ClaimedFragment claimedFragment = new ClaimedFragment();
+                while (dispatcher.claim(claimedFragment, 59) <= 0) {
+                  // spin
+                }
+                final MutableDirectBuffer buffer = claimedFragment.getBuffer();
+                buffer.putInt(claimedFragment.getOffset(), runCount);
+                claimedFragment.commit();
+              })
+          .start();
     }
   }
 
-  class Consumer implements FragmentHandler {
+  static class Consumer implements FragmentHandler {
     final ArrayList<Integer> counters = new ArrayList<>();
     final AtomicInteger counter = new AtomicInteger(0);
 
