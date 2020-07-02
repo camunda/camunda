@@ -637,21 +637,6 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     ).stream().max(Comparator.comparing(CamundaActivityEventDto::getTimestamp)).get();
   }
 
-  private ProcessInstanceEngineDto deployAndStartProcess() {
-    return deployAndStartProcessWithVariables(Collections.emptyMap());
-  }
-
-  private ProcessInstanceEngineDto deployAndStartInstanceWithBusinessKey(String businessKey) {
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(
-      Bpmn.createExecutableProcess("aProcess")
-        .startEvent(BPMN_START_EVENT_ID)
-        .userTask(USER_TASK_ID_ONE)
-        .endEvent(BPMN_END_EVENT_ID)
-        .done(),
-      Collections.emptyMap(), businessKey, null
-    );
-  }
-
   @SneakyThrows
   public void deleteBusinessKeyFromElasticsearchForProcessInstance(String processInstanceId) {
     DeleteRequest request =

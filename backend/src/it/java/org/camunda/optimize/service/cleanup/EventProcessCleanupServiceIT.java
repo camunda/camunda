@@ -244,8 +244,7 @@ public class EventProcessCleanupServiceIT extends AbstractEventProcessIT {
 
   private String createAndPublishEventProcess() {
     final String eventProcessMappingId = createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
-    eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
-    executeImportCycle();
+    publishEventProcess(eventProcessMappingId);
     return eventProcessMappingId;
   }
 

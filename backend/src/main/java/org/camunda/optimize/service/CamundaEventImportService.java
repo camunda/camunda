@@ -173,7 +173,7 @@ public class CamundaEventImportService {
     final ProcessDefinitionOptimizeDto processDefinition =
       processDefinitionResolverService.getDefinitionForProcessDefinitionId(flowNodeEventDto.getProcessDefinitionId())
         .orElseThrow(() -> new OptimizeRuntimeException(
-          "Could not resolve version for process definition: " + flowNodeEventDto.getProcessDefinitionId()
+          "Could not resolve version for process definition id: " + flowNodeEventDto.getProcessDefinitionId() + "."
         ));
     return CamundaActivityEventDto.builder()
       .activityId(flowNodeEventDto.getActivityId())

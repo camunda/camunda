@@ -148,6 +148,17 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     );
   }
 
+  protected void republishEventProcess(final String eventProcessMapping) {
+    eventProcessClient.cancelPublishEventProcessMapping(eventProcessMapping);
+    publishEventProcess(eventProcessMapping);
+  }
+
+  protected void publishEventProcess(final String eventProcessMapping) {
+    eventProcessClient.publishEventProcessMapping(eventProcessMapping);
+    executeImportCycle();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
   protected void createAndPublishEventProcessMapping(final Map<String, EventMappingDto> eventMappings, String bpmnXml) {
     final EventProcessMappingDto eventProcessMappingDto = eventProcessClient
       .buildEventProcessMappingDtoWithMappingsAndExternalEventSource(eventMappings, EVENT_PROCESS_NAME, bpmnXml);
@@ -421,6 +432,10 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       );
   }
 
+  protected ProcessInstanceEngineDto deployAndStartProcess() {
+    return deployAndStartProcessWithVariables(Collections.emptyMap());
+  }
+
   protected ProcessInstanceEngineDto deployAndStartProcessWithVariables(final Map<String, Object> variables) {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent(BPMN_START_EVENT_ID)
@@ -430,12 +445,32 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
   }
 
-  protected void publishEventMappingUsingProcessInstanceCamundaEvents(final ProcessInstanceEngineDto processInstanceEngineDto,
-                                                                      final Map<String, EventMappingDto> eventMappings) {
-    publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(processInstanceEngineDto, eventMappings, null);
+  protected ProcessInstanceEngineDto deployAndStartInstanceWithBusinessKey(final String businessKey) {
+    return deployAndStartInstanceWithBusinessKey(businessKey, Collections.emptyMap());
   }
 
-  protected void publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(
+  protected ProcessInstanceEngineDto deployAndStartInstanceWithBusinessKey(final String businessKey,
+                                                                           final Map<String, Object> variables) {
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
+      Bpmn.createExecutableProcess("aProcess")
+        .startEvent(BPMN_START_EVENT_ID)
+        .userTask(USER_TASK_ID_ONE)
+        .endEvent(BPMN_END_EVENT_ID)
+        .done(),
+      variables,
+      businessKey,
+      null
+    );
+  }
+
+  protected String publishEventMappingUsingProcessInstanceCamundaEvents(final ProcessInstanceEngineDto processInstanceEngineDto,
+                                                                        final Map<String, EventMappingDto> eventMappings) {
+    return publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(
+      processInstanceEngineDto, eventMappings, null
+    );
+  }
+
+  protected String publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(
     final ProcessInstanceEngineDto processInstanceEngineDto,
     final Map<String, EventMappingDto> eventMappings,
     final String traceVariable) {
@@ -447,11 +482,11 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
         traceVariable,
         Collections.singletonList("1")
       ));
-    createAndPublishEventMapping(eventMappings, eventSourceEntryDtos);
+    return createAndPublishEventMapping(eventMappings, eventSourceEntryDtos);
   }
 
-  protected void createAndPublishEventMapping(final Map<String, EventMappingDto> eventMappings,
-                                              final List<EventSourceEntryDto> eventSourceEntryDtos) {
+  protected String createAndPublishEventMapping(final Map<String, EventMappingDto> eventMappings,
+                                                final List<EventSourceEntryDto> eventSourceEntryDtos) {
     final EventProcessMappingDto eventProcessMappingDto =
       eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
         eventMappings,
@@ -461,6 +496,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       );
     String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
+    return eventProcessMappingId;
   }
 
   protected List<EventSourceEntryDto> createExternalEventSourceAsList() {
