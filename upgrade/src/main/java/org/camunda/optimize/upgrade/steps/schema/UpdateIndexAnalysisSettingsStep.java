@@ -3,25 +3,20 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.steps.document;
+package org.camunda.optimize.upgrade.steps.schema;
 
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
+public class UpdateIndexAnalysisSettingsStep implements UpgradeStep {
+  private final String indexName;
 
-public class InsertDataStep implements UpgradeStep {
-  private final String data;
-  private final IndexMappingCreator index;
-
-  public InsertDataStep(final IndexMappingCreator index, final String data) {
-    this.index = index;
-    this.data = data;
+  public UpdateIndexAnalysisSettingsStep(final String indexName) {
+    this.indexName = indexName;
   }
 
   @Override
   public void execute(final ESIndexAdjuster esIndexAdjuster) {
-    esIndexAdjuster.insertDataByIndexName(index, data);
+    esIndexAdjuster.updateIndexAnalysisSettings(indexName);
   }
-
 }

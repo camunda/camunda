@@ -16,8 +16,8 @@ public class DeleteDataStep implements UpgradeStep {
   private final QueryBuilder query;
 
   @Override
-  public void execute(ESIndexAdjuster ESIndexAdjuster) {
-    ESIndexAdjuster.deleteDataByIndexName(indexName, query);
+  public void execute(ESIndexAdjuster esIndexAdjuster) {
+    esIndexAdjuster.deleteDataByIndexName(indexName, query);
   }
 
 }

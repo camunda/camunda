@@ -36,6 +36,17 @@ public class IndexSettingsBuilder {
     return toSettings(builder);
   }
 
+  public static Settings buildAnalysisSettings() throws IOException {
+    XContentBuilder builder = jsonBuilder();
+    // @formatter:off
+    builder
+      .startObject();
+        addAnalysis(builder)
+      .endObject();
+    // @formatter:on
+    return toSettings(builder);
+  }
+
   public static Settings buildAllSettings(ConfigurationService configurationService,
                                           IndexMappingCreator indexMappingCreator) throws IOException {
     XContentBuilder builder = jsonBuilder();
@@ -92,7 +103,7 @@ public class IndexSettingsBuilder {
       .endObject()
       .startObject("tokenizer")
         .startObject("ngram_tokenizer")
-          .field("type", "nGram")
+          .field("type", "ngram")
           .field("min_gram", 1)
           .field("max_gram", MAX_GRAM)
         .endObject()
@@ -107,7 +118,7 @@ public class IndexSettingsBuilder {
     // @formatter:on
   }
 
-  private static Settings toSettings(final XContentBuilder builder) {
+  public static Settings toSettings(final XContentBuilder builder) {
     return Settings.builder().loadFromSource(Strings.toString(builder), XContentType.JSON).build();
   }
 }

@@ -17,7 +17,6 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -268,7 +267,7 @@ public class ProcessVariableReader {
           */
         ? wildcardQuery(getValueSearchField(VARIABLE_VALUE_LOWERCASE), buildWildcardQuery(lowerCaseValue))
           /*
-            using Elasticsearch nGrams to filter for strings < 10 chars,
+            using Elasticsearch ngrams to filter for strings < 10 chars,
             because it's fast but increasing the number of chars makes the index bigger
           */
         : termQuery(getValueSearchField(VARIABLE_VALUE_NGRAM), lowerCaseValue);

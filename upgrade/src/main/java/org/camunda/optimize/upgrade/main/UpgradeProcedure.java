@@ -18,7 +18,7 @@ public abstract class UpgradeProcedure {
 
   @Getter
   protected final UpgradeExecutionDependencies upgradeDependencies;
-  private final OptimizeElasticsearchClient esClient;
+  protected final OptimizeElasticsearchClient esClient;
   private UpgradeValidationService upgradeValidationService;
 
   public UpgradeProcedure() {

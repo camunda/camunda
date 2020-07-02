@@ -45,10 +45,10 @@ public class UpdateDataStep implements UpgradeStep {
 
   @Override
   @SneakyThrows
-  public void execute(ESIndexAdjuster ESIndexAdjuster) {
+  public void execute(ESIndexAdjuster esIndexAdjuster) {
     if (paramMapProvider != null) {
       parameters = paramMapProvider.call();
     }
-    ESIndexAdjuster.updateDataByIndexName(indexName, query, updateScript, parameters);
+    esIndexAdjuster.updateDataByIndexName(indexName, query, updateScript, parameters);
   }
 }

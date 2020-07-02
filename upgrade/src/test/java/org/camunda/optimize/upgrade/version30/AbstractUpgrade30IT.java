@@ -22,12 +22,13 @@ public abstract class AbstractUpgrade30IT extends AbstractUpgradeIT {
   private static final SingleProcessReportIndexV2 SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndexV2();
   private static final SingleDecisionReportIndexV2 SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndexV2();
   private static final CombinedReportIndex COMBINED_REPORT_INDEX = new CombinedReportIndex();
+  protected static final ImportIndexIndex IMPORT_INDEX_INDEX = new ImportIndexIndex();
   protected static final TimestampBasedImportIndex TIMESTAMP_BASED_IMPORT_INDEX = new TimestampBasedImportIndex();
-  private static final ImportIndexIndex IMPORT_INDEX_INDEX = new ImportIndexIndex();
   private static final AlertIndexV2 ALERT_INDEX = new AlertIndexV2();
   private static final ProcessInstanceIndexV4 PROCESS_INSTANCE_INDEX = new ProcessInstanceIndexV4();
   private static final EventProcessInstanceIndexV4 EVENT_PROCESS_INSTANCE_INDEX = new EventProcessInstanceIndexV4();
-  private static final EventProcessPublishStateIndex EVENT_PROCESS_PUBLISH_STATE_INDEX = new EventProcessPublishStateIndex();
+  private static final EventProcessPublishStateIndex EVENT_PROCESS_PUBLISH_STATE_INDEX =
+    new EventProcessPublishStateIndex();
 
   private static final String FROM_VERSION = "3.0.0";
 

@@ -33,6 +33,7 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateIndexAnalysisSettingsStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -107,7 +108,8 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(addDateVariableUnitAndCustomBucketFieldsToReportConfiguration(SINGLE_PROCESS_REPORT_INDEX_NAME))
       .addUpgradeStep(addDateVariableUnitAndCustomBucketFieldsToReportConfiguration(SINGLE_DECISION_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateAlertThresholdToNewDataType())
-      .addUpgradeSteps(addProcessInstanceIdToEventsMigrationSteps());
+      .addUpgradeSteps(addProcessInstanceIdToEventsMigrationSteps())
+      .addUpgradeStep(upgradeAllIndexAnalysisSettings()); // upgradeAllIndexAnalysisSettings should be last
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
     deleteTraceStateIndices(upgradeBuilder);
     deleteSequenceCountIndices(upgradeBuilder);
@@ -432,6 +434,11 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       script,
       params
     );
+  }
+
+  private UpgradeStep upgradeAllIndexAnalysisSettings() {
+    // upgrade analysis settings of all indices to remove deprecated nGram tokenizer
+    return new UpdateIndexAnalysisSettingsStep(esClient.getIndexNameService().getIndexPrefix() + "*");
   }
 
   @SneakyThrows

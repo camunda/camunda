@@ -10,5 +10,5 @@ import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 
 public interface UpgradeStep {
 
-  void execute(ESIndexAdjuster ESIndexAdjuster);
+  void execute(ESIndexAdjuster esIndexAdjuster);
 }
