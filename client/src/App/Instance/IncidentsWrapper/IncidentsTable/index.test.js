@@ -195,6 +195,7 @@ describe('IncidentsTable', () => {
       expect(screen.getByText('Error Message')).toBeEnabled();
       expect(screen.getByText('Operations')).toBeEnabled();
     });
+
     it('should disable sorting for jobId', () => {
       const props = {
         ...mockProps,
@@ -210,8 +211,9 @@ describe('IncidentsTable', () => {
       };
 
       render(<IncidentsTable {...props} />, {wrapper: Wrapper});
-
-      expect(screen.getByText('Job Id')).toBeDisabled();
+      expect(
+        screen.getByRole('button', {name: 'Sort by jobId'})
+      ).toBeDisabled();
     });
   });
 });
