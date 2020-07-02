@@ -30,6 +30,7 @@ import static org.camunda.optimize.service.es.schema.index.events.EventTraceStat
 import static org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex.GROUP;
 import static org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex.SOURCE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.functionScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -86,6 +87,24 @@ public class EventTraceStateReader {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = "Was not able to fetch event trace states";
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
+    }
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventTraceStateDto.class, objectMapper);
+  }
+
+  public List<EventTraceStateDto> getTracesWithTraceIdIn(final List<String> traceIds) {
+    log.debug("Fetching trace states with trace ID in [{}]", traceIds);
+
+    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(boolQuery().must(termsQuery(EventTraceStateIndex.TRACE_ID, traceIds)))
+      .size(MAX_RESPONSE_SIZE_LIMIT);
+    SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
+    SearchResponse searchResponse;
+    try {
+      searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      String reason = "Was not able to fetch event trace states for given trace IDs";
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }

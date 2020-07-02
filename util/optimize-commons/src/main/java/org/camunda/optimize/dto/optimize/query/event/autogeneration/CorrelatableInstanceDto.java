@@ -6,15 +6,19 @@
 package org.camunda.optimize.dto.optimize.query.event.autogeneration;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 
 import java.time.OffsetDateTime;
 
 @AllArgsConstructor
+@NoArgsConstructor
 @Data
-@Builder
-public class CorrelatedInstanceDto {
-  private String sourceIdentifier;
+public abstract class CorrelatableInstanceDto {
   private OffsetDateTime startDate;
+
+  public abstract String getSourceIdentifier();
+
+  public abstract String getCorrelationValueForEventSource(EventSourceEntryDto eventSourceEntryDto);
 }

@@ -66,7 +66,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 @RequiredArgsConstructor
 @Component
 @Slf4j
-public class CorrelatedProcessInstanceReader {
+public class CorrelatedCamundaProcessInstanceReader {
 
   private static final String EVENT_SOURCE_AGG = "eventSourceAgg";
   private static final String BUCKET_HITS_AGG = "bucketHitsAgg";
@@ -117,8 +117,8 @@ public class CorrelatedProcessInstanceReader {
     return extractCorrelationValues(aggregations, camundaSources);
   }
 
-  public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForCamundaSources(final List<EventSourceEntryDto> camundaSources,
-                                                                                        final List<String> correlationValues) {
+  public List<CorrelatableProcessInstanceDto> getCorrelatableInstancesForSources(final List<EventSourceEntryDto> camundaSources,
+                                                                                 final List<String> correlationValues) {
     if (camundaSources.isEmpty()) {
       log.debug("There are no Camunda sources to fetch correlated process instances for");
       return Collections.emptyList();

@@ -17,17 +17,24 @@ import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.BpmnModelUtility;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.sql.SQLException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -49,6 +56,11 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EV
 // The tests in this class relate to the connections between sources
 public class EventBasedProcessAutogenerationSourceConnectionsIT extends AbstractEventProcessAutogenerationIT {
 
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+
   @BeforeEach
   public void init() {
     embeddedOptimizeExtension.getConfigurationService()
@@ -58,15 +70,14 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   }
 
   @Test
-  @Disabled(value = "OPT-3861")
   public void createFromExternalAndCamundaSources_singleExternalStartEndEvents() {
     final String traceId = "tracingId";
     final Instant now = Instant.now();
     ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_A, traceId, now),
-      createCloudEventOfType(EVENT_B, traceId, now.plusSeconds(10)),
-      createCloudEventOfType(EVENT_C, traceId, now.plusSeconds(20)),
-      createCloudEventOfType(EVENT_D, traceId, now.plusSeconds(30))
+      createCloudEventOfType(EVENT_A, traceId, now.minusSeconds(30)),
+      createCloudEventOfType(EVENT_B, traceId, now.minusSeconds(20)),
+      createCloudEventOfType(EVENT_C, traceId, now.minusSeconds(10)),
+      createCloudEventOfType(EVENT_D, traceId, now)
     ));
 
     BpmnModelInstance modelInstance = singleStartSingleEndModel();
@@ -110,7 +121,6 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   }
 
   @Test
-  @Disabled(value = "OPT-3861")
   public void createFromExternalAndCamundaSources_noExternalEndEvents_singleCamundaStartEvent() {
     final Instant now = Instant.now();
     final String firstTraceId = "firstTracingId";
@@ -163,7 +173,6 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   }
 
   @Test
-  @Disabled(value = "OPT-3861")
   public void createFromExternalAndCamundaSources_noExternalEndEvents_multipleCamundaStartEvent() {
     final Instant now = Instant.now();
     final String firstTraceId = "firstTracingId";
@@ -237,20 +246,19 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   }
 
   @Test
-  @Disabled(value = "OPT-3861")
   public void createFromExternalAndCamundaSources_multipleExternalStartEndEvents() {
     final Instant now = Instant.now();
     final String firstTrace = "firstTracingId";
     ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_A, firstTrace, now),
-      createCloudEventOfType(EVENT_B, firstTrace, now.plusSeconds(10)),
-      createCloudEventOfType(EVENT_C, firstTrace, now.plusSeconds(20))
+      createCloudEventOfType(EVENT_A, firstTrace, now.minusSeconds(20)),
+      createCloudEventOfType(EVENT_B, firstTrace, now.minusSeconds(10)),
+      createCloudEventOfType(EVENT_C, firstTrace, now)
     ));
     final String secondTraceId = "secondTracingId";
     ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_A, secondTraceId, now),
-      createCloudEventOfType(EVENT_B, secondTraceId, now.plusSeconds(10)),
-      createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(20))
+      createCloudEventOfType(EVENT_A, secondTraceId, now.minusSeconds(20)),
+      createCloudEventOfType(EVENT_B, secondTraceId, now.minusSeconds(10)),
+      createCloudEventOfType(EVENT_D, secondTraceId, now)
     ));
 
     BpmnModelInstance modelInstance = singleStartSingleEndModel();
@@ -527,20 +535,20 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   }
 
   @Test
-  @Disabled(value = "OPT-3861")
   public void createFromThreeSourcesWithOrder_external_processStartEnd_startEndEvents() {
     final String traceId = "tracingId";
     final Instant now = Instant.now();
     ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_A, traceId, now),
-      createCloudEventOfType(EVENT_B, traceId, now.plusSeconds(10)),
-      createCloudEventOfType(EVENT_C, traceId, now.plusSeconds(20)),
-      createCloudEventOfType(EVENT_D, traceId, now.plusSeconds(30))
+      createCloudEventOfType(EVENT_A, traceId, now.minusSeconds(30)),
+      createCloudEventOfType(EVENT_B, traceId, now.minusSeconds(20)),
+      createCloudEventOfType(EVENT_C, traceId, now.minusSeconds(10)),
+      createCloudEventOfType(EVENT_D, traceId, now)
     ));
 
     final EventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1),
-      EventScopeType.PROCESS_INSTANCE
+      EventScopeType.PROCESS_INSTANCE,
+      traceId
     );
     final EventTypeDto processStart = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
     final EventTypeDto processEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
@@ -548,7 +556,8 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
 
     final EventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2),
-      EventScopeType.START_END
+      EventScopeType.START_END,
+      traceId
     );
     final EventTypeDto camundaStart = createCamundaEventTypeDto(PROCESS_ID_2, START_EVENT_ID_2, START_EVENT_ID_2);
     final EventTypeDto camundaEnd = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_2, END_EVENT_ID_2);
@@ -602,17 +611,10 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   @Test
   public void createFromThreeSourcesWithOrder_processStartEnd_startEndEvents_external() {
     final String traceId = "tracingId";
-    final Instant now = Instant.now();
-    ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_A, traceId, now),
-      createCloudEventOfType(EVENT_B, traceId, now.plusSeconds(10)),
-      createCloudEventOfType(EVENT_C, traceId, now.plusSeconds(20)),
-      createCloudEventOfType(EVENT_D, traceId, now.plusSeconds(30))
-    ));
-
     final EventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1),
-      EventScopeType.PROCESS_INSTANCE
+      EventScopeType.PROCESS_INSTANCE,
+      traceId
     );
 
     final EventTypeDto processStart = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
@@ -620,10 +622,19 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
 
     final EventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2),
-      EventScopeType.START_END
+      EventScopeType.START_END,
+      traceId
     );
     final EventTypeDto camundaStart = createCamundaEventTypeDto(PROCESS_ID_2, START_EVENT_ID_2, START_EVENT_ID_2);
     final EventTypeDto camundaEnd = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_2, END_EVENT_ID_2);
+
+    final Instant now = Instant.now();
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(EVENT_A, traceId, now),
+      createCloudEventOfType(EVENT_B, traceId, now.plusSeconds(10)),
+      createCloudEventOfType(EVENT_C, traceId, now.plusSeconds(20)),
+      createCloudEventOfType(EVENT_D, traceId, now.plusSeconds(30))
+    ));
 
     final List<EventSourceEntryDto> sources = Arrays.asList(
       camundaProcessSource,
@@ -677,31 +688,45 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   }
 
   @Test
-  @Disabled(value = "OPT-3861")
-  public void createFromThreeSourcesWithOrder_startEndEvents_external_processStartEnd() {
+  public void createFromThreeSourcesWithOrder_startEndEvents_external_processStartEnd() throws SQLException {
     final String traceId = "tracingId";
     final Instant now = Instant.now();
+
+    final ProcessInstanceEngineDto startEndInstance =
+      engineIntegrationExtension.deployAndStartProcessWithVariables(
+        singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2),
+        Collections.emptyMap(),
+        traceId,
+        null
+      );
+    engineDatabaseExtension.changeProcessInstanceStartDate(
+      startEndInstance.getId(),
+      OffsetDateTime.ofInstant(now.minusSeconds(50), ZoneId.systemDefault())
+    );
+    importEngineEntities();
+    final EventSourceEntryDto startEndSource = createCamundaSourceEntry(
+      startEndInstance.getProcessDefinitionKey(),
+      EventScopeType.START_END
+    );
+
+    final EventTypeDto camundaStart = createCamundaEventTypeDto(PROCESS_ID_2, START_EVENT_ID_2, START_EVENT_ID_2);
+    final EventTypeDto camundaEnd = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_2, END_EVENT_ID_2);
+
     ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_A, traceId, now),
-      createCloudEventOfType(EVENT_B, traceId, now.plusSeconds(10)),
-      createCloudEventOfType(EVENT_C, traceId, now.plusSeconds(20)),
-      createCloudEventOfType(EVENT_D, traceId, now.plusSeconds(30))
+      createCloudEventOfType(EVENT_A, traceId, now.minusSeconds(30)),
+      createCloudEventOfType(EVENT_B, traceId, now.minusSeconds(20)),
+      createCloudEventOfType(EVENT_C, traceId, now.minusSeconds(10)),
+      createCloudEventOfType(EVENT_D, traceId, now)
     ));
 
     final EventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(
       singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1),
-      EventScopeType.PROCESS_INSTANCE
+      EventScopeType.PROCESS_INSTANCE,
+      traceId
     );
 
     final EventTypeDto processStart = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
     final EventTypeDto processEnd = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
-
-    final EventSourceEntryDto startEndSource = deployDefinitionWithInstanceAndCreateEventSource(
-      singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2),
-      EventScopeType.START_END
-    );
-    final EventTypeDto camundaStart = createCamundaEventTypeDto(PROCESS_ID_2, START_EVENT_ID_2, START_EVENT_ID_2);
-    final EventTypeDto camundaEnd = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_2, END_EVENT_ID_2);
 
     final List<EventSourceEntryDto> sources = Arrays.asList(
       startEndSource,
@@ -743,22 +768,21 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
   }
 
   @Test
-  @Disabled(value = "OPT-3861")
   public void createFromThreeSourcesWithOrder_complexModelConfiguration() {
     final Instant now = Instant.now();
     final String firstTraceId = "firstTracingId";
     ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_A, firstTraceId, now),
-      createCloudEventOfType(EVENT_B, firstTraceId, now.plusSeconds(10)),
-      createCloudEventOfType(EVENT_C, firstTraceId, now.plusSeconds(20)),
-      createCloudEventOfType(EVENT_D, firstTraceId, now.plusSeconds(30))
+      createCloudEventOfType(EVENT_A, firstTraceId, now.minusSeconds(30)),
+      createCloudEventOfType(EVENT_B, firstTraceId, now.minusSeconds(20)),
+      createCloudEventOfType(EVENT_C, firstTraceId, now.minusSeconds(10)),
+      createCloudEventOfType(EVENT_D, firstTraceId, now)
     ));
     final String secondTraceId = "secondTracingId";
     ingestEventAndProcessTraces(Arrays.asList(
-      createCloudEventOfType(EVENT_A, secondTraceId, now),
-      createCloudEventOfType(EVENT_C, secondTraceId, now.plusSeconds(10)),
-      createCloudEventOfType(EVENT_B, secondTraceId, now.plusSeconds(20)),
-      createCloudEventOfType(EVENT_D, secondTraceId, now.plusSeconds(30))
+      createCloudEventOfType(EVENT_A, secondTraceId, now.minusSeconds(30)),
+      createCloudEventOfType(EVENT_C, secondTraceId, now.minusSeconds(20)),
+      createCloudEventOfType(EVENT_B, secondTraceId, now.minusSeconds(10)),
+      createCloudEventOfType(EVENT_D, secondTraceId, now)
     ));
 
     final EventSourceEntryDto camundaProcessSource = deployDefinitionWithInstanceAndCreateEventSource(

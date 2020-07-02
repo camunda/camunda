@@ -212,11 +212,12 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
   protected void assertCorrectMappingsAndContainsEvents(final Map<String, EventMappingDto> mappings,
                                                         final BpmnModelInstance bpmnModelInstance,
                                                         final List<EventTypeDto> expectedMappedEvents) {
+    assertThat(mappings.values().stream()
+                 .flatMap(mapping -> Stream.of(mapping.getStart(), mapping.getEnd()))
+                 .filter(Objects::nonNull)
+                 .collect(Collectors.toList()))
+      .containsExactlyInAnyOrderElementsOf(expectedMappedEvents);
     assertThat(mappings)
-      .hasSize(expectedMappedEvents.size())
-      .satisfies(modeledMappings -> assertThat(modeledMappings.values())
-        .extracting(EventMappingDto::getStart)
-        .containsExactlyInAnyOrderElementsOf(expectedMappedEvents))
       .allSatisfy((id, mapping) -> assertThat(bpmnModelInstance.getModelElementById(id).getElementType()).isNotNull());
   }
 

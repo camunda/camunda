@@ -5,23 +5,37 @@
  */
 package org.camunda.optimize.dto.optimize.query.event.autogeneration;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.EqualsAndHashCode;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
-@Builder
-public class CorrelatableProcessInstanceDto {
+@EqualsAndHashCode(callSuper = true)
+public class CorrelatableProcessInstanceDto extends CorrelatableInstanceDto {
   private String processDefinitionKey;
-  private OffsetDateTime startDate;
   private String businessKey;
   private List<SimpleProcessVariableDto> variables;
+
+  @Override
+  public String getSourceIdentifier() {
+    return processDefinitionKey;
+  }
+
+  @Override
+  public String getCorrelationValueForEventSource(final EventSourceEntryDto eventSourceEntryDto) {
+    if (eventSourceEntryDto.isTracedByBusinessKey()) {
+      return businessKey;
+    } else {
+      final String traceVariableName = eventSourceEntryDto.getTraceVariable();
+      return variables
+        .stream()
+        .filter(var -> var.getName().equals(traceVariableName))
+        .map(SimpleProcessVariableDto::getValue)
+        .findFirst().orElse(null);
+    }
+  }
+
 }

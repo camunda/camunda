@@ -96,9 +96,13 @@ public class EventTraceStateService {
     updateEventSequenceWithAdjustments(adjustmentsToWrite);
   }
 
+  public List<EventTraceStateDto> getTracesWithTraceIdIn(final List<String> traceIds) {
+    return eventTraceStateReader.getTracesWithTraceIdIn(traceIds);
+  }
+
   private void sortTracedEvents(final List<TracedEventDto> eventTrace) {
     eventTrace.sort(Comparator.comparing(TracedEventDto::getTimestamp)
-                    .thenComparing(compareOrderCounters())
+                      .thenComparing(compareOrderCounters())
                       .thenComparing(compareExistingSequenceCounts()));
   }
 
