@@ -19,9 +19,11 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.atomix.cluster.AtomixCluster;
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.core.Atomix;
+import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.snapshot.impl.FileBasedSnapshotMetadata;
 import io.atomix.utils.net.Address;
 import io.zeebe.broker.Broker;
@@ -109,7 +111,8 @@ public final class ClusteringRule extends ExternalResource {
   // cluster
   private ZeebeClient client;
   private Gateway gateway;
-  private LeaderListener leaderListener;
+  private CountDownLatch partitionLatch;
+  private final Map<Integer, Leader> partitionLeader = new ConcurrentHashMap<>();
 
   public ClusteringRule() {
     this(3);
@@ -183,7 +186,7 @@ public final class ClusteringRule extends ExternalResource {
 
   @Override
   protected void before() throws IOException {
-    leaderListener = new LeaderListener(partitionCount);
+    partitionLatch = new CountDownLatch(partitionCount);
     // create brokers
     for (int nodeId = 0; nodeId < clusterSize; nodeId++) {
       getBroker(nodeId);
@@ -228,7 +231,7 @@ public final class ClusteringRule extends ExternalResource {
         brokers.values().parallelStream().map(Broker::start).toArray(CompletableFuture[]::new);
     CompletableFuture.allOf(brokerStartFutures).get(120, TimeUnit.SECONDS);
 
-    leaderListener.awaitLeaders();
+    partitionLatch.await(15, TimeUnit.SECONDS);
   }
 
   private Broker createBroker(final int nodeId) {
@@ -237,7 +240,8 @@ public final class ClusteringRule extends ExternalResource {
     final Broker broker =
         new Broker(
             brokerCfg, brokerBase.getAbsolutePath(), controlledClock, new SpringBrokerBridge());
-    broker.addPartitionListener(leaderListener);
+
+    broker.addPartitionListener(new LeaderListener(partitionLatch, nodeId));
     new Thread(broker::start).start();
     return broker;
   }
@@ -512,6 +516,27 @@ public final class ClusteringRule extends ExternalResource {
         .count();
   }
 
+  public void stepDown(final int nodeId, final int partitionId) {
+    stepDown(getBroker(nodeId), partitionId);
+  }
+
+  public void stepDown(final Broker broker, final int partitionId) {
+    final var atomix = broker.getAtomix();
+    final MemberId nodeId = atomix.getMembershipService().getLocalMember().id();
+
+    final var raftPartition =
+        atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME).getPartitions()
+            .stream()
+            .filter(
+                partition ->
+                    partition.members().contains(nodeId) && partition.id().id() == partitionId)
+            .map(RaftPartition.class::cast)
+            .findFirst()
+            .orElseThrow();
+
+    raftPartition.getServer().stepDown().join();
+  }
+
   public void stopBrokerAndAwaitNewLeader(final int nodeId) {
     final Broker broker = brokers.get(nodeId);
     if (broker != null) {
@@ -676,12 +701,18 @@ public final class ClusteringRule extends ExternalResource {
     return logstreams.get(partitionId);
   }
 
+  public Leader getCurrentLeaderForPartition(final int partition) {
+    return partitionLeader.get(partition);
+  }
+
   private class LeaderListener implements PartitionListener {
 
     private final CountDownLatch latch;
+    private final int nodeId;
 
-    LeaderListener(final int partitionCount) {
-      latch = new CountDownLatch(partitionCount);
+    LeaderListener(final CountDownLatch latch, final int nodeId) {
+      this.latch = latch;
+      this.nodeId = nodeId;
     }
 
     @Override
@@ -694,11 +725,8 @@ public final class ClusteringRule extends ExternalResource {
         final int partitionId, final long term, final LogStream logStream) {
       logstreams.put(partitionId, logStream);
       latch.countDown();
+      partitionLeader.put(partitionId, new Leader(nodeId, term, logStream));
       return CompletableActorFuture.completed(null);
-    }
-
-    void awaitLeaders() throws InterruptedException {
-      latch.await(15, TimeUnit.SECONDS);
     }
   }
 }

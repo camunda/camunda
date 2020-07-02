@@ -607,6 +607,10 @@ public final class ZeebePartition extends Actor
     }
 
     try {
+      if (metricsTimer != null) {
+        metricsTimer.cancel();
+        metricsTimer = null;
+      }
       snapshotController.close();
       zeebeDb = null;
     } catch (final Exception e) {
