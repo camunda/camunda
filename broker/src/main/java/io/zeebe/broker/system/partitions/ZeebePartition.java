@@ -377,7 +377,8 @@ public final class ZeebePartition extends Actor
                   logStream.setCommitPosition(deferredCommitPosition);
                   deferredCommitPosition = -1;
                 }
-                criticalComponentsHealthMonitor.registerComponent("logStream", logStream);
+                criticalComponentsHealthMonitor.registerComponent(
+                    logStream.getLogName(), logStream);
                 installStorageServices()
                     .onComplete(
                         (deletionService, errorInstall) -> {
@@ -574,7 +575,7 @@ public final class ZeebePartition extends Actor
       return CompletableActorFuture.completed(null);
     }
 
-    criticalComponentsHealthMonitor.removeComponent("logstream");
+    criticalComponentsHealthMonitor.removeComponent(logStream.getLogName());
     final LogStream logStreamToClose = logStream;
     logStream = null;
     return logStreamToClose.closeAsync();
@@ -719,7 +720,7 @@ public final class ZeebePartition extends Actor
   private ActorFuture<LogStream> openLogStream() {
     return LogStream.builder()
         .withLogStorage(atomixLogStorage)
-        .withLogName(atomixRaftPartition.name())
+        .withLogName("logstream-" + atomixRaftPartition.name())
         .withNodeId(localBroker.getNodeId())
         .withPartitionId(atomixRaftPartition.id().id())
         .withMaxFragmentSize(maxFragmentSize)
