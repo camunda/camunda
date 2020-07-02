@@ -102,10 +102,16 @@ export default function Table({
   const tr = useRef();
   useEffect(() => {
     if (window.ResizeObserver) {
-      const ro = new ResizeObserver(() => {
-        if (tr.current && thead.current) {
-          thead.current.style.width = tr.current.clientWidth + 'px';
-        }
+      const ro = new ResizeObserver((entries) => {
+        // We wrap it in requestAnimationFrame to avoid this error - ResizeObserver loop limit exceeded
+        window.requestAnimationFrame(() => {
+          if (!Array.isArray(entries) || !entries.length) {
+            return;
+          }
+          if (tr.current && thead.current) {
+            thead.current.style.width = tr.current.clientWidth + 'px';
+          }
+        });
       });
       if (tr.current) {
         ro.observe(tr.current);
