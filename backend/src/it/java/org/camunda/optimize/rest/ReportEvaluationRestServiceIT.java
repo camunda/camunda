@@ -109,7 +109,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     // when future start date filter applied
     Response filteredResponse = evaluateSavedReport(
       reportId,
-      new AdditionalProcessReportEvaluationFilterDto(createFixedDateFilter(OffsetDateTime.now().plusSeconds(1), null))
+      new AdditionalProcessReportEvaluationFilterDto(createFixedDateFilter(OffsetDateTime.now().plusDays(1), null))
     );
 
     // then instance is not part of evaluated result

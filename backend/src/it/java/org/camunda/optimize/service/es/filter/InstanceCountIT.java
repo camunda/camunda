@@ -85,7 +85,7 @@ public class InstanceCountIT extends AbstractFilterIT {
       .setReportDataType(DecisionReportDataType.RAW_DATA)
       .build();
 
-    reportWithFilter.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(OffsetDateTime.now(), null)));
+    reportWithFilter.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(OffsetDateTime.now().plusDays(1), null)));
 
     RawDataDecisionReportResultDto resultWithFilter = reportClient.evaluateRawReport(reportWithFilter).getResult();
     RawDataDecisionReportResultDto resultWithoutFilter =

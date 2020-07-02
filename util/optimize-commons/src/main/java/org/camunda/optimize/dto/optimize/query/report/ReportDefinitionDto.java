@@ -31,7 +31,7 @@ public class ReportDefinitionDto<RD extends ReportDataDto> implements Collection
   protected String lastModifier;
   protected String collectionId;
 
-  private RD data;
+  protected RD data;
 
   private final Boolean combined;
 

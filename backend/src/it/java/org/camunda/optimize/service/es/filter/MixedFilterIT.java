@@ -21,9 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class MixedFilterIT extends AbstractFilterIT {
 
@@ -54,6 +53,8 @@ public class MixedFilterIT extends AbstractFilterIT {
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     OffsetDateTime start = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
     OffsetDateTime end = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId()).getEndTime();
+    engineDatabaseExtension.changeProcessInstanceStartDate(instanceEngineDto.getId(), start.plusDays(2));
+    engineDatabaseExtension.changeProcessInstanceEndDate(instanceEngineDto.getId(), end.plusDays(2));
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -70,19 +71,19 @@ public class MixedFilterIT extends AbstractFilterIT {
       .add()
       .fixedStartDate()
       .start(null)
-      .end(start.minusSeconds(1L))
+      .end(start.plusDays(1))
       .add()
       .fixedEndDate()
       .start(null)
-      .end(end.minusSeconds(1L))
+      .end(end.plusDays(1))
       .add()
       .buildList();
 
     RawDataProcessReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinition, filterList);
 
     // then
-    assertThat(rawDataReportResultDto.getData().size(), is(1));
-    assertThat(rawDataReportResultDto.getData().get(0).getProcessInstanceId(), is(expectedInstanceId));
+    assertThat(rawDataReportResultDto.getData()).hasSize(1);
+    assertThat(rawDataReportResultDto.getData().get(0).getProcessInstanceId()).isEqualTo(expectedInstanceId);
   }
 
   @Test
@@ -107,6 +108,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     OffsetDateTime start = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
+    engineDatabaseExtension.changeProcessInstanceStartDate(instanceEngineDto.getId(), start.plusDays(2));
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -123,15 +125,15 @@ public class MixedFilterIT extends AbstractFilterIT {
       .add()
       .fixedStartDate()
       .start(null)
-      .end(start.minusSeconds(1L))
+      .end(start.plusDays(1L))
       .add()
       .buildList();
 
     RawDataProcessReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinition, filterList);
 
     // then
-    assertThat(rawDataReportResultDto.getData().size(), is(1));
-    assertThat(rawDataReportResultDto.getData().get(0).getProcessInstanceId(), is(expectedInstanceId));
+    assertThat(rawDataReportResultDto.getData()).hasSize(1);
+    assertThat(rawDataReportResultDto.getData().get(0).getProcessInstanceId()).isEqualTo(expectedInstanceId);
   }
 
   protected RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto<?>> filter) {

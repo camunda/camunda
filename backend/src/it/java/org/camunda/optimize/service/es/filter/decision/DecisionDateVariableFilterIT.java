@@ -13,10 +13,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
@@ -41,8 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createDateInputVariableFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createFixedDateInputVariableFilter;
-import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRollingDateInputVariableFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRelativeDateInputVariableFilter;
+import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRollingDateInputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.INPUT_INVOICE_DATE_ID;
 import static org.camunda.optimize.util.DmnModels.createDecisionDefinitionWithDate;
 
@@ -75,8 +75,8 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
         Arguments.of(
           "Include value and Null/Undefined for type " + DateFilterType.FIXED,
           createSupplier(() -> new FixedDateFilterDataDto(
-            LocalDateUtil.getCurrentDateTime(),
-            LocalDateUtil.getCurrentDateTime().plusMinutes(1)
+            LocalDateUtil.getCurrentDateTime().minusDays(1),
+            LocalDateUtil.getCurrentDateTime().plusDays(1)
           ).setIncludeUndefined(true)),
           4L
         ),
@@ -122,7 +122,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     );
     engineIntegrationExtension.startDecisionInstance(
       decisionDefinitionDto.getId(),
-      Collections.singletonMap(dateVarName, toDateString(now.minusMinutes(1)))
+      Collections.singletonMap(dateVarName, toDateString(now.minusDays(1)))
     );
     engineIntegrationExtension.startDecisionInstance(
       decisionDefinitionDto.getId(),
@@ -130,7 +130,7 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     );
     engineIntegrationExtension.startDecisionInstance(
       decisionDefinitionDto.getId(),
-      Collections.singletonMap(dateVarName, toDateString(now.plusMinutes(1)))
+      Collections.singletonMap(dateVarName, toDateString(now.plusDays(1)))
     );
 
     importAllEngineEntitiesFromScratch();
@@ -327,6 +327,34 @@ public class DecisionDateVariableFilterIT extends AbstractDecisionDefinitionIT {
     assertThat(result1.getInstanceCount()).isEqualTo(1L);
     assertThat(result2.getInstanceCount()).isEqualTo(0L);
     assertThat(result3.getInstanceCount()).isEqualTo(1L);
+  }
+
+  @Test
+  public void dateVariableFilterTruncatedToDay_whenEvaluatingUnsavedReport() {
+    // given a report with date filters which have time information
+    final OffsetDateTime dateTimeInputFilterEnd = OffsetDateTime.parse("2019-01-01T01:01:01+00:00");
+    final String inputVariableIdToFilterOn = INPUT_INVOICE_DATE_ID;
+
+    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition(
+      createDecisionDefinitionWithDate()
+    );
+    startDecisionInstanceWithInputVars(
+      decisionDefinitionDto.getId(),
+      createInputsWithDate(100.0, "2018-01-01T00:00:00+00:00")
+    );
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
+    reportData.setFilter(Lists.newArrayList(createFixedDateInputVariableFilter(
+      inputVariableIdToFilterOn, null, dateTimeInputFilterEnd
+    )));
+    RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+
+    // then the resulting filter has been truncated to day
+    assertThat((String) result.getData().get(0).getInputVariables().get(inputVariableIdToFilterOn).getValue())
+      .startsWith("2018-01-01T00:00:00");
   }
 
   private String toDateString(final OffsetDateTime now) {

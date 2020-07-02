@@ -420,6 +420,12 @@ public class ReportClient {
       .execute(SingleProcessReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
+  public SingleDecisionReportDefinitionDto getSingleDecisionReportById(final String id) {
+    return getRequestExecutor()
+      .buildGetReportRequest(id)
+      .execute(SingleDecisionReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+  }
+
   public ReportDefinitionDto<?> getReportById(String id) {
     return getRequestExecutor()
       .buildGetReportRequest(id)
@@ -573,6 +579,15 @@ public class ReportClient {
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
+      // @formatter:on
+  }
+
+  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateReportWithRawDataResult(
+    final DecisionReportDataDto reportData) {
+    return getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
       // @formatter:on
   }
 

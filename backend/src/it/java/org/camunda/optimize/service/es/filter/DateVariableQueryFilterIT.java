@@ -11,10 +11,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Da
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
@@ -22,6 +25,8 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -29,6 +34,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Supplier;
@@ -67,8 +73,8 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         Arguments.of(
           "Include value and Null/Undefined for type " + DateFilterType.FIXED,
           createSupplier(() -> new FixedDateFilterDataDto(
-            LocalDateUtil.getCurrentDateTime(),
-            LocalDateUtil.getCurrentDateTime().plusMinutes(1)
+            LocalDateUtil.getCurrentDateTime().minusDays(1),
+            LocalDateUtil.getCurrentDateTime().plusDays(1)
           ).setIncludeUndefined(true)),
           4L
         ),
@@ -105,9 +111,9 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
       processDefinition.getId(),
       ImmutableMap.of(VARIABLE_NAME, new EngineVariableValue(null, VariableType.DATE.getId()))
     );
-    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusMinutes(1));
+    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusDays(1));
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
-    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusMinutes(1));
+    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusDays(1));
 
     importAllEngineEntitiesFromScratch();
 
@@ -133,9 +139,9 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     // given
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusSeconds(2));
+    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusDays(2));
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
-    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusSeconds(10));
+    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusDays(10));
 
     importAllEngineEntitiesFromScratch();
 
@@ -146,7 +152,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .variable()
         .dateType()
         .name(VARIABLE_NAME)
-        .fixedDate(null, now)
+        .fixedDate(null, now.plusDays(1))
         .add()
         .buildList();
 
@@ -161,9 +167,9 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     // given
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusSeconds(2));
+    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusDays(2));
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
-    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusSeconds(10));
+    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusDays(10));
 
     importAllEngineEntitiesFromScratch();
 
@@ -189,9 +195,9 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     // given
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusSeconds(2));
+    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusDays(2));
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
-    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusSeconds(10));
+    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusDays(10));
 
     importAllEngineEntitiesFromScratch();
 
@@ -202,7 +208,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .variable()
         .dateType()
         .name(VARIABLE_NAME)
-        .fixedDate(now, now)
+        .fixedDate(now, now.plusDays(1))
         .add()
         .buildList();
 
@@ -217,7 +223,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     // given
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusSeconds(2));
+    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusDays(2));
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
 
     importAllEngineEntitiesFromScratch();
@@ -229,7 +235,7 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .variable()
         .dateType()
         .name(VARIABLE_NAME)
-        .fixedDate(now.minusSeconds(1), now.plusSeconds(10))
+        .fixedDate(now.minusDays(1), now.plusDays(1))
         .add()
         .buildList();
 
@@ -244,9 +250,9 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     // given
     final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusSeconds(2));
+    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.minusDays(2));
     startInstanceForDefinitionWithDateVar(processDefinition.getId(), now);
-    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusSeconds(10));
+    startInstanceForDefinitionWithDateVar(processDefinition.getId(), now.plusDays(10));
 
     importAllEngineEntitiesFromScratch();
 
@@ -257,12 +263,12 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
         .variable()
         .dateType()
         .name(VARIABLE_NAME)
-        .fixedDate(now.minusSeconds(5), now)
+        .fixedDate(now.minusDays(1), now.plusDays(1))
         .add()
         .variable()
         .name(VARIABLE_NAME)
         .dateType()
-        .fixedDate(now, now.plusSeconds(20))
+        .fixedDate(now, now.plusDays(1))
         .add()
         .buildList();
 
@@ -397,6 +403,44 @@ public class DateVariableQueryFilterIT extends AbstractFilterIT {
     assertThat(result1.getInstanceCount()).isEqualTo(1L);
     assertThat(result2.getInstanceCount()).isEqualTo(0L);
     assertThat(result3.getInstanceCount()).isEqualTo(1L);
+  }
+
+  @Test
+  public void fixedDateFiltersAreTruncatedToDay_whenEvaluatingUnsavedReport() {
+    // given a report with date filters that include time information
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    startInstanceForDefinitionWithDateVar(processDefinition.getId(), OffsetDateTime.now());
+    importAllEngineEntitiesFromScratch();
+
+    final OffsetDateTime filterDateTime = OffsetDateTime.now().withHour(1);
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinition.getKey())
+      .setProcessDefinitionVersion(processDefinition.getVersionAsString())
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .setFilter(ProcessFilterBuilder
+                   .filter()
+                   .variable()
+                   .dateType()
+                   .name(VARIABLE_NAME)
+                   .fixedDate(filterDateTime, filterDateTime)
+                   .add()
+                   .buildList())
+      .build();
+
+
+    // when
+    final SingleProcessReportDefinitionDto resultReport =
+      reportClient.evaluateRawReport(reportData).getReportDefinition();
+
+    // then the resulting filter has been truncated to day
+    final OffsetDateTime expectedFilterDate = filterDateTime.truncatedTo(ChronoUnit.DAYS);
+    assertThat(resultReport.getData().getFilter())
+      .extracting(filter -> ((FixedDateFilterDataDto) ((DateVariableFilterDataDto) filter.getData()).getData()).getStart())
+      .containsOnly(expectedFilterDate);
+    assertThat(resultReport.getData().getFilter())
+      .extracting(filter -> ((DateVariableFilterDataDto) filter.getData()).getData().getEnd())
+      .containsOnly(expectedFilterDate);
   }
 
   private void startInstanceForDefinitionWithDateVar(final String definitionId, final OffsetDateTime variableValue) {

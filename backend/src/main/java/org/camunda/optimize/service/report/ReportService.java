@@ -38,7 +38,6 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.ReportWriter;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.UncombinableReportsException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;
@@ -66,6 +65,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_DEFINITION_COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_TENANT_COMPLIANT;
@@ -155,7 +155,7 @@ public class ReportService implements CollectionReferencingService {
     return reportReader.getAllReportsForIdsOmitXml(reportIds)
       .stream()
       .filter(reportDefinitionDto -> reportAuthorizationService.isAuthorizedToReport(userId, reportDefinitionDto))
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   private IdDto copyAndMoveReport(final String reportId,
@@ -223,15 +223,15 @@ public class ReportService implements CollectionReferencingService {
         ((SingleProcessReportDefinitionDto) reportDefinitionDto).getData().getProcessDefinitionKey(),
         processDefinitionKey
       ))
-      .collect(Collectors.toList());
+      .collect(toList());
     reportsForDefinitionKey.addAll(
       allReports.stream()
         .filter(report -> report instanceof CombinedReportDefinitionDto)
         .filter(combinedReport -> !Collections.disjoint(
-          reportsForDefinitionKey.stream().map(ReportDefinitionDto::getId).collect(Collectors.toList()),
+          reportsForDefinitionKey.stream().map(ReportDefinitionDto::getId).collect(toList()),
           ((CombinedReportDefinitionDto) combinedReport).getData().getReportIds()
         ))
-        .collect(Collectors.toList())
+        .collect(toList())
     );
     return reportsForDefinitionKey;
   }
@@ -572,7 +572,7 @@ public class ReportService implements CollectionReferencingService {
         final SingleReportDataDto data = report.getData();
         return scope.getComplianceType(report.getDefinitionType(), data.getDefinitionKey(), data.getTenantIds());
       })
-      .collect(Collectors.toList());
+      .collect(toList());
 
     boolean scopeCompliant =
       compliances.stream().anyMatch(compliance -> compliance.equals(COMPLIANT)) || !definitionKeyDefined;
@@ -701,7 +701,7 @@ public class ReportService implements CollectionReferencingService {
       .map(report -> Pair.of(report, reportAuthorizationService.getAuthorizedRole(userId, report)))
       .filter(reportAndRole -> reportAndRole.getValue().isPresent())
       .map(reportAndRole -> new AuthorizedReportDefinitionDto(reportAndRole.getKey(), reportAndRole.getValue().get()))
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   private static void copyDefinitionMetaDataToUpdate(ReportDefinitionDto from,

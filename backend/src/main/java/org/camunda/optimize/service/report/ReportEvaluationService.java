@@ -39,5 +39,4 @@ public class ReportEvaluationService {
     authorizedReportEvaluationResult.getEvaluationResult().getReportDefinition().setOwner(originalOwner);
     return authorizedReportEvaluationResult;
   }
-
 }

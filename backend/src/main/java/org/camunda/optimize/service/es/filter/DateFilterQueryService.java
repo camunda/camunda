@@ -7,13 +7,15 @@ package org.camunda.optimize.service.es.filter;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.DateFilterUtil;
@@ -104,7 +106,7 @@ public class DateFilterQueryService {
   }
 
   private Optional<RangeQueryBuilder> createRelativeDateFilter(final RelativeDateFilterDataDto dateDto,
-                                                              final String dateField) {
+                                                               final String dateField) {
     final RelativeDateFilterStartDto startDto = dateDto.getStart();
     if (startDto == null || startDto.getUnit() == null || startDto.getValue() == null) {
       return Optional.empty();
@@ -126,6 +128,26 @@ public class DateFilterQueryService {
       queryDate.gte(formatter.format(startOfPreviousInterval));
     }
     return Optional.of(queryDate);
+  }
+
+  public static void truncateDateFiltersToStartOfDay(final List<FilterDataDto> filters) {
+    filters.forEach(filter -> {
+      if (filter instanceof FixedDateFilterDataDto) {
+        truncateDateFilterStartAndEndDates(((FixedDateFilterDataDto) filter));
+      } else if (filter instanceof DateVariableFilterDataDto
+        && ((DateVariableFilterDataDto) filter).getData() instanceof FixedDateFilterDataDto) {
+        truncateDateFilterStartAndEndDates(((FixedDateFilterDataDto) ((DateVariableFilterDataDto) filter).getData()));
+      }
+    });
+  }
+
+  public static void truncateDateFilterStartAndEndDates(final FixedDateFilterDataDto dateFilterDataDto) {
+    if (dateFilterDataDto.getStart() != null) {
+      dateFilterDataDto.setStart(dateFilterDataDto.getStart().truncatedTo(ChronoUnit.DAYS));
+    }
+    if (dateFilterDataDto.getEnd() != null) {
+      dateFilterDataDto.setEnd(dateFilterDataDto.getEnd().truncatedTo(ChronoUnit.DAYS));
+    }
   }
 
 }
