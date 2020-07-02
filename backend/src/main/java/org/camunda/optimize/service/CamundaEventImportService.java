@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
 import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -80,9 +81,9 @@ public class CamundaEventImportService {
     if (shouldImport(engineAlias)) {
       final List<ImportRequestDto> imports =
         generateCamundaActivityEventsImports(
-        runningProcessInstances,
-        this::convertRunningProcessInstanceToCamundaActivityEvents
-      );
+          runningProcessInstances,
+          this::convertRunningProcessInstanceToCamundaActivityEvents
+        );
       imports.addAll(businessKeyWriter.generateBusinessKeyImports(runningProcessInstances));
       return imports;
     }
@@ -142,8 +143,13 @@ public class CamundaEventImportService {
           .activityId(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getActivityId()))
           .activityName(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getActivityName()))
           .activityInstanceId(applyCamundaTaskEndEventSuffix(flowNodeEventDto.getId()))
-          // the end event of a split task should have a higher counter than the start, so we convert it and increment by one.
-          .orderCounter(Optional.ofNullable(flowNodeEventDto.getOrderCounter()).map(counter -> convertToOptimizeCounter(counter) + 1).orElse(null))
+          // the end event of a split task should have a higher counter than the start, so we convert it and
+          // increment by one.
+          .orderCounter(
+            Optional.ofNullable(flowNodeEventDto.getOrderCounter())
+              .map(counter -> convertToOptimizeCounter(counter) + 1)
+              .orElse(null)
+          )
           .timestamp(flowNodeEventDto.getEndDate())
           .build()
       );
@@ -164,9 +170,11 @@ public class CamundaEventImportService {
   }
 
   private CamundaActivityEventDto toCamundaActivityEvent(final FlowNodeEventDto flowNodeEventDto) {
-    Optional<ProcessDefinitionOptimizeDto> processDefinition =
-      processDefinitionResolverService.getDefinitionForProcessDefinitionId(
-        flowNodeEventDto.getProcessDefinitionId());
+    final ProcessDefinitionOptimizeDto processDefinition =
+      processDefinitionResolverService.getDefinitionForProcessDefinitionId(flowNodeEventDto.getProcessDefinitionId())
+        .orElseThrow(() -> new OptimizeRuntimeException(
+          "Could not resolve version for process definition: " + flowNodeEventDto.getProcessDefinitionId()
+        ));
     return CamundaActivityEventDto.builder()
       .activityId(flowNodeEventDto.getActivityId())
       .activityName(flowNodeEventDto.getActivityName())
@@ -174,17 +182,20 @@ public class CamundaEventImportService {
       .activityInstanceId(flowNodeEventDto.getId())
       .processDefinitionKey(flowNodeEventDto.getProcessDefinitionKey())
       .processInstanceId(flowNodeEventDto.getProcessInstanceId())
-      .processDefinitionVersion(processDefinition.map(ProcessDefinitionOptimizeDto::getVersion).orElse(null))
-      .processDefinitionName(processDefinition.map(ProcessDefinitionOptimizeDto::getName).orElse(null))
+      .processDefinitionVersion(processDefinition.getVersion())
+      .processDefinitionName(processDefinition.getName())
       .engine(flowNodeEventDto.getEngineAlias())
       .tenantId(flowNodeEventDto.getTenantId())
       .timestamp(flowNodeEventDto.getStartDate())
-      .orderCounter(Optional.ofNullable(flowNodeEventDto.getOrderCounter()).map(this::convertToOptimizeCounter).orElse(null))
+      .orderCounter(
+        Optional.ofNullable(flowNodeEventDto.getOrderCounter()).map(this::convertToOptimizeCounter).orElse(null)
+      )
       .build();
   }
 
   private Long convertToOptimizeCounter(final Long counter) {
-    // We have to double the counters from the engine because we split activities, creating more than originally imported
+    // We have to double the counters from the engine because we split activities, creating more than originally
+    // imported
     return counter * 2;
   }
 
