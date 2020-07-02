@@ -108,13 +108,15 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(addDateVariableUnitAndCustomBucketFieldsToReportConfiguration(SINGLE_PROCESS_REPORT_INDEX_NAME))
       .addUpgradeStep(addDateVariableUnitAndCustomBucketFieldsToReportConfiguration(SINGLE_DECISION_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateAlertThresholdToNewDataType())
-      .addUpgradeSteps(addProcessInstanceIdToEventsMigrationSteps())
-      .addUpgradeStep(upgradeAllIndexAnalysisSettings()); // upgradeAllIndexAnalysisSettings should be last
+      .addUpgradeSteps(addProcessInstanceIdToEventsMigrationSteps());
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
     deleteTraceStateIndices(upgradeBuilder);
     deleteSequenceCountIndices(upgradeBuilder);
     upgradeBuilder.addUpgradeStep(deleteTraceStateImportIndexData());
-    return upgradeBuilder.build();
+    return upgradeBuilder
+      // upgradeAllIndexAnalysisSettings should be last
+      .addUpgradeStep(upgradeAllIndexAnalysisSettings())
+      .build();
   }
 
   private List<UpgradeStep> addProcessInstanceIdToEventsMigrationSteps() {
