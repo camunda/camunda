@@ -99,7 +99,7 @@ export function SingleReportDetails({report, showReportName, mightFail}) {
     versionInfo = versions.join(', ');
   }
 
-  const closePopover = () => document.querySelector('.Popover__button.active').click();
+  const closePopover = () => document.body.click();
 
   return (
     <div className="SingleReportDetails">
