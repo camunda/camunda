@@ -76,7 +76,8 @@ class ContainerStateRule extends TestWatcher {
             .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERNAME", "zeebe-cluster")
             .withNetwork(network)
             .withEmbeddedGateway(gatewayVersion == null)
-            .withLogLevel(Level.DEBUG);
+            .withLogLevel(Level.DEBUG)
+            .withDebug(false);
 
     broker.start();
     String contactPoint = broker.getExternalAddress(ZeebePort.GATEWAY);
@@ -145,7 +146,7 @@ class ContainerStateRule extends TestWatcher {
     if (matcher.find()) {
       try {
         incidentKey = Long.parseLong(matcher.group(2));
-      } catch (NumberFormatException | IndexOutOfBoundsException e) {
+      } catch (final NumberFormatException | IndexOutOfBoundsException e) {
         // no key was found
       }
     }
