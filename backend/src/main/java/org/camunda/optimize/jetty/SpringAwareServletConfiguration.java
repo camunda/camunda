@@ -14,6 +14,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.ServerProperties;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
@@ -59,6 +60,8 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     // Create JAX-RS application.
     final ResourceConfig application = new ResourceConfig()
       .packages(optimizeRestPackage)
+      // WADL is not used and having it not explicitly disabled causes a warn log
+      .property(ServerProperties.WADL_FEATURE_DISABLE, true)
       .register(JacksonFeature.class);
 
     ServletHolder jerseyServlet = new ServletHolder(new ServletContainer(application));
