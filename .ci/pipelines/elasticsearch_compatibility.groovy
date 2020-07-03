@@ -206,7 +206,7 @@ void integrationTestStepsAWS() {
       #cleanup before starting the integration tests to assure starting from scratch
       curl -XDELETE "http://$OPTIMIZE_ELASTICSEARCH_HOST/_all"
       """)
-    runMaven("verify -Dskip.docker -Pit,engine-latest -pl backend,upgrade -am -T\$LIMITS_CPU -DhttpTestTimeout=30000")
+    runMaven("verify -Dskip.docker -Pit,engine-latest -pl backend,upgrade -am -T\$LIMITS_CPU -DhttpTestTimeout=60000")
   }
 }
 
