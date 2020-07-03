@@ -9,6 +9,7 @@ package io.zeebe.engine.nwe;
 
 import io.zeebe.engine.Loggers;
 import io.zeebe.engine.nwe.behavior.BpmnBehaviorsImpl;
+import io.zeebe.engine.nwe.behavior.ProcessingRecordWrapper;
 import io.zeebe.engine.nwe.behavior.TypedResponseWriterProxy;
 import io.zeebe.engine.nwe.behavior.TypedStreamWriterProxy;
 import io.zeebe.engine.processor.SideEffectProducer;
@@ -25,6 +26,8 @@ import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 
@@ -35,6 +38,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
   private final TypedStreamWriterProxy streamWriterProxy = new TypedStreamWriterProxy();
   private final TypedResponseWriterProxy responseWriterProxy = new TypedResponseWriterProxy();
   private final SideEffectQueue sideEffectQueue = new SideEffectQueue();
+  private final Queue<TypedRecord<WorkflowInstanceRecord>> processingQueue = new LinkedList<>();
   private final BpmnElementContextImpl context = new BpmnElementContextImpl();
 
   private final WorkflowState workflowState;
@@ -74,11 +78,25 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
       final Consumer<SideEffectProducer> sideEffect) {
 
     // initialize
-    streamWriterProxy.wrap(streamWriter);
+    processingQueue.clear();
+    streamWriterProxy.wrap(streamWriter, processingQueue::add);
+
     responseWriterProxy.wrap(responseWriter, writer -> sideEffectQueue.add(writer::flush));
     sideEffectQueue.clear();
     sideEffect.accept(sideEffectQueue);
 
+    // process the record and follow-up events until reaching a wait state
+    TypedRecord<WorkflowInstanceRecord> nextRecord =
+        new ProcessingRecordWrapper(record.getKey(), record.getValue(), record.getIntent());
+
+    while (nextRecord != null) {
+      processRecord(nextRecord);
+
+      nextRecord = processingQueue.poll();
+    }
+  }
+
+  private void processRecord(final TypedRecord<WorkflowInstanceRecord> record) {
     final var intent = (WorkflowInstanceIntent) record.getIntent();
     final var recordValue = record.getValue();
 
@@ -88,7 +106,7 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<WorkflowI
     final var processor = processors.getProcessor(bpmnElementType);
     final ExecutableFlowElement element = getElement(recordValue, processor);
 
-    // process the event
+    // TODO (saig0): validate the state transition only for the first record
     if (stateTransitionGuard.isValidStateTransition(context)) {
       LOGGER.trace("Process workflow instance event [context: {}]", context);
 
