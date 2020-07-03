@@ -41,6 +41,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private int requestStreamId;
   private int protocolVersion = Protocol.PROTOCOL_VERSION; // always the current version by default
   private RejectionType rejectionType;
+  private boolean isProcessed;
 
   public RecordMetadata() {
     reset();
@@ -72,6 +73,10 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
       rejectionReason.wrap(buffer, offset, rejectionReasonLength);
     }
+
+    if (decoder.isProcessed() > 0) {
+      isProcessed = true;
+    }
   }
 
   @Override
@@ -102,6 +107,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         .protocolVersion(protocolVersion)
         .valueType(valueType)
         .intent(intentValue)
+        .isProcessed((short) (isProcessed ? 1 : 0))
         .rejectionType(rejectionType);
 
     offset += RecordMetadataEncoder.BLOCK_LENGTH;
@@ -145,13 +151,13 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata valueType(final ValueType eventType) {
-    this.valueType = eventType;
+    valueType = eventType;
     return this;
   }
 
   public RecordMetadata intent(final Intent intent) {
     this.intent = intent;
-    this.intentValue = intent.value();
+    intentValue = intent.value();
     return this;
   }
 
@@ -184,12 +190,20 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata rejectionReason(final DirectBuffer buffer) {
-    this.rejectionReason.wrap(buffer);
+    rejectionReason.wrap(buffer);
     return this;
   }
 
   public String getRejectionReason() {
     return BufferUtil.bufferAsString(rejectionReason);
+  }
+
+  public boolean isProcessed() {
+    return isProcessed;
+  }
+
+  public void setProcessed(final boolean processed) {
+    isProcessed = processed;
   }
 
   public RecordMetadata reset() {
@@ -202,6 +216,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     intent = null;
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
+    isProcessed = false;
     return this;
   }
 

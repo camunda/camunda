@@ -11,16 +11,22 @@ import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.Intent;
 import java.util.function.Consumer;
+import org.agrona.ExpandableArrayBuffer;
 
 public final class TypedStreamWriterProxy implements TypedStreamWriter {
 
   private TypedStreamWriter writer;
+  private Consumer<TypedRecord<WorkflowInstanceRecord>> eventConsumer;
 
-  public void wrap(final TypedStreamWriter writer) {
+  public void wrap(
+      final TypedStreamWriter writer,
+      final Consumer<TypedRecord<WorkflowInstanceRecord>> eventConsumer) {
     this.writer = writer;
+    this.eventConsumer = eventConsumer;
   }
 
   @Override
@@ -42,12 +48,12 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
 
   @Override
   public void appendNewEvent(final long key, final Intent intent, final UnpackedObject value) {
-    writer.appendNewEvent(key, intent, value);
+    writeEvent(key, intent, value);
   }
 
   @Override
   public void appendFollowUpEvent(final long key, final Intent intent, final UnpackedObject value) {
-    writer.appendFollowUpEvent(key, intent, value);
+    writeEvent(key, intent, value);
   }
 
   @Override
@@ -56,12 +62,33 @@ public final class TypedStreamWriterProxy implements TypedStreamWriter {
       final Intent intent,
       final UnpackedObject value,
       final Consumer<RecordMetadata> metadata) {
-    writer.appendFollowUpEvent(key, intent, value, metadata);
+    writeEvent(key, intent, value);
   }
 
   @Override
   public void configureSourceContext(final long sourceRecordPosition) {
     writer.configureSourceContext(sourceRecordPosition);
+  }
+
+  private void writeEvent(final long key, final Intent intent, final UnpackedObject value) {
+
+    if (value instanceof WorkflowInstanceRecord) {
+      final var recordValue = (WorkflowInstanceRecord) value;
+
+      final var recordValueCopy = new WorkflowInstanceRecord();
+      final var buffer = new ExpandableArrayBuffer();
+      recordValue.write(buffer, 0);
+      recordValueCopy.wrap(buffer);
+
+      final TypedRecord<WorkflowInstanceRecord> recordWrapper =
+          new ProcessingRecordWrapper(key, recordValueCopy, intent);
+      eventConsumer.accept(recordWrapper);
+
+      writer.appendFollowUpEvent(key, intent, value, metadata -> metadata.setProcessed(true));
+
+    } else {
+      writer.appendNewEvent(key, intent, value);
+    }
   }
 
   @Override

@@ -42,7 +42,7 @@ public final class StreamProcessorBuilder {
     return this;
   }
 
-  public StreamProcessorBuilder nodeId(int nodeId) {
+  public StreamProcessorBuilder nodeId(final int nodeId) {
     this.nodeId = nodeId;
     return this;
   }
@@ -95,8 +95,9 @@ public final class StreamProcessorBuilder {
   public StreamProcessor build() {
     validate();
 
-    final MetadataFilter metadataFilter = new VersionFilter();
-    final EventFilter eventFilter = new MetadataEventFilter(metadataFilter);
+    final MetadataFilter versionFilter = new VersionFilter();
+    final MetadataFilter isProcessedFilter = metadata -> !metadata.isProcessed();
+    final EventFilter eventFilter = new MetadataEventFilter(versionFilter.and(isProcessedFilter));
     processingContext.eventFilter(eventFilter);
 
     return new StreamProcessor(this);
