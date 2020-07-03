@@ -20,7 +20,13 @@ spec:
         imagePullPolicy: Always
         env:
           - name: JAVA_OPTIONS
-            value: "-Dapp.brokerUrl=default-zeebe-gateway:26500 -Dapp.starter.rate=300 -Dzeebe.client.requestTimeout=62000 -XX:+HeapDumpOnOutOfMemoryError -Dapp.starter.bpmnXmlPath=bpmn/timerProcess.bpmn -Dapp.starter.processId=timerProcess"
+            value: >-
+              -Dapp.brokerUrl=default-zeebe-gateway:26500
+              -Dapp.starter.rate=300
+              -Dzeebe.client.requestTimeout=62000
+              -XX:+HeapDumpOnOutOfMemoryError
+              -Dapp.starter.bpmnXmlPath=bpmn/timerProcess.bpmn
+              -Dapp.starter.processId=timerProcess
           - name: LOG_LEVEL
             value: "warn"
         resources:
