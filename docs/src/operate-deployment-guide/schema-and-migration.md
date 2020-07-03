@@ -1,18 +1,15 @@
 # Schema & Migration
 
 Operate stores data in Elasticsearch. On first start Operate will create all required indices and templates.
-All information describing Elasticsearch schema and required for migration is provided in `schema` folder of Operate distribution. 
 
 * [Schema](#schema)
-* [Migration](#migration)
+* [Data Migration](#data-migration)
 * [How to migrate](#how-to-migrate)
 * [Example for migrate in Kubernetes](#example-for-migrate-in-kubernetes)
 
 ## Schema
 
-Operate uses several Elasticsearch indices that are mostly created by using templates.  
-For each index exists a JSON file that describes how the index is structured and how it is configured. These JSON files
-follow the Elasticsearch REST API format and can be found in `schema/create` folder of distribution. 
+Operate uses several Elasticsearch indices that are mostly created by using templates.
 
 Index names follow the defined pattern:
 ```
@@ -38,72 +35,75 @@ PUT _template/template_operate
 
 > **Note:** In order for these settings to work, template must be created before Operate first run.
 
-## Migration
+## Data migration
 
-Version of Operate is reflected in Elasticsearch object names, e.g. `operate-user-1.3.0_` index contains user data for Operate v. 1.3.0. When upgrading from one 
-version of Operate to another, migration of data must be performed. Operate distribution provides an application to perform data migration from previous versions. 
+Version of Operate is reflected in Elasticsearch object names, e.g. `operate-user-1.3.0_` index contains user data for Operate v. 1.3.0. When upgrading from one
+version of Operate to another, migration of data must be performed. Operate distribution provides an application to perform data migration from previous versions.
 
 
 ### Concept
-The migration uses Elasticsearch [processors](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/ingest-processors.html) and [pipelines](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/pipeline.html) to reindex the data. 
 
-Migration execute plans for each index. A plan consists of a sequence of steps.
-A step describes one change in an index for a particular version. 
-The step has an index name, a version where the change happened, an order number to determine the position in the plan and the content which describes what will be changed.
-To track the application of a step and also for protocol usage the step stores additionally an applied marker and created and applied dates.
-The description field is for documentation purposes.
+The migration uses Elasticsearch [processors](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/ingest-processors.html) and [pipelines](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/pipeline.html) to reindex the data.
 
-All available steps will be stored in its own index in Elasticsearch ( `operate-migration-steps-repository`) Each change in schema will delivered by a new Operate version. Every Operate version contains migration steps for the change as json files. Operate updates the current migration steps repository in Elasticsearch. The steps repository contains all available steps and its states.
-By using this steps repository it is possible to apply needed steps to migrate from previous to current schema. Already applied and new steps will be detected and either applied
-or ignored.
+Each version of Operate delivers set of migration steps needed to be applied for corresponding version of Operate.
+When upgrading from one version to another necessary migration steps constitute the so-called migration plan.
+All known migration steps (both applied and not) are persisted in dedicated Elasticsearch index: `operate-migration-steps-repository`.
 
-### How to migrate 
+
+### How to migrate
 
 #### Migrate by using standalone application
 
-Make sure that Elasticsearch which contains the Operate data is running. The migration script will connect to specified connection in Operate configuration.
+Make sure that Elasticsearch which contains the Operate data is running. The migration script will connect to specified connection in Operate
+configuration (```<operate_home>/config/application.yml```).
 
-Execute ```<application-directory>/bin/migrate```
+Execute ```<operate_home>/bin/migrate``` (or ```<operate_home>/bin/migrate.bat``` for Windows).
 
-First the current schema will be created if not exist. Then will the steps are updated. After that the migration from previous to current version will be executed.If everything was successful the previous schema will be deleted. 
-The application exits.
+What is expected to happen:
+* Elasticsearch schema of new version is created
+* previous version is detected
+* migration plan is built and executed reindexing data for each index
+* old indices are deleted
 
+All known migration steps with metadata will be stored in `operate-migration-steps-repository` index.
 
-> **Note:** The old indices will be deleted after succeeded migration. That might need more disk space.
+> **Note:** The old indices will be deleted ONLY after successful migration. That might require
+>more disk space during migration process.
 
 > **Important!** You should take care of data backup before performing migration.
 
-#### Migrate by using automatic upgrade in Operate Webapplication
+#### Migrate by using built-in automatic upgrade
 
-At the start of Operate webapplication the current schema will be created if not exist. If the automatic migration is enabled the migration will be started.
-The migration runs only when ONE previous schema version exists. 
+When running newer version of Operate against older schema, it will perform data migration on startup.
+The migration will happen when excatly ONE previous schema version was detected.
 
 #### Further notes
 
-* If migration fails, it is OK to retry it. All applied steps are stored and only these steps will be applied that hasn't executed yet.
-* In case upgrade happens in the cluster with several Operate nodes, only one node must execute schema upgrade, the others must wait till the migration happens.
-* All steps are stored in Elasticsearch index `operate-migration-steps-repository`. Developers can store documentation and comments in `description` field of every step.
+* If migration fails, it is OK to retry it. All applied steps are stored and only those steps will be applied that hasn't been executed yet.
+* Operate should not be running, while migration is happening
+* In case version upgrade is performed in the cluster with several Operate nodes, only one node ([Webapp module](importer-and-archiver.md)) must execute data migration, the others must be stopped
+and started only after migration is fully finished
 
 #### Configure migration
 
 Automatic migration is enabled by default.
-It can be enabled/disabled by set configuration key to true or false:
+It can be disabled by setting the configuration key:
 
-`camunda.operate.migration.migrationEnabled` 
+`camunda.operate.migration.migrationEnabled = false`
 
-To specify previous/source version use configuration key:
+You can specify previous ("source") version with the configuration key:
 
- `camunda.operate.migration.sourceVersion` 
+`camunda.operate.migration.sourceVersion=0.23.0`
 
-If no *sourceVersion* is defined Operate tries to detect the previous version.
+If no *sourceVersion* is defined Operate tries to detect it from Elasticsearch indices.
 
 
 #### Example for migrate in Kubernetes
 
-To ensure that the migration will be executed *before* operate will be started you can use
-the [init container](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) feature of kubernetes. It makes sure that the 'main' container will only be started
-if the initContainer was successfully executed. 
-The following snippet of a pod description for kubernetes shows the usage of migration.sh as initContainer.
+To ensure that the migration will be executed *before* Operate will be started you can use
+the [init container](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/) feature of Kubernetes. It makes sure that the 'main' container will only be started
+if the initContainer was successfully executed.
+The following snippet of a pod description for Kubernetes shows the usage of `migrate` script as initContainer.
 
 ```
 ...
@@ -121,18 +121,3 @@ spec:
 ...
 ```
 
-
-### File organization in schema folder
-
-```
-+ create
-|   |
-|   + index     - Folder of indices as json files
-|   |
-|   + template  - Folder of templates as json files
-|   
-+ change   - Folder of steps as json files
-|   |
-|   + step-file.json
-
-``` 
