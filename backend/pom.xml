@@ -317,8 +317,6 @@
         <configuration>
           <workingDirectory>${project.build.directory}</workingDirectory>
           <trimStackTrace>false</trimStackTrace>
-          <forkCount>${test.forkCount}</forkCount>
-          <reuseForks>true</reuseForks>
         </configuration>
       </plugin>
 
