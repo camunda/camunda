@@ -10,7 +10,6 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 import io.zeebe.el.Expression;
 import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processor.Failure;
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
@@ -24,7 +23,6 @@ import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.zeebe.model.bpmn.util.time.TimeDateTimer;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.util.Either;
 import java.time.format.DateTimeParseException;
 
@@ -40,9 +38,6 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableCatchEventElement executableElement =
         workflow.getElementById(element.getId(), ExecutableCatchEventElement.class);
-
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.FLOWOUT_ELEMENT_COMPLETED);
 
     if (!element.getEventDefinitions().isEmpty()) {
       transformEventDefinition(element, context, executableElement);
@@ -103,7 +98,7 @@ public final class CatchEventTransformer implements ModelElementTransformer<Catc
               return expressionProcessor
                   .evaluateStringExpression(expression, scopeKey)
                   .map(RepeatingInterval::parse);
-            } catch (DateTimeParseException e) {
+            } catch (final DateTimeParseException e) {
               // todo(#4323): replace this caught exception with Either
               return Either.left(new Failure(e.getMessage()));
             }

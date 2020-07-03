@@ -9,14 +9,6 @@ package io.zeebe.engine.nwe;
 
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.processor.TypedStreamWriter;
-import io.zeebe.engine.processor.workflow.BpmnStepContext;
-import io.zeebe.engine.processor.workflow.EventOutput;
-import io.zeebe.engine.processor.workflow.SideEffectQueue;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
-import io.zeebe.engine.state.ZeebeState;
-import io.zeebe.engine.state.instance.WorkflowEngineState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
@@ -25,29 +17,8 @@ import org.agrona.DirectBuffer;
 public final class BpmnElementContextImpl implements BpmnElementContext {
 
   private long elementInstanceKey;
-
   private WorkflowInstanceRecord recordValue;
   private WorkflowInstanceIntent intent;
-
-  private final BpmnStepContext<?> stepContext;
-
-  public BpmnElementContextImpl(final ZeebeState zeebeState) {
-    this(createStepContext(zeebeState));
-  }
-
-  private BpmnElementContextImpl(final BpmnStepContext<?> stepContext) {
-    this.stepContext = stepContext;
-  }
-
-  private static BpmnStepContext<?> createStepContext(final ZeebeState zeebeState) {
-    final BpmnStepContext<?> stepContext;
-    final var eventOutput =
-        new EventOutput(
-            new WorkflowEngineState(1, zeebeState.getWorkflowState()),
-            zeebeState.getKeyGenerator());
-    stepContext = new BpmnStepContext<>(zeebeState.getWorkflowState(), eventOutput);
-    return stepContext;
-  }
 
   @Override
   public long getElementInstanceKey() {
@@ -100,11 +71,6 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   }
 
   @Override
-  public <T extends ExecutableFlowElement> BpmnStepContext<T> toStepContext() {
-    return (BpmnStepContext<T>) stepContext;
-  }
-
-  @Override
   public WorkflowInstanceRecord getRecordValue() {
     return recordValue;
   }
@@ -120,31 +86,18 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
       final WorkflowInstanceRecord recordValue,
       final WorkflowInstanceIntent intent) {
 
-    final var copy = new BpmnElementContextImpl(stepContext);
-    copy.elementInstanceKey = elementInstanceKey;
-    copy.recordValue = recordValue;
-    copy.intent = intent;
-
-    // the step context is not initialized for the copy
-    // because it is not needed yet
+    final var copy = new BpmnElementContextImpl();
+    copy.init(elementInstanceKey, recordValue, intent);
     return copy;
   }
 
   public void init(
-      final TypedRecord<WorkflowInstanceRecord> record,
-      final WorkflowInstanceIntent intent,
-      final ExecutableFlowElement element,
-      final TypedStreamWriter streamWriter,
-      final SideEffectQueue sideEffect) {
-    elementInstanceKey = record.getKey();
-    recordValue = record.getValue();
+      final long elementInstanceKey,
+      final WorkflowInstanceRecord recordValue,
+      final WorkflowInstanceIntent intent) {
+    this.elementInstanceKey = elementInstanceKey;
+    this.recordValue = recordValue;
     this.intent = intent;
-
-    stepContext.init(elementInstanceKey, recordValue, intent);
-    stepContext.setElement(element);
-    stepContext.setStreamWriter(streamWriter);
-    stepContext.getOutput().setStreamWriter(streamWriter);
-    stepContext.setSideEffect(sideEffect);
   }
 
   @Override

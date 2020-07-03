@@ -11,20 +11,22 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.el.Expression;
+import io.zeebe.engine.nwe.BpmnElementContext;
 import io.zeebe.engine.processor.Failure;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor.EvaluationException;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
-import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyContext;
-import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyContext.VariablesDocumentSupplier;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
 import io.zeebe.engine.processor.workflow.message.MessageNameException;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
+import io.zeebe.engine.state.instance.EventScopeInstanceState;
 import io.zeebe.engine.state.instance.TimerInstance;
+import io.zeebe.engine.state.instance.TimerInstanceState;
 import io.zeebe.engine.state.message.WorkflowInstanceSubscription;
+import io.zeebe.engine.state.message.WorkflowInstanceSubscriptionState;
 import io.zeebe.model.bpmn.util.time.Timer;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
@@ -40,10 +42,13 @@ import org.agrona.DirectBuffer;
 
 public final class CatchEventBehavior {
 
-  private final ZeebeState state;
   private final ExpressionProcessor expressionProcessor;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final int partitionsCount;
+
+  private final EventScopeInstanceState eventScopeInstanceState;
+  private final WorkflowInstanceSubscriptionState workflowInstanceSubscriptionState;
+  private final TimerInstanceState timerInstanceState;
 
   private final WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
   private final TimerRecord timerRecord = new TimerRecord();
@@ -51,33 +56,38 @@ public final class CatchEventBehavior {
   private final Map<DirectBuffer, Timer> evaluatedTimers = new HashMap<>();
 
   public CatchEventBehavior(
-      final ZeebeState state,
-      final ExpressionProcessor exporessionProcessor,
+      final ZeebeState zeebeState,
+      final ExpressionProcessor expressionProcessor,
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount) {
-    this.state = state;
-    expressionProcessor = exporessionProcessor;
+    this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.partitionsCount = partitionsCount;
+
+    eventScopeInstanceState = zeebeState.getWorkflowState().getEventScopeInstanceState();
+    timerInstanceState = zeebeState.getWorkflowState().getTimerState();
+    workflowInstanceSubscriptionState = zeebeState.getWorkflowInstanceSubscriptionState();
   }
 
   public void unsubscribeFromEvents(
-      final long elementInstanceKey, final BpmnStepContext<?> context) {
-    unsubscribeFromTimerEvents(elementInstanceKey, context.getOutput().getStreamWriter());
-    unsubscribeFromMessageEvents(elementInstanceKey, context);
-    context.getStateDb().getEventScopeInstanceState().deleteInstance(elementInstanceKey);
+      final BpmnElementContext context,
+      final TypedStreamWriter streamWriter,
+      final SideEffects sideEffects) {
+
+    unsubscribeFromTimerEvents(context, streamWriter);
+    unsubscribeFromMessageEvents(context, sideEffects);
+
+    eventScopeInstanceState.deleteInstance(context.getElementInstanceKey());
   }
 
   public void subscribeToEvents(
-      final BpmnStepContext<?> context, final ExecutableCatchEventSupplier supplier)
+      final BpmnElementContext context,
+      final ExecutableCatchEventSupplier supplier,
+      final TypedStreamWriter streamWriter,
+      final SideEffects sideEffects)
       throws MessageCorrelationKeyException {
+
     final List<ExecutableCatchEvent> events = supplier.getEvents();
-    final VariablesDocumentSupplier variablesSupplier =
-        context.getElementInstanceState().getVariablesState()::getVariablesAsDocument;
-    final MessageCorrelationKeyContext elementContext =
-        new MessageCorrelationKeyContext(variablesSupplier, context.getKey());
-    final MessageCorrelationKeyContext scopeContext =
-        new MessageCorrelationKeyContext(variablesSupplier, context.getValue().getFlowScopeKey());
 
     // collect all message names from their respective variables, as this might fail and
     // we might need to raise an incident
@@ -86,32 +96,32 @@ public final class CatchEventBehavior {
     // collect all message correlation keys from their respective variables, as this might fail and
     // we might need to raise an incident. This works the same for timers
     final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys =
-        extractMessageCorrelationKeys(events, elementContext, scopeContext);
-    final Map<DirectBuffer, Timer> evaluatedTimers = evaluateTimers(events, context.getKey());
+        extractMessageCorrelationKeys(events, context);
+    final Map<DirectBuffer, Timer> evaluatedTimers =
+        evaluateTimers(events, context.getElementInstanceKey());
 
     // if all subscriptions are valid then open the subscriptions
     for (final ExecutableCatchEvent event : events) {
       if (event.isTimer()) {
         subscribeToTimerEvent(
-            context.getKey(),
-            context.getValue().getWorkflowInstanceKey(),
-            context.getValue().getWorkflowKey(),
+            context.getElementInstanceKey(),
+            context.getWorkflowInstanceKey(),
+            context.getWorkflowKey(),
             event.getId(),
             evaluatedTimers.get(event.getId()),
-            context.getOutput().getStreamWriter());
+            streamWriter);
       } else if (event.isMessage()) {
         subscribeToMessageEvent(
             context,
             event,
             extractedCorrelationKeys.get(event.getId()),
-            extractedMessageNames.get((event.getId())));
+            extractedMessageNames.get((event.getId())),
+            sideEffects);
       }
     }
 
-    context
-        .getStateDb()
-        .getEventScopeInstanceState()
-        .createIfNotExists(context.getKey(), supplier.getInterruptingElementIds());
+    eventScopeInstanceState.createIfNotExists(
+        context.getElementInstanceKey(), supplier.getInterruptingElementIds());
   }
 
   public void subscribeToTimerEvent(
@@ -133,12 +143,9 @@ public final class CatchEventBehavior {
   }
 
   private void unsubscribeFromTimerEvents(
-      final long elementInstanceKey, final TypedStreamWriter writer) {
-    state
-        .getWorkflowState()
-        .getTimerState()
-        .forEachTimerForElementInstance(
-            elementInstanceKey, t -> unsubscribeFromTimerEvent(t, writer));
+      final BpmnElementContext context, final TypedStreamWriter streamWriter) {
+    timerInstanceState.forEachTimerForElementInstance(
+        context.getElementInstanceKey(), t -> unsubscribeFromTimerEvent(t, streamWriter));
   }
 
   public void unsubscribeFromTimerEvent(final TimerInstance timer, final TypedStreamWriter writer) {
@@ -155,13 +162,15 @@ public final class CatchEventBehavior {
   }
 
   private void subscribeToMessageEvent(
-      final BpmnStepContext<?> context,
+      final BpmnElementContext context,
       final ExecutableCatchEvent handler,
       final DirectBuffer extractedKey,
-      final DirectBuffer extractedMessageName) {
-    final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
-    final DirectBuffer bpmnProcessId = cloneBuffer(context.getValue().getBpmnProcessIdBuffer());
-    final long elementInstanceKey = context.getKey();
+      final DirectBuffer extractedMessageName,
+      final SideEffects sideEffects) {
+
+    final long workflowInstanceKey = context.getWorkflowInstanceKey();
+    final DirectBuffer bpmnProcessId = cloneBuffer(context.getBpmnProcessId());
+    final long elementInstanceKey = context.getElementInstanceKey();
 
     final DirectBuffer correlationKey = extractedKey;
     final DirectBuffer messageName = extractedMessageName;
@@ -178,59 +187,54 @@ public final class CatchEventBehavior {
     subscription.setCorrelationKey(correlationKey);
     subscription.setTargetElementId(handler.getId());
     subscription.setCloseOnCorrelate(closeOnCorrelate);
-    state.getWorkflowInstanceSubscriptionState().put(subscription);
+    workflowInstanceSubscriptionState.put(subscription);
 
-    context
-        .getSideEffect()
-        .add(
-            () ->
-                sendOpenMessageSubscription(
-                    subscriptionPartitionId,
-                    workflowInstanceKey,
-                    elementInstanceKey,
-                    bpmnProcessId,
-                    messageName,
-                    correlationKey,
-                    closeOnCorrelate));
+    sideEffects.add(
+        () ->
+            sendOpenMessageSubscription(
+                subscriptionPartitionId,
+                workflowInstanceKey,
+                elementInstanceKey,
+                bpmnProcessId,
+                messageName,
+                correlationKey,
+                closeOnCorrelate));
   }
 
   private void unsubscribeFromMessageEvents(
-      final long elementInstanceKey, final BpmnStepContext<?> context) {
-    state
-        .getWorkflowInstanceSubscriptionState()
-        .visitElementSubscriptions(
-            elementInstanceKey, sub -> unsubscribeFromMessageEvent(context, sub));
+      final BpmnElementContext context, final SideEffects sideEffects) {
+    workflowInstanceSubscriptionState.visitElementSubscriptions(
+        context.getElementInstanceKey(),
+        subscription -> unsubscribeFromMessageEvent(subscription, sideEffects));
   }
 
   private boolean unsubscribeFromMessageEvent(
-      final BpmnStepContext<?> context, final WorkflowInstanceSubscription subscription) {
+      final WorkflowInstanceSubscription subscription, final SideEffects sideEffects) {
+
     final DirectBuffer messageName = cloneBuffer(subscription.getMessageName());
     final int subscriptionPartitionId = subscription.getSubscriptionPartitionId();
     final long workflowInstanceKey = subscription.getWorkflowInstanceKey();
     final long elementInstanceKey = subscription.getElementInstanceKey();
 
     subscription.setClosing();
-    state
-        .getWorkflowInstanceSubscriptionState()
-        .updateToClosingState(subscription, ActorClock.currentTimeMillis());
+    workflowInstanceSubscriptionState.updateToClosingState(
+        subscription, ActorClock.currentTimeMillis());
 
-    context
-        .getSideEffect()
-        .add(
-            () ->
-                sendCloseMessageSubscriptionCommand(
-                    subscriptionPartitionId, workflowInstanceKey, elementInstanceKey, messageName));
+    sideEffects.add(
+        () ->
+            sendCloseMessageSubscriptionCommand(
+                subscriptionPartitionId, workflowInstanceKey, elementInstanceKey, messageName));
 
     return true;
   }
 
   private String extractCorrelationKey(
-      final ExecutableMessage message, final MessageCorrelationKeyContext context) {
+      final ExecutableMessage message, final long variableScopeKey) {
 
     final Expression correlationKeyExpression = message.getCorrelationKeyExpression();
 
     return expressionProcessor.evaluateMessageCorrelationKeyExpression(
-        correlationKeyExpression, context);
+        correlationKeyExpression, variableScopeKey);
   }
 
   private Either<Failure, String> extractMessageName(
@@ -268,20 +272,17 @@ public final class CatchEventBehavior {
   }
 
   private Map<DirectBuffer, DirectBuffer> extractMessageCorrelationKeys(
-      final List<ExecutableCatchEvent> events,
-      final MessageCorrelationKeyContext elementContext,
-      final MessageCorrelationKeyContext scopeContext) {
+      final List<ExecutableCatchEvent> events, final BpmnElementContext context) {
     extractedCorrelationKeys.clear();
 
-    // TODO (saig0): extract logic to resolve the variable scope key
-    //  see BpmnIncidentBehavior
+    // TODO (4799): extract general variable scope behavior of boundary events
     for (final ExecutableCatchEvent event : events) {
       if (event.isMessage()) {
-        final MessageCorrelationKeyContext context =
+        final long variableScopeKey =
             event.getElementType() == BpmnElementType.BOUNDARY_EVENT
-                ? scopeContext
-                : elementContext;
-        final String correlationKey = extractCorrelationKey(event.getMessage(), context);
+                ? context.getFlowScopeKey()
+                : context.getElementInstanceKey();
+        final String correlationKey = extractCorrelationKey(event.getMessage(), variableScopeKey);
 
         extractedCorrelationKeys.put(event.getId(), BufferUtil.wrapString(correlationKey));
       }
@@ -310,10 +311,10 @@ public final class CatchEventBehavior {
   }
 
   private Map<DirectBuffer, DirectBuffer> extractMessageNames(
-      final List<ExecutableCatchEvent> events, final BpmnStepContext<?> context) {
+      final List<ExecutableCatchEvent> events, final BpmnElementContext context) {
     final Map<DirectBuffer, DirectBuffer> extractedMessageNames = new HashMap<>();
 
-    final var scopeKey = context.getKey();
+    final var scopeKey = context.getElementInstanceKey();
     for (final ExecutableCatchEvent event : events) {
       if (event.isMessage()) {
         final Either<Failure, String> messageNameOrFailure =

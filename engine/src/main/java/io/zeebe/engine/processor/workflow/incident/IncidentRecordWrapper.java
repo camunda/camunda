@@ -18,9 +18,9 @@ import io.zeebe.protocol.record.intent.Intent;
 
 final class IncidentRecordWrapper implements TypedRecord<WorkflowInstanceRecord> {
 
-  private final IndexedRecord failedRecord;
+  private IndexedRecord failedRecord;
 
-  public IncidentRecordWrapper(final IndexedRecord failedRecord) {
+  public void wrap(final IndexedRecord failedRecord) {
     this.failedRecord = failedRecord;
   }
 

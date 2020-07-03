@@ -15,7 +15,6 @@ import io.zeebe.el.Expression;
 import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.el.ResultType;
 import io.zeebe.engine.processor.Failure;
-import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyContext;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
 import io.zeebe.model.bpmn.util.time.Interval;
 import io.zeebe.protocol.record.value.ErrorType;
@@ -23,7 +22,6 @@ import io.zeebe.util.Either;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -215,36 +213,19 @@ public final class ExpressionProcessor {
    * then an exception is thrown.
    *
    * @param expression the expression to evaluate
-   * @param context context object used to determine the variable scope key;
+   * @param scopeKey the scope to load the variables from (a negative key is intended to imply an
+   *     empty variable context)
    * @return the evaluation result as String
    * @throws MessageCorrelationKeyException if the evaluation fails or the result is not a string or
    *     number
    */
   public String evaluateMessageCorrelationKeyExpression(
-      final Expression expression, final MessageCorrelationKeyContext context) {
+      final Expression expression, final long scopeKey) {
 
-    final var evaluationResult = evaluateExpression(expression, context.getVariablesScopeKey());
+    final var evaluationResult = evaluateExpression(expression, scopeKey);
 
-    final var resultHandler = new CorrelationKeyResultHandler(context);
+    final var resultHandler = new CorrelationKeyResultHandler(scopeKey);
     return resultHandler.apply(evaluationResult);
-  }
-
-  /**
-   * Evaluates the given expression of a variable mapping and returns the result as buffer. If the
-   * evaluation fails or the result is not a context then an incident is raised.
-   *
-   * @param expression the expression to evaluate
-   * @param context the element context to load the variables from
-   * @return the evaluation result as buffer, or {@link Optional#empty()} if an incident is raised
-   */
-  public Optional<DirectBuffer> evaluateVariableMappingExpression(
-      final Expression expression, final BpmnStepContext<?> context) {
-
-    final var evaluationResult = evaluateExpression(expression, context.getKey());
-    return failureCheck(evaluationResult, ErrorType.IO_MAPPING_ERROR, context)
-        .flatMap(
-            result -> typeCheck(result, ResultType.OBJECT, ErrorType.IO_MAPPING_ERROR, context))
-        .map(EvaluationResult::toBuffer);
   }
 
   /**
@@ -262,37 +243,6 @@ public final class ExpressionProcessor {
         .flatMap(result -> typeCheck(result, ResultType.OBJECT, scopeKey))
         .mapLeft(failure -> new Failure(failure.getMessage(), ErrorType.IO_MAPPING_ERROR, scopeKey))
         .map(EvaluationResult::toBuffer);
-  }
-
-  private Optional<EvaluationResult> failureCheck(
-      final EvaluationResult result, final ErrorType errorType, final BpmnStepContext<?> context) {
-
-    if (result.isFailure()) {
-      context.raiseIncident(errorType, result.getFailureMessage());
-      return Optional.empty();
-
-    } else {
-      return Optional.of(result);
-    }
-  }
-
-  private Optional<EvaluationResult> typeCheck(
-      final EvaluationResult result,
-      final ResultType expectedResultType,
-      final ErrorType errorType,
-      final BpmnStepContext<?> context) {
-
-    if (result.getType() != expectedResultType) {
-      context.raiseIncident(
-          errorType,
-          String.format(
-              "Expected result of the expression '%s' to be '%s', but was '%s'.",
-              result.getExpression(), expectedResultType, result.getType()));
-      return Optional.empty();
-
-    } else {
-      return Optional.of(result);
-    }
   }
 
   private Either<Failure, EvaluationResult> typeCheck(
@@ -347,16 +297,17 @@ public final class ExpressionProcessor {
   protected static final class CorrelationKeyResultHandler
       implements Function<EvaluationResult, String> {
 
-    private final MessageCorrelationKeyContext context;
+    private final long variableScopeKey;
 
-    protected CorrelationKeyResultHandler(final MessageCorrelationKeyContext context) {
-      this.context = context;
+    protected CorrelationKeyResultHandler(final long variableScopeKey) {
+      this.variableScopeKey = variableScopeKey;
     }
 
     @Override
     public String apply(final EvaluationResult evaluationResult) {
       if (evaluationResult.isFailure()) {
-        throw new MessageCorrelationKeyException(context, evaluationResult.getFailureMessage());
+        throw new MessageCorrelationKeyException(
+            variableScopeKey, evaluationResult.getFailureMessage());
       }
       if (evaluationResult.getType() == ResultType.STRING) {
         return evaluationResult.getString();
@@ -370,7 +321,7 @@ public final class ExpressionProcessor {
             String.format(
                 "Failed to extract the correlation key for '%s': The value must be either a string or a number, but was %s.",
                 evaluationResult.getExpression(), evaluationResult.getType().toString());
-        throw new MessageCorrelationKeyException(context, failureMessage);
+        throw new MessageCorrelationKeyException(variableScopeKey, failureMessage);
       }
     }
   }

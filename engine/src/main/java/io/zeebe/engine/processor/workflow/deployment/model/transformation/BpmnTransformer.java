@@ -9,7 +9,6 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformation;
 
 import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
-import io.zeebe.engine.processor.workflow.deployment.model.transformer.ActivityTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.BoundaryEventTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.CallActivityTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.CatchEventTransformer;
@@ -23,7 +22,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformer.FlowNodeT
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.IntermediateCatchEventTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.MessageTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.MultiInstanceActivityTransformer;
-import io.zeebe.engine.processor.workflow.deployment.model.transformer.ParallelGatewayTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.ProcessTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.ReceiveTaskTransformer;
 import io.zeebe.engine.processor.workflow.deployment.model.transformer.SequenceFlowTransformer;
@@ -68,14 +66,12 @@ public final class BpmnTransformer {
     step1Visitor.registerHandler(new ProcessTransformer());
 
     step2Visitor = new TransformationVisitor();
-    step2Visitor.registerHandler(new ActivityTransformer());
     step2Visitor.registerHandler(new BoundaryEventTransformer());
     step2Visitor.registerHandler(new CallActivityTransformer());
     step2Visitor.registerHandler(new CatchEventTransformer());
     step2Visitor.registerHandler(new ContextProcessTransformer());
     step2Visitor.registerHandler(new EndEventTransformer());
     step2Visitor.registerHandler(new FlowNodeTransformer());
-    step2Visitor.registerHandler(new ParallelGatewayTransformer());
     step2Visitor.registerHandler(new SequenceFlowTransformer());
     step2Visitor.registerHandler(new ServiceTaskTransformer());
     step2Visitor.registerHandler(new ReceiveTaskTransformer());

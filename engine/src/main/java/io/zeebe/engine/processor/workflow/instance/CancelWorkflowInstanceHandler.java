@@ -8,7 +8,6 @@
 package io.zeebe.engine.processor.workflow.instance;
 
 import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.processor.workflow.EventOutput;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceCommandContext;
 import io.zeebe.engine.processor.workflow.WorkflowInstanceCommandHandler;
 import io.zeebe.engine.state.instance.ElementInstance;
@@ -38,10 +37,14 @@ public final class CancelWorkflowInstanceHandler implements WorkflowInstanceComm
       return;
     }
 
-    final EventOutput output = commandContext.getOutput();
     final WorkflowInstanceRecord value = elementInstance.getValue();
 
-    output.appendFollowUpEvent(command.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, value);
+    commandContext
+        .getStreamWriter()
+        .appendFollowUpEvent(command.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, value);
+
+    elementInstance.setState(WorkflowInstanceIntent.ELEMENT_TERMINATING);
+    commandContext.getElementInstanceState().updateInstance(elementInstance);
 
     commandContext
         .getResponseWriter()

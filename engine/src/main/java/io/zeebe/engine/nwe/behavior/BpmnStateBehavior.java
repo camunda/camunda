@@ -100,7 +100,6 @@ public final class BpmnStateBehavior {
     }
   }
 
-  // replaces BpmnStepContext.getFlowScopeInstance()
   public ElementInstance getFlowScopeInstance(final BpmnElementContext context) {
     return elementInstanceState.getInstance(context.getFlowScopeKey());
   }
@@ -117,12 +116,6 @@ public final class BpmnStateBehavior {
                 context.copy(
                     childInstance.getKey(), childInstance.getValue(), childInstance.getState()))
         .collect(Collectors.toList());
-  }
-
-  // todo(@korthout): remove this method
-  //  we should restrict what can be done to the state
-  public VariablesState getVariablesState() {
-    return variablesState;
   }
 
   public ElementInstance createChildElementInstance(
@@ -150,6 +143,40 @@ public final class BpmnStateBehavior {
       final long childInstanceKey, final WorkflowInstanceRecord childRecord) {
     return elementInstanceState.newInstance(
         childInstanceKey, childRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+  }
+
+  public BpmnElementContext getFlowScopeContext(final BpmnElementContext context) {
+    final var flowScope = getFlowScopeInstance(context);
+    return context.copy(flowScope.getKey(), flowScope.getValue(), flowScope.getState());
+  }
+
+  public BpmnElementContext getParentElementInstanceContext(final BpmnElementContext context) {
+    final var parentElementInstance =
+        elementInstanceState.getInstance(context.getParentElementInstanceKey());
+    return context.copy(
+        parentElementInstance.getKey(),
+        parentElementInstance.getValue(),
+        parentElementInstance.getState());
+  }
+
+  public Optional<DeployedWorkflow> getWorkflow(final long workflowKey) {
+    return Optional.ofNullable(workflowState.getWorkflowByKey(workflowKey));
+  }
+
+  public Optional<DeployedWorkflow> getLatestWorkflowVersion(final DirectBuffer processId) {
+    final var workflow = workflowState.getLatestWorkflowVersionByProcessId(processId);
+    return Optional.ofNullable(workflow);
+  }
+
+  public Optional<ElementInstance> getCalledChildInstance(final BpmnElementContext context) {
+    final var elementInstance = getElementInstance(context);
+    final var calledChildInstanceKey = elementInstance.getCalledChildInstanceKey();
+    return Optional.ofNullable(elementInstanceState.getInstance(calledChildInstanceKey));
+  }
+
+  public DirectBuffer getLocalVariable(
+      final BpmnElementContext context, final DirectBuffer variableName) {
+    return variablesState.getVariableLocal(context.getElementInstanceKey(), variableName);
   }
 
   public void setLocalVariable(
@@ -186,39 +213,10 @@ public final class BpmnStateBehavior {
         targetScope, context.getWorkflowKey(), variablesAsDocument);
   }
 
-  public BpmnElementContext getFlowScopeContext(final BpmnElementContext context) {
-    final var flowScope = getFlowScopeInstance(context);
-    return context.copy(flowScope.getKey(), flowScope.getValue(), flowScope.getState());
-  }
-
-  public BpmnElementContext getParentElementInstanceContext(final BpmnElementContext context) {
-    final var parentElementInstance =
-        elementInstanceState.getInstance(context.getParentElementInstanceKey());
-    return context.copy(
-        parentElementInstance.getKey(),
-        parentElementInstance.getValue(),
-        parentElementInstance.getState());
-  }
-
-  public Optional<DeployedWorkflow> getWorkflow(final long workflowKey) {
-    return Optional.ofNullable(workflowState.getWorkflowByKey(workflowKey));
-  }
-
-  public Optional<DeployedWorkflow> getLatestWorkflowVersion(final DirectBuffer processId) {
-    final var workflow = workflowState.getLatestWorkflowVersionByProcessId(processId);
-    return Optional.ofNullable(workflow);
-  }
-
   public void copyVariables(
       final long source, final long target, final DeployedWorkflow targetWorkflow) {
     final var variables = variablesState.getVariablesAsDocument(source);
     variablesState.setVariablesFromDocument(target, targetWorkflow.getKey(), variables);
-  }
-
-  public Optional<ElementInstance> getCalledChildInstance(final BpmnElementContext context) {
-    final var elementInstance = getElementInstance(context);
-    final var calledChildInstanceKey = elementInstance.getCalledChildInstanceKey();
-    return Optional.ofNullable(elementInstanceState.getInstance(calledChildInstanceKey));
   }
 
   public void propagateTemporaryVariables(

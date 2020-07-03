@@ -67,8 +67,10 @@ public final class BpmnElementProcessors {
 
     final var processor = (BpmnElementProcessor<T>) processors.get(bpmnElementType);
     if (processor == null) {
-      //      throw new UnsupportedOperationException(
-      //          String.format("no processor found for BPMN element type '%s'", bpmnElementType));
+      throw new UnsupportedOperationException(
+          String.format(
+              "Expected to find a BPMN element processor for the BPMN element type '%s' but not found.",
+              bpmnElementType));
     }
     return processor;
   }
@@ -80,6 +82,8 @@ public final class BpmnElementProcessors {
       return (BpmnElementContainerProcessor<T>) processor;
     }
     throw new UnsupportedOperationException(
-        String.format("no container processor found for BPMN element type '%s'", bpmnElementType));
+        String.format(
+            "Expected to find a BPMN container processor for the BPMN element type '%s' but not found.",
+            bpmnElementType));
   }
 }

@@ -17,7 +17,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.el.ExpressionLanguageFactory;
-import io.zeebe.engine.processor.workflow.BpmnStepProcessor;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
 import io.zeebe.engine.processor.workflow.WorkflowEventProcessors;
@@ -86,7 +85,7 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
                   ExpressionLanguageFactory.createExpressionLanguage(),
                   variablesState::getVariable);
 
-          final BpmnStepProcessor stepProcessor =
+          final var stepProcessor =
               WorkflowEventProcessors.addWorkflowProcessors(
                   zeebeState,
                   expressionProcessor,

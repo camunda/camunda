@@ -19,6 +19,7 @@ import io.zeebe.engine.nwe.behavior.BpmnEventPublicationBehavior;
 import io.zeebe.engine.nwe.behavior.BpmnIncidentBehavior;
 import io.zeebe.engine.nwe.behavior.BpmnStateBehavior;
 import io.zeebe.engine.nwe.behavior.BpmnStateTransitionBehavior;
+import io.zeebe.engine.processor.Failure;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableEndEvent;
 import io.zeebe.protocol.record.value.ErrorType;
 
@@ -69,8 +70,8 @@ public final class EndEventProcessor implements BpmnElementProcessor<ExecutableE
           String.format(
               "Expected to throw an error event with the code '%s', but it was not caught.",
               bufferAsString(errorCode));
-      incidentBehavior.createIncident(
-          ErrorType.UNHANDLED_ERROR_EVENT, errorMessage, context, context.getElementInstanceKey());
+      final var failure = new Failure(errorMessage, ErrorType.UNHANDLED_ERROR_EVENT);
+      incidentBehavior.createIncident(failure, context);
     }
   }
 

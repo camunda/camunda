@@ -10,8 +10,6 @@ package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 import io.zeebe.el.EvaluationResult;
 import io.zeebe.el.ExpressionLanguage;
 import io.zeebe.el.ResultType;
-import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElementContainer;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
@@ -21,7 +19,6 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.Transf
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.Process;
 import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public final class StartEventTransformer implements ModelElementTransformer<StartEvent> {
 
@@ -52,25 +49,6 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
     if (startEvent.isMessage() && element.getScope() instanceof Process) {
       evaluateMessageNameExpression(startEvent, context);
     }
-
-    bindLifecycle(startEvent);
-  }
-
-  private void bindLifecycle(final ExecutableCatchEventElement startEvent) {
-    startEvent.bindLifecycleState(
-        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    startEvent.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    startEvent.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    startEvent.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    startEvent.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    startEvent.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
-    startEvent.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
   }
 
   /**
@@ -83,7 +61,7 @@ public final class StartEventTransformer implements ModelElementTransformer<Star
    *     evaluation was not a String
    */
   private void evaluateMessageNameExpression(
-      ExecutableStartEvent startEvent, TransformContext context) {
+      final ExecutableStartEvent startEvent, final TransformContext context) {
     final ExecutableMessage message = startEvent.getMessage();
 
     if (message.getMessageName().isEmpty()) {

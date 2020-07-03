@@ -26,6 +26,8 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
   private boolean interrupting;
   private BiFunction<ExpressionProcessor, Long, Either<Failure, Timer>> timerFactory;
 
+  private boolean isConnectedToEventBasedGateway;
+
   public ExecutableCatchEventElement(final String id) {
     super(id);
   }
@@ -89,5 +91,13 @@ public class ExecutableCatchEventElement extends ExecutableFlowNode
 
   public void setInterrupting(final boolean interrupting) {
     this.interrupting = interrupting;
+  }
+
+  public boolean isConnectedToEventBasedGateway() {
+    return isConnectedToEventBasedGateway;
+  }
+
+  public void setConnectedToEventBasedGateway(final boolean connectedToEventBasedGateway) {
+    isConnectedToEventBasedGateway = connectedToEventBasedGateway;
   }
 }
