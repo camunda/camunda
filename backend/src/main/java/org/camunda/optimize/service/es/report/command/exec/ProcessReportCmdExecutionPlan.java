@@ -18,9 +18,7 @@ import org.camunda.optimize.service.es.report.command.modules.result.CompositeCo
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.metrics.Stats;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -48,7 +46,7 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
   }
 
   @Override
-  protected BoolQueryBuilder setupBaseQuery(final ProcessReportDataDto reportData) {
+  public BoolQueryBuilder setupBaseQuery(final ProcessReportDataDto reportData) {
     BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(reportData);
     queryFilterEnhancer.addFilterToQuery(boolQueryBuilder, reportData.getFilter());
     return boolQueryBuilder;

@@ -44,7 +44,7 @@ public class DecisionReportCmdExecutionPlan<R extends DecisionReportResultDto>
   }
 
   @Override
-  protected BoolQueryBuilder setupBaseQuery(final DecisionReportDataDto reportData) {
+  public BoolQueryBuilder setupBaseQuery(final DecisionReportDataDto reportData) {
     BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(reportData);
     queryFilterEnhancer.addFilterToQuery(boolQueryBuilder, reportData.getFilter());
     return boolQueryBuilder;

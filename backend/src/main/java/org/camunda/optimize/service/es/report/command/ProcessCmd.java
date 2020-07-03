@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.Optional;
 
@@ -34,6 +35,10 @@ public abstract class ProcessCmd<R extends ProcessReportResultDto>
   public Optional<MinMaxStatDto> retrieveStatsForCombinedGroupByNumberVariable(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     ExecutionContext<ProcessReportDataDto> executionContext = new ExecutionContext<>(commandContext);
     return executionPlan.calculateNumberRangeForGroupByNumberVariable(executionContext);
+  }
+
+  public BoolQueryBuilder getBaseQuery(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+    return executionPlan.setupBaseQuery(commandContext.getReportDefinition().getData());
   }
 
   @Override

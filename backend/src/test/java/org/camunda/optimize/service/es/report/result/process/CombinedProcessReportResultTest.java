@@ -272,7 +272,7 @@ public class CombinedProcessReportResultTest {
     // given
     CombinedProcessReportResult underTest = new CombinedProcessReportResult(
       new CombinedProcessReportResultDto(new HashMap<String, ReportEvaluationResult<SingleReportResultDto,
-        SingleProcessReportDefinitionDto>>()),
+        SingleProcessReportDefinitionDto>>(), 0L),
       new CombinedReportDefinitionDto()
     );
 
@@ -341,7 +341,7 @@ public class CombinedProcessReportResultTest {
     }
 
     return new CombinedProcessReportResult(
-      new CombinedProcessReportResultDto(mapIMap),
+      new CombinedProcessReportResultDto(mapIMap, 0L),
       new CombinedReportDefinitionDto()
     );
   }

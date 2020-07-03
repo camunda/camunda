@@ -17,12 +17,15 @@ import java.util.Map;
 @Setter
 public class CombinedProcessReportResultDataDto<RESULT extends SingleReportResultDto> implements ReportResultDto {
   protected Map<String, AuthorizedProcessReportEvaluationResultDto<RESULT>> data;
+  private long instanceCount;
 
   protected CombinedProcessReportResultDataDto() {
   }
 
-  public CombinedProcessReportResultDataDto(final Map<String, AuthorizedProcessReportEvaluationResultDto<RESULT>> data) {
+  public CombinedProcessReportResultDataDto(final Map<String, AuthorizedProcessReportEvaluationResultDto<RESULT>> data,
+                                            final long instanceCount) {
     this.data = data;
+    this.instanceCount = instanceCount;
   }
 
   @Override

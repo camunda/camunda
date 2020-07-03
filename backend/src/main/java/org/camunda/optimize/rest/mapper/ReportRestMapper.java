@@ -52,7 +52,7 @@ public class ReportRestMapper {
         ));
       return new AuthorizedCombinedReportEvaluationResultDto(
         reportEvaluationResult.getCurrentUserRole(),
-        new CombinedProcessReportResultDataDto(results),
+        new CombinedProcessReportResultDataDto(results, resultAsDto.getInstanceCount()),
         combinedReportResult.getReportDefinition()
       );
     } else {

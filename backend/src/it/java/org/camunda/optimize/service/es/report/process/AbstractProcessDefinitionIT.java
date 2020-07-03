@@ -66,6 +66,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected static final String TEST_PROCESS = "aProcess";
 
   protected static final Map<String, VariableType> varNameToTypeMap = new HashMap<>(VariableType.values().length);
+
   static {
     varNameToTypeMap.put("dateVar", VariableType.DATE);
     varNameToTypeMap.put("boolVar", VariableType.BOOLEAN);
@@ -121,7 +122,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return deploySimpleOneUserTasksDefinition("aProcess", null);
   }
 
-  private ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key, String tenantId) {
+  protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key, String tenantId) {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
       .startEvent(START_EVENT)
       .userTask(USER_TASK)

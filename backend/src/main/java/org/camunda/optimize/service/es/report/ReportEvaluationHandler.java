@@ -112,15 +112,20 @@ public abstract class ReportEvaluationHandler {
     final CombinedReportDefinitionDto combinedReportDefinitionDto =
       (CombinedReportDefinitionDto) authorizedReportDefinitionDto.getDefinitionDto();
     ValidationHelper.validateCombinedReportDefinition(authorizedReportDefinitionDto);
-    List<ReportEvaluationResult> resultList = evaluateListOfReportIds(
-      userId, combinedReportDefinitionDto.getData().getReportIds(), filterDto
+    final List<SingleProcessReportDefinitionDto> singleReportDefinitions = getAuthorizedSingleReportDefinitions(
+      userId,
+      combinedReportDefinitionDto.getData().getReportIds(),
+      filterDto
     );
-    return transformToCombinedReportResult(combinedReportDefinitionDto, resultList);
+    final List<ReportEvaluationResult> resultList = combinedReportEvaluator.evaluate(singleReportDefinitions);
+    final long instanceCount = combinedReportEvaluator.evaluateCombinedReportInstanceCount(singleReportDefinitions);
+    return transformToCombinedReportResult(combinedReportDefinitionDto, resultList, instanceCount);
   }
 
   private CombinedProcessReportResult transformToCombinedReportResult(
     final CombinedReportDefinitionDto combinedReportDefinition,
-    final List<ReportEvaluationResult> singleReportResultList) {
+    final List<ReportEvaluationResult> singleReportResultList,
+    final long instanceCount) {
 
     final AtomicReference<Class> singleReportResultType = new AtomicReference<>();
     final Map<String, ReportEvaluationResult> reportIdToMapResult = singleReportResultList
@@ -137,7 +142,7 @@ public abstract class ReportEvaluationHandler {
         LinkedHashMap::new
       ));
     final CombinedProcessReportResultDto combinedSingleReportResultDto =
-      new CombinedProcessReportResultDto(reportIdToMapResult);
+      new CombinedProcessReportResultDto(reportIdToMapResult, instanceCount);
     return new CombinedProcessReportResult(combinedSingleReportResultDto, combinedReportDefinition);
   }
 
@@ -147,16 +152,15 @@ public abstract class ReportEvaluationHandler {
       ResultType.NUMBER.equals(resultType);
   }
 
-  private List<ReportEvaluationResult> evaluateListOfReportIds(final String userId,
-                                                               final List<String> singleReportIds,
-                                                               final AdditionalProcessReportEvaluationFilterDto filterDto) {
-    List<SingleProcessReportDefinitionDto> singleReportDefinitions =
-      reportReader.getAllSingleProcessReportsForIdsOmitXml(singleReportIds)
-        .stream()
-        .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
-        .peek(reportDefinition -> addAdditionalFilters(userId, reportDefinition, filterDto))
-        .collect(Collectors.toList());
-    return combinedReportEvaluator.evaluate(singleReportDefinitions);
+  private List<SingleProcessReportDefinitionDto> getAuthorizedSingleReportDefinitions(
+    final String userId,
+    final List<String> singleReportIds,
+    final AdditionalProcessReportEvaluationFilterDto filterDto) {
+    return reportReader.getAllSingleProcessReportsForIdsOmitXml(singleReportIds)
+      .stream()
+      .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
+      .peek(reportDefinition -> addAdditionalFilters(userId, reportDefinition, filterDto))
+      .collect(Collectors.toList());
   }
 
   private void addAdditionalFilters(final String userId,

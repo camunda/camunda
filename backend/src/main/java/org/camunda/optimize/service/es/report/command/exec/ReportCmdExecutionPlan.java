@@ -53,7 +53,7 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
     this.esClient = esClient;
   }
 
-  protected abstract BoolQueryBuilder setupBaseQuery(final Data reportData);
+  public abstract BoolQueryBuilder setupBaseQuery(final Data reportData);
 
   protected abstract BoolQueryBuilder setupUnfilteredBaseQuery(final Data reportData);
 
