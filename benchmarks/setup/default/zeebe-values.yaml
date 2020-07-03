@@ -40,9 +40,8 @@ gateway:
 
 # JavaOpts:
 # DEFAULTS
-JavaOpts: >
-  -Xmx4g
-  -Xms4g
+JavaOpts: >-
+  -XX:MaxRAMPercentage=25.0
   -XX:+ExitOnOutOfMemoryError
   -XX:+HeapDumpOnOutOfMemoryError
   -XX:HeapDumpPath=/usr/local/zeebe/data
@@ -97,7 +96,7 @@ elasticsearch:
     storageClassName: "ssd"
     resources:
       requests:
-        storage: 300Gi
+        storage: 600Gi
 
   esJavaOpts: "-Xmx4g -Xms4g"
 
