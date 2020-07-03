@@ -140,11 +140,11 @@ export default function reportConfig({view, groupBy, visualization, combinations
   }
 
   function updateView(newView, props) {
-    const {groupBy, visualization} = props.report.data;
+    const {groupBy: groupByData, visualization} = props.report.data;
     const changes = {view: {$set: newView}};
 
-    const newGroup = getNext(newView) || groupBy;
-    if (newGroup && !equal(newGroup, groupBy)) {
+    const newGroup = getNext(newView) || groupByData;
+    if (newGroup && !equal(newGroup, groupByData)) {
       changes.groupBy = {$set: newGroup};
     }
 
@@ -153,6 +153,26 @@ export default function reportConfig({view, groupBy, visualization, combinations
       changes.visualization = {$set: null};
 
       return changes;
+    }
+
+    if (newView.entity !== 'variable') {
+      const viewObj = findSelectedOption(view, 'data', newView);
+      changes.configuration = {
+        yLabel: {
+          $set: viewObj.key
+            .split('_')
+            .map((key) => t('report.view.' + key))
+            .join(' '),
+        },
+      };
+      if (newGroup) {
+        if (newGroup.type?.toLowerCase().includes('variable')) {
+          changes.configuration.xLabel = {$set: newGroup.value.name};
+        } else {
+          const groupObj = findSelectedOption(groupBy, 'data', newGroup);
+          changes.configuration.xLabel = {$set: t('report.groupBy.' + groupObj.key.split('_')[0])};
+        }
+      }
     }
 
     const newVisualization = getNext(newView, newGroup) || visualization;
@@ -170,7 +190,14 @@ export default function reportConfig({view, groupBy, visualization, combinations
   function updateGroupBy(newGroupBy, props) {
     const {view, visualization} = props.report.data;
 
-    const changes = {groupBy: {$set: newGroupBy}};
+    const changes = {groupBy: {$set: newGroupBy}, configuration: {}};
+
+    if (newGroupBy.type?.toLowerCase().includes('variable')) {
+      changes.configuration.xLabel = {$set: newGroupBy.value.name};
+    } else {
+      const groupObj = findSelectedOption(groupBy, 'data', newGroupBy);
+      changes.configuration.xLabel = {$set: t('report.groupBy.' + groupObj.key.split('_')[0])};
+    }
 
     const newVisualization = getNext(view, newGroupBy);
 

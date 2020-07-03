@@ -17,7 +17,8 @@ const processUpdate = config.process.update;
 config.process.update = (type, data, props) => {
   const changes = processUpdate(type, data, props);
 
-  changes.configuration = {sorting: {$set: null}};
+  changes.configuration = changes.configuration || {};
+  changes.configuration.sorting = {$set: null};
 
   if (type === 'groupBy') {
     const distributedBy = props.report.data.configuration?.distributedBy;
