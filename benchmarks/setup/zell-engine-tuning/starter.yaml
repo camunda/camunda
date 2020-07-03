@@ -22,7 +22,8 @@ spec:
           - name: JAVA_OPTIONS
             value: >-
               -Dapp.brokerUrl=zell-engine-tuning-zeebe-gateway:26500
-              -Dapp.starter.rate=300
+              -Dapp.starter.rate=10
+              -Dapp.starter.bpmnXmlPath=bpmn/ten_tasks.bpmn
               -Dzeebe.client.requestTimeout=62000
               -XX:+HeapDumpOnOutOfMemoryError
           - name: LOG_LEVEL
