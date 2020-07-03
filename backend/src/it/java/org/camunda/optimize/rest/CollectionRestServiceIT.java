@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDataD
 import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -20,12 +19,12 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
 public class CollectionRestServiceIT extends AbstractIT {
 
@@ -154,8 +153,7 @@ public class CollectionRestServiceIT extends AbstractIT {
   @Test
   public void getCollection_adoptTimezoneFromHeader() {
     //given
-    OffsetDateTime now = OffsetDateTime.now(TimeZone.getTimeZone("Europe/Berlin").toZoneId());
-    LocalDateUtil.setCurrentTime(now);
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     String collectionId = collectionClient.createNewCollection();
 
     // when

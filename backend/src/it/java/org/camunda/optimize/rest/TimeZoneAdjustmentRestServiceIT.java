@@ -7,7 +7,6 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -16,14 +15,14 @@ import java.time.OffsetDateTime;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
 public class TimeZoneAdjustmentRestServiceIT extends AbstractIT {
 
   @Test
   public void unknownTimezoneUsesServerTimezone() {
     //given
-    OffsetDateTime now = OffsetDateTime.now();
-    LocalDateUtil.setCurrentTime(now);
+    OffsetDateTime now = dateFreezer().freezeDateAndReturn();
     final String collectionId = collectionClient.createNewCollection();
 
     // when
@@ -44,8 +43,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractIT {
   @Test
   public void omittedTimezoneUsesServerTimezone() {
     //given
-    OffsetDateTime now = OffsetDateTime.now();
-    LocalDateUtil.setCurrentTime(now);
+    OffsetDateTime now = dateFreezer().freezeDateAndReturn();
     final String collectionId = collectionClient.createNewCollection();
 
     // when

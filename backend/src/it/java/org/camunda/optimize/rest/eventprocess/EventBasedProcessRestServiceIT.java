@@ -58,7 +58,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -75,6 +74,7 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
@@ -391,8 +391,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   @Test
   public void getEventProcessMappingWithId_adoptTimezoneFromHeader() {
     //given
-    OffsetDateTime now = OffsetDateTime.now(TimeZone.getTimeZone("Europe/Berlin").toZoneId());
-    LocalDateUtil.setCurrentTime(now);
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     EventProcessMappingDto eventProcessMappingDto =
       createEventProcessMappingDtoWithSimpleMappingsAndExternalEventSource();
     String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
@@ -486,8 +485,7 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
   @Test
   public void getAllEventProcessMappings_adoptTimezoneFromHeader() {
     //given
-    OffsetDateTime now = OffsetDateTime.now(TimeZone.getTimeZone("Europe/Berlin").toZoneId());
-    LocalDateUtil.setCurrentTime(now);
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     EventProcessMappingDto eventProcessMappingDto = eventProcessClient
       .buildEventProcessMappingDtoWithMappingsAndExternalEventSource(null, "process name", simpleDiagramXml);
     eventProcessClient.createEventProcessMapping(eventProcessMappingDto);

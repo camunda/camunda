@@ -25,7 +25,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,7 +42,6 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import static javax.ws.rs.HttpMethod.DELETE;
@@ -56,6 +54,7 @@ import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIEN
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_INDEX_NAME;
@@ -204,8 +203,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void getStoredPrivateReports_adoptTimezoneFromHeader() {
     //given
-    OffsetDateTime now = OffsetDateTime.now(TimeZone.getTimeZone("Europe/Berlin").toZoneId());
-    LocalDateUtil.setCurrentTime(now);
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     reportClient.createEmptySingleProcessReport();
 
     // when
@@ -345,8 +343,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void getReport_adoptTimezoneFromHeader() {
     //given
-    OffsetDateTime now = OffsetDateTime.now(TimeZone.getTimeZone("Europe/Berlin").toZoneId());
-    LocalDateUtil.setCurrentTime(now);
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     String reportId = reportClient.createEmptySingleProcessReport();
 
     // when

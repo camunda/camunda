@@ -28,14 +28,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDeci
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
@@ -44,6 +42,7 @@ import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_CO
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -92,8 +91,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
   @Test
   public void getEntities_adoptTimezoneFromHeader() {
     //given
-    OffsetDateTime now = OffsetDateTime.now(TimeZone.getTimeZone("Europe/Berlin").toZoneId());
-    LocalDateUtil.setCurrentTime(now);
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
 
     addSingleReportToOptimize("My Report", ReportType.PROCESS);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
