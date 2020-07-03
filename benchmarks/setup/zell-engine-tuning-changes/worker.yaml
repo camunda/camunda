@@ -21,7 +21,7 @@ spec:
         env:
           - name: JAVA_OPTIONS
             value: >-
-              -Dapp.brokerUrl=default-zeebe-gateway:26500
+              -Dapp.brokerUrl=zell-engine-tuning-changes-zeebe-gateway:26500
               -Dzeebe.client.requestTimeout=62000
               -Dapp.worker.capacity=120
               -Dapp.worker.pollingDelay=1ms
