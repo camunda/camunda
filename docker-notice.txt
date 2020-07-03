@@ -1,0 +1,8 @@
+
+This Operate Trial Version is for testing and non-production use only.
+The General Terms and Conditions for the Operate Trial Version are available here: https://zeebe.io/legal/operate-evaluation-license/
+
+Login with the credentials:
+  User:     demo
+  Password: demo
+

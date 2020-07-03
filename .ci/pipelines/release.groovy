@@ -88,6 +88,19 @@ spec:
       requests:
         cpu: 2
         memory: 2Gi
+  - name: docker
+    image: docker:18.06-dind
+    args: ["--storage-driver=overlay2"]
+    securityContext:
+      privileged: true
+    tty: true
+    resources:
+      limits:
+        cpu: 1
+        memory: 4Gi
+      requests:
+        cpu: 1
+        memory: 4Gi
 """
 }
 
@@ -107,8 +120,9 @@ pipeline {
     string(name: 'RELEASE_VERSION', defaultValue: '1.0.0', description: 'Version to release. Applied to pom.xml and Git tag.')
     string(name: 'DEVELOPMENT_VERSION', defaultValue: '1.1.0-SNAPSHOT', description: 'Next development version.')
     string(name: 'BRANCH', defaultValue: 'master', description: 'Branch to build the release from.')
-    booleanParam(name: 'PUSH_CHANGES', defaultValue: false, description: 'Should the changes be pushed to remote locations (Nexus).')
-    booleanParam(name: 'GITHUB_UPLOAD_RELEASE', defaultValue: false, description: 'Should upload the release to github.')
+    booleanParam(name: 'PUSH_CHANGES', defaultValue: true, description: 'Should the changes be pushed to remote locations (Nexus).')
+    booleanParam(name: 'GITHUB_UPLOAD_RELEASE', defaultValue: true, description: 'Should upload the release to github.')
+    booleanParam(name: 'IS_LATEST', defaultValue: true, description: 'Should tag the docker image with "latest" tag.')
   }
 
   environment {
@@ -165,28 +179,29 @@ pipeline {
         }
       }
     }
-//    stage('Docker Image') {
-//      environment {
-//        VERSION = "${params.RELEASE_VERSION}"
-//        REGISTRY = credentials('docker-registry-ci3')
-//      }
-//      steps {
-//        container('docker') {
-//          sh """
-//            echo '${REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
-//
-//            docker build -t ${PROJECT_DOCKER_IMAGE()}:${VERSION} \
-//              --build-arg=VERSION=${VERSION} \
-//              --build-arg=SNAPSHOT=false \
-//              --build-arg=USERNAME=${NEXUS_USR} \
-//              --build-arg=PASSWORD=${NEXUS_PSW} \
-//              .
-//
-//            docker push ${PROJECT_DOCKER_IMAGE()}:${VERSION}
-//          """
-//        }
-//      }
-//    }
+    stage('Docker Hub Release'){
+      when { expression { return params.PUSH_CHANGES } }
+        environment {
+          IMAGE_NAME = 'camunda/operate'
+          IMAGE_TAG = "${params.RELEASE_VERSION}"
+          DOCKER_HUB = credentials('camunda-dockerhub')
+          IS_LATEST = "${params.IS_LATEST}"
+        }
+        steps {
+          container('docker') {
+            sh """
+              docker login --username ${DOCKER_HUB_USR} --password ${DOCKER_HUB_PSW}
+              docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+              docker push ${IMAGE_NAME}:${IMAGE_TAG}
+
+              if ${IS_LATEST}; then
+                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE}:latest
+                docker push ${IMAGE_NAME}:latest
+              fi
+            """
+          }
+        }
+      }
   }
 
   post {

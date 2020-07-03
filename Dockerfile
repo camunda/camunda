@@ -7,13 +7,15 @@ WORKDIR /tmp/operate
 COPY distro/target/camunda-operate-*.tar.gz operate.tar.gz
 RUN tar xzvf operate.tar.gz --strip 1
 RUN rm operate.tar.gz
+COPY docker-notice.txt notice.txt
+RUN sed -i '/^exec /i cat /usr/local/operate/notice.txt' bin/operate
 
 # Operate Image
 FROM openjdk:11-jre
 
 EXPOSE 8080
 
-ADD https://github.com/krallin/tini/releases/download/v0.18.0/tini /bin/tini
+ADD https://github.com/krallin/tini/releases/download/v0.19.0/tini /bin/tini
 
 WORKDIR /usr/local/operate
 

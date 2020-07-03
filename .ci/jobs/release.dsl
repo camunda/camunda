@@ -15,7 +15,8 @@ pipelineJob('camunda-operate-release') {
     stringParam('DEVELOPMENT_VERSION', '1.1.0-SNAPSHOT', 'Next development version.')
     stringParam('BRANCH', 'master', 'Branch to build the release from.')
     booleanParam('PUSH_CHANGES', true, 'Should the changes be pushed to remote locations (Nexus).')
-    booleanParam('GITHUB_UPLOAD_RELEASE', false, 'Should upload the release to github.')
+    booleanParam('GITHUB_UPLOAD_RELEASE', true, 'Should upload the release to github.')
+    booleanParam('IS_LATEST', true, 'Should tag the docker image with "latest" tag.')
   }
 
 }
