@@ -25,3 +25,7 @@ A new view option has been added for process reports. This new option allows cre
 ## Create Process Reports from Templates
 
 With this release it is now possible to create process reports based on predefined templates. For this there is a new dialog after clicking the New Process Report option that allows selecting the process definition and template for the new report.
+
+## Copy Alerts
+
+The context menu of an alert now includes an option for creating a copy of the alert. This makes it easier to create new alerts based on existing ones.

@@ -14,7 +14,7 @@ import {withErrorHandling} from 'HOC';
 import {getWebhooks} from 'config';
 
 import AlertModal from './modals/AlertModal';
-
+import CopyAlertModal from './modals/CopyAlertModal';
 import {loadAlerts, addAlert, editAlert, removeAlert} from './service';
 
 import './AlertList.scss';
@@ -26,6 +26,7 @@ export default withErrorHandling(
     state = {
       deleting: null,
       editing: null,
+      copying: null,
       reports: null,
       alerts: null,
       webhooks: null,
@@ -95,8 +96,11 @@ export default withErrorHandling(
     };
     closeEditAlertModal = () => this.setState({editing: null});
 
+    openCopyAlertModal = (copying) => this.setState({copying});
+    closeCopyAlertModal = () => this.setState({copying: null});
+
     render() {
-      const {deleting, editing, alerts, reports, webhooks} = this.state;
+      const {deleting, editing, copying, alerts, reports, webhooks} = this.state;
       const {readOnly} = this.props;
 
       const isLoading = alerts === null || reports === null;
@@ -137,6 +141,11 @@ export default withErrorHandling(
                       action: () => this.openEditAlertModal(alert),
                     },
                     {
+                      icon: 'copy-document',
+                      text: t('common.copy'),
+                      action: () => this.openCopyAlertModal(alert),
+                    },
+                    {
                       icon: 'delete',
                       text: t('common.delete'),
                       action: () => this.setState({deleting: alert}),
@@ -165,6 +174,16 @@ export default withErrorHandling(
                 } else {
                   this.addAlert(alert);
                 }
+              }}
+            />
+          )}
+          {copying && (
+            <CopyAlertModal
+              initialAlertName={copying.name}
+              onClose={this.closeCopyAlertModal}
+              onConfirm={async (name) => {
+                this.addAlert({...copying, name});
+                this.closeCopyAlertModal();
               }}
             />
           )}

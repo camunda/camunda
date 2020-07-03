@@ -25,3 +25,7 @@ Es wurde eine neue Ansichtsoption für Prozessberichte hinzugefügt, die es erla
 ## Prozessberichte von Vorlagen Erstellen
 
 Mit diesem Release ist es jetzt möglich Prozessberichte basierend auf Vorlagen zu erstellen. Dazu gibt es beim Erstellen eines neuen Prozessberichts einen Dialog der es erlaubt die Prozessdefinition und die Vorlage für den neuen Report auszuwählen.
+
+## Kopieren von Alarmen
+
+Das Kontextmenü eines Alarms enthält nun eine Option zum Kopieren des Alarms. Dies erleichtert die Erstellung neuer Alarme auf der Grundlage bestehender Alarme.

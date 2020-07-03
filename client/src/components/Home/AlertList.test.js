@@ -12,8 +12,9 @@ import {loadReports} from 'services';
 
 import AlertListWithErrorHandling from './AlertList';
 import AlertModal from './modals/AlertModal';
-import {loadAlerts} from './service';
+import {loadAlerts, addAlert} from './service';
 import {getWebhooks} from 'config';
+import CopyAlertModal from './modals/CopyAlertModal';
 
 const AlertList = AlertListWithErrorHandling.WrappedComponent;
 
@@ -124,7 +125,7 @@ it('should show create Alert button', () => {
 it('should Alert to Deleter', async () => {
   const node = shallow(<AlertList {...props} />);
 
-  node.find(EntityList).prop('data')[0].actions[1].action();
+  node.find(EntityList).prop('data')[0].actions[2].action();
 
   expect(node.state('deleting')).toEqual({
     id: 'alertID',
@@ -147,6 +148,24 @@ it('should open a modal when editing an alert', async () => {
     id: 'alertID',
     email: 'test@hotmail.com',
     name: 'Some Alert',
+    lastModifier: 'Admin',
+    lastModified: '2017-11-11T11:11:11.1111+0200',
+    reportId: '2',
+    webhook: null,
+  });
+});
+
+it('should invoke addAlert when copying an alert', async () => {
+  const node = shallow(<AlertList {...props} />);
+
+  node.find(EntityList).prop('data')[0].actions[1].action();
+
+  node.find(CopyAlertModal).prop('onConfirm')('testName');
+
+  expect(addAlert).toHaveBeenCalledWith({
+    id: 'alertID',
+    email: 'test@hotmail.com',
+    name: 'testName',
     lastModifier: 'Admin',
     lastModified: '2017-11-11T11:11:11.1111+0200',
     reportId: '2',
