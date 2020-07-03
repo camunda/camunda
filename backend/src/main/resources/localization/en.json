@@ -219,10 +219,14 @@
     },
     "instanceCount": {
       "appliedFilters": "Applied filters.",
-      "label": "Displaying data from {count} instance",
-      "label-plural": "Displaying data from {count} instances",
-      "reportFilters": "Report filters displaying data from {count} instance",
-      "reportFilters-plural": "Report filters displaying data from {count} instances",
+      "label": "Displaying data from {count} instance.",
+      "label-withFilter": "Displaying data from {count} of {totalCount} instance.",
+      "label-plural": "Displaying data from {count} instances.",
+      "label-plural-withFilter": "Displaying data from {count} of {totalCount} instances.",
+      "reportFilters": "Report filters displaying data from {count} instance.",
+      "reportFilters-withFilter": "Report filters displaying data from {count} of {totalCount} instance.",
+      "reportFilters-plural": "Report filters displaying data from {count} instances.",
+      "reportFilters-plural-withFilter": "Report filters displaying data from {count} of {totalCount} instances.",
       "process": {
         "label": "{count} instance in current filter",
         "label-plural": "{count} instances in current filter"

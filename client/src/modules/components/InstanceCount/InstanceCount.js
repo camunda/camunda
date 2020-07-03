@@ -23,6 +23,7 @@ export function InstanceCount({report, noInfo, mightFail}) {
   const {data, reportType} = report;
 
   const instanceCount = report.result?.instanceCount;
+  const totalCount = report.result?.instanceCountWithoutFilters;
   const hasFilter = data.filter?.length > 0;
 
   function loadRequiredData() {
@@ -66,9 +67,15 @@ export function InstanceCount({report, noInfo, mightFail}) {
           <Popover title={t('report.instanceCount.appliedFilters')} disabled={noInfo}>
             <div className="countString">
               {typeof instanceCount === 'number' &&
-                t(`report.instanceCount.reportFilters${instanceCount !== 1 ? '-plural' : ''}`, {
-                  count: instanceCount,
-                })}
+                t(
+                  `report.instanceCount.reportFilters${totalCount !== 1 ? '-plural' : ''}${
+                    hasFilter ? '-withFilter' : ''
+                  }`,
+                  {
+                    count: instanceCount,
+                    totalCount,
+                  }
+                )}
             </div>
             <FilterList data={data.filter} flowNodeNames={flowNodeNames} variables={variables} />
           </Popover>
@@ -76,9 +83,15 @@ export function InstanceCount({report, noInfo, mightFail}) {
       )}{' '}
       <span className="countString">
         {typeof instanceCount === 'number' &&
-          t(`report.instanceCount.label${instanceCount !== 1 ? '-plural' : ''}`, {
-            count: instanceCount,
-          })}
+          t(
+            `report.instanceCount.label${totalCount !== 1 ? '-plural' : ''}${
+              hasFilter ? '-withFilter' : ''
+            }`,
+            {
+              count: instanceCount,
+              totalCount,
+            }
+          )}
       </span>
     </div>
   );

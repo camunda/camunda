@@ -219,10 +219,14 @@
     },
     "instanceCount": {
       "appliedFilters": "Angewandte Filter.",
-      "label": "Zeigt Daten von {count} Instanz",
-      "label-plural": "Zeigt Daten von {count} Instanzen",
-      "reportFilters": "Berichtsfilter zeigen Daten von {count} Instanz",
-      "reportFilters-plural": "Berichtsfilter zeigen Daten von {count} Instanzen",
+      "label": "Zeigt Daten von {count} Instanz.",
+      "label-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanz.",
+      "label-plural": "Zeigt Daten von {count} Instanzen.",
+      "label-plural-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanzen.",
+      "reportFilters": "Berichtsfilter zeigen Daten von {count} Instanz.",
+      "reportFilters-withFilter": "Berichtsfilter zeigen Daten von {count} aus {totalCount} Instanz.",
+      "reportFilters-plural": "Berichtsfilter zeigen Daten von {count} Instanzen.",
+      "reportFilters-plural-withFilter": "Berichtsfilter zeigen Daten von {count} aus {totalCount} Instanzen.",
       "process": {
         "label": "{count} Instanz im aktuellen Filter",
         "label-plural": "{count} Instanzen im aktuellen Filter"

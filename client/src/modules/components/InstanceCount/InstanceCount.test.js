@@ -44,6 +44,7 @@ const props = {
     },
     result: {
       instanceCount: 123,
+      instanceCountWithoutFilters: 500,
     },
     reportType: 'process',
   },
@@ -54,6 +55,19 @@ it('should should show the instance count', () => {
   const node = shallow(<InstanceCount {...props} />);
 
   expect(node).toIncludeText('123');
+});
+
+it('should not show the total instance count if there are not filters', () => {
+  const noFilterReport = update(props.report, {data: {filter: {$set: []}}});
+  const node = shallow(<InstanceCount {...props} report={noFilterReport} />);
+
+  expect(node).not.toIncludeText('500');
+});
+
+it('should show the total instance count if there are filters', () => {
+  const node = shallow(<InstanceCount {...props} />);
+
+  expect(node).toIncludeText('500');
 });
 
 it('should contain a popover with information about the filters', () => {
