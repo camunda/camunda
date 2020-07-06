@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -317,6 +318,20 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
         Tuple.tuple("var2", VariableType.LONG),
         Tuple.tuple("var3", VariableType.DOUBLE)
       );
+  }
+
+  @Test
+  public void getVariableNamesForReport_reportWithNoDefinitionKey() {
+    // given
+    final String reportId = reportClient.createEmptySingleProcessReport();
+
+    // when
+    List<ProcessVariableNameResponseDto> variableResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildProcessVariableNamesForReportsRequest(Collections.singletonList(reportId))
+      .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(variableResponse).isEmpty();
   }
 
   @Test

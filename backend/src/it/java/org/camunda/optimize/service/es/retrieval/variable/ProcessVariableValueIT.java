@@ -62,6 +62,24 @@ public class ProcessVariableValueIT extends AbstractVariableIT {
   }
 
   @Test
+  public void getVariableValuesForReport_reportWithNoDefinitionKey() {
+    // given
+    final String reportId = reportClient.createEmptySingleProcessReport();
+    final ProcessVariableReportValuesRequestDto requestDto = new ProcessVariableReportValuesRequestDto();
+    requestDto.setReportIds(Collections.singletonList(reportId));
+    requestDto.setType(BOOLEAN);
+    requestDto.setName("varName");
+
+    // when
+    final List<String> values = embeddedOptimizeExtension.getRequestExecutor()
+      .buildProcessVariableValuesForReportsRequest(requestDto)
+      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(values).isEmpty();
+  }
+
+  @Test
   public void getVariableValuesSingleBucketFilteredBySingleTenant() {
     // given
     final String tenantId1 = "tenantId1";
