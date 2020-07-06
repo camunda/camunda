@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 
-// https://github.com/camunda-ci/jenkins-global-shared-library
+// https://github.com/camunda/jenkins-global-shared-library
 @Library('camunda-ci') _
 
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }

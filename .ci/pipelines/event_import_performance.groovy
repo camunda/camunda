@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 
-// https://github.com/camunda-ci/jenkins-global-shared-library
+// https://github.com/camunda/jenkins-global-shared-library
 @Library('camunda-ci') _
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }

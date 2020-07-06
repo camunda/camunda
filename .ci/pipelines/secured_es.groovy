@@ -1,6 +1,6 @@
 #!/usr/bin/env groovy
 
-// https://github.com/camunda-ci/jenkins-global-shared-library
+// https://github.com/camunda/jenkins-global-shared-library
 @Library('camunda-ci') _
 
 // general properties for CI execution

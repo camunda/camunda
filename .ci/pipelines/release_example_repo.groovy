@@ -2,7 +2,7 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-// https://github.com/camunda-ci/jenkins-global-shared-library
+// https://github.com/camunda/jenkins-global-shared-library
 @Library('camunda-ci') _
 
 // general properties for CI execution
