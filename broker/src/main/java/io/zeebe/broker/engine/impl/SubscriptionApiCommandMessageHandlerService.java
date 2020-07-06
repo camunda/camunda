@@ -11,7 +11,7 @@ import io.atomix.core.Atomix;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
-import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
+import io.zeebe.engine.processing.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;

@@ -27,7 +27,7 @@ import io.zeebe.broker.system.partitions.impl.NoneSnapshotReplication;
 import io.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
-import io.zeebe.engine.processor.StreamProcessor;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.ActorCondition;

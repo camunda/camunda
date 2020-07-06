@@ -10,10 +10,10 @@ package io.zeebe.engine.util;
 import static io.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
 import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.engine.processor.CommandResponseWriter;
-import io.zeebe.engine.processor.StreamProcessor;
-import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.processor.TypedRecordProcessorFactory;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;

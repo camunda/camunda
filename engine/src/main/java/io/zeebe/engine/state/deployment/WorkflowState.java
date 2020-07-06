@@ -11,8 +11,8 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.processor.KeyGenerator;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableFlowElement;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.NextValueManager;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.instance.ElementInstanceState;

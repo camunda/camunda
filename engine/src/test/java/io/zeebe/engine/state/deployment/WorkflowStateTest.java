@@ -10,9 +10,9 @@ package io.zeebe.engine.state.deployment;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.engine.processor.KeyGenerator;
-import io.zeebe.engine.processor.workflow.deployment.model.element.AbstractFlowElement;
-import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
+import io.zeebe.engine.processing.deployment.model.element.ExecutableWorkflow;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.ZeebeStateRule;
 import io.zeebe.model.bpmn.Bpmn;

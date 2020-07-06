@@ -9,7 +9,6 @@ package io.zeebe.engine.state;
 
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.protocol.Protocol;
 
 public final class KeyState implements KeyGenerator {

@@ -12,7 +12,7 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.engine.impl.DeploymentDistributorImpl;
 import io.zeebe.clustering.management.MessageHeaderDecoder;
 import io.zeebe.clustering.management.PushDeploymentRequestDecoder;
-import io.zeebe.engine.processor.workflow.DeploymentResponder;
+import io.zeebe.engine.processing.deployment.DeploymentResponder;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.encoding.ErrorResponse;

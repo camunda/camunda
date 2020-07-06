@@ -11,7 +11,7 @@ import static io.zeebe.clustering.management.PushDeploymentRequestDecoder.deploy
 
 import io.zeebe.clustering.management.PushDeploymentRequestDecoder;
 import io.zeebe.clustering.management.PushDeploymentRequestEncoder;
-import io.zeebe.engine.util.SbeBufferWriterReader;
+import io.zeebe.protocol.impl.encoding.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -31,7 +31,7 @@ public final class PushDeploymentRequest
   }
 
   public int partitionId() {
-    return this.partitionId;
+    return partitionId;
   }
 
   public PushDeploymentRequest deploymentKey(final long deploymentKey) {
@@ -40,7 +40,7 @@ public final class PushDeploymentRequest
   }
 
   public long deploymentKey() {
-    return this.deploymentKey;
+    return deploymentKey;
   }
 
   public PushDeploymentRequest deployment(final DirectBuffer directBuffer) {
@@ -49,7 +49,7 @@ public final class PushDeploymentRequest
   }
 
   public DirectBuffer deployment() {
-    return this.deployment;
+    return deployment;
   }
 
   @Override
@@ -62,6 +62,7 @@ public final class PushDeploymentRequest
     return bodyDecoder;
   }
 
+  @Override
   public void reset() {
     super.reset();
 

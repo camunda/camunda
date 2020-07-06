@@ -9,8 +9,7 @@ package io.zeebe.broker.system.partitions.impl;
 
 import io.atomix.raft.snapshot.TransientSnapshot;
 import io.zeebe.broker.system.partitions.StateController;
-import io.zeebe.engine.processor.RandomDuration;
-import io.zeebe.engine.processor.StreamProcessor;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.util.sched.Actor;
@@ -57,9 +56,9 @@ public final class AsyncSnapshotDirector extends Actor {
     this.streamProcessor = streamProcessor;
     this.stateController = stateController;
     this.logStream = logStream;
-    this.processorName = streamProcessor.getName();
+    processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
-    this.actorName = buildActorName(nodeId, "SnapshotDirector-" + logStream.getPartitionId());
+    actorName = buildActorName(nodeId, "SnapshotDirector-" + logStream.getPartitionId());
   }
 
   @Override
@@ -120,7 +119,7 @@ public final class AsyncSnapshotDirector extends Actor {
               return;
             }
 
-            this.lowerBoundSnapshotPosition = lastProcessedPosition;
+            lowerBoundSnapshotPosition = lastProcessedPosition;
             takeSnapshot();
           } else {
             LOG.error(ERROR_MSG_ON_RESOLVE_PROCESSED_POS, error);
