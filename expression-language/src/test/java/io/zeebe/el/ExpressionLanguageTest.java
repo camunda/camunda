@@ -29,6 +29,7 @@ public class ExpressionLanguageTest {
     assertThat(expression.isStatic()).isTrue();
     assertThat(expression.isValid()).isTrue();
     assertThat(expression.getExpression()).isEqualTo("x");
+    assertThat(expression.getVariableName()).isEmpty();
     assertThat(expression.getFailureMessage()).isNull();
   }
 
@@ -41,6 +42,7 @@ public class ExpressionLanguageTest {
     assertThat(expression.isStatic()).isTrue();
     assertThat(expression.isValid()).isTrue();
     assertThat(expression.getExpression()).isEqualTo("3");
+    assertThat(expression.getVariableName()).isEmpty();
     assertThat(expression.getFailureMessage()).isNull();
   }
 
@@ -53,6 +55,7 @@ public class ExpressionLanguageTest {
     assertThat(expression.isStatic()).isTrue();
     assertThat(expression.isValid()).isTrue();
     assertThat(expression.getExpression()).isEqualTo("3.141");
+    assertThat(expression.getVariableName()).isEmpty();
     assertThat(expression.getFailureMessage()).isNull();
   }
 
@@ -64,6 +67,7 @@ public class ExpressionLanguageTest {
     assertThat(expression.isStatic()).isFalse();
     assertThat(expression.isValid()).isTrue();
     assertThat(expression.getExpression()).isEqualTo("x.y");
+    assertThat(expression.getVariableName()).contains("x");
     assertThat(expression.getFailureMessage()).isNull();
   }
 
@@ -75,6 +79,7 @@ public class ExpressionLanguageTest {
     assertThat(expression.isStatic()).isFalse();
     assertThat(expression.isValid()).isTrue();
     assertThat(expression.getExpression()).isEqualTo("{\nx:1\n}");
+    assertThat(expression.getVariableName()).isEmpty();
     assertThat(expression.getFailureMessage()).isNull();
   }
 
@@ -85,6 +90,7 @@ public class ExpressionLanguageTest {
     assertThat(expression).isNotNull();
     assertThat(expression.isValid()).isFalse();
     assertThat(expression.getExpression()).isEqualTo("x ?! 5");
+    assertThat(expression.getVariableName()).isEmpty();
     assertThat(expression.getFailureMessage())
         .startsWith("failed to parse expression 'x ?! 5': [1.3] failure:");
   }
@@ -99,6 +105,7 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("x");
     assertThat(evaluationResult.getExpression()).isEqualTo("x");
+    assertThat(expression.getVariableName()).isEmpty();
     assertThat(evaluationResult.getFailureMessage()).isNull();
   }
 
@@ -112,6 +119,7 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.NUMBER);
     assertThat(evaluationResult.getNumber().longValue()).isEqualTo(3);
     assertThat(evaluationResult.getExpression()).isEqualTo("3");
+    assertThat(expression.getVariableName()).isEmpty();
     assertThat(evaluationResult.getFailureMessage()).isNull();
   }
 
@@ -125,6 +133,7 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.NUMBER);
     assertThat(evaluationResult.getNumber().doubleValue()).isEqualTo(3.141);
     assertThat(evaluationResult.getExpression()).isEqualTo("3.141");
+    assertThat(expression.getVariableName()).isEmpty();
     assertThat(evaluationResult.getFailureMessage()).isNull();
     // given
     final StaticExpression sutStaticExpression = new StaticExpression("3.141");
@@ -155,6 +164,7 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("x");
     assertThat(evaluationResult.getExpression()).isEqualTo("x");
+    assertThat(expression.getVariableName()).contains("x");
     assertThat(evaluationResult.getFailureMessage()).isNull();
   }
 
@@ -168,6 +178,7 @@ public class ExpressionLanguageTest {
     assertThat(evaluationResult.getFailureMessage())
         .startsWith("failed to evaluate expression 'x': no variable found for name 'x'");
     assertThat(evaluationResult.getExpression()).isEqualTo("x");
+    assertThat(expression.getVariableName()).contains("x");
     assertThat(evaluationResult.getType()).isNull();
     assertThat(evaluationResult.getString()).isNull();
   }
