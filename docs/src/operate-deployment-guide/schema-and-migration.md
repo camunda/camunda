@@ -75,7 +75,7 @@ All known migration steps with metadata will be stored in `operate-migration-ste
 #### Migrate by using built-in automatic upgrade
 
 When running newer version of Operate against older schema, it will perform data migration on startup.
-The migration will happen when excatly ONE previous schema version was detected.
+The migration will happen when exactly ONE previous schema version was detected.
 
 #### Further notes
 
