@@ -54,7 +54,7 @@ func (s *clientTestSuite) TestClientWithTls() {
 	parts := strings.Split(lis.Addr().String(), ":")
 	client, err := NewClient(&ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "testdata/ca.cert.pem",
+		CaCertificatePath: "testdata/chain.cert.pem",
 	})
 
 	s.NoError(err)
@@ -83,7 +83,7 @@ func (s *clientTestSuite) TestInsecureEnvVar() {
 	// when
 	config := &ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "testdata/ca.cert.pem",
+		CaCertificatePath: "testdata/chain.cert.pem",
 	}
 	env.set(InsecureEnvVar, "true")
 
@@ -110,13 +110,13 @@ func (s *clientTestSuite) TestCaCertificateEnvVar() {
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		CaCertificatePath: "testdata/wrong.cert",
 	}
-	env.set(CaCertificatePath, "testdata/ca.cert.pem")
+	env.set(CaCertificatePath, "testdata/chain.cert.pem")
 
 	_, err := NewClient(config)
 
 	// then
 	s.NoError(err)
-	s.EqualValues("testdata/ca.cert.pem", config.CaCertificatePath)
+	s.EqualValues("testdata/chain.cert.pem", config.CaCertificatePath)
 }
 
 func (s *clientTestSuite) TestClientWithoutTls() {
@@ -133,7 +133,7 @@ func (s *clientTestSuite) TestClientWithoutTls() {
 	client, err := NewClient(&ClientConfig{
 		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
 		UsePlaintextConnection: true,
-		CaCertificatePath:      "testdata/ca.cert.pem",
+		CaCertificatePath:      "testdata/chain.cert.pem",
 	})
 
 	s.NoError(err)
@@ -355,7 +355,7 @@ func (s *clientTestSuite) TestClientWithEmptyDialOptions() {
 	parts := strings.Split(lis.Addr().String(), ":")
 	client, err := NewClient(&ClientConfig{
 		GatewayAddress:    fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
-		CaCertificatePath: "testdata/ca.cert.pem",
+		CaCertificatePath: "testdata/chain.cert.pem",
 		DialOpts:          make([]grpc.DialOption, 0),
 	})
 
