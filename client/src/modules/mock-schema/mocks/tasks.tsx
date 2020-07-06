@@ -5,6 +5,7 @@
  */
 
 import {Task} from 'modules/types';
+import {TaskStates} from 'modules/constants/taskStates';
 
 const tasks: ReadonlyArray<Task> = [
   {
@@ -15,7 +16,7 @@ const tasks: ReadonlyArray<Task> = [
     completionTime: new Date().toISOString(),
     assignee: {username: 'Demo', firstname: 'Demo', lastname: 'User'},
     variables: [],
-    taskState: 'COMPLETED',
+    taskState: TaskStates.Completed,
   },
   {
     id: '1',
@@ -32,7 +33,7 @@ const tasks: ReadonlyArray<Task> = [
       {name: 'myVar', value: '0001'},
       {name: 'isCool', value: 'yes'},
     ],
-    taskState: 'CREATED',
+    taskState: TaskStates.Created,
   },
   {
     id: '2',
@@ -42,7 +43,7 @@ const tasks: ReadonlyArray<Task> = [
     completionTime: new Date().toISOString(),
     assignee: null,
     variables: [],
-    taskState: 'CREATED',
+    taskState: TaskStates.Created,
   },
 ];
 

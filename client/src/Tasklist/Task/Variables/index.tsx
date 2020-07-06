@@ -8,19 +8,24 @@ import React from 'react';
 import {useQuery} from '@apollo/react-hooks';
 import {useParams} from 'react-router-dom';
 
-import {GET_TASK_VARIABLES, GetVariables} from 'modules/queries/get-variables';
-import {GetTaskVariables} from 'modules/queries/get-task';
+import {
+  GET_TASK_VARIABLES,
+  GetTaskVariables,
+  TaskVariablesQueryVariables,
+} from 'modules/queries/get-task-variables';
 import {Table, TD, RowTH, ColumnTH, TR} from 'modules/components/Table/styled';
+
 import {Title, EmptyMessage} from './styled';
 
 const Variables: React.FC = () => {
   const {id} = useParams();
-  const {data, loading} = useQuery<GetVariables, GetTaskVariables>(
-    GET_TASK_VARIABLES,
-    {
-      variables: {id},
-    },
-  );
+
+  const {data, loading} = useQuery<
+    GetTaskVariables,
+    TaskVariablesQueryVariables
+  >(GET_TASK_VARIABLES, {
+    variables: {id},
+  });
 
   if (loading || data === undefined) {
     return null;
@@ -31,8 +36,7 @@ const Variables: React.FC = () => {
   return (
     <>
       <Title>Variables</Title>
-
-      {variables.length <= 0 ? (
+      {variables.length === 0 ? (
         <EmptyMessage>Task has no variables.</EmptyMessage>
       ) : (
         <Table data-testid="variables-table">

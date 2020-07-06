@@ -82,6 +82,7 @@ const mockGetClaimedByMe = {
   request: {
     query: GET_TASKS,
     variables: {
+      assigned: true,
       assignee: 'demo',
     },
   },

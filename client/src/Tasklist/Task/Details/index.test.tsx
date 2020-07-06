@@ -15,7 +15,7 @@ import {
   mockGetTaskUnclaimed,
   mockGetTaskCompleted,
   mockGetTaskClaimed,
-} from 'modules/queries/get-task';
+} from 'modules/queries/get-task-details';
 import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
@@ -49,7 +49,9 @@ describe('<Details />', () => {
     expect(await screen.findByText('My Completed Task')).toBeInTheDocument();
     expect(screen.getByText('Cool Workflow')).toBeInTheDocument();
     expect(screen.getByTestId('assignee')).toHaveTextContent('Jules Verne');
-    expect(screen.getByRole('button', {name: 'Unclaim'})).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Unclaim'}),
+    ).not.toBeInTheDocument();
     expect(
       screen.getByText(/2019-01-01 \d{2}:\d{2}:\d{2}/),
     ).toBeInTheDocument();

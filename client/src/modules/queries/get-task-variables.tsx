@@ -10,9 +10,13 @@ import {Task} from 'modules/types';
 import {
   taskWithVariables,
   taskWithoutVariables,
-} from 'modules/mock-schema/mocks/variables';
+  taskCompletedWithVariables,
+} from 'modules/mock-schema/mocks/task-variables';
 
-interface GetVariables {
+type TaskVariablesQueryVariables = {
+  id: Task['id'];
+};
+interface GetTaskVariables {
   task: {
     id: Task['id'];
     variables: Task['variables'];
@@ -22,16 +26,21 @@ interface GetVariables {
 const GET_TASK_VARIABLES =
   process.env.NODE_ENV === 'test'
     ? gql`
-        query GetTask($id: ID!) {
+        query GetTask($id: String!) {
           task(id: $id) {
+            id
             variables
           }
         }
       `
     : gql`
-        query GetTask($id: ID!) {
-          task(id: $id) @client {
-            variables
+        query GetTask($id: String!) {
+          task(id: $id) {
+            id
+            variables {
+              name
+              value
+            }
           }
         }
       `;
@@ -60,5 +69,22 @@ const mockTaskWithoutVariables = {
   },
 };
 
-export type {GetVariables};
-export {GET_TASK_VARIABLES, mockTaskWithVariables, mockTaskWithoutVariables};
+const mockTaskCompletedWithVariables = {
+  request: {
+    query: GET_TASK_VARIABLES,
+    variables: {id: '0'},
+  },
+  result: {
+    data: {
+      task: taskCompletedWithVariables,
+    },
+  },
+};
+
+export type {GetTaskVariables, TaskVariablesQueryVariables};
+export {
+  GET_TASK_VARIABLES,
+  mockTaskWithVariables,
+  mockTaskWithoutVariables,
+  mockTaskCompletedWithVariables,
+};

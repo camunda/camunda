@@ -6,7 +6,7 @@
 
 /* istanbul ignore file */
 
-import styled, {css} from 'styled-components';
+import styled from 'styled-components';
 import {Panel} from './Panel';
 import {CollapsablePanel} from './CollapsablePanel';
 
@@ -22,12 +22,6 @@ const TasksPanel = styled(CollapsablePanel)`
   background-color: ${({theme}) => theme.colors.ui02};
 `;
 
-const panelBodyStyles = css`
-  display: grid;
-  grid-template-rows: auto 1fr;
-  overflow: hidden;
-`;
-
 const DetailsPanel = styled(Panel)`
   border: 1px solid ${({theme}) => theme.colors.ui05};
   width: 100%;
@@ -41,10 +35,4 @@ const NoTaskSelectedMessage = styled.h1`
   font-weight: normal;
 `;
 
-export {
-  Container,
-  TasksPanel,
-  DetailsPanel,
-  NoTaskSelectedMessage,
-  panelBodyStyles,
-};
+export {Container, TasksPanel, DetailsPanel, NoTaskSelectedMessage};

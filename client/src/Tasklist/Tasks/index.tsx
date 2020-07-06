@@ -21,11 +21,13 @@ import {
 } from 'modules/queries/get-current-user';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {FilterValues} from 'modules/constants/filterValues';
+import {TaskStates} from 'modules/constants/taskStates';
 
 const getQueryVariables = (filter: string, {username}: {username?: string}) => {
   switch (filter) {
     case FilterValues.ClaimedByMe: {
       return {
+        assigned: true,
         assignee: username,
       };
     }
@@ -36,7 +38,7 @@ const getQueryVariables = (filter: string, {username}: {username?: string}) => {
     }
     case FilterValues.Completed: {
       return {
-        state: 'COMPLETED',
+        state: TaskStates.Completed,
       };
     }
     case FilterValues.AllOpen:
@@ -59,6 +61,7 @@ const Tasks: React.FC = () => {
     variables: getQueryVariables(filter, {
       username: userData?.currentUser.username,
     }),
+    fetchPolicy: 'no-cache',
   });
 
   if (loading || data === undefined) {

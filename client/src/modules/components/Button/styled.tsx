@@ -4,40 +4,81 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
-const Button = styled.button`
-  height: 22px;
-  padding: 0 11px;
-  border-radius: 11px;
-  border: solid 1px ${({theme}) => theme.colors.button.default.borderColor};
-  background-color: ${({theme}) => theme.colors.button.default.backgroundColor};
-
+const commonStyles = css`
   font-weight: 600;
-  font-size: 13px;
-  color: ${({theme}) => theme.colors.text.black};
 
   &::-moz-focus-inner {
     border: 0;
   }
+`;
+
+const PrimaryButton = styled.button`
+  ${commonStyles}
+  height: 35px;
+  padding: 0 11px;
+  border-radius: 3px;
+  box-shadow: ${({theme}) => theme.shadows.primaryButton};
+  border: solid 1px
+    ${({theme}) => theme.colors.primaryButton.default.borderColor};
+  background-color: ${({theme}) =>
+    theme.colors.primaryButton.default.backgroundColor};
+
+  font-size: 14px;
+  color: ${({theme}) => theme.colors.ui04};
 
   &:hover {
-    background-color: ${({theme}) => theme.colors.button.hover.backgroundColor};
-    border-color: ${({theme}) => theme.colors.button.hover.borderColor};
+    background-color: ${({theme}) =>
+      theme.colors.primaryButton.hover.backgroundColor};
+    border-color: ${({theme}) => theme.colors.primaryButton.hover.borderColor};
   }
 
   &:active {
     background-color: ${({theme}) =>
-      theme.colors.button.active.backgroundColor};
-    border-color: ${({theme}) => theme.colors.button.active.borderColor};
+      theme.colors.primaryButton.active.backgroundColor};
+    border-color: ${({theme}) => theme.colors.primaryButton.active.borderColor};
   }
 
   &:disabled {
     background-color: ${({theme}) =>
-      theme.colors.button.disabled.backgroundColor};
-    border-color: ${({theme}) => theme.colors.button.disabled.borderColor};
+      theme.colors.primaryButton.disabled.backgroundColor};
+    border-color: ${({theme}) =>
+      theme.colors.primaryButton.disabled.borderColor};
     cursor: not-allowed;
   }
 `;
 
-export {Button};
+const SmallButton = styled.button`
+  ${commonStyles}
+  height: 22px;
+  padding: 0 11px;
+  border-radius: 11px;
+  border: solid 1px ${({theme}) => theme.colors.smallButton.default.borderColor};
+  background-color: ${({theme}) =>
+    theme.colors.smallButton.default.backgroundColor};
+
+  font-size: 13px;
+  color: ${({theme}) => theme.colors.text.black};
+
+  &:hover {
+    background-color: ${({theme}) =>
+      theme.colors.smallButton.hover.backgroundColor};
+    border-color: ${({theme}) => theme.colors.smallButton.hover.borderColor};
+  }
+
+  &:active {
+    background-color: ${({theme}) =>
+      theme.colors.smallButton.active.backgroundColor};
+    border-color: ${({theme}) => theme.colors.smallButton.active.borderColor};
+  }
+
+  &:disabled {
+    background-color: ${({theme}) =>
+      theme.colors.smallButton.disabled.backgroundColor};
+    border-color: ${({theme}) => theme.colors.smallButton.disabled.borderColor};
+    cursor: not-allowed;
+  }
+`;
+
+export {SmallButton, PrimaryButton};

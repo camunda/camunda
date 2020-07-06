@@ -13,14 +13,12 @@ import {Pages} from 'modules/constants/pages';
 import {Header} from './Header';
 import {Filters} from './Filters';
 import {Tasks} from './Tasks';
-import {Details} from './Details';
-import {Variables} from './Variables';
+import {Task} from './Task';
 import {
   Container,
   TasksPanel,
   DetailsPanel,
   NoTaskSelectedMessage,
-  panelBodyStyles,
 } from './styled';
 import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNoticeText';
 
@@ -29,11 +27,7 @@ const Tasklist: React.FC = () => {
     <>
       <Header />
       <Container>
-        <TasksPanel
-          title="Tasks"
-          hasTransparentBackground
-          extraBodyStyles={panelBodyStyles}
-        >
+        <TasksPanel title="Tasks" hasTransparentBackground>
           <Filters />
           <Tasks />
         </TasksPanel>
@@ -48,8 +42,7 @@ const Tasklist: React.FC = () => {
             </NoTaskSelectedMessage>
           </Route>
           <Route path={Pages.TaskDetails()}>
-            <Details />
-            <Variables />
+            <Task />
           </Route>
         </DetailsPanel>
       </Container>

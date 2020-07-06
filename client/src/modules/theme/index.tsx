@@ -25,7 +25,7 @@ const theme = {
       odd: palette.ui04,
       even: '#f9fafc',
     },
-    button: {
+    smallButton: {
       default: {
         backgroundColor: palette.ui05,
         borderColor: '#9ea9b7',
@@ -41,6 +41,24 @@ const theme = {
       disabled: {
         backgroundColor: '#f1f2f5',
         borderColor: palette.ui03,
+      },
+    },
+    primaryButton: {
+      default: {
+        backgroundColor: palette.blue,
+        borderColor: '#3c85ff',
+      },
+      hover: {
+        backgroundColor: '#3c85ff',
+        borderColor: '#1a70ff',
+      },
+      active: {
+        backgroundColor: '#1a70ff',
+        borderColor: '#005df7',
+      },
+      disabled: {
+        backgroundColor: '#80b0ff',
+        borderColor: '#a2c5ff',
       },
     },
     text: {
@@ -59,6 +77,8 @@ const theme = {
     select: '0 2px 2px 0 rgba(0, 0, 0, 0.08)',
     fakeOutline: '0 0 0 1px #2b7bff, 0 0 0 4px #8cb7ff',
     dropdownMenu: '0 0 2px 0 rgba(0, 0, 0, 0.2)',
+    variablesFooter: '0 -1px 2px 0 rgba(0, 0, 0, 0.1)',
+    primaryButton: '0 2px 2px 0 rgba(0, 0, 0, 0.35)',
   },
 } as const;
 

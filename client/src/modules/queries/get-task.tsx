@@ -7,74 +7,48 @@
 import {gql} from 'apollo-boost';
 import {Task} from 'modules/types';
 
-import {
-  completedTask,
-  unclaimedTask,
-  claimedTask,
-} from 'modules/mock-schema/mocks/task';
+import {taskCreated, taskCompleted} from 'modules/mock-schema/mocks/task';
+
+type TaskQueryVariables = {
+  id: Task['id'];
+};
 
 interface GetTask {
   task: {
-    id: Task['id'];
-    name: Task['name'];
     assignee: Task['assignee'];
-    workflowName: Task['workflowName'];
-    creationTime: Task['creationTime'];
-    completionTime: Task['completionTime'];
+    taskState: Task['taskState'];
   };
-}
-
-interface GetTaskVariables {
-  id: Task['id'];
 }
 
 const GET_TASK =
   process.env.NODE_ENV === 'test'
     ? gql`
-        query GetTask($id: ID!) {
+        query GetTask($id: String!) {
           task(id: $id) {
             id
-            name
-            workflowName
             assignee
-            creationTime
-            completionTime
+            taskState
           }
         }
       `
     : gql`
-        query GetTask($id: ID!) {
-          task(id: $id) @client {
+        query GetTask($id: String!) {
+          task(id: $id) {
             id
-            name
-            workflowName
-            assignee
-            creationTime
-            completionTime
+            assignee @client
+            taskState @client
           }
         }
       `;
 
-const mockGetTaskUnclaimed = {
+const mockGetTaskCreated = {
   request: {
     query: GET_TASK,
     variables: {id: '1'},
   },
   result: {
     data: {
-      task: unclaimedTask,
-    },
-  },
-};
-
-const mockGetTaskClaimed = {
-  request: {
-    query: GET_TASK,
-    variables: {id: '1'},
-  },
-  result: {
-    data: {
-      task: claimedTask,
+      task: taskCreated,
     },
   },
 };
@@ -86,15 +60,10 @@ const mockGetTaskCompleted = {
   },
   result: {
     data: {
-      task: completedTask,
+      task: taskCompleted,
     },
   },
 };
 
-export type {GetTask, GetTaskVariables};
-export {
-  GET_TASK,
-  mockGetTaskUnclaimed,
-  mockGetTaskCompleted,
-  mockGetTaskClaimed,
-};
+export type {GetTask, TaskQueryVariables};
+export {GET_TASK, mockGetTaskCreated, mockGetTaskCompleted};

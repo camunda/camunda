@@ -5,41 +5,18 @@
  */
 
 import {Task} from 'modules/types';
+import {TaskStates} from 'modules/constants/taskStates';
 
-const unclaimedTask: Task = {
-  id: '1',
-  name: 'My Task',
-  workflowName: 'Nice Workflow',
-  assignee: null,
-  creationTime: new Date('2019').toISOString(),
-  completionTime: null,
-  variables: [],
-  taskState: 'CREATED',
-};
+type PartialTask = Pick<Task, 'id' | 'taskState'>;
 
-const claimedTask: Task = {
-  ...unclaimedTask,
-  id: '2',
-  assignee: {
-    username: 'Demo',
-    firstname: 'Demo',
-    lastname: 'User',
-  },
-};
-
-const completedTask: Task = {
+const taskCreated: PartialTask = {
   id: '0',
-  name: 'My Completed Task',
-  workflowName: 'Cool Workflow',
-  assignee: {
-    firstname: 'Jules',
-    lastname: 'Verne',
-    username: 'julesverne',
-  },
-  creationTime: new Date('2019').toISOString(),
-  completionTime: new Date('2020').toISOString(),
-  variables: [],
-  taskState: 'COMPLETED',
+  taskState: TaskStates.Created,
 };
 
-export {unclaimedTask, completedTask, claimedTask};
+const taskCompleted: PartialTask = {
+  id: '1',
+  taskState: TaskStates.Completed,
+};
+
+export {taskCreated, taskCompleted};

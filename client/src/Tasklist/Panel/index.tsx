@@ -6,7 +6,6 @@
 
 import * as React from 'react';
 import {Base, Header, Body, Footer} from './styled';
-import {css} from 'styled-components';
 
 interface Props {
   children: React.ReactNode;
@@ -17,7 +16,6 @@ interface Props {
   hasRoundTopRightCorner?: boolean;
   hasTransparentBackground?: boolean;
   Icon?: React.ReactElement;
-  extraBodyStyles?: ReturnType<typeof css>;
 }
 
 const Panel: React.FC<Props> = ({
@@ -29,7 +27,6 @@ const Panel: React.FC<Props> = ({
   hasRoundTopRightCorner,
   hasTransparentBackground,
   Icon,
-  extraBodyStyles,
 }) => {
   const hasFooter = footer !== undefined;
 
@@ -46,10 +43,7 @@ const Panel: React.FC<Props> = ({
           {Icon}
         </Header>
       )}
-      <Body
-        hasTransparentBackground={hasTransparentBackground}
-        extraBodyStyles={extraBodyStyles}
-      >
+      <Body hasTransparentBackground={hasTransparentBackground}>
         {children}
       </Body>
       {hasFooter && <Footer>{footer}</Footer>}

@@ -7,7 +7,12 @@
 /* istanbul ignore file */
 
 import gql from 'graphql-tag';
-import {claimedTask} from 'modules/mock-schema/mocks/task';
+import {Task} from 'modules/types';
+import {claimedTask} from 'modules/mock-schema/mocks/task-details';
+
+type ClaimTaskVariables = {
+  id: Task['id'];
+};
 
 const CLAIM_TASK =
   process.env.NODE_ENV === 'test'
@@ -38,4 +43,5 @@ const mockClaimTask = {
   },
 };
 
+export type {ClaimTaskVariables};
 export {CLAIM_TASK, mockClaimTask};

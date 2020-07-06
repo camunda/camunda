@@ -5,7 +5,6 @@
  */
 
 import React, {useState} from 'react';
-import {css} from 'styled-components';
 import {Panel} from '../Panel';
 import {
   ExpandedPanel,
@@ -21,7 +20,6 @@ interface Props {
   title: string;
   className?: string;
   hasTransparentBackground?: boolean;
-  extraBodyStyles?: ReturnType<typeof css>;
 }
 
 const CollapsablePanel: React.FC<Props> = (props) => {

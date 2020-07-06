@@ -13,15 +13,23 @@ import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {
   mockTaskWithVariables,
   mockTaskWithoutVariables,
-} from 'modules/queries/get-variables';
+  mockTaskCompletedWithVariables,
+} from 'modules/queries/get-task-variables';
+import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Variables} from './';
 
-const getWrapper = (id: string, mock: MockedResponse) => {
+const getWrapper = ({
+  id,
+  mocks,
+}: {
+  id: string;
+  mocks: Array<MockedResponse>;
+}) => {
   const Wrapper: React.FC = ({children}) => (
     <MemoryRouter initialEntries={[`/${id}`]}>
       <Route path="/:id">
-        <MockedApolloProvider mocks={[mock]}>
+        <MockedApolloProvider mocks={[mockGetCurrentUser, ...mocks]}>
           <MockThemeProvider>{children}</MockThemeProvider>
         </MockedApolloProvider>
       </Route>
@@ -34,7 +42,7 @@ const getWrapper = (id: string, mock: MockedResponse) => {
 describe('<Variables />', () => {
   it('should render with variables', async () => {
     render(<Variables />, {
-      wrapper: getWrapper('0', mockTaskWithVariables),
+      wrapper: getWrapper({id: '0', mocks: [mockTaskWithVariables]}),
     });
 
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
@@ -46,7 +54,7 @@ describe('<Variables />', () => {
 
   it('should render with empty message', async () => {
     render(<Variables />, {
-      wrapper: getWrapper('1', mockTaskWithoutVariables),
+      wrapper: getWrapper({id: '1', mocks: [mockTaskWithoutVariables]}),
     });
 
     expect(
@@ -55,5 +63,14 @@ describe('<Variables />', () => {
     expect(
       await screen.queryByTestId('variables-table'),
     ).not.toBeInTheDocument();
+  });
+
+  it.skip('should render variables from completed task', async () => {
+    // TODO (paddy): add test for checking readonly variables
+    render(<Variables />, {
+      wrapper: getWrapper({id: '0', mocks: [mockTaskCompletedWithVariables]}),
+    });
+
+    expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
   });
 });

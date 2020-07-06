@@ -7,7 +7,13 @@
 /* istanbul ignore file */
 
 import gql from 'graphql-tag';
-import {unclaimedTask} from 'modules/mock-schema/mocks/task';
+import {unclaimedTask} from 'modules/mock-schema/mocks/task-details';
+
+import {Task} from 'modules/types';
+
+type UnclaimTaskVariables = {
+  id: Task['id'];
+};
 
 const UNCLAIM_TASK =
   process.env.NODE_ENV === 'test'
@@ -38,4 +44,5 @@ const mockUnclaimTask = {
   },
 };
 
+export type {UnclaimTaskVariables};
 export {UNCLAIM_TASK, mockUnclaimTask};

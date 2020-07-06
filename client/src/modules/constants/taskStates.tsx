@@ -4,15 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Button} from 'modules/components/Button/styled';
+const TaskStates = {
+  Created: 'CREATED',
+  Completed: 'COMPLETED',
+} as const;
 
-const Container = styled.div`
-  margin-top: 18px;
-`;
-
-const ClaimButton = styled(Button)`
-  margin-left: 22px;
-`;
-
-export {Container, ClaimButton};
+export {TaskStates};
