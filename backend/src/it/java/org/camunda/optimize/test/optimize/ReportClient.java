@@ -420,12 +420,6 @@ public class ReportClient {
       .execute(SingleProcessReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public SingleDecisionReportDefinitionDto getSingleDecisionReportById(final String id) {
-    return getRequestExecutor()
-      .buildGetReportRequest(id)
-      .execute(SingleDecisionReportDefinitionDto.class, Response.Status.OK.getStatusCode());
-  }
-
   public ReportDefinitionDto<?> getReportById(String id) {
     return getRequestExecutor()
       .buildGetReportRequest(id)

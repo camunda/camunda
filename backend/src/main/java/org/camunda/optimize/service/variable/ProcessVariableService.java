@@ -65,6 +65,14 @@ public class ProcessVariableService {
     return processVariableReader.getVariableNames(processVariableNameRequestDtos);
   }
 
+  public List<ProcessVariableNameResponseDto> getVariableNamesForReportDefinitions(List<SingleProcessReportDefinitionDto> definitions) {
+    final List<ProcessVariableNameRequestDto> processVariableNameRequests = definitions.stream()
+      .filter(definition -> definition.getData().getProcessDefinitionKey() != null)
+      .map(this::convertToProcessVariableNameRequest)
+      .collect(Collectors.toList());
+    return processVariableReader.getVariableNames(processVariableNameRequests);
+  }
+
   public List<String> getVariableValues(String userId, ProcessVariableValueRequestDto requestDto) {
     ensureNotEmpty("process definition key", requestDto.getProcessDefinitionKey());
     ensureNotEmpty("variable name", requestDto.getName());

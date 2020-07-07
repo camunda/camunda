@@ -5,11 +5,14 @@
  */
 package org.camunda.optimize.dto.optimize.query.variable;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProcessVariableNameResponseDto {
-
   protected String name;
   protected VariableType type;
 }

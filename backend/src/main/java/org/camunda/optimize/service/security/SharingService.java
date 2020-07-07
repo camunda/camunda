@@ -79,7 +79,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
   }
 
   @Override
-  public void handleReportUpdated(final String id, final ReportDefinitionDto updateDefinition) {
+  public void handleReportUpdated(final String reportId, final ReportDefinitionDto updateDefinition) {
     //NOOP
   }
 

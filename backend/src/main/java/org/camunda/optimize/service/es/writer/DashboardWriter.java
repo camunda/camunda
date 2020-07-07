@@ -129,10 +129,7 @@ public class DashboardWriter {
   }
 
   public void removeReportFromDashboards(String reportId) {
-    String updateItemName = "report on dashboard";
-    log.info(
-      "Removing {} with ID [{}].", updateItemName, reportId
-    );
+    log.info("Removing report on dashboard with ID [{}].", reportId);
 
     Script removeReportIdFromCombinedReportsScript = new Script(
       ScriptType.INLINE,

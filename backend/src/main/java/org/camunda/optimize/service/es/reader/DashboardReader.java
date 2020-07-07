@@ -91,7 +91,7 @@ public class DashboardReader {
     return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
   }
 
-  public List<DashboardDefinitionDto> findFirstDashboardsForReport(String reportId) {
+  public List<DashboardDefinitionDto> findDashboardsForReport(String reportId) {
     log.debug("Fetching dashboards using report with id {}", reportId);
 
     final QueryBuilder getCombinedReportsBySimpleReportIdQuery = QueryBuilders.boolQuery()

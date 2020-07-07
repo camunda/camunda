@@ -93,6 +93,7 @@ public class ProcessVariableReader {
 
     BoolQueryBuilder query = boolQuery();
     variableNameRequests.stream()
+      .filter(request -> request.getProcessDefinitionKey() != null)
       .filter(request -> !CollectionUtils.isEmpty(request.getProcessDefinitionVersions()))
       .forEach(request -> query.should(createDefinitionQuery(
         request.getProcessDefinitionKey(),
@@ -130,9 +131,10 @@ public class ProcessVariableReader {
     for (Terms.Bucket variableNameBucket : nameTerms.getBuckets()) {
       Terms variableTypes = variableNameBucket.getAggregations().get(VARIABLE_TYPE_AGGREGATION);
       for (Terms.Bucket variableTypeBucket : variableTypes.getBuckets()) {
-        ProcessVariableNameResponseDto response = new ProcessVariableNameResponseDto();
-        response.setName(variableNameBucket.getKeyAsString());
-        response.setType(VariableType.getTypeForId(variableTypeBucket.getKeyAsString()));
+        ProcessVariableNameResponseDto response = new ProcessVariableNameResponseDto(
+          variableNameBucket.getKeyAsString(),
+          VariableType.getTypeForId(variableTypeBucket.getKeyAsString())
+        );
         responseDtoList.add(response);
       }
     }

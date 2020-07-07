@@ -435,8 +435,8 @@ public class AlertService implements ReportReferencingService {
   }
 
   @Override
-  public void handleReportUpdated(final String id, final ReportDefinitionDto updateDefinition) {
-    deleteAlertsIfNeeded(id, updateDefinition);
+  public void handleReportUpdated(final String reportId, final ReportDefinitionDto updateDefinition) {
+    deleteAlertsIfNeeded(reportId, updateDefinition);
   }
 
   private Set<ConflictedItemDto> mapAlertsToConflictingItems(List<AlertDefinitionDto> alertsForReport) {
