@@ -10,8 +10,11 @@
 
   <Loggers>
     <Logger name="io.zeebe" level="debug"/>
-    <Logger name="io.atomix" level="warn"/>
-    <Logger name="io.atomix.raft" level="info"/>
+    <Logger name="io.atomix" level="debug"/>
+
+    <Logger name="io.atomix.cluster.messaging" level="info"/>
+    <Logger name="io.atomix.cluster.protocol" level="debug"/>
+    <Logger name="io.atomix.raft" level="debug"/>
 
     <Root level="info">
       <AppenderRef ref="Console"/>

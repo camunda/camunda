@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
@@ -222,6 +223,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     try {
       LOGGER.debug("DELETE dir {}", directory);
       FileUtil.deleteFolder(directory);
+    } catch (final NoSuchFileException nsfe) {
+      LOGGER.debug(
+          "Tried to delete pending dir {}, but doesn't exist. Either was already removed or no chunk was applied until now.",
+          directory,
+          nsfe);
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete pending snapshot {}", this, e);
     }
