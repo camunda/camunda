@@ -25,7 +25,6 @@ import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilde
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
 import org.elasticsearch.search.aggregations.metrics.ParsedMax;
 import org.elasticsearch.search.aggregations.metrics.ParsedMin;
-import org.elasticsearch.search.aggregations.metrics.ParsedValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
@@ -47,10 +46,10 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_D
 @Slf4j
 public class IntervalAggregationService {
 
-  private static final String MIN_AGGREGATION = "minValueOfData";
-  private static final String MAX_AGGREGATION = "maxValueOfData";
-  public static final String MIN_COUNT_AGGREGATION = "countOfMinValues";
-  public static final String MAX_COUNT_AGGREGATION = "countOfMaxValues";
+  private static final String MIN_AGGREGATION_FIRST_FIELD = "minValueOfFirstField";
+  private static final String MIN_AGGREGATION_SECOND_FIELD = "minValueOfSecondField";
+  private static final String MAX_AGGREGATION_FIRST_FIELD = "maxValueOfFirstField";
+  private static final String MAX_AGGREGATION_SECOND_FIELD = "maxValueOfSecondField";
   public static final String RANGE_AGGREGATION = "rangeAggregation";
 
   private final OptimizeElasticsearchClient esClient;
@@ -79,31 +78,32 @@ public class IntervalAggregationService {
     }
   }
 
-  public MinMaxStatDto getMinMaxStats(QueryBuilder query, String indexName, String minMaxField) {
-    return getMinMaxStats(query, indexName, minMaxField, minMaxField);
+  public MinMaxStatDto getCrossFieldMinMaxStats(QueryBuilder query, String indexName, String minMaxField) {
+    return getCrossFieldMinMaxStats(query, indexName, minMaxField, minMaxField);
   }
 
-  public MinMaxStatDto getMinMaxStats(QueryBuilder query, String indexName, String minField, String maxField) {
-    AggregationBuilder minFieldCount = AggregationBuilders
-      .count(MIN_COUNT_AGGREGATION)
-      .field(minField);
-    AggregationBuilder maxFieldCount = AggregationBuilders
-      .count(MAX_COUNT_AGGREGATION)
-      .field(minField);
-    AggregationBuilder minAgg = AggregationBuilders
-      .min(MIN_AGGREGATION)
-      .field(minField);
-    AggregationBuilder maxAgg = AggregationBuilders
-      .max(MAX_AGGREGATION)
-      .field(maxField);
+  public MinMaxStatDto getCrossFieldMinMaxStats(QueryBuilder query, String indexName,
+                                                String firstField, String secondField) {
+    AggregationBuilder minAgg1 = AggregationBuilders
+      .min(MIN_AGGREGATION_FIRST_FIELD)
+      .field(firstField);
+    AggregationBuilder minAgg2 = AggregationBuilders
+      .min(MIN_AGGREGATION_SECOND_FIELD)
+      .field(secondField);
+    AggregationBuilder maxAgg1 = AggregationBuilders
+      .max(MAX_AGGREGATION_FIRST_FIELD)
+      .field(firstField);
+    AggregationBuilder maxAgg2 = AggregationBuilders
+      .max(MAX_AGGREGATION_SECOND_FIELD)
+      .field(secondField);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
       .fetchSource(false)
-      .aggregation(minFieldCount)
-      .aggregation(maxFieldCount)
-      .aggregation(minAgg)
-      .aggregation(maxAgg)
+      .aggregation(minAgg1)
+      .aggregation(minAgg2)
+      .aggregation(maxAgg1)
+      .aggregation(maxAgg2)
       .size(0);
     SearchRequest searchRequest = new SearchRequest(indexName).source(searchSourceBuilder);
 
@@ -112,9 +112,9 @@ public class IntervalAggregationService {
       response = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format(
-        "Could not retrieve stats for minField %s and maxField %s on index %s",
-        minField,
-        maxField,
+        "Could not retrieve stats for firstField %s and secondField %s on index %s",
+        firstField,
+        secondField,
         indexName
       );
       log.error(reason, e);
@@ -139,8 +139,8 @@ public class IntervalAggregationService {
   private Optional<AggregationBuilder> createIntervalAggregation(QueryBuilder query,
                                                                  String indexName,
                                                                  String field) {
-    MinMaxStatDto stats = getMinMaxStats(query, indexName, field);
-    if (stats.getMinFieldCount() > 1) {
+    MinMaxStatDto stats = getCrossFieldMinMaxStats(query, indexName, field);
+    if (stats.isValidRange()) {
       OffsetDateTime min = OffsetDateTime.parse(stats.getMinAsString(), dateTimeFormatter);
       OffsetDateTime max = OffsetDateTime.parse(stats.getMaxAsString(), dateTimeFormatter);
       return Optional.of(createIntervalAggregationFromGivenRange(field, min, max));
@@ -209,13 +209,19 @@ public class IntervalAggregationService {
   }
 
   private MinMaxStatDto mapStatsAggregationToStatDto(final SearchResponse response) {
-    final ParsedValueCount minCountAgg = response.getAggregations().get(MIN_COUNT_AGGREGATION);
-    final ParsedValueCount maxCountAgg = response.getAggregations().get(MAX_COUNT_AGGREGATION);
-    final ParsedMin minAgg = response.getAggregations().get(MIN_AGGREGATION);
-    final ParsedMax maxAgg = response.getAggregations().get(MAX_AGGREGATION);
+    final ParsedMin minAgg1 = response.getAggregations().get(MIN_AGGREGATION_FIRST_FIELD);
+    final ParsedMin minAgg2 = response.getAggregations().get(MIN_AGGREGATION_SECOND_FIELD);
+    final ParsedMax maxAgg1 = response.getAggregations().get(MAX_AGGREGATION_FIRST_FIELD);
+    final ParsedMax maxAgg2 = response.getAggregations().get(MAX_AGGREGATION_SECOND_FIELD);
+
+    final ParsedMin minAgg = minAgg1.getValue() < minAgg2.getValue()
+      ? minAgg1
+      : minAgg2;
+    final ParsedMax maxAgg = maxAgg1.getValue() > maxAgg2.getValue()
+      ? maxAgg1
+      : maxAgg2;
+
     return new MinMaxStatDto(
-      minCountAgg.getValue(),
-      maxCountAgg.getValue(),
       minAgg.getValue(),
       maxAgg.getValue(),
       minAgg.getValueAsString(),

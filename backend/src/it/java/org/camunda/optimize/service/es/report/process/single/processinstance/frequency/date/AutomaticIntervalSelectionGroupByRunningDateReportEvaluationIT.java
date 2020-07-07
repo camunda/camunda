@@ -33,6 +33,7 @@ import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -128,10 +129,17 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
     assertThat(resultData).isEmpty();
   }
 
+  @SneakyThrows
   @Test
   public void automaticIntervalSelectionForOneDataPoint() {
     // given there is only one data point
+    final OffsetDateTime instanceDateTime = dateFreezer().freezeDateAndReturn();
     final ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess();
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      engineDto.getId(),
+      instanceDateTime,
+      instanceDateTime
+    );
     importAllEngineEntitiesFromScratch();
 
     // when

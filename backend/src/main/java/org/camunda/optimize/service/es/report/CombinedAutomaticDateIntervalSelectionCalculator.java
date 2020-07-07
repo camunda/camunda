@@ -26,13 +26,13 @@ public class CombinedAutomaticDateIntervalSelectionCalculator
   public Optional<Range<OffsetDateTime>> calculateInterval() {
     Optional<OffsetDateTime> max =
       minMaxCommandStats.stream()
-        .filter(s -> s.getMaxFieldCount() > 0)
+        .filter(MinMaxStatDto::isMaxValid)
         .max(Comparator.comparing(MinMaxStatDto::getMax))
         .map(MinMaxStatDto::getMaxAsString)
         .map(m -> OffsetDateTime.parse(m, dateTimeFormatter));
     Optional<OffsetDateTime> min =
       minMaxCommandStats.stream()
-        .filter(s -> s.getMinFieldCount() > 0)
+        .filter(MinMaxStatDto::isMinValid)
         .min(Comparator.comparing(MinMaxStatDto::getMin))
         .map(MinMaxStatDto::getMinAsString)
         .map(m -> OffsetDateTime.parse(m, dateTimeFormatter));

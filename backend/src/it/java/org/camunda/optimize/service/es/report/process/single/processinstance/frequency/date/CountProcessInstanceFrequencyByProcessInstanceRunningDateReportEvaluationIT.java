@@ -6,6 +6,9 @@
 package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.date;
 
 import lombok.SneakyThrows;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
@@ -93,11 +96,10 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
     ).toOffsetDateTime().withOffsetSameLocal(OffsetDateTime.now().getOffset()).toZonedDateTime();
     IntStream.range(0, expectedNumberOfBuckets)
       .forEach(i -> {
-        final String expectedBucketKey =
-          localDateTimeToString(truncateToStartOfUnit(
-            lastBucketStartDate.toOffsetDateTime().minus(i, mapToChronoUnit(unit)),
-            mapToChronoUnit(unit)
-          ).toOffsetDateTime().withOffsetSameLocal(OffsetDateTime.now().getOffset()).toZonedDateTime());
+        final String expectedBucketKey = convertToExpectedBucketKey(
+          lastBucketStartDate.toOffsetDateTime().minus(i, mapToChronoUnit(unit)),
+          unit
+        );
         assertThat(resultData.get(i).getKey()).isEqualTo(expectedBucketKey);
       });
 
@@ -105,6 +107,78 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
     assertThat(resultData.get(0).getValue()).isEqualTo(1.);
     assertThat(resultData.get(1).getValue()).isEqualTo(2.);
     assertThat(resultData.get(2).getValue()).isEqualTo(1.);
+  }
+
+  @SneakyThrows
+  @ParameterizedTest
+  @MethodSource("staticGroupByDateUnits")
+  public void countRunningInstances_runningInstancesOnly(final GroupByDateUnit unit) {
+    // given two running instances
+    final Duration bucketWidth = mapToChronoUnit(unit).getDuration();
+    final OffsetDateTime startOfFirstInstance = OffsetDateTime.parse("2020-01-05T12:00:00+02:00");
+    final OffsetDateTime startOfSecondInstance = OffsetDateTime.parse("2020-01-05T12:00:00+02:00").plus(bucketWidth);
+
+    ProcessDefinitionEngineDto processDefinition = deployUserTaskProcess();
+    ProcessInstanceEngineDto instance1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto instance2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance1.getId(), startOfFirstInstance);
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance2.getId(), startOfSecondInstance);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = getGroupByRunningDateReportData(
+      processDefinition.getKey(),
+      processDefinition.getVersionAsString(),
+      unit
+    );
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then the bucket range is based on earliest and latest start date
+    final List<MapResultEntryDto> resultData = result.getData();
+
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(2);
+    assertThat(resultData.get(0).getKey()).isEqualTo(convertToExpectedBucketKey(startOfSecondInstance, unit));
+    assertThat(resultData.get(1).getKey()).isEqualTo(convertToExpectedBucketKey(startOfFirstInstance, unit));
+  }
+
+  @SneakyThrows
+  @ParameterizedTest
+  @MethodSource("staticGroupByDateUnits")
+  public void countRunningInstances_latestStartDateAfterLatestEndDate(final GroupByDateUnit unit) {
+    // given instances whose latest start date is after the latest end date
+    final Duration bucketWidth = mapToChronoUnit(unit).getDuration();
+    final OffsetDateTime earliestStartDate = OffsetDateTime.parse("2020-01-05T12:00:10+02:00");
+    final OffsetDateTime latestStartDate = OffsetDateTime.parse("2020-01-05T12:00:10+02:00")
+      .plus(bucketWidth.multipliedBy(3));
+    ProcessDefinitionEngineDto processDefinition = deployUserTaskProcess();
+    ProcessInstanceEngineDto instance1 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto instance2 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto instance3 = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance1.getId(), earliestStartDate);
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(
+      instance2.getId(),
+      earliestStartDate,
+      earliestStartDate.plus(bucketWidth)
+    );
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance3.getId(), latestStartDate);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = getGroupByRunningDateReportData(
+      processDefinition.getKey(),
+      processDefinition.getVersionAsString(),
+      unit
+    );
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then the bucket range is earliest to latest start date
+    final List<MapResultEntryDto> resultData = result.getData();
+
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(4);
+    assertThat(resultData.get(0).getKey()).isEqualTo(convertToExpectedBucketKey(latestStartDate, unit));
+    assertThat(resultData.get(3).getKey()).isEqualTo(convertToExpectedBucketKey(earliestStartDate, unit));
   }
 
   @Override
@@ -136,5 +210,23 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
       .setDateInterval(unit)
       .setReportDataType(getTestReportDataType())
       .build();
+  }
+
+  private String convertToExpectedBucketKey(final OffsetDateTime date, final GroupByDateUnit unit) {
+    return localDateTimeToString(
+      truncateToStartOfUnit(date, mapToChronoUnit(unit))
+        // currently, we always assume the current time zone
+        .toOffsetDateTime().withOffsetSameLocal(OffsetDateTime.now().getOffset()).toZonedDateTime()
+    );
+  }
+
+  private ProcessDefinitionEngineDto deployUserTaskProcess() {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+      .startEvent()
+      .userTask()
+      .endEvent()
+      .done();
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 }

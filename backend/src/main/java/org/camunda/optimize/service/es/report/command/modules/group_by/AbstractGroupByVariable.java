@@ -176,7 +176,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   private Optional<AggregationBuilder> createNumberVariableAggregation(final QueryBuilder baseQuery,
                                                                        final ExecutionContext<Data> context) {
     final MinMaxStatDto minMaxStats = getMinMaxStats(baseQuery, context);
-    if (minMaxStats.getMinFieldCount() == 0) {
+    if (!minMaxStats.isMinValid()) {
       return Optional.empty();
     }
 
@@ -214,10 +214,10 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     GroupByDateUnit unit = getGroupByDateUnit(context);
     if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
       MinMaxStatDto minMaxStats = getMinMaxStats(baseQuery, context);
-      if (minMaxStats.getMinFieldCount() == 0) {
+      if (!minMaxStats.isMinValid()) {
         return Optional.empty();
       }
-      if (minMaxStats.getMinFieldCount() != 1) {
+      if (minMaxStats.isValidRange()) {
         return Optional.of(createAutomaticIntervalAggregation(minMaxStats, context));
       }
       // if there is only one instance we always group by month
@@ -287,7 +287,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     final ParsedFilter filterAgg = nestedAgg.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
     final ParsedStats stats = filterAgg.getAggregations().get(STATS);
     return new MinMaxStatDto(
-      stats.getCount(),
       stats.getMin(),
       stats.getMax(),
       stats.getMinAsString(),

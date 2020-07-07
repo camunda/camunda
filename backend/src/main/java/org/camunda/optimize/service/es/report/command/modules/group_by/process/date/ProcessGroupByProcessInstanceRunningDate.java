@@ -70,7 +70,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
       DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
         return Optional.of(
-          intervalAggregationService.getMinMaxStats(
+          intervalAggregationService.getCrossFieldMinMaxStats(
             baseQuery,
             PROCESS_INSTANCE_INDEX_NAME,
             START_DATE,
@@ -84,22 +84,27 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final MinMaxStatDto minMaxStats = intervalAggregationService.getMinMaxStats(
+    final MinMaxStatDto minMaxStats = intervalAggregationService.getCrossFieldMinMaxStats(
       searchSourceBuilder.query(),
       PROCESS_INSTANCE_INDEX_NAME,
       START_DATE,
       END_DATE
     );
     final GroupByDateUnit unit = getGroupByDateUnit(minMaxStats, context.getReportData());
-    // if the report contains no completed instances (stats are empty), no aggregations can be created as they are
-    // based on instances data (start and end date stats)
-    return minMaxStats.getMinFieldCount() == 0 || minMaxStats.getMaxFieldCount() == 0
-      ? Collections.emptyList()
-      : createAggregation(
-      OffsetDateTime.parse(minMaxStats.getMinAsString(), formatter)
-        .withOffsetSameInstant(OffsetDateTime.now().getOffset()),
-      OffsetDateTime.parse(minMaxStats.getMaxAsString(), formatter)
-        .withOffsetSameInstant(OffsetDateTime.now().getOffset()),
+    if (!minMaxStats.isMinValid()) {
+      // if the report contains no instances, no aggregations can be created as they are
+      // based on instances data (start and end date stats)
+      return Collections.emptyList();
+    }
+
+    final OffsetDateTime startOfRange = OffsetDateTime.parse(minMaxStats.getMinAsString(), formatter)
+      .withOffsetSameInstant(OffsetDateTime.now().getOffset());
+    final OffsetDateTime endOfRange = OffsetDateTime.parse(minMaxStats.getMaxAsString(), formatter)
+      .withOffsetSameInstant(OffsetDateTime.now().getOffset());
+
+    return createAggregation(
+      startOfRange,
+      endOfRange,
       unit,
       context
     );
@@ -254,9 +259,9 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
 
   private GroupByDateUnit getGroupByDateUnit(final MinMaxStatDto stats,
                                              final ProcessReportDataDto processReportData) {
-    // if there is only one instance and grouping is automatic, we always group by month instead
+    // if there is only one instance data point and grouping is automatic, we always group by month instead
     GroupByDateUnit unit = ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();
-    return GroupByDateUnit.AUTOMATIC.equals(unit) && stats.getMinFieldCount() == 1
+    return GroupByDateUnit.AUTOMATIC.equals(unit) && !stats.isValidRange()
       ? GroupByDateUnit.MONTH
       : unit;
   }

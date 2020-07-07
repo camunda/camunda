@@ -293,7 +293,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
                                                                  final QueryBuilder query,
                                                                  final String field) {
     MinMaxStatDto stats = getMinMaxStats(context, query, field);
-    if (stats.getMinFieldCount() > 1) {
+    if (stats.isValidRange()) {
       OffsetDateTime min = OffsetDateTime.parse(stats.getMinAsString(), dateTimeFormatter);
       OffsetDateTime max = OffsetDateTime.parse(stats.getMaxAsString(), dateTimeFormatter);
       return Optional.of(createIntervalAggregationFromGivenRange(context, field, min, max));
@@ -331,7 +331,6 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
     final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
     final Stats minMaxStats = filteredUserTasks.getAggregations().get(STATS_AGGREGATION);
     return new MinMaxStatDto(
-      minMaxStats.getCount(),
       minMaxStats.getMin(),
       minMaxStats.getMax(),
       minMaxStats.getMinAsString(),

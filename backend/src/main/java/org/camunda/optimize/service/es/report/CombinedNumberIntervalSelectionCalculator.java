@@ -16,12 +16,12 @@ public class CombinedNumberIntervalSelectionCalculator extends AbstractCombinedI
   public Optional<Range<Double>> calculateInterval() {
     Optional<Double> max =
       minMaxCommandStats.stream()
-        .filter(s -> s.getMaxFieldCount() > 0)
+        .filter(MinMaxStatDto::isMaxValid)
         .max(Comparator.comparing(MinMaxStatDto::getMax))
         .map(MinMaxStatDto::getMax);
     Optional<Double> min =
       minMaxCommandStats.stream()
-        .filter(s -> s.getMinFieldCount() > 0)
+        .filter(MinMaxStatDto::isMinValid)
         .min(Comparator.comparing(MinMaxStatDto::getMin))
         .map(MinMaxStatDto::getMin);
     if (max.isPresent() && min.isPresent()) {

@@ -74,7 +74,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
       DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
         return Optional.of(
-          intervalAggregationService.getMinMaxStats(
+          intervalAggregationService.getCrossFieldMinMaxStats(
             baseQuery,
             PROCESS_INSTANCE_INDEX_NAME,
             getDateField()
