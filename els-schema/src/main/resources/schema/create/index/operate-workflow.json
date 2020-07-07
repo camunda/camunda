@@ -21,20 +21,6 @@
 			}
 		],
 		"properties": {
-			"activities": {
-				"type": "nested",
-				"properties": {
-					"id": {
-						"type": "keyword"
-					},
-					"name": {
-						"type": "keyword"
-					},
-					"type": {
-						"type": "keyword"
-					}
-				}
-			},
 			"bpmnProcessId": {
 				"type": "keyword",
 				"eager_global_ordinals": true

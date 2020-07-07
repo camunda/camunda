@@ -18,9 +18,6 @@ public class WorkflowIndex extends AbstractIndexDescriptor {
   public static final String VERSION = "version";
   public static final String BPMN_XML = "bpmnXml";
   public static final String RESOURCE_NAME = "resourceName";
-  public static final String ACTIVITIES = "activities";
-  public static final String ACTIVITY_NAME = "name";
-  public static final String ACTIVITY_TYPE = "type";
 
   @Override
   public String getMainIndexName() {
