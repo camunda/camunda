@@ -37,8 +37,8 @@
     <version.micrometer>1.5.1</version.micrometer>
     <version.mockito>3.3.3</version.mockito>
     <version.assertj-core>3.16.1</version.assertj-core>
-    <version.graphql>7.0.1</version.graphql>
-    <version.graphql.tools>6.0.2</version.graphql.tools>
+    <version.graphql>7.1.0</version.graphql>
+    <version.graphql.tools>6.1.0</version.graphql.tools>
 
 
     <version.node>v13.13.0</version.node>

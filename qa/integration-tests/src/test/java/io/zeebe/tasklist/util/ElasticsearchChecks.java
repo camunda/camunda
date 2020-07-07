@@ -18,8 +18,8 @@ import io.zeebe.tasklist.es.schema.indices.WorkflowIndex;
 import io.zeebe.tasklist.es.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.webapp.es.TaskReaderWriter;
 import io.zeebe.tasklist.webapp.es.cache.WorkflowReader;
-import io.zeebe.tasklist.webapp.es.reader.TaskReader;
 import io.zeebe.tasklist.webapp.rest.exception.NotFoundException;
 import java.io.IOException;
 import java.util.List;
@@ -48,9 +48,9 @@ public class ElasticsearchChecks {
   public static final String WORKFLOW_IS_DEPLOYED_CHECK = "workflowIsDeployedCheck";
   public static final String TASK_IS_CREATED_CHECK = "taskIsCreatedCheck";
   public static final String TASK_IS_COMPLETED_CHECK = "taskIsCompletedCheck";
-  private static final Logger LOGGER = LoggerFactory.getLogger(TaskReader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchChecks.class);
 
-  @Autowired private TaskReader taskReader;
+  @Autowired private TaskReaderWriter taskReader;
 
   @Autowired private RestHighLevelClient esClient;
 

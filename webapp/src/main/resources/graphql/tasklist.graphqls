@@ -26,6 +26,11 @@ type Variable {
     value: String!
 }
 
+input VariableInput {
+    name: String!
+    value: String!
+}
+
 type User {
     username: ID!
     firstname: String
@@ -39,4 +44,8 @@ type Query {
     # get one task: returns error when task does not exist
     task(id: String!): Task!
     currentUser: User!
+}
+
+type Mutation {
+    completeTask(taskId: String!, variables: [VariableInput!]!): Boolean!
 }
