@@ -5,61 +5,57 @@
  */
 package io.zeebe.tasklist.entities;
 
+import java.util.Objects;
+
 public class VariableEntity extends TasklistZeebeEntity<VariableEntity> {
 
   private String name;
   private String value;
-  private Long scopeKey;
-  private Long workflowInstanceKey;
+  private String scopeFlowNodeId;
+  private String workflowInstanceId;
 
-  public static String getIdBy(long scopeKey, String name) {
-    return String.format("%d-%s", scopeKey, name);
+  public static String getIdBy(String scopeFlowNodeId, String name) {
+    return String.format("%s-%s", scopeFlowNodeId, name);
   }
 
   public String getName() {
     return name;
   }
 
-  public void setName(String name) {
+  public VariableEntity setName(final String name) {
     this.name = name;
+    return this;
   }
 
   public String getValue() {
     return value;
   }
 
-  public void setValue(String value) {
+  public VariableEntity setValue(final String value) {
     this.value = value;
+    return this;
   }
 
-  public Long getScopeKey() {
-    return scopeKey;
+  public String getScopeFlowNodeId() {
+    return scopeFlowNodeId;
   }
 
-  public void setScopeKey(Long scopeKey) {
-    this.scopeKey = scopeKey;
+  public VariableEntity setScopeFlowNodeId(final String scopeFlowNodeId) {
+    this.scopeFlowNodeId = scopeFlowNodeId;
+    return this;
   }
 
-  public Long getWorkflowInstanceKey() {
-    return workflowInstanceKey;
+  public String getWorkflowInstanceId() {
+    return workflowInstanceId;
   }
 
-  public void setWorkflowInstanceKey(Long workflowInstanceKey) {
-    this.workflowInstanceKey = workflowInstanceKey;
-  }
-
-  @Override
-  public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (name != null ? name.hashCode() : 0);
-    result = 31 * result + (value != null ? value.hashCode() : 0);
-    result = 31 * result + (scopeKey != null ? scopeKey.hashCode() : 0);
-    result = 31 * result + (workflowInstanceKey != null ? workflowInstanceKey.hashCode() : 0);
-    return result;
+  public VariableEntity setWorkflowInstanceId(final String workflowInstanceId) {
+    this.workflowInstanceId = workflowInstanceId;
+    return this;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -69,20 +65,15 @@ public class VariableEntity extends TasklistZeebeEntity<VariableEntity> {
     if (!super.equals(o)) {
       return false;
     }
-
     final VariableEntity that = (VariableEntity) o;
+    return Objects.equals(name, that.name)
+        && Objects.equals(value, that.value)
+        && Objects.equals(scopeFlowNodeId, that.scopeFlowNodeId)
+        && Objects.equals(workflowInstanceId, that.workflowInstanceId);
+  }
 
-    if (name != null ? !name.equals(that.name) : that.name != null) {
-      return false;
-    }
-    if (value != null ? !value.equals(that.value) : that.value != null) {
-      return false;
-    }
-    if (scopeKey != null ? !scopeKey.equals(that.scopeKey) : that.scopeKey != null) {
-      return false;
-    }
-    return workflowInstanceKey != null
-        ? workflowInstanceKey.equals(that.workflowInstanceKey)
-        : that.workflowInstanceKey == null;
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), name, value, scopeFlowNodeId, workflowInstanceId);
   }
 }

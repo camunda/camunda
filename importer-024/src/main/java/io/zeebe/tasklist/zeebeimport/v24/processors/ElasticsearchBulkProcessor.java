@@ -22,8 +22,6 @@ import io.zeebe.tasklist.zeebeimport.v24.record.value.VariableDocumentRecordImpl
 import io.zeebe.tasklist.zeebeimport.v24.record.value.VariableRecordValueImpl;
 import io.zeebe.tasklist.zeebeimport.v24.record.value.WorkflowInstanceRecordValueImpl;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +33,7 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBulkProcessor.class);
 
-  @Autowired private ActivityInstanceZeebeRecordProcessor activityInstanceZeebeRecordProcessor;
+  @Autowired private WorkflowInstanceZeebeRecordProcessor workflowInstanceZeebeRecordProcessor;
 
   @Autowired private VariableZeebeRecordProcessor variableZeebeRecordProcessor;
 
@@ -60,37 +58,25 @@ public class ElasticsearchBulkProcessor extends AbstractImportBatchProcessor {
     final ImportValueType importValueType = importBatch.getImportValueType();
 
     LOGGER.debug("Writing [{}] Zeebe records to Elasticsearch", zeebeRecords.size());
-
-    switch (importValueType) {
-      case WORKFLOW_INSTANCE:
-        final Map<Long, List<RecordImpl<WorkflowInstanceRecordValueImpl>>>
-            groupedWIRecordsPerActivityInst =
-                zeebeRecords.stream()
-                    .map(obj -> (RecordImpl<WorkflowInstanceRecordValueImpl>) obj)
-                    .collect(Collectors.groupingBy(obj -> obj.getKey()));
-        activityInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(
-            groupedWIRecordsPerActivityInst, bulkRequest);
-        break;
-      case VARIABLE:
-        // old style
-        for (Record record : zeebeRecords) {
+    for (Record record : zeebeRecords) {
+      switch (importValueType) {
+        case WORKFLOW_INSTANCE:
+          workflowInstanceZeebeRecordProcessor.processWorkflowInstanceRecord(record, bulkRequest);
+          break;
+        case VARIABLE:
           variableZeebeRecordProcessor.processVariableRecord(record, bulkRequest);
-        }
-        break;
-      case JOB:
-        for (Record record : zeebeRecords) {
+          break;
+        case JOB:
           jobZeebeRecordProcessor.processJobRecord(record, bulkRequest);
-        }
-        break;
-      case DEPLOYMENT:
-        for (Record record : zeebeRecords) {
+          break;
+        case DEPLOYMENT:
           // deployment records can be processed one by one
           workflowZeebeRecordProcessor.processDeploymentRecord(record, bulkRequest);
-        }
-        break;
-      default:
-        LOGGER.debug("Default case triggered for type {}", importValueType);
-        break;
+          break;
+        default:
+          LOGGER.debug("Default case triggered for type {}", importValueType);
+          break;
+      }
     }
   }
 

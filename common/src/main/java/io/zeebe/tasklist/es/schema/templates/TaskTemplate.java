@@ -16,10 +16,9 @@ public class TaskTemplate extends AbstractTemplateDescriptor {
   public static final String KEY = "key";
   public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
   public static final String POSITION = "position";
-  public static final String PARTITION_ID = "partitionId";
   public static final String CREATION_TIME = "creationTime";
   public static final String COMPLETION_TIME = "completionTime";
-  public static final String ELEMENT_ID = "elementId";
+  public static final String FLOW_NODE_BPMN_ID = "flowNodeBpmnId";
   public static final String STATE = "state";
   public static final String ASSIGNEE = "assignee";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";

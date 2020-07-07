@@ -5,6 +5,7 @@
  */
 package io.zeebe.tasklist.graphql;
 
+import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -16,6 +17,7 @@ import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.entities.TaskState;
+import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
 import io.zeebe.tasklist.zeebe.ImportValueType;
@@ -23,7 +25,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.Predicate;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -37,16 +38,16 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
 
   @Autowired
-  @Qualifier("taskIsCreatedCheck")
-  private Predicate<Object[]> taskIsCreatedCheck;
+  @Qualifier(TASK_IS_CREATED_CHECK)
+  private TestCheck taskIsCreatedCheck;
 
   @Test
   public void shouldReturnAllTasks() throws IOException {
     // having
     final String bpmnProcessId = "testProcess";
-    final String elementId = "taskA";
+    final String flowNodeBpmnId = "taskA";
     tester
-        .createAndDeploySimpleWorkflow(bpmnProcessId, elementId)
+        .createAndDeploySimpleWorkflow(bpmnProcessId, flowNodeBpmnId)
         .waitUntil()
         .workflowIsDeployed()
         .and()
@@ -54,7 +55,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
         .startWorkflowInstance(bpmnProcessId)
         .startWorkflowInstance(bpmnProcessId)
         .waitUntil()
-        .taskIsCreated(elementId);
+        .taskIsCreated(flowNodeBpmnId);
 
     // when
     final GraphQLResponse response =
@@ -68,7 +69,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
       assertNotNull(response.get(taskJsonPath + ".id"));
 
       // workflow does not contain task name and workflow name
-      assertEquals(elementId, response.get(taskJsonPath + ".name"));
+      assertEquals(flowNodeBpmnId, response.get(taskJsonPath + ".name"));
       assertEquals(bpmnProcessId, response.get(taskJsonPath + ".workflowName"));
 
       assertNotNull(response.get(taskJsonPath + ".creationTime"));
@@ -91,15 +92,15 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   public void shouldReturnCompletedTask() throws IOException {
     // having
     final String bpmnProcessId = "testProcess";
-    final String elementId = "taskA";
+    final String flowNodeBpmnId = "taskA";
     tester
-        .createAndDeploySimpleWorkflow(bpmnProcessId, elementId)
+        .createAndDeploySimpleWorkflow(bpmnProcessId, flowNodeBpmnId)
         .waitUntil()
         .workflowIsDeployed()
         .and()
         .startWorkflowInstance(bpmnProcessId)
         .and()
-        .completeHumanTask(elementId);
+        .completeHumanTask(flowNodeBpmnId);
 
     // when
     final GraphQLResponse response =
@@ -109,7 +110,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertTrue(response.isOk());
     assertEquals("1", response.get("$.data.tasks.length()"));
     assertNotNull(response.get("$.data.tasks[0].id"));
-    assertEquals(elementId, response.get("$.data.tasks[0].name"));
+    assertEquals(flowNodeBpmnId, response.get("$.data.tasks[0].name"));
     assertEquals(bpmnProcessId, response.get("$.data.tasks[0].workflowName"));
     assertNotNull(response.get("$.data.tasks[0].creationTime"));
     assertNotNull(response.get("$.data.tasks[0].completionTime"));
@@ -122,12 +123,12 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   public void shouldNotImportWrongJobType() throws IOException {
     // having
     final String bpmnProcessId = "testProcess";
-    final String wrongElementId = "taskA";
+    final String wrongFlowNodeBpmnId = "taskA";
     final String wrongJobType = "serviceTask";
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(bpmnProcessId)
             .startEvent()
-            .serviceTask(wrongElementId)
+            .serviceTask(wrongFlowNodeBpmnId)
             .zeebeJobType(wrongJobType)
             .endEvent()
             .done();
@@ -139,7 +140,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
         .and()
         .startWorkflowInstance(bpmnProcessId)
         .waitUntil()
-        .taskIsCreated(wrongElementId); // this waiting must time out
+        .taskIsCreated(wrongFlowNodeBpmnId); // this waiting must time out
 
     // when
     final GraphQLResponse response =

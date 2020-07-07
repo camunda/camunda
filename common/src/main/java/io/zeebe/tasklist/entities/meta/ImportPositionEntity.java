@@ -6,6 +6,7 @@
 package io.zeebe.tasklist.entities.meta;
 
 import io.zeebe.tasklist.entities.TasklistEntity;
+import java.util.Objects;
 
 public class ImportPositionEntity extends TasklistEntity {
 
@@ -29,50 +30,54 @@ public class ImportPositionEntity extends TasklistEntity {
     return aliasName;
   }
 
-  public void setAliasName(String aliasName) {
+  public ImportPositionEntity setAliasName(final String aliasName) {
     this.aliasName = aliasName;
+    return this;
   }
 
   public int getPartitionId() {
     return partitionId;
   }
 
-  public void setPartitionId(int partitionId) {
+  public ImportPositionEntity setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
+    return this;
   }
 
   public long getPosition() {
     return position;
   }
 
-  public void setPosition(long position) {
+  public ImportPositionEntity setPosition(final long position) {
     this.position = position;
+    return this;
   }
 
   public String getIndexName() {
     return indexName;
   }
 
-  public void setIndexName(String indexName) {
+  public ImportPositionEntity setIndexName(final String indexName) {
     this.indexName = indexName;
+    return this;
   }
 
+  @Override
   public String getId() {
     return String.format("%s-%s", partitionId, aliasName);
   }
 
-  @Override
-  public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (aliasName != null ? aliasName.hashCode() : 0);
-    result = 31 * result + partitionId;
-    result = 31 * result + (int) (position ^ (position >>> 32));
-    result = 31 * result + (indexName != null ? indexName.hashCode() : 0);
-    return result;
+  public static ImportPositionEntity createFrom(
+      ImportPositionEntity importPositionEntity, long newPosition, String indexName) {
+    return new ImportPositionEntity()
+        .setAliasName(importPositionEntity.getAliasName())
+        .setPartitionId(importPositionEntity.getPartitionId())
+        .setIndexName(indexName)
+        .setPosition(newPosition);
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -82,19 +87,16 @@ public class ImportPositionEntity extends TasklistEntity {
     if (!super.equals(o)) {
       return false;
     }
-
     final ImportPositionEntity that = (ImportPositionEntity) o;
+    return partitionId == that.partitionId
+        && position == that.position
+        && Objects.equals(aliasName, that.aliasName)
+        && Objects.equals(indexName, that.indexName);
+  }
 
-    if (partitionId != that.partitionId) {
-      return false;
-    }
-    if (position != that.position) {
-      return false;
-    }
-    if (aliasName != null ? !aliasName.equals(that.aliasName) : that.aliasName != null) {
-      return false;
-    }
-    return indexName != null ? indexName.equals(that.indexName) : that.indexName == null;
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), aliasName, partitionId, position, indexName);
   }
 
   @Override
@@ -111,15 +113,5 @@ public class ImportPositionEntity extends TasklistEntity {
         + indexName
         + '\''
         + '}';
-  }
-
-  public static ImportPositionEntity createFrom(
-      ImportPositionEntity importPositionEntity, long newPosition, String indexName) {
-    final ImportPositionEntity newImportPositionEntity = new ImportPositionEntity();
-    newImportPositionEntity.setAliasName(importPositionEntity.getAliasName());
-    newImportPositionEntity.setPartitionId(importPositionEntity.getPartitionId());
-    newImportPositionEntity.setIndexName(indexName);
-    newImportPositionEntity.setPosition(newPosition);
-    return newImportPositionEntity;
   }
 }

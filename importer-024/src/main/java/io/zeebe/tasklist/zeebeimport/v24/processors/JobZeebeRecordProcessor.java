@@ -63,22 +63,25 @@ public class JobZeebeRecordProcessor {
 
   private UpdateRequest persistTask(Record record, JobRecordValueImpl recordValue)
       throws PersistenceException {
-    final TaskEntity entity = new TaskEntity();
-    entity.setId(String.valueOf(record.getKey()));
-    entity.setKey(record.getKey());
-    entity.setPartitionId(record.getPartitionId());
-    entity.setElementId(recordValue.getElementId());
-    entity.setWorkflowInstanceId(String.valueOf(recordValue.getWorkflowInstanceKey()));
-    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    entity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
+    final TaskEntity entity =
+        new TaskEntity()
+            .setId(String.valueOf(record.getKey()))
+            .setKey(record.getKey())
+            .setPartitionId(record.getPartitionId())
+            .setFlowNodeBpmnId(recordValue.getElementId())
+            .setFlowNodeInstanceId(String.valueOf(recordValue.getElementInstanceKey()))
+            .setWorkflowInstanceId(String.valueOf(recordValue.getWorkflowInstanceKey()))
+            .setBpmnProcessId(recordValue.getBpmnProcessId())
+            .setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
     if (TASK_FINISH_STATES.contains(record.getIntent().name())) {
-      entity.setState(TaskState.COMPLETED);
-      entity.setCompletionTime(
-          DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      entity
+          .setState(TaskState.COMPLETED)
+          .setCompletionTime(
+              DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     } else {
-      entity.setState(TaskState.CREATED);
-      entity.setCreationTime(
-          DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+      entity
+          .setState(TaskState.CREATED)
+          .setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
     }
     return getTaskQuery(entity);
   }

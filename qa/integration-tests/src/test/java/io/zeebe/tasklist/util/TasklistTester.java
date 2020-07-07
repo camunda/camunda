@@ -5,13 +5,16 @@
  */
 package io.zeebe.tasklist.util;
 
+import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_COMPLETED_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_IS_DEPLOYED_CHECK;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.property.TasklistProperties;
-import java.util.function.Predicate;
+import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
@@ -33,16 +36,16 @@ public class TasklistTester {
   private String workflowInstanceId;
 
   @Autowired
-  @Qualifier("workflowIsDeployedCheck")
-  private Predicate<Object[]> workflowIsDeployedCheck;
+  @Qualifier(WORKFLOW_IS_DEPLOYED_CHECK)
+  private TestCheck workflowIsDeployedCheck;
 
   @Autowired
-  @Qualifier("taskIsCreatedCheck")
-  private Predicate<Object[]> taskIsCreatedCheck;
+  @Qualifier(TASK_IS_CREATED_CHECK)
+  private TestCheck taskIsCreatedCheck;
 
   @Autowired
-  @Qualifier("taskIsCompletedCheck")
-  private Predicate<Object[]> taskIsCompletedCheck;
+  @Qualifier(TASK_IS_COMPLETED_CHECK)
+  private TestCheck taskIsCompletedCheck;
 
   //  @Autowired
   //  @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
@@ -75,17 +78,16 @@ public class TasklistTester {
     this.zeebeClient = zeebeClient;
     this.elasticsearchTestRule = elasticsearchTestRule;
   }
-
   //
   //  public Long getWorkflowInstanceKey() {
   //    return workflowInstanceKey;
   //  }
   //
-  public TasklistTester createAndDeploySimpleWorkflow(String processId, String elementId) {
+  public TasklistTester createAndDeploySimpleWorkflow(String processId, String flowNodeBpmnId) {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(processId)
             .startEvent("start")
-            .serviceTask(elementId)
+            .serviceTask(flowNodeBpmnId)
             .zeebeJobType(tasklistProperties.getImporter().getJobType())
             .endEvent()
             .done();
@@ -135,25 +137,34 @@ public class TasklistTester {
   //  }
   //
 
-  public TasklistTester taskIsCreated(String elementId) {
+  public TasklistTester taskIsCreated(String flowNodeBpmnId) {
     elasticsearchTestRule.processAllRecordsAndWait(
-        taskIsCreatedCheck, workflowInstanceId, elementId);
+        taskIsCreatedCheck, workflowInstanceId, flowNodeBpmnId);
     return this;
   }
 
-  public TasklistTester taskIsCompleted(String elementId) {
+  public TasklistTester taskIsCompleted(String flowNodeBpmnId) {
     elasticsearchTestRule.processAllRecordsAndWait(
-        taskIsCompletedCheck, workflowInstanceId, elementId);
+        taskIsCompletedCheck, workflowInstanceId, flowNodeBpmnId);
     return this;
   }
 
-  public TasklistTester completeHumanTask(String elementId) {
+  public TasklistTester completeHumanTask(String flowNodeBpmnId, String payload) {
+    ZeebeTestUtil.completeTask(
+        zeebeClient,
+        tasklistProperties.getImporter().getJobType(),
+        TestUtil.createRandomString(10),
+        payload);
+    return taskIsCompleted(flowNodeBpmnId);
+  }
+
+  public TasklistTester completeHumanTask(String flowNodeBpmnId) {
     ZeebeTestUtil.completeTask(
         zeebeClient,
         tasklistProperties.getImporter().getJobType(),
         TestUtil.createRandomString(10),
         null);
-    return taskIsCompleted(elementId);
+    return taskIsCompleted(flowNodeBpmnId);
   }
 
   public TasklistTester completeServiceTask(String jobType) {

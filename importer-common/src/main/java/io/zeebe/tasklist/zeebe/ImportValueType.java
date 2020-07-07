@@ -13,17 +13,12 @@ public enum ImportValueType {
   VARIABLE_DOCUMENT(ZeebeESConstants.VARIABLE_DOCUMENT_INDEX_NAME);
 
   public static final ImportValueType[] IMPORT_VALUE_TYPES =
-      new ImportValueType[] {
-        //      ImportValueType.WORKFLOW_INSTANCE,
-        ImportValueType.DEPLOYMENT, ImportValueType.JOB
-      };
+      new ImportValueType[] {WORKFLOW_INSTANCE, DEPLOYMENT, JOB, VARIABLE};
   private final String aliasTemplate;
 
   ImportValueType(String aliasTemplate) {
     this.aliasTemplate = aliasTemplate;
   }
-  //      ImportValueType.VARIABLE,
-  //      ImportValueType.VARIABLE_DOCUMENT};
 
   public String getAliasTemplate() {
     return aliasTemplate;

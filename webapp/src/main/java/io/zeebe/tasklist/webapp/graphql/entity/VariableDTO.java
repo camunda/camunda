@@ -5,6 +5,8 @@
  */
 package io.zeebe.tasklist.webapp.graphql.entity;
 
+import java.util.Objects;
+
 public class VariableDTO {
 
   private String name;
@@ -14,39 +16,34 @@ public class VariableDTO {
     return name;
   }
 
-  public void setName(String name) {
+  public VariableDTO setName(final String name) {
     this.name = name;
+    return this;
   }
 
   public String getValue() {
     return value;
   }
 
-  public void setValue(String value) {
+  public VariableDTO setValue(final String value) {
     this.value = value;
+    return this;
   }
 
   @Override
-  public int hashCode() {
-    int result = name != null ? name.hashCode() : 0;
-    result = 31 * result + (value != null ? value.hashCode() : 0);
-    return result;
-  }
-
-  @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    final VariableDTO that = (VariableDTO) o;
+    return Objects.equals(name, that.name) && Objects.equals(value, that.value);
+  }
 
-    final VariableDTO variable = (VariableDTO) o;
-
-    if (name != null ? !name.equals(variable.name) : variable.name != null) {
-      return false;
-    }
-    return value != null ? value.equals(variable.value) : variable.value == null;
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, value);
   }
 }

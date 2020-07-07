@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.tasklist.es.ElasticsearchSchemaManager;
 import io.zeebe.tasklist.property.TasklistElasticsearchProperties;
 import io.zeebe.tasklist.property.TasklistProperties;
+import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.zeebe.tasklist.zeebe.ImportValueType;
 import io.zeebe.tasklist.zeebeimport.RecordsReader;
 import io.zeebe.tasklist.zeebeimport.RecordsReaderHolder;
@@ -21,7 +22,6 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
@@ -129,31 +129,31 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
   }
 
-  public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
+  public void processAllRecordsAndWait(TestCheck testCheck, Object... arguments) {
     processRecordsAndWaitFor(
-        recordsReaderHolder.getActiveRecordsReaders(), predicate, null, arguments);
+        recordsReaderHolder.getActiveRecordsReaders(), testCheck, null, arguments);
   }
 
   public void processAllRecordsAndWait(
-      Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+      TestCheck testCheck, Supplier<Object> supplier, Object... arguments) {
     processRecordsAndWaitFor(
-        recordsReaderHolder.getActiveRecordsReaders(), predicate, supplier, arguments);
+        recordsReaderHolder.getActiveRecordsReaders(), testCheck, supplier, arguments);
   }
 
   public void processRecordsWithTypeAndWait(
-      ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments) {
-    processRecordsAndWaitFor(getRecordsReaders(importValueType), predicate, null, arguments);
+      ImportValueType importValueType, TestCheck testCheck, Object... arguments) {
+    processRecordsAndWaitFor(getRecordsReaders(importValueType), testCheck, null, arguments);
   }
 
   public void processRecordsAndWaitFor(
       Collection<RecordsReader> readers,
-      Predicate<Object[]> predicate,
+      TestCheck testCheck,
       Supplier<Object> supplier,
       Object... arguments) {
     long shouldImportCount = 0;
     int waitingRound = 0;
     final int maxRounds = 50;
-    boolean found = predicate.test(arguments);
+    boolean found = testCheck.test(arguments);
     final long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {
       testImportListener.resetCounters();
@@ -185,7 +185,7 @@ public class ElasticsearchTestRule extends TestWatcher {
         LOGGER.debug(" {} of {} records processed", imported, shouldImportCount);
       }
       refreshTasklistESIndices();
-      found = predicate.test(arguments);
+      found = testCheck.test(arguments);
       if (!found) {
         sleepFor(500);
         waitingRound++;
@@ -194,9 +194,17 @@ public class ElasticsearchTestRule extends TestWatcher {
     final long finishedTime = System.currentTimeMillis() - start;
 
     if (found) {
-      LOGGER.debug("Conditions met in round {} ({} ms).", waitingRound, finishedTime);
+      LOGGER.debug(
+          "Condition {} was met in round {} ({} ms).",
+          testCheck.getName(),
+          waitingRound,
+          finishedTime);
     } else {
-      LOGGER.debug("Conditions not met after {} rounds ({} ms).", waitingRound, finishedTime);
+      LOGGER.debug(
+          "Condition {} was not met after {} rounds ({} ms).",
+          testCheck.getName(),
+          waitingRound,
+          finishedTime);
     }
   }
 

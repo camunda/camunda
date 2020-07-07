@@ -6,12 +6,14 @@
 package io.zeebe.tasklist.entities;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
 
   private String bpmnProcessId;
   private String workflowId;
-  private String elementId;
+  private String flowNodeBpmnId;
+  private String flowNodeInstanceId;
   private String workflowInstanceId;
   private OffsetDateTime creationTime;
   private OffsetDateTime completionTime;
@@ -36,12 +38,21 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     return this;
   }
 
-  public String getElementId() {
-    return elementId;
+  public String getFlowNodeBpmnId() {
+    return flowNodeBpmnId;
   }
 
-  public TaskEntity setElementId(String elementId) {
-    this.elementId = elementId;
+  public TaskEntity setFlowNodeBpmnId(String flowNodeBpmnId) {
+    this.flowNodeBpmnId = flowNodeBpmnId;
+    return this;
+  }
+
+  public String getFlowNodeInstanceId() {
+    return flowNodeInstanceId;
+  }
+
+  public TaskEntity setFlowNodeInstanceId(final String flowNodeInstanceId) {
+    this.flowNodeInstanceId = flowNodeInstanceId;
     return this;
   }
 
@@ -91,21 +102,7 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
   }
 
   @Override
-  public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
-    result = 31 * result + (workflowId != null ? workflowId.hashCode() : 0);
-    result = 31 * result + (elementId != null ? elementId.hashCode() : 0);
-    result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
-    result = 31 * result + (creationTime != null ? creationTime.hashCode() : 0);
-    result = 31 * result + (completionTime != null ? completionTime.hashCode() : 0);
-    result = 31 * result + (state != null ? state.hashCode() : 0);
-    result = 31 * result + (assignee != null ? assignee.hashCode() : 0);
-    return result;
-  }
-
-  @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -115,38 +112,30 @@ public class TaskEntity extends TasklistZeebeEntity<TaskEntity> {
     if (!super.equals(o)) {
       return false;
     }
-
     final TaskEntity that = (TaskEntity) o;
+    return Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(workflowId, that.workflowId)
+        && Objects.equals(flowNodeBpmnId, that.flowNodeBpmnId)
+        && Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId)
+        && Objects.equals(workflowInstanceId, that.workflowInstanceId)
+        && Objects.equals(creationTime, that.creationTime)
+        && Objects.equals(completionTime, that.completionTime)
+        && state == that.state
+        && Objects.equals(assignee, that.assignee);
+  }
 
-    if (bpmnProcessId != null
-        ? !bpmnProcessId.equals(that.bpmnProcessId)
-        : that.bpmnProcessId != null) {
-      return false;
-    }
-    if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null) {
-      return false;
-    }
-    if (elementId != null ? !elementId.equals(that.elementId) : that.elementId != null) {
-      return false;
-    }
-    if (workflowInstanceId != null
-        ? !workflowInstanceId.equals(that.workflowInstanceId)
-        : that.workflowInstanceId != null) {
-      return false;
-    }
-    if (creationTime != null
-        ? !creationTime.equals(that.creationTime)
-        : that.creationTime != null) {
-      return false;
-    }
-    if (completionTime != null
-        ? !completionTime.equals(that.completionTime)
-        : that.completionTime != null) {
-      return false;
-    }
-    if (state != that.state) {
-      return false;
-    }
-    return assignee != null ? assignee.equals(that.assignee) : that.assignee == null;
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        bpmnProcessId,
+        workflowId,
+        flowNodeBpmnId,
+        flowNodeInstanceId,
+        workflowInstanceId,
+        creationTime,
+        completionTime,
+        state,
+        assignee);
   }
 }

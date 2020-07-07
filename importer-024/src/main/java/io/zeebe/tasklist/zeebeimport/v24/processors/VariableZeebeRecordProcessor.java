@@ -55,11 +55,12 @@ public class VariableZeebeRecordProcessor {
   private UpdateRequest persistVariable(Record record, VariableRecordValueImpl recordValue)
       throws PersistenceException {
     final VariableEntity entity = new VariableEntity();
-    entity.setId(VariableEntity.getIdBy(recordValue.getScopeKey(), recordValue.getName()));
+    entity.setId(
+        VariableEntity.getIdBy(String.valueOf(recordValue.getScopeKey()), recordValue.getName()));
     entity.setKey(record.getKey());
     entity.setPartitionId(record.getPartitionId());
-    entity.setScopeKey(recordValue.getScopeKey());
-    entity.setWorkflowInstanceKey(recordValue.getWorkflowInstanceKey());
+    entity.setScopeFlowNodeId(String.valueOf(recordValue.getScopeKey()));
+    entity.setWorkflowInstanceId(String.valueOf(recordValue.getWorkflowInstanceKey()));
     entity.setName(recordValue.getName());
     entity.setValue(recordValue.getValue());
     return getVariableQuery(entity);

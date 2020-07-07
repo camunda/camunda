@@ -11,11 +11,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
 import io.zeebe.tasklist.util.ZeebeTestUtil;
 import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Predicate;
 import org.junit.After;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
@@ -29,7 +29,7 @@ public class WorkflowCacheIT extends TasklistZeebeIntegrationTest {
 
   @Autowired
   @Qualifier("workflowIsDeployedCheck")
-  private Predicate<Object[]> workflowIsDeployedCheck;
+  private TestCheck workflowIsDeployedCheck;
 
   @After
   public void after() {

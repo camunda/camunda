@@ -10,8 +10,12 @@ import graphql.kickstart.execution.context.GraphQLContext;
 import graphql.kickstart.servlet.context.DefaultGraphQLServletContext;
 import graphql.kickstart.servlet.context.DefaultGraphQLWebSocketContext;
 import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
+import io.zeebe.tasklist.webapp.es.reader.VariableReader;
+import io.zeebe.tasklist.webapp.es.reader.VariableReader.GetVariablesRequest;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
+import io.zeebe.tasklist.webapp.graphql.entity.VariableDTO;
 import io.zeebe.tasklist.webapp.security.UserReader;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,8 +30,11 @@ import org.springframework.stereotype.Component;
 public class TasklistGraphQLContextBuilder implements GraphQLServletContextBuilder {
 
   public static final String USER_DATA_LOADER = "userDataLoader";
+  public static final String VARIABLE_DATA_LOADER = "variableDataLoader";
 
   @Autowired private UserReader userReader;
+
+  @Autowired private VariableReader variableReader;
 
   @Override
   public GraphQLContext build(HttpServletRequest req, HttpServletResponse response) {
@@ -57,6 +64,10 @@ public class TasklistGraphQLContextBuilder implements GraphQLServletContextBuild
         new DataLoader<String, UserDTO>(
             usernames ->
                 CompletableFuture.supplyAsync(() -> userReader.getUsersByUsernames(usernames))));
+    dataLoaderRegistry.register(
+        VARIABLE_DATA_LOADER,
+        new DataLoader<GetVariablesRequest, List<VariableDTO>>(
+            req -> CompletableFuture.supplyAsync(() -> variableReader.getVariablesByTaskIds(req))));
     return dataLoaderRegistry;
   }
 }

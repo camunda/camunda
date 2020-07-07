@@ -44,10 +44,10 @@ public class WorkflowCache {
     }
   }
 
-  public String getTaskName(String workflowId, String flowNodeId) {
+  public String getTaskName(String workflowId, String flowNodeBpmnId) {
     final WorkflowCacheEntity cachedWorkflowData = getWorkflowCacheEntity(workflowId);
     if (cachedWorkflowData != null) {
-      return cachedWorkflowData.getFlowNodeNames().get(flowNodeId);
+      return cachedWorkflowData.getFlowNodeNames().get(flowNodeBpmnId);
     } else {
       return null;
     }

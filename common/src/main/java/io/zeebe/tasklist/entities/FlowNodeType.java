@@ -8,7 +8,7 @@ package io.zeebe.tasklist.entities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public enum ActivityType {
+public enum FlowNodeType {
   UNSPECIFIED,
   PROCESS,
   SUB_PROCESS,
@@ -26,14 +26,14 @@ public enum ActivityType {
   CALL_ACTIVITY,
   UNKNOWN;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ActivityType.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FlowNodeType.class);
 
-  public static ActivityType fromZeebeBpmnElementType(String bpmnElementType) {
+  public static FlowNodeType fromZeebeBpmnElementType(String bpmnElementType) {
     if (bpmnElementType == null) {
       return UNSPECIFIED;
     }
     try {
-      return ActivityType.valueOf(bpmnElementType);
+      return FlowNodeType.valueOf(bpmnElementType);
     } catch (IllegalArgumentException ex) {
       LOGGER.error(
           "Activity type not found for value [{}]. UNKNOWN type will be assigned.",
