@@ -59,6 +59,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -211,6 +212,10 @@ public final class RaftRule extends ExternalResource {
     final var follower = getFollower().orElseThrow();
     shutdownServer(follower);
     return follower.name();
+  }
+
+  public Set<String> getNodes() {
+    return servers.keySet();
   }
 
   public void joinCluster(final String nodeId) throws Exception {
@@ -458,6 +463,26 @@ public final class RaftRule extends ExternalResource {
     return createStorage(memberId, Function.identity());
   }
 
+  public void copySnapshotOffline(final String sourceNode, final String targetNode)
+      throws Exception {
+    final var snapshotOnNode = getSnapshotOnNode(sourceNode);
+
+    final var memberDirectory = getMemberDirectory(directory, targetNode);
+    final var snapshotStore =
+        new FileBasedSnapshotStoreFactory().createSnapshotStore(memberDirectory.toPath(), "1");
+
+    try (final var snapshotChunkReader = snapshotOnNode.newChunkReader()) {
+      final var receivedSnapshot =
+          snapshotStore.newReceivedSnapshot(snapshotOnNode.getId().getSnapshotIdAsString());
+
+      while (snapshotChunkReader.hasNext()) {
+        final var chunk = snapshotChunkReader.next();
+        receivedSnapshot.apply(chunk);
+      }
+      receivedSnapshot.persist();
+    }
+  }
+
   private RaftStorage createStorage(
       final MemberId memberId,
       final Function<RaftStorage.Builder, RaftStorage.Builder> configurator) {
@@ -558,6 +583,10 @@ public final class RaftRule extends ExternalResource {
 
     final var memberDirectory = getMemberDirectory(directory, member);
     FileUtil.deleteFolder(memberDirectory.toPath());
+  }
+
+  public PersistedSnapshotStore getPersistedSnapshotStore(final String followerB) {
+    return servers.get(followerB).getContext().getPersistedSnapshotStore();
   }
 
   private final class RaftSnapshotListener implements PersistedSnapshotListener {
