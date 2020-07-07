@@ -10,11 +10,8 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom30To31;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
-import org.elasticsearch.action.admin.indices.close.CloseIndexRequest;
-import org.elasticsearch.action.admin.indices.open.OpenIndexRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
-import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -25,9 +22,7 @@ import java.io.IOException;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildAnalysisSettings;
-import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.toSettings;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ANALYSIS_SETTING;
-import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class UpgradeIndexSettingsIT extends AbstractUpgrade30IT {
 
@@ -41,11 +36,6 @@ public class UpgradeIndexSettingsIT extends AbstractUpgrade30IT {
   public void upgradedIndicesHaveCorrectTokenizerType() {
     // given
     final UpgradePlan upgradePlan = new UpgradeFrom30To31().buildUpgradePlan();
-    final Settings oldSettings = buildOldAnalysisSettings();
-    updateIndexSettings(
-      indexNameService.getVersionedOptimizeIndexNameForIndexMapping(IMPORT_INDEX_INDEX),
-      oldSettings
-    );
 
     // when
     upgradePlan.execute();
@@ -65,29 +55,6 @@ public class UpgradeIndexSettingsIT extends AbstractUpgrade30IT {
     final GetSettingsResponse response =
       prefixAwareClient.getHighLevelClient().indices().getSettings(getSettingsRequest, RequestOptions.DEFAULT);
     return response.getIndexToSettings().get(indexName);
-  }
-
-  private void updateIndexSettings(final String indexName, final Settings settings) throws IOException {
-    final CloseIndexRequest closeIndexRequest = new CloseIndexRequest(indexName);
-    final OpenIndexRequest openIndexRequest = new OpenIndexRequest(indexName);
-    final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
-    updateSettingsRequest.indices(indexName);
-    updateSettingsRequest.settings(settings);
-
-    prefixAwareClient.getHighLevelClient().indices().close(closeIndexRequest, RequestOptions.DEFAULT);
-    prefixAwareClient.getHighLevelClient().indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
-    prefixAwareClient.getHighLevelClient().indices().open(openIndexRequest, RequestOptions.DEFAULT);
-  }
-
-  private Settings buildOldAnalysisSettings() throws IOException {
-    XContentBuilder builder = jsonBuilder();
-    // @formatter:off
-    builder
-      .startObject();
-    addAnalysis(builder)
-      .endObject();
-    // @formatter:on
-    return toSettings(builder);
   }
 
   private XContentBuilder addAnalysis(XContentBuilder builder) throws IOException {
