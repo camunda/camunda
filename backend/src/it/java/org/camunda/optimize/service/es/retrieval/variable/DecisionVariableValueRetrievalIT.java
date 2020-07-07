@@ -17,13 +17,11 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
 import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;
 import static org.camunda.optimize.util.DmnModels.OUTPUT_CLASSIFICATION_ID;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinitionIT {
 
@@ -50,15 +48,13 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(3));
-    assertThat(amountInputVariableValues, hasItem("200.0"));
-    assertThat(amountInputVariableValues, hasItem("300.0"));
-    assertThat(amountInputVariableValues, hasItem("500.0"));
+    assertThat(amountInputVariableValues)
+      .hasSize(3)
+      .containsExactlyInAnyOrder("200.0", "300.0", "500.0");
 
-    assertThat(categoryInputVariableValues.size(), is(3));
-    assertThat(categoryInputVariableValues, hasItem("Misc"));
-    assertThat(categoryInputVariableValues, hasItem("Travel Expenses"));
-    assertThat(categoryInputVariableValues, hasItem("somethingElse"));
+    assertThat(categoryInputVariableValues)
+      .hasSize(3)
+      .containsExactlyInAnyOrder("Misc", "Travel Expenses", "somethingElse");
   }
 
   @Test
@@ -81,9 +77,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
       .getDecisionOutputVariableValues(decisionDefinitionDto, OUTPUT_AUDIT_ID, VariableType.BOOLEAN, null);
 
     // then
-    assertThat(auditOutputVariableValues.size(), is(2));
-    assertThat(auditOutputVariableValues, hasItem("true"));
-    assertThat(auditOutputVariableValues, hasItem("false"));
+    assertThat(auditOutputVariableValues)
+      .hasSize(2)
+      .containsExactlyInAnyOrder("true", "false");
   }
 
   @Test
@@ -108,7 +104,8 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues, is(amountInputValues.stream().map(String::valueOf).collect(toList())));
+    assertThat(amountInputVariableValues)
+      .isEqualTo(amountInputValues.stream().map(String::valueOf).collect(toList()));
   }
 
 
@@ -135,11 +132,12 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(1));
-    assertThat(amountInputVariableValues, hasItem("200.0"));
-
-    assertThat(categoryInputVariableValues.size(), is(1));
-    assertThat(categoryInputVariableValues, hasItem("Misc"));
+    assertThat(amountInputVariableValues)
+      .hasSize(1)
+      .containsExactly("200.0");
+    assertThat(categoryInputVariableValues)
+      .hasSize(1)
+      .containsExactly("Misc");
   }
 
   @Test
@@ -162,8 +160,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(1));
-    assertThat(amountInputVariableValues, hasItem("200.0"));
+    assertThat(amountInputVariableValues)
+      .hasSize(1)
+      .containsExactlyInAnyOrder("200.0");
   }
 
   @Test
@@ -186,8 +185,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(1));
-    assertThat(amountInputVariableValues, hasItem("200.0"));
+    assertThat(amountInputVariableValues)
+      .hasSize(1)
+      .containsExactlyInAnyOrder("200.0");
   }
 
   @Test
@@ -212,9 +212,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(2));
-    assertThat(amountInputVariableValues, hasItem("200.0"));
-    assertThat(amountInputVariableValues, hasItem("300.0"));
+    assertThat(amountInputVariableValues)
+      .hasSize(2)
+      .containsExactlyInAnyOrder("200.0", "300.0");
   }
 
   @Test
@@ -238,9 +238,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(2));
-    assertThat(amountInputVariableValues, hasItem("200.0"));
-    assertThat(amountInputVariableValues, hasItem("300.0"));
+    assertThat(amountInputVariableValues)
+      .hasSize(2)
+      .containsExactlyInAnyOrder("200.0", "300.0");
   }
 
   @Test
@@ -264,9 +264,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(2));
-    assertThat(amountInputVariableValues, hasItem("300.0"));
-    assertThat(amountInputVariableValues, hasItem("400.0"));
+    assertThat(amountInputVariableValues)
+      .hasSize(2)
+      .containsExactlyInAnyOrder("300.0", "400.0");
   }
 
   @Test
@@ -290,8 +290,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(1));
-    assertThat(amountInputVariableValues, hasItem("300.0"));
+    assertThat(amountInputVariableValues)
+      .hasSize(1)
+      .containsExactly("300.0");
   }
 
   @Test
@@ -314,9 +315,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(2));
-    assertThat(amountInputVariableValues, hasItem("Travel Expenses"));
-    assertThat(amountInputVariableValues, hasItem("Travel"));
+    assertThat(amountInputVariableValues)
+      .hasSize(2)
+      .containsExactlyInAnyOrder("Travel Expenses", "Travel");
   }
 
   @Test
@@ -339,9 +340,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(2));
-    assertThat(amountInputVariableValues, hasItem("Travel Expenses"));
-    assertThat(amountInputVariableValues, hasItem("Travel"));
+    assertThat(amountInputVariableValues)
+      .hasSize(2)
+      .containsExactlyInAnyOrder("Travel Expenses", "Travel");
   }
 
   @Test
@@ -364,9 +365,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
       .getDecisionOutputVariableValues(decisionDefinitionDto, OUTPUT_CLASSIFICATION_ID, VariableType.STRING, "ex");
 
     // then
-    assertThat(classificationOutputVariableValues.size(), is(2));
-    assertThat(classificationOutputVariableValues, hasItem("exceptional"));
-    assertThat(classificationOutputVariableValues, hasItem("day-to-day expense"));
+    assertThat(classificationOutputVariableValues)
+      .hasSize(2)
+      .containsExactlyInAnyOrder("exceptional", "day-to-day expense");
   }
 
   @Test
@@ -389,9 +390,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(2));
-    assertThat(amountInputVariableValues, hasItem("TrAVel Expenses"));
-    assertThat(amountInputVariableValues, hasItem("Travel"));
+    assertThat(amountInputVariableValues)
+      .hasSize(2)
+      .containsExactlyInAnyOrder("TrAVel Expenses", "Travel");
   }
 
   @Test
@@ -414,9 +415,9 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(2));
-    assertThat(amountInputVariableValues, hasItem("Misc barbarbarbar"));
-    assertThat(amountInputVariableValues, hasItem("Travelbarbarbarbar Expenses"));
+    assertThat(amountInputVariableValues)
+      .hasSize(2)
+      .containsExactlyInAnyOrder("Misc barbarbarbar", "Travelbarbarbarbar Expenses");
   }
 
   @Test
@@ -436,7 +437,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(1));
+    assertThat(amountInputVariableValues).hasSize(1);
   }
 
   @Test
@@ -456,7 +457,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(0));
+    assertThat(amountInputVariableValues).isEmpty();
   }
 
   @Test
@@ -476,7 +477,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(0));
+    assertThat(amountInputVariableValues).isEmpty();
   }
 
   @Test
@@ -496,7 +497,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(1));
+    assertThat(amountInputVariableValues).hasSize(1);
   }
 
   @Test
@@ -516,7 +517,7 @@ public class DecisionVariableValueRetrievalIT extends AbstractDecisionDefinition
     );
 
     // then
-    assertThat(amountInputVariableValues.size(), is(1));
+    assertThat(amountInputVariableValues).hasSize(1);
   }
 
   private void startDecisionInstanceWithInputs(final DecisionDefinitionEngineDto decisionDefinitionDto,

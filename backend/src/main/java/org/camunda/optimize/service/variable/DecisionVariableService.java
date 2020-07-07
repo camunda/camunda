@@ -30,17 +30,8 @@ public class DecisionVariableService {
   private final TenantAuthorizationService tenantAuthorizationService;
 
 
-  public List<DecisionVariableNameDto> getInputVariableNames(String identityId,
-                                                             DecisionVariableNameRequestDto variableRequestDto) {
+  public List<DecisionVariableNameDto> getInputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
     ensureNotEmpty("decision definition key", variableRequestDto.getDecisionDefinitionKey());
-
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(
-      identityId,
-      IdentityType.USER,
-      variableRequestDto.getTenantIds()
-    )) {
-      throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
-    }
     return decisionVariableReader.getInputVariableNames(
       variableRequestDto.getDecisionDefinitionKey(),
       variableRequestDto.getDecisionDefinitionVersions(),
@@ -48,17 +39,8 @@ public class DecisionVariableService {
     );
   }
 
-  public List<DecisionVariableNameDto> getOutputVariableNames(String userId,
-                                                              DecisionVariableNameRequestDto variableRequestDto) {
+  public List<DecisionVariableNameDto> getOutputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
     ensureNotEmpty("decision definition key", variableRequestDto.getDecisionDefinitionKey());
-
-    if (!tenantAuthorizationService.isAuthorizedToSeeAllTenants(
-      userId,
-      IdentityType.USER,
-      variableRequestDto.getTenantIds()
-    )) {
-      throw new ForbiddenException("Current user is not authorized to access data of all provided tenants");
-    }
     return decisionVariableReader.getOutputVariableNames(
       variableRequestDto.getDecisionDefinitionKey(),
       variableRequestDto.getDecisionDefinitionVersions(),

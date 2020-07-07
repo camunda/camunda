@@ -20,10 +20,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
 
@@ -53,7 +52,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
       .filter(i -> i.getType().equals(VariableType.DOUBLE))
       .collect(Collectors.toList());
 
-    assertThat(list.get(0).getValue(), is("400.0"));
+    assertThat(list.get(0).getValue()).isEqualTo("400.0");
   }
 
   @Test
@@ -68,7 +67,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
 
     List<InputInstanceDto> list = decisionInstanceDtos.get(0).getInputs();
 
-    assertThat(list.isEmpty(), is(true));
+    assertThat(list).isEmpty();
   }
 
   @Test
@@ -83,7 +82,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
 
     List<InputInstanceDto> list = decisionInstanceDtos.get(0).getInputs();
 
-    assertThat(list.size(), is(4));
+    assertThat(list).hasSize(4);
   }
 
   @Test
@@ -101,24 +100,24 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
 
     List<InputInstanceDto> inputs = decisionInstanceDtos.get(0).getInputs();
 
-    assertThat(inputs.size(), is(2));
+    assertThat(inputs).hasSize(2);
 
     List<OutputInstanceDto> outputs = decisionInstanceDtos.get(0).getOutputs();
 
-    assertThat(outputs.size(), is(2));
+    assertThat(outputs).hasSize(2);
 
     List<InputInstanceDto> strings = inputs
       .stream()
       .filter(i -> i.getType().equals(VariableType.STRING))
       .collect(Collectors.toList());
-    assertThat(strings.get(0).getValue(), is("Misc"));
+    assertThat(strings.get(0).getValue()).isEqualTo("Misc");
 
     List<InputInstanceDto> doubles = inputs
       .stream()
       .filter(i -> i.getType().equals(VariableType.DOUBLE))
       .collect(Collectors.toList());
 
-    assertThat(doubles.get(0).getValue(), is("300.0"));
+    assertThat(doubles.get(0).getValue()).isEqualTo("300.0");
   }
 
   @Test
@@ -140,14 +139,14 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
       .stream()
       .filter(i -> i.getType().equals(VariableType.STRING))
       .collect(Collectors.toList());
-    assertThat(strings.get(0).getValue(), is("foo"));
+    assertThat(strings.get(0).getValue()).isEqualTo("foo");
 
     List<InputInstanceDto> doubles = decisionInstanceDtos.get(0).getInputs()
       .stream()
       .filter(i -> i.getType().equals(VariableType.DOUBLE))
       .collect(Collectors.toList());
 
-    assertThat(doubles.get(0).getValue(), is("600.0"));
+    assertThat(doubles.get(0).getValue()).isEqualTo("600.0");
   }
 
   @Test
@@ -164,7 +163,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
     List<OutputInstanceDto> list = decisionInstanceDtos.get(0).getOutputs();
-    assertThat(list.size(), is(3));
+    assertThat(list).hasSize(3);
   }
 
   @Test
@@ -184,20 +183,19 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
     List<DecisionInstanceDto> decisionInstanceDtos = getDecisionInstanceDtos();
 
     List<OutputInstanceDto> outputs = decisionInstanceDtos.get(0).getOutputs();
-    assertThat(outputs.size(), is(3));
+    assertThat(outputs).hasSize(3);
 
     List<InputInstanceDto> doubles = decisionInstanceDtos.get(0).getInputs()
       .stream()
       .filter(i -> i.getType().equals(VariableType.DOUBLE))
       .collect(Collectors.toList());
 
-    assertThat(doubles.get(0).getValue(), is("400.0"));
+    assertThat(doubles.get(0).getValue()).isEqualTo("400.0");
   }
 
   private List<DecisionInstanceDto> getDecisionInstanceDtos() {
     return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
-      DECISION_INSTANCE_INDEX_NAME, DecisionInstanceDto.class
-    );
+      DECISION_INSTANCE_INDEX_NAME, DecisionInstanceDto.class);
   }
 
   public DecisionDefinitionEngineDto deployAndStartDecisionDefinition(HashMap<String, Object> variables) {

@@ -41,6 +41,7 @@ import static org.camunda.optimize.util.DmnModels.INPUT_VARIABLE_SEASON;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 
 public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
+
   @RegisterExtension
   @Order(4)
   public EngineDatabaseExtension engineDatabaseExtension =

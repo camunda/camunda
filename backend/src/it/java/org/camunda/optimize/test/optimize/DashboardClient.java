@@ -6,7 +6,6 @@
 package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
@@ -28,7 +27,7 @@ public class DashboardClient {
   public DashboardDefinitionDto getDashboard(final String dashboardId) {
     return getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
-      .execute(DashboardDefinitionDto.class, HttpStatus.SC_OK);
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   public AuthorizedDashboardDefinitionDto getDashboardAsUser(final String dashboardId, String username,
@@ -36,7 +35,7 @@ public class DashboardClient {
     return getRequestExecutor()
       .buildGetDashboardRequest(dashboardId)
       .withUserAuthentication(username, password)
-      .execute(AuthorizedDashboardDefinitionDto.class, HttpStatus.SC_OK);
+      .execute(AuthorizedDashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   public String createEmptyDashboard(final String collectionId) {

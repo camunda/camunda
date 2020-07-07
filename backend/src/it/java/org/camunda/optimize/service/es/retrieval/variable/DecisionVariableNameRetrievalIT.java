@@ -7,9 +7,9 @@ package org.camunda.optimize.service.es.retrieval.variable;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -19,7 +19,6 @@ import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -29,15 +28,12 @@ import static com.google.common.collect.ImmutableList.of;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Arrays.asList;
 import static java.util.Collections.nCopies;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
 import static org.camunda.optimize.test.util.decision.DecisionTypeRef.BOOLEAN;
 import static org.camunda.optimize.test.util.decision.DecisionTypeRef.STRING;
 import static org.camunda.optimize.test.util.decision.DecisionTypeRef.values;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDefinitionIT {
 
@@ -54,13 +50,14 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinitionDto);
 
     // then
-    assertThat(variableResponse.size(), is(2));
-    assertThat(variableResponse.get(0).getName(), is("var1"));
-    assertThat(variableResponse.get(0).getId(), notNullValue());
-    assertThat(variableResponse.get(0).getType(), is(VariableType.STRING));
-    assertThat(variableResponse.get(1).getName(), is("var2"));
-    assertThat(variableResponse.get(1).getId(), notNullValue());
-    assertThat(variableResponse.get(1).getType(), is(VariableType.STRING));
+    assertThat(variableResponse)
+      .hasSize(2)
+      .allSatisfy(varName -> assertThat(varName.getId()).isNotNull())
+      .extracting(DecisionVariableNameDto::getName, DecisionVariableNameDto::getType)
+      .containsExactly(
+        Tuple.tuple("var1", VariableType.STRING),
+        Tuple.tuple("var2", VariableType.STRING)
+      );
   }
 
   @Test
@@ -91,10 +88,13 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     List<DecisionVariableNameDto> variableResponse = getVariableNames("decision2", "1");
 
     // then
-    assertThat(variableResponse.size(), is(1));
-    assertThat(variableResponse.get(0).getName().endsWith("2"), is(true));
-    assertThat(variableResponse.get(0).getId(), notNullValue());
-    assertThat(variableResponse.get(0).getType(), is(VariableType.STRING));
+    assertThat(variableResponse)
+      .hasSize(1)
+      .hasOnlyOneElementSatisfying(varName -> {
+        assertThat(varName.getId()).isNotNull();
+        assertThat(varName.getName()).endsWith("2");
+        assertThat(varName.getType()).isEqualTo(VariableType.STRING);
+      });
   }
 
   @Test
@@ -116,7 +116,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     List<DecisionVariableNameDto> variableResponse = getVariableNames(variableNameRequestDto);
 
     // then
-    assertThat(variableResponse.size(), is(selectedTenants.size()));
+    assertThat(variableResponse).hasSameSizeAs(selectedTenants);
   }
 
   @Test
@@ -137,10 +137,10 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
       );
 
     // then
-    assertThat(variableResponse.size(), is(3));
-    assertThat(variableResponse.get(0).getName(), is("var1"));
-    assertThat(variableResponse.get(1).getName(), is("var2"));
-    assertThat(variableResponse.get(2).getName(), is("var3"));
+    assertThat(variableResponse)
+      .hasSize(3)
+      .extracting(DecisionVariableNameDto::getName)
+      .containsExactly("var1", "var2", "var3");
   }
 
   @Test
@@ -155,7 +155,7 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition);
 
     // then
-    assertThat(variableResponse.size(), is(11));
+    assertThat(variableResponse).hasSize(11);
   }
 
   @Test
@@ -171,10 +171,10 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition.getKey(), ALL_VERSIONS);
 
     // then
-    assertThat(variableResponse.size(), is(3));
-    assertThat(variableResponse.get(0).getName(), is("var1"));
-    assertThat(variableResponse.get(1).getName(), is("var2"));
-    assertThat(variableResponse.get(2).getName(), is("var3"));
+    assertThat(variableResponse)
+      .hasSize(3)
+      .extracting(DecisionVariableNameDto::getName)
+      .containsExactly("var1", "var2", "var3");
   }
 
   @Test
@@ -190,10 +190,10 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition.getKey(), LATEST_VERSION);
 
     // then
-    assertThat(variableResponse.size(), is(3));
-    assertThat(variableResponse.get(0).getName(), is("var1"));
-    assertThat(variableResponse.get(1).getName(), is("var2"));
-    assertThat(variableResponse.get(2).getName(), is("var3"));
+    assertThat(variableResponse)
+      .hasSize(3)
+      .extracting(DecisionVariableNameDto::getName)
+      .containsExactly("var1", "var2", "var3");
   }
 
   @Test
@@ -207,8 +207,9 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition);
 
     // then
-    assertThat(variableResponse.size(), is(1));
-    assertThat(variableResponse.get(0).getName(), is("expectedVar"));
+    assertThat(variableResponse)
+      .hasSize(1)
+      .hasOnlyOneElementSatisfying(var -> assertThat(var.getName()).isEqualTo("expectedVar"));
   }
 
   @Test
@@ -223,10 +224,10 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition);
 
     // then
-    assertThat(variableResponse.size(), is(expectedVars.size()));
+    assertThat(variableResponse).hasSize(expectedVars.size());
     List<String> actualVars =
       variableResponse.stream().map(DecisionVariableNameDto::getName).collect(Collectors.toList());
-    assertThat(actualVars, is(expectedVars));
+    assertThat(actualVars).isEqualTo(expectedVars);
   }
 
   @Test
@@ -244,11 +245,11 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
       Arrays.stream(values())
         .map(typeRef -> VariableType.getTypeForId(typeRef.getId()))
         .toArray(VariableType[]::new);
-    assertThat(variableResponse.size(), is(expectedTypes.length));
+    assertThat(variableResponse).hasSize(expectedTypes.length);
     List<VariableType> actualTypes = variableResponse.stream()
       .map(DecisionVariableNameDto::getType)
       .collect(Collectors.toList());
-    assertThat(actualTypes, containsInAnyOrder(expectedTypes));
+    assertThat(actualTypes).containsExactlyInAnyOrder(expectedTypes);
   }
 
   @Test
@@ -261,11 +262,13 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     List<DecisionVariableNameDto> variableResponse = getVariableNames(decisionDefinition);
 
     // then
-    assertThat(variableResponse.size(), is(2));
-    assertThat(variableResponse.get(0).getName(), is("var"));
-    assertThat(variableResponse.get(0).getType(), is(VariableType.STRING));
-    assertThat(variableResponse.get(1).getName(), is("var"));
-    assertThat(variableResponse.get(1).getType(), is(VariableType.BOOLEAN));
+    assertThat(variableResponse)
+      .hasSize(2)
+      .extracting(DecisionVariableNameDto::getName, DecisionVariableNameDto::getType)
+      .containsExactly(
+        Tuple.tuple("var", VariableType.STRING),
+        Tuple.tuple("var", VariableType.BOOLEAN)
+      );
   }
 
   protected abstract DecisionDefinitionEngineDto deployDecisionsWithVarNames(List<String> varNames,
@@ -297,13 +300,6 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
       String randomVarName = RandomStringUtils.randomAlphabetic(10);
       deployDecisionsWithStringVarName(randomVarName);
     });
-  }
-
-  private void startDecisionInstanceWithInputs(final DecisionDefinitionEngineDto decisionDefinitionDto,
-                                               final double amountValue,
-                                               final String category) {
-    final HashMap<String, InputVariableEntry> inputs = createInputs(amountValue, category);
-    startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), inputs);
   }
 
 }
