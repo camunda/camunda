@@ -39,7 +39,7 @@ export function GenerationModal({onClose, mightFail}) {
     return <Redirect to={`/eventBasedProcess/${redirect}/generated`} />;
   }
 
-  const docsLink = `https://docs.camunda.org/optimize/${version}/user-guide/event-based-processes#autogenerate-beta-feature`;
+  const docsLink = `https://docs.camunda.org/optimize/${version}/user-guide/event-based-processes#autogenerate`;
   return (
     <Modal
       className="GenerationModal"

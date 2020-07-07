@@ -104,7 +104,7 @@ export default withErrorHandling(
 
       const isPublishing = state === 'publish_pending';
       const canPublish = state === 'mapped' || state === 'unpublished_changes';
-      const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/user-guide/event-based-processes#autogenerate-beta-feature`;
+      const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/user-guide/event-based-processes#autogenerate`;
 
       return (
         <div className="ProcessView">
