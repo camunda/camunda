@@ -19,7 +19,8 @@ const VariablePanel = observer(function VariablePanel() {
   const {id: workflowInstanceId} = useParams();
 
   useEffect(() => {
-    variables.init(workflowInstanceId);
+    variables.startPolling(workflowInstanceId);
+
     return () => {
       variables.reset();
     };

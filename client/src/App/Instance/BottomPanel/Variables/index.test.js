@@ -67,7 +67,6 @@ describe('Variables', () => {
   beforeEach(async () => {
     await currentInstance.fetchCurrentInstance('active_instance');
     variables.reset();
-    variables.init();
   });
 
   describe('Skeleton', () => {
@@ -104,7 +103,9 @@ describe('Variables', () => {
 
       expect(screen.getByText('Variable')).toBeInTheDocument();
       expect(screen.getByText('Value')).toBeInTheDocument();
+
       const {items} = variables.state;
+
       items.forEach((item) => {
         const withinVariableRow = within(screen.getByTestId(item.name));
         expect(withinVariableRow.getByText(item.name)).toBeInTheDocument();
@@ -117,9 +118,8 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       const {items} = variables.state;
-
       const [activeOperationVariable] = items.filter(
-        (item) => item.hasActiveOperation
+        ({hasActiveOperation}) => hasActiveOperation
       );
 
       expect(
@@ -129,7 +129,7 @@ describe('Variables', () => {
       ).toBeInTheDocument();
 
       const [inactiveOperationVariable] = items.filter(
-        (item) => !item.hasActiveOperation
+        ({hasActiveOperation}) => !hasActiveOperation
       );
 
       expect(
@@ -248,9 +248,9 @@ describe('Variables', () => {
       renderVariables();
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      const activeOperationVariable = variables.state.items.filter(
-        (x) => x.hasActiveOperation
-      )[0];
+      const [activeOperationVariable] = variables.state.items.filter(
+        ({hasActiveOperation}) => hasActiveOperation
+      );
 
       expect(
         within(screen.getByTestId(activeOperationVariable.name)).queryByTestId(
@@ -258,9 +258,9 @@ describe('Variables', () => {
         )
       ).not.toBeInTheDocument();
 
-      const inactiveOperationVariable = variables.state.items.filter(
-        (x) => !x.hasActiveOperation
-      )[0];
+      const [inactiveOperationVariable] = variables.state.items.filter(
+        ({hasActiveOperation}) => !hasActiveOperation
+      );
 
       expect(
         within(screen.getByTestId(inactiveOperationVariable.name)).getByTestId(
@@ -273,21 +273,21 @@ describe('Variables', () => {
       renderVariables(1);
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      const activeOperationVariable = variables.state.items.filter(
-        (x) => !x.hasActiveOperation
-      )[0];
+      const [inactiveOperationVariable] = variables.state.items.filter(
+        ({hasActiveOperation}) => !hasActiveOperation
+      );
 
       expect(
-        within(screen.getByTestId(activeOperationVariable.name)).getByTestId(
+        within(screen.getByTestId(inactiveOperationVariable.name)).getByTestId(
           'edit-variable-button'
         )
       ).toBeInTheDocument();
 
       await currentInstance.fetchCurrentInstance('canceled_instance');
       expect(
-        within(screen.getByTestId(activeOperationVariable.name)).queryByTestId(
-          'edit-variable-button'
-        )
+        within(
+          screen.getByTestId(inactiveOperationVariable.name)
+        ).queryByTestId('edit-variable-button')
       ).not.toBeInTheDocument();
     });
 

@@ -17,16 +17,14 @@ const DEFAULT_STATE = {
   isVariableOperationInProgress: false,
 };
 
-let isStoreInitialized = false;
-
 class Variables {
   state = {...DEFAULT_STATE};
-  timeoutId = null;
+  intervalId = null;
 
   reset = () => {
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
-    isStoreInitialized = false;
+    this.intervalId = null;
   };
 
   clearItems = () => {
@@ -36,19 +34,23 @@ class Variables {
   handleFailure = () => {
     this.state.isFailed = true;
     this.state.isLoading = false;
+
+    if (!this.state.isInitialLoadComplete) {
+      this.state.isInitialLoadComplete = true;
+    }
   };
 
   handleSuccess = () => {
     this.state.isFailed = false;
     this.state.isLoading = false;
+
+    if (!this.state.isInitialLoadComplete) {
+      this.state.isInitialLoadComplete = true;
+    }
   };
 
   startLoading = () => {
     this.state.isLoading = true;
-  };
-
-  setIsInitialLoadComplete = () => {
-    this.state.isInitialLoadComplete = true;
   };
 
   setItems = (items) => {
@@ -66,41 +68,50 @@ class Variables {
     return undefined;
   }
 
-  fetchVariables = async (workflowInstanceId, isPolling = false) => {
-    if (!isPolling) {
-      this.startLoading();
-    }
+  handlePolling = async (workflowInstanceId) => {
     const response = await fetchVariables({
       instanceId: workflowInstanceId,
       scopeId: this.scopeId !== undefined ? this.scopeId : workflowInstanceId,
     });
-    if (!isStoreInitialized) {
-      return;
+
+    if (this.intervalId !== null) {
+      this.handleResponse(response);
     }
+  };
+
+  handleResponse = (response) => {
     if (response.error) {
       this.handleFailure();
-    } else {
-      if (this.state.items.length === 0) {
-        this.setItems(response);
-      } else {
-        const {items} = this.state;
-
-        const localVariables = differenceWith(
-          items,
-          response,
-          (item, res) => item.name === res.name && item.value === res.value
-        );
-
-        const serverVariables = differenceBy(response, localVariables, 'name');
-        this.setItems([...serverVariables, ...localVariables]);
-      }
-
-      this.handleSuccess();
-
-      if (!this.state.isInitialLoadComplete) {
-        this.setIsInitialLoadComplete();
-      }
+      return;
     }
+
+    if (this.state.items.length === 0) {
+      this.setItems(response);
+    } else {
+      const {items} = this.state;
+      const localVariables = differenceWith(
+        items,
+        response,
+        (item, responseItem) =>
+          item.name === responseItem.name && item.value === responseItem.value
+      );
+      const serverVariables = differenceBy(response, localVariables, 'name');
+
+      this.setItems([...serverVariables, ...localVariables]);
+    }
+
+    this.handleSuccess();
+  };
+
+  fetchVariables = async (workflowInstanceId) => {
+    this.startLoading();
+
+    this.handleResponse(
+      await fetchVariables({
+        instanceId: workflowInstanceId,
+        scopeId: this.scopeId !== undefined ? this.scopeId : workflowInstanceId,
+      })
+    );
   };
 
   addVariable = async (id, name, value) => {
@@ -151,7 +162,7 @@ class Variables {
     const {items, isVariableOperationInProgress} = this.state;
 
     return (
-      items.filter((item) => item.hasActiveOperation).length > 0 ||
+      items.some(({hasActiveOperation}) => hasActiveOperation) ||
       isVariableOperationInProgress
     );
   }
@@ -161,14 +172,9 @@ class Variables {
     return !isLoading && isInitialLoadComplete && items.length === 0;
   }
 
-  init = async (workflowInstanceId) => {
-    isStoreInitialized = true;
-    await this.startPolling(workflowInstanceId);
-  };
-
   startPolling = async (workflowInstanceId) => {
-    this.intervalId = setInterval(async () => {
-      await this.fetchVariables(workflowInstanceId, true);
+    this.intervalId = setInterval(() => {
+      this.handlePolling(workflowInstanceId);
     }, 5000);
   };
 
@@ -184,7 +190,6 @@ decorate(Variables, {
   handleSuccess: action,
   startLoading: action,
   handleFailure: action,
-  setIsInitialLoadComplete: action,
   clearItems: action,
   updateVariable: action,
   addVariable: action,

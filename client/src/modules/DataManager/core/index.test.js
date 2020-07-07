@@ -16,7 +16,6 @@ import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 
 import {
   mockParams,
-  mockScopeId,
   MOCK_TOPICS,
   mockStaticContent,
   customTopic,
