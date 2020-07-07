@@ -156,6 +156,8 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected void publishEventProcess(final String eventProcessMapping) {
     eventProcessClient.publishEventProcessMapping(eventProcessMapping);
     executeImportCycle();
+    // second cycle to make sure event process publish states are updated based on the previous cycle
+    executeImportCycle();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 

@@ -286,7 +286,7 @@ public class IndexRolloverIT extends AbstractIT {
   }
 
   private List<CamundaActivityEventDto> getAllStoredCamundaActivityEventsForDefinitionKey(final String indexName) {
-    return elasticSearchIntegrationTestExtension.getAllStoredCamundaActivityEvents(indexName);
+    return elasticSearchIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(indexName);
   }
 
   private List<VariableUpdateInstanceDto> getAllStoredVariableUpdateInstanceDtos() {

@@ -428,6 +428,10 @@ public class EmbeddedOptimizeExtension
     }
   }
 
+  public void reinitializeSchema() {
+    getElasticSearchSchemaManager().initializeSchema(getOptimizeElasticClient());
+  }
+
   public boolean isImporting() {
     return this.getElasticsearchImportJobExecutor().isActive();
   }

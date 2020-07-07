@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.importing.InputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.OutputInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.hamcrest.CoreMatchers.is;
@@ -39,7 +37,9 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
 
   @Test
   public void adaptInputs() {
-    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericInputValues");
+    addDMNInputImportPluginBasePackagesToConfiguration(
+      "org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericInputValues"
+    );
     deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
@@ -58,7 +58,9 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
 
   @Test
   public void skipInvalidAdaptedInputs() {
-    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn2.ReturnInvalidInputs");
+    addDMNInputImportPluginBasePackagesToConfiguration(
+      "org.camunda.optimize.testplugin.adapter.variable.dmn2.ReturnInvalidInputs"
+    );
     engineIntegrationExtension.deployAndStartDecisionDefinition();
     importAllEngineEntitiesFromScratch();
 
@@ -71,7 +73,9 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
 
   @Test
   public void pluginReturnsMoreInputVariables() {
-    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn3.ReturnMoreInputVariables");
+    addDMNInputImportPluginBasePackagesToConfiguration(
+      "org.camunda.optimize.testplugin.adapter.variable.dmn3.ReturnMoreInputVariables"
+    );
     engineIntegrationExtension.deployAndStartDecisionDefinition();
     importAllEngineEntitiesFromScratch();
 
@@ -107,7 +111,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
       .stream()
       .filter(i -> i.getType().equals(VariableType.STRING))
       .collect(Collectors.toList());
-    assertThat(strings.get(0).getValue() , is("Misc"));
+    assertThat(strings.get(0).getValue(), is("Misc"));
 
     List<InputInstanceDto> doubles = inputs
       .stream()
@@ -119,8 +123,10 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
 
   @Test
   public void applySeveralInputAdapters() {
-    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericValues",
-                                                       "org.camunda.optimize.testplugin.adapter.variable.dmn5.SetAllStringInputsToFoo");
+    addDMNInputImportPluginBasePackagesToConfiguration(
+      "org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericValues",
+      "org.camunda.optimize.testplugin.adapter.variable.dmn5.SetAllStringInputsToFoo"
+    );
     deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 300);
       put("invoiceCategory", "notFoo");
@@ -134,7 +140,7 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
       .stream()
       .filter(i -> i.getType().equals(VariableType.STRING))
       .collect(Collectors.toList());
-    assertThat(strings.get(0).getValue() , is("foo"));
+    assertThat(strings.get(0).getValue(), is("foo"));
 
     List<InputInstanceDto> doubles = decisionInstanceDtos.get(0).getInputs()
       .stream()
@@ -146,7 +152,9 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
 
   @Test
   public void adaptOutputs() {
-    addDMNOutputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn4.AddNewOutput");
+    addDMNOutputImportPluginBasePackagesToConfiguration(
+      "org.camunda.optimize.testplugin.adapter.variable.dmn4.AddNewOutput"
+    );
     deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
@@ -161,8 +169,12 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
 
   @Test
   public void adaptingOutputsAndInputsWorksTogether() {
-    addDMNOutputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn4.AddNewOutput");
-    addDMNInputImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericInputValues");
+    addDMNOutputImportPluginBasePackagesToConfiguration(
+      "org.camunda.optimize.testplugin.adapter.variable.dmn4.AddNewOutput"
+    );
+    addDMNInputImportPluginBasePackagesToConfiguration(
+      "org.camunda.optimize.testplugin.adapter.variable.dmn1.DoubleNumericInputValues"
+    );
     deployAndStartDecisionDefinition(new HashMap<String, Object>() {{
       put("amount", 200);
       put("invoiceCategory", "Misc");
@@ -183,11 +195,8 @@ public class DecisionVariableImportPluginAdapterIT extends AbstractIT {
   }
 
   private List<DecisionInstanceDto> getDecisionInstanceDtos() {
-    SearchResponse response = elasticSearchIntegrationTestExtension.getSearchResponseForAllDocumentsOfIndex(DECISION_INSTANCE_INDEX_NAME);
-    return mapHits(
-      response.getHits(),
-      DecisionInstanceDto.class,
-      embeddedOptimizeExtension.getObjectMapper()
+    return elasticSearchIntegrationTestExtension.getAllDocumentsOfIndexAs(
+      DECISION_INSTANCE_INDEX_NAME, DecisionInstanceDto.class
     );
   }
 

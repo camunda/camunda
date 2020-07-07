@@ -357,7 +357,7 @@ public class ReportClient {
       .getId();
   }
 
-  private String createAndStoreDecisionReport(String collectionId, String definitionKey, List<String> tenants) {
+  public String createAndStoreDecisionReport(String collectionId, String definitionKey, List<String> tenants) {
     SingleDecisionReportDefinitionDto decisionReportDefinition = createSingleDecisionReportDefinitionDto(
       collectionId,
       definitionKey,

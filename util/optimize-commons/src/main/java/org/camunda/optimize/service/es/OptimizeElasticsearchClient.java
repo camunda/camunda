@@ -212,7 +212,12 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
 
   private String[] convertToPrefixedIndexNames(final String[] indices) {
     return Arrays.stream(indices)
-      .map(indexNameService::getOptimizeIndexAliasForIndex)
+      .map(index -> {
+        final boolean hasExcludePrefix = '-' == index.charAt(0);
+        final String rawIndexName = hasExcludePrefix ? index.substring(1) : index;
+        final String prefixedIndexName = indexNameService.getOptimizeIndexAliasForIndex(rawIndexName);
+        return hasExcludePrefix ? "-" + prefixedIndexName : prefixedIndexName;
+      })
       .toArray(String[]::new);
   }
 

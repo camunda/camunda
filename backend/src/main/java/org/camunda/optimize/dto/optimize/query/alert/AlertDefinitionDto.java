@@ -20,5 +20,4 @@ public class AlertDefinitionDto extends AlertCreationDto {
   protected String owner;
   protected String lastModifier;
   protected boolean triggered;
-  protected boolean fixNotification;
 }

@@ -5,199 +5,353 @@
  */
 package org.camunda.optimize.reimport.preparation;
 
+import com.google.common.collect.ImmutableList;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.util.FileReaderUtil;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
+import org.camunda.optimize.service.TenantService;
+import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.junit.jupiter.api.Test;
 
-import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LICENSE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
-public class ForceReimportIT extends AbstractIT {
+@Slf4j
+public class ForceReimportIT extends AbstractEventProcessIT {
+
+  public static final List<String> TENANTS = Collections.singletonList(null);
 
   @Test
-  public void forceReimport() {
-    //given
-    addLicense();
-    ProcessDefinitionEngineDto processDefinitionEngineDto = deployAndStartSimpleServiceTask();
-    String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinitionEngineDto);
-    String reportId = createAndStoreNumberReport(collectionId, processDefinitionEngineDto);
-    AlertCreationDto alert = setupBasicAlert(reportId);
-    embeddedOptimizeExtension
-      .getRequestExecutor().buildCreateAlertRequest(alert).execute();
-    final String dashboardId = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateDashboardRequest()
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+  public void forceReimport_optimizeEntitiesUntouched() {
+    // given
+    final ProcessDefinitionEngineDto processDefinitionEngineDto = deployAndStartSimpleServiceTask();
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.createTenant("tenant1");
+    final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinitionEngineDto);
+    collectionClient.addScopeEntryToCollection(
+      collectionId, decisionDefinitionEngineDto.getKey(), DefinitionType.DECISION, TENANTS
+    );
+    final String reportId = createAndStoreNumberReport(collectionId, processDefinitionEngineDto);
+    reportClient.createAndStoreDecisionReport(collectionId, decisionDefinitionEngineDto.getKey(), TENANTS);
+    alertClient.createAlertForReport(reportId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
 
     importAllEngineEntitiesFromScratch();
 
-    // when
-    List<AuthorizedReportDefinitionDto> reports = getAllReportsInCollection(collectionId);
-    DashboardDefinitionDto dashboard = getDashboardById(dashboardId);
-    List<AlertDefinitionDto> alerts = alertClient.getAllAlerts();
-
-    // then
-    assertThat(licenseExists()).isTrue();
-    assertThat(reports).hasSize(1);
-    assertThat(dashboard).isNotNull();
-    assertThat(alerts).hasSize(1);
-    assertThat(hasEngineData()).isTrue();
+    final List<AuthorizedReportDefinitionDto> allReports = collectionClient.getReportsForCollection(collectionId);
+    final DashboardDefinitionDto dashboard = dashboardClient.getDashboard(dashboardId);
+    final List<AlertDefinitionDto> allAlerts = alertClient.getAllAlerts();
+    assertThat(allReports).hasSize(2);
+    assertThat(allAlerts).hasSize(1);
 
     // when
     forceReimportOfEngineData();
 
-    reports = getAllReportsInCollection(collectionId);
-    dashboard = getDashboardById(dashboardId);
-    alerts = alertClient.getAllAlerts();
-
     // then
-    assertThat(licenseExists()).isTrue();
-    assertThat(reports).hasSize(1);
-    assertThat(dashboard).isNotNull();
-    assertThat(alerts).hasSize(1);
-    assertThat(hasEngineData()).isFalse();
+    assertThat(collectionClient.getReportsForCollection(collectionId)).isEqualTo(allReports);
+    assertThat(dashboardClient.getDashboard(dashboardId)).isEqualTo(dashboard);
+    assertThat(alertClient.getAllAlerts())
+      .usingElementComparatorIgnoringFields("triggered")
+      .isEqualTo(allAlerts);
   }
 
-  private boolean hasEngineData() {
-    List<String> indices = new ArrayList<>();
-    indices.add(TIMESTAMP_BASED_IMPORT_INDEX_NAME);
-    indices.add(IMPORT_INDEX_INDEX_NAME);
-    indices.add(PROCESS_DEFINITION_INDEX_NAME);
-    indices.add(PROCESS_INSTANCE_INDEX_NAME);
+  @Test
+  public void forceReimport_tenantDataCleanedUp() {
+    // given
+    engineIntegrationExtension.createTenant("tenant1");
 
-    SearchResponse response = elasticSearchIntegrationTestExtension
-      .getSearchResponseForAllDocumentsOfIndices(indices.toArray(new String[0]));
-
-    return response.getHits().getTotalHits().value > 0L;
-  }
-
-  private boolean licenseExists() {
-    GetRequest getRequest = new GetRequest(LICENSE_INDEX_NAME).id(LICENSE_INDEX_NAME);
-    GetResponse getResponse;
-    try {
-      getResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
-        .get(getRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not retrieve license!", e);
-    }
-    return getResponse.isExists();
-  }
-
-  private void addLicense() {
-    String license = FileReaderUtil.readValidTestLicense();
-
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildValidateAndStoreLicenseRequest(license)
-      .execute();
-  }
-
-  private AlertCreationDto setupBasicAlert(String reportId) {
     importAllEngineEntitiesFromScratch();
 
-    return createSimpleAlert(reportId);
+    final List<TenantDto> allTenants = elasticSearchIntegrationTestExtension.getAllTenants();
+    assertThat(allTenants).isNotEmpty();
+
+    // when
+    forceReimportOfEngineData();
+
+    // then
+    assertThat(hasNoEngineProcessData()).isTrue();
+
+    // when
+    embeddedOptimizeExtension.reloadConfiguration();
+    embeddedOptimizeExtension.reinitializeSchema();
+    importAllEngineEntitiesFromLastIndex();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllTenants()).isEqualTo(allTenants);
+  }
+
+  @Test
+  public void forceReimport_processDataCleanedUp() {
+    // given
+    deployAndStartSimpleServiceTask();
+
+    importAllEngineEntitiesFromScratch();
+    runEventProcessing();
+
+    final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    final List<String> allProcessInstanceIds = getProcessInstanceIds();
+    assertThat(allProcessDefinitions).isNotEmpty();
+    assertThat(allProcessInstanceIds).isNotEmpty();
+
+    // when
+    forceReimportOfEngineData();
+
+    // then
+    assertThat(hasNoEngineProcessData()).isTrue();
+
+    // when
+    embeddedOptimizeExtension.reloadConfiguration();
+    embeddedOptimizeExtension.reinitializeSchema();
+    importAllEngineEntitiesFromLastIndex();
+    runEventProcessing();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllProcessDefinitions()).isEqualTo(allProcessDefinitions);
+    assertThat(getProcessInstanceIds()).isEqualTo(allProcessInstanceIds);
+    assertThat(hasEngineProcessData()).isTrue();
+  }
+
+  @Test
+  public void forceReimport_decisionDataCleanedUp() {
+    // given
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+
+    importAllEngineEntitiesFromScratch();
+
+    final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
+      elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
+    final List<String> allDecisionInstanceIds = getDecisionInstanceIds();
+    assertThat(allDecisionDefinitions).isNotEmpty();
+    assertThat(allDecisionInstanceIds).isNotEmpty();
+
+    // when
+    forceReimportOfEngineData();
+
+    // then
+    assertThat(hasNoEngineDecisionData()).isTrue();
+
+    // when
+    embeddedOptimizeExtension.reloadConfiguration();
+    embeddedOptimizeExtension.reinitializeSchema();
+    importAllEngineEntitiesFromLastIndex();
+
+    // then
+    assertThat(elasticSearchIntegrationTestExtension.getAllDecisionDefinitions()).isEqualTo(allDecisionDefinitions);
+    assertThat(getDecisionInstanceIds()).isEqualTo(allDecisionInstanceIds);
+    assertThat(hasEngineDecisionData()).isTrue();
+  }
+
+  @Test
+  public void forceReimport_eventProcessDataCleanedUp() {
+    // given
+    final String eventProcessMapping = createEventProcess();
+
+    importAllEngineEntitiesFromScratch();
+    runEventProcessing();
+    publishEventProcess(eventProcessMapping);
+
+    final List<String> allProcessDefinitionKeys = getAllProcessDefinitionKeys();
+    final List<String> allProcessInstanceIds = getProcessInstanceIds();
+    final List<EventProcessMappingDto> allEventProcessMappings = eventProcessClient.getAllEventProcessMappings();
+    assertThat(allProcessDefinitionKeys).isNotEmpty();
+    assertThat(allProcessInstanceIds).isNotEmpty();
+    assertThat(allEventProcessMappings)
+      .extracting(EventProcessMappingDto::getState)
+      .containsExactly(EventProcessState.PUBLISHED);
+    assertThat(hasExternalEventData()).isTrue();
+    assertThat(hasPublishedEventProcessData()).isTrue();
+
+    // when
+    forceReimportOfEngineData();
+
+    // then
+    assertThat(getAllProcessDefinitionKeys()).isEmpty();
+    assertThat(getProcessInstanceIds()).isEmpty();
+    assertThat(eventProcessClient.getAllEventProcessMappings())
+      .isEqualTo(allEventProcessMappings)
+      .extracting(EventProcessMappingDto::getState)
+      .containsExactly(EventProcessState.MAPPED);
+    assertThat(hasExternalEventData()).isTrue();
+    assertThat(hasPublishedEventProcessData()).isFalse();
+
+    // when
+    embeddedOptimizeExtension.reloadConfiguration();
+    embeddedOptimizeExtension.reinitializeSchema();
+    importAllEngineEntitiesFromLastIndex();
+    runEventProcessing();
+    publishEventProcess(eventProcessMapping);
+
+    // then
+    assertThat(getAllProcessDefinitionKeys()).isEqualTo(allProcessDefinitionKeys);
+    assertThat(getProcessInstanceIds()).isEqualTo(allProcessInstanceIds);
+    assertThat(allEventProcessMappings)
+      .extracting(EventProcessMappingDto::getState)
+      .containsExactly(EventProcessState.PUBLISHED);
+    assertThat(hasExternalEventData()).isTrue();
+    assertThat(hasPublishedEventProcessData()).isTrue();
+  }
+
+  private String createEventProcess() {
+    ingestTestEvent(STARTED_EVENT, OffsetDateTime.now(), "trace1");
+    ingestTestEvent(FINISHED_EVENT, OffsetDateTime.now(), "trace1");
+    return createSimpleEventProcessMapping(STARTED_EVENT, FINISHED_EVENT);
   }
 
   private String createAndStoreNumberReport(String collectionId, ProcessDefinitionEngineDto processDefinition) {
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = getReportDefinitionDto(
-      processDefinition.getKey(),
-      String.valueOf(processDefinition.getVersion())
+    return reportClient.createAndStoreProcessReport(
+      collectionId, processDefinition.getKey(), Collections.singletonList(TenantService.TENANT_NOT_DEFINED.getId())
     );
-    singleProcessReportDefinitionDto.setCollectionId(collectionId);
-    return createNewReport(singleProcessReportDefinitionDto);
   }
 
-  private String createNewReport(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
+  private List<String> getAllProcessDefinitionKeys() {
+    return elasticSearchIntegrationTestExtension.getAllProcessDefinitions()
+      .stream().map(DefinitionOptimizeDto::getKey).collect(Collectors.toList());
   }
 
-  private SingleProcessReportDefinitionDto getReportDefinitionDto(String processDefinitionKey,
-                                                                  String processDefinitionVersion) {
-    ProcessReportDataDto reportData =
-      TemplatedProcessReportDataBuilder
-        .createReportData()
-        .setProcessDefinitionKey(processDefinitionKey)
-        .setProcessDefinitionVersion(processDefinitionVersion)
-        .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
-        .build();
-    SingleProcessReportDefinitionDto report = new SingleProcessReportDefinitionDto();
-    report.setData(reportData);
-    report.setId("something");
-    report.setLastModifier("something");
-    report.setName("something");
-    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    report.setCreated(someDate);
-    report.setLastModified(someDate);
-    report.setOwner("something");
-    return report;
+  private List<String> getProcessInstanceIds() {
+    return elasticSearchIntegrationTestExtension.getAllProcessInstances()
+      .stream().map(ProcessInstanceDto::getProcessInstanceId).collect(Collectors.toList());
   }
 
-  private AlertCreationDto createSimpleAlert(String reportId) {
-    AlertCreationDto alertCreationDto = new AlertCreationDto();
+  private List<String> getDecisionInstanceIds() {
+    return elasticSearchIntegrationTestExtension.getAllDecisionInstances()
+      .stream().map(DecisionInstanceDto::getDecisionInstanceId).collect(Collectors.toList());
+  }
 
-    AlertInterval interval = new AlertInterval();
-    interval.setUnit("Seconds");
-    interval.setValue(1);
-    alertCreationDto.setCheckInterval(interval);
-    alertCreationDto.setThreshold(0.0);
-    alertCreationDto.setThresholdOperator(AlertThresholdOperator.GREATER);
-    alertCreationDto.setEmail("test@camunda.com");
-    alertCreationDto.setName("test alert");
-    alertCreationDto.setReportId(reportId);
+  private boolean hasEngineProcessData() {
+    return allIndexGroupsHaveData(getEngineProcessDataIndices());
+  }
 
-    return alertCreationDto;
+  private boolean hasEngineDecisionData() {
+    return allIndexGroupsHaveData(getEngineDecisionDataIndices());
+  }
+
+  private boolean hasExternalEventData() {
+    return allIndexGroupsHaveData(getExternalEventDataIndices());
+  }
+
+  private boolean hasPublishedEventProcessData() {
+    return allIndexGroupsHaveData(getEventProcessDataIndices());
+  }
+
+  private boolean allIndexGroupsHaveData(final Set<List<String>> indexGroups) {
+    final long groupsThatHaveData = indexGroups.stream()
+      .map(indexGroup -> elasticSearchIntegrationTestExtension
+        .getSearchResponseForAllDocumentsOfIndices(indexGroup.toArray(new String[0])))
+      .filter(response -> response.getHits().getTotalHits().value > 0L)
+      .count();
+    return indexGroups.size() == groupsThatHaveData;
+  }
+
+  private boolean hasNoEngineDecisionData() {
+    return noIndexGroupHasData(getEngineDecisionDataIndices());
+  }
+
+  private boolean hasNoEngineProcessData() {
+    return noIndexGroupHasData(getEngineProcessDataIndices());
+  }
+
+  private boolean noIndexGroupHasData(final Set<List<String>> indexGroups) {
+    final long groupsThatHaveNoData = indexGroups.stream()
+      .map(indexGroup -> elasticSearchIntegrationTestExtension
+        .getSearchResponseForAllDocumentsOfIndices(indexGroup.toArray(new String[0])))
+      .filter(response -> response.getHits().getTotalHits().value == 0L)
+      .count();
+    return indexGroups.size() == groupsThatHaveNoData;
+  }
+
+  private Set<List<String>> getEventProcessDataIndices() {
+    final Set<List<String>> indexGroups = new HashSet<>();
+    indexGroups.add(Collections.singletonList(EVENT_PROCESS_DEFINITION_INDEX_NAME));
+    indexGroups.add(Collections.singletonList(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*"));
+    indexGroups.add(Collections.singletonList(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME));
+    return indexGroups;
+  }
+
+  private Set<List<String>> getEngineProcessDataIndices() {
+    final Set<List<String>> indexGroups = new HashSet<>();
+    indexGroups.add(Collections.singletonList(TIMESTAMP_BASED_IMPORT_INDEX_NAME));
+    indexGroups.add(Collections.singletonList(IMPORT_INDEX_INDEX_NAME));
+    indexGroups.add(Collections.singletonList(PROCESS_DEFINITION_INDEX_NAME));
+    indexGroups.add(Collections.singletonList(PROCESS_INSTANCE_INDEX_NAME));
+    indexGroups.add(Collections.singletonList(BUSINESS_KEY_INDEX_NAME));
+    indexGroups.add(Collections.singletonList(VARIABLE_UPDATE_INSTANCE_INDEX_NAME));
+    indexGroups.add(Collections.singletonList(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"));
+    indexGroups.add(ImmutableList.of(
+      EVENT_TRACE_STATE_INDEX_PREFIX + "*",
+      "-" + EVENT_TRACE_STATE_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX + "*"
+    ));
+    indexGroups.add(ImmutableList.of(
+      EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*",
+      "-" + EVENT_SEQUENCE_COUNT_INDEX_PREFIX + EXTERNAL_EVENTS_INDEX_SUFFIX + "*"
+    ));
+    return indexGroups;
+  }
+
+  private Set<List<String>> getEngineDecisionDataIndices() {
+    final Set<List<String>> indexGroups = new HashSet<>();
+    indexGroups.add(Collections.singletonList(TIMESTAMP_BASED_IMPORT_INDEX_NAME));
+    indexGroups.add(Collections.singletonList(IMPORT_INDEX_INDEX_NAME));
+    indexGroups.add(Collections.singletonList(DECISION_DEFINITION_INDEX_NAME));
+    indexGroups.add(Collections.singletonList(DECISION_INSTANCE_INDEX_NAME));
+    return indexGroups;
+  }
+
+  private Set<List<String>> getExternalEventDataIndices() {
+    final Set<List<String>> indexGroups = new HashSet<>();
+    indexGroups.add(Collections.singletonList(EXTERNAL_EVENTS_INDEX_NAME));
+    indexGroups.add(Collections.singletonList(EVENT_TRACE_STATE_INDEX_PREFIX + "external*"));
+    indexGroups.add(Collections.singletonList(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "external*"));
+    return indexGroups;
+  }
+
+  private void runEventProcessing() {
+    embeddedOptimizeExtension.processEvents();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void forceReimportOfEngineData() {
     ReimportPreparation.main(new String[]{});
-  }
-
-  private DashboardDefinitionDto getDashboardById(final String dashboardId) {
-    return embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetDashboardRequest(dashboardId)
-      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  private List<AuthorizedReportDefinitionDto> getAllReportsInCollection(String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetReportsForCollectionRequest(collectionId)
-      .executeAndReturnList(AuthorizedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
 
   private ProcessDefinitionEngineDto deployAndStartSimpleServiceTask() {
@@ -220,4 +374,5 @@ public class ForceReimportIT extends AbstractIT {
     engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId(), variables);
     return processDefinitionEngineDto;
   }
+
 }
