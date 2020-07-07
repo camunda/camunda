@@ -60,6 +60,7 @@ export async function request(payload) {
     body: processBody(body),
     headers: {
       'Content-Type': 'application/json',
+      'X-Optimize-Client-Timezone': Intl.DateTimeFormat().resolvedOptions().timeZone,
       ...headers,
     },
     mode: 'cors',

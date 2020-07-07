@@ -22,7 +22,8 @@
     "connected": "is connected",
     "notConnected": "is not connected",
     "rightsReserved": "All Rights Reserved",
-    "connectionError": "Connection Status Unknown (Cannot establish Websocket connection)"
+    "connectionError": "Connection Status Unknown (Cannot establish Websocket connection)",
+    "timezone": "Date and Time displayed in local timezone:"
   },
   "license": {
     "licensedFor": "Licensed for",

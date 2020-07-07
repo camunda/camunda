@@ -55,7 +55,7 @@ export default class Footer extends React.Component {
   }
 
   renderListElement = (key, connectionStatus, isImporting) => {
-    let className = 'Footer__connect-status-item';
+    let className = 'statusItem';
     let title;
 
     if (connectionStatus) {
@@ -86,24 +86,30 @@ export default class Footer extends React.Component {
       error,
     } = this.state;
 
+    const timezoneInfo =
+      t('footer.timezone') + ' ' + Intl.DateTimeFormat().resolvedOptions().timeZone;
+
     return (
       <footer className="Footer">
-        <div className="Footer__content">
+        <div className="content">
           {error ? (
             <span className="error">{t('footer.connectionError')}</span>
           ) : (
-            <ul className="Footer__connect-status">
-              {loaded && (
+            loaded && (
+              <ul className="status">
                 <>
                   {Object.keys(engineConnections).map((key) =>
                     this.renderListElement(key, engineConnections[key], isImporting[key])
                   )}
                   {this.renderListElement('Elasticsearch', connectedToElasticsearch, false)}
                 </>
-              )}
-            </ul>
+              </ul>
+            )
           )}
-          <div className="Footer__colophon">
+          <div className="timezone" title={timezoneInfo}>
+            {timezoneInfo}
+          </div>
+          <div className="colophon">
             © Camunda Services GmbH {new Date().getFullYear()}, {t('footer.rightsReserved')} |{' '}
             {optimizeVersion}
           </div>

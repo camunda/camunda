@@ -22,7 +22,8 @@
     "connected": "ist verbunden",
     "notConnected": "ist nicht verbunden",
     "rightsReserved": "Alle Rechte vorbehalten",
-    "connectionError": "Verbindungsstatus unbekannt (Websocket-Verbindung kann nicht hergestellt werden)"
+    "connectionError": "Verbindungsstatus unbekannt (Websocket-Verbindung kann nicht hergestellt werden)",
+    "timezone": "Datum und Uhrzeit werden in der lokalen Zeitzone angezeigt:"
   },
   "license": {
     "licensedFor": "Lizenziert für",
