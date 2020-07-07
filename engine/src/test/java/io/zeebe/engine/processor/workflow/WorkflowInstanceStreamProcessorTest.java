@@ -438,7 +438,7 @@ public final class WorkflowInstanceStreamProcessorTest {
     // then
     assertThat(envRule.events().onlyTimerRecords().collect(Collectors.toList()))
         .extracting(r -> tuple(r.getRecordType(), r.getIntent()))
-        .containsExactly(
+        .containsSubsequence(
             tuple(RecordType.COMMAND, TimerIntent.CREATE),
             tuple(RecordType.EVENT, TimerIntent.CREATED),
             tuple(RecordType.COMMAND, TimerIntent.TRIGGER),

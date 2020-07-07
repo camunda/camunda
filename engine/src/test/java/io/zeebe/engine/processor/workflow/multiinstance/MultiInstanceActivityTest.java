@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow.multiinstance;
 
+import static io.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -16,7 +17,6 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.MultiInstanceLoopCharacteristicsBuilder;
 import io.zeebe.model.bpmn.builder.zeebe.MessageBuilder;
 import io.zeebe.model.bpmn.instance.ServiceTask;
-import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
@@ -25,6 +25,8 @@ import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.protocol.record.value.VariableRecordValue;
+import io.zeebe.test.util.BrokerClassRuleHelper;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -33,9 +35,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.groups.Tuple;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,13 +53,12 @@ public final class MultiInstanceActivityTest {
 
   private static final String PROCESS_ID = "process";
   private static final String ELEMENT_ID = "task";
-  private static final String JOB_TYPE = "test";
 
-  private static final String INPUT_COLLECTION_VARIABLE = "items";
+  private static final String INPUT_COLLECTION_EXPRESSION = "items";
   private static final String INPUT_ELEMENT_VARIABLE = "item";
   private static final List<Integer> INPUT_COLLECTION = List.of(10, 20, 30);
   private static final String OUTPUT_COLLECTION_VARIABLE = "results";
-  private static final String OUTPUT_ELEMENT_VARIABLE = "result";
+  private static final String OUTPUT_ELEMENT_EXPRESSION = "result";
   private static final List<Integer> OUTPUT_COLLECTION = List.of(11, 22, 33);
 
   private static final String MESSAGE_CORRELATION_KEY_VARIABLE = "correlationKey";
@@ -65,10 +68,10 @@ public final class MultiInstanceActivityTest {
   private static final Consumer<MultiInstanceLoopCharacteristicsBuilder> INPUT_VARIABLE_BUILDER =
       multiInstance(
           m ->
-              m.zeebeInputCollectionExpression(INPUT_COLLECTION_VARIABLE)
+              m.zeebeInputCollectionExpression(INPUT_COLLECTION_EXPRESSION)
                   .zeebeInputElement(INPUT_ELEMENT_VARIABLE)
-                  .zeebeOutputCollection(OUTPUT_COLLECTION_VARIABLE)
-                  .zeebeOutputElementExpression(OUTPUT_ELEMENT_VARIABLE));
+                  .zeebeOutputElementExpression(OUTPUT_ELEMENT_EXPRESSION)
+                  .zeebeOutputCollection(OUTPUT_COLLECTION_VARIABLE));
 
   private static final Consumer<MessageBuilder> MESSAGE_BUILDER =
       m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(MESSAGE_CORRELATION_KEY_VARIABLE);
@@ -76,6 +79,8 @@ public final class MultiInstanceActivityTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
+
+  @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
   @Parameterized.Parameter(0)
   public String loopCharacteristics;
@@ -86,13 +91,15 @@ public final class MultiInstanceActivityTest {
   @Parameterized.Parameter(2)
   public List<Tuple> expectedLifecycle;
 
-  private static BpmnModelInstance workflow(
+  private String jobType;
+
+  private BpmnModelInstance workflow(
       final Consumer<MultiInstanceLoopCharacteristicsBuilder> builder) {
     return Bpmn.createExecutableProcess(PROCESS_ID)
         .startEvent()
         .serviceTask(
             ELEMENT_ID,
-            t -> t.zeebeJobType(JOB_TYPE).multiInstance(INPUT_VARIABLE_BUILDER.andThen(builder)))
+            t -> t.zeebeJobType(jobType).multiInstance(INPUT_VARIABLE_BUILDER.andThen(builder)))
         .endEvent()
         .done();
   }
@@ -103,6 +110,11 @@ public final class MultiInstanceActivityTest {
       {"parallel", multiInstance(m -> m.parallel()), parallelLifecycle()},
       {"sequential", multiInstance(m -> m.sequential()), sequentialLifecycle()},
     };
+  }
+
+  @Before
+  public void init() {
+    jobType = helper.getJobType();
   }
 
   private static Consumer<MultiInstanceLoopCharacteristicsBuilder> multiInstance(
@@ -152,7 +164,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -177,7 +189,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -206,7 +218,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -232,7 +244,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -262,7 +274,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -295,14 +307,14 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
 
     // then
     assertThat(
-            RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED).withType(JOB_TYPE).limit(3))
+            RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).limit(3))
         .flatExtracting(r -> r.getValue().getJobs())
         .extracting(j -> j.getVariables().get(INPUT_ELEMENT_VARIABLE))
         .containsExactlyElementsOf(INPUT_COLLECTION);
@@ -328,7 +340,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -353,7 +365,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, 1);
@@ -386,7 +398,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     final int completedJobs = INPUT_COLLECTION.size() - 1;
@@ -425,7 +437,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, Collections.emptyList())
+            .withVariable(INPUT_COLLECTION_EXPRESSION, Collections.emptyList())
             .create();
 
     // then
@@ -458,7 +470,7 @@ public final class MultiInstanceActivityTest {
             workflow(
                 miBuilder.andThen(
                     m ->
-                        m.zeebeInputCollectionExpression(INPUT_COLLECTION_VARIABLE)
+                        m.zeebeInputCollectionExpression(INPUT_COLLECTION_EXPRESSION)
                             .zeebeInputElement(null))))
         .deploy();
 
@@ -467,7 +479,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -475,7 +487,7 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
-                .withType(JOB_TYPE)
+                .withType(jobType)
                 .limit(INPUT_COLLECTION.size()))
         .flatExtracting(r -> r.getValue().getJobs())
         .flatExtracting(j -> j.getVariables().keySet())
@@ -490,7 +502,8 @@ public final class MultiInstanceActivityTest {
         .withXmlResource(
             workflow(
                 miBuilder.andThen(
-                    m -> m.zeebeInputCollectionExpression("nested." + INPUT_COLLECTION_VARIABLE))))
+                    m ->
+                        m.zeebeInputCollectionExpression("nested." + INPUT_COLLECTION_EXPRESSION))))
         .deploy();
 
     final long workflowInstanceKey =
@@ -498,7 +511,7 @@ public final class MultiInstanceActivityTest {
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
             .withVariable(
-                "nested", Collections.singletonMap(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION))
+                "nested", Collections.singletonMap(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION))
             .create();
 
     RecordingExporter.jobRecords(JobIntent.CREATED)
@@ -511,11 +524,93 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.jobBatchRecords(JobBatchIntent.ACTIVATED)
-                .withType(JOB_TYPE)
+                .withType(jobType)
                 .limit(INPUT_COLLECTION.size()))
         .flatExtracting(r -> r.getValue().getJobs())
         .extracting(j -> j.getVariables().get(INPUT_ELEMENT_VARIABLE))
         .containsExactlyElementsOf(INPUT_COLLECTION);
+  }
+
+  @Test
+  public void shouldCollectNestedOutputElements() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            workflow(
+                miBuilder.andThen(
+                    m -> m.zeebeOutputElementExpression(OUTPUT_ELEMENT_EXPRESSION + ".nested"))))
+        .deploy();
+
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    // complete jobs
+    completeJobs(
+        workflowInstanceKey,
+        INPUT_COLLECTION.size(),
+        i -> Map.of("nested", OUTPUT_COLLECTION.get(i)));
+
+    // then
+    assertThat(
+            RecordingExporter.variableRecords(VariableIntent.CREATED)
+                .withName(OUTPUT_ELEMENT_EXPRESSION) // without '.nested'
+                .withValue("null")
+                .limit(INPUT_COLLECTION.size()))
+        .hasSize(INPUT_COLLECTION.size());
+
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withName(OUTPUT_COLLECTION_VARIABLE)
+                .withScopeKey(workflowInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasValue(JsonUtil.toJson(OUTPUT_COLLECTION));
+  }
+
+  @Test
+  public void shouldCollectOutputElementsFromExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            workflow(
+                miBuilder.andThen(
+                    m ->
+                        m.zeebeOutputElementExpression(
+                            "number(string(loopCounter) + string(loopCounter))"))))
+        .deploy();
+
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
+            .create();
+
+    // complete jobs
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .map(Record::getValue)
+                .map(VariableRecordValue::getName))
+        .noneMatch("number(string(loopCounter) + string(loopCounter))"::equals);
+
+    assertThat(
+            RecordingExporter.variableRecords()
+                .withName(OUTPUT_COLLECTION_VARIABLE)
+                .withScopeKey(workflowInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasValue(JsonUtil.toJson(OUTPUT_COLLECTION));
   }
 
   @Test
@@ -528,7 +623,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -540,7 +635,7 @@ public final class MultiInstanceActivityTest {
             .withScopeKey(workflowInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(variableRecord.getValue()).hasValue(JsonUtil.toJson(OUTPUT_COLLECTION));
+    assertThat(variableRecord.getValue()).hasValue(JsonUtil.toJson(OUTPUT_COLLECTION));
   }
 
   @Test
@@ -553,7 +648,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -584,7 +679,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -592,14 +687,14 @@ public final class MultiInstanceActivityTest {
     // then
     assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
-                .withName(OUTPUT_ELEMENT_VARIABLE)
+                .withName(OUTPUT_ELEMENT_EXPRESSION)
                 .limit(INPUT_COLLECTION.size()))
         .extracting(r -> r.getValue().getValue())
         .containsOnly("null");
 
     assertThat(
             RecordingExporter.variableRecords(VariableIntent.UPDATED)
-                .withName(OUTPUT_ELEMENT_VARIABLE)
+                .withName(OUTPUT_ELEMENT_EXPRESSION)
                 .limit(INPUT_COLLECTION.size()))
         .extracting(r -> r.getValue().getValue())
         .containsExactlyElementsOf(
@@ -616,7 +711,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, List.of())
+            .withVariable(INPUT_COLLECTION_EXPRESSION, List.of())
             .create();
 
     // then
@@ -626,7 +721,7 @@ public final class MultiInstanceActivityTest {
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
-    Assertions.assertThat(variableRecord.getValue()).hasValue("[]");
+    assertThat(variableRecord.getValue()).hasValue("[]");
   }
 
   @Test
@@ -645,7 +740,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -670,7 +765,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -683,7 +778,7 @@ public final class MultiInstanceActivityTest {
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .withScopeKey(workflowInstanceKey))
         .extracting(r -> r.getValue().getName())
-        .doesNotContain(OUTPUT_ELEMENT_VARIABLE);
+        .doesNotContain(OUTPUT_ELEMENT_EXPRESSION);
   }
 
   @Test
@@ -696,7 +791,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -742,7 +837,7 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
@@ -779,7 +874,8 @@ public final class MultiInstanceActivityTest {
     final ServiceTask task = workflow(miBuilder).getModelElementById(ELEMENT_ID);
     final var workflow =
         task.builder()
-            .zeebeOutputExpression("loopCounter", OUTPUT_ELEMENT_VARIABLE) // overrides the variable
+            .zeebeOutputExpression(
+                "loopCounter", OUTPUT_ELEMENT_EXPRESSION) // overrides the variable
             .zeebeOutputExpression("loopCounter", "global") // propagates to root scope
             .done();
 
@@ -790,13 +886,13 @@ public final class MultiInstanceActivityTest {
         ENGINE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .withVariable(INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION)
             .create();
 
     completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.variableRecords()
                 .withScopeKey(workflowInstanceKey)
                 .withName(OUTPUT_COLLECTION_VARIABLE)
@@ -837,7 +933,7 @@ public final class MultiInstanceActivityTest {
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables(
                 Map.of(
-                    INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION,
+                    INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION,
                     MESSAGE_CORRELATION_KEY_VARIABLE, MESSAGE_CORRELATION_KEY))
             .create();
 
@@ -927,7 +1023,7 @@ public final class MultiInstanceActivityTest {
             .ofBpmnProcessId(PROCESS_ID)
             .withVariables(
                 Map.of(
-                    INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION,
+                    INPUT_COLLECTION_EXPRESSION, INPUT_COLLECTION,
                     MESSAGE_CORRELATION_KEY_VARIABLE, MESSAGE_CORRELATION_KEY))
             .create();
 
@@ -998,6 +1094,14 @@ public final class MultiInstanceActivityTest {
   }
 
   private void completeJobs(final long workflowInstanceKey, final int count) {
+    final Function<Integer, Object> defaultResultProvider = OUTPUT_COLLECTION::get;
+    completeJobs(workflowInstanceKey, count, defaultResultProvider);
+  }
+
+  private void completeJobs(
+      final long workflowInstanceKey,
+      final int count,
+      final Function<Integer, Object> resultProvider) {
     IntStream.range(0, count)
         .forEach(
             i -> {
@@ -1010,7 +1114,7 @@ public final class MultiInstanceActivityTest {
                   .isTrue();
 
               final var jobBatch =
-                  ENGINE.jobs().withType(JOB_TYPE).withMaxJobsToActivate(1).activate().getValue();
+                  ENGINE.jobs().withType(jobType).withMaxJobsToActivate(1).activate().getValue();
 
               jobBatch
                   .getJobKeys()
@@ -1019,7 +1123,7 @@ public final class MultiInstanceActivityTest {
                           ENGINE
                               .job()
                               .withKey(jobKey)
-                              .withVariable(OUTPUT_ELEMENT_VARIABLE, OUTPUT_COLLECTION.get(i))
+                              .withVariable(OUTPUT_ELEMENT_EXPRESSION, resultProvider.apply(i))
                               .complete());
             });
   }

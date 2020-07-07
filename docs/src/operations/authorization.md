@@ -46,33 +46,44 @@ public class SecureClient {
 ### Go
 
 ```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "google.golang.org/grpc/status"
+    "google.golang.org/grpc/codes"
+    "github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
+)
+
 type MyCredentialsProvider struct {
 }
 
 // ApplyCredentials adds a token to the Authorization header of a gRPC call.
-func (p *MyCredentialsProvider) ApplyCredentials(headers map[string]string) error {
+func (p *MyCredentialsProvider) ApplyCredentials(ctx context.Context, headers map[string]string) error {
     headers["Authorization"] = "someToken"
     return nil
 }
 
 // ShouldRetryRequest returns true if the call failed with a deadline exceed error.
-func (p *MyCredentialsProvider) ShouldRetryRequest(err error) bool {
+func (p *MyCredentialsProvider) ShouldRetryRequest(ctx context.Context, err error) bool {
     return status.Code(err) == codes.DeadlineExceeded
 }
 
 func main() {
-    client, err := NewZBClientWithConfig(&ZBClientConfig{
-		  CredentialsProvider:  &MyCredentialsProvider{},
+    client, err := zbc.NewClient(&zbc.ClientConfig{
+    	CredentialsProvider:  &MyCredentialsProvider{},
     })
     if err != nil {
       panic(err)
     }
-  
-    response, err := client.NewTopologyCommand().Send()
+
+    ctx := context.Background()
+    response, err := client.NewTopologyCommand().Send(ctx)
     if err != nil {
       panic(err)
     }
-    
+
     fmt.Println(response.String())
 }
 ```
@@ -127,8 +138,16 @@ The client will create an OAuthCredentialProvider with the credentials specified
 
 ### Go
 ```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
+)
+
 func main() {
-    credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+    credsProvider, err := zbc.NewOAuthCredentialsProvider(&zbc.OAuthProviderConfig{
         ClientID:     "clientId",
         ClientSecret: "clientSecret",
         Audience:     "cluster.endpoint.com",
@@ -137,7 +156,7 @@ func main() {
         panic(err)
     }
 
-    client, err := NewZBClientWithConfig(&ZBClientConfig{
+    client, err := zbc.NewClient(&zbc.ClientConfig{
         GatewayAddress:      "cluster.endpoint.com:443",
         CredentialsProvider: credsProvider,
     })
@@ -145,7 +164,9 @@ func main() {
         panic(err)
     }
 
-    response, err := client.NewTopologyCommand().Send()
+
+    ctx := context.Background()
+    response, err := client.NewTopologyCommand().Send(ctx)
     if err != nil {
         panic(err)
     }
@@ -157,15 +178,24 @@ func main() {
 As was the case with the Java client, it's possible to make use of the `ZEEBE_CLIENT_ID` and `ZEEBE_CLIENT_SECRET` environment variables to simplify the client configuration:
 
 ```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
+)
+
 func main() {
-    client, err := NewZBClientWithConfig(&ZBClientConfig{
+    client, err := zbc.NewClient(&zbc.ClientConfig{
         GatewayAddress: "cluster.endpoint.com:443",
     })
     if err != nil {
         panic(err)
     }
 
-    response, err := client.NewTopologyCommand().Send()
+    ctx := context.Background()
+    response, err := client.NewTopologyCommand().Send(ctx)
     if err != nil {
         panic(err)
     }

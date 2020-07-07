@@ -178,7 +178,7 @@ public final class ActorFrameworkIntegrationTest {
     }
 
     void produce() {
-      if (dispatcher.claim(claim, 4534) >= 0) {
+      if (dispatcher.claimSingleFragment(claim, 4534) >= 0) {
         claim.getBuffer().putInt(claim.getOffset(), counter++);
         claim.commit();
       }

@@ -18,7 +18,6 @@ import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.intent.Intent;
@@ -103,6 +102,10 @@ public final class StreamProcessorRule implements TestRule {
             .around(new FailedTestRecordPrinter());
   }
 
+  public ActorSchedulerRule getActorSchedulerRule() {
+    return actorSchedulerRule;
+  }
+
   @Override
   public Statement apply(final Statement base, final Description description) {
     return chain.apply(base, description);
@@ -136,14 +139,6 @@ public final class StreamProcessorRule implements TestRule {
 
   public void closeStreamProcessor() {
     closeStreamProcessor(startPartitionId);
-  }
-
-  public StateSnapshotController getStateSnapshotController(final int partitionId) {
-    return streams.getStateSnapshotController(getLogName(partitionId));
-  }
-
-  public StateSnapshotController getStateSnapshotController() {
-    return getStateSnapshotController(startPartitionId);
   }
 
   public CommandResponseWriter getCommandResponseWriter() {

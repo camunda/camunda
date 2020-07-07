@@ -12,6 +12,7 @@ import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor.EvaluationException;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
+import io.zeebe.engine.processor.workflow.message.MessageNameException;
 import io.zeebe.protocol.record.value.ErrorType;
 
 public final class CatchEventSubscriber {
@@ -29,11 +30,17 @@ public final class CatchEventSubscriber {
     } catch (final MessageCorrelationKeyException e) {
       context.raiseIncident(
           ErrorType.EXTRACT_VALUE_ERROR, e.getContext().getVariablesScopeKey(), e.getMessage());
+      return false;
     } catch (final EvaluationException e) {
       context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, e.getMessage());
+      return false;
+    } catch (final MessageNameException e) {
+      // processing was interrupted at the point the exception was thrown; no further processing
+      // shall take place, that's why we return false here
+      // todo verify that this is the correct level to raise the incident at
+      context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, e.getFailure().getMessage());
+      return false;
     }
-
-    return false;
   }
 
   public <T extends ExecutableCatchEventSupplier> void unsubscribeFromEvents(

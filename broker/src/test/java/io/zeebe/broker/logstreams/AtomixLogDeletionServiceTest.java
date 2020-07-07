@@ -5,23 +5,20 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
+
 package io.zeebe.broker.logstreams;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.raft.snapshot.impl.FileBasedSnapshotStore;
+import io.atomix.raft.snapshot.impl.SnapshotMetrics;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.storage.journal.Indexed;
-import io.atomix.storage.journal.JournalReader.Mode;
 import io.atomix.storage.journal.JournalSegmentDescriptor;
 import io.atomix.utils.time.WallClockTimestamp;
-import io.zeebe.broker.clustering.atomix.storage.snapshot.AtomixRecordEntrySupplierImpl;
-import io.zeebe.broker.clustering.atomix.storage.snapshot.AtomixSnapshotStorage;
-import io.zeebe.broker.clustering.atomix.storage.snapshot.DbSnapshotStore;
-import io.zeebe.logstreams.state.SnapshotMetrics;
-import io.zeebe.logstreams.storage.atomix.AtomixLogStorageReader;
-import io.zeebe.logstreams.storage.atomix.ZeebeIndexAdapter;
 import io.zeebe.logstreams.util.AtomixLogStorageRule;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -32,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
@@ -55,36 +51,20 @@ public final class AtomixLogDeletionServiceTest {
   public final RuleChain chain =
       RuleChain.outerRule(temporaryFolder).around(actorScheduler).around(logStorageRule);
 
-  private AtomixSnapshotStorage snapshotStorage;
-  private AtomixLogStorageReader storageReader;
   private LogDeletionService deletionService;
   private Compactor compactor;
 
   @Before
-  public void setUp() throws IOException {
-    final var runtimeDirectory = temporaryFolder.newFolder().toPath();
-    final var pendingDirectory = temporaryFolder.newFolder().toPath();
-    storageReader =
-        new AtomixLogStorageReader(
-            ZeebeIndexAdapter.ofDensity(5),
-            logStorageRule.getRaftLog().openReader(-1, Mode.COMMITS));
-    snapshotStorage =
-        new AtomixSnapshotStorage(
-            runtimeDirectory,
-            pendingDirectory,
-            logStorageRule.getSnapshotStore(),
-            new AtomixRecordEntrySupplierImpl(storageReader),
-            new SnapshotMetrics(PARTITION_ID));
+  public void setUp() {
     compactor = new Compactor();
-
-    deletionService = new LogDeletionService(0, PARTITION_ID, compactor, snapshotStorage);
+    deletionService =
+        new LogDeletionService(
+            0, PARTITION_ID, compactor, logStorageRule.getPersistedSnapshotStore());
     actorScheduler.submitActor(deletionService).join();
   }
 
   @After
   public void tearDown() {
-    storageReader.close();
-    snapshotStorage.close();
     deletionService.close();
   }
 
@@ -147,11 +127,19 @@ public final class AtomixLogDeletionServiceTest {
   }
 
   private void createSnapshot(final long index) {
-    final var store = logStorageRule.getSnapshotStore();
+    final var store = logStorageRule.getPersistedSnapshotStore();
     final var now = WallClockTimestamp.from(System.currentTimeMillis());
-    final var pending = store.newPendingSnapshot(index, 0, now);
-    pending.write(ByteBuffer.wrap("foo".getBytes()), ByteBuffer.wrap("bar".getBytes()));
-    pending.commit();
+    final var transientSnapshot = store.newTransientSnapshot(index, 0, now);
+    transientSnapshot.take(
+        p -> {
+          try {
+            FileUtil.ensureDirectoryExists(p);
+            return true;
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        });
+    transientSnapshot.persist();
   }
 
   private static RaftStorage.Builder builder(
@@ -161,10 +149,10 @@ public final class AtomixLogDeletionServiceTest {
           // hardcode max segment size to allow a single entry only
           .withMaxSegmentSize(JournalSegmentDescriptor.BYTES + 8 * Integer.BYTES)
           .withSnapshotStore(
-              new DbSnapshotStore(
+              new FileBasedSnapshotStore(
+                  new SnapshotMetrics("1"),
                   folder.newFolder("runtime").toPath(),
-                  folder.newFolder("snapshots").toPath(),
-                  new ConcurrentSkipListMap<>()));
+                  folder.newFolder("snapshots").toPath()));
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }

@@ -14,6 +14,7 @@ import io.zeebe.engine.util.EngineRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
@@ -311,5 +312,56 @@ public final class ExclusiveGatewayTest {
             WorkflowInstanceIntent.ELEMENT_COMPLETED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED);
+  }
+
+  @Test
+  public void shouldResolveIncidentsWhenTerminating() {
+    // given
+    final String processId = Strings.newRandomValidBpmnId();
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .exclusiveGateway("xor")
+                .sequenceFlowId("s1")
+                .defaultFlow()
+                .endEvent("default-end")
+                .moveToLastGateway()
+                .sequenceFlowId("s2")
+                .conditionExpression("nonexisting_variable")
+                .endEvent("non-default-end")
+                .done())
+        .deploy();
+    final long workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(processId).withVariable("foo", 10).create();
+    assertThat(
+            RecordingExporter.incidentRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limit(2))
+        .extracting(Record::getIntent)
+        .containsExactly(IncidentIntent.CREATE, IncidentIntent.CREATED);
+
+    // when
+    ENGINE.workflowInstance().withInstanceKey(workflowInstanceKey).cancel();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limitToWorkflowInstanceTerminated())
+        .extracting(r -> tuple(r.getValue().getBpmnElementType(), r.getIntent()))
+        .containsSubsequence(
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.EXCLUSIVE_GATEWAY, WorkflowInstanceIntent.ELEMENT_TERMINATING),
+            tuple(BpmnElementType.EXCLUSIVE_GATEWAY, WorkflowInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.PROCESS, WorkflowInstanceIntent.ELEMENT_TERMINATED));
+
+    assertThat(
+            RecordingExporter.incidentRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey)
+                .limit(3))
+        .extracting(Record::getIntent)
+        .containsExactly(IncidentIntent.CREATE, IncidentIntent.CREATED, IncidentIntent.RESOLVED);
   }
 }

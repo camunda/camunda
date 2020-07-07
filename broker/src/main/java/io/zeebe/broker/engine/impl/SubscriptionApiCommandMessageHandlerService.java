@@ -46,8 +46,7 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
   }
 
   @Override
-  public ActorFuture<Void> onBecomingFollower(
-      final int partitionId, final long term, final LogStream logStream) {
+  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
     return actor.call(
         () -> {
           leaderPartitions.remove(partitionId);

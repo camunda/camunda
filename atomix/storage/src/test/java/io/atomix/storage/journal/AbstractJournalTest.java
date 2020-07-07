@@ -91,7 +91,7 @@ public abstract class AbstractJournalTest {
         .withNamespace(NAMESPACE)
         .withStorageLevel(storageLevel())
         .withMaxSegmentSize(maxSegmentSize)
-        .withMaxEntrySize(64)
+        .withMaxEntrySize(48)
         .withJournalIndexFactory(() -> index)
         .build();
   }

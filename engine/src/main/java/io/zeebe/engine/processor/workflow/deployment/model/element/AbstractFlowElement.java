@@ -21,10 +21,11 @@ public abstract class AbstractFlowElement implements ExecutableFlowElement {
   private final Map<WorkflowInstanceIntent, BpmnStep> bpmnSteps =
       new EnumMap<>(WorkflowInstanceIntent.class);
   private BpmnElementType elementType;
+  private ExecutableFlowElement flowScope;
 
   public AbstractFlowElement(final String id) {
     this.id = BufferUtil.wrapString(id);
-    this.elementType = BpmnElementType.UNSPECIFIED;
+    elementType = BpmnElementType.UNSPECIFIED;
   }
 
   @Override
@@ -46,7 +47,16 @@ public abstract class AbstractFlowElement implements ExecutableFlowElement {
     this.elementType = elementType;
   }
 
+  @Override
+  public ExecutableFlowElement getFlowScope() {
+    return flowScope;
+  }
+
+  public void setFlowScope(final ExecutableFlowElement flowScope) {
+    this.flowScope = flowScope;
+  }
+
   public void bindLifecycleState(final WorkflowInstanceIntent state, final BpmnStep step) {
-    this.bpmnSteps.put(state, step);
+    bpmnSteps.put(state, step);
   }
 }

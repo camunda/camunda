@@ -156,7 +156,17 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
           Duration.ofMillis(Long.parseLong(properties.getProperty(DEFAULT_REQUEST_TIMEOUT))));
     }
     if (properties.containsKey(USE_PLAINTEXT_CONNECTION)) {
-      usePlaintext();
+      /**
+       * The following condition is phrased in this particular way in order to be backwards
+       * compatible with older versions of the software. In older versions the content of the
+       * property was not interpreted. It was assumed to be true, whenever it was set. Because of
+       * that, code examples in this code base set the flag to an empty string. By phrasing the
+       * condition this way, the old code will still work with this new implementation. Only if
+       * somebody deliberately sets the flag to false, the behavior will change
+       */
+      if (!"false".equalsIgnoreCase(properties.getProperty(USE_PLAINTEXT_CONNECTION))) {
+        usePlaintext();
+      }
     }
     if (properties.containsKey(CA_CERTIFICATE_PATH)) {
       caCertificatePath(properties.getProperty(CA_CERTIFICATE_PATH));

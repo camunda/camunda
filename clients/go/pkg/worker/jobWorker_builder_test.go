@@ -16,7 +16,9 @@
 package worker
 
 import (
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
+	"github.com/zeebe-io/zeebe/clients/go/internal/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"testing"
 	"time"
@@ -91,4 +93,12 @@ func TestJobWorkerBuilder_FetchVariables(t *testing.T) {
 	builder := JobWorkerBuilder{}
 	builder.FetchVariables(fetchVariables...)
 	assert.Equal(t, fetchVariables, builder.request.FetchVariable)
+}
+
+func TestJobWorkerBuilder_Metrics(t *testing.T) {
+	builder := JobWorkerBuilder{}
+	workerMetrics := mock_pb.NewMockJobWorkerMetrics(gomock.NewController(t))
+	builder.Metrics(workerMetrics)
+
+	assert.Equal(t, workerMetrics, builder.metrics)
 }

@@ -189,7 +189,14 @@ public interface RaftMember {
      */
     ACTIVE,
 
-    /** Bootstraps the partition cluster, which means it tries directly to become candidate. */
+    /**
+     * <b>DEPRECATED</b>
+     *
+     * <p>We need to keep this type to be backwards compatible
+     *
+     * <p>Bootstraps the partition cluster, which means it tries directly to become candidate.
+     */
+    @Deprecated
     BOOTSTRAP,
   }
 }

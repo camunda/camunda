@@ -23,9 +23,7 @@ import static io.atomix.utils.concurrent.Threads.namedThreads;
 
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.PrimitiveTypeRegistry;
 import io.atomix.raft.RaftCommitListener;
-import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
@@ -36,12 +34,6 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.metrics.RaftRoleMetrics;
-import io.atomix.raft.protocol.CloseSessionResponse;
-import io.atomix.raft.protocol.CommandResponse;
-import io.atomix.raft.protocol.KeepAliveResponse;
-import io.atomix.raft.protocol.MetadataResponse;
-import io.atomix.raft.protocol.OpenSessionResponse;
-import io.atomix.raft.protocol.QueryResponse;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.protocol.TransferRequest;
@@ -53,16 +45,14 @@ import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.roles.PassiveRole;
 import io.atomix.raft.roles.PromotableRole;
 import io.atomix.raft.roles.RaftRole;
-import io.atomix.raft.session.RaftSessionRegistry;
+import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.storage.snapshot.SnapshotStore;
 import io.atomix.raft.storage.system.MetaStore;
-import io.atomix.raft.utils.LoadMonitor;
-import io.atomix.raft.utils.LoadMonitorFactory;
+import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.ComposableFuture;
@@ -90,30 +80,24 @@ import org.slf4j.Logger;
  */
 public class RaftContext implements AutoCloseable {
 
-  private static final int LOAD_WINDOW_SIZE = 5;
-  private static final int HIGH_LOAD_THRESHOLD = 500;
   protected final String name;
   protected final ThreadContext threadContext;
-  protected final PrimitiveTypeRegistry primitiveTypes;
   protected final ClusterMembershipService membershipService;
   protected final RaftClusterContext cluster;
   protected final RaftServerProtocol protocol;
   protected final RaftStorage storage;
-  protected final RaftServiceRegistry services = new RaftServiceRegistry();
-  protected final RaftSessionRegistry sessions = new RaftSessionRegistry();
   private final Logger log;
   private final Set<RaftRoleChangeListener> roleChangeListeners = new CopyOnWriteArraySet<>();
   private final Set<Consumer<State>> stateChangeListeners = new CopyOnWriteArraySet<>();
   private final Set<Consumer<RaftMember>> electionListeners = new CopyOnWriteArraySet<>();
   private final Set<RaftCommitListener> commitListeners = new CopyOnWriteArraySet<>();
   private final Set<Runnable> failureListeners = new CopyOnWriteArraySet<>();
-  private final LoadMonitor loadMonitor;
   private final RaftRoleMetrics raftRoleMetrics;
   private final MetaStore meta;
   private final RaftLog raftLog;
   private final RaftLogWriter logWriter;
   private final RaftLogReader logReader;
-  private final SnapshotStore snapshotStore;
+  private final PersistedSnapshotStore persistedSnapshotStore;
   private final RaftStateMachine stateMachine;
   private final ThreadContextFactory threadContextFactory;
   private final ThreadContext loadContext;
@@ -123,7 +107,6 @@ public class RaftContext implements AutoCloseable {
   private RaftRole role = new InactiveRole(this);
   private Duration electionTimeout = Duration.ofMillis(500);
   private Duration heartbeatInterval = Duration.ofMillis(150);
-  private Duration sessionTimeout = Duration.ofMillis(5000);
   private volatile MemberId leader;
   private volatile long term;
   private MemberId lastVotedFor;
@@ -132,6 +115,7 @@ public class RaftContext implements AutoCloseable {
   private volatile long lastApplied;
   private volatile long lastAppliedTerm;
   private volatile boolean started;
+  private EntryValidator entryValidator;
 
   @SuppressWarnings("unchecked")
   public RaftContext(
@@ -140,16 +124,13 @@ public class RaftContext implements AutoCloseable {
       final ClusterMembershipService membershipService,
       final RaftServerProtocol protocol,
       final RaftStorage storage,
-      final PrimitiveTypeRegistry primitiveTypes,
       final ThreadContextFactory threadContextFactory,
       final boolean closeOnStop,
-      final RaftStateMachineFactory stateMachineFactory,
-      final LoadMonitorFactory loadMonitorFactory) {
+      final RaftStateMachineFactory stateMachineFactory) {
     this.name = checkNotNull(name, "name cannot be null");
     this.membershipService = checkNotNull(membershipService, "membershipService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
     this.storage = checkNotNull(storage, "storage cannot be null");
-    this.primitiveTypes = checkNotNull(primitiveTypes, "registry cannot be null");
     this.log =
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(RaftServer.class).addValue(name).build());
@@ -170,10 +151,6 @@ public class RaftContext implements AutoCloseable {
         checkNotNull(threadContextFactory, "threadContextFactory cannot be null");
     this.closeOnStop = closeOnStop;
 
-    checkNotNull(loadMonitorFactory, "loadMonitorFactory must be not null");
-    this.loadMonitor =
-        loadMonitorFactory.createLoadMonitor(LOAD_WINDOW_SIZE, HIGH_LOAD_THRESHOLD, loadContext);
-
     // Open the metadata store.
     this.meta = storage.openMetaStore();
 
@@ -187,12 +164,11 @@ public class RaftContext implements AutoCloseable {
     this.logReader = raftLog.openReader(1, RaftLogReader.Mode.ALL);
 
     // Open the snapshot store.
-    this.snapshotStore = storage.getSnapshotStore();
+    this.persistedSnapshotStore = storage.getPersistedSnapshotStore();
 
     // Create a new internal server state machine.
     checkNotNull(stateMachineFactory, "stateMachineFactory must be not null");
-    this.stateMachine =
-        stateMachineFactory.createStateMachine(this, stateContext, threadContextFactory);
+    this.stateMachine = stateMachineFactory.createStateMachine(this);
 
     this.cluster = new RaftClusterContext(localMemberId, this);
 
@@ -228,17 +204,6 @@ public class RaftContext implements AutoCloseable {
 
   /** Registers server handlers on the configured protocol. */
   private void registerHandlers(final RaftServerProtocol protocol) {
-    protocol.registerOpenSessionHandler(
-        request ->
-            runOnContextIfReady(() -> role.onOpenSession(request), OpenSessionResponse::builder));
-    protocol.registerCloseSessionHandler(
-        request ->
-            runOnContextIfReady(() -> role.onCloseSession(request), CloseSessionResponse::builder));
-    protocol.registerKeepAliveHandler(
-        request ->
-            runOnContextIfReady(() -> role.onKeepAlive(request), KeepAliveResponse::builder));
-    protocol.registerMetadataHandler(
-        request -> runOnContextIfReady(() -> role.onMetadata(request), MetadataResponse::builder));
     protocol.registerConfigureHandler(request -> runOnContext(() -> role.onConfigure(request)));
     protocol.registerInstallHandler(request -> runOnContext(() -> role.onInstall(request)));
     protocol.registerJoinHandler(request -> runOnContext(() -> role.onJoin(request)));
@@ -248,25 +213,6 @@ public class RaftContext implements AutoCloseable {
     protocol.registerAppendHandler(request -> runOnContext(() -> role.onAppend(request)));
     protocol.registerPollHandler(request -> runOnContext(() -> role.onPoll(request)));
     protocol.registerVoteHandler(request -> runOnContext(() -> role.onVote(request)));
-    protocol.registerCommandHandler(
-        request -> runOnContextIfReady(() -> role.onCommand(request), CommandResponse::builder));
-    protocol.registerQueryHandler(
-        request -> runOnContextIfReady(() -> role.onQuery(request), QueryResponse::builder));
-  }
-
-  private <R extends RaftResponse> CompletableFuture<R> runOnContextIfReady(
-      final Supplier<CompletableFuture<R>> function,
-      final Supplier<RaftResponse.Builder<?, R>> builderSupplier) {
-    if (state == State.READY) {
-      return runOnContext(function);
-    } else {
-      return CompletableFuture.completedFuture(
-          builderSupplier
-              .get()
-              .withStatus(RaftResponse.Status.ERROR)
-              .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
-              .build());
-    }
   }
 
   private <R extends RaftResponse> CompletableFuture<R> runOnContext(
@@ -622,13 +568,9 @@ public class RaftContext implements AutoCloseable {
   public void transition(final RaftMember.Type type) {
     switch (type) {
       case ACTIVE:
-        if (!(role instanceof ActiveRole)) {
-          transition(RaftServer.Role.FOLLOWER);
-        }
-        break;
       case BOOTSTRAP:
         if (!(role instanceof ActiveRole)) {
-          transition(Role.CANDIDATE);
+          transition(RaftServer.Role.FOLLOWER);
         }
         break;
       case PROMOTABLE:
@@ -675,7 +617,7 @@ public class RaftContext implements AutoCloseable {
 
     // Close the snapshot store.
     try {
-      snapshotStore.close();
+      persistedSnapshotStore.close();
     } catch (final Exception e) {
       log.error("Failed to close snapshot store", e);
     }
@@ -692,10 +634,6 @@ public class RaftContext implements AutoCloseable {
 
   /** Unregisters server handlers on the configured protocol. */
   private void unregisterHandlers(final RaftServerProtocol protocol) {
-    protocol.unregisterOpenSessionHandler();
-    protocol.unregisterCloseSessionHandler();
-    protocol.unregisterKeepAliveHandler();
-    protocol.unregisterMetadataHandler();
     protocol.unregisterConfigureHandler();
     protocol.unregisterInstallHandler();
     protocol.unregisterJoinHandler();
@@ -705,8 +643,6 @@ public class RaftContext implements AutoCloseable {
     protocol.unregisterAppendHandler();
     protocol.unregisterPollHandler();
     protocol.unregisterVoteHandler();
-    protocol.unregisterCommandHandler();
-    protocol.unregisterQueryHandler();
   }
 
   /** Deletes the server context. */
@@ -795,6 +731,24 @@ public class RaftContext implements AutoCloseable {
   }
 
   /**
+   * Returns the entry validator to be called when an entry is appended.
+   *
+   * @return The entry validator.
+   */
+  public EntryValidator getEntryValidator() {
+    return entryValidator;
+  }
+
+  /**
+   * Sets the entry validator to be called when an entry is appended.
+   *
+   * @param validator The entry validator.
+   */
+  public void setEntryValidator(final EntryValidator validator) {
+    this.entryValidator = validator;
+  }
+
+  /**
    * Returns the last applied index.
    *
    * @return the last applied index
@@ -840,15 +794,6 @@ public class RaftContext implements AutoCloseable {
     } else {
       log.trace("Reset last voted for");
     }
-  }
-
-  /**
-   * Returns the server load monitor.
-   *
-   * @return the server load monitor
-   */
-  public LoadMonitor getLoadMonitor() {
-    return loadMonitor;
   }
 
   /**
@@ -906,15 +851,6 @@ public class RaftContext implements AutoCloseable {
   }
 
   /**
-   * Returns the server state machine registry.
-   *
-   * @return The server state machine registry.
-   */
-  public PrimitiveTypeRegistry getPrimitiveTypes() {
-    return primitiveTypes;
-  }
-
-  /**
    * Returns the server protocol.
    *
    * @return The server protocol.
@@ -955,48 +891,12 @@ public class RaftContext implements AutoCloseable {
   }
 
   /**
-   * Returns the server service registry.
-   *
-   * @return the server service registry
-   */
-  public RaftServiceRegistry getServices() {
-    return services;
-  }
-
-  /**
-   * Returns the session timeout.
-   *
-   * @return The session timeout.
-   */
-  public Duration getSessionTimeout() {
-    return sessionTimeout;
-  }
-
-  /**
-   * Sets the session timeout.
-   *
-   * @param sessionTimeout The session timeout.
-   */
-  public void setSessionTimeout(final Duration sessionTimeout) {
-    this.sessionTimeout = checkNotNull(sessionTimeout, "sessionTimeout cannot be null");
-  }
-
-  /**
-   * Returns the server session registry.
-   *
-   * @return the server session registry
-   */
-  public RaftSessionRegistry getSessions() {
-    return sessions;
-  }
-
-  /**
    * Returns the server snapshot store.
    *
    * @return The server snapshot store.
    */
-  public SnapshotStore getSnapshotStore() {
-    return snapshotStore;
+  public PersistedSnapshotStore getPersistedSnapshotStore() {
+    return persistedSnapshotStore;
   }
 
   /**

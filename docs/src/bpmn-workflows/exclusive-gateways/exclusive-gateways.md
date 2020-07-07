@@ -3,27 +3,31 @@
 An exclusive gateway (aka XOR-gateway) allows to make a decision based on data (i.e. on workflow instance variables).
 
 ![workflow](/bpmn-workflows/exclusive-gateways/exclusive-gateway.png)
- 
+
 If an exclusive gateway has multiple outgoing sequence flows then all sequence flows, except one, **must** have a `conditionExpression` to define when the flow is taken. The gateway can have one sequence flow without `conditionExpression` which must be defined as the default flow.
 
 When an exclusive gateway is entered then the `conditionExpression`s are evaluated. The workflow instance takes the first sequence flow that condition is fulfilled.
 
 If no condition is fulfilled then it takes the **default flow** of the gateway. In case the gateway has no default flow, an incident is created.
 
-An exclusive gateway can also be used to **join** multiple incoming flows to one, in order to improve the readability of the BPMN. A joining gateway has a pass-through semantic. It doesn't merge the incoming concurrent flows like a parallel gateway.   
+An exclusive gateway can also be used to **join** multiple incoming flows to one, in order to improve the readability of the BPMN. A joining gateway has a pass-through semantic. It doesn't merge the incoming concurrent flows like a parallel gateway.
 
 ## Conditions
 
-A `conditionExpression` defines when a flow is taken. The expression can access the workflow instance variables and compare them with literals or other variables. Comparisons can be combined with logical operators.
+A `conditionExpression` defines when a flow is taken. It is a [boolean expression](/reference/expressions.html#boolean-expressions) that can access the workflow instance variables and compare them with literals or other variables. The condition is fulfilled when the expression returns `true`.
+
+Multiple boolean values or comparisons can be combined as disjunction (`and`) or conjunction (`or`).
 
 For example:
 
-```js
-totalPrice > 100
+```feel
+= totalPrice > 100
 
-order.customer == "Paul"
+= order.customer = "Paul"
 
-orderCount > 15 || totalPrice > 50
+= orderCount > 15 or totalPrice > 50
+
+= valid and orderCount > 0
 ```
 
 ## Additional Resources
@@ -35,14 +39,14 @@ orderCount > 15 || totalPrice > 50
 ```xml
 <bpmn:exclusiveGateway id="exclusiveGateway" default="else" />
 
-<bpmn:sequenceFlow id="priceGreaterThan100" name="totalPrice &#62; 100" 
+<bpmn:sequenceFlow id="priceGreaterThan100" name="totalPrice &#62; 100"
   sourceRef="exclusiveGateway" targetRef="shipParcelWithInsurance">
   <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">
-    <![CDATA[ totalPrice > 100 ]]>
+    = totalPrice &gt; 100
   </bpmn:conditionExpression>
 </bpmn:sequenceFlow>
 
-<bpmn:sequenceFlow id="else" name="else" 
+<bpmn:sequenceFlow id="else" name="else"
   sourceRef="exclusiveGateway" targetRef="shipParcel" />
 ```
 
@@ -53,20 +57,20 @@ orderCount > 15 || totalPrice > 50
   <summary>Using the BPMN modeler</summary>
   <p>Adding an exclusive gateway with two outgoing sequence flows:
 
-![exclusive-gateway](/bpmn-workflows/exclusive-gateways/exclusive-gateway.gif) 
+![exclusive-gateway](/bpmn-workflows/exclusive-gateways/exclusive-gateway.gif)
   </p>
 </details>
 
 <details>
   <summary>Workflow Lifecycle</summary>
-  <p>Workflow instance records of an exclusive gateway: 
+  <p>Workflow instance records of an exclusive gateway:
 
 <table>
     <tr>
         <th>Intent</th>
         <th>Element Id</th>
         <th>Element Type</th>
-    </tr>    
+    </tr>
     <tr>
         <td>ELEMENT_ACTIVATING</td>
         <td>shipping-gateway</td>
@@ -98,5 +102,5 @@ orderCount > 15 || totalPrice > 50
 </details>
 
 References:
-* [Conditions](/reference/conditions.html)
+* [Expressions](/reference/expressions.html)
 * [Incidents](/reference/incidents.html)

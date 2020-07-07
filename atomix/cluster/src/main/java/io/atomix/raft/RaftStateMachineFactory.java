@@ -17,12 +17,9 @@
 package io.atomix.raft;
 
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.utils.concurrent.ThreadContext;
-import io.atomix.utils.concurrent.ThreadContextFactory;
 
 @FunctionalInterface
 public interface RaftStateMachineFactory {
 
-  RaftStateMachine createStateMachine(
-      RaftContext raft, ThreadContext stateContext, ThreadContextFactory threadContextFactory);
+  RaftStateMachine createStateMachine(RaftContext raft);
 }

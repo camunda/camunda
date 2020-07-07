@@ -17,7 +17,9 @@ import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.zeebe.gateway.impl.configuration.SecurityCfg;
+import io.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
+import io.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.zeebe.util.VersionUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.File;
@@ -42,6 +44,9 @@ public final class Gateway {
 
   private Server server;
   private BrokerClient brokerClient;
+
+  @SuppressWarnings("squid:S3077")
+  private volatile Status status = Status.INITIAL;
 
   public Gateway(
       final GatewayCfg gatewayCfg,
@@ -76,11 +81,16 @@ public final class Gateway {
     return gatewayCfg;
   }
 
+  public Status getStatus() {
+    return status;
+  }
+
   public BrokerClient getBrokerClient() {
     return brokerClient;
   }
 
   public void start() throws IOException {
+    status = Status.STARTING;
     if (LOG.isInfoEnabled()) {
       LOG.info("Version: {}", VersionUtil.getVersion());
       LOG.info("Starting gateway with configuration {}", gatewayCfg.toJson());
@@ -88,10 +98,16 @@ public final class Gateway {
 
     brokerClient = buildBrokerClient();
 
-    final LongPollingActivateJobsHandler longPollingHandler = buildLongPollingHandler(brokerClient);
-    actorScheduler.submitActor(longPollingHandler);
-
-    final EndpointManager endpointManager = new EndpointManager(brokerClient, longPollingHandler);
+    final ActivateJobsHandler activateJobsHandler;
+    if (gatewayCfg.getLongPolling().isEnabled()) {
+      final LongPollingActivateJobsHandler longPollingHandler =
+          buildLongPollingHandler(brokerClient);
+      actorScheduler.submitActor(longPollingHandler);
+      activateJobsHandler = longPollingHandler;
+    } else {
+      activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
+    }
+    final EndpointManager endpointManager = new EndpointManager(brokerClient, activateJobsHandler);
 
     final ServerBuilder serverBuilder = serverBuilderFactory.apply(gatewayCfg);
 
@@ -112,6 +128,7 @@ public final class Gateway {
     server = serverBuilder.build();
 
     server.start();
+    status = Status.RUNNING;
   }
 
   private static NettyServerBuilder setNetworkConfig(final NetworkCfg cfg) {
@@ -173,6 +190,7 @@ public final class Gateway {
   }
 
   public void stop() {
+    status = Status.SHUTDOWN;
     if (server != null && !server.isShutdown()) {
       server.shutdownNow();
       try {
@@ -189,5 +207,12 @@ public final class Gateway {
       brokerClient.close();
       brokerClient = null;
     }
+  }
+
+  public static enum Status {
+    INITIAL,
+    STARTING,
+    RUNNING,
+    SHUTDOWN
   }
 }

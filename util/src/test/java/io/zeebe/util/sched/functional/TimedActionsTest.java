@@ -13,10 +13,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ScheduledTimer;
+import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import java.time.Duration;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -102,20 +104,15 @@ public final class TimedActionsTest {
   public void shouldCancelRunDelayed() {
     // given
     final Runnable action = mock(Runnable.class);
-    final AtomicReference<ScheduledTimer> timer = new AtomicReference<>();
-    final Actor actor =
-        new Actor() {
-          @Override
-          protected void onActorStarted() {
-            timer.set(actor.runDelayed(Duration.ofMillis(10), action));
-          }
-        };
+    final TimerActor actor =
+        new TimerActor(actorControl -> actorControl.runDelayed(Duration.ofMillis(10), action));
 
     // when
     schedulerRule.getClock().setCurrentTime(100);
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
-    timer.get().cancel();
+    actor.cancelTimer();
+    schedulerRule.workUntilDone();
     schedulerRule.getClock().addTime(Duration.ofMillis(10));
     schedulerRule.workUntilDone();
 
@@ -127,14 +124,8 @@ public final class TimedActionsTest {
   public void shouldCancelRunDelayedAfterExecution() {
     // given
     final Runnable action = mock(Runnable.class);
-    final AtomicReference<ScheduledTimer> timer = new AtomicReference<>();
-    final Actor actor =
-        new Actor() {
-          @Override
-          protected void onActorStarted() {
-            timer.set(actor.runDelayed(Duration.ofMillis(10), action));
-          }
-        };
+    final var actor =
+        new TimerActor(actorControl -> actorControl.runDelayed(Duration.ofMillis(10), action));
 
     // when
     schedulerRule.getClock().setCurrentTime(100);
@@ -146,7 +137,8 @@ public final class TimedActionsTest {
     schedulerRule.workUntilDone();
 
     // when
-    timer.get().cancel();
+    actor.cancelTimer();
+    schedulerRule.workUntilDone();
 
     // then
     // no exception has been thrown
@@ -156,24 +148,39 @@ public final class TimedActionsTest {
   public void shouldCancelRunAtFixedRate() {
     // given
     final Runnable action = mock(Runnable.class);
-    final AtomicReference<ScheduledTimer> timer = new AtomicReference<>();
-    final Actor actor =
-        new Actor() {
-          @Override
-          protected void onActorStarted() {
-            timer.set(actor.runAtFixedRate(Duration.ofMillis(10), action));
-          }
-        };
+    final TimerActor actor =
+        new TimerActor(actorControl -> actorControl.runAtFixedRate(Duration.ofMillis(10), action));
 
     // when
     schedulerRule.getClock().setCurrentTime(100);
     schedulerRule.submitActor(actor);
     schedulerRule.workUntilDone();
-    timer.get().cancel();
+    actor.cancelTimer();
+    schedulerRule.workUntilDone();
     schedulerRule.getClock().addTime(Duration.ofMillis(10));
     schedulerRule.workUntilDone();
 
     // then
     verify(action, times(0)).run();
+  }
+
+  private static final class TimerActor extends Actor {
+
+    private final Function<ActorControl, ScheduledTimer> action;
+
+    private ScheduledTimer scheduledTimer;
+
+    private TimerActor(final Function<ActorControl, ScheduledTimer> action) {
+      this.action = action;
+    }
+
+    @Override
+    protected void onActorStarted() {
+      scheduledTimer = action.apply(actor);
+    }
+
+    public ActorFuture<Void> cancelTimer() {
+      return actor.call(() -> scheduledTimer.cancel());
+    }
   }
 }

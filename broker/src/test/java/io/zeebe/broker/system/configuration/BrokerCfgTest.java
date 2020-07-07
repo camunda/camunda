@@ -21,8 +21,11 @@ import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_MONITORING
 import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
-import io.zeebe.broker.system.configuration.BackpressureCfg.LimitAlgorithm;
+import io.zeebe.broker.exporter.metrics.MetricsExporter;
+import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
+import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
 import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.util.Environment;
 import java.nio.file.Paths;
@@ -60,8 +63,10 @@ public final class BrokerCfgTest {
 
   private static final String ZEEBE_BROKER_NETWORK_HOST = "zeebe.broker.network.host";
   private static final String ZEEBE_BROKER_NETWORK_ADVERTISED_HOST =
-      "zeebe.broker.network.advertised-host";
+      "zeebe.broker.network.advertisedHost";
   private static final String ZEEBE_BROKER_NETWORK_PORT_OFFSET = "zeebe.broker.network.portOffset";
+  private static final String ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED =
+      "zeebe.broker.executionMetricsExporterEnabled";
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -238,6 +243,15 @@ public final class BrokerCfgTest {
 
     // then
     assertDefaultDebugLogExporter(true);
+  }
+
+  @Test
+  public void shouldEnableMetricsExporter() {
+    // given
+    environment.put(ZEEBE_BROKER_EXECUTION_METRICS_EXPORTER_ENABLED, "true");
+
+    // then
+    assertMetricsExporter();
   }
 
   @Test
@@ -468,6 +482,42 @@ public final class BrokerCfgTest {
   }
 
   @Test
+  public void shouldUseConfiguredBackpressureAlgorithms() {
+
+    final BackpressureCfg backpressure = new BackpressureCfg();
+
+    // when
+    backpressure.setAlgorithm("gradient");
+    // then;
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.GRADIENT);
+
+    // when
+    backpressure.setAlgorithm("gradient");
+    // then;
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.GRADIENT);
+
+    // when
+    backpressure.setAlgorithm("gradient2");
+    // then;
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.GRADIENT2);
+
+    // when
+    backpressure.setAlgorithm("vegas");
+    // then;
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.VEGAS);
+
+    // when
+    backpressure.setAlgorithm("fixed");
+    // then;
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.FIXED);
+
+    // when
+    backpressure.setAlgorithm("aimd");
+    // then;
+    assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.AIMD);
+  }
+
+  @Test
   public void shouldUseDefaultAdvertisedHost() {
     // when - then
     assertAdvertisedAddress(
@@ -491,7 +541,7 @@ public final class BrokerCfgTest {
   @Test
   public void shouldUseDefaultAdvertisedHostFromEnv() {
     // given
-    environment.put("zeebe.broker.network.advertisedHost", "zeebe.io");
+    environment.put(ZEEBE_BROKER_NETWORK_ADVERTISED_HOST, "zeebe.io");
 
     // then
     assertAdvertisedAddress("default", "zeebe.io", NetworkCfg.DEFAULT_COMMAND_API_PORT);
@@ -510,6 +560,54 @@ public final class BrokerCfgTest {
     assertThat(actual.getExporters()).hasSize(1);
     assertThat(actual.getExporters()).containsKey("elasticsearch");
     assertThat(actual.getExporters().get("elasticsearch")).isEqualTo(expected);
+  }
+
+  @Test
+  public void shouldUseMmap() {
+    // given
+    environment.put("zeebe.broker.data.useMmap", "true");
+
+    // then
+    assertUseMmap(true);
+  }
+
+  @Test
+  public void shouldNotPrintConfidentialInformation() throws Exception {
+    // given
+    final var brokerCfg = readConfig("elasticexporter");
+
+    // when
+    final var json = brokerCfg.toJson();
+
+    // then
+    final var objectMapper = new ObjectMapper();
+    final var jsonNode = objectMapper.readTree(json);
+
+    final var arguments =
+        jsonNode.get("exporters").get("elasticsearch").get("args").get("authentication");
+
+    assertThat(arguments.get("password").asText()).isEqualTo("***");
+    assertThat(arguments.get("username").asText()).isEqualTo("***");
+  }
+
+  @Test
+  public void shouldSetCustomMembershipConfig() {
+    // when
+    final BrokerCfg brokerCfg = readConfig("membership-cfg");
+
+    // then
+    final var membershipCfg = brokerCfg.getCluster().getMembership();
+
+    assertThat(membershipCfg.isBroadcastDisputes()).isFalse();
+    assertThat(membershipCfg.isBroadcastUpdates()).isTrue();
+    assertThat(membershipCfg.isNotifySuspect()).isTrue();
+    assertThat(membershipCfg.getGossipInterval()).isEqualTo(Duration.ofSeconds(2));
+    assertThat(membershipCfg.getGossipFanout()).isEqualTo(3);
+    assertThat(membershipCfg.getProbeInterval()).isEqualTo(Duration.ofSeconds(3));
+    assertThat(membershipCfg.getProbeTimeout()).isEqualTo(Duration.ofSeconds(5));
+    assertThat(membershipCfg.getSuspectProbes()).isEqualTo(5);
+    assertThat(membershipCfg.getFailureTimeout()).isEqualTo(Duration.ofSeconds(20));
+    assertThat(membershipCfg.getSyncInterval()).isEqualTo(Duration.ofSeconds(25));
   }
 
   private BrokerCfg readConfig(final String name) {
@@ -573,6 +671,17 @@ public final class BrokerCfgTest {
   private void assertDefaultHost(final String host) {
     assertHost("default", host);
     assertHost("empty", host);
+  }
+
+  private void assertUseMmap(final boolean useMmap) {
+    assertUseMmap("default", useMmap);
+    assertUseMmap("empty", useMmap);
+  }
+
+  private void assertUseMmap(final String configFileName, final boolean useMmap) {
+    final var config = readConfig(configFileName);
+    final var data = config.getData();
+    assertThat(data.useMmap()).isEqualTo(useMmap);
   }
 
   private void assertHost(final String configFileName, final String host) {
@@ -662,6 +771,20 @@ public final class BrokerCfgTest {
 
   private void assertDebugLogExporter(final String configFileName, final boolean prettyPrint) {
     final ExporterCfg exporterCfg = DebugLogExporter.defaultConfig(prettyPrint);
+    final BrokerCfg brokerCfg = readConfig(configFileName);
+
+    assertThat(brokerCfg.getExporters().values())
+        .usingRecursiveFieldByFieldElementComparator()
+        .contains(exporterCfg);
+  }
+
+  private void assertMetricsExporter() {
+    assertMetricsExporter("default");
+    assertMetricsExporter("empty");
+  }
+
+  private void assertMetricsExporter(final String configFileName) {
+    final ExporterCfg exporterCfg = MetricsExporter.defaultConfig();
     final BrokerCfg brokerCfg = readConfig(configFileName);
 
     assertThat(brokerCfg.getExporters().values())

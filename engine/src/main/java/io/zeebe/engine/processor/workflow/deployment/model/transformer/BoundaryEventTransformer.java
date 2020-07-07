@@ -7,6 +7,7 @@
  */
 package io.zeebe.engine.processor.workflow.deployment.model.transformer;
 
+import io.zeebe.engine.processor.workflow.deployment.model.BpmnStep;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableActivity;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableBoundaryEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableWorkflow;
@@ -14,6 +15,7 @@ import io.zeebe.engine.processor.workflow.deployment.model.transformation.ModelE
 import io.zeebe.engine.processor.workflow.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
+import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 
 public final class BoundaryEventTransformer implements ModelElementTransformer<BoundaryEvent> {
   @Override
@@ -28,7 +30,10 @@ public final class BoundaryEventTransformer implements ModelElementTransformer<B
         workflow.getElementById(event.getId(), ExecutableBoundaryEvent.class);
 
     element.setInterrupting(event.cancelActivity());
+
     attachToActivity(event, workflow, element);
+
+    bindLifecycle(element);
   }
 
   private void attachToActivity(
@@ -40,5 +45,22 @@ public final class BoundaryEventTransformer implements ModelElementTransformer<B
         workflow.getElementById(attachedToActivity.getId(), ExecutableActivity.class);
 
     attachedToElement.attach(element);
+  }
+
+  private void bindLifecycle(final ExecutableBoundaryEvent element) {
+    element.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    element.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    element.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    element.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    element.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    element.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    element.bindLifecycleState(
+        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
   }
 }

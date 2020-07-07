@@ -9,6 +9,7 @@ package io.zeebe.engine.processor.workflow.deployment;
 
 import static io.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 
+import io.zeebe.engine.processor.Failure;
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.SideEffectProducer;
 import io.zeebe.engine.processor.TypedRecord;
@@ -17,6 +18,7 @@ import io.zeebe.engine.processor.TypedResponseWriter;
 import io.zeebe.engine.processor.TypedStreamWriter;
 import io.zeebe.engine.processor.workflow.CatchEventBehavior;
 import io.zeebe.engine.processor.workflow.ExpressionProcessor;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor.EvaluationException;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventElement;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableStartEvent;
 import io.zeebe.engine.processor.workflow.deployment.transform.DeploymentTransformer;
@@ -28,6 +30,7 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
+import io.zeebe.util.Either;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -50,9 +53,9 @@ public final class TransformingDeploymentCreateProcessor
       final ZeebeState zeebeState,
       final CatchEventBehavior catchEventBehavior,
       final ExpressionProcessor expressionProcessor) {
-    this.workflowState = zeebeState.getWorkflowState();
-    this.keyGenerator = zeebeState.getKeyGenerator();
-    this.deploymentTransformer = new DeploymentTransformer(zeebeState, expressionProcessor);
+    workflowState = zeebeState.getWorkflowState();
+    keyGenerator = zeebeState.getKeyGenerator();
+    deploymentTransformer = new DeploymentTransformer(zeebeState, expressionProcessor);
     this.catchEventBehavior = catchEventBehavior;
     this.expressionProcessor = expressionProcessor;
   }
@@ -71,7 +74,7 @@ public final class TransformingDeploymentCreateProcessor
       if (workflowState.putDeployment(key, deploymentEvent)) {
         try {
           createTimerIfTimerStartEvent(command, streamWriter);
-        } catch (RuntimeException e) {
+        } catch (final RuntimeException e) {
           final String reason = String.format(COULD_NOT_CREATE_TIMER_MESSAGE, e.getMessage());
           responseWriter.writeRejectionOnCommand(command, RejectionType.PROCESSING_ERROR, reason);
           streamWriter.appendRejection(command, RejectionType.PROCESSING_ERROR, reason);
@@ -113,13 +116,18 @@ public final class TransformingDeploymentCreateProcessor
           // There are no variables when there is no process instance yet,
           // we use a negative scope key to indicate this
           final long scopeKey = -1L;
-          final Timer timer = startEvent.getTimerFactory().apply(expressionProcessor, scopeKey);
+          final Either<Failure, Timer> timerOrError =
+              startEvent.getTimerFactory().apply(expressionProcessor, scopeKey);
+          if (timerOrError.isLeft()) {
+            // todo(#4323): deal with this exceptional case without throwing an exception
+            throw new EvaluationException(timerOrError.getLeft().getMessage());
+          }
           catchEventBehavior.subscribeToTimerEvent(
               NO_ELEMENT_INSTANCE,
               NO_ELEMENT_INSTANCE,
               workflow.getKey(),
               startEvent.getId(),
-              timer,
+              timerOrError.get(),
               streamWriter);
         }
       }

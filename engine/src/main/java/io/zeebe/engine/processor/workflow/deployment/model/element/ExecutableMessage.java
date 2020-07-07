@@ -8,12 +8,13 @@
 package io.zeebe.engine.processor.workflow.deployment.model.element;
 
 import io.zeebe.el.Expression;
-import org.agrona.DirectBuffer;
+import java.util.Optional;
 
 public class ExecutableMessage extends AbstractFlowElement {
 
   private Expression correlationKeyExpression;
-  private DirectBuffer messageName;
+  private Expression messageNameExpression;
+  private String messageName;
 
   public ExecutableMessage(final String id) {
     super(id);
@@ -27,11 +28,27 @@ public class ExecutableMessage extends AbstractFlowElement {
     this.correlationKeyExpression = correlationKey;
   }
 
-  public DirectBuffer getMessageName() {
-    return messageName;
+  public Expression getMessageNameExpression() {
+    return messageNameExpression;
   }
 
-  public void setMessageName(final DirectBuffer messageName) {
+  public void setMessageNameExpression(final Expression messageName) {
+    this.messageNameExpression = messageName;
+  }
+
+  /**
+   * Returns the message name, if it has been resolved previously (and is independent of the
+   * variable context). If this returns an empty {@code Optional} then the message name must be
+   * resolved by evaluating {@code getMessageNameExpression()}
+   *
+   * @return the message name, if it has been resolved previously (and is independent of the *
+   *     variable context)
+   */
+  public Optional<String> getMessageName() {
+    return Optional.ofNullable(messageName);
+  }
+
+  public void setMessageName(String messageName) {
     this.messageName = messageName;
   }
 }

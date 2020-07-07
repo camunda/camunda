@@ -12,6 +12,7 @@ import static io.zeebe.engine.processor.TypedRecordProcessors.processors;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.zeebe.engine.state.ZeebeState;
@@ -23,10 +24,13 @@ import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.util.health.HealthStatus;
+import io.zeebe.util.sched.Actor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,17 +40,24 @@ public class StreamProcessorHealthTest {
 
   private StreamProcessor streamProcessor;
   private TypedStreamWriter mockedLogStreamWriter;
-  private final AtomicBoolean shouldFlushThrowException = new AtomicBoolean();
-  private final AtomicInteger invocation = new AtomicInteger();
-  private final AtomicBoolean shouldFailErrorHandlingInTransaction = new AtomicBoolean();
-  private final AtomicBoolean shouldProcessingThrowException = new AtomicBoolean(true);
+  private AtomicBoolean shouldFlushThrowException;
+  private AtomicInteger invocation;
+  private AtomicBoolean shouldFailErrorHandlingInTransaction;
+  private AtomicBoolean shouldProcessingThrowException;
+
+  @Before
+  public void before() {
+    invocation = new AtomicInteger();
+    shouldFlushThrowException = new AtomicBoolean();
+    shouldFailErrorHandlingInTransaction = new AtomicBoolean();
+    shouldProcessingThrowException = new AtomicBoolean();
+  }
 
   @After
-  public void after() {
-    // To exit the processing error loop
-    shouldProcessingThrowException.set(false);
+  public void tearDown() {
     shouldFlushThrowException.set(false);
     shouldFailErrorHandlingInTransaction.set(false);
+    shouldProcessingThrowException.set(false);
   }
 
   @Test
@@ -67,13 +78,23 @@ public class StreamProcessorHealthTest {
   @Test
   public void shouldMarkUnhealthyWhenReprocessingRetryLoop() {
     // given
+    shouldProcessingThrowException.set(true);
     final long firstPosition =
         streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
     streamProcessorRule.writeWorkflowInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
+    assertThat(
+            streamProcessorRule
+                .events()
+                .onlyWorkflowInstanceRecords()
+                .withIntent(ELEMENT_ACTIVATED)
+                .exists())
+        .isTrue();
 
     streamProcessor = getErrorProneStreamProcessor();
+    final var healthStatusCheck = HealthStatusCheck.of(streamProcessor);
+    streamProcessorRule.getActorSchedulerRule().submitActor(healthStatusCheck);
 
-    waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.HEALTHY);
+    waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.HEALTHY));
     waitUntil(() -> invocation.get() > 1);
 
     // when
@@ -84,21 +105,24 @@ public class StreamProcessorHealthTest {
     streamProcessorRule.getClock().addTime(HEALTH_CHECK_TICK_DURATION.multipliedBy(1));
 
     // then
-    waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.UNHEALTHY);
+    waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.UNHEALTHY));
   }
 
   @Test
   public void shouldMarkUnhealthyWhenOnErrorHandlingWriteEventFails() {
     // given
     streamProcessor = getErrorProneStreamProcessor();
-    waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.HEALTHY);
+    final var healthStatusCheck = HealthStatusCheck.of(streamProcessor);
+    streamProcessorRule.getActorSchedulerRule().submitActor(healthStatusCheck);
+
+    waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.HEALTHY));
 
     // when
     shouldFlushThrowException.set(true);
     streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
 
     // then
-    waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.UNHEALTHY);
+    waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.UNHEALTHY));
   }
 
   @Test
@@ -119,15 +143,20 @@ public class StreamProcessorHealthTest {
   @Test
   public void shouldMarkUnhealthyWhenExceptionErrorHandlingInTransaction() {
     // given
+    shouldProcessingThrowException.set(true);
     streamProcessor = getErrorProneStreamProcessor();
-    waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.HEALTHY);
+    final var healthStatusCheck = HealthStatusCheck.of(streamProcessor);
+    streamProcessorRule.getActorSchedulerRule().submitActor(healthStatusCheck);
+    waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.HEALTHY));
 
     // when
+    // since processing fails we will write error event
+    // we want to fail error even transaction
     shouldFailErrorHandlingInTransaction.set(true);
     streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
 
     // then
-    waitUntil(() -> streamProcessor.getHealthStatus() == HealthStatus.UNHEALTHY);
+    waitUntil(() -> healthStatusCheck.hasHealthStatus(HealthStatus.UNHEALTHY));
   }
 
   @Test
@@ -266,6 +295,24 @@ public class StreamProcessorHealthTest {
         throw new RuntimeException("flush failed");
       }
       return wrappedWriter.flush();
+    }
+  }
+
+  private static final class HealthStatusCheck extends Actor {
+    private final StreamProcessor streamProcessor;
+
+    private HealthStatusCheck(final StreamProcessor streamProcessor) {
+      this.streamProcessor = streamProcessor;
+    }
+
+    public static HealthStatusCheck of(final StreamProcessor streamProcessor) {
+      return new HealthStatusCheck(streamProcessor);
+    }
+
+    public boolean hasHealthStatus(final HealthStatus healthStatus) {
+      return actor
+          .call(() -> streamProcessor.getHealthStatus() == healthStatus)
+          .join(5, TimeUnit.SECONDS);
     }
   }
 }

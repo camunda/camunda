@@ -20,10 +20,10 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import io.atomix.raft.snapshot.PersistedSnapshotStore;
+import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.storage.snapshot.SnapshotStore;
-import io.atomix.raft.storage.snapshot.impl.DefaultSnapshotStore;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.StorageLevel;
@@ -73,7 +73,7 @@ public final class RaftStorage {
   private final boolean flushOnCommit;
   private final boolean retainStaleSnapshots;
   private final StorageStatistics statistics;
-  private final SnapshotStore snapshotStore;
+  private final PersistedSnapshotStore persistedSnapshotStore;
   private final Supplier<JournalIndex> journalIndexFactory;
 
   private RaftStorage(
@@ -90,7 +90,7 @@ public final class RaftStorage {
       final boolean flushOnCommit,
       final boolean retainStaleSnapshots,
       final StorageStatistics storageStatistics,
-      final SnapshotStore snapshotStore,
+      final PersistedSnapshotStore persistedSnapshotStore,
       final Supplier<JournalIndex> journalIndexFactory) {
     this.prefix = prefix;
     this.storageLevel = storageLevel;
@@ -105,7 +105,7 @@ public final class RaftStorage {
     this.flushOnCommit = flushOnCommit;
     this.retainStaleSnapshots = retainStaleSnapshots;
     this.statistics = storageStatistics;
-    this.snapshotStore = snapshotStore;
+    this.persistedSnapshotStore = persistedSnapshotStore;
     this.journalIndexFactory = journalIndexFactory;
     directory.mkdirs();
   }
@@ -283,17 +283,17 @@ public final class RaftStorage {
   }
 
   /**
-   * Returns the {@link SnapshotStore}.
+   * Returns the {@link PersistedSnapshotStore}.
    *
    * @return The snapshot store.
    */
-  public SnapshotStore getSnapshotStore() {
-    return snapshotStore;
+  public PersistedSnapshotStore getPersistedSnapshotStore() {
+    return persistedSnapshotStore;
   }
 
-  /** Deletes a {@link SnapshotStore} from disk. */
+  /** Deletes a {@link PersistedSnapshotStore} from disk. */
   public void deleteSnapshotStore() {
-    snapshotStore.delete();
+    persistedSnapshotStore.delete();
   }
 
   /**
@@ -417,7 +417,7 @@ public final class RaftStorage {
     private boolean flushOnCommit = DEFAULT_FLUSH_ON_COMMIT;
     private boolean retainStaleSnapshots = DEFAULT_RETAIN_STALE_SNAPSHOTS;
     private StorageStatistics storageStatistics;
-    private SnapshotStore snapshotStore;
+    private PersistedSnapshotStore persistedSnapshotStore;
     private Supplier<JournalIndex> journalIndexFactory;
 
     private Builder() {}
@@ -682,11 +682,11 @@ public final class RaftStorage {
     /**
      * Sets the snapshot store to use for remote snapshot installation.
      *
-     * @param snapshotStore the snapshot store for this Raft
+     * @param persistedSnapshotStore the snapshot store for this Raft
      * @return the storage builder
      */
-    public Builder withSnapshotStore(final SnapshotStore snapshotStore) {
-      this.snapshotStore = snapshotStore;
+    public Builder withSnapshotStore(final PersistedSnapshotStore persistedSnapshotStore) {
+      this.persistedSnapshotStore = persistedSnapshotStore;
       return this;
     }
 
@@ -697,8 +697,9 @@ public final class RaftStorage {
      */
     @Override
     public RaftStorage build() {
-      if (snapshotStore == null) {
-        snapshotStore = new DefaultSnapshotStore(directory.toPath(), prefix);
+      if (persistedSnapshotStore == null) {
+        persistedSnapshotStore =
+            new FileBasedSnapshotStoreFactory().createSnapshotStore(directory.toPath(), prefix);
       }
 
       return new RaftStorage(
@@ -715,7 +716,7 @@ public final class RaftStorage {
           flushOnCommit,
           retainStaleSnapshots,
           Optional.ofNullable(storageStatistics).orElse(new StorageStatistics(directory)),
-          snapshotStore,
+          persistedSnapshotStore,
           journalIndexFactory);
     }
 

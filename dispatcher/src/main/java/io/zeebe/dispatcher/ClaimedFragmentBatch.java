@@ -55,12 +55,12 @@ public class ClaimedFragmentBatch {
   }
 
   public void wrap(
-      final UnsafeBuffer underlyingbuffer,
+      final UnsafeBuffer underlyingBuffer,
       final int partitionId,
       final int fragmentOffset,
       final int fragmentLength,
       final Runnable onCompleteHandler) {
-    buffer.wrap(underlyingbuffer, fragmentOffset, fragmentLength);
+    buffer.wrap(underlyingBuffer, fragmentOffset, fragmentLength);
 
     this.partitionId = partitionId;
     this.partitionOffset = fragmentOffset;

@@ -13,12 +13,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.engine.processor.AsyncSnapshotDirector;
 import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.processor.TypedEventRegistry;
@@ -28,12 +26,9 @@ import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.state.SnapshotStorage;
-import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.logstreams.util.AtomixLogStorageRule;
+import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.util.SyncLogStream;
 import io.zeebe.logstreams.util.SynchronousLogStream;
-import io.zeebe.logstreams.util.TestSnapshotStorage;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.CopiedRecord;
@@ -44,7 +39,6 @@ import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.ActorScheduler;
-import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
@@ -53,14 +47,14 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
 
 public final class TestStreams {
-  private static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
-
+  static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
   private static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
 
   static {
@@ -112,40 +106,39 @@ public final class TestStreams {
   }
 
   public SynchronousLogStream createLogStream(final String name, final int partitionId) {
-    final File segments;
-    try {
-      segments = dataDirectory.newFolder(name, "segments");
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
-
-    return createLogStream(name, partitionId, segments);
+    final var listLogStorage = new ListLogStorage();
+    return createLogStream(
+        name,
+        partitionId,
+        listLogStorage,
+        logStream -> listLogStorage.setPositionListener(logStream::setCommitPosition));
   }
 
-  public SyncLogStream createLogStream(
-      final String name, final int partitionId, final File segmentsDir) {
-    final AtomixLogStorageRule logStorageRule =
-        new AtomixLogStorageRule(dataDirectory, partitionId);
-    logStorageRule.open(
-        b ->
-            b.withDirectory(segmentsDir)
-                .withMaxEntrySize(4 * 1024 * 1024)
-                .withMaxSegmentSize(128 * 1024 * 1024));
-    return createLogStream(name, partitionId, logStorageRule);
+  public SynchronousLogStream createLogStream(
+      final String name, final int partitionId, final ListLogStorage listLogStorage) {
+    return createLogStream(
+        name,
+        partitionId,
+        listLogStorage,
+        logStream -> listLogStorage.setPositionListener(logStream::setCommitPosition));
   }
 
-  public SyncLogStream createLogStream(
-      final String name, final int partitionId, final AtomixLogStorageRule logStorageRule) {
+  public SynchronousLogStream createLogStream(
+      final String name,
+      final int partitionId,
+      final LogStorage logStorage,
+      final Consumer<SyncLogStream> logStreamConsumer) {
     final var logStream =
         SyncLogStream.builder()
             .withLogName(name)
-            .withLogStorage(logStorageRule.getStorage())
+            .withLogStorage(logStorage)
             .withPartitionId(partitionId)
             .withActorScheduler(actorScheduler)
             .build();
-    logStorageRule.setPositionListener(logStream::setCommitPosition);
 
-    final LogContext logContext = LogContext.createLogContext(logStream, logStorageRule);
+    logStreamConsumer.accept(logStream);
+
+    final LogContext logContext = LogContext.createLogContext(logStream, logStorage);
     logContextMap.put(name, logContext);
     closeables.manage(logContext);
     closeables.manage(() -> logContextMap.remove(name));
@@ -185,7 +178,7 @@ public final class TestStreams {
     return new FluentLogWriter(newLogStreamRecordWriter(logName));
   }
 
-  public SnapshotStorage createSnapshotStorage(final SynchronousLogStream stream) {
+  public Path createRuntimeFolder(final SynchronousLogStream stream) {
     final Path rootDirectory =
         dataDirectory.getRoot().toPath().resolve(stream.getLogName()).resolve("state");
 
@@ -197,7 +190,7 @@ public final class TestStreams {
       throw new UncheckedIOException(e);
     }
 
-    return new TestSnapshotStorage(rootDirectory);
+    return rootDirectory.resolve("runtime");
   }
 
   public StreamProcessor startStreamProcessor(
@@ -214,17 +207,10 @@ public final class TestStreams {
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory factory,
       final Duration snapshotInterval) {
-    final SnapshotStorage storage = createSnapshotStorage(stream);
-    final StateSnapshotController currentSnapshotController =
-        spy(new StateSnapshotController(zeebeDbFactory, storage));
+    final var storage = createRuntimeFolder(stream);
     final String logName = stream.getLogName();
 
-    try {
-      currentSnapshotController.recover();
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-    final var zeebeDb = currentSnapshotController.openDb();
+    final var zeebeDb = zeebeDbFactory.createDb(storage.toFile());
     streamProcessor =
         StreamProcessor.builder()
             .logStream(stream.getAsyncLogStream())
@@ -234,30 +220,15 @@ public final class TestStreams {
             .onProcessedListener(mockOnProcessedListener)
             .streamProcessorFactory(factory)
             .build();
-    streamProcessor.openAsync().join();
-
-    final var asyncSnapshotDirector =
-        new AsyncSnapshotDirector(
-            0,
-            streamProcessor,
-            currentSnapshotController,
-            stream.getAsyncLogStream(),
-            snapshotInterval);
-    actorScheduler.submitActor(asyncSnapshotDirector).join();
+    streamProcessor.openAsync().join(15, TimeUnit.SECONDS);
 
     final LogContext context = logContextMap.get(logName);
     final ProcessorContext processorContext =
-        ProcessorContext.createStreamContext(
-            context, streamProcessor, currentSnapshotController, asyncSnapshotDirector, zeebeDb);
+        ProcessorContext.createStreamContext(context, streamProcessor, zeebeDb);
     streamContextMap.put(logName, processorContext);
     closeables.manage(processorContext);
-    closeables.manage(storage);
 
     return streamProcessor;
-  }
-
-  public StateSnapshotController getStateSnapshotController(final String stream) {
-    return streamContextMap.get(stream).getStateSnapshotController();
   }
 
   public void closeProcessor(final String streamName) throws Exception {
@@ -357,31 +328,30 @@ public final class TestStreams {
       writer.metadataWriter(metadata);
       writer.valueWriter(value);
 
-      return doRepeatedly(() -> writer.tryWrite()).until(p -> p >= 0);
+      return doRepeatedly(writer::tryWrite).until(p -> p >= 0);
     }
   }
 
   private static final class LogContext implements AutoCloseable {
     private final SynchronousLogStream logStream;
-    private final AtomixLogStorageRule logStorageRule;
+    private final LogStorage logStorage;
     private final LogStreamRecordWriter logStreamWriter;
 
-    private LogContext(
-        final SynchronousLogStream logStream, final AtomixLogStorageRule logStorageRule) {
+    private LogContext(final SynchronousLogStream logStream, final LogStorage logStorage) {
       this.logStream = logStream;
       logStreamWriter = logStream.newLogStreamRecordWriter();
-      this.logStorageRule = logStorageRule;
+      this.logStorage = logStorage;
     }
 
     public static LogContext createLogContext(
-        final SyncLogStream logStream, final AtomixLogStorageRule logStorageRule) {
-      return new LogContext(logStream, logStorageRule);
+        final SyncLogStream logStream, final LogStorage logStorage) {
+      return new LogContext(logStream, logStorage);
     }
 
     @Override
     public void close() {
       logStream.close();
-      logStorageRule.close();
+      logStorage.close();
     }
 
     public LogStreamRecordWriter getLogStreamWriter() {
@@ -400,42 +370,25 @@ public final class TestStreams {
   private static final class ProcessorContext implements AutoCloseable {
 
     private final LogContext logContext;
-    private final StateSnapshotController stateSnapshotController;
-    private final AsyncSnapshotDirector asyncSnapshotDirector;
     private final ZeebeDb zeebeDb;
 
     private boolean closed = false;
     private final StreamProcessor streamProcessor;
 
     private ProcessorContext(
-        final LogContext logContext,
-        final StreamProcessor streamProcessor,
-        final StateSnapshotController stateSnapshotController,
-        final AsyncSnapshotDirector asyncSnapshotDirector,
-        final ZeebeDb zeebeDb) {
+        final LogContext logContext, final StreamProcessor streamProcessor, final ZeebeDb zeebeDb) {
       this.logContext = logContext;
       this.streamProcessor = streamProcessor;
-      this.stateSnapshotController = stateSnapshotController;
-      this.asyncSnapshotDirector = asyncSnapshotDirector;
       this.zeebeDb = zeebeDb;
     }
 
     public static ProcessorContext createStreamContext(
-        final LogContext logContext,
-        final StreamProcessor streamProcessor,
-        final StateSnapshotController stateSnapshotController,
-        final AsyncSnapshotDirector asyncSnapshotDirector,
-        final ZeebeDb zeebeDb) {
-      return new ProcessorContext(
-          logContext, streamProcessor, stateSnapshotController, asyncSnapshotDirector, zeebeDb);
+        final LogContext logContext, final StreamProcessor streamProcessor, final ZeebeDb zeebeDb) {
+      return new ProcessorContext(logContext, streamProcessor, zeebeDb);
     }
 
     public SynchronousLogStream getLogStream() {
       return logContext.getLogStream();
-    }
-
-    public StateSnapshotController getStateSnapshotController() {
-      return stateSnapshotController;
     }
 
     @Override
@@ -443,8 +396,6 @@ public final class TestStreams {
       if (closed) {
         return;
       }
-
-      asyncSnapshotDirector.closeAsync().join();
       Loggers.IO_LOGGER.debug("Close stream processor");
       streamProcessor.closeAsync().join();
       zeebeDb.close();

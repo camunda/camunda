@@ -50,6 +50,135 @@ public final class MessageIncidentTest {
     ENGINE.deployment().withXmlResource(WORKFLOW).deploy();
   }
 
+  private BpmnModelInstance createWorkflowWithMessageNameFeelExpression(final String processId) {
+    return Bpmn.createExecutableProcess(processId)
+        .startEvent()
+        .intermediateCatchEvent(
+            "catch",
+            e ->
+                e.message(
+                    m -> m.nameExpression("nameLookup").zeebeCorrelationKeyExpression("12345")))
+        .done();
+  }
+
+  @Test
+  public void shouldCreateIncidentIfNameExpressionCannotBeEvaluated() {
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            createWorkflowWithMessageNameFeelExpression("UNRESOLVABLE_NAME_EXPRESSION"))
+        .deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId("UNRESOLVABLE_NAME_EXPRESSION").create();
+
+    final Record<WorkflowInstanceRecordValue> failureEvent =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId("catch")
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    // then
+    final Record<IncidentRecordValue> incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentRecord.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "failed to evaluate expression 'nameLookup': no variable found for name 'nameLookup'")
+        .hasBpmnProcessId("UNRESOLVABLE_NAME_EXPRESSION")
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementId("catch")
+        .hasElementInstanceKey(failureEvent.getKey())
+        .hasJobKey(-1L)
+        .hasVariableScopeKey(failureEvent.getKey());
+  }
+
+  @Test
+  public void shouldCreateIncidentIfNameExpressionEvaluatesToWrongType() {
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            createWorkflowWithMessageNameFeelExpression("NAME_EXPRESSION_INVALID_TYPE"))
+        .deploy();
+
+    // when
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId("NAME_EXPRESSION_INVALID_TYPE")
+            .withVariable("nameLookup", 25)
+            .create();
+
+    final Record<WorkflowInstanceRecordValue> failureEvent =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATING)
+            .withElementId("catch")
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    // then
+    final Record<IncidentRecordValue> incidentRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(incidentRecord.getValue())
+        .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
+        .hasErrorMessage(
+            "Expected result of the expression 'nameLookup' to be 'STRING', but was 'NUMBER'.")
+        .hasBpmnProcessId("NAME_EXPRESSION_INVALID_TYPE")
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasElementId("catch")
+        .hasElementInstanceKey(failureEvent.getKey())
+        .hasJobKey(-1L)
+        .hasVariableScopeKey(failureEvent.getKey());
+  }
+
+  @Test
+  public void shouldResolveIncidentIfNameCouldNotBeEvaluated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            createWorkflowWithMessageNameFeelExpression("UNRESOLVABLE_NAME_EXPRESSION2"))
+        .deploy();
+
+    final long workflowInstance =
+        ENGINE.workflowInstance().ofBpmnProcessId("UNRESOLVABLE_NAME_EXPRESSION2").create();
+
+    final Record<IncidentRecordValue> incidentCreatedRecord =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstance)
+            .getFirst();
+
+    ENGINE
+        .variables()
+        .ofScope(incidentCreatedRecord.getValue().getElementInstanceKey())
+        .withDocument(Maps.of(entry("nameLookup", "messageName")))
+        .update();
+
+    // when
+    final Record<IncidentRecordValue> incidentResolvedEvent =
+        ENGINE
+            .incident()
+            .ofInstance(workflowInstance)
+            .withKey(incidentCreatedRecord.getKey())
+            .resolve();
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceSubscriptionRecords(
+                    WorkflowInstanceSubscriptionIntent.OPENED)
+                .withWorkflowInstanceKey(workflowInstance)
+                .exists())
+        .isTrue();
+
+    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedRecord.getKey());
+  }
+
   @Test
   public void shouldCreateIncidentIfCorrelationKeyNotFound() {
     // when

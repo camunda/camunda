@@ -1,6 +1,6 @@
 # Service Tasks
 
-A service task represents a work item in the workflow with a specific type. 
+A service task represents a work item in the workflow with a specific type.
 
 ![workflow](/bpmn-workflows/order-process.png)
 
@@ -14,13 +14,15 @@ A service task **must** have a `taskDefinition`. It specifies the **type of job*
 
 Optionally, a `taskDefinition` can specify the number of times the job is retried when a worker signals failure (default = 3).
 
+Usually, the job type and the job retries are defined as static values (e.g. `order-items`) but they can also be defined as [expressions](/reference/expressions.html) (e.g. `= "order-" + priorityGroup`). The expressions are evaluated on activating the service task and must result in a `string` for the job type and a `number` for the retries.
+
 ## Task Headers
 
 A service task can define an arbitrary number of `taskHeaders`. They are static metadata that are handed to workers along with the job. The headers can be used as configuration parameters for the worker.
 
 ## Variable Mappings
 
-By default, all job variables are merged into the workflow instance. This behavior can be customized by defining an output mapping at the service task. 
+By default, all job variables are merged into the workflow instance. This behavior can be customized by defining an output mapping at the service task.
 
 Input mappings can be used to transform the variables into a format that is accepted by the job worker.
 
@@ -48,26 +50,26 @@ Input mappings can be used to transform the variables into a format that is acce
   <summary>Using the BPMN modeler</summary>
   <p>Adding a service task:
 
-![service-task](/bpmn-workflows/service-tasks/service-task.gif) 
+![service-task](/bpmn-workflows/service-tasks/service-task.gif)
 
 Adding custom headers:
-![task-headers](/bpmn-workflows/service-tasks/task-headers.gif) 
+![task-headers](/bpmn-workflows/service-tasks/task-headers.gif)
 
 Adding variable mappings:
-![variable-mappings](/bpmn-workflows/service-tasks/variable-mappings.gif) 
+![variable-mappings](/bpmn-workflows/service-tasks/variable-mappings.gif)
   </p>
 </details>
 
 <details>
   <summary>Workflow Lifecycle</summary>
-  <p>Workflow instance records of a service task: 
+  <p>Workflow instance records of a service task:
 
 <table>
     <tr>
         <th>Intent</th>
         <th>Element Id</th>
         <th>Element Type</th>
-    </tr>    
+    </tr>
     <tr>
         <td>ELEMENT_ACTIVATING</td>
         <td>collect-money</td>
@@ -100,5 +102,6 @@ Adding variable mappings:
 
 References:
 * [Job Handling](/basics/job-workers.html)
+* [Expressions](/reference/expressions.html)
 * [Variable Mappings](/reference/variables.html#inputoutput-variable-mappings)
 * [Incidents](/reference/incidents.html)

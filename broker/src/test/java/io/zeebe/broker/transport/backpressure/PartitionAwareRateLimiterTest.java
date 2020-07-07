@@ -9,31 +9,37 @@ package io.zeebe.broker.transport.backpressure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.netflix.concurrency.limits.Limit;
-import com.netflix.concurrency.limits.limit.SettableLimit;
+import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceCreationIntent;
-import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
 
 public final class PartitionAwareRateLimiterTest {
-  private static final Supplier<Limit> LIMIT_SUPPLIER = () -> new SettableLimit(1);
   private static final int PARTITIONS = 3;
   private final Intent context = WorkflowInstanceCreationIntent.CREATE;
-
-  private final PartitionAwareRequestLimiter partitionedLimiter =
-      new PartitionAwareRequestLimiter(LIMIT_SUPPLIER);
+  private PartitionAwareRequestLimiter partitionedLimiter;
 
   @Before
   public void setUp() {
-    IntStream.range(0, PARTITIONS).forEach(i -> partitionedLimiter.addPartition(i));
+    final var backpressureCfg = new BackpressureCfg();
+    backpressureCfg.setAlgorithm("fixed");
+    backpressureCfg.getFixedLimit().setLimit(1);
+    partitionedLimiter =
+        io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter.newLimiter(
+            backpressureCfg);
+    IntStream.range(0, PARTITIONS).forEach(partitionedLimiter::addPartition);
   }
 
   @Test
-  public void shouldPartitionsHaveItsOwnLimiter() {
-    IntStream.range(0, PARTITIONS)
+  public void shouldNotBlockRequestsOnOtherPartitionsWhenOnePartitionIsFull() {
+    // when
+    assertThat(partitionedLimiter.tryAcquire(0, 0, 1, context)).isTrue();
+    assertThat(partitionedLimiter.tryAcquire(0, 0, 2, context)).isFalse();
+
+    // then
+    IntStream.range(1, PARTITIONS)
         .forEach(i -> assertThat(partitionedLimiter.tryAcquire(i, 0, 1, context)).isTrue());
   }
 

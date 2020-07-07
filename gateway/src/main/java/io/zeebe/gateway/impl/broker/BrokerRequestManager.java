@@ -20,32 +20,32 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerError;
-import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.record.ErrorCode;
 import io.zeebe.protocol.record.MessageHeaderDecoder;
+import io.zeebe.transport.ClientRequest;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
+import java.util.function.ToIntFunction;
 import org.agrona.DirectBuffer;
 
-public final class BrokerRequestManager extends Actor {
+final class BrokerRequestManager extends Actor {
 
+  private static final TransportRequestSender SENDER_WITH_RETRY =
+      (c, s, r, t) -> c.sendRequestWithRetry(s, BrokerRequestManager::responseValidation, r, t);
+  private static final TransportRequestSender SENDER_WITHOUT_RETRY = ClientTransport::sendRequest;
   private final ClientTransport clientTransport;
   private final RequestDispatchStrategy dispatchStrategy;
   private final BrokerTopologyManagerImpl topologyManager;
   private final Duration requestTimeout;
 
-  public BrokerRequestManager(
+  BrokerRequestManager(
       final ClientTransport clientTransport,
       final BrokerTopologyManagerImpl topologyManager,
       final RequestDispatchStrategy dispatchStrategy,
@@ -77,107 +77,50 @@ public final class BrokerRequestManager extends Actor {
     }
   }
 
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
+  <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(final BrokerRequest<T> request) {
+    return sendRequestWithRetry(request, this.requestTimeout);
+  }
+
+  <T> CompletableFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
     return sendRequest(request, this.requestTimeout);
   }
 
-  public <T> ActorFuture<BrokerResponse<T>> sendRequest(
+  <T> CompletableFuture<BrokerResponse<T>> sendRequest(
+      final BrokerRequest<T> request, final Duration timeout) {
+    return sendRequestInternal(request, SENDER_WITHOUT_RETRY, timeout);
+  }
+
+  <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(
       final BrokerRequest<T> request, final Duration requestTimeout) {
-    final ActorFuture<BrokerResponse<T>> responseFuture = new CompletableActorFuture<>();
-
-    sendRequest(
-        request,
-        (response, error) -> {
-          if (error == null) {
-            responseFuture.complete(response);
-          } else {
-            responseFuture.completeExceptionally(error);
-          }
-        },
-        requestTimeout);
-
-    return responseFuture;
+    return sendRequestInternal(request, SENDER_WITH_RETRY, requestTimeout);
   }
 
-  public <T> void sendRequest(
+  private <T> CompletableFuture<BrokerResponse<T>> sendRequestInternal(
       final BrokerRequest<T> request,
-      final BrokerResponseConsumer<T> responseConsumer,
-      final Consumer<Throwable> throwableConsumer) {
-    sendRequest(request, responseConsumer, throwableConsumer, this.requestTimeout);
-  }
-
-  public <T> void sendRequest(
-      final BrokerRequest<T> request,
-      final BrokerResponseConsumer<T> responseConsumer,
-      final Consumer<Throwable> throwableConsumer,
+      final TransportRequestSender sender,
       final Duration requestTimeout) {
-    sendRequest(
-        request,
-        responseConsumer,
-        rejection -> throwableConsumer.accept(new BrokerRejectionException(rejection)),
-        error -> throwableConsumer.accept(new BrokerErrorException(error)),
-        throwableConsumer,
-        requestTimeout);
-  }
-
-  private <T> void sendRequest(
-      final BrokerRequest<T> request,
-      final BrokerResponseConsumer<T> responseConsumer,
-      final Consumer<BrokerRejection> rejectionConsumer,
-      final Consumer<BrokerError> errorConsumer,
-      final Consumer<Throwable> throwableConsumer,
-      final Duration requestTimeout) {
-
-    sendRequest(
-        request,
-        (response, error) -> {
-          try {
-            if (error == null) {
-              if (response.isResponse()) {
-                responseConsumer.accept(response.getKey(), response.getResponse());
-              } else if (response.isRejection()) {
-                rejectionConsumer.accept(response.getRejection());
-              } else if (response.isError()) {
-                errorConsumer.accept(response.getError());
-              } else {
-                throwableConsumer.accept(
-                    new IllegalBrokerResponseException(
-                        "Expected broker response to be either response, rejection, or error, but is neither of them"));
-              }
-            } else {
-              throwableConsumer.accept(error);
-            }
-          } catch (final RuntimeException e) {
-            throwableConsumer.accept(new BrokerResponseException(e));
-          }
-        },
-        requestTimeout);
-  }
-
-  private <T> void sendRequest(
-      final BrokerRequest<T> request,
-      final BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
-      final Duration requestTimeout) {
+    final CompletableFuture<BrokerResponse<T>> responseFuture = new CompletableFuture<>();
     request.serializeValue();
-    actor.run(() -> sendRequestInternal(request, responseConsumer, requestTimeout));
+    actor.run(() -> sendRequestInternal(request, responseFuture, sender, requestTimeout));
+    return responseFuture;
   }
 
   private <T> void sendRequestInternal(
       final BrokerRequest<T> request,
-      final BiConsumer<BrokerResponse<T>, Throwable> responseConsumer,
+      final CompletableFuture<BrokerResponse<T>> returnFuture,
+      final TransportRequestSender sender,
       final Duration requestTimeout) {
 
     final BrokerAddressProvider nodeIdProvider;
     try {
       nodeIdProvider = determineBrokerNodeIdProvider(request);
-    } catch (PartitionNotFoundException e) {
-      responseConsumer.accept(null, e);
+    } catch (final PartitionNotFoundException e) {
+      returnFuture.completeExceptionally(e);
       return;
     }
 
     final ActorFuture<DirectBuffer> responseFuture =
-        clientTransport.sendRequestWithRetry(
-            nodeIdProvider, BrokerRequestManager::responseValidation, request, requestTimeout);
+        sender.send(clientTransport, nodeIdProvider, request, requestTimeout);
 
     if (responseFuture != null) {
       actor.runOnCompletion(
@@ -186,16 +129,35 @@ public final class BrokerRequestManager extends Actor {
             try {
               if (error == null) {
                 final BrokerResponse<T> response = request.getResponse(clientResponse);
-                responseConsumer.accept(response, null);
+                handleResponse(response, returnFuture);
               } else {
-                responseConsumer.accept(null, error);
+                returnFuture.completeExceptionally(error);
               }
             } catch (final RuntimeException e) {
-              responseConsumer.accept(null, new ClientResponseException(e));
+              returnFuture.completeExceptionally(new ClientResponseException(e));
             }
           });
     } else {
-      responseConsumer.accept(null, new ClientOutOfMemoryException());
+      returnFuture.completeExceptionally(new ClientOutOfMemoryException());
+    }
+  }
+
+  private <T> void handleResponse(
+      final BrokerResponse<T> response, final CompletableFuture<BrokerResponse<T>> responseFuture) {
+    try {
+      if (response.isResponse()) {
+        responseFuture.complete(response);
+      } else if (response.isRejection()) {
+        responseFuture.completeExceptionally(new BrokerRejectionException(response.getRejection()));
+      } else if (response.isError()) {
+        responseFuture.completeExceptionally(new BrokerErrorException(response.getError()));
+      } else {
+        responseFuture.completeExceptionally(
+            new IllegalBrokerResponseException(
+                "Expected broker response to be either response, rejection, or error, but is neither of them"));
+      }
+    } catch (final RuntimeException e) {
+      responseFuture.completeExceptionally(new BrokerResponseException(e));
     }
   }
 
@@ -248,8 +210,16 @@ public final class BrokerRequestManager extends Actor {
     }
   }
 
+  private interface TransportRequestSender {
+    ActorFuture<DirectBuffer> send(
+        ClientTransport transport,
+        Supplier<String> nodeAddressSupplier,
+        ClientRequest clientRequest,
+        Duration timeout);
+  }
+
   private class BrokerAddressProvider implements Supplier<String> {
-    private final Function<BrokerClusterState, Integer> nodeIdSelector;
+    private final ToIntFunction<BrokerClusterState> nodeIdSelector;
 
     BrokerAddressProvider() {
       this(BrokerClusterState::getRandomBroker);
@@ -259,7 +229,7 @@ public final class BrokerRequestManager extends Actor {
       this(state -> state.getLeaderForPartition(partitionId));
     }
 
-    BrokerAddressProvider(final Function<BrokerClusterState, Integer> nodeIdSelector) {
+    BrokerAddressProvider(final ToIntFunction<BrokerClusterState> nodeIdSelector) {
       this.nodeIdSelector = nodeIdSelector;
     }
 
@@ -267,7 +237,7 @@ public final class BrokerRequestManager extends Actor {
     public String get() {
       final BrokerClusterState topology = topologyManager.getTopology();
       if (topology != null) {
-        return topology.getBrokerAddress(nodeIdSelector.apply(topology));
+        return topology.getBrokerAddress(nodeIdSelector.applyAsInt(topology));
       } else {
         return null;
       }

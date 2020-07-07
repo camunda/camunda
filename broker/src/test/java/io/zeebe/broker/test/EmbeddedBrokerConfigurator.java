@@ -13,6 +13,7 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
@@ -51,9 +52,10 @@ public final class EmbeddedBrokerConfigurator {
       cluster.setReplicationFactor(replicationFactor);
       cluster.setClusterSize(clusterSize);
       cluster.setClusterName(clusterName);
-      cluster.setGossipFailureTimeout(2000);
-      cluster.setGossipInterval(150);
-      cluster.setGossipProbeInterval(250);
+      cluster.getMembership().setFailureTimeout(Duration.ofMillis(2000));
+      cluster.getMembership().setGossipInterval(Duration.ofMillis(150));
+      cluster.getMembership().setProbeInterval(Duration.ofMillis(250));
+      cluster.getMembership().setProbeInterval(Duration.ofMillis(250));
     };
   }
 

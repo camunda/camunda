@@ -16,6 +16,8 @@
  */
 package io.atomix.raft.protocol;
 
+import static org.mockito.Mockito.spy;
+
 import com.google.common.collect.Maps;
 import io.atomix.cluster.MemberId;
 import io.atomix.utils.concurrent.ThreadContext;
@@ -25,21 +27,10 @@ import java.util.Map;
 public class TestRaftProtocolFactory {
 
   private final Map<MemberId, TestRaftServerProtocol> servers = Maps.newConcurrentMap();
-  private final Map<MemberId, TestRaftClientProtocol> clients = Maps.newConcurrentMap();
   private final ThreadContext context;
 
   public TestRaftProtocolFactory(final ThreadContext context) {
     this.context = context;
-  }
-
-  /**
-   * Returns a new test client protocol.
-   *
-   * @param memberId the client member identifier
-   * @return a new test client protocol
-   */
-  public RaftClientProtocol newClientProtocol(final MemberId memberId) {
-    return new TestRaftClientProtocol(memberId, servers, clients, context);
   }
 
   /**
@@ -48,7 +39,32 @@ public class TestRaftProtocolFactory {
    * @param memberId the server member identifier
    * @return a new test server protocol
    */
-  public RaftServerProtocol newServerProtocol(final MemberId memberId) {
-    return new TestRaftServerProtocol(memberId, servers, clients, context);
+  public TestRaftServerProtocol newServerProtocol(final MemberId memberId) {
+    final TestRaftServerProtocol spyProtocol =
+        spy(new TestRaftServerProtocol(memberId, servers, context));
+    servers.put(memberId, spyProtocol);
+    return spyProtocol;
+  }
+
+  /** Disconnect server from rest of the servers */
+  public void partition(final MemberId target) {
+    servers.keySet().forEach(other -> partition(target, other));
+  }
+
+  /** Disconnect two members */
+  private void partition(final MemberId first, final MemberId second) {
+    servers.get(first).disconnect(second);
+    servers.get(second).disconnect(first);
+  }
+
+  /** Heal network partition between target and rest of the cluster */
+  public void heal(final MemberId target) {
+    servers.keySet().forEach(other -> heal(target, other));
+  }
+
+  /** Heal network partition between two members */
+  private void heal(final MemberId first, final MemberId second) {
+    servers.get(first).reconnect(second);
+    servers.get(second).reconnect(first);
   }
 }

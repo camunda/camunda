@@ -5,8 +5,6 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
-	"github.com/cenkalti/backoff"
-	"github.com/docker/docker/errdefs"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,6 +14,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff"
+	"github.com/docker/docker/errdefs"
+
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -23,8 +24,8 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	uuid "github.com/satori/go.uuid"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -242,6 +243,16 @@ func (c *DockerContainer) Networks(ctx context.Context) ([]string, error) {
 	return n, nil
 }
 
+// ContainerIP gets the IP address of the primary network within the container.
+func (c *DockerContainer) ContainerIP(ctx context.Context) (string, error) {
+	inspect, err := c.inspectContainer(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	return inspect.NetworkSettings.IPAddress, nil
+}
+
 // NetworkAliases gets the aliases of the container for the networks it is attached to.
 func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]string, error) {
 	inspect, err := c.inspectContainer(ctx)
@@ -383,11 +394,9 @@ type DockerNetwork struct {
 }
 
 // Remove is used to remove the network. It is usually triggered by as defer function.
-func (n *DockerNetwork) Remove(_ context.Context) error {
-	if n.terminationSignal != nil {
-		n.terminationSignal <- true
-	}
-	return nil
+func (n *DockerNetwork) Remove(ctx context.Context) error {
+
+	return n.provider.client.NetworkRemove(ctx, n.ID)
 }
 
 // DockerProvider implements the ContainerProvider interface
@@ -413,8 +422,8 @@ func NewDockerProvider() (*DockerProvider, error) {
 
 // BuildImage will build and image from context and Dockerfile, then return the tag
 func (p *DockerProvider) BuildImage(ctx context.Context, img ImageBuildInfo) (string, error) {
-	repo := uuid.NewV4()
-	tag := uuid.NewV4()
+	repo := uuid.New()
+	tag := uuid.New()
 
 	repoTag := fmt.Sprintf("%s:%s", repo, tag)
 
@@ -463,7 +472,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		req.Labels = make(map[string]string)
 	}
 
-	sessionID := uuid.NewV4()
+	sessionID := uuid.New()
 
 	var termSignal chan bool
 	if !req.SkipReaper {
@@ -494,25 +503,35 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 		}
 	} else {
 		tag = req.Image
-		_, _, err = p.client.ImageInspectWithRaw(ctx, tag)
-		if err != nil {
-			if client.IsErrNotFound(err) {
-				pullOpt := types.ImagePullOptions{}
-				if req.RegistryCred != "" {
-					pullOpt.RegistryAuth = req.RegistryCred
-				}
+		var shouldPullImage bool
 
-				if err := p.attemptToPullImage(ctx, tag, pullOpt); err != nil {
+		if req.AlwaysPullImage {
+			shouldPullImage = true // If requested always attempt to pull image
+		} else {
+			_, _, err = p.client.ImageInspectWithRaw(ctx, tag)
+			if err != nil {
+				if client.IsErrNotFound(err) {
+					shouldPullImage = true
+				} else {
 					return nil, err
 				}
+			}
+		}
 
-			} else {
+		if shouldPullImage {
+			pullOpt := types.ImagePullOptions{}
+			if req.RegistryCred != "" {
+				pullOpt.RegistryAuth = req.RegistryCred
+			}
+
+			if err := p.attemptToPullImage(ctx, tag, pullOpt); err != nil {
 				return nil, err
 			}
 		}
 	}
 
 	dockerInput := &container.Config{
+		Entrypoint:   req.Entrypoint,
 		Image:        tag,
 		Env:          env,
 		ExposedPorts: exposedPortSet,
@@ -582,7 +601,7 @@ func (p *DockerProvider) CreateContainer(ctx context.Context, req ContainerReque
 	return c, nil
 }
 
-//attemptToPullImage tries to pull the image while respecting the ctx cancellations.
+// attemptToPullImage tries to pull the image while respecting the ctx cancellations.
 // Besides, if the image cannot be pulled due to ErrorNotFound then no need to retry but terminate immediately.
 func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pullOpt types.ImagePullOptions) error {
 	var (
@@ -604,6 +623,13 @@ func (p *DockerProvider) attemptToPullImage(ctx context.Context, tag string, pul
 	// download of docker image finishes at EOF of the pull request
 	_, err = ioutil.ReadAll(pull)
 	return err
+}
+
+// Helth measure the healthiness of the provider. Right now we leverage the
+// docker-client ping endpoint to see if the daemon is reachable.
+func (p *DockerProvider) Health(ctx context.Context) (err error) {
+	_, err = p.client.Ping(ctx)
+	return
 }
 
 // RunContainer takes a RequestContainer as input and it runs a container via the docker sdk
@@ -675,7 +701,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		Labels:         req.Labels,
 	}
 
-	sessionID := uuid.NewV4()
+	sessionID := uuid.New()
 
 	var termSignal chan bool
 	if !req.SkipReaper {
@@ -704,6 +730,7 @@ func (p *DockerProvider) CreateNetwork(ctx context.Context, req NetworkRequest) 
 		Driver:            req.Driver,
 		Name:              req.Name,
 		terminationSignal: termSignal,
+		provider:          p,
 	}
 
 	return n, nil

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.gateway.api.util.GatewayTest;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
+import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
@@ -24,8 +25,27 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public final class ActivateJobsTest extends GatewayTest {
+
+  public ActivateJobsTest(final boolean isLongPollingEnabled) {
+    super(getConfig(isLongPollingEnabled));
+  }
+
+  @Parameters(name = "{index}: longPolling.enabled[{0}]")
+  public static Iterable<Object[]> data() {
+    return Arrays.asList(new Object[][] {{true}, {false}});
+  }
+
+  private static GatewayCfg getConfig(final boolean isLongPollingEnabled) {
+    final var config = new GatewayCfg();
+    config.getLongPolling().setEnabled(isLongPollingEnabled);
+    return config;
+  }
 
   @Test
   public void shouldMapRequestAndResponse() {

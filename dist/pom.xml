@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.24.0-SNAPSHOT</version>
+    <version>0.25.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -40,11 +40,6 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>atomix</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>atomix-cluster</artifactId>
     </dependency>
 
@@ -56,11 +51,6 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-legacy-toml-config</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.prometheus</groupId>
-      <artifactId>simpleclient_httpserver</artifactId>
     </dependency>
 
     <dependency>
@@ -80,22 +70,61 @@
 
     <dependency>
       <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.prometheus</groupId>
       <artifactId>simpleclient_hotspot</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.apache.logging.log4j</groupId>
       <artifactId>log4j-api</artifactId>
-      <version>2.13.0</version>
     </dependency>
+
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot</artifactId>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
     </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-core</artifactId>
+      <exclusions>
+        <exclusion>
+          <!-- Conflicts with histogram in elasticsearch exporter dependency -->
+          <groupId>org.hdrhistogram</groupId>
+          <artifactId>HdrHistogram</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!-- needed for the Spring actuators which enable health checks and liveness probes-->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+
+
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
@@ -104,7 +133,10 @@
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
     </dependency>
-
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-context</artifactId>
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -215,6 +247,11 @@
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
             <dependency>io.zeebe:zeebe-elasticsearch-exporter</dependency>
+
+            <!-- Needed for Spring Actuators, which provide health checks and liveness/readiness probed -->
+            <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
+            <dependency>io.micrometer:micrometer-core</dependency>
+            <dependency>io.micrometer:micrometer-registry-prometheus</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

@@ -168,58 +168,87 @@ class FileChannelJournalSegmentReader<E> implements JournalReader<E> {
   /** Reads the next entry in the segment. */
   @SuppressWarnings("unchecked")
   private void readNext() {
-    // Compute the index of the next entry in the segment.
     final long index = getNextIndex();
 
     try {
-      // Read more bytes from the segment if necessary.
-      if (memory.remaining() < maxEntrySize) {
-        final long position = channel.position() + memory.position();
-        channel.position(position);
-        memory.clear();
-        channel.read(memory);
-        channel.position(position);
-        memory.flip();
-      }
-
       // Mark the buffer so it can be reset if necessary.
       memory.mark();
 
-      try {
-        // Read the length of the entry.
-        final int length = memory.getInt();
-
-        // If the buffer length is zero then return.
-        if (length <= 0 || length > maxEntrySize) {
-          memory.reset().limit(memory.position());
-          nextEntry = null;
-          return;
-        }
-
-        // Read the checksum of the entry.
-        final long checksum = memory.getInt() & 0xFFFFFFFFL;
-
-        // Compute the checksum for the entry bytes.
-        final Checksum crc32 = new CRC32();
-        crc32.update(memory.array(), memory.position(), length);
-
-        // If the stored checksum equals the computed checksum, return the entry.
-        if (checksum == crc32.getValue()) {
-          final int limit = memory.limit();
-          memory.limit(memory.position() + length);
-          final E entry = namespace.deserialize(memory);
-          memory.limit(limit);
-          nextEntry = new Indexed<>(index, entry, length);
-        } else {
-          memory.reset().limit(memory.position());
-          nextEntry = null;
-        }
-      } catch (final BufferUnderflowException e) {
-        memory.reset().limit(memory.position());
-        nextEntry = null;
+      final var cantReadLength = memory.remaining() < Integer.BYTES;
+      if (cantReadLength) {
+        readBytesIntoBuffer();
+        memory.mark();
       }
+
+      final int length = memory.getInt();
+      if (isLengthInvalid(length)) {
+        return;
+      }
+
+      // we using a CRC32 - which is 32 byte checksum
+      // remaining bytes need to be larger or equals to entry length + checksum length
+      final var cantReadEntry = memory.remaining() < (length + Integer.BYTES);
+      if (cantReadEntry) {
+        readBytesIntoBuffer();
+        memory.mark();
+        // we don't need to read the length again
+      }
+
+      readNextEntry(index, length);
+
+    } catch (final BufferUnderflowException e) {
+      resetReading();
     } catch (final IOException e) {
       throw new StorageException(e);
     }
+  }
+
+  private void readNextEntry(final long index, final int length) {
+    if (isChecksumInvalid(length)) {
+      resetReading();
+      return;
+    }
+
+    // If the stored checksum equals the computed checksum, set the next entry.
+    final int limit = memory.limit();
+    memory.limit(memory.position() + length);
+    final E entry = namespace.deserialize(memory);
+    memory.limit(limit);
+    nextEntry = new Indexed<>(index, entry, length);
+  }
+
+  private void resetReading() {
+    memory.reset().limit(memory.position());
+    nextEntry = null;
+  }
+
+  private boolean isChecksumInvalid(final int length) {
+    // Read the checksum of the entry.
+    final long checksum = memory.getInt() & 0xFFFFFFFFL;
+
+    // Compute the checksum for the entry bytes.
+    final Checksum crc32 = new CRC32();
+    crc32.update(memory.array(), memory.position(), length);
+
+    return checksum != crc32.getValue();
+  }
+
+  private boolean isLengthInvalid(final int length) {
+    // If the buffer length is zero then return.
+    if (length <= 0 || length > maxEntrySize) {
+      memory.reset().limit(memory.position());
+      nextEntry = null;
+      return true;
+    }
+    return false;
+  }
+
+  private void readBytesIntoBuffer() throws IOException {
+    final long position = channel.position() + memory.position();
+    channel.position(position);
+    memory.clear();
+    channel.read(memory);
+    channel.position(position);
+    memory.flip();
   }
 }

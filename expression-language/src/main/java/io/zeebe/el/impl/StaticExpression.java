@@ -17,6 +17,7 @@ import java.time.Duration;
 import java.time.Period;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Optional;
 import org.agrona.DirectBuffer;
 
 /**
@@ -52,6 +53,11 @@ public final class StaticExpression implements Expression, EvaluationResult {
   @Override
   public String getExpression() {
     return expression;
+  }
+
+  @Override
+  public Optional<String> getVariableName() {
+    return Optional.empty();
   }
 
   @Override

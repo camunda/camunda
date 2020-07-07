@@ -39,7 +39,6 @@ import io.atomix.utils.logging.LoggerContext;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -138,14 +137,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
     }
 
     if (configuration == null) {
-
-      final MemberId firstMemberId = new ArrayList<>(cluster).get(0);
-      if (cluster.size() == 1 || (cluster.size() > 1 && firstMemberId.equals(member.memberId()))) {
-        // try to bootstrap partition as leader
-        member.setType(Type.BOOTSTRAP);
-      } else {
-        member.setType(Type.ACTIVE);
-      }
+      member.setType(Type.ACTIVE);
 
       // Create a set of active members.
       final Set<RaftMember> activeMembers =
@@ -160,6 +152,10 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
       // Create a new configuration and store it on disk to ensure the cluster can fall back to the
       // configuration.
       configure(new Configuration(0, 0, member.getLastUpdated().toEpochMilli(), activeMembers));
+    } else if (member.getType() == Type.BOOTSTRAP) {
+      member.setType(
+          Type.ACTIVE); // bootstrap is deprecated, but might be persisted on previous started
+      // cluster
     }
     return join();
   }
@@ -354,7 +350,7 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
    */
   public List<RaftMemberContext> getRemoteMemberStates(final RaftMember.Type type) {
     final List<RaftMemberContext> members = memberTypes.get(type);
-    return members != null ? members : Collections.EMPTY_LIST;
+    return members != null ? members : List.of();
   }
 
   /**
@@ -389,6 +385,8 @@ public final class RaftClusterContext implements RaftCluster, AutoCloseable {
               // Transition the server to the appropriate state for the local member type.
               raft.transition(member.getType());
               if (member.getType() == Type.BOOTSTRAP) {
+                // RaftMember.Type.BOOTSTRAP is deprecated, but might be persisted on a previous
+                // started cluster
                 member.setType(Type.ACTIVE);
               }
 

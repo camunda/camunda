@@ -11,7 +11,6 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.socket.SocketUtil;
-import org.elasticsearch.ElasticsearchStatusException;
 import org.junit.Test;
 
 public class ElasticsearchExporterFaultToleranceIT
@@ -41,8 +40,8 @@ public class ElasticsearchExporterFaultToleranceIT
 
   private boolean wasExported(final Record<?> record) {
     try {
-      return esClient.get(record) != null;
-    } catch (final ElasticsearchStatusException e) {
+      return esClient.getDocument(record) != null;
+    } catch (final Exception e) {
       // suppress exception in order to retry and see if it was exported yet or not
       // the exception can occur since elastic may not be ready yet, or maybe the index hasn't been
       // created yet, etc.

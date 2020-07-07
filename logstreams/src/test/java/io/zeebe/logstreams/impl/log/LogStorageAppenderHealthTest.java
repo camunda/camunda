@@ -49,7 +49,6 @@ public final class LogStorageAppenderHealthTest {
             .actorScheduler(schedulerRule.get())
             .bufferSize((int) ByteValue.ofMegabytes(100 * MAX_FRAGMENT_SIZE))
             .maxFragmentLength(MAX_FRAGMENT_SIZE)
-            .initialPartitionId(0)
             .build();
     final var subscription = dispatcher.openSubscription("log");
 

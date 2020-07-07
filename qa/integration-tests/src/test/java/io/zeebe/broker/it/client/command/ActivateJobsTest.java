@@ -10,13 +10,11 @@ package io.zeebe.broker.it.client.command;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.util.GrpcClientRule;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.response.ActivateJobsResponse;
-import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.test.util.BrokerClassRuleHelper;
-import io.zeebe.util.SocketUtil;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -25,7 +23,8 @@ import org.junit.rules.RuleChain;
 
 public final class ActivateJobsTest {
 
-  private static final EmbeddedBrokerRule BROKER_RULE = new EmbeddedBrokerRule();
+  private static final EmbeddedBrokerRule BROKER_RULE =
+      new EmbeddedBrokerRule(ActivateJobsTest::disableLongPolling);
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(BROKER_RULE);
 
   @ClassRule
@@ -35,123 +34,47 @@ public final class ActivateJobsTest {
 
   private String jobType;
 
+  private static void disableLongPolling(final BrokerCfg config) {
+    config.getGateway().getLongPolling().setEnabled(false);
+  }
+
   @Before
   public void init() {
     jobType = helper.getJobType();
   }
 
-  @Test
-  public void shouldActivateJobsRespectingAmountLimit() {
+  @Test(timeout = 5000)
+  public void shouldRespondActivatedJobsWhenJobsAreAvailable() {
     // given
-    final int availableJobs = 3;
-    final int activateJobs = 2;
-
-    CLIENT_RULE.createJobs(jobType, availableJobs);
+    CLIENT_RULE.createJobs(jobType, 2);
 
     // when
-    final ActivateJobsResponse response =
-        CLIENT_RULE
-            .getClient()
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(activateJobs)
-            .send()
-            .join();
-
-    // then
-    assertThat(response.getJobs()).hasSize(activateJobs);
-  }
-
-  @Test
-  public void shouldActivateJobsIfBatchIsTruncated() {
-    // given
-    final int availableJobs = 10;
-
-    final int maxMessageSize =
-        (int) BROKER_RULE.getBrokerCfg().getNetwork().getMaxMessageSizeInBytes();
-    final var largeVariableValue = "x".repeat(maxMessageSize / 4);
-    final String variablesJson = String.format("{\"variablesJson\":\"%s\"}", largeVariableValue);
-
-    CLIENT_RULE.createJobs(jobType, b -> {}, variablesJson, availableJobs);
-
-    // when
-    final var response =
-        CLIENT_RULE
-            .getClient()
-            .newActivateJobsCommand()
-            .jobType(jobType)
-            .maxJobsToActivate(availableJobs)
-            .send()
-            .join();
-
-    // then
-    assertThat(response.getJobs()).hasSize(availableJobs);
-  }
-
-  @Test
-  public void shouldWaitUntilJobsAvailable() {
-    // given
-    final int expectedJobsCount = 1;
-
     final ZeebeFuture<ActivateJobsResponse> responseFuture =
         CLIENT_RULE
             .getClient()
             .newActivateJobsCommand()
             .jobType(jobType)
-            .maxJobsToActivate(expectedJobsCount)
+            .maxJobsToActivate(2)
             .send();
-
-    // when
-    CLIENT_RULE.createSingleJob(jobType);
 
     // then
     final ActivateJobsResponse response = responseFuture.join();
-    assertThat(response.getJobs()).hasSize(expectedJobsCount);
+    assertThat(response.getJobs()).hasSize(2);
   }
 
-  @Test
-  public void shouldActivatedJobForOpenRequest() throws InterruptedException {
-    // given
-    sendActivateRequestsAndClose(jobType, 3);
-
-    final var activateJobsResponse =
+  @Test(timeout = 5000)
+  public void shouldRespondNoActivatedJobsWhenNoJobsAvailable() {
+    // when
+    final ZeebeFuture<ActivateJobsResponse> responseFuture =
         CLIENT_RULE
             .getClient()
             .newActivateJobsCommand()
             .jobType(jobType)
-            .maxJobsToActivate(5)
-            .workerName("open")
+            .maxJobsToActivate(1)
             .send();
 
-    sendActivateRequestsAndClose(jobType, 3);
-
-    // when
-    CLIENT_RULE.createSingleJob(jobType);
-
     // then
-    final var jobs = activateJobsResponse.join().getJobs();
-
-    assertThat(jobs).hasSize(1).extracting(ActivatedJob::getWorker).contains("open");
-  }
-
-  private void sendActivateRequestsAndClose(final String jobType, final int count)
-      throws InterruptedException {
-    for (int i = 0; i < count; i++) {
-      final ZeebeClient client =
-          ZeebeClient.newClientBuilder()
-              .brokerContactPoint(SocketUtil.toHostAndPortString(BROKER_RULE.getGatewayAddress()))
-              .usePlaintext()
-              .build();
-
-      client
-          .newActivateJobsCommand()
-          .jobType(jobType)
-          .maxJobsToActivate(5)
-          .workerName("closed-" + i)
-          .send();
-
-      Thread.sleep(100);
-      client.close();
-    }
+    final ActivateJobsResponse response = responseFuture.join();
+    assertThat(response.getJobs()).isEmpty();
   }
 }

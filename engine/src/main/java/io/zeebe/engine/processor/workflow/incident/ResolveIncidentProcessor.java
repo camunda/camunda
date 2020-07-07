@@ -23,6 +23,7 @@ import io.zeebe.engine.state.instance.JobState;
 import io.zeebe.engine.state.instance.JobState.State;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.protocol.record.intent.IncidentIntent;
 import java.util.function.Consumer;
@@ -112,6 +113,7 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
       queue.clear();
       queue.add(responseWriter::flush);
       stepProcessor.processRecordValue(
+          createRecord(failedRecord),
           failedRecord.getKey(),
           failedRecord.getValue(),
           failedRecord.getState(),
@@ -121,6 +123,11 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
       sideEffect.accept(queue);
     }
+  }
+
+  // TODO (saig0): need to pass the record properties for the new BPMN element processor
+  private TypedRecord<WorkflowInstanceRecord> createRecord(final IndexedRecord failedRecord) {
+    return new IncidentRecordWrapper(failedRecord);
   }
 
   private void attemptToSolveJobIncident(final long jobKey, final TypedStreamWriter streamWriter) {

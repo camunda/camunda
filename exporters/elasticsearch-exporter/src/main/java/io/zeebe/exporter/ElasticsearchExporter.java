@@ -44,15 +44,6 @@ public class ElasticsearchExporter implements Exporter {
     context.setFilter(new ElasticsearchRecordFilter(configuration));
   }
 
-  private void validate(final ElasticsearchExporterConfiguration configuration) {
-    if (configuration.index.prefix != null && configuration.index.prefix.contains("_")) {
-      throw new ExporterException(
-          String.format(
-              "Elasticsearch prefix must not contain underscore. Current value: %s",
-              configuration.index.prefix));
-    }
-  }
-
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
@@ -94,6 +85,15 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
+  private void validate(final ElasticsearchExporterConfiguration configuration) {
+    if (configuration.index.prefix != null && configuration.index.prefix.contains("_")) {
+      throw new ExporterException(
+          String.format(
+              "Elasticsearch prefix must not contain underscore. Current value: %s",
+              configuration.index.prefix));
+    }
+  }
+
   protected ElasticsearchClient createClient() {
     return new ElasticsearchClient(configuration, log);
   }
@@ -113,11 +113,8 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void flush() {
-    if (client.flush()) {
-      controller.updateLastExportedRecordPosition(lastPosition);
-    } else {
-      log.warn("Failed to flush bulk completely");
-    }
+    client.flush();
+    controller.updateLastExportedRecordPosition(lastPosition);
   }
 
   private void createIndexTemplates() {

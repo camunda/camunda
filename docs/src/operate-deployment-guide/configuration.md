@@ -12,6 +12,7 @@ with `camunda.operate`. The following parts are configurable:
  * [Scaling Operate](importer-and-archiver.md)
  * [Monitoring possibilities](#monitoring-operate)
  * [Logging configuration](#logging)
+ * [Probes](#probes)
   
 # Configurations
 
@@ -29,7 +30,7 @@ camunda.operate.elasticsearch.port | Port of Elasticsearch REST API | 9200
 
 ## A snippet from application.yml:
 
-```
+```yaml
 camunda.operate:
   elasticsearch:
     # Cluster name
@@ -52,7 +53,7 @@ camunda.operate.zeebe.brokerContactPoint | Broker contact point to zeebe as host
 
 ## A snippet from application.yml:
 
-```
+```yaml
 camunda.operate:  
   zeebe:
     # Broker contact point
@@ -75,7 +76,7 @@ camunda.operate.zeebeElasticsearch.prefix | Index prefix as configured in Zeebe 
 
 ## A snippet from application.yml:
 
-```
+```yaml
 camunda.operate:
   zeebeElasticsearch:
     # Cluster name
@@ -98,7 +99,7 @@ camunda.operate.operationExecutor.threadsCount| How many threads should be used 
 
 ## A snippet from application.yml
 
-```
+```yaml
 camunda.operate:
   operationExecutor:
   	threadsCount: 3
@@ -118,7 +119,7 @@ management.metrics.export.prometheus.enabled | When true, Prometheus metrics are
 
 ## A snippet from application.yml
 
-```
+```yaml
 #Spring Boot Actuator endpoints to be exposed
 management.endpoints.web.exposure.include: health,prometheus
 # Enable or disable metrics
@@ -134,7 +135,7 @@ that can be further adjusted to your needs.
 
 * `config/log4j2.xml` (applied by default)
 
-```
+```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN" monitorInterval="30">
   <Properties>
@@ -164,7 +165,7 @@ environment. The logs will be written in JSON format to make them better searcha
 
 You can enable one of the logging configurations by setting the environment variable ```OPERATE_LOG_APPENDER``` like this:
 
-```
+```sh
 OPERATE_LOG_APPENDER=Stackdriver
 ```
 
@@ -210,4 +211,50 @@ camunda.operate:
 management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
 # Enable or disable metrics
 #management.metrics.export.prometheus.enabled: false
-``` 
+```
+
+# Probes
+
+Operate provides liveness and readiness probes for using in cloud environment (Kubernetes).
+
+* Kubernetes uses liveness probes to know when to restart a container.
+* Kubernetes uses readiness probes to decide when the container is available for accepting traffic.
+
+See also: [Kubernetes configure startup probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
+
+A HTTP GET call to REST endpoint ```/actuator/health```can be used to make a liveness probe.
+To use this call make sure that the management health endpoint is enabled in configuration file (`application.yml`): 
+
+```yaml
+management.endpoints.web.exposure.include: health
+```
+See also [Monitoring possibilities](#monitoring-operate)
+
+A HTTP GET call to REST endpoint ```/api/check``` can be used to make a readiness probe.
+
+Any HTTP status code greater than or equal to 200 and less than 400 indicates success. Any other code indicates failure.
+
+In case you have Operate cluster and use dedicated Importer and/or Archiver nodes, you can use ```/actuator/health``` endpoint for both liveness and readiness probes for these nodes.
+
+## Example snippets to use Operate probes in Kubernetes:
+For details to set Kubernetes probes parameters see: [Kubernetes configure probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes)
+### Readiness probe as yaml config:
+```yaml
+readinessProbe:
+     httpGet:
+        path: /api/check
+        port: 8080
+     initialDelaySeconds: 30
+     periodSeconds: 30
+```
+### Liveness probe as yaml config:
+```yaml
+livenessProbe:
+     httpGet:
+        path: /actuator/health
+        port: 8080
+     initialDelaySeconds: 30
+     periodSeconds: 30
+```
+
+

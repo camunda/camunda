@@ -7,8 +7,11 @@
  */
 package io.zeebe.engine.state;
 
+import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
+import io.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import java.util.function.BiFunction;
 
 public final class DefaultZeebeDbFactory {
 
@@ -18,6 +21,12 @@ public final class DefaultZeebeDbFactory {
    */
   public static final ZeebeDbFactory<ZbColumnFamilies> DEFAULT_DB_FACTORY =
       defaultFactory(ZbColumnFamilies.class);
+
+  public static final BiFunction<String, ZeebeDb<ZbColumnFamilies>, ZeebeRocksDBMetricExporter>
+      DEFAULT_DB_METRIC_EXPORTER_FACTORY =
+          (partitionId, database) -> {
+            return new ZeebeRocksDBMetricExporter<>(partitionId, database, ZbColumnFamilies.class);
+          };
 
   /**
    * Returns the default zeebe database factory which is used in the broker.

@@ -8,6 +8,7 @@
 package io.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -20,6 +21,7 @@ import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -27,18 +29,22 @@ import org.mockito.ArgumentMatchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ElasticsearchClientTest {
+public class ElasticsearchClientTest extends AbstractElasticsearchExporterIntegrationTestCase {
 
   private static final long RECORD_KEY = 1234L;
   private ElasticsearchExporterConfiguration configuration;
   private Logger logSpy;
   private ElasticsearchClient client;
+  private ArrayList<String> bulkRequest;
 
   @Before
-  public void setUp() {
-    configuration = new ElasticsearchExporterConfiguration();
+  public void init() {
+    elastic.start();
+
+    configuration = getDefaultConfiguration();
     logSpy = spy(LoggerFactory.getLogger(ElasticsearchClientTest.class));
-    client = new ElasticsearchClient(configuration, logSpy);
+    bulkRequest = new ArrayList<>();
+    client = new ElasticsearchClient(configuration, logSpy, bulkRequest);
   }
 
   @Test
@@ -102,5 +108,60 @@ public class ElasticsearchClientTest {
             variableValue.getBytes().length,
             scopeKey,
             workflowInstanceKey);
+  }
+
+  @Test
+  public void shouldThrowExceptionIfFailToFlushBulk() {
+    // given
+    final int bulkSize = 10;
+
+    final Record<VariableRecordValue> recordMock = mock(Record.class);
+    when(recordMock.getPartitionId()).thenReturn(1);
+    when(recordMock.getValueType()).thenReturn(ValueType.WORKFLOW_INSTANCE);
+
+    // bulk contains records that fail on flush
+    IntStream.range(0, bulkSize)
+        .forEach(
+            i -> {
+              when(recordMock.getKey()).thenReturn(RECORD_KEY + i);
+              when(recordMock.toJson()).thenReturn("invalid-json-" + i);
+              client.index(recordMock);
+            });
+
+    // and one valid record
+    when(recordMock.getKey()).thenReturn(RECORD_KEY + bulkSize);
+    when(recordMock.toJson()).thenReturn("{}");
+    client.index(recordMock);
+
+    // when/then
+    assertThatThrownBy(client::flush)
+        .isInstanceOf(ElasticsearchExporterException.class)
+        .hasMessage("Failed to flush all items of the bulk");
+
+    verify(logSpy)
+        .warn(
+            "Failed to flush {} item(s) of bulk request [type: {}, reason: {}]",
+            bulkSize,
+            "mapper_parsing_exception",
+            "failed to parse");
+  }
+
+  @Test
+  public void shouldIgnoreRecordIfDuplicateOfLast() {
+    // given
+    final Record<VariableRecordValue> recordMock = mock(Record.class);
+    when(recordMock.getPartitionId()).thenReturn(1);
+    when(recordMock.getValueType()).thenReturn(ValueType.WORKFLOW_INSTANCE);
+    when(recordMock.getKey()).thenReturn(RECORD_KEY + 1);
+    when(recordMock.toJson()).thenReturn("{}");
+
+    client.index(recordMock);
+    assertThat(bulkRequest).hasSize(1);
+
+    // when
+    client.index(recordMock);
+
+    // then
+    assertThat(bulkRequest).hasSize(1);
   }
 }

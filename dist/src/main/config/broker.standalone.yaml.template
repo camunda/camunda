@@ -92,6 +92,11 @@
         # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_SECURITY_PRIVATEKEYPATH.
         # privateKeyPath:
 
+      # longPolling:
+        # Enables long polling for available jobs
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_GATEWAY_LONGPOLLING_ENABLED.
+        # enabled: true
+
     # network:
       # This section contains the network configuration. Particularly, it allows to
       # configure the hosts and ports the broker should bind to. The broker exposes three sockets:
@@ -227,6 +232,53 @@
       # Example:
       # clusterName: zeebe-cluster
 
+      # Configure parameters for SWIM protocol which is used to propagate cluster membership
+      # information among brokers and gateways
+      # membership:
+
+        # Configure whether to broadcast member updates to all members.
+        # If set to false updates will be gossiped among the members.
+        # If set to true the network traffic may increase but it reduce the time to detect membership changes.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTUPDATES
+        # broadcastUpdates: false
+
+        # Configure whether to broadcast disputes to all members.
+        # If set to true the network traffic may increase but it reduce the time to detect membership changes.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTDISPUTES
+        # broadcastDisputes: true
+
+        # Configure whether to notify a suspect node on state changes.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_NOTIFYSUSPECT
+        # notifySuspect: false
+
+        # Sets the interval at which the membership updates are sent to a random member.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_GOSSIPINTERVAL
+        # gossipInterval: 250ms
+
+        # Sets the number of members to which membership updates are sent at each gossip interval.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_GOSSIPFANOUT
+        # gossipFanout: 2
+
+        # Sets the interval at which to probe a random member.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL
+        # probeInterval: 1s
+
+        # Sets the timeout for a probe response
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT
+        # probeTimeout: 2s
+
+        # Sets the number of probes failed before declaring a member is suspect
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES
+        # suspectProbes: 3
+
+        # Sets the timeout for a suspect member is declared dead.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_FAILURETIMEOUT
+        # failureTimeout: 10s
+
+        # Sets the interval at which this member synchronizes its membership information with a random member.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL
+        # syncInterval: 10s
+
     # threads:
       # Controls the number of non-blocking CPU threads to be used. WARNING: You
       # should never specify a value that is larger than the number of physical cores
@@ -243,6 +295,102 @@
       #
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_THREADS_IOTHREADCOUNT
       # ioThreadCount: 2
+
+    # backpressure:
+      # Configure backpressure below.
+      #
+      # Set this to enable or disable backpressure. When enabled the broker rejects user requests when
+      # the number of inflight requests is greater than than the "limit". The value of the "limit" is determined
+      # based on the configured algorithm.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_ENABLED
+      # enabled : true
+
+      # if enabled - will use the average latencies over a window as the current latency to update the limit.
+      # It is not recommended to enable this when the algorithm is aimd. This setting is not applicable to fixed limit.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_USEWINDOWED
+      # useWindowed: true
+
+      # The algorithm configures which algorithm to use for the backpressure.
+      # It should be one of vegas, aimd, fixedLimit, gradient, or gradient2.
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_ALGORITHM
+      # algorithm: "vegas"
+
+      # Configure the parameters for "aimd" algorithm.
+      # AIMD increases the limit for every successful response and decrease the limit for every request timeout.
+      # aimd:
+        # The limit will be reduced if the observed latency is greater than the requestTimeout.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_AIMD_REQUESTTIMEOUT
+        # requestTimeout: "1s"
+
+        # The initial limit to be used when the broker starts. The limit will be reset to this value when the broker restarts.
+        # This setting can also be overridden using the environment ZEEBE_BROKER_BACKPRESSURE_AIMD_INITIALLIMIT
+        # initialLimit: 100
+
+        # The minimum limit. This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_AIMD_MINLIMIT
+        # minLimit: 1
+
+        # The maximum limit. This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_AIMD_MAXLIMIT
+        # maxLimit: 1000
+
+        # The backoffRatio is a double value x such that 0 <  x  < 1. It determines the factor by which the limit is decreased.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_AIMD_BACKOFFRATIO
+        # backoffRatio: 0.9
+
+      # Configure the parameters for "fixed" algorithm
+      # fixedLimit:
+        # Set a fixed limit. This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_FIXEDLIMIT_LIMIT
+        # limit: 20
+
+      # Configure the parameters for "vegas" algorithm
+      # Vegas is an adaptive limit algorithm based on TCP Vegas congestion control algorithm.
+      # It estimates a queue size which indicates how many additional requests are in the queue over the estimated limit.
+      # The limit is adjusted based on this queueSize.
+      # vegas:
+        # The initial limit to be used when the broker starts. The limit will be reset to this value when the broker restarts.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_VEGAS_INITIALLIMIT
+        # initialLimit: 20
+
+        # The limit is increased if the queue size is less than this value.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_VEGAS_ALPHA
+        # alpha: 3
+
+        # The limit is decreased if the queue size is greater than this value.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_VEGAS_BETA
+        # beta: 6
+
+      # Configure the parameters for "gradient" algorithm
+      # In gradient algorithm, the limit is adjusted based on the gradient of observed latency and an estimated minimum latency.
+      # If gradient is less than 1, the limit is decreased otherwise the limit is increased.
+      # gradient:
+        # The minimum limit. This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_GRADIENT_MINLIMIT
+        # minLimit: 10
+
+        # The initial limit to be used when the broker starts. The limit will be reset to this value when the broker restarts.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_GRADIENT_INITIALLIMIT
+        # initialLimit: 20
+
+        # Tolerance for changes from minimum latency. A value >= 1.0 indicating how much change from minimum latency is acceptable
+        # before reducing the limit.  For example, a value of 2.0 means that a 2x increase in latency is acceptable.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_GRADIENT_RTTTOLERANCE
+        # rttTolerance: 2.0
+
+      # Configure the parameters for "gradient2" algorithm
+      # gradient2:
+        # The minimum limit. This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_GRADIENT2_MINLIMIT
+        # minLimit: 10
+
+        # The initial limit to be used when the broker starts. The limit will be reset to this value when the broker restarts.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_GRADIENT2_INITIALLIMIT
+        # initialLimit: 20
+
+        # Tolerance for changes from minimum latency. A value >= 1.0 indicating how much change from minimum latency is acceptable
+        # before reducing the limit.  For example, a value of 2.0 means that a 2x increase in latency is acceptable.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_GRADIENT2_RTTTOLERANCE
+        # rttTolerance: 2.0
+
+        # longWindow is the length of the window (the number of samples) to calculate the exponentially smoothed average latency.
+        # This setting can also be overridden using the environment ZEEBE_BROKER_BACKPRESSURE_GRADIENT2_LONGWINDOW
+        # longWindow: 600
 
     # exporters:
       # Configure exporters below

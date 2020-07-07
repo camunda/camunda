@@ -73,7 +73,4 @@ public interface UnicastService {
    * @param listener the broadcast listener to remove
    */
   void removeListener(String subject, BiConsumer<Address, byte[]> listener);
-
-  /** Broadcast service builder. */
-  interface Builder extends io.atomix.utils.Builder<UnicastService> {}
 }

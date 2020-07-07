@@ -8,15 +8,19 @@
 package io.zeebe.engine.processor.workflow;
 
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.el.Expression;
+import io.zeebe.engine.processor.Failure;
 import io.zeebe.engine.processor.TypedStreamWriter;
+import io.zeebe.engine.processor.workflow.ExpressionProcessor.EvaluationException;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEvent;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableCatchEventSupplier;
 import io.zeebe.engine.processor.workflow.deployment.model.element.ExecutableMessage;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyContext;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyContext.VariablesDocumentSupplier;
 import io.zeebe.engine.processor.workflow.message.MessageCorrelationKeyException;
+import io.zeebe.engine.processor.workflow.message.MessageNameException;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.TimerInstance;
@@ -26,6 +30,7 @@ import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.zeebe.protocol.record.intent.TimerIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
+import io.zeebe.util.Either;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.HashMap;
@@ -51,7 +56,7 @@ public final class CatchEventBehavior {
       final SubscriptionCommandSender subscriptionCommandSender,
       final int partitionsCount) {
     this.state = state;
-    this.expressionProcessor = exporessionProcessor;
+    expressionProcessor = exporessionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.partitionsCount = partitionsCount;
   }
@@ -74,6 +79,10 @@ public final class CatchEventBehavior {
     final MessageCorrelationKeyContext scopeContext =
         new MessageCorrelationKeyContext(variablesSupplier, context.getValue().getFlowScopeKey());
 
+    // collect all message names from their respective variables, as this might fail and
+    // we might need to raise an incident
+    final Map<DirectBuffer, DirectBuffer> extractedMessageNames =
+        extractMessageNames(events, context);
     // collect all message correlation keys from their respective variables, as this might fail and
     // we might need to raise an incident. This works the same for timers
     final Map<DirectBuffer, DirectBuffer> extractedCorrelationKeys =
@@ -91,7 +100,11 @@ public final class CatchEventBehavior {
             evaluatedTimers.get(event.getId()),
             context.getOutput().getStreamWriter());
       } else if (event.isMessage()) {
-        subscribeToMessageEvent(context, event, extractedCorrelationKeys.get(event.getId()));
+        subscribeToMessageEvent(
+            context,
+            event,
+            extractedCorrelationKeys.get(event.getId()),
+            extractedMessageNames.get((event.getId())));
       }
     }
 
@@ -144,14 +157,14 @@ public final class CatchEventBehavior {
   private void subscribeToMessageEvent(
       final BpmnStepContext<?> context,
       final ExecutableCatchEvent handler,
-      final DirectBuffer extractedKey) {
-    final ExecutableMessage message = handler.getMessage();
-
+      final DirectBuffer extractedKey,
+      final DirectBuffer extractedMessageName) {
     final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
     final DirectBuffer bpmnProcessId = cloneBuffer(context.getValue().getBpmnProcessIdBuffer());
     final long elementInstanceKey = context.getKey();
-    final DirectBuffer messageName = cloneBuffer(message.getMessageName());
+
     final DirectBuffer correlationKey = extractedKey;
+    final DirectBuffer messageName = extractedMessageName;
     final boolean closeOnCorrelate = handler.shouldCloseMessageSubscriptionOnCorrelate();
     final int subscriptionPartitionId =
         SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionsCount);
@@ -220,6 +233,13 @@ public final class CatchEventBehavior {
         correlationKeyExpression, context);
   }
 
+  private Either<Failure, String> extractMessageName(
+      final ExecutableMessage message, final long scopeKey) {
+
+    final Expression messageNameExpression = message.getMessageNameExpression();
+    return expressionProcessor.evaluateStringExpression(messageNameExpression, scopeKey);
+  }
+
   private boolean sendCloseMessageSubscriptionCommand(
       final int subscriptionPartitionId,
       final long workflowInstanceKey,
@@ -253,6 +273,8 @@ public final class CatchEventBehavior {
       final MessageCorrelationKeyContext scopeContext) {
     extractedCorrelationKeys.clear();
 
+    // TODO (saig0): extract logic to resolve the variable scope key
+    //  see BpmnIncidentBehavior
     for (final ExecutableCatchEvent event : events) {
       if (event.isMessage()) {
         final MessageCorrelationKeyContext context =
@@ -274,11 +296,37 @@ public final class CatchEventBehavior {
 
     for (final ExecutableCatchEvent event : events) {
       if (event.isTimer()) {
-        final var timer = event.getTimerFactory().apply(expressionProcessor, key);
-        evaluatedTimers.put(event.getId(), timer);
+        final Either<Failure, Timer> timerOrError =
+            event.getTimerFactory().apply(expressionProcessor, key);
+        if (timerOrError.isLeft()) {
+          // todo(#4323): deal with this exceptional case without throwing an exception
+          throw new EvaluationException(timerOrError.getLeft().getMessage());
+        }
+        evaluatedTimers.put(event.getId(), timerOrError.get());
       }
     }
 
     return evaluatedTimers;
+  }
+
+  private Map<DirectBuffer, DirectBuffer> extractMessageNames(
+      final List<ExecutableCatchEvent> events, final BpmnStepContext<?> context) {
+    final Map<DirectBuffer, DirectBuffer> extractedMessageNames = new HashMap<>();
+
+    final var scopeKey = context.getKey();
+    for (final ExecutableCatchEvent event : events) {
+      if (event.isMessage()) {
+        final Either<Failure, String> messageNameOrFailure =
+            extractMessageName(event.getMessage(), scopeKey);
+        messageNameOrFailure.ifRightOrLeft(
+            messageName -> extractedMessageNames.put(event.getId(), wrapString(messageName)),
+            failure -> {
+              // todo(#4323): deal with this exceptional case without throwing an exception
+              throw new MessageNameException(failure, event.getId());
+            });
+      }
+    }
+
+    return extractedMessageNames;
   }
 }

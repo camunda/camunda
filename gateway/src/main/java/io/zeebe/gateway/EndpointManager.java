@@ -19,12 +19,13 @@ import io.zeebe.gateway.cmd.GrpcStatusException;
 import io.zeebe.gateway.cmd.GrpcStatusExceptionImpl;
 import io.zeebe.gateway.cmd.PartitionNotFoundException;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
-import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
+import io.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
@@ -69,13 +70,15 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   private final BrokerClient brokerClient;
   private final BrokerTopologyManager topologyManager;
-  private final LongPollingActivateJobsHandler activateJobsHandler;
+  private final ActivateJobsHandler activateJobsHandler;
+  private final RequestRetryHandler requestRetryHandler;
 
   public EndpointManager(
-      final BrokerClient brokerClient, final LongPollingActivateJobsHandler longPollingHandler) {
+      final BrokerClient brokerClient, final ActivateJobsHandler activateJobsHandler) {
     this.brokerClient = brokerClient;
     topologyManager = brokerClient.getTopologyManager();
-    activateJobsHandler = longPollingHandler;
+    this.activateJobsHandler = activateJobsHandler;
+    requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
   }
 
   private void addBrokerInfo(
@@ -147,7 +150,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
   public void createWorkflowInstance(
       final CreateWorkflowInstanceRequest request,
       final StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
-    sendRequest(
+    sendRequestWithRetryPartitions(
         request,
         RequestMapper::toCreateWorkflowInstanceRequest,
         ResponseMapper::toCreateWorkflowInstanceResponse,
@@ -159,14 +162,14 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
       final CreateWorkflowInstanceWithResultRequest request,
       final StreamObserver<CreateWorkflowInstanceWithResultResponse> responseObserver) {
     if (request.getRequestTimeout() > 0) {
-      sendRequest(
+      sendRequestWithRetryPartitions(
           request,
           RequestMapper::toCreateWorkflowInstanceWithResultRequest,
           ResponseMapper::toCreateWorkflowInstanceWithResultResponse,
           responseObserver,
           Duration.ofMillis(request.getRequestTimeout()));
     } else {
-      sendRequest(
+      sendRequestWithRetryPartitions(
           request,
           RequestMapper::toCreateWorkflowInstanceWithResultRequest,
           ResponseMapper::toCreateWorkflowInstanceWithResultResponse,
@@ -305,13 +308,32 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     }
 
     suppressCancelledException(grpcRequest, streamObserver);
-    brokerClient.sendRequest(
+    brokerClient.sendRequestWithRetry(
         brokerRequest,
         (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
         error -> streamObserver.onError(convertThrowable(error)));
   }
 
-  private <GrpcRequestT, BrokerResponseT, GrpcResponseT> void sendRequest(
+  private <GrpcRequestT, BrokerResponseT, GrpcResponseT> void sendRequestWithRetryPartitions(
+      final GrpcRequestT grpcRequest,
+      final Function<GrpcRequestT, BrokerRequest<BrokerResponseT>> requestMapper,
+      final BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
+      final StreamObserver<GrpcResponseT> streamObserver) {
+
+    final BrokerRequest<BrokerResponseT> brokerRequest =
+        mapRequest(grpcRequest, requestMapper, streamObserver);
+    if (brokerRequest == null) {
+      return;
+    }
+
+    suppressCancelledException(grpcRequest, streamObserver);
+    requestRetryHandler.sendRequest(
+        brokerRequest,
+        (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
+        error -> streamObserver.onError(convertThrowable(error)));
+  }
+
+  private <GrpcRequestT, BrokerResponseT, GrpcResponseT> void sendRequestWithRetryPartitions(
       final GrpcRequestT grpcRequest,
       final Function<GrpcRequestT, BrokerRequest<BrokerResponseT>> requestMapper,
       final BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
@@ -325,7 +347,7 @@ public final class EndpointManager extends GatewayGrpc.GatewayImplBase {
     }
 
     suppressCancelledException(grpcRequest, streamObserver);
-    brokerClient.sendRequest(
+    requestRetryHandler.sendRequest(
         brokerRequest,
         (key, response) -> consumeResponse(responseMapper, streamObserver, key, response),
         error -> streamObserver.onError(convertThrowable(error)),

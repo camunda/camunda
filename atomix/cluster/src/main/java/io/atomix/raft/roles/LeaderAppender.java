@@ -27,7 +27,6 @@ import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.RaftRequest;
-import io.atomix.raft.storage.snapshot.Snapshot;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -268,7 +267,7 @@ final class LeaderAppender extends AbstractAppender {
     else if (member.getConfigTerm() < raft.getTerm()
         || member.getConfigIndex() < raft.getCluster().getConfiguration().index()) {
       if (member.canConfigure()) {
-        sendConfigureRequest(member, buildConfigureRequest(member));
+        sendConfigureRequest(member, buildConfigureRequest());
       } else if (member.canHeartbeat()) {
         sendAppendRequest(member, buildAppendEmptyRequest(member));
       }
@@ -277,22 +276,31 @@ final class LeaderAppender extends AbstractAppender {
     else if (member.getMember().getType() == RaftMember.Type.ACTIVE
         || member.getMember().getType() == RaftMember.Type.PROMOTABLE
         || member.getMember().getType() == RaftMember.Type.PASSIVE) {
-      final Snapshot snapshot = raft.getSnapshotStore().getCurrentSnapshot();
-      if (snapshot != null
-          && member.getSnapshotIndex() < snapshot.index()
-          && snapshot.index() >= member.getLogReader().getCurrentIndex()) {
-        if (!member.canInstall()) {
-          return;
-        }
-
-        log.debug("Replicating snapshot {} to {}", snapshot.index(), member.getMember().memberId());
-        sendInstallRequest(member, buildInstallRequest(member, snapshot));
-      } else if (member.canAppend()) {
-        sendAppendRequest(member, buildAppendRequest(member, -1));
-      }
+      tryToReplicateSnapshot(member);
     }
     // If no AppendRequest is already being sent, send an AppendRequest.
     else if (member.canAppend()) {
+      sendAppendRequest(member, buildAppendRequest(member, -1));
+    }
+  }
+
+  private void tryToReplicateSnapshot(final RaftMemberContext member) {
+    final var optSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
+
+    if (optSnapshot.isPresent()
+        && member.getSnapshotIndex() < optSnapshot.get().getIndex()
+        && optSnapshot.get().getIndex() >= member.getLogReader().getCurrentIndex()) {
+      if (!member.canInstall()) {
+        return;
+      }
+
+      final var persistedSnapshot = optSnapshot.get();
+      log.debug(
+          "Replicating snapshot {} to {}",
+          persistedSnapshot.getIndex(),
+          member.getMember().memberId());
+      sendInstallRequest(member, buildInstallRequest(member, persistedSnapshot));
+    } else if (member.canAppend()) {
       sendAppendRequest(member, buildAppendRequest(member, -1));
     }
   }

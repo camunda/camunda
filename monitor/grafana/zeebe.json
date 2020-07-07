@@ -11,10 +11,16 @@
   ],
   "__requires": [
     {
+      "type": "panel",
+      "id": "gauge",
+      "name": "Gauge",
+      "version": ""
+    },
+    {
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "6.3.5"
+      "version": "6.7.1"
     },
     {
       "type": "panel",
@@ -50,6 +56,7 @@
   "annotations": {
     "list": [
       {
+        "$$hashKey": "object:47",
         "builtIn": 1,
         "datasource": "-- Grafana --",
         "enable": true,
@@ -64,11 +71,12 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1584614330956,
+  "iteration": 1593111084962,
   "links": [],
   "panels": [
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -77,6 +85,118 @@
       },
       "id": 56,
       "panels": [
+        {
+          "datasource": "$DS_PROMETHEUS",
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 0,
+            "y": 1
+          },
+          "id": 137,
+          "links": [],
+          "options": {
+            "fieldOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "defaults": {
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 100
+                    }
+                  ]
+                },
+                "title": ""
+              },
+              "overrides": [],
+              "values": false
+            },
+            "orientation": "auto",
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "6.7.1",
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_stream_processor_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\", action=~\"processed\"}[1m])) by (pod, partition, processor, action)",
+              "format": "time_series",
+              "instant": true,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}}-{{partition}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Processing per Partition",
+          "type": "gauge"
+        },
+        {
+          "datasource": "$DS_PROMETHEUS",
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 1
+          },
+          "id": 138,
+          "links": [],
+          "options": {
+            "fieldOptions": {
+              "calcs": [
+                "last"
+              ],
+              "defaults": {
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 100
+                    }
+                  ]
+                },
+                "title": ""
+              },
+              "overrides": [],
+              "values": false
+            },
+            "orientation": "auto",
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "6.7.1",
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_exporter_events_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (pod, partition, exporter)",
+              "format": "time_series",
+              "hide": false,
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}}-{{partition}}",
+              "refId": "B"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Exporting per Partition",
+          "type": "gauge"
+        },
         {
           "columns": [
             {
@@ -90,11 +210,10 @@
             "h": 9,
             "w": 5,
             "x": 0,
-            "y": 1
+            "y": 7
           },
           "id": 68,
           "links": [],
-          "options": {},
           "pageSize": null,
           "scroll": true,
           "showHeader": true,
@@ -105,6 +224,7 @@
           "styles": [
             {
               "alias": "Time",
+              "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
               "link": false,
               "pattern": "Time",
@@ -112,6 +232,7 @@
             },
             {
               "alias": "Broker - Partition",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -131,6 +252,7 @@
             },
             {
               "alias": "Role",
+              "align": "auto",
               "colorMode": "value",
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -164,6 +286,7 @@
             },
             {
               "alias": "test",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -209,8 +332,9 @@
             "h": 9,
             "w": 9,
             "x": 5,
-            "y": 1
+            "y": 7
           },
+          "hiddenSeries": false,
           "id": 116,
           "legend": {
             "avg": false,
@@ -309,15 +433,15 @@
               "value": "current"
             }
           ],
+          "datasource": "${DS_PROMETHEUS}",
           "fontSize": "100%",
           "gridPos": {
             "h": 9,
             "w": 5,
             "x": 14,
-            "y": 1
+            "y": 7
           },
           "id": 129,
-          "options": {},
           "pageSize": null,
           "scroll": true,
           "showHeader": true,
@@ -328,12 +452,14 @@
           "styles": [
             {
               "alias": "Time",
+              "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
               "pattern": "Time",
               "type": "date"
             },
             {
               "alias": "",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -350,6 +476,7 @@
             },
             {
               "alias": "Broker Partition",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -364,6 +491,7 @@
             },
             {
               "alias": "Status",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -417,10 +545,9 @@
             "h": 9,
             "w": 5,
             "x": 19,
-            "y": 1
+            "y": 7
           },
           "id": 54,
-          "options": {},
           "pageSize": null,
           "scroll": true,
           "showHeader": true,
@@ -431,12 +558,14 @@
           "styles": [
             {
               "alias": "Time",
+              "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
               "pattern": "Time",
               "type": "date"
             },
             {
               "alias": "Pod",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -451,6 +580,7 @@
             },
             {
               "alias": "Status",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -504,8 +634,9 @@
             "h": 8,
             "w": 10,
             "x": 0,
-            "y": 10
+            "y": 16
           },
+          "hiddenSeries": false,
           "id": 58,
           "legend": {
             "alignAsTable": false,
@@ -616,7 +747,7 @@
             "h": 4,
             "w": 5,
             "x": 10,
-            "y": 10
+            "y": 16
           },
           "id": 117,
           "interval": null,
@@ -635,7 +766,6 @@
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
-          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -692,8 +822,9 @@
             "h": 8,
             "w": 9,
             "x": 15,
-            "y": 10
+            "y": 16
           },
+          "hiddenSeries": false,
           "id": 74,
           "legend": {
             "avg": false,
@@ -792,7 +923,7 @@
             "h": 4,
             "w": 5,
             "x": 10,
-            "y": 14
+            "y": 20
           },
           "id": 118,
           "interval": null,
@@ -811,7 +942,6 @@
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
-          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -868,8 +998,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 18
+            "y": 24
           },
+          "hiddenSeries": false,
           "id": 87,
           "legend": {
             "avg": false,
@@ -978,8 +1109,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 18
+            "y": 24
           },
+          "hiddenSeries": false,
           "id": 31,
           "legend": {
             "avg": false,
@@ -1088,8 +1220,9 @@
             "h": 9,
             "w": 12,
             "x": 0,
-            "y": 26
+            "y": 32
           },
+          "hiddenSeries": false,
           "id": 62,
           "legend": {
             "avg": false,
@@ -1116,8 +1249,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(grpc_server_handled_total[1m])) by (grpc_method)",
+              "expr": "sum(rate(grpc_server_handled_total{namespace=~\"$namespace\"}[1m])) by (grpc_method)",
               "format": "time_series",
+              "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} Request",
               "refId": "A"
@@ -1176,8 +1310,9 @@
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 26
+            "y": 32
           },
+          "hiddenSeries": false,
           "id": 93,
           "legend": {
             "avg": false,
@@ -1269,6 +1404,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1285,12 +1421,11 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 2
+            "y": 44
           },
           "hideTimeOverride": false,
           "id": 12,
           "links": [],
-          "options": {},
           "pageSize": null,
           "scroll": true,
           "showHeader": true,
@@ -1301,12 +1436,14 @@
           "styles": [
             {
               "alias": "Time",
+              "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
               "pattern": "Time",
               "type": "date"
             },
             {
               "alias": "",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -1342,12 +1479,11 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 2
+            "y": 44
           },
           "hideTimeOverride": false,
           "id": 13,
           "links": [],
-          "options": {},
           "pageSize": null,
           "scroll": true,
           "showHeader": true,
@@ -1358,12 +1494,14 @@
           "styles": [
             {
               "alias": "Time",
+              "align": "auto",
               "dateFormat": "YYYY-MM-DD HH:mm:ss",
               "pattern": "Time",
               "type": "date"
             },
             {
               "alias": "",
+              "align": "auto",
               "colorMode": null,
               "colors": [
                 "rgba(245, 54, 54, 0.9)",
@@ -1404,8 +1542,9 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 7
+            "y": 49
           },
+          "hiddenSeries": false,
           "id": 2,
           "legend": {
             "avg": false,
@@ -1500,8 +1639,9 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 7
+            "y": 49
           },
+          "hiddenSeries": false,
           "id": 3,
           "legend": {
             "avg": false,
@@ -1596,8 +1736,9 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 55
           },
+          "hiddenSeries": false,
           "id": 4,
           "legend": {
             "avg": false,
@@ -1692,8 +1833,9 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 55
           },
+          "hiddenSeries": false,
           "id": 5,
           "legend": {
             "avg": false,
@@ -1788,8 +1930,9 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 19
+            "y": 61
           },
+          "hiddenSeries": false,
           "id": 15,
           "legend": {
             "avg": false,
@@ -1891,8 +2034,9 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 19
+            "y": 61
           },
+          "hiddenSeries": false,
           "id": 18,
           "legend": {
             "avg": false,
@@ -1974,6 +2118,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -1996,8 +2141,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 2
+            "y": 3
           },
+          "hiddenSeries": false,
           "id": 102,
           "legend": {
             "avg": false,
@@ -2073,91 +2219,68 @@
           }
         },
         {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#b4ff00",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateOranges",
+            "exponent": 0.5,
+            "mode": "opacity"
+          },
+          "dataFormat": "tsbuckets",
           "datasource": "$DS_PROMETHEUS",
           "description": "Approximate duration of taking a single snapshot from the processor point-of-view (without replication or committing).",
-          "fill": 1,
-          "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 2
+            "y": 3
           },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
           "id": 112,
           "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
+            "show": false
           },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "dataLinks": []
-          },
-          "percentage": false,
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
+          "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "zeebe_snapshot_duration_milliseconds{namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
-              "legendFormat": "{{pod}} p{{partition}}",
+              "expr": "sum(increase(zeebe_snapshot_duration_bucket{namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "",
+              "legendFormat": "{{le}}",
               "refId": "A"
             }
           ],
-          "thresholds": [],
           "timeFrom": null,
-          "timeRegions": [],
           "timeShift": null,
           "title": "Snapshot Operation Duration",
           "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
             "show": true,
-            "values": []
+            "showHistogram": false
           },
-          "yaxes": [
-            {
-              "format": "ms",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
         },
         {
           "aliasColors": {},
@@ -2172,8 +2295,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 10
+            "y": 11
           },
+          "hiddenSeries": false,
           "id": 105,
           "legend": {
             "avg": false,
@@ -2265,7 +2389,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 10
+            "y": 11
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -2274,7 +2398,6 @@
           "legend": {
             "show": false
           },
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -2323,8 +2446,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 18
+            "y": 19
           },
+          "hiddenSeries": false,
           "id": 108,
           "legend": {
             "avg": false,
@@ -2410,8 +2534,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 18
+            "y": 19
           },
+          "hiddenSeries": false,
           "id": 110,
           "legend": {
             "avg": false,
@@ -2490,6 +2615,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -2510,8 +2636,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 4
+            "y": 38
           },
+          "hiddenSeries": false,
           "id": 33,
           "legend": {
             "avg": false,
@@ -2611,8 +2738,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 4
+            "y": 38
           },
+          "hiddenSeries": false,
           "id": 98,
           "legend": {
             "avg": false,
@@ -2722,8 +2850,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 46
           },
+          "hiddenSeries": false,
           "id": 64,
           "legend": {
             "avg": false,
@@ -2817,8 +2946,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 46
           },
+          "hiddenSeries": false,
           "id": 35,
           "legend": {
             "avg": false,
@@ -2906,8 +3036,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 20
+            "y": 54
           },
+          "hiddenSeries": false,
           "id": 37,
           "legend": {
             "avg": false,
@@ -3001,8 +3132,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 20
+            "y": 54
           },
+          "hiddenSeries": false,
           "id": 40,
           "legend": {
             "avg": false,
@@ -3090,8 +3222,9 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 28
+            "y": 62
           },
+          "hiddenSeries": false,
           "id": 39,
           "legend": {
             "avg": false,
@@ -3180,6 +3313,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -3201,8 +3335,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 70
           },
+          "hiddenSeries": false,
           "id": 122,
           "legend": {
             "avg": false,
@@ -3288,8 +3423,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 70
           },
+          "hiddenSeries": false,
           "id": 124,
           "legend": {
             "avg": false,
@@ -3375,8 +3511,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 78
           },
+          "hiddenSeries": false,
           "id": 126,
           "legend": {
             "avg": false,
@@ -3462,8 +3599,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 78
           },
+          "hiddenSeries": false,
           "id": 127,
           "legend": {
             "avg": false,
@@ -3542,6 +3680,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -3564,11 +3703,12 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the time (latency) between writing the command on the dispatcher and processing it.",
           "gridPos": {
-            "h": 9,
+            "h": 7,
             "w": 12,
             "x": 0,
-            "y": 5
+            "y": 6
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3578,7 +3718,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -3628,11 +3767,12 @@
           },
           "dataFormat": "tsbuckets",
           "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the time (latency) between writing the event on the dispatcher and processing it.",
           "gridPos": {
-            "h": 9,
+            "h": 7,
             "w": 12,
             "x": 12,
-            "y": 5
+            "y": 6
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3642,7 +3782,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -3677,6 +3816,198 @@
           "yBucketBound": "auto",
           "yBucketNumber": null,
           "yBucketSize": null
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#ef843c",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the execution time of a process instance. This means the time (latency) between creating the instance and completing it.",
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 13
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 132,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "expr": "sum(increase(zeebe_workflow_instance_execution_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Processing Execution Time",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#ef843c",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the time (latency) between creating the job and activating it.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 21
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 133,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "expr": "sum(increase(zeebe_job_activation_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Job Activation Time",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#ef843c",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the complete lifetime of an job. This means the time (latency) between creating the job and completing it.",
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 21
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 135,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "expr": "sum(increase(zeebe_job_life_time_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Job Life Time",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
         }
       ],
       "title": "Processing Latency",
@@ -3684,6 +4015,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -3704,8 +4036,9 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 63
+            "y": 7
           },
+          "hiddenSeries": false,
           "id": 26,
           "legend": {
             "avg": false,
@@ -3735,6 +4068,7 @@
             {
               "expr": "sum(grpc_server_handled_total{namespace=~\"$namespace\", pod=~\"$pod\"}) by (grpc_method, code)",
               "format": "time_series",
+              "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} ({{code}})",
               "refId": "A"
@@ -3793,8 +4127,9 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 63
+            "y": 7
           },
+          "hiddenSeries": false,
           "id": 27,
           "legend": {
             "avg": false,
@@ -3824,6 +4159,7 @@
             {
               "expr": "sum(rate(grpc_server_handled_total{namespace=~\"$namespace\", pod=~\"$pod\"}[1m])) by (grpc_method, code)",
               "format": "time_series",
+              "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{grpc_method}} ({{code}})",
               "refId": "A"
@@ -3895,7 +4231,7 @@
             "h": 9,
             "w": 8,
             "x": 0,
-            "y": 70
+            "y": 14
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3905,11 +4241,10 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{grpc_method=\"CreateWorkflowInstance\"}[30s])) by (le)",
+              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{namespace=~\"$namespace\", pod=~\"$pod\", grpc_method=\"CreateWorkflowInstance\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -3959,7 +4294,7 @@
             "h": 9,
             "w": 8,
             "x": 8,
-            "y": 70
+            "y": 14
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -3969,11 +4304,10 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{grpc_method=\"ActivateJobs\"}[30s])) by (le)",
+              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{namespace=~\"$namespace\", pod=~\"$pod\", grpc_method=\"ActivateJobs\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -4023,7 +4357,7 @@
             "h": 9,
             "w": 8,
             "x": 16,
-            "y": 70
+            "y": 14
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4033,11 +4367,10 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
-              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{grpc_method=\"CompleteJob\"}[30s])) by (le)",
+              "expr": "sum(increase(grpc_server_handled_latency_seconds_bucket{namespace=~\"$namespace\", pod=~\"$pod\", grpc_method=\"CompleteJob\"}[30s])) by (le)",
               "format": "heatmap",
               "interval": "30s",
               "intervalFactor": 1,
@@ -4075,6 +4408,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -4101,7 +4435,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 7
+            "y": 50
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4111,7 +4445,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -4166,7 +4499,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 7
+            "y": 50
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4176,7 +4509,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -4226,8 +4558,9 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 56
           },
+          "hiddenSeries": false,
           "id": 79,
           "legend": {
             "avg": false,
@@ -4317,8 +4650,9 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 56
           },
+          "hiddenSeries": false,
           "id": 114,
           "legend": {
             "avg": false,
@@ -4409,7 +4743,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 20
+            "y": 63
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4419,7 +4753,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -4474,7 +4807,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 20
+            "y": 63
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4484,7 +4817,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -4540,7 +4872,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 27
+            "y": 70
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4550,7 +4882,6 @@
             "show": true
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -4601,8 +4932,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 27
+            "y": 70
           },
+          "hiddenSeries": false,
           "id": 72,
           "legend": {
             "avg": false,
@@ -4694,8 +5026,9 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 35
+            "y": 78
           },
+          "hiddenSeries": false,
           "id": 95,
           "legend": {
             "alignAsTable": true,
@@ -4787,6 +5120,7 @@
     },
     {
       "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -5042,13 +5376,14 @@
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 19,
+  "schemaVersion": 22,
   "style": "dark",
   "tags": [],
   "templating": {
     "list": [
       {
         "current": {
+          "selected": true,
           "text": "Prometheus",
           "value": "Prometheus"
         },
@@ -5068,40 +5403,19 @@
         "allValue": ".*",
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "",
+        "definition": "label_values(zeebe_health, namespace)",
         "hide": 0,
         "includeAll": true,
+        "index": -1,
         "label": null,
         "multi": false,
         "name": "namespace",
         "options": [],
-        "query": "label_values(jvm_info, namespace)",
+        "query": "label_values(zeebe_health, namespace)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
-        "tagValuesQuery": "",
-        "tags": [],
-        "tagsQuery": "",
-        "type": "query",
-        "useTags": false
-      },
-      {
-        "allValue": "(.*-zeebe-[0-9]+$)",
-        "current": {},
-        "datasource": "${DS_PROMETHEUS}",
-        "definition": "label_values(jvm_info{namespace=~\"$namespace\"}, pod)",
-        "hide": 0,
-        "includeAll": true,
-        "label": null,
-        "multi": false,
-        "name": "pod",
-        "options": [],
-        "query": "label_values(jvm_info{namespace=~\"$namespace\"}, pod)",
-        "refresh": 2,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
         "tagValuesQuery": "",
         "tags": [],
         "tagsQuery": "",
@@ -5112,18 +5426,42 @@
         "allValue": ".*",
         "current": {},
         "datasource": "${DS_PROMETHEUS}",
-        "definition": "",
+        "definition": "label_values(zeebe_health{namespace=~\"$namespace\"}, pod)",
         "hide": 0,
         "includeAll": true,
+        "index": -1,
         "label": null,
-        "multi": false,
-        "name": "partition",
+        "multi": true,
+        "name": "pod",
         "options": [],
-        "query": "label_values(zeebe_stream_processor_events_total{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+        "query": "label_values(zeebe_health{namespace=~\"$namespace\"}, pod)",
         "refresh": 2,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": ".*",
+        "current": {},
+        "datasource": "${DS_PROMETHEUS}",
+        "definition": "label_values(zeebe_health{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+        "hide": 0,
+        "includeAll": true,
+        "index": -1,
+        "label": null,
+        "multi": true,
+        "name": "partition",
+        "options": [],
+        "query": "label_values(zeebe_health{namespace=~\"$namespace\", pod=~\"$pod\"}, partition)",
+        "refresh": 2,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
         "tagValuesQuery": "",
         "tags": [],
         "tagsQuery": "",
@@ -5164,5 +5502,8 @@
   "timezone": "",
   "title": "Zeebe",
   "uid": "I4lo7_EZk",
-  "version": 1
+  "variables": {
+    "list": []
+  },
+  "version": 4
 }

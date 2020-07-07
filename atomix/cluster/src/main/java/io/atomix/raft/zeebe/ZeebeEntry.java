@@ -49,28 +49,22 @@ public class ZeebeEntry extends TimestampedEntry {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(super.hashCode(), lowestPosition(), highestPosition(), data());
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeEntry that = (ZeebeEntry) o;
+    return lowestPosition == that.lowestPosition
+        && highestPosition == that.highestPosition
+        && data.equals(that.data);
   }
 
   @Override
-  public boolean equals(final Object other) {
-    if (this == other) {
-      return true;
-    }
-
-    if (!super.equals(other)) {
-      return false;
-    }
-
-    if (!(other instanceof ZeebeEntry)) {
-      return false;
-    }
-
-    final ZeebeEntry that = (ZeebeEntry) other;
-    return lowestPosition() == that.lowestPosition()
-        && highestPosition() == that.highestPosition()
-        && data().equals(that.data());
+  public int hashCode() {
+    return Objects.hash(lowestPosition, highestPosition, data);
   }
 
   public long lowestPosition() {

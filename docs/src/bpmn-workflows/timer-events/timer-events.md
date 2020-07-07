@@ -6,7 +6,7 @@ Timer events are events which are triggered by a defined timer.
 
 ## Timer Start Events
 
-A workflow can have one or more timer start events (besides other types of start events). Each of the timer events must have either a **time date or time cycle** definition. 
+A workflow can have one or more timer start events (besides other types of start events). Each of the timer events must have either a **time date or time cycle** definition.
 
 When a workflow is deployed then it schedules a timer for each timer start event. Scheduled timers of the previous version of the workflow (based on the BPMN process id) are canceled.
 
@@ -22,23 +22,30 @@ When an intermediate timer catch event is entered then a corresponding timer is 
 
 An interrupting timer boundary event must have a **time duration** definition. When the corresponding timer is triggered then the activity gets terminated. Interrupting timer boundary events is often used to model timeouts, for example, canceling the processing after 5 minutes and do something else.
 
-An non-interrupting timer boundary event must have either a **time duration or time cycle** definition. When the activity is entered then it schedules a corresponding timer. If the timer is triggered and it is defined as time cycle with repetitions > 0 then it schedules the timer again until the defined number of repetitions is reached. Non-interrupting timer boundary events is often used to model notifications, for example, contacting the support if the processing takes longer than one hour. 
+An non-interrupting timer boundary event must have either a **time duration or time cycle** definition. When the activity is entered then it schedules a corresponding timer. If the timer is triggered and it is defined as time cycle with repetitions > 0 then it schedules the timer again until the defined number of repetitions is reached. Non-interrupting timer boundary events is often used to model notifications, for example, contacting the support if the processing takes longer than one hour.
 
 ## Timers
 
-Timers must be defined by providing either a date, a duration, or a cycle. 
+Timers must be defined by providing either a date, a duration, or a cycle.
+
+A timer can be defined either as a static value (e.g. `PT3D`) or as an [expression](/reference/expressions.html). There are two common ways for using an expression:
+
+* [access a variable](/reference/expressions.html#access-variables) (e.g. `= remainingTime`)
+* [using temporal values](/reference/expressions.html#temporal-expressions) (e.g. `= date and time(expirationDate) - date and time(creationDate)`)
+
+If the expression belongs to a timer start event of the workflow then it is evaluated on deploying the workflow. Otherwise, it is evaluated on activating the timer catch event. The evaluation must result either in a `string` that has the same ISO 8601 format as the static value or an equivalent temporal value (i.e. a date-time, a duration, or a cycle).
 
 ### Time Date
 
 A specific point in time defined as ISO 8601 combined date and time representation. It must contain a timezone information, either `Z` for UTC or a zone offset. Optionally, it can contain a zone id.
 
-* `2019-10-01T12:00:00Z` - UTC time   
+* `2019-10-01T12:00:00Z` - UTC time
 * `2019-10-02T08:09:40+02:00` - UTC plus 2 hours zone offset
 * `2019-10-02T08:09:40+02:00[Europe/Berlin]` - UTC plus 2 hours zone offset at Berlin
 
 ### Time Duration
 
-A duration defined as ISO 8601 durations format. 
+A duration defined as ISO 8601 durations format.
 
 * `PT15S` - 15 seconds
 * `PT1H30M` - 1 hour and 30 minutes
@@ -65,8 +72,8 @@ A cycle defined as ISO 8601 repeating intervals format. It contains the duration
     <bpmn:timeDate>2019-10-01T12:00:00Z</bpmn:timeDate>
   </bpmn:timerEventDefinition>
 </bpmn:startEvent>
-``` 
-  
+```
+
 An intermediate timer catch event with time duration:
 
 ```xml
@@ -93,25 +100,25 @@ A non-interrupting boundary timer event with time cycle:
   <summary>Using the BPMN modeler</summary>
   <p>Adding an interrupting timer boundary event:
 
-![message-event](/bpmn-workflows/timer-events/interrupting-timer-event.gif) 
+![message-event](/bpmn-workflows/timer-events/interrupting-timer-event.gif)
   </p>
 </details>
 
 <details>
   <summary>Workflow Lifecycle</summary>
-  <p>Workflow instance records of a timer start event: 
+  <p>Workflow instance records of a timer start event:
 
 <table>
     <tr>
         <th>Intent</th>
         <th>Element Id</th>
         <th>Element Type</th>
-    </tr>   
+    </tr>
     <tr>
         <td>EVENT_OCCURRED</td>
         <td>release-date</td>
         <td>START_EVENT</td>
-    <tr> 
+    <tr>
     <tr>
         <td>ELEMENT_ACTIVATING</td>
         <td>release-date</td>
@@ -134,14 +141,14 @@ A non-interrupting boundary timer event with time cycle:
     <tr>
 </table>
 
-Workflow instance records of an intermediate timer catch event: 
+Workflow instance records of an intermediate timer catch event:
 
 <table>
     <tr>
         <th>Intent</th>
         <th>Element Id</th>
         <th>Element Type</th>
-    </tr>    
+    </tr>
     <tr>
         <td>ELEMENT_ACTIVATING</td>
         <td>coffee-break</td>
@@ -178,4 +185,5 @@ Workflow instance records of an intermediate timer catch event:
 </details>
 
 References:
+* [Expressions](/reference/expressions.html)
 * [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)

@@ -2,9 +2,11 @@
 
 Welcome to the setup a benchmark. :wave:
 
+This document describes the steps to setup and run a benchmark. It is target at a Linux system.
+
 ## Requirements
 
-Make sure you have the following installed: gcloud, kubectl, kubens and helm!
+Make sure you have the following installed: docker, gcloud, kubectl, kubens and helm!
 
 ## How to setup a Benchmark namespace
 
@@ -16,10 +18,10 @@ Like:
 . ./newBenchmark.sh my-benchmark-name
 ```
 
-This will source and run the `newBenchmark.sh` script, which means it will 
-create a new k8 namespace and switch to it via `kubens`. Furthermore a new folder 
+This will source and run the `newBenchmark.sh` script, which means it will
+create a new k8 namespace and switch to it via `kubens`. Furthermore a new folder
 will be created with the given name. If you used `.` before `./newBenchmark.sh`
-the script will also change your directory after running, so you can directly start 
+the script will also change your directory after running, so you can directly start
 to configure your benchmark.
 
 ## How to configure a Benchmark
@@ -36,7 +38,7 @@ If you want to use your own or a different Zeebe snapshot then you could do the 
 # builds the dist with zbctl packed
 clients/go/cmd/zbctl/build.sh && mvn clean install -T1C -DskipTests -pl dist -am
 # builds the a new zeebe docker image
-docker build --build-arg DISTBALL=dist/target/zeebe-distribution-*.tar.gz -t gcr.io/zeebe-io/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD) .
+docker build --build-arg DISTBALL=dist/target/zeebe-distribution-*.tar.gz -t gcr.io/zeebe-io/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD) --target app .
 # pushes the image to our docker registry
 docker push gcr.io/zeebe-io/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD)
 ```

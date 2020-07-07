@@ -25,3 +25,6 @@ zeebe:
       enabled: true
       privateKeyPath: privateKeyPath
       certificateChainPath: certificateChainPath
+
+    longPolling:
+      enabled: false

@@ -267,7 +267,8 @@ public final class ErrorEventIncidentTest {
 
     Assertions.assertThat(incidentEvent.getValue())
         .hasErrorType(ErrorType.UNHANDLED_ERROR_EVENT)
-        .hasErrorMessage("An error was thrown with the code 'error' but not caught.")
+        .hasErrorMessage(
+            "Expected to throw an error event with the code 'error', but it was not caught.")
         .hasBpmnProcessId(endEvent.getValue().getBpmnProcessId())
         .hasWorkflowKey(endEvent.getValue().getWorkflowKey())
         .hasWorkflowInstanceKey(endEvent.getValue().getWorkflowInstanceKey())

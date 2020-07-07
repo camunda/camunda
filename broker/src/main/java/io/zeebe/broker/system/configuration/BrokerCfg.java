@@ -11,6 +11,8 @@ import static io.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
+import io.zeebe.broker.exporter.metrics.MetricsExporter;
+import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.zeebe.util.Environment;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import java.time.Duration;
@@ -34,6 +36,7 @@ public final class BrokerCfg {
   private BackpressureCfg backpressure = new BackpressureCfg();
 
   private Duration stepTimeout = Duration.ofMinutes(5);
+  private boolean executionMetricsExporterEnabled;
 
   public void init(final String brokerBase) {
     init(brokerBase, new Environment());
@@ -41,6 +44,11 @@ public final class BrokerCfg {
 
   public void init(final String brokerBase, final Environment environment) {
     applyEnvironment(environment);
+
+    if (isExecutionMetricsExporterEnabled()) {
+      exporters.put(MetricsExporter.defaultExporterId(), MetricsExporter.defaultConfig());
+    }
+
     network.init(this, brokerBase);
     cluster.init(this, brokerBase);
     threads.init(this, brokerBase);
@@ -126,6 +134,14 @@ public final class BrokerCfg {
     this.stepTimeout = stepTimeout;
   }
 
+  public boolean isExecutionMetricsExporterEnabled() {
+    return executionMetricsExporterEnabled;
+  }
+
+  public void setExecutionMetricsExporterEnabled(final boolean executionMetricsExporterEnabled) {
+    this.executionMetricsExporterEnabled = executionMetricsExporterEnabled;
+  }
+
   @Override
   public String toString() {
     return "BrokerCfg{"
@@ -143,16 +159,17 @@ public final class BrokerCfg {
         + gateway
         + ", backpressure="
         + backpressure
-        + ", stepTimeout='"
+        + ", stepTimeout="
         + stepTimeout
-        + '\''
+        + ", executionMetricsExporter="
+        + executionMetricsExporterEnabled
         + '}';
   }
 
   public String toJson() {
     try {
       return getDefaultJsonObjectWriter().writeValueAsString(this);
-    } catch (JsonProcessingException e) {
+    } catch (final JsonProcessingException e) {
       throw new UncheckedExecutionException("Writing to JSON failed", e);
     }
   }

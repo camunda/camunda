@@ -7,6 +7,23 @@ Currently, metrics are exported using Prometheus. You can find
 documentation about the different metrics 
 [here](https://docs.zeebe.io/operations/metrics.html).
 
+### Testing
+
+You can easily test metrics locally by using the standard provided [docker compose
+file](../docker/compose/docker-compose.yaml) in combination with the one [here](docker-compose.yml), e.g.:
+
+```sh
+docker-compose --project-directory ./ -f docker-compose.yml -f ../docker/compose/docker-compose.yaml up -d
+```
+
+This will start the usual 3 brokers cluster, as well as a Grafana instance (on port 3000) and a Prometheus instance on
+port 9090. The Prometheus instance is configured to scrape the brokers every 5 seconds, and pre-assigns them the
+namespace and pod label as `local` and `broker-*`.
+
+> Remember that docker-compose does not remove volumes on the down command, so if you are completely done with it you
+> will need to run either `docker-compose --project-directory ./ -f docker-compose.yml -f ../docker/compose/docker-compose.yaml down -v` 
+> or `docker volume prune`
+
 ### Grafana
 
 You can find [here](grafana/zeebe.json) a pre-built Grafana dashboard to
@@ -36,3 +53,4 @@ checking `Export for sharing externally` as you do.
 #### Preview
 
 ![Zeebe Grafana Dashboard Preview](grafana/preview.png)
+

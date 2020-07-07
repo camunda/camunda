@@ -8,6 +8,7 @@
 package io.zeebe.el.impl;
 
 import io.zeebe.el.Expression;
+import java.util.Optional;
 
 public final class InvalidExpression implements Expression {
 
@@ -22,6 +23,11 @@ public final class InvalidExpression implements Expression {
   @Override
   public String getExpression() {
     return expression;
+  }
+
+  @Override
+  public Optional<String> getVariableName() {
+    return Optional.empty();
   }
 
   @Override

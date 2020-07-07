@@ -1,6 +1,5 @@
 final PROJECT = "zeebe"
 final CHAOS_TEST_NAMESPACE = "zeebe-chaos-test"
-final NOTIFY_EMAIL = "christopher.zell@camunda.com"
 
 pipeline {
     options {
@@ -91,20 +90,15 @@ pipeline {
           }
         }
 
-        failure {
-            buildNotification(currentBuild.result, NOTIFY_EMAIL)
+        changed {
+            script {
+                slackSend(
+                    channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+                    message: "Zeebe ${env.JOB_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
+            }
         }
+
     }
-}
-
-void buildNotification(String buildStatus, String to) {
-
-    buildStatus = buildStatus ?: 'SUCCESS'
-
-    String subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
-    String body = "See: ${env.BUILD_URL}consoleFull"
-
-    emailext subject: subject, body: body, to: to
 }
 
 static String pythonAgent() {

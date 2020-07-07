@@ -14,7 +14,6 @@ import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.util.LangUtil;
 import io.zeebe.util.health.FailureListener;
 import io.zeebe.util.health.HealthMonitorable;
 import io.zeebe.util.health.HealthStatus;
@@ -30,8 +29,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 
 public class StreamProcessor extends Actor implements HealthMonitorable {
+  public static final long UNSET_POSITION = -1L;
   static final Duration HEALTH_CHECK_TICK_DURATION = Duration.ofSeconds(5);
-  static final long UNSET_POSITION = -1L;
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
   private static final Logger LOG = Loggers.LOGSTREAMS_LOGGER;
@@ -99,19 +98,15 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
       snapshotPosition = recoverFromSnapshot();
 
       initProcessors();
-    } catch (final Throwable e) {
-      onFailure(e);
-      LangUtil.rethrowUnchecked(e);
-    }
 
-    try {
       processingStateMachine = new ProcessingStateMachine(processingContext, this::isOpened);
+
+      healthCheckTick();
       openFuture.complete(null);
 
       final ReProcessingStateMachine reProcessingStateMachine =
           new ReProcessingStateMachine(processingContext);
 
-      healthCheckTick();
       final ActorFuture<Void> recoverFuture =
           reProcessingStateMachine.startRecover(snapshotPosition);
 
@@ -127,7 +122,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
           });
     } catch (final RuntimeException e) {
       onFailure(e);
-      throw e;
     }
   }
 
@@ -160,11 +154,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
   @Override
   protected void handleFailure(final Exception failure) {
-    LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), failure);
-    if (this.failureListener != null) {
-      this.failureListener.onFailure();
-    }
-    actor.fail();
+    onFailure(failure);
   }
 
   @Override
@@ -172,6 +162,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     phase = Phase.FAILED;
     closeFuture = CompletableActorFuture.completed(null);
     isOpened.set(false);
+    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onFailed);
     tearDown();
   }
 
@@ -276,6 +267,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   }
 
   private void onFailure(final Throwable throwable) {
+    LOG.error("Actor {} failed in phase {}.", actorName, actor.getLifecyclePhase(), throwable);
     actor.fail();
     if (!openFuture.isDone()) {
       openFuture.completeExceptionally(throwable);

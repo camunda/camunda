@@ -22,7 +22,6 @@ import io.atomix.cluster.AtomixClusterBuilder;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
-import io.atomix.core.profile.Profile;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.utils.net.Address;
 import java.time.Duration;
@@ -87,81 +86,6 @@ public class AtomixBuilder extends AtomixClusterBuilder {
    */
   public AtomixBuilder withShutdownHook(final boolean enabled) {
     config.setEnableShutdownHook(enabled);
-    return this;
-  }
-
-  /**
-   * Sets the Atomix profiles.
-   *
-   * <p>Profiles are common configurations that will be applied to the instance configuration when
-   * the {@link Atomix} instance is constructed.
-   *
-   * @param profiles the profiles
-   * @return the Atomix builder
-   * @throws NullPointerException if the profiles are null
-   */
-  public AtomixBuilder withProfiles(final Profile... profiles) {
-    return withProfiles(Arrays.asList(checkNotNull(profiles)));
-  }
-
-  /**
-   * Sets the Atomix profiles.
-   *
-   * <p>Profiles are common configurations that will be applied to the instance configuration when
-   * the {@link Atomix} instance is constructed.
-   *
-   * @param profiles the profiles
-   * @return the Atomix builder
-   * @throws NullPointerException if the profiles are null
-   */
-  public AtomixBuilder withProfiles(final Collection<Profile> profiles) {
-    profiles.forEach(profile -> config.addProfile(profile.config()));
-    return this;
-  }
-
-  /**
-   * Adds an Atomix profile.
-   *
-   * <p>Profiles are common configurations that will be applied to the instance configuration when
-   * the {@link Atomix} instance is constructed.
-   *
-   * @param profile the profile to add
-   * @return the Atomix builder
-   * @throws NullPointerException if the profile is null
-   */
-  public AtomixBuilder addProfile(final Profile profile) {
-    config.addProfile(profile.config());
-    return this;
-  }
-
-  /**
-   * Sets the system management partition group.
-   *
-   * <p>The system management group must be configured for stateful instances. This group will be
-   * used to store primitive and transaction metadata and coordinate primary elections for
-   * replication protocols.
-   *
-   * <pre>{@code
-   * Atomix atomix = Atomix.builder()
-   *   .withManagementGroup(RaftPartitionGroup.builder("system")
-   *     .withNumPartitions(1)
-   *     .build())
-   *   .build();
-   *
-   * }</pre>
-   *
-   * <p>The configured partition group is replicated on whichever nodes define them in this
-   * configuration. That is, this node will participate in whichever partition group is provided to
-   * this method.
-   *
-   * <p>The management group can also be configured in {@code atomix.conf} under the {@code
-   * management-group} key.
-   *
-   * @param systemManagementGroup the system management partition group
-   * @return the Atomix builder
-   */
-  public AtomixBuilder withManagementGroup(final ManagedPartitionGroup systemManagementGroup) {
-    config.setManagementGroup(systemManagementGroup.config());
     return this;
   }
 

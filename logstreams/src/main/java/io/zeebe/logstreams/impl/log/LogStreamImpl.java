@@ -9,7 +9,6 @@ package io.zeebe.logstreams.impl.log;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.impl.PositionUtil;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
@@ -261,11 +260,15 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     final var appenderOpenFuture = new CompletableActorFuture<LogStorageAppender>();
 
     appenderFuture = appenderOpenFuture;
-    final int initialDispatcherPartitionId = determineInitialPartitionId();
+    long initialPosition = getLastPosition() + 1;
+    if (initialPosition <= 0) {
+      initialPosition = 1;
+    }
+
     writeBuffer =
         Dispatchers.create(buildActorName(nodeId, "dispatcher-" + partitionId))
             .maxFragmentLength(maxFrameLength)
-            .initialPartitionId(initialDispatcherPartitionId + 1)
+            .initialPosition(initialPosition)
             .name(logName + "-write-buffer")
             .actorScheduler(actorScheduler)
             .build();
@@ -308,20 +311,9 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     onFailure();
   }
 
-  private int determineInitialPartitionId() {
+  private long getLastPosition() {
     try (final LogStreamReaderImpl logReader = new LogStreamReaderImpl(logStorage)) {
-
-      // Get position of last entry
-      final long lastPosition = logReader.seekToEnd();
-
-      // dispatcher needs to generate positions greater than the last position
-      int dispatcherPartitionId = 0;
-
-      if (lastPosition > 0) {
-        dispatcherPartitionId = PositionUtil.partitionId(lastPosition);
-      }
-
-      return dispatcherPartitionId;
+      return logReader.seekToEnd();
     }
   }
 

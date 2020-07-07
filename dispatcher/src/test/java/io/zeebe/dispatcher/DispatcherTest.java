@@ -26,25 +26,23 @@ import io.zeebe.dispatcher.impl.log.LogBufferAppender;
 import io.zeebe.dispatcher.impl.log.LogBufferPartition;
 import io.zeebe.util.sched.ActorCondition;
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import org.agrona.concurrent.UnsafeBuffer;
+import java.nio.charset.StandardCharsets;
+import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
 
 public final class DispatcherTest {
 
-  static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(Charset.forName("utf-8"));
+  static final byte[] A_MSG_PAYLOAD = "some bytes".getBytes(StandardCharsets.UTF_8);
   static final int A_MSG_PAYLOAD_LENGTH = A_MSG_PAYLOAD.length;
   static final int A_FRAGMENT_LENGTH = align(A_MSG_PAYLOAD_LENGTH + HEADER_LENGTH, FRAME_ALIGNMENT);
-  static final UnsafeBuffer A_MSG = new UnsafeBuffer(A_MSG_PAYLOAD);
   static final int AN_INITIAL_PARTITION_ID = 0;
   static final int A_LOG_WINDOW_LENGTH = 128;
-  static final int A_PARITION_SIZE = 1024;
+  static final int A_PARTITION_SIZE = 1024;
   static final int A_STREAM_ID = 20;
-  @Rule public final ExpectedException thrown = ExpectedException.none();
+  private static final long INITIAL_POSITION = 123L;
+
   Dispatcher dispatcher;
   LogBuffer logBuffer;
   LogBufferPartition logBufferPartition0;
@@ -56,6 +54,7 @@ public final class DispatcherTest {
   Subscription subscriptionSpy;
   FragmentHandler fragmentHandler;
   ClaimedFragment claimedFragment;
+  ClaimedFragmentBatch claimedFragmentBatch;
   AtomicPosition subscriberPosition;
 
   @Before
@@ -65,9 +64,8 @@ public final class DispatcherTest {
     logBufferPartition1 = mock(LogBufferPartition.class);
     logBufferPartition2 = mock(LogBufferPartition.class);
 
-    when(logBuffer.getInitialPartitionId()).thenReturn(AN_INITIAL_PARTITION_ID);
     when(logBuffer.getPartitionCount()).thenReturn(3);
-    when(logBuffer.getPartitionSize()).thenReturn(A_PARITION_SIZE);
+    when(logBuffer.getPartitionSize()).thenReturn(A_PARTITION_SIZE);
     when(logBuffer.getPartition(0)).thenReturn(logBufferPartition0);
     when(logBuffer.getPartition(1)).thenReturn(logBufferPartition1);
     when(logBuffer.getPartition(2)).thenReturn(logBufferPartition2);
@@ -78,6 +76,7 @@ public final class DispatcherTest {
     publisherPosition = mock(AtomicPosition.class);
     fragmentHandler = mock(FragmentHandler.class);
     claimedFragment = mock(ClaimedFragment.class);
+    claimedFragmentBatch = mock(ClaimedFragmentBatch.class);
     subscriberPosition = mock(AtomicPosition.class);
 
     dispatcher =
@@ -86,6 +85,7 @@ public final class DispatcherTest {
             logAppender,
             publisherLimit,
             publisherPosition,
+            INITIAL_POSITION,
             A_LOG_WINDOW_LENGTH,
             A_LOG_WINDOW_LENGTH,
             new String[0],
@@ -99,7 +99,7 @@ public final class DispatcherTest {
                 spy(
                     new Subscription(
                         subscriberPosition,
-                        determineLimit(subscriberId),
+                        determineLimit(),
                         subscriberId,
                         subscriberName,
                         onConsumption,
@@ -119,7 +119,7 @@ public final class DispatcherTest {
     when(publisherLimit.get()).thenReturn(position(0, 0));
 
     // if
-    final long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH);
+    final long newPosition = dispatcher.claimSingleFragment(claimedFragment, A_MSG_PAYLOAD_LENGTH);
 
     // then
     assertThat(newPosition).isEqualTo(-1);
@@ -151,10 +151,11 @@ public final class DispatcherTest {
         .thenReturn(A_FRAGMENT_LENGTH);
 
     // if
-    final long newPosition = dispatcher.claim(claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
+    final long newPosition =
+        dispatcher.claimSingleFragment(claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
 
     // then
-    assertThat(newPosition).isEqualTo(position(0, A_FRAGMENT_LENGTH));
+    assertThat(newPosition).isEqualTo(INITIAL_POSITION);
 
     verify(logAppender)
         .claim(
@@ -222,7 +223,7 @@ public final class DispatcherTest {
 
   @Test
   public void shouldUpdatePublisherLimitToNextPartition() {
-    when(subscriberPosition.get()).thenReturn(position(10, A_PARITION_SIZE - A_LOG_WINDOW_LENGTH));
+    when(subscriberPosition.get()).thenReturn(position(10, A_PARTITION_SIZE - A_LOG_WINDOW_LENGTH));
 
     dispatcher.doOpenSubscription("test", mock(ActorCondition.class));
     dispatcher.updatePublisherLimit();
@@ -255,10 +256,61 @@ public final class DispatcherTest {
 
   @Test
   public void shouldNotOpenSubscriptionWithSameName() {
-    thrown.expect(IllegalStateException.class);
-    thrown.expectMessage("subscription with name 's1' already exists");
+    dispatcher.doOpenSubscription("s1", mock(ActorCondition.class));
+    Assert.assertThrows(
+        "subscription with name 's1' already exists",
+        IllegalStateException.class,
+        () -> dispatcher.doOpenSubscription("s1", mock(ActorCondition.class)));
+  }
 
-    dispatcher.doOpenSubscription("s1", mock(ActorCondition.class));
-    dispatcher.doOpenSubscription("s1", mock(ActorCondition.class));
+  @Test
+  public void shouldIncrementRecordPositionAfterClaimingFragment() {
+    // given
+    when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+    when(logAppender.claim(
+            eq(logBufferPartition0),
+            eq(0),
+            eq(claimedFragment),
+            eq(A_MSG_PAYLOAD_LENGTH),
+            eq(A_STREAM_ID),
+            any()))
+        .thenReturn(A_FRAGMENT_LENGTH);
+
+    // when
+    long newPosition =
+        dispatcher.claimSingleFragment(claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
+
+    // then
+    assertThat(newPosition).isEqualTo(INITIAL_POSITION);
+    newPosition =
+        dispatcher.claimSingleFragment(claimedFragment, A_MSG_PAYLOAD_LENGTH, A_STREAM_ID);
+    assertThat(newPosition).isEqualTo(INITIAL_POSITION + 1);
+  }
+
+  @Test
+  public void shouldIncreasePositionByFragmentCountAfterClaimingBatch() {
+    // given
+    final int fragmentCount = 3;
+    when(logBuffer.getActivePartitionIdVolatile()).thenReturn(0);
+    when(logBufferPartition0.getTailCounterVolatile()).thenReturn(0);
+    when(publisherLimit.get()).thenReturn(position(0, A_FRAGMENT_LENGTH));
+    when(logAppender.claim(
+            eq(logBufferPartition0),
+            eq(0),
+            eq(claimedFragmentBatch),
+            eq(fragmentCount),
+            eq(A_MSG_PAYLOAD_LENGTH),
+            any()))
+        .thenReturn(A_FRAGMENT_LENGTH);
+
+    // when
+    long newPosition =
+        dispatcher.claimFragmentBatch(claimedFragmentBatch, fragmentCount, A_MSG_PAYLOAD_LENGTH);
+
+    // then
+    assertThat(newPosition).isEqualTo(INITIAL_POSITION);
+    newPosition =
+        dispatcher.claimFragmentBatch(claimedFragmentBatch, fragmentCount, A_MSG_PAYLOAD_LENGTH);
+    assertThat(newPosition).isEqualTo(INITIAL_POSITION + fragmentCount);
   }
 }

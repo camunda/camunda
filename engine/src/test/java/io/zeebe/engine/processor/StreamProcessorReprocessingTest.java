@@ -313,7 +313,7 @@ public final class StreamProcessorReprocessingTest {
   }
 
   @Test
-  public void shouldStartFromLastSnapshotPosition() throws Exception {
+  public void shouldStartFromLastProcessedEvent() throws Exception {
     // given
     final CountDownLatch processingLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
@@ -367,9 +367,9 @@ public final class StreamProcessorReprocessingTest {
   }
 
   @Test
-  public void shouldNotReprocessEventAtSnapshotPosition() throws Exception {
+  public void shouldNotReprocessEventAtLastProcessedEvent() throws Exception {
     // given
-    final CountDownLatch processingLatch = new CountDownLatch(2);
+    final CountDownLatch processingLatch = new CountDownLatch(3);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onEvent(
@@ -390,8 +390,11 @@ public final class StreamProcessorReprocessingTest {
     streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
     final long snapshotPosition =
         streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    // we write three event to make sure that the second event was committed and is part of the
+    // state (lastProcessedEvent)
     processingLatch.await();
-    streamProcessorRule.closeStreamProcessor(); // enforce snapshot
+    streamProcessorRule.closeStreamProcessor();
     final long lastSourceEvent =
         streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
     final long lastEvent =
@@ -423,6 +426,6 @@ public final class StreamProcessorReprocessingTest {
     newProcessLatch.await();
 
     assertThat(processedPositions).doesNotContain(snapshotPosition);
-    assertThat(processedPositions).containsExactly(lastSourceEvent, lastEvent);
+    assertThat(processedPositions).endsWith(lastSourceEvent, lastEvent);
   }
 }

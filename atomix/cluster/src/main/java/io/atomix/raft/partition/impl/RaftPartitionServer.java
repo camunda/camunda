@@ -21,7 +21,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.primitive.PrimitiveTypeRegistry;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftRoleChangeListener;
@@ -32,9 +31,9 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.roles.RaftRole;
+import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.snapshot.SnapshotStore;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.JournalReader.Mode;
@@ -67,14 +66,13 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
   private final RaftPartitionGroupConfig config;
   private final ClusterMembershipService membershipService;
   private final ClusterCommunicationService clusterCommunicator;
-  private final PrimitiveTypeRegistry primitiveTypes;
   private final ThreadContextFactory threadContextFactory;
   private final Set<RaftRoleChangeListener> deferredRoleChangeListeners =
       new CopyOnWriteArraySet<>();
   private final Set<Runnable> deferredFailureListeners = new CopyOnWriteArraySet<>();
 
   private RaftServer server;
-  private SnapshotStore snapshotStore;
+  private PersistedSnapshotStore persistedSnapshotStore;
   private final Supplier<JournalIndex> journalIndexFactory;
 
   public RaftPartitionServer(
@@ -83,7 +81,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
       final MemberId localMemberId,
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService clusterCommunicator,
-      final PrimitiveTypeRegistry primitiveTypes,
       final ThreadContextFactory threadContextFactory,
       final Supplier<JournalIndex> journalIndexFactory) {
     this.partition = partition;
@@ -91,7 +88,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
     this.localMemberId = localMemberId;
     this.membershipService = membershipService;
     this.clusterCommunicator = clusterCommunicator;
-    this.primitiveTypes = primitiveTypes;
     this.threadContextFactory = threadContextFactory;
     this.journalIndexFactory = journalIndexFactory;
   }
@@ -151,24 +147,23 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
   }
 
   private RaftServer buildServer() {
-    snapshotStore =
+    persistedSnapshotStore =
         config
             .getStorageConfig()
-            .getSnapshotStoreFactory()
+            .getPersistedSnapshotStoreFactory()
             .createSnapshotStore(partition.dataDirectory().toPath(), partition.name());
 
     return RaftServer.builder(localMemberId)
         .withName(partition.name())
         .withMembershipService(membershipService)
         .withProtocol(createServerProtocol())
-        .withPrimitiveTypes(primitiveTypes)
         .withHeartbeatInterval(config.getHeartbeatInterval())
         .withElectionTimeout(config.getElectionTimeout())
-        .withSessionTimeout(config.getDefaultSessionTimeout())
         .withStorage(createRaftStorage())
         .withThreadContextFactory(threadContextFactory)
         .withStateMachineFactory(config.getStateMachineFactory())
         .withJournalIndexFactory(journalIndexFactory)
+        .withEntryValidator(config.getEntryValidator())
         .build();
   }
 
@@ -233,8 +228,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
     server.getContext().removeCommitListener(commitListener);
   }
 
-  public SnapshotStore getSnapshotStore() {
-    return snapshotStore;
+  public PersistedSnapshotStore getPersistedSnapshotStore() {
+    return persistedSnapshotStore;
   }
 
   /** Deletes the server. */
@@ -310,7 +305,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         .withFreeDiskBuffer(compactionConfig.getFreeDiskBuffer())
         .withFreeMemoryBuffer(compactionConfig.getFreeMemoryBuffer())
         .withNamespace(RaftNamespaces.RAFT_STORAGE)
-        .withSnapshotStore(snapshotStore)
+        .withSnapshotStore(persistedSnapshotStore)
         .withJournalIndexFactory(journalIndexFactory)
         .build();
   }

@@ -133,7 +133,7 @@ public final class FragmentBatchIntegrationTest {
   }
 
   private void claimAndWriteFragments() {
-    while (dispatcher.claim(batch, 2, MSG1.length + MSG2.length) <= 0) {
+    while (dispatcher.claimFragmentBatch(batch, 2, MSG1.length + MSG2.length) <= 0) {
       // spin
     }
 
@@ -147,7 +147,7 @@ public final class FragmentBatchIntegrationTest {
   }
 
   private void claimAndWriteMsgThree() {
-    while (dispatcher.claim(batch, 1, MSG3.length) <= 0) {
+    while (dispatcher.claimFragmentBatch(batch, 1, MSG3.length) <= 0) {
       // spin
     }
 

@@ -47,17 +47,18 @@ public final class EventBasedGatewayTransformer
 
   private void bindLifecycle(final ExecutableEventBasedGateway gateway) {
     gateway.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_ACTIVATING);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
     gateway.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_ACTIVATED);
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
     gateway.bindLifecycleState(
-        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.EVENT_BASED_GATEWAY_EVENT_OCCURRED);
+        WorkflowInstanceIntent.EVENT_OCCURRED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
     gateway.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_COMPLETING);
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
     gateway.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_COMPLETED);
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
     gateway.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING,
-        BpmnStep.EVENT_BASED_GATEWAY_ELEMENT_TERMINATING);
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.BPMN_ELEMENT_PROCESSOR);
+    gateway.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.BPMN_ELEMENT_PROCESSOR);
   }
 }
