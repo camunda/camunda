@@ -53,7 +53,12 @@ const props = {
     lastModifier: 'Test Person',
   },
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  location: {pathname: '/report/1'},
 };
+
+beforeEach(() => {
+  loadTenants.mockClear();
+});
 
 it('should show relevant information', () => {
   const node = shallow(<SingleReportDetails {...props} />);
@@ -80,6 +85,17 @@ it('should not show tenant section if there is only one tenant', () => {
   const node = shallow(<SingleReportDetails {...props} report={oneTenant} />);
   runLastEffect();
 
+  expect(node).not.toIncludeText('Sales');
+  expect(node).not.toIncludeText('Tenant');
+});
+
+it('should not show tenant section on share pages', () => {
+  const node = shallow(
+    <SingleReportDetails {...props} location={{pathname: '/share/report/abc'}} />
+  );
+  runLastEffect();
+
+  expect(loadTenants).not.toHaveBeenCalled();
   expect(node).not.toIncludeText('Sales');
   expect(node).not.toIncludeText('Tenant');
 });

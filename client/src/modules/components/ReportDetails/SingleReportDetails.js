@@ -6,6 +6,7 @@
 
 import React, {useState, useEffect} from 'react';
 import classnames from 'classnames';
+import {withRouter} from 'react-router-dom';
 
 import {Button} from 'components';
 import {withErrorHandling} from 'HOC';
@@ -59,7 +60,7 @@ function getVersions(data) {
   return data.processDefinitionVersions || data.decisionDefinitionVersions;
 }
 
-export function SingleReportDetails({report, showReportName, mightFail}) {
+export function SingleReportDetails({report, showReportName, mightFail, location}) {
   const [tenants, setTenants] = useState();
   const [showRawData, setShowRawData] = useState();
   const [showDiagram, setShowDiagram] = useState();
@@ -70,14 +71,15 @@ export function SingleReportDetails({report, showReportName, mightFail}) {
   const versions = getVersions(report.data);
   const type = report.reportType;
   const nameOrKey = name || key;
+  const isShared = location.pathname.startsWith('/share');
 
   useEffect(() => {
-    if (key && versions) {
+    if (key && versions && !isShared) {
       mightFail(loadTenants(key, versions, type), setTenants, showError);
     } else {
       setTenants();
     }
-  }, [key, versions, type, mightFail]);
+  }, [key, versions, isShared, type, mightFail]);
 
   let tenantInfo;
   if (tenants && tenants.length > 1) {
@@ -154,4 +156,4 @@ export function SingleReportDetails({report, showReportName, mightFail}) {
   );
 }
 
-export default withErrorHandling(SingleReportDetails);
+export default withRouter(withErrorHandling(SingleReportDetails));

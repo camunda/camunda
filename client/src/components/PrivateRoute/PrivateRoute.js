@@ -132,6 +132,7 @@ function Detachable({container, children}) {
 let isLoggedIn = false;
 const outstandingRequests = [];
 addHandler((response, payload) => {
+  // login detection logic does not apply to non-restricted ressources
   if (
     ![
       'api/authentication',
@@ -140,7 +141,8 @@ addHandler((response, payload) => {
       'api/ui-configuration',
       'api/localization',
       'api/eventBasedProcess/isEnabled',
-    ].includes(payload.url)
+      'api/share',
+    ].some((url) => payload.url.startsWith(url))
   ) {
     if (response.status === 401) {
       if (isLoggedIn) {
