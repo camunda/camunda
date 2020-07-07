@@ -46,7 +46,7 @@ export default function processRawData(
         return cockpitLink(endpoints, instance, 'process');
       }
       if ((entry === 'startDate' || entry === 'endDate') && instance[entry]) {
-        return moment.parseZone(instance[entry]).format('YYYY-MM-DD HH:mm:ss [UTC]Z');
+        return moment(instance[entry]).format('YYYY-MM-DD HH:mm:ss [UTC]Z');
       }
       if (entry === 'duration') {
         return duration(instance[entry]);

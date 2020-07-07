@@ -4,9 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import processRawData from './processRawData';
-import {NoDataNotice} from 'components';
 import React from 'react';
+import moment from 'moment';
+
+import {NoDataNotice} from 'components';
+
+import processRawData from './processRawData';
 
 const data = {
   configuration: {
@@ -95,13 +98,19 @@ it('should make the processInstanceId a link', () => {
 });
 
 it('should format start and end dates', () => {
+  const dateFormat = 'YYYY-MM-DD HH:mm:ss [UTC]Z';
+
+  // using moment here to dynamically return date with client timezone
+  const startDate = moment('2019-06-07T10:33:19.192').format();
+  const endDate = moment('2019-06-09T16:12:49.875').format();
+
   const cells = processRawData({
     report: {
       result: {
         data: [
           {
-            startDate: '2019-06-07T10:33:19.192+0700',
-            endDate: '2019-06-09T16:12:49.875+0500',
+            startDate,
+            endDate,
             variables: {},
           },
         ],
@@ -110,8 +119,8 @@ it('should format start and end dates', () => {
     },
   }).body[0];
 
-  expect(cells[0]).toBe('2019-06-07 10:33:19 UTC+07:00');
-  expect(cells[1]).toBe('2019-06-09 16:12:49 UTC+05:00');
+  expect(cells[0]).toBe(moment(startDate).format(dateFormat));
+  expect(cells[1]).toBe(moment(endDate).format(dateFormat));
 });
 
 it('should format duration', () => {
