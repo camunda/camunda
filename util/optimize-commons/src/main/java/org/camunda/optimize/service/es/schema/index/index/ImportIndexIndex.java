@@ -15,7 +15,7 @@ import java.io.IOException;
 @Component
 public class ImportIndexIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   public static final String IMPORT_INDEX = "importIndex";
   public static final String ENGINE = "engine";

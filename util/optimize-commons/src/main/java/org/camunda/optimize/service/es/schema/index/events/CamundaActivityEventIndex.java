@@ -34,7 +34,7 @@ public class CamundaActivityEventIndex extends DefaultIndexMappingCreator {
   public static final String TIMESTAMP = CamundaActivityEventDto.Fields.timestamp;
   public static final String ORDER_COUNTER = CamundaActivityEventDto.Fields.orderCounter;
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   private String indexName;
 

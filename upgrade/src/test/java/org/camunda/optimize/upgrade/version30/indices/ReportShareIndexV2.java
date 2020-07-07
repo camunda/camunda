@@ -3,19 +3,17 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.version30.indices;
 
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
-public class ReportShareIndex extends DefaultIndexMappingCreator {
+public class ReportShareIndexV2 extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 2;
 
   public static final String ID = "id";
   public static final String REPORT_ID = "reportId";
@@ -37,16 +35,16 @@ public class ReportShareIndex extends DefaultIndexMappingCreator {
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(POSITION)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedPositionField(newBuilder)
-        .endObject()
+      .field("type", "nested")
+      .startObject("properties");
+    addNestedPositionField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(REPORT_ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject();
 
     return newBuilder;
@@ -55,10 +53,10 @@ public class ReportShareIndex extends DefaultIndexMappingCreator {
   private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
     return builder
       .startObject(X_POSITION)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(Y_POSITION)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject();
   }
 }

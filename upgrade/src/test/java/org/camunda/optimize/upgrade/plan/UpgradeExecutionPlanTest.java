@@ -7,27 +7,15 @@ package org.camunda.optimize.upgrade.plan;
 
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 public class UpgradeExecutionPlanTest {
-
-  @Test
-  public void testGetMappings() {
-    final UpgradeExecutionPlan underTest = new UpgradeExecutionPlan();
-    final List<IndexMappingCreator> mappings = underTest.getMappings();
-
-    assertThat(mappings).hasSize(25);
-  }
 
   @Test
   public void testInitializeSchemaIsCalled() {

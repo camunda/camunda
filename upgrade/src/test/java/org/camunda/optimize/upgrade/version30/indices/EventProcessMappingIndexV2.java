@@ -3,27 +3,25 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index.events;
+package org.camunda.optimize.upgrade.version30.indices;
 
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@Component
-public class EventProcessMappingIndex extends DefaultIndexMappingCreator {
+public class EventProcessMappingIndexV2 extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 2;
 
   public static final String ID = IndexableEventProcessMappingDto.Fields.id;
   public static final String NAME = IndexableEventProcessMappingDto.Fields.name;
@@ -72,38 +70,38 @@ public class EventProcessMappingIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     XContentBuilder newXContentBuilder = xContentBuilder
       .startObject(ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(NAME)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(LAST_MODIFIER)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(LAST_MODIFIED)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
+      .field("type", "date")
+      .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(XML)
-        .field("type", "text")
-        .field("index", true)
-        .field("analyzer", "is_present_analyzer")
+      .field("type", "text")
+      .field("index", true)
+      .field("analyzer", "is_present_analyzer")
       .endObject()
       .startObject(MAPPINGS)
-        .field("type", "object")
-        .startObject("properties");
-          addNestedFlowNodeMappingsFields(newXContentBuilder)
-        .endObject()
+      .field("type", "object")
+      .startObject("properties");
+    addNestedFlowNodeMappingsFields(newXContentBuilder)
+      .endObject()
       .endObject()
       .startObject(EVENT_SOURCES)
-        .field("type", "nested");
-         addEventSourcesField(newXContentBuilder)
+      .field("type", "nested");
+    addEventSourcesField(newXContentBuilder)
       .endObject()
       .startObject(ROLES)
-        .field("type", "object")
-        .startObject("properties");
-          addNestedRolesFields(newXContentBuilder)
-        .endObject()
+      .field("type", "object")
+      .startObject("properties");
+    addNestedRolesFields(newXContentBuilder)
+      .endObject()
       .endObject();
     // @formatter:on
     return newXContentBuilder;
@@ -113,19 +111,19 @@ public class EventProcessMappingIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     XContentBuilder newXContentBuilder = xContentBuilder
       .startObject(FLOWNODE_ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(START)
-        .field("type", "object")
-        .startObject("properties");
-          addEventMappingFields(newXContentBuilder)
-        .endObject()
+      .field("type", "object")
+      .startObject("properties");
+    addEventMappingFields(newXContentBuilder)
+      .endObject()
       .endObject()
       .startObject(END)
-        .field("type", "object")
-        .startObject("properties");
-          addEventMappingFields(newXContentBuilder)
-        .endObject()
+      .field("type", "object")
+      .startObject("properties");
+    addEventMappingFields(newXContentBuilder)
+      .endObject()
       .endObject();
     // @formatter:on
     return newXContentBuilder;
@@ -135,13 +133,13 @@ public class EventProcessMappingIndex extends DefaultIndexMappingCreator {
     return xContentBuilder
       // @formatter:off
       .startObject(GROUP)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(SOURCE)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(EVENT_NAME)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(EVENT_LABEL)
       .field("type", "keyword")
@@ -153,30 +151,30 @@ public class EventProcessMappingIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return xContentBuilder
       .startObject("properties")
-        .startObject(EVENT_SOURCE_ID)
-          .field("type", "keyword")
-        .endObject()
-        .startObject(EVENT_SOURCE_TYPE)
-          .field("type", "keyword")
-        .endObject()
-        .startObject(EVENT_SOURCE_PROC_DEF_KEY)
-          .field("type", "keyword")
-        .endObject()
-        .startObject(EVENT_SOURCE_VERSIONS)
-          .field("type", "keyword")
-        .endObject()
-        .startObject(EVENT_SOURCE_TENANTS)
-          .field("type", "keyword")
-        .endObject()
-        .startObject(EVENT_SOURCE_TRACED_BY_BUSINESS_KEY)
-          .field("type", "boolean")
-        .endObject()
-        .startObject(EVENT_SOURCE_TRACE_VARIABLE)
-          .field("type", "keyword")
-        .endObject()
-        .startObject(EVENT_SOURCE_EVENT_SCOPE)
-          .field("type", "keyword")
-        .endObject()
+      .startObject(EVENT_SOURCE_ID)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(EVENT_SOURCE_TYPE)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(EVENT_SOURCE_PROC_DEF_KEY)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(EVENT_SOURCE_VERSIONS)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(EVENT_SOURCE_TENANTS)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(EVENT_SOURCE_TRACED_BY_BUSINESS_KEY)
+      .field("type", "boolean")
+      .endObject()
+      .startObject(EVENT_SOURCE_TRACE_VARIABLE)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(EVENT_SOURCE_EVENT_SCOPE)
+      .field("type", "keyword")
+      .endObject()
       .endObject();
     // @formatter:on
   }
@@ -185,18 +183,18 @@ public class EventProcessMappingIndex extends DefaultIndexMappingCreator {
     return xContentBuilder
       // @formatter:off
       .startObject(ROLE_ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(ROLE_IDENTITY)
-        .field("type", "object")
-        .startObject("properties")
-          .startObject(ROLE_IDENTITY_ID)
-            .field("type", "keyword")
-          .endObject()
-          .startObject(ROLE_IDENTITY_TYPE)
-            .field("type", "keyword")
-          .endObject()
-        .endObject()
+      .field("type", "object")
+      .startObject("properties")
+      .startObject(ROLE_IDENTITY_ID)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(ROLE_IDENTITY_TYPE)
+      .field("type", "keyword")
+      .endObject()
+      .endObject()
       .endObject();
     // @formatter:on
   }

@@ -15,7 +15,7 @@ import java.io.IOException;
 
 @Component
 public class TenantIndex extends DefaultIndexMappingCreator {
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   @Override
   public String getIndexName() {

@@ -16,14 +16,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomNumberBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
-import org.camunda.optimize.service.es.schema.index.AlertIndex;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
@@ -33,7 +29,6 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
-import org.camunda.optimize.upgrade.steps.schema.UpdateIndexAnalysisSettingsStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -47,25 +42,28 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.util.MappingMetadataUtil.getAllNonDynamicMappings;
+import static org.camunda.optimize.upgrade.util.MappingMetadataUtil.retrieveAllCamundaActivityEventIndices;
+import static org.camunda.optimize.upgrade.util.MappingMetadataUtil.retrieveAllEventTraceIndices;
+import static org.camunda.optimize.upgrade.util.MappingMetadataUtil.retrieveAllSequenceCountIndices;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -90,8 +88,7 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
       .toVersion(TO_VERSION)
-      .addUpgradeStep(new UpdateIndexStep(new SingleProcessReportIndex(), null))
-      .addUpgradeStep(new UpdateIndexStep(new SingleDecisionReportIndex(), null))
+      .addUpgradeSteps(reindexAllIndices()) // Reindex all indices to apply new analysis settings
       .addUpgradeStep(migrateAxisLabels(SINGLE_PROCESS_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateAxisLabels(SINGLE_DECISION_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateAxisLabels(COMBINED_REPORT_INDEX_NAME))
@@ -107,25 +104,33 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(resetRunningProcessInstanceImport())
       .addUpgradeStep(addDateVariableUnitAndCustomBucketFieldsToReportConfiguration(SINGLE_PROCESS_REPORT_INDEX_NAME))
       .addUpgradeStep(addDateVariableUnitAndCustomBucketFieldsToReportConfiguration(SINGLE_DECISION_REPORT_INDEX_NAME))
-      .addUpgradeStep(migrateAlertThresholdToNewDataType())
       .addUpgradeSteps(addProcessInstanceIdToEventsMigrationSteps());
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
     deleteTraceStateIndices(upgradeBuilder);
     deleteSequenceCountIndices(upgradeBuilder);
     upgradeBuilder.addUpgradeStep(deleteTraceStateImportIndexData());
-    return upgradeBuilder
-      // upgradeAllIndexAnalysisSettings should be last
-      .addUpgradeStep(upgradeAllIndexAnalysisSettings())
-      .build();
+    return upgradeBuilder.build();
+  }
+
+  private List<UpgradeStep> reindexAllIndices() {
+    List<IndexMappingCreator> indices = new ArrayList<>();
+
+    // Reindex all indices not already upgraded in other steps
+    indices.addAll(getAllNonDynamicMappings());
+    indices.removeIf(index -> index instanceof ProcessInstanceIndex);
+    indices.addAll(retrieveAllCamundaActivityEventIndices(upgradeDependencies.getEsClient()));
+
+    return indices.stream()
+      .map(indexMappingCreator -> new UpdateIndexStep(indexMappingCreator, null))
+      .collect(toList());
   }
 
   private List<UpgradeStep> addProcessInstanceIdToEventsMigrationSteps() {
-
     List<ProcessInstanceIndex> processInstanceIndices = getAllEventProcessPublishStates().stream()
       .map(EventProcessPublishStateDto::getId)
       .filter(Objects::nonNull)
       .map(EventProcessInstanceIndex::new)
-      .collect(Collectors.toList());
+      .collect(toList());
     processInstanceIndices.add(new ProcessInstanceIndex());
     //@formatter:off
     final String script =
@@ -141,7 +146,7 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
     //@formatter:on
     return processInstanceIndices.stream()
       .map(index -> new UpdateIndexStep(index, script))
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   private List<EventProcessPublishStateDto> getAllEventProcessPublishStates() {
@@ -166,11 +171,7 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       upgradeDependencies.getObjectMapper(),
       upgradeDependencies.getEsClient(),
       upgradeDependencies.getConfigurationService().getElasticsearchScrollTimeout()
-    ).stream().map(IndexableEventProcessPublishStateDto::toEventProcessPublishStateDto).collect(Collectors.toList());
-  }
-
-  private UpgradeStep migrateAlertThresholdToNewDataType() {
-    return new UpdateIndexStep(new AlertIndex(), null);
+    ).stream().map(IndexableEventProcessPublishStateDto::toEventProcessPublishStateDto).collect(toList());
   }
 
   private UpgradeStep migrateProcessReportFilterForUndefined() {
@@ -438,39 +439,16 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
     );
   }
 
-  private UpgradeStep upgradeAllIndexAnalysisSettings() {
-    // upgrade analysis settings of all indices to remove deprecated nGram tokenizer
-    return new UpdateIndexAnalysisSettingsStep(esClient.getIndexNameService().getIndexPrefix() + "*");
-  }
-
   @SneakyThrows
   private void deleteTraceStateIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
-    final GetAliasesResponse aliases = upgradeDependencies.getEsClient().getAlias(
-      new GetAliasesRequest(EVENT_TRACE_STATE_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
-    );
-    aliases.getAliases()
-      .values()
-      .stream()
-      .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetaData::alias))
-      .map(fullAliasName -> fullAliasName.substring(fullAliasName.lastIndexOf(EVENT_TRACE_STATE_INDEX_PREFIX) + EVENT_TRACE_STATE_INDEX_PREFIX
-        .length()))
-      .forEach(indexSuffix -> upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(new EventTraceStateIndex(
-        indexSuffix))));
+    retrieveAllEventTraceIndices(upgradeDependencies.getEsClient())
+      .forEach(index -> upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(index)));
   }
 
   @SneakyThrows
   private void deleteSequenceCountIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
-    final GetAliasesResponse aliases = upgradeDependencies.getEsClient().getAlias(
-      new GetAliasesRequest(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
-    );
-    aliases.getAliases()
-      .values()
-      .stream()
-      .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetaData::alias))
-      .map(fullAliasName -> fullAliasName.substring(fullAliasName.lastIndexOf(EVENT_SEQUENCE_COUNT_INDEX_PREFIX) + EVENT_SEQUENCE_COUNT_INDEX_PREFIX
-        .length()))
-      .forEach(indexSuffix -> upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(new EventSequenceCountIndex(
-        indexSuffix))));
+    retrieveAllSequenceCountIndices(upgradeDependencies.getEsClient())
+      .forEach(index -> upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(index)));
   }
 
   @SneakyThrows

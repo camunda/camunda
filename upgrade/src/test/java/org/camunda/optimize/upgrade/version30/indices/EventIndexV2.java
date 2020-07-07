@@ -3,14 +3,13 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index.events;
+package org.camunda.optimize.upgrade.version30.indices;
 
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
@@ -18,8 +17,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_FIELD_
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTING;
 
-@Component
-public class EventIndex extends DefaultIndexMappingCreator {
+public class EventIndexV2 extends DefaultIndexMappingCreator {
 
   public static final String ID = EventDto.Fields.id;
   public static final String EVENT_NAME = EventDto.Fields.eventName;
@@ -30,7 +28,7 @@ public class EventIndex extends DefaultIndexMappingCreator {
   public static final String SOURCE = EventDto.Fields.source;
   public static final String DATA = EventDto.Fields.data;
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 2;
 
   @Override
   public String getIndexName() {
@@ -57,28 +55,28 @@ public class EventIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return xContentBuilder
       .startObject(ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(EVENT_NAME)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(TRACE_ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(TIMESTAMP)
-        .field("type", "date")
+      .field("type", "date")
       .endObject()
       .startObject(INGESTION_TIMESTAMP)
-        .field("type", "date")
+      .field("type", "date")
       .endObject()
       .startObject(GROUP)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(SOURCE)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(DATA)
-        .field("enabled", false)
+      .field("enabled", false)
       .endObject()
       ;
     // @formatter:on
@@ -91,8 +89,8 @@ public class EventIndex extends DefaultIndexMappingCreator {
     final XContentBuilder newXContentBuilder = super.getStaticSettings(xContentBuilder, configurationService);
     return newXContentBuilder
       .startObject(SORT_SETTING)
-        .field(SORT_FIELD_SETTING, INGESTION_TIMESTAMP)
-        .field(SORT_ORDER_SETTING, "desc")
+      .field(SORT_FIELD_SETTING, INGESTION_TIMESTAMP)
+      .field(SORT_ORDER_SETTING, "desc")
       .endObject();
     // @formatter:on
   }

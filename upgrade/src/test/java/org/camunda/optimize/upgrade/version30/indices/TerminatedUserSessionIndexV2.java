@@ -3,21 +3,19 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.version30.indices;
 
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@Component
-public class TerminatedUserSessionIndex extends DefaultIndexMappingCreator {
+public class TerminatedUserSessionIndexV2 extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 2;
 
   public static final String ID = "id";
   public static final String TERMINATION_TIMESTAMP = "terminationTimestamp";
@@ -27,11 +25,11 @@ public class TerminatedUserSessionIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return  builder
       .startObject(ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(TERMINATION_TIMESTAMP)
-        .field("type", "date")
-        .field("format", OPTIMIZE_DATE_FORMAT)
+      .field("type", "date")
+      .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject();
     // @formatter:on
   }

@@ -7,6 +7,7 @@ package org.camunda.optimize.upgrade.version30;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom30To31;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.elasticsearch.action.admin.indices.close.CloseIndexRequest;
@@ -50,7 +51,7 @@ public class UpgradeIndexSettingsIT extends AbstractUpgrade30IT {
     upgradePlan.execute();
 
     // then
-    final Settings settingsAfterUpgrade = getIndexSettings(IMPORT_INDEX_INDEX);
+    final Settings settingsAfterUpgrade = getIndexSettings(new ImportIndexIndex());
     final Settings expectedSettings = buildAnalysisSettings();
 
     assertThat(settingsAfterUpgrade.get("analysis.tokenizer.ngram_tokenizer.type"))

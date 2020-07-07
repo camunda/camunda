@@ -3,23 +3,23 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.version30.indices;
 
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
+import org.camunda.optimize.service.es.schema.index.DefinitionBasedType;
+import org.camunda.optimize.service.es.schema.index.InstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@Component
-public class DecisionInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
+public class DecisionInstanceIndexV3 extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
-  public static final int VERSION = 4;
+  public static final int VERSION = 3;
 
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
@@ -87,64 +87,64 @@ public class DecisionInstanceIndex extends DefaultIndexMappingCreator implements
   public XContentBuilder addProperties(XContentBuilder builder) throws IOException {
     // @formatter:off
     XContentBuilder newBuilder =  builder
-            .startObject(DECISION_INSTANCE_ID)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(DECISION_DEFINITION_ID)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(DECISION_DEFINITION_KEY)
-              .field("type", "keyword")
-            .endObject()
-              .startObject(DECISION_DEFINITION_VERSION)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(PROCESS_DEFINITION_ID)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(PROCESS_DEFINITION_KEY)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(PROCESS_INSTANCE_ID)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(ROOT_PROCESS_INSTANCE_ID)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(EVALUATION_DATE_TIME)
-              .field("type", "date")
-              .field("format", OPTIMIZE_DATE_FORMAT)
-            .endObject()
-            .startObject(ACTIVITY_ID)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(INPUTS)
-              .field("type", "nested")
-              .startObject("properties");
-                addNestedInputField(newBuilder)
-              .endObject()
-            .endObject()
-            .startObject(OUTPUTS)
-              .field("type", "nested")
-              .startObject("properties");
-                addNestedOutputField(newBuilder)
-              .endObject()
-            .endObject()
-            .startObject(MATCHED_RULES)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(COLLECT_RESULT_VALUE)
-              .field("type", "double")
-            .endObject()
-            .startObject(ROOT_DECISION_INSTANCE_ID)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(ENGINE)
-              .field("type", "keyword")
-            .endObject()
-            .startObject(TENANT_ID)
-              .field("type", "keyword")
-            .endObject();
+      .startObject(DECISION_INSTANCE_ID)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(DECISION_DEFINITION_ID)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(DECISION_DEFINITION_KEY)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(DECISION_DEFINITION_VERSION)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(PROCESS_DEFINITION_ID)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(PROCESS_DEFINITION_KEY)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(PROCESS_INSTANCE_ID)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(ROOT_PROCESS_INSTANCE_ID)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(EVALUATION_DATE_TIME)
+      .field("type", "date")
+      .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(ACTIVITY_ID)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(INPUTS)
+      .field("type", "nested")
+      .startObject("properties");
+    addNestedInputField(newBuilder)
+      .endObject()
+      .endObject()
+      .startObject(OUTPUTS)
+      .field("type", "nested")
+      .startObject("properties");
+    addNestedOutputField(newBuilder)
+      .endObject()
+      .endObject()
+      .startObject(MATCHED_RULES)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(COLLECT_RESULT_VALUE)
+      .field("type", "double")
+      .endObject()
+      .startObject(ROOT_DECISION_INSTANCE_ID)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(ENGINE)
+      .field("type", "keyword")
+      .endObject()
+      .startObject(TENANT_ID)
+      .field("type", "keyword")
+      .endObject();
     // @formatter:on
     return newBuilder;
   }
@@ -153,22 +153,22 @@ public class DecisionInstanceIndex extends DefaultIndexMappingCreator implements
     // @formatter:off
     builder
       .startObject(VARIABLE_ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(VARIABLE_CLAUSE_ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(VARIABLE_CLAUSE_NAME)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(VARIABLE_VALUE_TYPE)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(VARIABLE_VALUE)
-        .field("type", "keyword")
-        .startObject("fields");
-          addValueMultifields(builder)
-        .endObject()
+      .field("type", "keyword")
+      .startObject("fields");
+    addValueMultifields(builder)
+      .endObject()
       .endObject();
     return builder;
     // @formatter:on
@@ -178,31 +178,31 @@ public class DecisionInstanceIndex extends DefaultIndexMappingCreator implements
     // @formatter:off
     builder
       .startObject(VARIABLE_ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(VARIABLE_CLAUSE_ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(VARIABLE_CLAUSE_NAME)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(VARIABLE_VALUE_TYPE)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(VARIABLE_VALUE)
-        .field("type", "keyword")
-        .startObject("fields");
-          addValueMultifields(builder)
-        .endObject()
+      .field("type", "keyword")
+      .startObject("fields");
+    addValueMultifields(builder)
+      .endObject()
       .endObject()
       .startObject(OUTPUT_VARIABLE_RULE_ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(OUTPUT_VARIABLE_RULE_ORDER)
-        .field("type", "long")
+      .field("type", "long")
       .endObject()
       .startObject(OUTPUT_VARIABLE_NAME)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject();
     return builder;
     // @formatter:on

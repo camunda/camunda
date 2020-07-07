@@ -31,7 +31,7 @@ public class VariableUpdateInstanceIndex extends DefaultIndexMappingCreator {
   public static final String TENANT_ID = VariableUpdateInstanceDto.Fields.tenantId;
   public static final String TIMESTAMP = VariableUpdateInstanceDto.Fields.timestamp;
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   @Override
   public String getIndexName() {

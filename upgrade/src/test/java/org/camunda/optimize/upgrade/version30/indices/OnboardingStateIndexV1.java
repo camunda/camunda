@@ -3,19 +3,17 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.version30.indices;
 
 import org.camunda.optimize.dto.optimize.OnboardingStateDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
-public class OnboardingStateIndex extends DefaultIndexMappingCreator {
-  public static final int VERSION = 2;
+public class OnboardingStateIndexV1 extends DefaultIndexMappingCreator {
+  public static final int VERSION = 1;
 
   @Override
   public String getIndexName() {
@@ -32,16 +30,16 @@ public class OnboardingStateIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return xContentBuilder
       .startObject(OnboardingStateDto.Fields.id)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(OnboardingStateDto.Fields.key)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(OnboardingStateDto.Fields.userId)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(OnboardingStateDto.Fields.seen)
-        .field("type", "boolean")
+      .field("type", "boolean")
       .endObject();
     // @formatter:on
   }

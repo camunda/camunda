@@ -3,18 +3,17 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.version30.indices;
 
+import org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
-public class DecisionDefinitionIndex extends AbstractDefinitionIndex {
+public class DecisionDefinitionIndexV2 extends AbstractDefinitionIndex {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 2;
 
   public static final String DECISION_DEFINITION_ID = DEFINITION_ID;
   public static final String DECISION_DEFINITION_KEY = DEFINITION_KEY;
@@ -42,15 +41,15 @@ public class DecisionDefinitionIndex extends AbstractDefinitionIndex {
     // @formatter:off
     return super.addProperties(xContentBuilder)
       .startObject(INPUT_VARIABLE_NAMES)
-        .field("enabled", "false")
+      .field("enabled", "false")
       .endObject()
       .startObject(OUTPUT_VARIABLE_NAMES)
-        .field("enabled", "false")
+      .field("enabled", "false")
       .endObject()
       .startObject(DECISION_DEFINITION_XML)
-        .field("type", "text")
-        .field("index", true)
-        .field("analyzer", "is_present_analyzer")
+      .field("type", "text")
+      .field("index", true)
+      .field("analyzer", "is_present_analyzer")
       .endObject();
     // @formatter:on
   }

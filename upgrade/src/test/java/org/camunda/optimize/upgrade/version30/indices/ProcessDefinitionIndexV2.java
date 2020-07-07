@@ -3,19 +3,18 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.version30.indices;
 
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.service.es.schema.index.AbstractDefinitionIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
-public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
+public class ProcessDefinitionIndexV2 extends AbstractDefinitionIndex {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 2;
 
   public static final String PROCESS_DEFINITION_ID = DEFINITION_ID;
   public static final String PROCESS_DEFINITION_KEY = DEFINITION_KEY;
@@ -43,17 +42,17 @@ public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
     // @formatter:off
     return super.addProperties(xContentBuilder)
       .startObject(FLOW_NODE_NAMES)
-        .field("type", "object")
-        .field("enabled", "false")
+      .field("type", "object")
+      .field("enabled", "false")
       .endObject()
       .startObject(USER_TASK_NAMES)
-        .field("type", "object")
-        .field("enabled", "false")
+      .field("type", "object")
+      .field("enabled", "false")
       .endObject()
       .startObject(PROCESS_DEFINITION_XML)
-        .field("type", "text")
-        .field("index", true)
-        .field("analyzer", "is_present_analyzer")
+      .field("type", "text")
+      .field("index", true)
+      .field("analyzer", "is_present_analyzer")
       .endObject();
     // @formatter:on
   }

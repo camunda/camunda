@@ -3,19 +3,17 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.schema.index;
+package org.camunda.optimize.upgrade.version30.indices;
 
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
-public class DashboardShareIndex extends DefaultIndexMappingCreator {
+public class DashboardShareIndexV2 extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 2;
 
   public static final String ID = "id";
   public static final String DASHBOARD_ID = "dashboardId";
@@ -48,16 +46,16 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(REPORT_SHARES)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedReportsField(newBuilder)
-        .endObject()
+      .field("type", "nested")
+      .startObject("properties");
+    addNestedReportsField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(DASHBOARD_ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject();
 
     return newBuilder;
@@ -66,25 +64,25 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
   private XContentBuilder addNestedReportsField(XContentBuilder builder) throws IOException {
     XContentBuilder newBuilder = builder
       .startObject(REPORT_ID)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(REPORT_NAME)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(POSITION)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedPositionField(newBuilder)
-        .endObject()
+      .field("type", "nested")
+      .startObject("properties");
+    addNestedPositionField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(DIMENSION)
-        .field("type", "nested")
-        .startObject("properties");
-          addNestedDimensionField(newBuilder)
-        .endObject()
+      .field("type", "nested")
+      .startObject("properties");
+    addNestedDimensionField(newBuilder)
+      .endObject()
       .endObject()
       .startObject(CONFIGURATION)
-        .field("enabled", false)
+      .field("enabled", false)
       .endObject();
     return newBuilder;
   }
@@ -92,20 +90,20 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
   private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
     return builder
       .startObject(X_POSITION)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(Y_POSITION)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject();
   }
 
   private XContentBuilder addNestedDimensionField(XContentBuilder builder) throws IOException {
     return builder
       .startObject(WIDTH)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject()
       .startObject(HEIGHT)
-        .field("type", "keyword")
+      .field("type", "keyword")
       .endObject();
   }
 }
