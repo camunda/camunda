@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report;
 
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
@@ -68,6 +69,9 @@ public class CombinedReportEvaluator {
   }
 
   public long evaluateCombinedReportInstanceCount(List<SingleProcessReportDefinitionDto> singleReportDefinitions) {
+    if (CollectionUtils.isEmpty(singleReportDefinitions)) {
+      return 0L;
+    }
     final SingleReportEvaluatorForCombinedReports singleReportEvaluator =
       new SingleReportEvaluatorForCombinedReports(singleReportEvaluatorInjected);
     final List<BoolQueryBuilder> baseQueries = getAllBaseQueries(singleReportDefinitions, singleReportEvaluator);

@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.filter;
 
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
-import org.assertj.core.api.Assertions;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
@@ -29,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
@@ -150,7 +150,25 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
       reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then
-    Assertions.assertThat(combinedResult.getInstanceCount()).isEqualTo(2);
+    assertThat(combinedResult.getInstanceCount()).isEqualTo(2);
+  }
+
+  @SneakyThrows
+  @Test
+  public void instanceCount_emptyCombinedReport() {
+    // given
+    ProcessDefinitionEngineDto runningInstanceDef = deploySimpleOneUserTasksDefinition("runningInstanceDef", null);
+    engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
+    engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+      reportClient.saveAndEvaluateCombinedReport(Collections.emptyList());
+
+    // then
+    assertThat(combinedResult.getInstanceCount()).isEqualTo(0);
   }
 
   private ProcessReportDataDto createReport(String definitionKey, String definitionVersion) {
