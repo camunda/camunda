@@ -99,7 +99,7 @@ export class OptimizeReport extends React.Component {
           >
             {reportName}
           </EntityName>
-          <InstanceCount report={data} />
+          <InstanceCount report={data} useIcon="filter" />
         </div>
         <div className="visualization">
           {error ? (

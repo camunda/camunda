@@ -139,3 +139,10 @@ it('should not load data twice', () => {
 
   expect(getFlowNodeNames).toHaveBeenCalledTimes(1);
 });
+
+it('should substitute the popover title with an icon if requested', () => {
+  const node = shallow(<InstanceCount {...props} useIcon="someIcon" />);
+
+  expect(node.find('Popover').prop('title')).toBe(false);
+  expect(node.find('Popover').prop('icon')).toBe('someIcon');
+});

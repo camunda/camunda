@@ -15,7 +15,7 @@ import {showError} from 'notifications';
 
 import './InstanceCount.scss';
 
-export function InstanceCount({report, noInfo, mightFail}) {
+export function InstanceCount({report, noInfo, useIcon, mightFail}) {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [flowNodeNames, setFlowNodeNames] = useState();
   const [variables, setVariables] = useState();
@@ -64,7 +64,11 @@ export function InstanceCount({report, noInfo, mightFail}) {
             }
           }}
         >
-          <Popover title={t('report.instanceCount.appliedFilters')} disabled={noInfo}>
+          <Popover
+            icon={useIcon}
+            title={!useIcon && t('report.instanceCount.appliedFilters')}
+            disabled={noInfo}
+          >
             <div className="countString">
               {typeof instanceCount === 'number' &&
                 t(

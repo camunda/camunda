@@ -17,8 +17,13 @@
   }
 
   .EntityName {
+    padding-right: 0;
+
     .Popover {
       margin-top: -2px;
+      .Popover__button {
+        margin-left: 2px;
+      }
     }
 
     .name-container .name {
@@ -35,11 +40,17 @@
       display: none;
     }
 
-    .Popover .Popover__button {
-      vertical-align: middle;
+    > span {
+      vertical-align: top;
+    }
 
-      &::after {
-        content: '';
+    .Popover {
+      display: inline-block;
+      margin-top: -2px;
+
+      .Popover__button {
+        width: 20px;
+        height: 20px;
       }
     }
   }

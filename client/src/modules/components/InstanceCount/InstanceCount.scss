@@ -18,27 +18,48 @@
 
     .Popover__button {
       font-size: 12px;
-      color: $grey-lighten-56;
       font-weight: bold;
       padding: 0;
       width: auto;
       background: transparent;
       border: 0;
 
-      &::after {
-        content: '.';
-      }
-
       .downIcon {
         display: none;
       }
 
-      &:disabled {
-        cursor: text;
+      &.icon {
+        width: 20px;
+        height: 20px;
+
+        &:hover {
+          background-color: $silver-darken-94;
+        }
+
+        &:active,
+        &.active {
+          background-color: $silver-darken-80;
+        }
+
+        .Icon {
+          margin: 2px;
+        }
       }
 
-      &:not(:disabled):hover {
-        text-decoration: underline;
+      &:not(.icon) {
+        color: $grey-lighten-56;
+
+        &::after {
+          content: '.';
+        }
+
+        &:disabled {
+          cursor: text;
+        }
+
+        &:not(:disabled):hover {
+          text-decoration: underline;
+        }
       }
     }
 
