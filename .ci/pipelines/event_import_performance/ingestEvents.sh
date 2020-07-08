@@ -17,6 +17,8 @@ BATCH_SIZE=10000
 
 EVENT_NAMES=( "InvoiceReceived" "InvoiceApprovalStarted" "InvoiceApprovalFinished" "InvoiceProcessed" )
 EVENT_TEMPLATE="{\"specversion\":\"1.0\",\"id\":\"%s\",\"group\":\"invoice\",\"source\":\"system\",\"type\":\"%s\",\"traceid\":\"%s\",\"time\":\"%(%Y-%m-%dT%H:%M:%S.000Z)T\"}"
+# default to UTC timestamps when formatting
+export TZ=UTC
 
 printf -v CURRENT_TIMESTAMP_SECONDS "%(%s)T"
 # subtract the number of events in seconds from current timestamp, each event will be 1 seconds apart from the previous
@@ -35,7 +37,7 @@ for (( i=1; i<=$EXTERNAL_EVENT_COUNT; )); do
     # create event uuid
     CURRENT_EVENT_ID=$i
     # modify the event template with the current values & append the event to the batch file
-    TZ=UTC printf "$EVENT_TEMPLATE" "$CURRENT_EVENT_ID" "$CURRENT_EVENT_NAME" "$CURRENT_TRACE_ID" "$((START_TIMESTAMP_SECONDS+i))" >> $BATCH_FILE
+    printf "$EVENT_TEMPLATE" "$CURRENT_EVENT_ID" "$CURRENT_EVENT_NAME" "$CURRENT_TRACE_ID" "$((START_TIMESTAMP_SECONDS+i))" >> $BATCH_FILE
     # if batch size is reached or end of generation, ingest the current batch
     if [[ $CURRENT_BATCH_SIZE -ge $BATCH_SIZE || $i -ge $EXTERNAL_EVENT_COUNT ]]
     then
