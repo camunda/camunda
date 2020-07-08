@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
@@ -458,15 +459,6 @@ public class ReportClient {
     updateSingleProcessReport(reportId, report, force, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  public <T extends SingleReportResultDto> CombinedProcessReportResultDataDto<T> evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
-    return getRequestExecutor()
-      .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<T>>() {})
-      // @formatter:on
-      .getResult();
-  }
-
   public ConflictResponseDto getReportDeleteConflicts(String id) {
     return getRequestExecutor()
       .buildGetReportDeleteConflictsRequest(id)
@@ -625,6 +617,33 @@ public class ReportClient {
       // @formatter:off
       .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<T>>() {});
       // @formatter:on
+  }
+
+  public <T extends SingleReportResultDto> CombinedProcessReportResultDataDto<T> evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
+    return getRequestExecutor()
+      .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<T>>() {})
+      // @formatter:on
+      .getResult();
+  }
+
+  public CombinedProcessReportResultDataDto<SingleReportResultDto> saveAndEvaluateCombinedReport(
+    final List<String> reportIds) {
+    final List<CombinedReportItemDto> reportItems = reportIds.stream()
+      .map(CombinedReportItemDto::new)
+      .collect(toList());
+
+    final CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+    combinedReportData.setReports(reportItems);
+    final CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    combinedReport.setData(combinedReportData);
+
+    final IdDto response = getRequestExecutor()
+      .buildCreateCombinedReportRequest(combinedReport)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+
+    return evaluateCombinedReportById(response.getId()).getResult();
   }
 
   public AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> evaluateReport(

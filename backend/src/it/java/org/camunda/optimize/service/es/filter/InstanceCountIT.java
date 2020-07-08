@@ -7,32 +7,46 @@ package org.camunda.optimize.service.es.filter;
 
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
+import org.assertj.core.api.Assertions;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.List;
 
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createFixedEvaluationDateFilter;
 
-public class InstanceCountIT extends AbstractFilterIT {
+public class InstanceCountIT extends AbstractProcessDefinitionIT {
 
   @SneakyThrows
   @Test
   public void instanceCountWithoutFilters_processReport() {
     //given
-    ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
+    ProcessDefinitionEngineDto userTaskProcess = deploySimpleOneUserTasksDefinition();
     ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
@@ -49,8 +63,14 @@ public class InstanceCountIT extends AbstractFilterIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportWithFilter = createReportWithDefinition(userTaskProcess);
-    ProcessReportDataDto reportWithoutFilter = createReportWithDefinition(userTaskProcess);
+    ProcessReportDataDto reportWithFilter = createReport(
+      userTaskProcess.getKey(),
+      userTaskProcess.getVersionAsString()
+    );
+    ProcessReportDataDto reportWithoutFilter = createReport(
+      userTaskProcess.getKey(),
+      userTaskProcess.getVersionAsString()
+    );
     reportWithFilter.setFilter(ProcessFilterBuilder.filter().suspendedInstancesOnly().add().buildList());
 
     RawDataProcessReportResultDto resultWithFilter = reportClient.evaluateRawReport(reportWithFilter).getResult();
@@ -85,7 +105,10 @@ public class InstanceCountIT extends AbstractFilterIT {
       .setReportDataType(DecisionReportDataType.RAW_DATA)
       .build();
 
-    reportWithFilter.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(OffsetDateTime.now().plusDays(1), null)));
+    reportWithFilter.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(
+      OffsetDateTime.now().plusDays(1),
+      null
+    )));
 
     RawDataDecisionReportResultDto resultWithFilter = reportClient.evaluateRawReport(reportWithFilter).getResult();
     RawDataDecisionReportResultDto resultWithoutFilter =
@@ -99,4 +122,56 @@ public class InstanceCountIT extends AbstractFilterIT {
     assertThat(resultWithoutFilter.getInstanceCountWithoutFilters()).isEqualTo(3L);
   }
 
+  @SneakyThrows
+  @Test
+  public void instanceCount_combinedReport_endDateReportsExcludeRunningInstances() {
+    // given
+    ProcessDefinitionEngineDto runningInstanceDef = deploySimpleOneUserTasksDefinition("runningInstanceDef", null);
+    engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
+    engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
+
+    final SingleProcessReportDefinitionDto singleReport1 = createDateReport(
+      COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE
+    );
+    singleReport1.getData().setProcessDefinitionKey("runningInstanceDef");
+    final SingleProcessReportDefinitionDto singleReport2 = createDateReport(
+      COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE
+    );
+    singleReport2.getData().setProcessDefinitionKey("runningInstanceDef");
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<String> reportIds = Arrays.asList(singleReport1, singleReport2)
+      .stream()
+      .map(reportClient::createSingleProcessReport)
+      .collect(toList());
+    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+      reportClient.saveAndEvaluateCombinedReport(reportIds);
+
+    // then
+    Assertions.assertThat(combinedResult.getInstanceCount()).isEqualTo(2);
+  }
+
+  private ProcessReportDataDto createReport(String definitionKey, String definitionVersion) {
+    return TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(definitionKey)
+      .setProcessDefinitionVersion(definitionVersion)
+      .setReportDataType(RAW_DATA)
+      .build();
+  }
+
+  private SingleProcessReportDefinitionDto createDateReport(final ProcessReportDataType reportDataType) {
+    SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto runningReportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(TEST_PROCESS)
+      .setProcessDefinitionVersion("1")
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setReportDataType(reportDataType)
+      .build();
+    reportDefinitionDto.setData(runningReportData);
+    return reportDefinitionDto;
+  }
 }

@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.exec;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
@@ -19,6 +20,8 @@ import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -48,7 +51,7 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
   @Override
   public BoolQueryBuilder setupBaseQuery(final ProcessReportDataDto reportData) {
     BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(reportData);
-    queryFilterEnhancer.addFilterToQuery(boolQueryBuilder, reportData.getFilter());
+    queryFilterEnhancer.addFilterToQuery(boolQueryBuilder, getAllFilters(reportData));
     return boolQueryBuilder;
   }
 
@@ -79,5 +82,12 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
 
   public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<ProcessReportDataDto> context) {
     return groupByPart.calculateNumberRangeForGroupByNumberVariable(context, setupBaseQuery(context.getReportData()));
+  }
+
+  private List<ProcessFilterDto<?>> getAllFilters(final ProcessReportDataDto reportData) {
+    List<ProcessFilterDto<?>> allFilters = new ArrayList<>();
+    allFilters.addAll(reportData.getFilter());
+    allFilters.addAll(reportData.getAdditionalFiltersForReportType());
+    return allFilters;
   }
 }

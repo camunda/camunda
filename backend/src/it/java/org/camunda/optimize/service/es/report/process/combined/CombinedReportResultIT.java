@@ -8,11 +8,7 @@ package org.camunda.optimize.service.es.report.process.combined;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -31,7 +27,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import javax.ws.rs.core.Response;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -66,14 +61,14 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
 
     // when
     final List<String> reportIds = combinableReportsWithUnit.getValue().stream()
-      .map(this::createNewSingleReport)
+      .map(reportClient::createSingleProcessReport)
       .collect(toList());
     final ReportMapResultDto[] singleReportResults = reportIds
       .stream()
       .map(reportId -> reportClient.evaluateMapReportById(reportId).getResult())
       .toArray(ReportMapResultDto[]::new);
     final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
-      getCombinedReportResultFromReportIds(reportIds);
+      reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then the combined combinedResult evaluation yields the same results as the single report evaluations
     assertThat(combinedResult.getData()).isNotNull();
@@ -120,24 +115,33 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
       OffsetDateTime.now()
     );
 
-    // and a report for a second definition
+    // and report for second definition (with no instances in it)
     final SingleProcessReportDefinitionDto singleReport2 = createReport(
+      COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
+      GroupByDateUnit.DAY
+    );
+    singleReport2.getData().setProcessDefinitionKey("runningInstanceDef");
+    ProcessDefinitionEngineDto runningInstanceDef = deploySimpleOneUserTasksDefinition("runningInstanceDef", null);
+    engineIntegrationExtension.startProcessInstance(runningInstanceDef.getId());
+
+    // and a report for a second definition
+    final SingleProcessReportDefinitionDto singleReport3 = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
       GroupByDateUnit.DAY
     );
-    singleReport2.getData().setProcessDefinitionKey("otherDef");
+    singleReport3.getData().setProcessDefinitionKey("otherDef");
     ProcessDefinitionEngineDto otherDef = deploySimpleOneUserTasksDefinition("otherDef", null);
     engineIntegrationExtension.startProcessInstance(otherDef.getId());
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<String> reportIds = Arrays.asList(singleReport1, singleReport2)
+    final List<String> reportIds = Arrays.asList(singleReport1, singleReport2, singleReport3)
       .stream()
-      .map(this::createNewSingleReport)
+      .map(reportClient::createSingleProcessReport)
       .collect(toList());
     final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
-      getCombinedReportResultFromReportIds(reportIds);
+      reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then
     assertThat(combinedResult.getInstanceCount()).isEqualTo(5);
@@ -171,10 +175,10 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     // when
     final List<String> reportIds = Arrays.asList(singleReport1, singleReport2)
       .stream()
-      .map(this::createNewSingleReport)
+      .map(reportClient::createSingleProcessReport)
       .collect(toList());
     final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
-      getCombinedReportResultFromReportIds(reportIds);
+      reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then
     assertThat(combinedResult.getInstanceCount()).isEqualTo(4);
@@ -207,11 +211,11 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     // when
     final List<String> reportIds = Arrays.asList(singleReport1, singleReport2)
       .stream()
-      .map(this::createNewSingleReport)
+      .map(reportClient::createSingleProcessReport)
       .collect(toList());
 
     final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
-      getCombinedReportResultFromReportIds(reportIds);
+      reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then
     assertThat(combinedResult.getInstanceCount()).isEqualTo(4);
@@ -241,10 +245,10 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     // when
     final List<String> reportIds = Arrays.asList(singleReport1, singleReport2)
       .stream()
-      .map(this::createNewSingleReport)
+      .map(reportClient::createSingleProcessReport)
       .collect(toList());
     final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
-      getCombinedReportResultFromReportIds(reportIds);
+      reportClient.saveAndEvaluateCombinedReport(reportIds);
 
     // then
     assertThat(combinedResult.getInstanceCount()).isEqualTo(0);
@@ -326,38 +330,11 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
 
   private CombinedProcessReportResultDataDto<SingleReportResultDto> getCombinedReportResult(
     final List<SingleProcessReportDefinitionDto> reports) {
-    return getCombinedReportResultFromReportIds(
+    return reportClient.saveAndEvaluateCombinedReport(
       reports.stream()
-        .map(this::createNewSingleReport)
+        .map(reportClient::createSingleProcessReport)
         .collect(toList())
     );
-  }
-
-  private CombinedProcessReportResultDataDto<SingleReportResultDto> getCombinedReportResultFromReportIds(
-    final List<String> reportIds) {
-    final List<CombinedReportItemDto> reportItems = reportIds.stream()
-      .map(CombinedReportItemDto::new)
-      .collect(toList());
-
-    final CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
-    combinedReportData.setReports(reportItems);
-    final CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
-    combinedReport.setData(combinedReportData);
-
-    final IdDto response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
-
-    return reportClient.evaluateCombinedReportById(response.getId()).getResult();
-  }
-
-  private String createNewSingleReport(SingleProcessReportDefinitionDto singleProcessReportDefinitionDto) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
   }
 
   private static SingleProcessReportDefinitionDto createReport(final ProcessReportDataType reportDataType,

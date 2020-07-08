@@ -63,7 +63,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected static final String SECOND_USER = "secondUser";
   protected static final String SECOND_USERS_PASSWORD = "secondUserPW";
   protected static final VariableType DEFAULT_VARIABLE_TYPE = VariableType.STRING;
-  protected static final String TEST_PROCESS = "aProcess";
+  public static final String TEST_PROCESS = "aProcess";
 
   protected static final Map<String, VariableType> varNameToTypeMap = new HashMap<>(VariableType.values().length);
 

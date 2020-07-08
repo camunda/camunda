@@ -17,10 +17,12 @@ import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
@@ -112,6 +114,14 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
   }
 
+  @JsonIgnore
+  public List<ProcessFilterDto<?>> getAdditionalFiltersForReportType() {
+    if (isGroupByEndDateReport()) {
+      return ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList();
+    }
+    return Collections.emptyList();
+  }
+
   private boolean isGroupByCombinable(final ProcessReportDataDto that) {
     if (Combinable.isCombinable(this.groupBy, that.groupBy)) {
       if (isGroupByDateVariableReport()) {
@@ -148,6 +158,12 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     return groupBy != null
       && ProcessGroupByType.VARIABLE.equals(groupBy.getType())
       && VariableType.DATE.equals(((VariableGroupByDto) groupBy).getValue().getType());
+  }
+
+  private boolean isGroupByEndDateReport() {
+    return groupBy != null
+      && ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity())
+      && ProcessGroupByType.END_DATE.equals(groupBy.getType());
   }
 
   private boolean isGroupByNumberVariableReport() {
