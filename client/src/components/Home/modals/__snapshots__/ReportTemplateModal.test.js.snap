@@ -6,7 +6,9 @@ Object {
   "state": Object {
     "data": Object {
       "configuration": Object {
+        "xLabel": "Flow Nodes",
         "xml": "processXML",
+        "yLabel": "Flow Node Count",
       },
       "groupBy": Object {
         "type": "flowNodes",

@@ -22,47 +22,62 @@ import chartImg from './images/chart.svg';
 
 import './ReportTemplateModal.scss';
 
-const templates = [
-  {name: 'blank'},
-  {
-    name: 'heatmap',
-    img: heatmapImg,
-    config: {
-      view: {entity: 'flowNode', property: 'frequency'},
-      groupBy: {type: 'flowNodes', value: null},
-      visualization: 'heat',
-    },
-  },
-  {
-    name: 'number',
-    img: durationImg,
-    config: {
-      view: {entity: 'processInstance', property: 'duration'},
-      groupBy: {type: 'none', value: null},
-      visualization: 'number',
-    },
-  },
-  {
-    name: 'table',
-    img: tableImg,
-    config: {
-      view: {entity: 'userTask', property: 'frequency'},
-      groupBy: {type: 'userTasks', value: null},
-      visualization: 'table',
-    },
-  },
-  {
-    name: 'chart',
-    img: chartImg,
-    config: {
-      view: {entity: 'processInstance', property: 'frequency'},
-      groupBy: {type: 'startDate', value: {unit: 'automatic'}},
-      visualization: 'bar',
-    },
-  },
-];
-
 export function ReportTemplateModal({onClose, mightFail}) {
+  const templates = [
+    {name: 'blank'},
+    {
+      name: 'heatmap',
+      img: heatmapImg,
+      config: {
+        view: {entity: 'flowNode', property: 'frequency'},
+        groupBy: {type: 'flowNodes', value: null},
+        visualization: 'heat',
+        configuration: {
+          xLabel: t('report.groupBy.flowNodes'),
+          yLabel: t('report.view.fn') + ' ' + t('report.view.count')
+        }
+      },
+    },
+    {
+      name: 'number',
+      img: durationImg,
+      config: {
+        view: {entity: 'processInstance', property: 'duration'},
+        groupBy: {type: 'none', value: null},
+        visualization: 'number',
+        configuration: {
+          yLabel: t('report.view.pi') + ' ' + t('report.view.duration')
+        }
+      },
+    },
+    {
+      name: 'table',
+      img: tableImg,
+      config: {
+        view: {entity: 'userTask', property: 'frequency'},
+        groupBy: {type: 'userTasks', value: null},
+        visualization: 'table',
+        configuration: {
+          xLabel: t('report.groupBy.userTasks'),
+          yLabel: t('report.view.userTask') + ' ' + t('report.view.count')
+        }
+      },
+    },
+    {
+      name: 'chart',
+      img: chartImg,
+      config: {
+        view: {entity: 'processInstance', property: 'frequency'},
+        groupBy: {type: 'startDate', value: {unit: 'automatic'}},
+        visualization: 'bar',
+        configuration: {
+          xLabel: t('report.groupBy.startDate'),
+          yLabel: t('report.view.pi') + ' ' + t('report.view.count')
+        }
+      },
+    },
+  ];
+
   const [name, setName] = useState(t('report.new'));
   const [definition, setDefinition] = useState({definitionKey: '', versions: [], tenants: []});
   const [xml, setXml] = useState();
@@ -151,12 +166,12 @@ export function ReportTemplateModal({onClose, mightFail}) {
             state: {
               name,
               data: {
-                configuration: {xml},
+                ...(template || {}),
+                configuration: {...(template?.configuration || {}), xml},
                 processDefinitionKey: definitionKey,
                 processDefinitionVersions: versions,
                 processDefinitionName: definitionName,
                 tenantIds: tenants,
-                ...(template || {}),
               },
             },
           }}

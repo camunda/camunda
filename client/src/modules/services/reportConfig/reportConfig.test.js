@@ -234,10 +234,6 @@ describe('update', () => {
           },
         },
       })
-    ).toEqual({
-      view: {$set: countProcessInstances},
-      groupBy: {$set: null},
-      visualization: {$set: null},
-    });
+    ).toMatchSnapshot();
   });
 });

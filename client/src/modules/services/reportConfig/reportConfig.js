@@ -148,13 +148,6 @@ export default function reportConfig({view, groupBy, visualization, combinations
       changes.groupBy = {$set: newGroup};
     }
 
-    if (!isAllowed(props.report, newView, newGroup)) {
-      changes.groupBy = {$set: null};
-      changes.visualization = {$set: null};
-
-      return changes;
-    }
-
     if (newView.entity !== 'variable') {
       const viewObj = findSelectedOption(view, 'data', newView);
       changes.configuration = {
@@ -173,6 +166,15 @@ export default function reportConfig({view, groupBy, visualization, combinations
           changes.configuration.xLabel = {$set: t('report.groupBy.' + groupObj.key.split('_')[0])};
         }
       }
+    }
+
+    if (!isAllowed(props.report, newView, newGroup)) {
+      changes.groupBy = {$set: null};
+      changes.visualization = {$set: null};
+      changes.configuration = changes.configuration || {};
+      changes.configuration.xLabel = {$set: ''};
+
+      return changes;
     }
 
     const newVisualization = getNext(newView, newGroup) || visualization;
