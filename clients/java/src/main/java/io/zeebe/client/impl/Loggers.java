@@ -24,4 +24,5 @@ public final class Loggers {
       LoggerFactory.getLogger("io.zeebe.client.job.poller");
   public static final Logger JOB_WORKER_LOGGER =
       LoggerFactory.getLogger("io.zeebe.client.job.worker");
+  public static final Logger LOGGER = LoggerFactory.getLogger("io.zeebe.client");
 }

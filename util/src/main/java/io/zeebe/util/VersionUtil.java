@@ -16,7 +16,7 @@ public final class VersionUtil {
 
   public static final Logger LOG = Loggers.FILE_LOGGER;
 
-  private static final String VERSION_PROPERTIES_PATH = "/version.properties";
+  private static final String VERSION_PROPERTIES_PATH = "/zeebe-util.properties";
   private static final String VERSION_PROPERTY_NAME = "zeebe.version";
   private static final String LAST_VERSION_PROPERTY_NAME = "zeebe.last.version";
   private static final String VERSION_DEV = "development";

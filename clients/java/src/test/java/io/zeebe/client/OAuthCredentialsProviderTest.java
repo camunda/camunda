@@ -16,6 +16,7 @@
 package io.zeebe.client;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -317,13 +318,10 @@ public final class OAuthCredentialsProviderTest {
     // given
     mockCredentials(ACCESS_TOKEN);
     recordingInterceptor.setInterceptAction(
-        new BiConsumer<ServerCall, Metadata>() {
-          @Override
-          public void accept(final ServerCall call, final Metadata metadata) {
-            final String authHeader = metadata.get(AUTH_KEY);
-            if (authHeader != null && authHeader.endsWith("staleToken")) {
-              call.close(Status.UNAUTHENTICATED, metadata);
-            }
+        (call, metadata) -> {
+          final String authHeader = metadata.get(AUTH_KEY);
+          if (authHeader != null && authHeader.endsWith("staleToken")) {
+            call.close(Status.UNAUTHENTICATED, metadata);
           }
         });
     final String cachePath = tempFolder.getRoot().getPath() + File.separator + ".credsCache";
@@ -460,6 +458,7 @@ public final class OAuthCredentialsProviderTest {
         WireMock.post(WireMock.urlPathEqualTo("/oauth/token"))
             .withHeader("Content-Type", equalTo("application/x-www-form-urlencoded"))
             .withHeader("Accept", equalTo("application/json"))
+            .withHeader("User-Agent", matching("zeebe-client-java/\\d+\\.\\d+\\.\\d+.*"))
             .withRequestBody(equalTo(encodedBody))
             .willReturn(
                 WireMock.okJson(

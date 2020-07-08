@@ -25,6 +25,7 @@ import io.grpc.Status;
 import io.grpc.Status.Code;
 import io.zeebe.client.CredentialsProvider;
 import io.zeebe.client.impl.ZeebeClientCredentials;
+import io.zeebe.client.util.VersionUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -150,7 +151,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
   private static String encode(final String param) {
     try {
       return URLEncoder.encode(param, StandardCharsets.UTF_8.name());
-    } catch (UnsupportedEncodingException e) {
+    } catch (final UnsupportedEncodingException e) {
       throw new UncheckedIOException("Failed while encoding OAuth request parameters: ", e);
     }
   }
@@ -162,6 +163,7 @@ public final class OAuthCredentialsProvider implements CredentialsProvider {
     connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
     connection.setRequestProperty("Accept", "application/json");
     connection.setDoOutput(true);
+    connection.setRequestProperty("User-Agent", "zeebe-client-java/" + VersionUtil.getVersion());
 
     try (final OutputStream os = connection.getOutputStream()) {
       final byte[] input = payload.getBytes(StandardCharsets.UTF_8);
