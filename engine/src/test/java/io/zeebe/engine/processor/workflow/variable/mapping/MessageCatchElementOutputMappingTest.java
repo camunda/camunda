@@ -5,7 +5,7 @@
  * Licensed under the Zeebe Community License 1.0. You may not use this file
  * except in compliance with the Zeebe Community License 1.0.
  */
-package io.zeebe.engine.processor.workflow.message;
+package io.zeebe.engine.processor.workflow.variable.mapping;
 
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 
@@ -37,24 +37,25 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-public final class MessageMappingTest {
+public final class MessageCatchElementOutputMappingTest {
 
   @ClassRule public static final EngineRule ENGINE_RULE = EngineRule.singlePartition();
   private static final String PROCESS_ID = "process";
   private static final String MESSAGE_NAME = "message";
   private static final String CORRELATION_VARIABLE = "key";
+  private static final String MAPPING_ELEMENT_ID = "catch";
 
   private static final BpmnModelInstance CATCH_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .intermediateCatchEvent("catch")
+          .intermediateCatchEvent(MAPPING_ELEMENT_ID)
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .done();
 
   private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
-          .receiveTask("catch")
+          .receiveTask(MAPPING_ELEMENT_ID)
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .done();
 
@@ -62,7 +63,7 @@ public final class MessageMappingTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .serviceTask("task", b -> b.zeebeJobType("type"))
-          .boundaryEvent("catch")
+          .boundaryEvent(MAPPING_ELEMENT_ID)
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .endEvent()
           .done();
@@ -71,7 +72,7 @@ public final class MessageMappingTest {
       Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .serviceTask("task", b -> b.zeebeJobType("type"))
-          .boundaryEvent("catch", b -> b.cancelActivity(false))
+          .boundaryEvent(MAPPING_ELEMENT_ID, b -> b.cancelActivity(false))
           .message(m -> m.name(MESSAGE_NAME).zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
           .endEvent()
           .done();
@@ -82,7 +83,7 @@ public final class MessageMappingTest {
           .eventBasedGateway()
           .id("gateway")
           .intermediateCatchEvent(
-              "catch",
+              MAPPING_ELEMENT_ID,
               c ->
                   c.message(
                       m ->
@@ -98,15 +99,16 @@ public final class MessageMappingTest {
   private static final BpmnModelInstance INTERRUPTING_EVENT_SUBPROCESS_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .eventSubProcess(
-              "catch",
+              "event-subprocess",
               eventSubProcess ->
                   eventSubProcess
-                      .startEvent()
+                      .startEvent(MAPPING_ELEMENT_ID)
                       .message(
                           m ->
                               m.name(MESSAGE_NAME)
                                   .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
                       .interrupting(true)
+                      .serviceTask("task-2", t -> t.zeebeJobType("type"))
                       .endEvent())
           .startEvent()
           .serviceTask("task", t -> t.zeebeJobType("type"))
@@ -116,15 +118,16 @@ public final class MessageMappingTest {
   private static final BpmnModelInstance NON_INTERRUPTING_EVENT_SUBPROCESS_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
           .eventSubProcess(
-              "catch",
+              "event-subprocess",
               eventSubProcess ->
                   eventSubProcess
-                      .startEvent()
+                      .startEvent(MAPPING_ELEMENT_ID)
                       .message(
                           m ->
                               m.name(MESSAGE_NAME)
                                   .zeebeCorrelationKeyExpression(CORRELATION_VARIABLE))
                       .interrupting(false)
+                      .serviceTask("task-2", t -> t.zeebeJobType("type"))
                       .endEvent())
           .startEvent()
           .serviceTask("task", t -> t.zeebeJobType("type"))
@@ -245,7 +248,7 @@ public final class MessageMappingTest {
 
   private void deployWorkflowWithMapping(final Consumer<ZeebeVariablesMappingBuilder<?>> c) {
     final BpmnModelInstance modifiedWorkflow = workflow.clone();
-    final ModelElementInstance element = modifiedWorkflow.getModelElementById("catch");
+    final ModelElementInstance element = modifiedWorkflow.getModelElementById(MAPPING_ELEMENT_ID);
     if (element instanceof IntermediateCatchEvent) {
       c.accept(((IntermediateCatchEvent) element).builder());
     } else if (element instanceof StartEvent) {
