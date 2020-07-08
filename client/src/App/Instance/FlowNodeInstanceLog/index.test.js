@@ -5,92 +5,145 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import PropTypes from 'prop-types';
 
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
-
-import {SUBSCRIPTION_TOPIC, LOADING_STATE} from 'modules/constants';
-
-// Conponents
-import FlowNodeInstanceLog from './index';
-import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
-
-import EmptyPanel from 'modules/components/EmptyPanel';
-import Skeleton from './Skeleton';
-
-//Test Data
-import {mockProps, dataLoaded} from './index.setup';
-
-// Providers
-import {ThemeProvider} from 'modules/theme';
 import {DataManagerProvider} from 'modules/DataManager';
 
-// mock modules
-jest.mock('modules/utils/bpmn');
-jest.mock('../FlowNodeInstancesTree', () => {
-  return {
-    FlowNodeInstancesTree: function FlowNodeInstancesTree() {
-      return <div />;
-    },
-  };
-});
+import {SUBSCRIPTION_TOPIC, LOADING_STATE} from 'modules/constants';
+import FlowNodeInstanceLog from './index';
 
-const mountComponent = (props) => {
-  createMockDataManager();
-  return mount(
-    <ThemeProvider>
-      <DataManagerProvider>
-        <FlowNodeInstanceLog {...props} />
-      </DataManagerProvider>
-    </ThemeProvider>
+import {
+  mockSuccessResponseForActivityTree,
+  mockFailedResponseForActivityTree,
+  mockProps,
+} from './index.setup';
+import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {currentInstance} from 'modules/stores/currentInstance';
+import {FlowNodeTimeStampProvider} from 'modules/contexts/FlowNodeTimeStampContext';
+import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
+
+let dataManager = createMockDataManager();
+
+jest.mock('modules/api/activityInstances');
+
+jest.mock('modules/api/instances', () => ({
+  fetchWorkflowInstance: jest.fn().mockImplementation(() => {
+    return {id: '1', state: 'ACTIVE'};
+  }),
+}));
+
+const Wrapper = ({children}) => {
+  return (
+    <DataManagerProvider>
+      <FlowNodeTimeStampProvider>{children} </FlowNodeTimeStampProvider>
+    </DataManagerProvider>
   );
 };
-
+Wrapper.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
+};
 describe('FlowNodeInstanceLog', () => {
-  let root, node, subscriptions;
+  beforeAll(async () => {
+    await currentInstance.fetchCurrentInstance(1);
+  });
+  afterEach(() => {
+    fetchActivityInstancesTree.mockReset();
+  });
+
   beforeEach(() => {
-    root = mountComponent(mockProps);
-    node = root.find('FlowNodeInstanceLog');
-    subscriptions = node.instance().subscriptions;
+    flowNodeInstance.reset();
   });
 
-  it('should subscribe and unsubscribe on un/mount', () => {
-    //given
-    const {dataManager} = node.instance().props;
+  it('should render skeleton when instance tree is not loaded', async () => {
+    fetchActivityInstancesTree.mockResolvedValueOnce(
+      mockSuccessResponseForActivityTree
+    );
 
-    //then
-    expect(dataManager.subscribe).toHaveBeenCalledWith(subscriptions);
-
-    //when
-    root.unmount();
-    //then
-    expect(dataManager.unsubscribe).toHaveBeenCalledWith(subscriptions);
-  });
-
-  it('should render Tree when data is available', () => {
-    root = mountComponent(dataLoaded);
-    node = root.find(FlowNodeInstanceLog);
-
-    expect(node.find(FlowNodeInstancesTree)).toHaveLength(1);
-  });
-
-  it('should render skeleton when data is not available', () => {
-    expect(node.find(Skeleton));
-  });
-
-  it('should render warning when data could not be fetched', () => {
-    //given
-    const {dataManager} = node.instance().props;
-    // when
+    render(
+      <FlowNodeInstanceLog.WrappedComponent
+        {...mockProps}
+        dataManager={dataManager}
+      />,
+      {
+        wrapper: Wrapper,
+      }
+    );
 
     dataManager.publish({
-      subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE],
-      state: LOADING_STATE.LOAD_FAILED,
+      subscription: dataManager.subscriptions()[
+        SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS
+      ],
+      state: LOADING_STATE.LOADED,
     });
-    root.update();
-    // then
-    expect(
-      node.find(EmptyPanel).contains('Activity Instances could not be fetched')
+
+    flowNodeInstance.fetchInstanceExecutionHistory(1);
+
+    expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('flownodeInstance-skeleton')
     );
+  });
+
+  it('should display error when instance tree data could not be fetched', async () => {
+    fetchActivityInstancesTree.mockResolvedValueOnce(
+      mockFailedResponseForActivityTree
+    );
+
+    render(
+      <FlowNodeInstanceLog.WrappedComponent
+        {...mockProps}
+        dataManager={dataManager}
+      />,
+      {
+        wrapper: Wrapper,
+      }
+    );
+
+    dataManager.publish({
+      subscription: dataManager.subscriptions()[
+        SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS
+      ],
+      state: LOADING_STATE.LOADED,
+    });
+
+    await flowNodeInstance.fetchInstanceExecutionHistory(1);
+    expect(
+      screen.getByText('Activity Instances could not be fetched')
+    ).toBeInTheDocument();
+  });
+
+  it('should render flow node instances tree', async () => {
+    fetchActivityInstancesTree.mockResolvedValueOnce(
+      mockSuccessResponseForActivityTree
+    );
+
+    render(
+      <FlowNodeInstanceLog.WrappedComponent
+        {...mockProps}
+        dataManager={dataManager}
+      />,
+      {
+        wrapper: Wrapper,
+      }
+    );
+
+    dataManager.publish({
+      subscription: dataManager.subscriptions()[
+        SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS
+      ],
+      state: LOADING_STATE.LOADED,
+    });
+    await flowNodeInstance.fetchInstanceExecutionHistory(1);
+    expect(screen.getAllByText('nodeName').length).toBeGreaterThan(0);
   });
 });

@@ -57,13 +57,15 @@ describe('FlowNodeInstancesTree', () => {
   beforeEach(() => {
     node = mountNode();
     // specific nodes
-    StartEventNode = node.find(`[data-test="StartEventId"]`).find('li');
+    StartEventNode = node
+      .find(`[data-test="tree-node-StartEventId"]`)
+      .find('li');
     SubProcessNode = node
       .find(Styled.Li)
       .find('li')
-      .find(`[data-test="SubProcessId"]`);
+      .find(`[data-test="tree-node-SubProcessId"]`);
 
-    ServiceNode = node.find(`[data-test="ServiceTaskId"]`).find('li');
+    ServiceNode = node.find(`[data-test="tree-node-ServiceTaskId"]`).find('li');
     flowNodeInstance.reset();
   });
 
@@ -157,7 +159,7 @@ describe('FlowNodeInstancesTree', () => {
       expect(
         node
           .find(Foldable.Summary)
-          .find(`[data-test="${testData.parentNode.id}"]`)
+          .find(`[data-test="tree-node-${testData.parentNode.id}"]`)
           .find(FoldableRightIcon)
       ).not.toExist();
     });
@@ -172,7 +174,7 @@ describe('FlowNodeInstancesTree', () => {
       // On Tree level: 1
       expect(
         node
-          .find(`[data-test="${testData.parentNode.id}"]`)
+          .find(`[data-test="tree-node-${testData.parentNode.id}"]`)
           .find(Styled.NodeStateIcon)
           .find('[indentationMultiplier=1]')
       ).toExist();

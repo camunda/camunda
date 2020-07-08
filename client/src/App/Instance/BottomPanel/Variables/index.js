@@ -258,9 +258,11 @@ const Variables = observer(function Variables() {
 
   function isInstanceRunning() {
     const {
-      selection: {flowNodeId, treeRowIds},
+      state: {
+        selection: {flowNodeId, treeRowIds},
+      },
       flowNodeIdToFlowNodeInstanceMap,
-    } = flowNodeInstance.state;
+    } = flowNodeInstance;
 
     const {instance} = currentInstance.state;
 

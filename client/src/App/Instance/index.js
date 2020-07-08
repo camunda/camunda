@@ -57,7 +57,6 @@ const Instance = observer(
       this.state = {
         nodeMetaDataMap: null,
         diagramDefinitions: null,
-        activityInstancesTree: {},
         processedSequenceFlows: [],
         events: [],
         incidents: {
@@ -80,9 +79,7 @@ const Instance = observer(
             );
 
             const {dataManager} = this.props;
-
             // kick off all follow-up requests.
-            dataManager.getActivityInstancesTreeData(response);
             dataManager.getWorkflowXML(response.workflowId, response);
             dataManager.getEvents(response.id);
             dataManager.getSequenceFlows(response.id);
@@ -101,20 +98,6 @@ const Instance = observer(
             this.setState({events: response});
           }),
 
-        LOAD_INSTANCE_TREE: ({response, state, staticContent}) => {
-          if (state === LOADING_STATE.LOADED) {
-            flowNodeInstance.setFlowNodeInstanceMap(response);
-            this.setState({
-              activityInstancesTree: {
-                ...response,
-                id: staticContent.id,
-                type: 'WORKFLOW',
-                state: staticContent.state,
-                endDate: staticContent.endDate,
-              },
-            });
-          }
-        },
         LOAD_STATE_DEFINITIONS: ({response, state, staticContent}) => {
           if (state === LOADING_STATE.LOADED) {
             // Get all selectable BPMN elements
@@ -143,25 +126,11 @@ const Instance = observer(
         },
         CONSTANT_REFRESH: ({response, state}) => {
           if (state === LOADING_STATE.LOADED) {
-            const {
-              LOAD_INSTANCE,
-              LOAD_INCIDENTS,
-              LOAD_EVENTS,
-              LOAD_INSTANCE_TREE,
-              LOAD_SEQUENCE_FLOWS,
-            } = response;
+            const {LOAD_INCIDENTS, LOAD_EVENTS, LOAD_SEQUENCE_FLOWS} = response;
 
-            flowNodeInstance.setFlowNodeInstanceMap(LOAD_INSTANCE_TREE);
             this.setState({
               isPollActive: false,
               events: LOAD_EVENTS,
-              activityInstancesTree: {
-                ...LOAD_INSTANCE_TREE,
-                id: LOAD_INSTANCE.id,
-                type: 'WORKFLOW',
-                state: LOAD_INSTANCE.state,
-                endDate: LOAD_INSTANCE.endDate,
-              },
               processedSequenceFlows: getProcessedSequenceFlows(
                 LOAD_SEQUENCE_FLOWS
               ),
@@ -178,6 +147,8 @@ const Instance = observer(
       const id = this.props.match.params.id;
       // should later be removed and call currentInstance.fetchCurrentInstance(id); instead
       this.props.dataManager.getWorkflowInstance(id);
+      flowNodeInstance.fetchInstanceExecutionHistory(id);
+      flowNodeInstance.startPolling(id);
     }
 
     componentDidUpdate() {
@@ -209,7 +180,6 @@ const Instance = observer(
           {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE}, // should later be removed and call currentInstance.fetchCurrentInstance(id); instead
           {name: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS},
           {name: SUBSCRIPTION_TOPIC.LOAD_EVENTS},
-          {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE},
           {name: SUBSCRIPTION_TOPIC.LOAD_SEQUENCE_FLOWS},
         ],
       };
@@ -226,7 +196,7 @@ const Instance = observer(
         ...initallyLoadedStates
       } = this.state;
 
-      const {flowNodeIdToFlowNodeInstanceMap} = flowNodeInstance.state;
+      const {flowNodeIdToFlowNodeInstanceMap} = flowNodeInstance;
       const states = {
         ...initallyLoadedStates,
         flowNodeIdToFlowNodeInstanceMap,
@@ -266,8 +236,8 @@ const Instance = observer(
       const {
         state: {
           selection: {flowNodeId, treeRowIds},
-          flowNodeIdToFlowNodeInstanceMap,
         },
+        flowNodeIdToFlowNodeInstanceMap,
         areMultipleNodesSelected,
       } = flowNodeInstance;
 
@@ -367,11 +337,9 @@ const Instance = observer(
         diagramDefinitions,
         incidents,
         nodeMetaDataMap,
-        activityInstancesTree,
         processedSequenceFlows,
       } = this.state;
       const {instance} = currentInstance.state;
-
       return (
         <Styled.Instance>
           <VisuallyHiddenH1>
@@ -393,7 +361,6 @@ const Instance = observer(
             <BottomPanel>
               <FlowNodeInstanceLog
                 diagramDefinitions={diagramDefinitions}
-                activityInstancesTree={activityInstancesTree}
                 getNodeWithMetaData={this.getNodeWithMetaData}
                 onTreeRowSelection={this.handleTreeRowSelection}
               />

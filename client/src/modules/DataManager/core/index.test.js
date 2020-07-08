@@ -12,7 +12,6 @@ import * as instancesApi from 'modules/api/instances';
 import * as diagramApi from 'modules/api/diagram';
 
 import {fetchEvents} from 'modules/api/events';
-import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 
 import {
   mockParams,
@@ -188,22 +187,6 @@ describe('DataManager', () => {
           SUBSCRIPTION_TOPIC.LOAD_EVENTS
         );
         expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(fetchEvents);
-        expect(fetchAndPublishSpy.mock.calls[0][2]).toBe(
-          mockWorkflowInstance.id
-        );
-      });
-    });
-
-    describe('fetch Activity Instance Tree', () => {
-      it('should fetch and publish', () => {
-        dataManager.getActivityInstancesTreeData(mockWorkflowInstance);
-
-        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
-          SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
-          fetchActivityInstancesTree
-        );
         expect(fetchAndPublishSpy.mock.calls[0][2]).toBe(
           mockWorkflowInstance.id
         );

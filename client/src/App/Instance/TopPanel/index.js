@@ -89,7 +89,7 @@ const TopPanel = observer(
         selectMultiInstanceChildrenOnly: false,
       }
     ) => {
-      const {flowNodeIdToFlowNodeInstanceMap} = flowNodeInstance.state;
+      const {flowNodeIdToFlowNodeInstanceMap} = flowNodeInstance;
       const {instance} = currentInstance.state;
       let treeRowIds = [instance.id];
       if (flowNodeId) {
@@ -115,9 +115,9 @@ const TopPanel = observer(
       } = this.props;
 
       const {
-        selection,
+        state: {selection},
         flowNodeIdToFlowNodeInstanceMap,
-      } = flowNodeInstance.state;
+      } = flowNodeInstance;
       const {instance} = currentInstance.state;
 
       return (

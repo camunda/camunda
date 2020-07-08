@@ -37,12 +37,11 @@ const FlowNodeInstancesTree = observer(
       const {
         selection: {treeRowIds: selectedTreeRowIds},
       } = flowNodeInstance.state;
-
       const hasChildren = node.children.length > 0;
       const isSelected = selectedTreeRowIds.includes(node.id);
 
       return (
-        <Styled.Li treeDepth={treeDepth} data-test={node.id}>
+        <Styled.Li treeDepth={treeDepth} data-test={`tree-node-${node.id}`}>
           <Styled.NodeDetails
             showConnectionDot={treeDepth >= 3}
             data-test={`treeDepth:${treeDepth}`}

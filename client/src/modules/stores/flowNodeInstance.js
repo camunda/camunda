@@ -6,30 +6,110 @@
 
 import {observable, decorate, action, computed} from 'mobx';
 import {constructFlowNodeIdToFlowNodeInstanceMap} from './mappers';
+import {currentInstance} from 'modules/stores/currentInstance';
+import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 
 const DEFAULT_STATE = {
   selection: {
     treeRowIds: [],
     flowNodeId: null,
   },
-  flowNodeIdToFlowNodeInstanceMap: new Map(),
+  isInitialLoadComplete: false,
+  isFailed: false,
+  isLoading: false,
+  response: null,
 };
 
 class FlowNodeInstance {
   state = {...DEFAULT_STATE};
+  intervalId = null;
 
   setCurrentSelection = (selection) => {
     this.state.selection = selection;
   };
 
-  reset = () => {
-    this.state = {...DEFAULT_STATE};
+  fetchInstanceExecutionHistory = async (id) => {
+    this.startLoading();
+
+    const response = await fetchActivityInstancesTree(id);
+    if (response.error) {
+      this.handleFailure();
+    } else {
+      this.handleSuccess(response);
+    }
+
+    if (!this.state.isInitialLoadComplete) {
+      this.setIsInitialLoadComplete();
+    }
   };
 
-  setFlowNodeInstanceMap = (flowNodeInstancesTree) => {
-    this.state.flowNodeIdToFlowNodeInstanceMap = constructFlowNodeIdToFlowNodeInstanceMap(
-      flowNodeInstancesTree
+  get isInstanceExecutionHistoryAvailable() {
+    const {isInitialLoadComplete, isFailed} = this.state;
+
+    return (
+      isInitialLoadComplete &&
+      !isFailed &&
+      this.instanceExecutionHistory !== null &&
+      Object.keys(this.instanceExecutionHistory).length > 0
     );
+  }
+  get instanceExecutionHistory() {
+    const {instance} = currentInstance.state;
+    const {response, isInitialLoadComplete} = this.state;
+
+    if (instance === null || !isInitialLoadComplete) {
+      return null;
+    }
+    return {
+      ...response,
+      id: instance.id,
+      type: 'WORKFLOW',
+      state: instance.state,
+    };
+  }
+
+  get flowNodeIdToFlowNodeInstanceMap() {
+    const {response, isFailed, isInitialLoadComplete} = this.state;
+
+    if (isFailed || !isInitialLoadComplete) {
+      return new Map();
+    }
+    return constructFlowNodeIdToFlowNodeInstanceMap(response);
+  }
+
+  startLoading = () => {
+    this.state.isLoading = true;
+  };
+
+  handleFailure = () => {
+    this.state.isLoading = false;
+    this.state.isFailed = true;
+  };
+
+  handleSuccess = (response) => {
+    this.state.isLoading = false;
+    this.state.isFailed = false;
+    this.state.response = response;
+  };
+
+  startPolling = async (workflowInstanceId) => {
+    this.intervalId = setInterval(async () => {
+      await this.fetchInstanceExecutionHistory(workflowInstanceId);
+    }, 5000);
+  };
+
+  stopPolling = () => {
+    clearInterval(this.intervalId);
+  };
+
+  setIsInitialLoadComplete = () => {
+    this.state.isInitialLoadComplete = true;
+  };
+
+  reset = () => {
+    this.stopPolling();
+    this.state = {...DEFAULT_STATE};
+    this.intervalId = null;
   };
 
   get areMultipleNodesSelected() {
@@ -39,10 +119,16 @@ class FlowNodeInstance {
 
 decorate(FlowNodeInstance, {
   state: observable,
+  handleSuccess: action,
+  handleFailure: action,
+  startLoading: action,
+  setIsInitialLoadComplete: action,
   reset: action,
   setCurrentSelection: action,
-  setFlowNodeInstanceMap: action,
   areMultipleNodesSelected: computed,
+  instanceExecutionHistory: computed,
+  flowNodeIdToFlowNodeInstanceMap: computed,
+  isInstanceExecutionHistoryAvailable: computed,
 });
 
 export const flowNodeInstance = new FlowNodeInstance();

@@ -186,7 +186,7 @@ describe('Instance', () => {
         );
       });
 
-      it('should always request instance tree, diagram, variables, events, sequence flows ', () => {
+      it('should always request diagram, variables, events, sequence flows ', () => {
         //given
         const {dataManager} = node.instance().props;
         // when
@@ -201,9 +201,7 @@ describe('Instance', () => {
           workflowInstance.workflowId,
           workflowInstance
         );
-        expect(dataManager.getActivityInstancesTreeData).toHaveBeenCalledWith(
-          workflowInstance
-        );
+
         expect(dataManager.getSequenceFlows).toHaveBeenCalledWith(
           workflowInstance.id
         );
@@ -262,27 +260,6 @@ describe('Instance', () => {
         expect(node.instance().state.incidents).toEqual(incidents);
       });
     });
-    describe('load instance tree', () => {
-      it('should set loaded instance tree in state', () => {
-        //given
-        const {dataManager} = node.instance().props;
-        // when
-        dataManager.publish({
-          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE],
-          response: instanceHistoryTree,
-          staticContent: workflowInstance,
-        });
-        // then
-
-        expect(node.instance().state.activityInstancesTree).toEqual({
-          ...instanceHistoryTree,
-          id: workflowInstance.id,
-          type: 'WORKFLOW',
-          state: workflowInstance.state,
-          endDate: workflowInstance.endDate,
-        });
-      });
-    });
     describe('load instance diagram', () => {
       it('should set loaded diagram in state', async () => {
         //given
@@ -337,13 +314,11 @@ describe('Instance', () => {
           response: {
             LOAD_INSTANCE: workflowInstance,
             LOAD_EVENTS: events,
-            LOAD_INSTANCE_TREE: instanceHistoryTree,
             LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
           },
         });
 
         //then
-
         expect(node.instance().state.events).toEqual(events);
 
         // don't set conditional states.

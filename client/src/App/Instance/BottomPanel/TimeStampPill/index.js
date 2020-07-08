@@ -12,26 +12,22 @@ import useSubscription from 'modules/hooks/useSubscription';
 import {withFlowNodeTimeStampContext} from 'modules/contexts/FlowNodeTimeStampContext';
 
 import * as Styled from './styled';
+import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {observer} from 'mobx-react';
 
-function TimeStampPill(props) {
+const TimeStampPill = observer(function TimeStampPill(props) {
   const {showTimeStamp, onTimeStampToggle} = props;
-  const [isTreeLoaded, setIsTreeLoaded] = useState(false);
   const [isDefLoaded, setIsDefLoaded] = useState(false);
   const {subscribe} = useSubscription();
+  const {isInitialLoadComplete: isTreeLoaded} = flowNodeInstance.state;
 
   useEffect(() => {
-    const unsubscribeInstanceTree = subscribe(
-      SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE,
-      LOADING_STATE.LOADED,
-      () => setIsTreeLoaded(true)
-    );
     const unsubscribeDefinitions = subscribe(
       SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS,
       LOADING_STATE.LOADED,
       () => setIsDefLoaded(true)
     );
     return () => {
-      unsubscribeInstanceTree();
       unsubscribeDefinitions();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -49,7 +45,7 @@ function TimeStampPill(props) {
       {`${showTimeStamp ? 'Hide' : 'Show'} End Time`}
     </Styled.Pill>
   );
-}
+});
 
 TimeStampPill.propTypes = {
   onTimeStampToggle: PropTypes.func.isRequired,

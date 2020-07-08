@@ -34,7 +34,6 @@ export const mockDataManager = () => {
     getWorkflowXML: jest.fn(),
     getWorkflowInstance: jest.fn(),
     getWorkflowInstances: jest.fn(),
-    getActivityInstancesTreeData: jest.fn(),
     getWorkflowInstancesStatistics: jest.fn(),
     getWorkflowInstancesByIds: jest.fn(),
     getInstancesByWorkflow: jest.fn(),

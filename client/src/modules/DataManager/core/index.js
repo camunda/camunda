@@ -20,8 +20,6 @@ import {
   fetchIncidentsByError,
 } from 'modules/api/incidents';
 
-import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
-
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {fetchEvents} from 'modules/api/events';
 
@@ -87,15 +85,6 @@ export class DataManager {
       topic,
       () => apiCall(cachedParams),
       staticContent
-    );
-  };
-
-  getActivityInstancesTreeData = (instance) => {
-    this.fetchAndPublish(
-      SUBSCRIPTION_TOPIC.LOAD_INSTANCE_TREE,
-      fetchActivityInstancesTree,
-      instance.id,
-      instance
     );
   };
 
