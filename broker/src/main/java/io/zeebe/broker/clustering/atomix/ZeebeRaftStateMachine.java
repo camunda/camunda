@@ -136,9 +136,15 @@ public final class ZeebeRaftStateMachine implements RaftStateMachine {
 
   private void applyAll(final long index, final CompletableFuture<?> future) {
     lastEnqueued = Math.max(lastEnqueued, raft.getSnapshotStore().getCurrentSnapshotIndex());
-    while (lastEnqueued < index) {
+    int chunkCounter = 0;
+    while (lastEnqueued < index && chunkCounter < 1000) {
+      chunkCounter++;
       final long nextIndex = ++lastEnqueued;
       applyIndex(nextIndex, future);
+
+      if (chunkCounter == 1000) {
+        executor().execute(() -> applyAll(index, future));
+      }
     }
   }
 
