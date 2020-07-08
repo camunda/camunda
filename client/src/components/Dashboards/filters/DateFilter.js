@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState} from 'react';
+import React, {useState, useEffect} from 'react';
 import moment from 'moment';
 import classnames from 'classnames';
 
@@ -18,9 +18,14 @@ export default function DateFilter({
   setFilter,
   icon = 'filter',
   children,
+  resetTrigger,
   emptyText = t('common.select'),
 }) {
   const [showDatePicker, setShowDatePicker] = useState(filter?.type === 'fixed');
+
+  useEffect(() => {
+    setShowDatePicker(false);
+  }, [resetTrigger]);
 
   function setRelativeFilter(unit, past) {
     setFilter({type: 'relative', start: {value: past ? 1 : 0, unit}, end: null});

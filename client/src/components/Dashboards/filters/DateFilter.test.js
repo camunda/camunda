@@ -4,12 +4,25 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import {Dropdown, DatePicker} from 'components';
 
 import DateFilter from './DateFilter';
+
+jest.mock('react', () => {
+  const outstandingEffects = [];
+  return {
+    ...jest.requireActual('react'),
+    useEffect: (fn) => outstandingEffects.push(fn),
+    runLastEffect: () => {
+      if (outstandingEffects.length) {
+        outstandingEffects.pop()();
+      }
+    },
+  };
+});
 
 const props = {
   filter: null,
@@ -43,6 +56,18 @@ it('should show a datepicker when switching to fixed state', () => {
   node.find(Dropdown.Option).at(0).simulate('click');
 
   expect(node.find(DatePicker)).toExist();
+});
+
+it('should show the dropdown again after an external reset', () => {
+  const node = shallow(<DateFilter {...props} />);
+
+  node.find(Dropdown.Option).at(0).simulate('click');
+  node.setProps({resetTrigger: true});
+
+  runLastEffect();
+
+  expect(node.find(DatePicker)).not.toExist();
+  expect(node.find(Dropdown)).toExist();
 });
 
 it('should show the filter state', () => {

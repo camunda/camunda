@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 
 import {Button} from 'components';
 import {t} from 'translation';
@@ -16,6 +16,14 @@ import VariableFilter from './VariableFilter';
 import './FiltersView.scss';
 
 export default function FiltersView({availableFilters, filter = [], setFilter}) {
+  // used by the individual filter components to reset internal state
+  const [resetTrigger, setResetTrigger] = useState(false);
+  useEffect(() => {
+    if (resetTrigger) {
+      setResetTrigger(false);
+    }
+  }, [resetTrigger]);
+
   return (
     <div className="FiltersView">
       <h3>{t('dashboard.filter.viewLabel')}</h3>
@@ -31,6 +39,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter}) 
                 key={type}
                 emptyText={t('common.off')}
                 icon="calender"
+                resetTrigger={resetTrigger}
                 filter={dateFilter?.data}
                 setFilter={(newFilter) => {
                   const rest = filter.filter((filter) => filter !== dateFilter);
@@ -73,6 +82,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter}) 
       <Button
         onClick={() => {
           setFilter([]);
+          setResetTrigger(true);
         }}
       >
         {t('dashboard.filter.resetAll')}

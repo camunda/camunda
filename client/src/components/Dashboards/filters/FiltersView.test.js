@@ -52,6 +52,14 @@ it('should have a button to reset all filters', () => {
   expect(props.setFilter).toHaveBeenCalledWith([]);
 });
 
+it('should pass a resetTrigger to DateFilters to help manage internal state', () => {
+  const node = shallow(<FiltersView {...props} availableFilters={[{type: 'startDate'}]} />);
+
+  node.find(Button).simulate('click');
+
+  expect(node.find('DateFilter')).toHaveProp('resetTrigger', true);
+});
+
 it('should add a variable filter', () => {
   const node = shallow(
     <FiltersView
