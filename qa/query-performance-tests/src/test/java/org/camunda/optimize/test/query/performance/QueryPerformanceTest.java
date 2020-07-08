@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.test.util.ReportsGenerator.createAllPossibleReports;
+import static org.camunda.optimize.test.util.ReportsGenerator.createAllReportTypesForAllDefinitions;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
@@ -109,6 +109,6 @@ public class QueryPerformanceTest {
   }
 
   private static Stream<SingleReportDataDto> getPossibleReports() {
-    return createAllPossibleReports().stream();
+    return createAllReportTypesForAllDefinitions().stream();
   }
 }

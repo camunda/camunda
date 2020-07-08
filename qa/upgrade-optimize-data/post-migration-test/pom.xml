@@ -252,6 +252,10 @@
                     <echo message="Starting the old Optimize version ${project.previousVersion}" />
                     <exec dir="${project.build.directory}/${project.previousVersion}/" executable="${project.build.directory}/${project.previousVersion}/optimize-startup.sh" spawn="true">
                       <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${old.optimize.elasticsearch.port}" />
+                      <env key="OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS" value="[demo]" />
+                      <env key="OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED" value="true" />
+                      <env key="OPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED" value="true" />
+                      <env key="OPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN" value="secret" />
                     </exec>
 
                     <echo message="Wait for Optimize to start..." />
@@ -362,6 +366,10 @@
                     <echo message="Starting Optimize ${project.version}..." />
                     <exec dir="${project.build.directory}/${project.version}/" executable="${project.build.directory}/${project.version}/optimize-startup.sh" spawn="true">
                       <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${new.optimize.elasticsearch.port}" />
+                      <env key="OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS" value="[demo]" />
+                      <env key="OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED" value="true" />
+                      <env key="OPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED" value="true" />
+                      <env key="OPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN" value="secret" />
                     </exec>
                     <echo message="Optimize successfully started." />
 

@@ -6,117 +6,88 @@
 package org.camunda.optimize.test.data.upgrade;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.engine.CredentialsDto;
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
+import org.camunda.optimize.test.optimize.AlertClient;
+import org.camunda.optimize.test.optimize.CollectionClient;
+import org.camunda.optimize.test.optimize.EntitiesClient;
+import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.core.GenericType;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.service.security.AuthCookieService.createOptimizeAuthCookieValue;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @Slf4j
 public class PostMigrationTest {
-  // @formatter:off
-  private static final GenericType<List<ReportDefinitionDto>> REPORT_TYPE = new GenericType<List<ReportDefinitionDto>>() {};
-  private static final GenericType<List<EntityDto>> ENTITIES_TYPE = new GenericType<List<EntityDto>>() {};
-  // @formatter:on
-  private static final String DEFAULT_USERNAME = "demo";
-  private static final String OPTIMIZE_API_ENDPOINT = "http://localhost:8090/api/";
+  private static final String DEFAULT_USER = "demo";
 
-  private static Client client;
-  private static String authHeader;
+  private static OptimizeRequestExecutor requestExecutor;
+  private static AlertClient alertClient;
+  private static CollectionClient collectionClient;
+  private static EntitiesClient entitiesClient;
+  private static EventProcessClient eventProcessClient;
 
   @BeforeAll
   public static void init() {
-    ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext("optimizeDataUpgradeContext.xml");
-
-    OptimizeObjectMapperContextResolver provider = ctx.getBean(OptimizeObjectMapperContextResolver.class);
-
-    client = ClientBuilder.newClient().register(provider);
-    authenticateDemo();
-  }
-
-  @Test
-  public void retrieveAllReports() {
-    final List<ReportDefinitionDto> reports = getReports();
-
-    assertThat(reports.size(), is(greaterThan(0)));
-  }
-
-  @Test
-  public void evaluateAllReports() {
-    final List<ReportDefinitionDto> reports = getReports();
-
-    for (ReportDefinitionDto report : reports) {
-      evaluateReportByIdAndAssertSuccess(report.getId());
-    }
+    final ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext("optimizeDataUpgradeContext.xml");
+    final ObjectMapper objectMapper = ctx.getBean(ObjectMapper.class);
+    final WebTarget optimizeClient = ClientBuilder.newClient()
+      .target("http://localhost:8090/api/")
+      .register(new OptimizeObjectMapperContextResolver(objectMapper));
+    requestExecutor = new OptimizeRequestExecutor(optimizeClient, ctx.getBean(ObjectMapper.class))
+      .withUserAuthentication(DEFAULT_USER, DEFAULT_USER)
+      .withCurrentUserAuthenticationAsNewDefaultToken();
+    alertClient = new AlertClient(() -> requestExecutor);
+    collectionClient = new CollectionClient(() -> requestExecutor);
+    entitiesClient = new EntitiesClient(() -> requestExecutor);
+    eventProcessClient = new EventProcessClient(() -> requestExecutor);
   }
 
   @Test
   public void retrieveAllEntities() {
-    final List<EntityDto> entities = getEntityDtos();
-    assertThat(entities.size(), is(greaterThan(0)));
+    final List<EntityDto> entities = entitiesClient.getAllEntities();
+    assertThat(entities).isNotEmpty();
   }
 
   @Test
   public void retrieveAlerts() {
     List<AlertDefinitionDto> allAlerts = new ArrayList<>();
-    List<EntityDto> collections = getCollections();
-    collections.forEach(c -> {
-      Response response = client.target(OPTIMIZE_API_ENDPOINT + "collection/" + c.getId() + "/alerts")
-        .request()
-        .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
-        .get();
 
-      assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-      
-      // @formatter:off
-      List<AlertDefinitionDto> objects = response.readEntity(new GenericType<List<AlertDefinitionDto>>() {});
-      // @formatter:on
-      allAlerts.addAll(objects);
+    List<EntityDto> collections = getCollections();
+    collections.forEach(collection -> {
+      allAlerts.addAll(alertClient.getAlertsForCollectionAsDefaultUser(collection.getId()));
     });
 
-
-    assertThat(allAlerts.size() > 0, is(true));
+    assertThat(allAlerts)
+      .isNotEmpty()
+      .allSatisfy(alertDefinitionDto -> assertThat(alertDefinitionDto).isNotNull());
   }
 
   @Test
   public void retrieveAllCollections() {
     final List<EntityDto> collections = getCollections();
 
-    assertThat(collections.size(), is(greaterThan(0)));
+    assertThat(collections).isNotEmpty();
     for (EntityDto collection : collections) {
-      getCollectionById(collection.getId());
+      assertThat(collectionClient.getCollectionById(collection.getId())).isNotNull();
     }
-  }
-
-  private List<EntityDto> getCollections() {
-    final List<EntityDto> entities = getEntityDtos();
-
-    return entities.stream()
-      .filter(entityDto -> EntityType.COLLECTION.equals(entityDto.getEntityType()))
-      .collect(Collectors.toList());
   }
 
   @Test
@@ -124,72 +95,35 @@ public class PostMigrationTest {
     final List<EntityDto> collections = getCollections();
 
     for (EntityDto collection : collections) {
-      final List<EntityDto> collectionEntities = getCollectionEntities(collection.getId());
+      final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collection.getId());
       for (EntityDto entity : collectionEntities.stream()
         .filter(entityDto -> EntityType.REPORT.equals(entityDto.getEntityType()))
         .collect(Collectors.toList())) {
-        evaluateReportByIdAndAssertSuccess(entity.getId());
+        final Response response = requestExecutor.buildEvaluateSavedReportRequest(entity.getId())
+          .execute(Response.Status.OK.getStatusCode());
+        final JsonNode jsonResponse = response.readEntity(JsonNode.class);
+        assertThat(jsonResponse.hasNonNull(AuthorizedEvaluationResultDto.Fields.result.name())).isTrue();
       }
     }
   }
 
-  private List<ReportDefinitionDto> getReports() {
-    return client.target(getReportEndpoint())
-      .request()
-      .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
-      .get(REPORT_TYPE);
+  // FIXME to be activated with OPT-3968
+  @Disabled
+  @Test
+  public void retrieveAllEventBasedProcessesAndEnsureTheyArePublished() {
+    final List<EventProcessMappingDto> allEventProcessMappings = eventProcessClient.getAllEventProcessMappings();
+    assertThat(allEventProcessMappings)
+      .isNotEmpty()
+      .extracting(EventProcessMappingDto::getState)
+      .allSatisfy(eventProcessState -> assertThat(eventProcessState).isEqualTo(EventProcessState.PUBLISHED));
   }
 
-  private void evaluateReportByIdAndAssertSuccess(final String reportId) {
-    log.debug("Evaluating report {}", reportId);
-    final Invocation.Builder evaluateReportRequest = client
-      .target(getReportEndpoint() + reportId + "/evaluate")
-      .request()
-      .cookie(OPTIMIZE_AUTHORIZATION, authHeader);
-    try (Response reportEvaluationResponse = evaluateReportRequest.post(null)) {
-      assertThat(reportEvaluationResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
-      final JsonNode response = reportEvaluationResponse.readEntity(JsonNode.class);
-      assertThat(response.hasNonNull(AuthorizedEvaluationResultDto.Fields.result.name()), is(true));
-    }
+  private List<EntityDto> getCollections() {
+    final List<EntityDto> entities = entitiesClient.getAllEntities();
+
+    return entities.stream()
+      .filter(entityDto -> EntityType.COLLECTION.equals(entityDto.getEntityType()))
+      .collect(Collectors.toList());
   }
 
-  private AuthorizedCollectionDefinitionRestDto getCollectionById(final String collectionId) {
-    Response response = client.target(OPTIMIZE_API_ENDPOINT + "collection/" + collectionId)
-      .request()
-      .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
-      .get();
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-
-    return response.readEntity(new GenericType<AuthorizedCollectionDefinitionRestDto>() {
-    });
-  }
-
-  private List<EntityDto> getCollectionEntities(final String collectionId) {
-    return client.target(OPTIMIZE_API_ENDPOINT + "collection/" + collectionId + "/entities")
-      .request()
-      .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
-      .get(ENTITIES_TYPE);
-  }
-
-  private List<EntityDto> getEntityDtos() {
-    return client.target(OPTIMIZE_API_ENDPOINT + "entities")
-      .request()
-      .cookie(OPTIMIZE_AUTHORIZATION, authHeader)
-      .get(ENTITIES_TYPE);
-  }
-
-  private static void authenticateDemo() {
-    final CredentialsDto credentials = new CredentialsDto();
-    credentials.setUsername(DEFAULT_USERNAME);
-    credentials.setPassword(DEFAULT_USERNAME);
-
-    final Response response = client.target(OPTIMIZE_API_ENDPOINT + "authentication")
-      .request().post(Entity.json(credentials));
-
-    authHeader = createOptimizeAuthCookieValue(response.readEntity(String.class));
-  }
-
-  private String getReportEndpoint() {
-    return OPTIMIZE_API_ENDPOINT + "report/";
-  }
 }

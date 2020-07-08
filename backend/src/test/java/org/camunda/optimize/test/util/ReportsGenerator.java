@@ -62,31 +62,32 @@ import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 public class ReportsGenerator {
 
   private static final Random randomGen = new Random();
-  public static final String DOUBLE_VAR = "doubleVar";
-  private static SimpleEngineClient client =
-    new SimpleEngineClient(IntegrationTestConfigurationUtil.getEngineRestEndpoint() + "default");
+  private static final String DOUBLE_VAR = "doubleVar";
+  private static final SimpleEngineClient client = new SimpleEngineClient(
+    IntegrationTestConfigurationUtil.getEngineRestEndpoint() + "default"
+  );
 
-  public static List<SingleReportDataDto> createAllPossibleReports() {
-    List<ProcessDefinitionEngineDto> latestDefinitionVersions =
-      client.getLatestProcessDefinitions();
+  public static List<SingleReportDataDto> createAllReportTypesForAllDefinitions() {
+    final List<ProcessDefinitionEngineDto> processDefinitions = client.getLatestProcessDefinitions();
+    final List<DecisionDefinitionEngineDto> decisionDefinitions = client.getLatestDecisionDefinitions();
+    return createAllReportTypesForDefinitions(processDefinitions, decisionDefinitions);
+  }
 
-    List<DecisionDefinitionEngineDto> latestDecisionDefs =
-      client.getLatestDecisionDefinitions();
-
-    List<DecisionReportDataDto> decisionReportDataDtos = latestDecisionDefs
+  public static List<SingleReportDataDto> createAllReportTypesForDefinitions(final List<ProcessDefinitionEngineDto> processDefinitions,
+                                                                             final List<DecisionDefinitionEngineDto> decisionDefinitions) {
+    final List<DecisionReportDataDto> decisionReportDataDtos = decisionDefinitions
       .stream()
       .map(ReportsGenerator::createDecisionReportsFromDefinition)
       .flatMap(Collection::stream)
       .collect(Collectors.toList());
 
-    List<ProcessReportDataDto> processReportDataDtos = latestDefinitionVersions
+    final List<ProcessReportDataDto> processReportDataDtos = processDefinitions
       .stream()
       .map(ReportsGenerator::createProcessReportsFromDefinition)
       .flatMap(Collection::stream)
       .collect(Collectors.toList());
 
-
-    List<SingleReportDataDto> reports = new ArrayList<>();
+    final List<SingleReportDataDto> reports = new ArrayList<>();
     reports.addAll(decisionReportDataDtos);
     reports.addAll(processReportDataDtos);
     return reports;
