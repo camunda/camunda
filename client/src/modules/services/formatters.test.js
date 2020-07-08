@@ -51,6 +51,9 @@ describe('frequencyFormatter', () => {
     expect(frequencyFormatter(0.1234, 1)).toBe(new Intl.NumberFormat().format(0));
     expect(frequencyFormatter(-0.1234, 2)).toBe(new Intl.NumberFormat().format(-0.1));
     expect(frequencyFormatter(-0.1234, 4)).toBe(new Intl.NumberFormat().format(-0.123));
+    expect(frequencyFormatter(70900000000000, 2)).toBe(
+      new Intl.NumberFormat().format(71) + ' trillion'
+    );
   });
 
   it('should return -- for nondefined values', () => {

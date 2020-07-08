@@ -977,6 +977,22 @@
       "million": {
         "label": "million",
         "label-plural": "million"
+      },
+      "billion": {
+        "label": "billion",
+        "label-plural": "billion"
+      },
+      "trillion": {
+        "label": "trillion",
+        "label-plural": "trillion"
+      },
+      "quadrillion": {
+        "label": "quadrillion",
+        "label-plural": "quadrillion"
+      },
+      "quintillion": {
+        "label": "quintillion",
+        "label-plural": "quintillion"
       }
     }
   },

@@ -19,6 +19,15 @@ const timeUnits = {
   years: {value: 12 * 30 * 24 * 60 * 60 * 1000, abbreviation: 'y', label: 'year'},
 };
 
+const scaleUnits = [
+  {exponent: 18, label: 'quintillion'},
+  {exponent: 15, label: 'quadrillion'},
+  {exponent: 12, label: 'trillion'},
+  {exponent: 9, label: 'billion'},
+  {exponent: 6, label: 'million'},
+  {exponent: 3, label: 'thousand'},
+];
+
 function getNumberOfDigits(x) {
   // https://stackoverflow.com/a/28203456
   return Math.max(Math.floor(Math.log10(Math.abs(x))), 0) + 1;
@@ -37,22 +46,16 @@ export function frequency(number, precision) {
     const roundedToPrecision =
       (Math.round((number / digitsFactor) * precisionFactor) / precisionFactor) * digitsFactor;
 
-    if (Math.abs(roundedToPrecision) >= 10 ** 6) {
-      const millions = roundedToPrecision / 10 ** 6;
-      return (
-        intl.format(millions) +
-        ' ' +
-        t(`common.unit.million.label${millions !== 1 ? '-plural' : ''}`)
-      );
-    }
-
-    if (Math.abs(roundedToPrecision) >= 10 ** 3) {
-      const thousand = roundedToPrecision / 10 ** 3;
-      return (
-        intl.format(thousand) +
-        ' ' +
-        t(`common.unit.thousand.label${thousand !== 1 ? '-plural' : ''}`)
-      );
+    for (let i = 0; i < scaleUnits.length; i++) {
+      const {exponent, label} = scaleUnits[i];
+      if (Math.abs(roundedToPrecision) >= 10 ** exponent) {
+        const shortened = roundedToPrecision / 10 ** exponent;
+        return (
+          intl.format(shortened) +
+          ' ' +
+          t(`common.unit.${label}.label${shortened !== 1 ? '-plural' : ''}`)
+        );
+      }
     }
     return intl.format(roundedToPrecision);
   }
