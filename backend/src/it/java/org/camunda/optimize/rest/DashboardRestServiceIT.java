@@ -5,7 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DashboardFilterType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -20,7 +23,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.LongVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.ShortVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
@@ -52,6 +57,16 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_S
 import static org.mockserver.model.HttpRequest.request;
 
 public class DashboardRestServiceIT extends AbstractIT {
+
+  private static final ImmutableMap<String, Object> ALL_VARIABLES = ImmutableMap.<String, Object>builder()
+    .put("boolVar", true)
+    .put("dateVar", OffsetDateTime.now())
+    .put("longVar", 1L)
+    .put("shortVar", (short) 2)
+    .put("integerVar", 3)
+    .put("doubleVar", 4.0D)
+    .put("stringVar", "sillyString")
+    .build();
 
   @Test
   public void createNewDashboardWithoutAuthentication() {
@@ -93,10 +108,12 @@ public class DashboardRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @MethodSource("validFilterCombinations")
   public void createNewDashboardWithFilterSpecification(List<DashboardFilterDto> dashboardFilterDtos) {
+    // given
+    final DashboardDefinitionDto dashboardDefinitionDto =
+      createDashboardForReportContainingAllVariables(dashboardFilterDtos);
+
     // when
-    final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
-    dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
-    IdDto idDto = embeddedOptimizeExtension
+    final IdDto idDto = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
       .execute(IdDto.class, Response.Status.OK.getStatusCode());
@@ -116,9 +133,11 @@ public class DashboardRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @MethodSource("invalidFilterCombinations")
   public void createNewDashboardWithInvalidFilterSpecification(List<DashboardFilterDto> dashboardFilterDtos) {
-    // when
+    // given
     final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
+
+    // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
@@ -126,6 +145,48 @@ public class DashboardRestServiceIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void createNewDashboardWithVariableFilter_variableNameNotInContainedReport() {
+    // given
+    final List<DashboardFilterDto> variableFilter = variableFilter();
+    final DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
+    dashboardDefinitionDto.setAvailableFilters(variableFilter);
+
+    // when
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void createNewDashboardWithVariableFilter_variableValueNotInContainedReport() {
+    // given
+    final List<DashboardFilterDto> dashboardFilters = Collections.singletonList(new DashboardFilterDto(
+      DashboardFilterType.VARIABLE,
+      new StringVariableFilterDataDto("stringVar", "in", Collections.singletonList("thisValueIsNotInReport"))
+    ));
+
+    final DashboardDefinitionDto dashboardDefinitionDto =
+      createDashboardForReportContainingAllVariables(dashboardFilters);
+
+    // when
+    final IdDto idDto = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(idDto.getId()).isNotNull();
+    final DashboardDefinitionDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDashboardRequest(idDto.getId())
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+    assertThat(savedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilters);
   }
 
   @Test
@@ -210,7 +271,7 @@ public class DashboardRestServiceIT extends AbstractIT {
 
   @Test
   public void getDashboard_adoptTimezoneFromHeader() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     generateDashboardDefinitionDto();
     String dashboardId = dashboardClient.createDashboard(generateDashboardDefinitionDto());
@@ -285,7 +346,7 @@ public class DashboardRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @MethodSource("validFilterCombinations")
   public void updateDashboardFilterSpecification(List<DashboardFilterDto> dashboardFilterDtos) {
-    // when
+    // given
     final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
     String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
 
@@ -295,10 +356,13 @@ public class DashboardRestServiceIT extends AbstractIT {
     assertThat(savedDefinition.getAvailableFilters()).isEmpty();
 
     // when
+    final DashboardDefinitionDto dashboardUpdate =
+      createDashboardForReportContainingAllVariables(dashboardFilterDtos);
+    dashboardUpdate.setId(dashboardId);
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
     final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+      .buildUpdateDashboardRequest(dashboardId, dashboardUpdate)
       .execute();
     final DashboardDefinitionDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
 
@@ -310,6 +374,28 @@ public class DashboardRestServiceIT extends AbstractIT {
     } else {
       assertThat(updatedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilterDtos);
     }
+  }
+
+  @Test
+  public void updateDashboardWithVariableFilter_variableNotInContainedReport() {
+    // given
+    final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+
+    // then
+    assertThat(dashboardId).isNotNull();
+    final DashboardDefinitionDto savedDefinition = dashboardClient.getDashboard(dashboardId);
+    assertThat(savedDefinition.getAvailableFilters()).isEmpty();
+
+    // when
+    dashboardDefinitionDto.setAvailableFilters(variableFilter());
+    final Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest
@@ -499,10 +585,7 @@ public class DashboardRestServiceIT extends AbstractIT {
         DashboardFilterType.VARIABLE,
         new BooleanVariableFilterDataDto("boolVar", null)
       )),
-      Collections.singletonList(new DashboardFilterDto(
-        DashboardFilterType.VARIABLE,
-        new DateVariableFilterDataDto("dateVar", null)
-      )),
+      variableFilter(),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.VARIABLE,
         new LongVariableFilterDataDto("longVar", "in", Arrays.asList("1", "2"))
@@ -573,8 +656,7 @@ public class DashboardRestServiceIT extends AbstractIT {
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.VARIABLE,
         new DateVariableFilterDataDto("dateVar", new FixedDateFilterDataDto(null, OffsetDateTime.now()))
-      ))
-      ,
+      )),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.VARIABLE,
         new BooleanVariableFilterDataDto("boolVar", Collections.singletonList(true))
@@ -591,6 +673,36 @@ public class DashboardRestServiceIT extends AbstractIT {
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setName("Dashboard name");
     return dashboardDefinitionDto;
+  }
+
+  private DashboardDefinitionDto createDashboardForReportContainingAllVariables(final List<DashboardFilterDto> dashboardFilterDtos) {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("someProcess").startEvent().endEvent().done();
+    final ProcessInstanceEngineDto deployedInstanceWithAllVariables =
+      engineIntegrationExtension.deployAndStartProcessWithVariables(
+        modelInstance,
+        ALL_VARIABLES
+      );
+    importAllEngineEntitiesFromScratch();
+    final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
+      reportClient.createSingleProcessReportDefinitionDto(
+        null,
+        deployedInstanceWithAllVariables.getProcessDefinitionKey(),
+        Collections.singletonList(null)
+      );
+    singleProcessReportDefinitionDto.getData()
+      .setProcessDefinitionVersion(deployedInstanceWithAllVariables.getProcessDefinitionVersion());
+    final String reportId = reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
+    final DashboardDefinitionDto dashboardDefinitionDto = generateDashboardDefinitionDto();
+    dashboardDefinitionDto.setReports(Collections.singletonList(ReportLocationDto.builder().id(reportId).build()));
+    dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
+    return dashboardDefinitionDto;
+  }
+
+  private static List<DashboardFilterDto> variableFilter() {
+    return Collections.singletonList(new DashboardFilterDto(
+      DashboardFilterType.VARIABLE,
+      new DateVariableFilterDataDto("dateVar", null)
+    ));
   }
 
 }

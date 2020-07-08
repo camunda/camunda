@@ -47,8 +47,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @AllArgsConstructor
@@ -125,7 +125,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   public IdDto createNewDashboardAndReturnId(final String userId, final DashboardDefinitionDto dashboardDefinitionDto) {
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, dashboardDefinitionDto.getCollectionId());
-    Optional.ofNullable(dashboardDefinitionDto.getAvailableFilters()).ifPresent(this::validateDashboardFilters);
+    validateDashboardFilters(userId, dashboardDefinitionDto);
     return dashboardWriter.createNewDashboard(userId, dashboardDefinitionDto);
   }
 
@@ -272,7 +272,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
     final DashboardDefinitionUpdateDto updateDto = convertToUpdateDtoWithModifier(updatedDashboard, userId);
     final String dashboardCollectionId = dashboardWithEditAuthorization.getDefinitionDto().getCollectionId();
-    Optional.ofNullable(updatedDashboard.getAvailableFilters()).ifPresent(this::validateDashboardFilters);
+    validateDashboardFilters(userId, updatedDashboard);
     updateDto.getReports().forEach(reportLocationDto -> {
       if (IdGenerator.isValidId(reportLocationDto.getId())) {
         final ReportDefinitionDto reportDefinition =
@@ -311,22 +311,59 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     return authorizedDashboardDefinition;
   }
 
-  private void validateDashboardFilters(final List<DashboardFilterDto> availableFilters) {
-    if (availableFilters.stream().anyMatch(filter -> filter.getType() == null)) {
-      throw new BadRequestException("Dashboard Filters cannot have a null type");
+  private void validateDashboardFilters(final String userId, final DashboardDefinitionDto dashboardDefinitionDto) {
+    final List<DashboardFilterDto> availableFilters = dashboardDefinitionDto.getAvailableFilters();
+    if (!CollectionUtils.isEmpty(availableFilters)) {
+      if (availableFilters.stream().anyMatch(filter -> filter.getType() == null)) {
+        throw new BadRequestException("Dashboard Filters cannot have a null type");
+      }
+      final Map<DashboardFilterType, List<DashboardFilterDto>> filtersByType = availableFilters
+        .stream()
+        .collect(Collectors.groupingBy(DashboardFilterDto::getType));
+      validateNonVariableTypeFilters(filtersByType);
+      validateVariableFilters(filtersByType);
+      validateVariableFiltersExistInReports(userId, dashboardDefinitionDto, availableFilters);
     }
-    final Map<DashboardFilterType, List<DashboardFilterDto>> filtersByType = availableFilters
-      .stream()
-      .collect(Collectors.groupingBy(DashboardFilterDto::getType));
-    filtersByType.entrySet().stream()
-      .filter(filterType -> !filterType.getKey().equals(DashboardFilterType.VARIABLE))
-      .forEach(byType -> {
-        if (byType.getValue().size() > 1) {
-          throw new BadRequestException("There can only be one of each non-variable filter types");
-        } else if (byType.getValue().stream().anyMatch(filter -> filter.getData() != null)) {
-          throw new BadRequestException("Additional data can only be supplied with variable filter types");
-        }
-      });
+  }
+
+  private void validateVariableFiltersExistInReports(final String userId,
+                                                     final DashboardDefinitionDto dashboardDefinitionDto,
+                                                     final List<DashboardFilterDto> availableFilters) {
+    final List<String> reportIdsInDashboard = dashboardDefinitionDto.getReports().stream()
+      .map(ReportLocationDto::getId)
+      .collect(Collectors.toList());
+    final Map<String, List<VariableType>> possibleVarTypesByName = processVariableService.getVariableNamesForReports(
+      userId,
+      reportIdsInDashboard
+    ).stream().collect(
+      Collectors.groupingBy(
+        ProcessVariableNameResponseDto::getName,
+        Collectors.mapping(ProcessVariableNameResponseDto::getType, Collectors.toList())
+      )
+    );
+
+    final List<DashboardFilterDto> invalidFilters = availableFilters.stream()
+      .filter(isInvalidVariableFilter(possibleVarTypesByName))
+      .collect(Collectors.toList());
+    if (!invalidFilters.isEmpty()) {
+      throw new BadRequestException(String.format(
+        "The following variable filter names/types do not exist in any report in dashboard: [%s]",
+        invalidFilters
+      ));
+    }
+  }
+
+  private Predicate<DashboardFilterDto> isInvalidVariableFilter(final Map<String, List<VariableType>> possibleVarTypesByName) {
+    return filter -> {
+      if (DashboardFilterType.VARIABLE.equals(filter.getType())) {
+        final List<VariableType> typesByName = possibleVarTypesByName.get(filter.getData().getName());
+        return typesByName == null || !typesByName.contains(filter.getData().getType());
+      }
+      return false;
+    };
+  }
+
+  private void validateVariableFilters(final Map<DashboardFilterType, List<DashboardFilterDto>> filtersByType) {
     final List<DashboardFilterDto> variableFilters = filtersByType.get(DashboardFilterType.VARIABLE);
     if (variableFilters != null) {
       variableFilters.forEach(variableFilter -> {
@@ -350,6 +387,30 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         }
       });
     }
+  }
+
+  private void validateNonVariableTypeFilters(final Map<DashboardFilterType, List<DashboardFilterDto>> filtersByType) {
+    filtersByType.entrySet().stream()
+      .filter(filterType -> !filterType.getKey().equals(DashboardFilterType.VARIABLE))
+      .forEach(byType -> {
+        if (byType.getValue().size() > 1) {
+          throw new BadRequestException(String.format(
+            "There can only be one of each non-variable filter types. Filters of type %s supplied: %s",
+            byType.getKey(),
+            byType.getValue()
+          )
+          );
+        }
+        final List<DashboardFilterDto> filtersWithData = byType.getValue()
+          .stream()
+          .filter(filter -> filter.getData() != null)
+          .collect(Collectors.toList());
+        if (!filtersWithData.isEmpty()) {
+          throw new BadRequestException(String.format(
+            "Filters %s supplied additional data but are not a variable filter", filtersWithData)
+          );
+        }
+      });
   }
 
   private void removeReportFromDashboards(final String reportId) {

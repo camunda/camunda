@@ -61,7 +61,6 @@ public class ProcessVariableService {
       reportIds,
       definitionDto -> convertToProcessVariableNameRequest((SingleProcessReportDefinitionDto) definitionDto)
     );
-
     return processVariableReader.getVariableNames(processVariableNameRequestDtos);
   }
 

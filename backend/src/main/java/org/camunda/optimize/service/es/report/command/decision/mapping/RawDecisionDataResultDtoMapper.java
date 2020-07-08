@@ -101,7 +101,6 @@ public class RawDecisionDataResultDtoMapper {
         OutputInstanceDto::getClauseId,
         this::mapToVariableEntry,
         (variableEntry, variableEntry2) -> {
-
           variableEntry.getValues().addAll(variableEntry2.getValues());
           return variableEntry;
         }
