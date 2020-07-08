@@ -60,9 +60,7 @@ describe('<Variables />', () => {
     expect(
       await screen.findByText('Task has no variables.'),
     ).toBeInTheDocument();
-    expect(
-      await screen.queryByTestId('variables-table'),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('variables-table')).not.toBeInTheDocument();
   });
 
   it.skip('should render variables from completed task', async () => {
