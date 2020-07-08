@@ -109,6 +109,9 @@ export function getRelativeValue(data, total) {
   if (!data && data !== 0) {
     return '--';
   }
+  if (data === 0) {
+    return '0%';
+  }
   return Math.round((data / total) * 1000) / 10 + '%';
 }
 

@@ -15,6 +15,7 @@ import {
   formatReportResult,
   createDurationFormattingOptions,
   formatFileName,
+  getRelativeValue,
 } from './formatters';
 const nbsp = '\u00A0';
 
@@ -361,4 +362,18 @@ describe('File name formatting', () => {
 
   const anotherFileName = formatFileName('<another?|name>');
   expect(anotherFileName).toBe('anothername');
+});
+
+describe('getRelativeValue', () => {
+  it('should return correct relative value', () => {
+    expect(getRelativeValue(30, 100)).toBe('30%');
+  });
+
+  it('should return 0% if value is 0 regardless of total value', () => {
+    expect(getRelativeValue(0, 0)).toBe('0%');
+  });
+
+  it('should return -- if value is null or not defined', () => {
+    expect(getRelativeValue(null, 5)).toBe('--');
+  });
 });
