@@ -26,6 +26,12 @@
     min-width: 200px;
     border-left: 1px solid #f2f3f4;
 
+    .instanceCount {
+      font-weight: normal;
+      font-size: 0.875em;
+      color: $grey-darken-23;
+    }
+
     .TypeaheadMultipleSelection__labeled-input {
       width: 100%;
       .TypeaheadMultipleSelection__input {

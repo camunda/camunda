@@ -31,8 +31,7 @@ export default class VariablesTable extends React.Component {
 
     return data.map((row) => [
       <div className="outliersCount">
-        {row.instanceCount}{' '}
-        {t(`analysis.outlier.tooltip.instance.label${row.instanceCount !== 1 ? '-plural' : ''}`)}
+        {row.instanceCount} {t(`common.instance.label${row.instanceCount !== 1 ? '-plural' : ''}`)}
         <a
           href={getInstancesDownloadUrl({
             ...this.props.config,

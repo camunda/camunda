@@ -380,8 +380,8 @@
     },
     "combined": {
       "multiSelect": {
-        "available": "Verfügbare Berichte",
-        "selected": "Ausgewählte Berichte",
+        "available": "Verfügbare Berichte:",
+        "selected": "Ausgewählte Berichte:",
         "search": "Suche nach Berichten",
         "empty": "Keine Berichte gefunden"
       }
@@ -568,10 +568,6 @@
           "label": "Ausreißer",
           "label-plural": "Ausreißer"
         },
-        "instance": {
-          "label": "Instanz",
-          "label-plural": "Instanzen"
-        },
         "tookDuration": "Benötigte eine Dauer von"
       },
       "onlyCompletedHint": "Hinweis: Die Ausreißeranalyse wird nur für abgeschlossene Knoten durchgeführt",
@@ -664,6 +660,10 @@
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
+    },
+    "instance": {
+      "label": "Instanz",
+      "label-plural": "Instanzen"
     },
     "tenant": {
       "label": "Mandant",

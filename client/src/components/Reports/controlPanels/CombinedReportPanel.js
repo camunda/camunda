@@ -217,6 +217,8 @@ export default withRouter(
         }
       }
 
+      const instanceCount = combinedReport.result?.instanceCount;
+
       return (
         <div className="CombinedReportPanel">
           <Configuration type={configurationType} report={combinedReport} onChange={updateReport} />
@@ -227,7 +229,19 @@ export default withRouter(
             toggleValue={this.update}
             labels={{
               available: t('report.combined.multiSelect.available'),
-              selected: t('report.combined.multiSelect.selected'),
+              selected: (
+                <>
+                  {t('report.combined.multiSelect.selected')}{' '}
+                  {instanceCount > 0 && (
+                    <span className="instanceCount">
+                      {instanceCount}{' '}
+                      {instanceCount.length === 1
+                        ? t('common.instance.label')
+                        : t('common.instance.label-plural')}
+                    </span>
+                  )}
+                </>
+              ),
               search: t('report.combined.multiSelect.search'),
               empty: t('report.combined.multiSelect.empty'),
             }}

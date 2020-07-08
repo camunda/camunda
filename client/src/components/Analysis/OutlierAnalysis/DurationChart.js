@@ -88,14 +88,12 @@ export default class DurationChart extends React.Component {
     if (!data.length) {
       return;
     }
-    let unit = 'instance';
+    let key = 'common.instance';
     if (this.props.data[data[0].index].outlier) {
-      unit = 'outlier';
+      key = 'analysis.outlier.tooltip.outlier';
     }
 
-    const unitLabel = t(
-      `analysis.outlier.tooltip.${unit}.label${+data[0].value !== 1 ? '-plural' : ''}`
-    );
+    const unitLabel = t(`${key}.label${+data[0].value !== 1 ? '-plural' : ''}`);
 
     return data[0].value + ' ' + unitLabel;
   };

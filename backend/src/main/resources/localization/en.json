@@ -380,8 +380,8 @@
     },
     "combined": {
       "multiSelect": {
-        "available": "Available reports",
-        "selected": "Selected reports",
+        "available": "Available reports:",
+        "selected": "Selected reports:",
         "search": "Search for reports",
         "empty": "No reports found"
       }
@@ -568,10 +568,6 @@
           "label": "Outlier",
           "label-plural": "Outliers"
         },
-        "instance": {
-          "label": "instance",
-          "label-plural": "instances"
-        },
         "tookDuration": "Took a duration of"
       },
       "onlyCompletedHint": "Note: The outlier analysis is performed on completed flow nodes only",
@@ -664,6 +660,10 @@
     "errors": {
       "inValidLink": "This link is not valid.",
       "postiveNum": "Please enter a positive numeric value"
+    },
+    "instance": {
+      "label": "instance",
+      "label-plural": "instances"
     },
     "tenant": {
       "label": "Tenant",
