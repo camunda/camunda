@@ -15,12 +15,11 @@ import {t} from 'translation';
 export default function BarChartConfig({onChange, report}) {
   const {
     combined,
-    data: {visualization, configuration, groupBy},
+    data: {configuration, groupBy},
     result,
   } = report;
 
   const durationReport = isDurationReport(combined ? Object.values(result.data)[0] : report);
-  const combinedNumberReport = combined && visualization === 'number';
 
   return (
     <div className="BarChartConfig">
@@ -38,7 +37,7 @@ export default function BarChartConfig({onChange, report}) {
       <fieldset>
         <legend>{t('report.config.tooltips.legend')}</legend>
         <RelativeAbsoluteSelection
-          hideRelative={durationReport || combinedNumberReport}
+          hideRelative={durationReport}
           absolute={configuration.alwaysShowAbsolute}
           relative={configuration.alwaysShowRelative}
           onChange={(type, value) => {
