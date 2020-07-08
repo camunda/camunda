@@ -14,7 +14,6 @@ const DEFAULT_STATE = {
   isInitialLoadComplete: false,
   isLoading: false,
   isFailed: false,
-  isVariableOperationInProgress: false,
 };
 
 class Variables {
@@ -115,8 +114,6 @@ class Variables {
   };
 
   addVariable = async (id, name, value) => {
-    this.state.isVariableOperationInProgress = true;
-
     this.setItems([
       ...this.state.items,
       {name, value, hasActiveOperation: true},
@@ -128,11 +125,9 @@ class Variables {
       variableName: name,
       variableValue: value,
     });
-    this.state.isVariableOperationInProgress = false;
   };
 
   updateVariable = async (id, name, value) => {
-    this.state.isVariableOperationInProgress = true;
     const {items} = this.state;
 
     this.setItems(
@@ -155,16 +150,12 @@ class Variables {
       variableName: name,
       variableValue: value,
     });
-    this.state.isVariableOperationInProgress = false;
   };
 
   get hasActiveOperation() {
-    const {items, isVariableOperationInProgress} = this.state;
+    const {items} = this.state;
 
-    return (
-      items.some(({hasActiveOperation}) => hasActiveOperation) ||
-      isVariableOperationInProgress
-    );
+    return items.some(({hasActiveOperation}) => hasActiveOperation);
   }
 
   get hasNoVariables() {
