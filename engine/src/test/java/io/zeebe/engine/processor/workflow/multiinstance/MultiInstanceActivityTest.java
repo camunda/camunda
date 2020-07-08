@@ -25,6 +25,7 @@ import io.zeebe.protocol.record.intent.VariableIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.JobRecordValue;
+import io.zeebe.protocol.record.value.VariableRecordValue;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -516,6 +517,47 @@ public final class MultiInstanceActivityTest {
         .flatExtracting(r -> r.getValue().getJobs())
         .extracting(j -> j.getVariables().get(INPUT_ELEMENT_VARIABLE))
         .containsExactlyElementsOf(INPUT_COLLECTION);
+  }
+
+  @Test
+  public void shouldCollectOutputElementsFromExpression() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            workflow(
+                miBuilder.andThen(
+                    m ->
+                        m.zeebeOutputElementExpression(
+                            "number(string(loopCounter) + string(loopCounter))"))))
+        .deploy();
+
+    final long workflowInstanceKey =
+        ENGINE
+            .workflowInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withVariable(INPUT_COLLECTION_VARIABLE, INPUT_COLLECTION)
+            .create();
+
+    // complete jobs
+    completeJobs(workflowInstanceKey, INPUT_COLLECTION.size());
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .map(Record::getValue)
+                .map(VariableRecordValue::getName))
+        .noneMatch("number(string(loopCounter) + string(loopCounter))"::equals);
+
+    Assertions.assertThat(
+            RecordingExporter.variableRecords()
+                .withName(OUTPUT_COLLECTION_VARIABLE)
+                .withScopeKey(workflowInstanceKey)
+                .getFirst()
+                .getValue())
+        .hasValue(JsonUtil.toJson(OUTPUT_COLLECTION));
   }
 
   @Test

@@ -135,21 +135,17 @@ public abstract class AbstractMultiInstanceBodyHandler
                 variablesState.setVariableLocal(
                     elementInstanceKey, workflowKey, variableName, item));
 
-    // Output element expressions that are just a variable or nested variable need to be initialised
-    // with a nil-value. This makes sure that they are not written at a non-local scope.
+    // Output element expressions that are just a variable or nested property of a variable need to
+    // be initialised with a nil-value. This makes sure that they are not written at a non-local
+    // scope.
     loopCharacteristics
         .getOutputElement()
-        .map(Expression::getExpression)
-        .map(expression -> expression.split("\\.")[0]) // only take the main variable name
-        // TODO #4100 (@korthout/@saig0)
-        // Filter out all non-variable expressions without this ugly regex :)
+        .flatMap(Expression::getVariableName)
+        .map(BufferUtil::wrapString)
         .ifPresent(
             variableName ->
                 variablesState.setVariableLocal(
-                    elementInstanceKey,
-                    workflowKey,
-                    BufferUtil.wrapString(variableName),
-                    NIL_VALUE));
+                    elementInstanceKey, workflowKey, variableName, NIL_VALUE));
 
     variablesState.setVariableLocal(
         elementInstanceKey,

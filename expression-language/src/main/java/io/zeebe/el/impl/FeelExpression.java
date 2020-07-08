@@ -8,7 +8,11 @@
 package io.zeebe.el.impl;
 
 import io.zeebe.el.Expression;
+import java.util.Optional;
+import org.camunda.feel.syntaxtree.Exp;
 import org.camunda.feel.syntaxtree.ParsedExpression;
+import org.camunda.feel.syntaxtree.PathExpression;
+import org.camunda.feel.syntaxtree.Ref;
 
 public final class FeelExpression implements Expression {
 
@@ -24,6 +28,11 @@ public final class FeelExpression implements Expression {
   }
 
   @Override
+  public Optional<String> getVariableName() {
+    return extractVariableName(expression.expression());
+  }
+
+  @Override
   public boolean isStatic() {
     return false;
   }
@@ -36,6 +45,18 @@ public final class FeelExpression implements Expression {
   @Override
   public String getFailureMessage() {
     return null;
+  }
+
+  private static Optional<String> extractVariableName(final Exp expression) {
+    if (expression instanceof PathExpression) {
+      final var path = (PathExpression) expression;
+      return extractVariableName(path.path());
+    }
+    if (expression instanceof Ref) {
+      final var ref = (Ref) expression;
+      return Optional.of(ref.names().head());
+    }
+    return Optional.empty();
   }
 
   public ParsedExpression getParsedExpression() {
