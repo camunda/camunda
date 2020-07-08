@@ -134,7 +134,7 @@ describe('Variables', () => {
 
       expect(
         within(
-          screen.getByTestId(inactiveOperationVariable.name)
+          screen.queryByTestId(inactiveOperationVariable.name)
         ).queryByTestId('edit-variable-spinner')
       ).not.toBeInTheDocument();
     });
@@ -236,7 +236,7 @@ describe('Variables', () => {
 
       await variables.fetchVariables('with-newly-added-variable');
       expect(
-        within(screen.getByTestId(newVariableName)).queryByTestId(
+        within(screen.queryByTestId(newVariableName)).queryByTestId(
           'edit-variable-spinner'
         )
       ).not.toBeInTheDocument();
@@ -253,9 +253,9 @@ describe('Variables', () => {
       );
 
       expect(
-        within(screen.getByTestId(activeOperationVariable.name)).queryByTestId(
-          'edit-variable-button'
-        )
+        within(
+          screen.queryByTestId(activeOperationVariable.name)
+        ).queryByTestId('edit-variable-button')
       ).not.toBeInTheDocument();
 
       const [inactiveOperationVariable] = variables.state.items.filter(
@@ -286,7 +286,7 @@ describe('Variables', () => {
       await currentInstance.fetchCurrentInstance('canceled_instance');
       expect(
         within(
-          screen.getByTestId(inactiveOperationVariable.name)
+          screen.queryByTestId(inactiveOperationVariable.name)
         ).queryByTestId('edit-variable-button')
       ).not.toBeInTheDocument();
     });
