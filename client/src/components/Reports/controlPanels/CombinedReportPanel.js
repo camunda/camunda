@@ -279,7 +279,7 @@ export default withRouter(
 );
 
 function convertGroupByType(type) {
-  if (type === 'startDate' || type === 'endDate') {
+  if (['startDate', 'endDate', 'runningDate'].includes(type)) {
     return 'date';
   }
   if (type === 'userTasks') {
