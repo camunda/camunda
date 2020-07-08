@@ -24,6 +24,7 @@ const props = {
 const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
+  const attachSpy = jest.fn();
   return class NavigatedViewer {
     constructor() {
       this.canvas = {
@@ -36,7 +37,7 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
         stepZoom: jest.fn(),
       };
     }
-    attachTo = jest.fn();
+    attachTo = attachSpy;
     detach = jest.fn();
     importXML = jest.fn((xml, cb) => cb());
     _container = {
@@ -62,6 +63,7 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
 });
 
 jest.mock('bpmn-js/lib/Viewer', () => {
+  const attachSpy = jest.fn();
   return class Viewer {
     constructor() {
       this.canvas = {
@@ -70,7 +72,7 @@ jest.mock('bpmn-js/lib/Viewer', () => {
         viewbox: jest.fn().mockReturnValue({}),
       };
     }
-    attachTo = jest.fn();
+    attachTo = attachSpy;
     detach = jest.fn();
     importXML = jest.fn((xml, cb) => cb());
     _container = {
@@ -136,6 +138,20 @@ it('should import an updated xml', async () => {
   await flushPromises();
 
   expect(node.instance().viewer.importXML.mock.calls[0][0]).toBe('some other xml');
+});
+
+it('should handle rapid xml updates well', async () => {
+  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
+
+  await flushPromises();
+  node.instance().viewer.attachTo.mockClear();
+
+  node.setProps({xml: 'first update xml'});
+  node.setProps({xml: 'second update xml'});
+
+  await flushPromises();
+
+  expect(node.instance().viewer.attachTo).toHaveBeenCalledTimes(1);
 });
 
 it('should resize the diagram to fit the container initially', async () => {

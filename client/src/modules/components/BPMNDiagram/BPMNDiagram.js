@@ -141,6 +141,13 @@ export default themed(
           this.setState({loaded: false});
 
           this.props.mightFail(this.findOrCreateViewerFor(xml, this.props.theme), (viewer) => {
+            if (this.props.xml !== xml) {
+              // The xml we are supposed to render has changed while the viewer was created
+              // The viewer for the old XML must be discarded, otherwise multiple viewers
+              // would be attached to the same container
+              return;
+            }
+
             this.viewer = viewer;
             this.viewer.attachTo(this.container);
 
