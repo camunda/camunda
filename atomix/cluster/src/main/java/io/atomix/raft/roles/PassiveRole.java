@@ -56,6 +56,7 @@ public class PassiveRole extends InactiveRole {
 
   private long pendingSnapshotStartTimestamp;
   private ReceivedSnapshot pendingSnapshot;
+  private PersistedSnapshotListener snapshotListener;
 
   public PassiveRole(final RaftContext context) {
     super(context);
@@ -66,6 +67,8 @@ public class PassiveRole extends InactiveRole {
 
   @Override
   public CompletableFuture<RaftRole> start() {
+    snapshotListener = createSnapshotListener();
+
     return super.start()
         .thenRun(this::truncateUncommittedEntries)
         .thenRun(this::addSnapshotListener)
@@ -84,6 +87,17 @@ public class PassiveRole extends InactiveRole {
       final RaftLogWriter writer = raft.getLogWriter();
       writer.truncate(raft.getCommitIndex());
     }
+
+    // to fix the edge case where we might have been stopped
+    // between persisting snapshot and truncating log we need to call on restart snapshot listener
+    // again, such that we truncate the log when necessary
+    final var latestSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
+    if (latestSnapshot.isPresent()) {
+      final var persistedSnapshot = latestSnapshot.get();
+      if (snapshotListener != null) {
+        snapshotListener.onNewSnapshot(persistedSnapshot);
+      }
+    }
   }
 
   /**
@@ -98,7 +112,6 @@ public class PassiveRole extends InactiveRole {
   }
 
   private void addSnapshotListener() {
-    final var snapshotListener = createSnapshotListener();
     if (snapshotListener != null) {
       raft.getPersistedSnapshotStore().addSnapshotListener(snapshotListener);
     }
@@ -749,7 +762,7 @@ public class PassiveRole extends InactiveRole {
     private final RaftLogWriter logWriter;
     private final Logger log;
 
-    public ResetWriterSnapshotListener(
+    ResetWriterSnapshotListener(
         final Logger log, final ThreadContext threadContext, final RaftLogWriter logWriter) {
       this.log = log;
       this.threadContext = threadContext;
@@ -758,25 +771,26 @@ public class PassiveRole extends InactiveRole {
 
     @Override
     public void onNewSnapshot(final PersistedSnapshot persistedSnapshot) {
-      threadContext.execute(
-          () -> {
-            // this is called after the snapshot is commited
-            // on install requests and on Zeebe snapshot replication
+      if (threadContext.isCurrentContext()) {
+        // this is called after the snapshot is commited
+        // on install requests and on Zeebe snapshot replication
 
-            final var index = persistedSnapshot.getIndex();
-            // It might happen that the last index is far behind our current snapshot index.
-            // E. g. on slower followers, we need to throw away the existing log,
-            // otherwise we might end with an inconsistent log (gaps between last index and
-            // snapshot index)
-            final var lastIndex = logWriter.getLastIndex();
-            if (lastIndex < index) {
-              log.info(
-                  "Delete existing log (lastIndex '{}') and replace with received snapshot (index '{}')",
-                  lastIndex,
-                  index);
-              logWriter.reset(index + 1);
-            }
-          });
+        final var index = persistedSnapshot.getIndex();
+        // It might happen that the last index is far behind our current snapshot index.
+        // E. g. on slower followers, we need to throw away the existing log,
+        // otherwise we might end with an inconsistent log (gaps between last index and
+        // snapshot index)
+        final var lastIndex = logWriter.getLastIndex();
+        if (lastIndex < index) {
+          log.info(
+              "Delete existing log (lastIndex '{}') and replace with received snapshot (index '{}')",
+              lastIndex,
+              index);
+          logWriter.reset(index + 1);
+        }
+      } else {
+        threadContext.execute(() -> onNewSnapshot(persistedSnapshot));
+      }
     }
   }
 }
