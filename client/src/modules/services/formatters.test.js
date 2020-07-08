@@ -44,6 +44,13 @@ describe('frequencyFormatter', () => {
     expect(frequencyFormatter(12345678, 4)).toBe(
       new Intl.NumberFormat().format(12.35) + ' million'
     );
+
+    expect(frequencyFormatter(-123, 1)).toBe(new Intl.NumberFormat().format(-100));
+    expect(frequencyFormatter(-42821, 2)).toBe(new Intl.NumberFormat().format(-43) + ' thousand');
+
+    expect(frequencyFormatter(0.1234, 1)).toBe(new Intl.NumberFormat().format(0));
+    expect(frequencyFormatter(-0.1234, 2)).toBe(new Intl.NumberFormat().format(-0.1));
+    expect(frequencyFormatter(-0.1234, 4)).toBe(new Intl.NumberFormat().format(-0.123));
   });
 
   it('should return -- for nondefined values', () => {

@@ -19,20 +19,25 @@ const timeUnits = {
   years: {value: 12 * 30 * 24 * 60 * 60 * 1000, abbreviation: 'y', label: 'year'},
 };
 
+function getNumberOfDigits(x) {
+  // https://stackoverflow.com/a/28203456
+  return Math.max(Math.floor(Math.log10(Math.abs(x))), 0) + 1;
+}
+
 export function frequency(number, precision) {
   if (!number && number !== 0) {
     return '--';
   }
 
-  const intl = new Intl.NumberFormat(undefined, {maximumFractionDigits: precision});
+  const intl = new Intl.NumberFormat();
 
   if (precision) {
-    const digitsFactor = 10 ** ('' + number).length;
+    const digitsFactor = 10 ** getNumberOfDigits(number);
     const precisionFactor = 10 ** precision;
     const roundedToPrecision =
       (Math.round((number / digitsFactor) * precisionFactor) / precisionFactor) * digitsFactor;
 
-    if (roundedToPrecision >= 10 ** 6) {
+    if (Math.abs(roundedToPrecision) >= 10 ** 6) {
       const millions = roundedToPrecision / 10 ** 6;
       return (
         intl.format(millions) +
@@ -41,7 +46,7 @@ export function frequency(number, precision) {
       );
     }
 
-    if (roundedToPrecision >= 10 ** 3) {
+    if (Math.abs(roundedToPrecision) >= 10 ** 3) {
       const thousand = roundedToPrecision / 10 ** 3;
       return (
         intl.format(thousand) +
