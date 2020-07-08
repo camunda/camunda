@@ -1,31 +1,19 @@
-## Dashboard Filter
+## Dashboard-Filter
 
-In Dashboards ist es jetzt möglich alle Berichte nach Status, Datum oder Variable zu filtern. Dazu müssen verfügbare Filter im Bearbeitungs-Modus hinzugefügt und im Ansichts-Modus verwendet werden.
+Filtern Sie in Dashboards angezeigte Berichte nach Status, Datum oder Variablenwerten.
 
-## Rollierende Datumsfilter für Datums-Variablen
+## Berichtsvorlagen
 
-Zusätzlich zu festen Datumsbereichen können jetzt rollierende Werte wie "Heute", "Diese Woche" oder "In den letzten 5 Monaten" in Ihren Datums-Variablenfiltern festgelegt werden.
+Erstellen Sie Berichte mithilfe von Vorlagen mit einem Klick. Eine ausgewählte Vorlage kann im Berichtsbearbeitungsmodus einfach bearbeitet und verfeinert werden.
 
-## Neuer Filter für Prozessknoten Dauer
+## Neue Berichtsfilter
 
-Zusätzlich zum Filter für die Dauer der Prozessinstanz gibt es einen neuen Filter für Prozessinstanzen, bei denen ein oder mehrere Prozessknoten eine bestimmte Zeit zur Ausführung brauchten. Es können z.B. Prozessinstanzen gefiltert werden, bei denen ein Prozessknoten mehr als drei Tage oder weniger als fünf Sekunden für die Ausführung brauchten.
+*Legen Sie fortlaufende Datumswerte* wie "Heute", "Diese Woche" oder "In den letzten 5 Monaten" in Ihren Datumsvariablenfiltern fest.
 
-## Assignee and Candidate Group filters
+*Prozessknotendauer* filtert Fälle, in denen ein oder mehrere Prozessknoten eine bestimmte Zeit in Anspruch genommen haben. Somit können z.B. Prozessinstanzen, bei denen Prozessknoten länger als drei Tage oder weniger als fünf Sekunden dauerten, gefiltert werden.
 
-Es wurde ein neuer Filter hinzugefügt, um Prozessinstanzen ein- oder auszuschließen, bei denen eine der Benutzeraufgaben einen bestimmten Bearbeiter oder Potenzielle Gruppe hat.
+*Filtern nach Kandidatengruppen* zum Einschließen / Ausschließen von Prozessinstanzen, bei denen eine der Benutzeraufgaben bestimmte Verantwortliche oder Kandidatengruppen hat.
 
-## Null oder nicht definierte Werte beim Filtern nach Variablen einschließen
+## Numerische Aggregations-Berichte für Variablen
 
-Wenn nach Variablen gefiltert wird, gibt es in jedem Variablentyp eine neue Option, die es Ihnen erlaubt, `null` oder `nicht definierte` Werte im Ergebnis für den gewählten Filter auszuschließen oder einzuschließen.
-
-## Berichte für Variablenaggregationen
-
-Es wurde eine neue Ansichtsoption für Prozessberichte hinzugefügt, die es erlaubt eine Aggregation (z.B. Summe oder Durchschnitt) der Werte einer Variablen des Prozesses darzustellen.
-
-## Prozessberichte von Vorlagen Erstellen
-
-Mit diesem Release ist es jetzt möglich Prozessberichte basierend auf Vorlagen zu erstellen. Dazu gibt es beim Erstellen eines neuen Prozessberichts einen Dialog der es erlaubt die Prozessdefinition und die Vorlage für den neuen Report auszuwählen.
-
-## Kopieren von Alarmen
-
-Das Kontextmenü eines Alarms enthält nun eine Option zum Kopieren des Alarms. Dies erleichtert die Erstellung neuer Alarme auf der Grundlage bestehender Alarme.
+Wählen Sie in der Ansichtsoption eine Zahlenvariable aus, um Berichte zu erstellen, in denen eine Aggregation (z.B. Summe oder Durchschnitt) der Werte einer Variablen für einen Prozess angezeigt wird.

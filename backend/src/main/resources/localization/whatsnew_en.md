@@ -1,31 +1,19 @@
 ## Dashboard Filters
 
-On dashboards, it is now possible to filter all included reports by state, date or variable. To do so, add available filters in the dashboard edit mode and use them in the view mode.
+Filter Reports displayed in Dashboards by state, date, or variable values. 
 
-## Rolling dates for date variables
+## Report Templates
 
-In addition to fixed date ranges, it is now possible to set rolling values such as “Today”, “This week” or “in the past 5 months” within your date variable filters.
+Create Reports with the click of a button by using templates. A selected template can easily be edited and refined in the report edit mode. 
 
-## New Flow Node Duration Filter
+## New Report Filters
 
-In addition to the instance duration filter, a new duration filter is added to be able to filter instances where one or more flow nodes took a certain time span for their execution. For instance, you can filter process instances where a flow node took more than three days or less than five seconds.
+*Set rolling date values* such as “Today”, “This week” or “in the past 5 months” within your date variable filters.
 
-## Assignee and Candidate Group filters
+*Flow node duration* filters instances where one or more flow nodes took a certain amount of time. As an example this allows to filter for process instances where a flow node took more than three days or less than five seconds.
 
-A new filter is added that allows you to include/exclude process instances where any of the user tasks has a specific Assignee or Candidate group.
-
-## Include undefined/null values when filtering by variable
-
-When filtering by variables, there is a new option in each variable type that allows you to exclude or include `null` or `undefined` values in the result for the selected filter.
+*Filter by Assignee or Candidate group* to include / exclude process instances where any of the user tasks have a specific Assignee or Candidate group.
 
 ## Variable Aggregation Reports
 
-A new view option has been added for process reports. This new option allows creating reports that show an aggregation (e.g. Sum or Average) of the values of a variable for a process.
-
-## Create Process Reports from Templates
-
-With this release it is now possible to create process reports based on predefined templates. For this there is a new dialog after clicking the New Process Report option that allows selecting the process definition and template for the new report.
-
-## Copy Alerts
-
-The context menu of an alert now includes an option for creating a copy of the alert. This makes it easier to create new alerts based on existing ones.
+Select a number variable in the view option, to create reports showing an aggregation (e.g. Sum or Average) of the values of a variable for a process.
