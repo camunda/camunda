@@ -150,7 +150,13 @@ export function SingleReportDetails({report, showReportName, mightFail, location
         </div>
       )}
       {name && <hr />}
-      {showRawData && <RawDataModal report={report} name={nameOrKey} close={closePopover} />}
+      {showRawData && (
+        <RawDataModal
+          report={report}
+          name={reportName + ' - ' + t('report.view.rawData')}
+          close={closePopover}
+        />
+      )}
       {showDiagram && <DiagramModal report={report} name={nameOrKey} close={closePopover} />}
     </div>
   );
