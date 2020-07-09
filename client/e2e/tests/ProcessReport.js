@@ -747,3 +747,17 @@ test('deleting', async (t) => {
 
   await t.expect(e.report.exists).notOk();
 });
+
+test('show raw data and process model', async (t) => {
+  await u.createNewReport(t);
+  await u.save(t);
+
+  await t.click(e.detailsPopoverButton);
+  await t.click(e.modalButton('View Raw data'));
+  await t.expect(e.rawDataTable.visible).ok();
+  await t.click(e.closeModalButton);
+
+  await t.click(e.detailsPopoverButton);
+  await t.click(e.modalButton('View Process Model'));
+  await t.expect(e.modalDiagram.visible).ok();
+});

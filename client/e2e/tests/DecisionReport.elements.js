@@ -22,3 +22,4 @@ export const configurationButton = Selector('.Configuration .Popover');
 export const gradientBarsSwitch = Selector('.Popover label').withText('Show Gradient Bars');
 export const reportNumber = reportRenderer.find('.Number');
 export const report = Selector('.Report');
+export const modalDecisionTable = Selector('.DiagramModal .DMNDiagram');
