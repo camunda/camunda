@@ -19,7 +19,9 @@ import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
+import io.atomix.cluster.messaging.impl.NettyBroadcastService;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
+import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.core.Atomix;
 import io.atomix.raft.partition.RaftPartition;
@@ -384,6 +386,7 @@ public final class ClusteringRule extends ExternalResource {
     return Awaitility.await()
         .pollInterval(Duration.ofMillis(100))
         .atMost(Duration.ofSeconds(10))
+        .ignoreExceptions()
         .until(() -> client.newTopologyRequest().send().join(), Objects::nonNull);
   }
 
@@ -538,15 +541,17 @@ public final class ClusteringRule extends ExternalResource {
   public void disconnect(final Broker broker) {
     final var atomix = broker.getAtomix();
 
-    final var messagingService = (NettyMessagingService) atomix.getMessagingService();
-    messagingService.stop().join();
+    ((NettyUnicastService) atomix.getUnicastService()).stop().join();
+    ((NettyMessagingService) atomix.getMessagingService()).stop().join();
+    ((NettyBroadcastService) atomix.getBroadcastService()).stop().join();
   }
 
   public void connect(final Broker broker) {
     final var atomix = broker.getAtomix();
 
-    final var messagingService = (NettyMessagingService) atomix.getMessagingService();
-    messagingService.start().join();
+    ((NettyUnicastService) atomix.getUnicastService()).start().join();
+    ((NettyMessagingService) atomix.getMessagingService()).start().join();
+    ((NettyBroadcastService) atomix.getBroadcastService()).start().join();
   }
 
   public void stopBrokerAndAwaitNewLeader(final int nodeId) {
@@ -600,6 +605,7 @@ public final class ClusteringRule extends ExternalResource {
     Awaitility.await()
         .pollInterval(Duration.ofMillis(100))
         .atMost(Duration.ofSeconds(10))
+        .ignoreExceptions()
         .until(() -> getTopologyFromClient().getBrokers(), topologyPredicate);
   }
 

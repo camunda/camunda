@@ -65,11 +65,13 @@ import java.security.cert.Certificate;
 import java.time.Duration;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -109,6 +111,7 @@ public class NettyMessagingService implements ManagedMessagingService {
   private Class<? extends Channel> clientChannelClass;
   private ScheduledExecutorService timeoutExecutor;
   private Channel serverChannel;
+  private final List<CompletableFuture> openFutures;
 
   public NettyMessagingService(
       final String cluster, final Address address, final MessagingConfig config) {
@@ -124,6 +127,7 @@ public class NettyMessagingService implements ManagedMessagingService {
     this.returnAddress = address;
     this.config = config;
     this.protocolVersion = protocolVersion;
+    this.openFutures = new CopyOnWriteArrayList<>();
     this.channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
   }
 
@@ -176,6 +180,11 @@ public class NettyMessagingService implements ManagedMessagingService {
       final boolean keepAlive,
       final Duration timeout,
       final Executor executor) {
+    if (!started.get()) {
+      return CompletableFuture.failedFuture(
+          new IllegalStateException("MessagingService is closed."));
+    }
+
     final long messageId = messageIdGenerator.incrementAndGet();
     final ProtocolRequest message = new ProtocolRequest(messageId, returnAddress, type, payload);
     if (keepAlive) {
@@ -304,6 +313,12 @@ public class NettyMessagingService implements ManagedMessagingService {
                 final var connection = entry.getValue();
                 connection.close();
               }
+
+              for (final CompletableFuture openFuture : openFutures) {
+                openFuture.completeExceptionally(
+                    new IllegalStateException("MessagingService has been closed."));
+              }
+              openFutures.clear();
             } finally {
               log.info("Stopped");
               if (interrupted) {
@@ -462,12 +477,15 @@ public class NettyMessagingService implements ManagedMessagingService {
       return;
     }
 
+    // we need these to close them on stop
+    openFutures.add(future);
     channelPool
         .getChannel(address, type)
         .whenComplete(
             (channel, channelError) -> {
               if (channelError == null) {
                 final ClientConnection connection = getOrCreateClientConnection(channel);
+                openFutures.remove(future);
                 callback
                     .apply(connection)
                     .whenComplete(
