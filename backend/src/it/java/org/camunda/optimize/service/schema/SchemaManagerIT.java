@@ -9,6 +9,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
@@ -37,22 +38,27 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.common.xcontent.json.JsonXContent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockserver.integration.ClientAndServer;
 
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static javax.ws.rs.HttpMethod.HEAD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager.INDEX_EXIST_BATCH_SIZE;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.DYNAMIC_SETTING_MAX_NGRAM_DIFF;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_NESTED_OBJECTS_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_REPLICAS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REFRESH_INTERVAL_SETTING;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
+import static org.mockserver.model.HttpRequest.request;
+import static org.mockserver.verify.VerificationTimes.exactly;
 
-public class SchemaInitializerIT extends AbstractIT {
+public class SchemaManagerIT extends AbstractIT {
 
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
   private OptimizeIndexNameService indexNameService;
@@ -82,7 +88,7 @@ public class SchemaInitializerIT extends AbstractIT {
     initializeSchema();
 
     // then
-    assertThat(embeddedOptimizeExtension.getElasticSearchSchemaManager().schemaExists(prefixAwareRestHighLevelClient))
+    assertThat(getSchemaManager().schemaExists(prefixAwareRestHighLevelClient))
       .isTrue();
   }
 
@@ -99,7 +105,7 @@ public class SchemaInitializerIT extends AbstractIT {
     initializeSchema();
 
     // then
-    assertThat(embeddedOptimizeExtension.getElasticSearchSchemaManager()
+    assertThat(getSchemaManager()
                  .schemaExists(prefixAwareRestHighLevelClient)).isTrue();
   }
 
@@ -109,7 +115,7 @@ public class SchemaInitializerIT extends AbstractIT {
     initializeSchema();
 
     // then
-    final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
+    final List<IndexMappingCreator> mappings = getSchemaManager().getMappings();
     assertThat(mappings).hasSize(25);
     for (IndexMappingCreator mapping : mappings) {
       assertIndexExists(mapping.getIndexName());
@@ -126,13 +132,13 @@ public class SchemaInitializerIT extends AbstractIT {
     // when there is a new mapping and I update the mapping
     MyUpdatedEventIndex myUpdatedEventIndex = new MyUpdatedEventIndex();
     try {
-      embeddedOptimizeExtension.getElasticSearchSchemaManager().addMapping(myUpdatedEventIndex);
+      getSchemaManager().addMapping(myUpdatedEventIndex);
       initializeSchema();
 
       // then the mapping contains the new fields
       assertThatNewFieldExists();
     } finally {
-      embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings().remove(myUpdatedEventIndex);
+      getSchemaManager().getMappings().remove(myUpdatedEventIndex);
     }
   }
 
@@ -142,7 +148,7 @@ public class SchemaInitializerIT extends AbstractIT {
     initializeSchema();
 
     // with a different dynamic setting than default
-    final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
+    final List<IndexMappingCreator> mappings = getSchemaManager().getMappings();
     modifyDynamicIndexSetting(mappings);
 
     // when
@@ -150,8 +156,29 @@ public class SchemaInitializerIT extends AbstractIT {
 
     // then the settings contain the updated value
     final GetSettingsResponse getSettingsResponse = getIndexSettingsFor(mappings);
-
     assertMappingSettings(mappings, getSettingsResponse);
+  }
+
+  @Test
+  public void indexExistCheckIsPerformedInBatches() {
+    // given
+    final int expectedExistQueryBatchExecutionCount =
+      (int) Math.ceil((double) getSchemaManager().getMappings().size() / INDEX_EXIST_BATCH_SIZE);
+    assertThat(expectedExistQueryBatchExecutionCount).isGreaterThan(1);
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+
+    // when
+    initializeSchema();
+
+    // then the index exist check was performed in batches
+    esMockServer.verify(
+      request().withPath(String.format(
+        "/(%s-.*){2,%s}",
+        embeddedOptimizeExtension.getOptimizeElasticClient().getIndexNameService().getIndexPrefix(),
+        INDEX_EXIST_BATCH_SIZE
+      )).withMethod(HEAD),
+      exactly(expectedExistQueryBatchExecutionCount)
+    );
   }
 
   @Test
@@ -191,7 +218,7 @@ public class SchemaInitializerIT extends AbstractIT {
     initializeSchema();
 
     // with a different dynamic setting than default
-    final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
+    final List<IndexMappingCreator> mappings = getSchemaManager().getMappings();
     modifyDynamicIndexSetting(mappings);
 
     // one index is missing so recreating of indexes is triggered
@@ -232,6 +259,10 @@ public class SchemaInitializerIT extends AbstractIT {
       "12312412",
       extendedEventDto
     )).isInstanceOf(ElasticsearchStatusException.class);
+  }
+
+  private ElasticSearchSchemaManager getSchemaManager() {
+    return embeddedOptimizeExtension.getElasticSearchSchemaManager();
   }
 
   private void assertMappingSettings(final List<IndexMappingCreator> mappings,
@@ -325,6 +356,6 @@ public class SchemaInitializerIT extends AbstractIT {
   }
 
   private void initializeSchema() {
-    embeddedOptimizeExtension.getElasticSearchSchemaManager().initializeSchema(prefixAwareRestHighLevelClient);
+    getSchemaManager().initializeSchema(prefixAwareRestHighLevelClient);
   }
 }

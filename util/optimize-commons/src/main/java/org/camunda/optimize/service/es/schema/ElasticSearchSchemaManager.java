@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.schema;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +38,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
 
@@ -47,6 +49,7 @@ import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildD
 @Slf4j
 public class ElasticSearchSchemaManager {
   private static final String INDEX_READ_ONLY_SETTING = "index.blocks.read_only_allow_delete";
+  public static final int INDEX_EXIST_BATCH_SIZE = 10;
 
   private final ElasticsearchMetadataService metadataService;
   private final ConfigurationService configurationService;
@@ -90,18 +93,19 @@ public class ElasticSearchSchemaManager {
 
   public boolean indicesExist(final OptimizeElasticsearchClient esClient,
                               final List<IndexMappingCreator> mappings) {
-    final List<String> indices = mappings.stream().map(IndexMappingCreator::getIndexName)
-      .collect(Collectors.toList());
-    final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[]{}));
-    try {
-      return esClient.exists(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      final String message = String.format(
-        "Could not check if [%s] index(es) already exist.",
-        String.join(",", indices)
-      );
-      throw new OptimizeRuntimeException(message, e);
-    }
+    return StreamSupport.stream(Iterables.partition(mappings, INDEX_EXIST_BATCH_SIZE).spliterator(), true)
+      .map(mappingBatch -> mappingBatch.stream().map(IndexMappingCreator::getIndexName).collect(toList()))
+      .allMatch(indices -> {
+        final GetIndexRequest request = new GetIndexRequest(indices.toArray(new String[]{}));
+        try {
+          return esClient.exists(request, RequestOptions.DEFAULT);
+        } catch (IOException e) {
+          final String message = String.format(
+            "Could not check if [%s] index(es) already exist.", String.join(",", indices)
+          );
+          throw new OptimizeRuntimeException(message, e);
+        }
+      });
   }
 
   public void createIndexIfMissing(final OptimizeElasticsearchClient esClient,
