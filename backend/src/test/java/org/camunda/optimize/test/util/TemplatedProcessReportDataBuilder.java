@@ -33,6 +33,7 @@ public class TemplatedProcessReportDataBuilder {
   private String variableName;
   private VariableType variableType;
   private GroupByDateUnit dateInterval;
+  private GroupByDateUnit groupByDateVariableUnit = new SingleReportConfigurationDto().getGroupByDateVariableUnit();
   private String startFlowNodeId;
   private String endFlowNodeId;
   private UserTaskDurationTime userTaskDurationTime = new SingleReportConfigurationDto().getUserTaskDurationTime();
@@ -561,6 +562,7 @@ public class TemplatedProcessReportDataBuilder {
     reportData.setFilter(this.filter);
     reportData.setVisualization(visualization == null ? reportData.getVisualization() : visualization);
     reportData.getConfiguration().setUserTaskDurationTime(userTaskDurationTime);
+    reportData.getConfiguration().setGroupByDateVariableUnit(groupByDateVariableUnit);
     return reportData;
   }
 
@@ -631,6 +633,11 @@ public class TemplatedProcessReportDataBuilder {
 
   public TemplatedProcessReportDataBuilder setVisualization(ProcessVisualization visualization) {
     this.visualization = visualization;
+    return this;
+  }
+
+  public TemplatedProcessReportDataBuilder setGroupByDateVariableUnit(final GroupByDateUnit groupByDateVariableUnit) {
+    this.groupByDateVariableUnit = groupByDateVariableUnit;
     return this;
   }
 }

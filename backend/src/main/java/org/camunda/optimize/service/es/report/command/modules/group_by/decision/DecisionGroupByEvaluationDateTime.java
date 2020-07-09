@@ -37,6 +37,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -90,7 +91,7 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
       .order(BucketOrder.key(false))
       .field(EVALUATION_DATE_TIME)
       .dateHistogramInterval(interval)
-      .timeZone(ZoneId.systemDefault());
+      .timeZone(context.getTimezone());
 
     final List<DateFilterDataDto<?>> dateFilterDataDtos = queryFilterEnhancer.extractFilters(
       context.getReportData().getFilter(), EvaluationDateFilterDto.class
@@ -135,7 +136,8 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
         Optional.empty(),
         builder.query(),
         DECISION_INSTANCE_INDEX_NAME,
-        EVALUATION_DATE_TIME
+        EVALUATION_DATE_TIME,
+        context.getTimezone()
       );
 
     return automaticIntervalAggregation.map(agg -> agg.subAggregation(distributedByPart.createAggregation(context)))
@@ -170,7 +172,7 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
 
       for (Histogram.Bucket entry : agg.getBuckets()) {
         ZonedDateTime keyAsDate = (ZonedDateTime) entry.getKey();
-        String formattedDate = keyAsDate.withZoneSameInstant(ZoneId.systemDefault()).format(dateTimeFormatter);
+        String formattedDate = keyAsDate.withZoneSameInstant(context.getTimezone()).format(dateTimeFormatter);
         final List<DistributedByResult> distributions =
           distributedByPart.retrieveResult(response, entry.getAggregations(), context);
         result.add(GroupByResult.createGroupByResult(formattedDate, distributions));
@@ -189,10 +191,16 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
       .entrySet()
       .stream()
       .map(stringBucketEntry -> GroupByResult.createGroupByResult(
-        stringBucketEntry.getKey(),
+        formatToCorrectTimezone(stringBucketEntry.getKey(), context.getTimezone()),
         distributedByPart.retrieveResult(response, stringBucketEntry.getValue().getAggregations(), context)
       ))
       .collect(Collectors.toList());
+  }
+
+  private String formatToCorrectTimezone(final String dateAsString, final ZoneId timezone) {
+    final OffsetDateTime date = OffsetDateTime.parse(dateAsString, dateTimeFormatter);
+    OffsetDateTime dateWithAdjustedTimezone = date.atZoneSameInstant(timezone).toOffsetDateTime();
+    return dateTimeFormatter.format(dateWithAdjustedTimezone);
   }
 
   @Override

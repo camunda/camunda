@@ -17,12 +17,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -538,15 +536,11 @@ public class FixedDateFilterIT extends AbstractFilterIT {
                                           long daysToShift,
                                           long durationInSec) {
     OffsetDateTime shiftedStartDate = startDate.plusDays(daysToShift);
-    try {
-      engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
-      engineDatabaseExtension.changeProcessInstanceEndDate(
-        processInstanceId,
-        shiftedStartDate.plusSeconds(durationInSec)
-      );
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException("Failed adjusting process instance dates", e);
-    }
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+      processInstanceId,
+      shiftedStartDate.plusSeconds(durationInSec)
+    );
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {

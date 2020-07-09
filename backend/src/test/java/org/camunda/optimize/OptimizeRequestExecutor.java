@@ -1026,10 +1026,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildCopyReportRequest(String id) {
-    return buildCopyReportRequest(id, null);
-  }
-
   public OptimizeRequestExecutor buildCopyReportRequest(String id, String collectionId) {
     this.path = "report/" + id + "/copy";
     this.method = POST;

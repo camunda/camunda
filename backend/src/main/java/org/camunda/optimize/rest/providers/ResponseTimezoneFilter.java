@@ -19,10 +19,11 @@ import javax.ws.rs.container.ContainerResponseContext;
 import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.ext.Provider;
+
 import java.time.ZoneId;
-import java.util.Set;
 
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
 @Slf4j
 @AllArgsConstructor
@@ -30,33 +31,16 @@ import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIEN
 @Component
 public class ResponseTimezoneFilter implements ContainerResponseFilter {
 
-  private static final Set<String> AVAILABLE_ZONE_IDS = ZoneId.getAvailableZoneIds();
-
   @Override
   public void filter(final ContainerRequestContext requestContext, final ContainerResponseContext responseContext) {
     ObjectWriterInjector.set(new DateMod(extractTimezone(requestContext)));
   }
 
-  private String extractTimezone(ContainerRequestContext requestContext) {
-    final String headerString = requestContext.getHeaderString(X_OPTIMIZE_CLIENT_TIMEZONE);
-    if (AVAILABLE_ZONE_IDS.contains(headerString)) {
-      return headerString;
-    } else if (headerString != null) {
-      log.warn(
-        "The provided timezone [{}] is not being recognized. Falling back to server timezone instead.",
-        headerString
-      );
-    }
-    // uses server timezone if unknown
-    return ZoneId.systemDefault().getId();
-  }
-
-
   public static class DateMod extends ObjectWriterModifier {
 
-    private final String timezone;
+    private final ZoneId timezone;
 
-    public DateMod(String timezone) {
+    public DateMod(ZoneId timezone) {
       this.timezone = timezone;
     }
 
@@ -67,7 +51,7 @@ public class ResponseTimezoneFilter implements ContainerResponseFilter {
                                final ObjectWriter objectWriter,
                                final JsonGenerator jsonGenerator) {
       return objectWriter
-        .withAttribute(X_OPTIMIZE_CLIENT_TIMEZONE, timezone);
+        .withAttribute(X_OPTIMIZE_CLIENT_TIMEZONE, timezone.getId());
     }
   }
 }

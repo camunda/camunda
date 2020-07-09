@@ -98,8 +98,8 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
                                                                             String tenantId) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess(TEST_PROCESS)
       .name("aProcessName")
-      .startEvent()
-      .endEvent()
+      .startEvent(START_EVENT)
+      .endEvent(END_EVENT)
       .done();
     return engineIntegrationExtension.deployAndStartProcessWithVariables(
       processModel,
@@ -113,7 +113,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .startEvent(START_EVENT)
       .userTask(USER_TASK)
-      .endEvent()
+      .endEvent(END_EVENT)
       .done();
     return engineIntegrationExtension.deployAndStartProcess(processModel);
   }

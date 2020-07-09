@@ -5,23 +5,68 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.optimize.AbstractIT;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableMap;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
+import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
+import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
-public class TimeZoneAdjustmentRestServiceIT extends AbstractIT {
+public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT {
 
   @Test
   public void unknownTimezoneUsesServerTimezone() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().freezeDateAndReturn();
     final String collectionId = collectionClient.createNewCollection();
 
@@ -42,7 +87,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractIT {
 
   @Test
   public void omittedTimezoneUsesServerTimezone() {
-    //given
+    // given
     OffsetDateTime now = dateFreezer().freezeDateAndReturn();
     final String collectionId = collectionClient.createNewCollection();
 
@@ -58,5 +103,582 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractIT {
     assertThat(collection.getLastModified()).isEqualTo(now);
     assertThat(getOffsetDiffInHours(collection.getCreated(), now)).isZero();
     assertThat(getOffsetDiffInHours(collection.getLastModified(), now)).isZero();
+  }
+
+  @ParameterizedTest
+  @MethodSource("allProcessDateReports")
+  public void adjustReportEvaluationResultToTimezone_processDateReports(final ProcessReportDataType reportType) {
+    // given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    final ProcessInstanceEngineDto processInstanceDto2 = deployAndStartSimpleUserTaskProcess();
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto2.getId(), now);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto1.getId(), USER_TASK, now);
+    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto2.getId(), USER_TASK, now);
+    engineDatabaseExtension.changeUserTaskEndDate(processInstanceDto1.getId(), USER_TASK, now);
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setDateInterval(GroupByDateUnit.HOUR)
+      .setProcessDefinitionKey(processInstanceDto1.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setReportDataType(reportType)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .build();
+
+    // when
+    final List<String> dateAsStringDateResultEntries = evaluateReportInLondonTimezoneAndReturnDateEntries(reportData);
+
+    // then
+    assertThat(dateAsStringDateResultEntries)
+      .hasSize(1)
+      .first()
+      .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
+      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+  }
+
+  @ParameterizedTest
+  @MethodSource("allProcessDateReports")
+  public void adjustReportEvaluationResultToTimezone_daylightSavingHoursAreRespected(final ProcessReportDataType reportType) {
+    // given now is in summer time
+    OffsetDateTime now = dateFreezer().dateToFreeze(OffsetDateTime.of(2020, 7, 5, 12, 0, 0, 0, ZoneOffset.UTC))
+      .timezone("Europe/Berlin")
+      .freezeDateAndReturn();
+    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    final ProcessInstanceEngineDto processInstanceDto2 = deployAndStartSimpleUserTaskProcess();
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto2.getId(), now);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto1.getId(), USER_TASK, now);
+    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto2.getId(), USER_TASK, now);
+    engineDatabaseExtension.changeUserTaskEndDate(processInstanceDto1.getId(), USER_TASK, now);
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      // truncation of the date is in winter time
+      .setDateInterval(GroupByDateUnit.YEAR)
+      .setProcessDefinitionKey(processInstanceDto1.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setReportDataType(reportType)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .build();
+
+    // when
+    final List<String> dateAsStringDateResultEntries = evaluateReportInLondonTimezoneAndReturnDateEntries(reportData);
+
+    // then
+    assertThat(dateAsStringDateResultEntries)
+      .hasSize(1)
+      .first()
+      .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
+      .satisfies(date -> assertThat(date).isEqualTo(truncateToYearWithLondonTimezone(now)));
+  }
+
+  @Test
+  public void adjustReportEvaluationResultToTimezone_checkCorrectTruncation() {
+    // for details see https://github.com/camunda/camunda-optimize/pull/2318#discussion_r451470038
+    // given the truncation falls into the start of the year
+    OffsetDateTime now = dateFreezer().dateToFreeze(OffsetDateTime.of(2020, 1, 15, 0, 0, 0, 0, ZoneOffset.UTC))
+      .freezeDateAndReturn();
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto.getId(), now);
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setDateInterval(GroupByDateUnit.YEAR)
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .build();
+
+    // when
+    final ReportMapResultDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // the timezone has an offset of -1(UTC)/-2 (UTC DST) and if the truncation is wrong
+      // the result date would fall into the year 2019
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Atlantic/Cape_Verde")
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      // @formatter:on
+      .getResult();
+
+    // then
+    OffsetDateTime expectedDate =
+      ZonedDateTime.of(2020, 1, 1, 0, 0, 0, 0, ZoneId.of("Atlantic/Cape_Verde")).toOffsetDateTime();
+    assertThat(result.getData())
+      .hasSize(1)
+      .first()
+      .extracting(MapResultEntryDto::getKey)
+      .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
+      .satisfies(date -> assertThat(date).isEqualTo(expectedDate));
+  }
+
+  @ParameterizedTest
+  @MethodSource("allProcessDateReports")
+  public void adjustReportEvaluationResultToTimezone_processDateReports_automaticInterval(final ProcessReportDataType reportType) {
+    // given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    final ProcessInstanceEngineDto processInstanceDto2 = deployAndStartSimpleUserTaskProcess();
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto2.getId(), now);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto1.getId(), USER_TASK, now);
+    engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto2.getId(), USER_TASK, now);
+    engineDatabaseExtension.changeUserTaskEndDate(processInstanceDto1.getId(), USER_TASK, now);
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setDateInterval(GroupByDateUnit.AUTOMATIC)
+      .setProcessDefinitionKey(processInstanceDto1.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setReportDataType(reportType)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .build();
+
+    // when
+    final List<String> dateAsStringDateResultEntries = evaluateReportInLondonTimezoneAndReturnDateEntries(reportData);
+
+    // then
+    assertThat(dateAsStringDateResultEntries)
+      .hasSize(1)
+      .first()
+      .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
+      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+  }
+
+  private static Stream<ProcessReportDataType> allProcessDateReports() {
+    return ProcessReportDataType.allDateReports().stream();
+  }
+
+  private List<String> evaluateReportInLondonTimezoneAndReturnDateEntries(final ProcessReportDataDto reportData) {
+    final ProcessReportResultDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ProcessReportResultDto>>() {})
+      // @formatter:on
+      .getResult();
+    assertThat(result).isNotNull();
+    if (result instanceof ReportHyperMapResultDto) {
+      ReportHyperMapResultDto hyperMapResultDto = (ReportHyperMapResultDto) result;
+      return hyperMapResultDto.getData().stream().map(HyperMapResultEntryDto::getKey).collect(Collectors.toList());
+    } else if (result instanceof ReportMapResultDto) {
+      ReportMapResultDto reportMapResultDto = (ReportMapResultDto) result;
+      return reportMapResultDto.getData().stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
+    } else {
+      throw new OptimizeIntegrationTestException("Unknown result type!");
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource("allProcessVariableReports")
+  public void adjustReportEvaluationResultToTimezone_groupByDateVariable(final ProcessReportDataType reportType) {
+    // given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    Map<String, Object> variables = ImmutableMap.of("dateVar", now);
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleProcessWithVariables(variables);
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setGroupByDateVariableUnit(GroupByDateUnit.HOUR)
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setReportDataType(reportType)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .setVariableName("dateVar")
+      .setVariableType(VariableType.DATE)
+      .build();
+
+    // when
+    final List<String> dateAsStringDateResultEntries = evaluateReportInLondonTimezoneAndReturnDateEntries(reportData);
+
+    // then
+    assertThat(dateAsStringDateResultEntries)
+      .hasSize(1)
+      .first()
+      .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
+      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+  }
+
+  private static Stream<ProcessReportDataType> allProcessVariableReports() {
+    return ProcessReportDataType.allVariableReports().stream();
+  }
+
+  @Test
+  public void adjustReportEvaluationResultToTimezone_groupByDateVariable_automaticInterval() {
+    // given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    Map<String, Object> variables = ImmutableMap.of("dateVar", now);
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleProcessWithVariables(variables);
+    variables = ImmutableMap.of("dateVar", now.plusDays(1));
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setGroupByDateVariableUnit(GroupByDateUnit.AUTOMATIC)
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .setStartFlowNodeId(START_EVENT)
+      .setEndFlowNodeId(END_EVENT)
+      .setVariableName("dateVar")
+      .setVariableType(VariableType.DATE)
+      .build();
+
+    // when
+    final List<String> dateAsStringDateResultEntries = evaluateReportInLondonTimezoneAndReturnDateEntries(reportData);
+
+    // then
+    String expectedDateAsString = embeddedOptimizeExtension.getDateTimeFormatter()
+      .format(now.atZoneSameInstant(ZoneId.of("Europe/London")).toOffsetDateTime());
+    assertThat(dateAsStringDateResultEntries)
+      .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    final String lastElement = dateAsStringDateResultEntries.get(dateAsStringDateResultEntries.size() - 1);
+    assertThat(lastElement).isEqualTo(expectedDateAsString);
+
+    expectedDateAsString = expectedLastDateAsStringForAutomaticInterval(now);
+    final String firstElement = dateAsStringDateResultEntries.get(0);
+    assertThat(firstElement).isEqualTo(expectedDateAsString);
+  }
+
+  @Test
+  public void adjustReportEvaluationResultToTimezone_decisionReport() {
+    // given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final DecisionDefinitionEngineDto decisionDefinition =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.startDecisionInstance(decisionDefinition.getId());
+    importAllEngineEntitiesFromScratch();
+
+    DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
+      .setDateInterval(GroupByDateUnit.HOUR)
+      .setDecisionDefinitionKey(decisionDefinition.getKey())
+      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
+      .build();
+
+    // when
+    final ReportMapResultDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto>>() {})
+      .getResult();
+      // @formatter:on
+
+    // then
+    assertThat(result.getData())
+      .hasSize(1)
+      .extracting(MapResultEntryDto::getKey)
+      .first()
+      .extracting(a -> OffsetDateTime.parse(a, embeddedOptimizeExtension.getDateTimeFormatter()))
+      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+  }
+
+  @Test
+  public void adjustReportEvaluationResultToTimezone_combinedDateReport() {
+    // given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto groupByDate = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.HOUR)
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .build();
+    final String singleProcessReportId1 = reportClient.createSingleProcessReport(groupByDate);
+    final String singleProcessReportId2 = reportClient.createSingleProcessReport(groupByDate);
+    final String combinedReportId =
+      reportClient.createNewCombinedReport(singleProcessReportId1, singleProcessReportId2);
+
+    // when
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(combinedReportId, null)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto>>() {});
+      // @formatter:on
+    final CombinedProcessReportResultDataDto<ReportMapResultDto> resultData = result.getResult();
+    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = resultData.getData();
+
+    // then
+    assertThat(resultMap).hasSize(2);
+    assertThat(resultMap.values())
+      .hasSize(2)
+      .extracting(AuthorizedProcessReportEvaluationResultDto::getResult)
+      .flatExtracting(ReportMapResultDto::getData)
+      .extracting(MapResultEntryDto::getKey)
+      .hasSize(2)
+      .first()
+      .extracting(date -> OffsetDateTime.parse(date, embeddedOptimizeExtension.getDateTimeFormatter()))
+      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+  }
+
+  @Test
+  public void adjustReportEvaluationResultToTimezone_combinedDateReport_automaticInterval() {
+    // given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    ProcessInstanceEngineDto instance1 = deployAndStartSimpleProcess();
+    final ProcessInstanceEngineDto instance2 =
+      engineIntegrationExtension.startProcessInstance(instance1.getDefinitionId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance1.getId(), now);
+    engineDatabaseExtension.changeProcessInstanceStartDate(instance2.getId(), now.plusDays(1));
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto groupByDate = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(instance1.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(instance1.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.AUTOMATIC)
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .build();
+    final String singleProcessReportId1 = reportClient.createSingleProcessReport(groupByDate);
+    final String singleProcessReportId2 = reportClient.createSingleProcessReport(groupByDate);
+    final String combinedReportId =
+      reportClient.createNewCombinedReport(singleProcessReportId1, singleProcessReportId2);
+
+    // when
+    AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(combinedReportId, null)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto>>() {});
+    // @formatter:on
+    final CombinedProcessReportResultDataDto<ReportMapResultDto> resultData = result.getResult();
+    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> combinedResultMap =
+      resultData.getData();
+
+    // then
+    assertThat(combinedResultMap).hasSize(2);
+    for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> value : combinedResultMap.values()) {
+      final ReportMapResultDto resultMap = value.getResult();
+      final List<String> dateAsStringDateResultEntries = resultMap.getData()
+        .stream()
+        .map(MapResultEntryDto::getKey)
+        .collect(Collectors.toList());
+
+      String expectedDateAsString = embeddedOptimizeExtension.getDateTimeFormatter()
+        .format(now.atZoneSameInstant(ZoneId.of("Europe/London")).toOffsetDateTime());
+      assertThat(dateAsStringDateResultEntries)
+        .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+      final String lastElement = dateAsStringDateResultEntries.get(dateAsStringDateResultEntries.size() - 1);
+      assertThat(lastElement).isEqualTo(expectedDateAsString);
+
+      expectedDateAsString = expectedLastDateAsStringForAutomaticInterval(now);
+      final String firstElement = dateAsStringDateResultEntries.get(0);
+      assertThat(firstElement).isEqualTo(expectedDateAsString);
+    }
+  }
+
+  @Test
+  public void adjustReportEvaluationResultToTimezone_evaluationById() {
+    // given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto groupByDate = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.HOUR)
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .build();
+    final String singleProcessReportId = reportClient.createSingleProcessReport(groupByDate);
+
+    // when
+    final ReportMapResultDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSavedReportRequest(singleProcessReportId)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      .getResult();
+      // @formatter:on
+
+    // then
+    assertThat(result.getData())
+      .hasSize(1)
+      .first()
+      .extracting(MapResultEntryDto::getKey)
+      .extracting(date -> OffsetDateTime.parse(date, embeddedOptimizeExtension.getDateTimeFormatter()))
+      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+  }
+
+  @Test
+  public void adjustReportEvaluationResultToTimezone_sharedReportEvaluation() {
+    // given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto groupByDate = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.HOUR)
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .build();
+    final String reportId = reportClient.createSingleProcessReport(groupByDate);
+    final String reportShareId = sharingClient.shareReport(reportId);
+
+    // when
+    final ReportMapResultDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSharedReportRequest(reportShareId)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      .getResult();
+
+    // then
+    assertThat(result.getData())
+      .hasSize(1)
+      .first()
+      .extracting(MapResultEntryDto::getKey)
+      .extracting(date -> OffsetDateTime.parse(date, embeddedOptimizeExtension.getDateTimeFormatter()))
+      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+  }
+
+  @Test
+  public void adjustReportEvaluationResultToTimezone_reportEvaluationOfSharedDashboard() {
+    // given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(engineDto.getId(), now.minusDays(2L));
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto groupByDate = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.HOUR)
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .build();
+    final String reportId = reportClient.createSingleProcessReport(groupByDate);
+    final String dashboardId = dashboardClient.createEmptyDashboard(null);
+    dashboardClient.updateDashboardWithReports(dashboardId, Collections.singletonList(reportId));
+    final String dashboardShareId = sharingClient.shareDashboard(dashboardId);
+
+    // when
+    final ReportMapResultDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      .getResult();
+
+    // then
+    assertThat(result.getData())
+      .hasSize(1)
+      .first()
+      .extracting(MapResultEntryDto::getKey)
+      .extracting(date -> OffsetDateTime.parse(date, embeddedOptimizeExtension.getDateTimeFormatter()))
+      .satisfies(date -> assertThat(getOffsetDiffInHours(date, now)).isOne());
+  }
+
+  @Test
+  public void adjustReportEvaluationResultToTimezone_rawProcessReport() {
+    // given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstance.getId(), now);
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto rawDataReport = new ProcessReportDataBuilderHelper()
+      .processDefinitionKey(processInstance.getProcessDefinitionKey())
+      .processDefinitionVersions(Collections.singletonList(processInstance.getProcessDefinitionVersion()))
+      .viewProperty(ProcessViewProperty.RAW_DATA)
+      .visualization(ProcessVisualization.TABLE)
+      .build();
+
+    // when
+    final RawDataProcessReportResultDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(rawDataReport)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {})
+      // @formatter:on
+      .getResult();
+
+    // then
+    assertThat(result.getData()).hasSize(1);
+    RawDataProcessInstanceDto rawInstance = result.getData().get(0);
+    assertThat(getOffsetDiffInHours(rawInstance.getStartDate(), now)).isOne();
+    assertThat(getOffsetDiffInHours(rawInstance.getEndDate(), now)).isOne();
+  }
+
+  @Test
+  public void adjustReportEvaluationResultToTimezone_rawDecisionReport() {
+    // given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    DecisionDefinitionEngineDto decisionDefinition = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineDatabaseExtension.changeDecisionInstanceEvaluationDate(now, now);
+    importAllEngineEntitiesFromScratch();
+
+    final DecisionReportDataDto rawDataReport = DecisionReportDataBuilder
+      .create()
+      .setDecisionDefinitionKey(decisionDefinition.getKey())
+      .setDecisionDefinitionVersion(decisionDefinition.getVersionAsString())
+      .setReportDataType(DecisionReportDataType.RAW_DATA)
+      .build();
+
+    // when
+    final RawDataDecisionReportResultDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(rawDataReport)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {})
+      // @formatter:on
+      .getResult();
+
+    // then
+    assertThat(result.getData()).hasSize(1);
+    RawDataDecisionInstanceDto rawInstance = result.getData().get(0);
+    assertThat(getOffsetDiffInHours(rawInstance.getEvaluationDateTime(), now)).isOne();
+  }
+
+  private OffsetDateTime truncateToYearWithLondonTimezone(final OffsetDateTime now) {
+    return truncateToStartOfUnit(now, ChronoUnit.YEARS, (ZoneId.of("Europe/London"))).toOffsetDateTime();
+  }
+
+  private String expectedLastDateAsStringForAutomaticInterval(final OffsetDateTime now) {
+    final String expectedDateAsString;
+    final long automaticIntervalStepInMs = Duration.between(now, now.plusDays(1))
+      .toMillis() / NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+    final OffsetDateTime lastDateOfAutomaticInterval = now.plusDays(1)
+      .minus(automaticIntervalStepInMs, ChronoUnit.MILLIS);
+    expectedDateAsString = embeddedOptimizeExtension.getDateTimeFormatter()
+      .format(lastDateOfAutomaticInterval.atZoneSameInstant(ZoneId.of("Europe/London")).toOffsetDateTime());
+    return expectedDateAsString;
   }
 }

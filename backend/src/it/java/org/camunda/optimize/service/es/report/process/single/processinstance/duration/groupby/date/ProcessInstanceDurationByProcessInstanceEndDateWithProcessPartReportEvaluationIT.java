@@ -15,12 +15,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndD
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -47,18 +45,13 @@ public class ProcessInstanceDurationByProcessInstanceEndDateWithProcessPartRepor
                                             long daysToShift,
                                             Long durationInSec) {
     OffsetDateTime shiftedDate = referenceDate.plusDays(daysToShift);
-    try {
-      if (durationInSec != null) {
-        engineDatabaseExtension.changeProcessInstanceStartDate(
-          processInstanceId,
-          shiftedDate.minusSeconds(durationInSec)
-        );
-      }
-      engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedDate);
-
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException("Failed adjusting process instance dates", e);
+    if (durationInSec != null) {
+      engineDatabaseExtension.changeProcessInstanceStartDate(
+        processInstanceId,
+        shiftedDate.minusSeconds(durationInSec)
+      );
     }
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedDate);
   }
 
   @Test

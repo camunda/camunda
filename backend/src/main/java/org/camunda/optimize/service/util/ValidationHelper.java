@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.util;
 
 import lombok.experimental.UtilityClass;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -68,17 +69,18 @@ public class ValidationHelper {
     }
   }
 
-  public static void validateCombinedReportDefinition(AuthorizedReportDefinitionDto reportDefinition) {
-    final CombinedReportDefinitionDto combinedReportDefinitionDto =
-      (CombinedReportDefinitionDto) reportDefinition.getDefinitionDto();
+  public static void validateCombinedReportDefinition(final CombinedReportDefinitionDto combinedReportDefinitionDto,
+                                                      final RoleType currentUserRole) {
+    AuthorizedReportDefinitionDto authorizedReportDefinitionDto =
+      new AuthorizedReportDefinitionDto(combinedReportDefinitionDto, currentUserRole);
     if (combinedReportDefinitionDto.getData() == null) {
       OptimizeValidationException ex =
         new OptimizeValidationException("Report data for a combined report is not allowed to be null!");
-      throw new ReportEvaluationException(reportDefinition, ex);
+      throw new ReportEvaluationException(authorizedReportDefinitionDto, ex);
     } else if (combinedReportDefinitionDto.getData().getReportIds() == null) {
       OptimizeValidationException ex =
         new OptimizeValidationException("Reports list for a combined report is not allowed to be null!");
-      throw new ReportEvaluationException(reportDefinition, ex);
+      throw new ReportEvaluationException(authorizedReportDefinitionDto, ex);
     }
   }
 

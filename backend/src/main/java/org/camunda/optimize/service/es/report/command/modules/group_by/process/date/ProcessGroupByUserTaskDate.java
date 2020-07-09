@@ -133,8 +133,8 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .order(BucketOrder.key(false))
       .field(getDateField())
-      .dateHistogramInterval(interval)
-      .timeZone(ZoneId.systemDefault());
+      .timeZone(context.getTimezone())
+      .dateHistogramInterval(interval);
 
     final Optional<OffsetDateTime> latestDate =
       getMostRecentUserTaskDate(searchSourceBuilder.query(), getDateField(), context);
@@ -254,7 +254,8 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
   }
 
   private AggregationBuilder createIntervalAggregationFromGivenRange(final ExecutionContext<ProcessReportDataDto> context,
-                                                                     String field, OffsetDateTime min,
+                                                                     String field,
+                                                                     OffsetDateTime min,
                                                                      OffsetDateTime max) {
     long msAsUnit = getDateHistogramIntervalFromMinMax(min, max);
     RangeAggregationBuilder rangeAgg = AggregationBuilders
@@ -263,20 +264,30 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
     AggregationBuilder nestedRangeAgg =
       wrapInNestedUserTaskAggregation(context, rangeAgg.subAggregation(distributedByPart.createAggregation(context)));
 
-    for (OffsetDateTime start = min; start.isBefore(max); start = start.plus(msAsUnit, ChronoUnit.MILLIS)) {
+    OffsetDateTime start = min;
+    int bucketCount = 0;
+
+    do {
+      if (bucketCount >= configurationService.getEsAggregationBucketLimit()) {
+        break;
+      }
+      // this is a do while loop to ensure there's always at least one bucket, even when min and max are equal
       OffsetDateTime nextStart = start.plus(msAsUnit, ChronoUnit.MILLIS);
       boolean isLast = nextStart.isAfter(max) || nextStart.isEqual(max);
-      // plus 1 millisecond because the end of the range is inclusive
-      OffsetDateTime end = isLast ? max.plus(1, ChronoUnit.MILLIS) : nextStart;
+      // plus 1 ms because the end of the range is exclusive yet we want to make sure max falls into the last bucket
+      OffsetDateTime end = isLast ? nextStart.plus(1, ChronoUnit.MILLIS) : nextStart;
 
+      ZoneId timezone = context.getTimezone();
       RangeAggregator.Range range =
         new RangeAggregator.Range(
-          dateTimeFormatter.format(start.atZoneSameInstant(ZoneId.systemDefault())), // key that's being used
-          dateTimeFormatter.format(start),
-          dateTimeFormatter.format(end)
+          dateTimeFormatter.format(start.atZoneSameInstant(timezone)), // key that's being used
+          dateTimeFormatter.format(start.atZoneSameInstant(timezone)),
+          dateTimeFormatter.format(end.atZoneSameInstant(timezone))
         );
       rangeAgg.addRange(range);
-    }
+      start = nextStart;
+      bucketCount++;
+    } while (start.isBefore(max));
     return nestedRangeAgg;
   }
 
@@ -385,7 +396,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
 
       for (Histogram.Bucket entry : agg.getBuckets()) {
         ZonedDateTime keyAsDate = (ZonedDateTime) entry.getKey();
-        String formattedDate = keyAsDate.withZoneSameInstant(ZoneId.systemDefault()).format(dateTimeFormatter);
+        String formattedDate = keyAsDate.withZoneSameInstant(context.getTimezone()).format(dateTimeFormatter);
         final List<DistributedByResult> distributions =
           distributedByPart.retrieveResult(response, entry.getAggregations(), context);
         result.add(GroupByResult.createGroupByResult(formattedDate, distributions));
@@ -403,10 +414,16 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
       .entrySet()
       .stream()
       .map(stringBucketEntry -> GroupByResult.createGroupByResult(
-        stringBucketEntry.getKey(),
+        formatToCorrectTimezone(stringBucketEntry.getKey(), context.getTimezone()),
         distributedByPart.retrieveResult(response, stringBucketEntry.getValue().getAggregations(), context)
       ))
       .collect(Collectors.toList());
+  }
+
+  private String formatToCorrectTimezone(final String dateAsString, final ZoneId timezone) {
+    final OffsetDateTime date = OffsetDateTime.parse(dateAsString, dateTimeFormatter);
+    OffsetDateTime dateWithAdjustedTimezone = date.atZoneSameInstant(timezone).toOffsetDateTime();
+    return dateTimeFormatter.format(dateWithAdjustedTimezone);
   }
 
   private Map<String, Range.Bucket> mapIntervalAggregationsToKeyBucketMap(Aggregations aggregations) {

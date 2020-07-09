@@ -33,6 +33,8 @@ import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -98,9 +100,9 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
     }
 
     final OffsetDateTime startOfRange = OffsetDateTime.parse(minMaxStats.getMinAsString(), formatter)
-      .withOffsetSameInstant(OffsetDateTime.now().getOffset());
+      .atZoneSameInstant(context.getTimezone()).toOffsetDateTime();
     final OffsetDateTime endOfRange = OffsetDateTime.parse(minMaxStats.getMaxAsString(), formatter)
-      .withOffsetSameInstant(OffsetDateTime.now().getOffset());
+      .atZoneSameInstant(context.getTimezone()).toOffsetDateTime();
 
     return createAggregation(
       startOfRange,
@@ -144,7 +146,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
     List<CompositeCommandResult.GroupByResult> results = new ArrayList<>();
 
     for (Filters.Bucket entry : agg.getBuckets()) {
-      String key = entry.getKeyAsString();
+      String key = formatToCorrectTimezone(entry.getKeyAsString(), context.getTimezone());
       final List<CompositeCommandResult.DistributedByResult> distributions =
         distributedByPart.retrieveResult(response, entry.getAggregations(), context);
       results.add(
@@ -155,6 +157,12 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
       }
     }
     return results;
+  }
+
+  private String formatToCorrectTimezone(final String dateAsString, final ZoneId timezone) {
+    final OffsetDateTime date = OffsetDateTime.parse(dateAsString, formatter);
+    OffsetDateTime dateWithAdjustedTimezone = date.atZoneSameInstant(timezone).toOffsetDateTime();
+    return formatter.format(dateWithAdjustedTimezone);
   }
 
   @Override
@@ -172,16 +180,23 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
       endOfLastInstance
     );
 
-    final OffsetDateTime startOfFirstBucket = truncateToUnit(startOfFirstInstance, unit);
-    final OffsetDateTime endOfLastBucket = GroupByDateUnit.AUTOMATIC.equals(unit)
-      ? endOfLastInstance
-      : truncateToUnit(endOfLastInstance, unit).plus(1, mapToChronoUnit(unit));
+    // to do correct date arithmetic (e.g. daylight saving time, timezones, etc.) we need to switch
+    // here to zoned date time.
+    final ZonedDateTime startOfFirstBucket = truncateToUnit(startOfFirstInstance, unit, context.getTimezone());
+    final ZonedDateTime endOfLastBucket = GroupByDateUnit.AUTOMATIC.equals(unit)
+      ? endOfLastInstance.atZoneSameInstant(context.getTimezone())
+      : truncateToUnit(endOfLastInstance, unit, context.getTimezone()).plus(1, mapToChronoUnit(unit));
 
-    for (OffsetDateTime currentBucketStart = startOfFirstBucket;
+    for (ZonedDateTime currentBucketStart = startOfFirstBucket;
          currentBucketStart.isBefore(endOfLastBucket);
          currentBucketStart = getEndOfBucket(currentBucketStart, unit, automaticIntervalDuration)) {
-      final String startAsString = formatter.format(currentBucketStart);
-      final String endAsString = formatter.format(getEndOfBucket(currentBucketStart, unit, automaticIntervalDuration));
+      // to use our correct date formatting we need to switch back to OffsetDateTime
+      final String startAsString = formatter.format(currentBucketStart.toOffsetDateTime());
+      final String endAsString = formatter.format(getEndOfBucket(
+        currentBucketStart,
+        unit,
+        automaticIntervalDuration
+      ).toOffsetDateTime());
 
       BoolQueryBuilder query = QueryBuilders.boolQuery()
         .must(
@@ -206,28 +221,32 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
         .subAggregation(distributedByPart.createAggregation(context)));
   }
 
-  private OffsetDateTime truncateToUnit(final OffsetDateTime dateToTruncate,
-                                        final GroupByDateUnit unit) {
+  private ZonedDateTime truncateToUnit(final OffsetDateTime dateToTruncate,
+                                       final GroupByDateUnit unit,
+                                       final ZoneId timezone) {
     switch (unit) {
       case YEAR:
         return dateToTruncate
+          .atZoneSameInstant(timezone)
           .withMonth(1)
           .withDayOfMonth(1)
           .truncatedTo(ChronoUnit.DAYS);
       case MONTH:
         return dateToTruncate
+          .atZoneSameInstant(timezone)
           .withDayOfMonth(1)
           .truncatedTo(ChronoUnit.DAYS);
       case WEEK:
         return dateToTruncate
+          .atZoneSameInstant(timezone)
           .minusDays(getDistanceToStartOfWeekInDays(dateToTruncate))
           .truncatedTo(ChronoUnit.DAYS);
       case DAY:
       case HOUR:
       case MINUTE:
-        return dateToTruncate.truncatedTo(mapToChronoUnit(unit));
+        return dateToTruncate.atZoneSameInstant(timezone).truncatedTo(mapToChronoUnit(unit));
       case AUTOMATIC:
-        return dateToTruncate;
+        return dateToTruncate.atZoneSameInstant(timezone);
       default:
         throw new IllegalArgumentException("Unsupported unit: " + unit);
     }
@@ -241,7 +260,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
     );
   }
 
-  private OffsetDateTime getEndOfBucket(final OffsetDateTime startOfBucket,
+  private ZonedDateTime getEndOfBucket(final ZonedDateTime startOfBucket,
                                         final GroupByDateUnit unit,
                                         final Duration durationOfAutomaticInterval) {
     return GroupByDateUnit.AUTOMATIC.equals(unit)

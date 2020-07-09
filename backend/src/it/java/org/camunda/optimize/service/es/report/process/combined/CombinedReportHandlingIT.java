@@ -59,7 +59,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -963,7 +962,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   @Test
-  public void canSaveAndEvaluateCombinedReportsWithStartAndEndDateGroupedReports() throws SQLException {
+  public void canSaveAndEvaluateCombinedReportsWithStartAndEndDateGroupedReports() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
@@ -985,21 +984,22 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getResult()
       .getData();
-    assertThat(resultMap).isNotNull();
-    assertThat(resultMap).hasSize(2);
+    assertThat(resultMap)
+      .isNotNull()
+      .hasSize(2);
     assertThat(resultMap.keySet()).containsExactlyInAnyOrder(singleReportId1, singleReportId2);
 
     final ReportMapResultDto result1 = resultMap.get(singleReportId1)
       .getResult();
     final List<MapResultEntryDto> resultData1 = result1.getData();
-    assertThat(resultData1).isNotNull();
-    assertThat(resultData1).hasSize(1);
+    assertThat(resultData1).isNotNull().hasSize(1);
 
     final ReportMapResultDto result2 = resultMap.get(singleReportId2)
       .getResult();
     final List<MapResultEntryDto> resultData2 = result2.getData();
-    assertThat(resultData2).isNotNull();
-    assertThat(resultData2).hasSize(3);
+    assertThat(resultData2)
+      .isNotNull()
+      .hasSize(3);
   }
 
   @Test
@@ -1077,8 +1077,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Set<String> resultSet = reports.stream()
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toSet());
-    assertThat(resultSet).hasSize(3);
-    assertThat(resultSet).contains(combinedReportId);
+    assertThat(resultSet)
+      .hasSize(3)
+      .contains(combinedReportId);
     Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
       .filter(reportDto -> reportDto instanceof CombinedReportDefinitionDto)
       .map(reportDto -> (CombinedReportDefinitionDto) reportDto)
@@ -1115,8 +1116,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Set<String> resultSet = reports.stream()
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toSet());
-    assertThat(resultSet).hasSize(3);
-    assertThat(resultSet).contains(combinedReportId);
+    assertThat(resultSet)
+      .hasSize(3)
+      .contains(combinedReportId);
     Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
       .filter(reportDto -> reportDto instanceof CombinedReportDefinitionDto)
       .map(reportDto -> (CombinedReportDefinitionDto) reportDto)
@@ -1153,8 +1155,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     Set<String> resultSet = reports.stream()
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toSet());
-    assertThat(resultSet).hasSize(3);
-    assertThat(resultSet).contains(combinedReportId);
+    assertThat(resultSet)
+      .hasSize(3)
+      .contains(combinedReportId);
     Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
       .filter(reportDto -> reportDto instanceof CombinedReportDefinitionDto)
       .map(reportDto -> (CombinedReportDefinitionDto) reportDto)
@@ -1345,7 +1348,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   @Test
-  public void canEvaluateUnsavedCombinedReportWithGroupedByProcessInstanceStartAndEndDateReports() throws SQLException {
+  public void canEvaluateUnsavedCombinedReportWithGroupedByProcessInstanceStartAndEndDateReports() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
@@ -1371,14 +1374,16 @@ public class CombinedReportHandlingIT extends AbstractIT {
     final ReportMapResultDto result1 = resultMap.get(singleReportId1)
       .getResult();
     final List<MapResultEntryDto> resultData1 = result1.getData();
-    assertThat(resultData1).isNotNull();
-    assertThat(resultData1).hasSize(1);
+    assertThat(resultData1)
+      .isNotNull()
+      .hasSize(1);
 
     final ReportMapResultDto result2 = resultMap.get(singleReportId2)
       .getResult();
     final List<MapResultEntryDto> resultData2 = result2.getData();
-    assertThat(resultData2).isNotNull();
-    assertThat(resultData2).hasSize(3);
+    assertThat(resultData2)
+      .isNotNull()
+      .hasSize(3);
   }
 
   @Test
@@ -1422,14 +1427,16 @@ public class CombinedReportHandlingIT extends AbstractIT {
     final ReportMapResultDto result1 = resultMap.get(groupedByEndDateReportId)
       .getResult();
     final List<MapResultEntryDto> resultData1 = result1.getData();
-    assertThat(resultData1).isNotNull();
-    assertThat(resultData1).hasSize(1);
+    assertThat(resultData1)
+      .isNotNull()
+      .hasSize(1);
 
     final ReportMapResultDto result2 = resultMap.get(groupedByStartDateReportId)
       .getResult();
     final List<MapResultEntryDto> resultData2 = result2.getData();
-    assertThat(resultData2).isNotNull();
-    assertThat(resultData2).hasSize(3);
+    assertThat(resultData2)
+      .isNotNull()
+      .hasSize(3);
   }
 
   @Test
@@ -1466,8 +1473,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     // then
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap =
       result.getData();
-    assertThat(resultMap).hasSize(1);
-    assertThat(resultMap).containsKey(singleReportId2);
+    assertThat(resultMap)
+      .hasSize(1)
+      .containsKey(singleReportId2);
   }
 
   @Test

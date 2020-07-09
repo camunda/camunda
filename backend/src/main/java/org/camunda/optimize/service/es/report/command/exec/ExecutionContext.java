@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.service.es.report.command.CommandContext;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.Set;
 
@@ -21,6 +22,7 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
 
   private ReportData reportData;
   private Integer recordLimit;
+  private ZoneId timezone;
   private long unfilteredInstanceCount;
 
   // only used/needed for group by date commands when evaluated for
@@ -39,6 +41,7 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
   public <RD extends ReportDefinitionDto<ReportData>> ExecutionContext(final CommandContext<RD> commandContext) {
     this.reportData = commandContext.getReportDefinition().getData();
     this.recordLimit = commandContext.getRecordLimit();
+    this.timezone = commandContext.getTimezone();
     this.dateIntervalRange = commandContext.getDateIntervalRange();
     this.numberVariableRange = commandContext.getNumberVariableRange();
   }

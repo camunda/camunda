@@ -7,6 +7,7 @@ package org.camunda.optimize.test.optimize;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
@@ -57,6 +58,24 @@ public class SharingClient {
     return getRequestExecutor()
       .buildShareReportRequest(share)
       .execute();
+  }
+
+  public String shareReport(final String reportId) {
+    ReportShareDto shareDto = new ReportShareDto();
+    shareDto.setReportId(reportId);
+    return getRequestExecutor()
+      .buildShareReportRequest(shareDto)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .getId();
+  }
+
+  public String shareDashboard(final String dashboardId) {
+    DashboardShareDto dashboardShare = new DashboardShareDto();
+    dashboardShare.setDashboardId(dashboardId);
+    return getRequestExecutor()
+      .buildShareDashboardRequest(dashboardShare)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .getId();
   }
 
 

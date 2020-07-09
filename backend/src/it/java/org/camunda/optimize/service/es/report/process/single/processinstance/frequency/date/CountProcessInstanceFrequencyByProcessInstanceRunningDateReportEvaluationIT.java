@@ -21,7 +21,6 @@ import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
@@ -50,13 +49,13 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
 
   @Override
   protected void changeProcessInstanceDate(final String processInstanceId,
-                                           final OffsetDateTime newDate) throws SQLException {
+                                           final OffsetDateTime newDate) {
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, newDate);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, newDate);
   }
 
   @Override
-  protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> newIdToDates) throws SQLException {
+  protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> newIdToDates) {
     engineDatabaseExtension.changeProcessInstanceStartDates(newIdToDates);
     engineDatabaseExtension.changeProcessInstanceEndDates(newIdToDates);
   }
@@ -86,14 +85,15 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
     // then
     final int expectedNumberOfBuckets = 3;
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(expectedNumberOfBuckets);
+    assertThat(resultData)
+      .isNotNull()
+      .hasSize(expectedNumberOfBuckets);
 
     // bucket keys exist for each unit between start date of first and end date of last instance
     final ZonedDateTime lastBucketStartDate = truncateToStartOfUnit(
       startOfFirstInstance.plus(bucketWidth.multipliedBy(expectedNumberOfBuckets - 1)),
       mapToChronoUnit(unit)
-    ).toOffsetDateTime().withOffsetSameLocal(OffsetDateTime.now().getOffset()).toZonedDateTime();
+    );
     IntStream.range(0, expectedNumberOfBuckets)
       .forEach(i -> {
         final String expectedBucketKey = convertToExpectedBucketKey(
@@ -188,10 +188,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
                                           ChronoUnit unit,
                                           Double expectedValue) {
     MatcherAssert.assertThat(resultData.size(), is(size));
-    final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit)
-      .toOffsetDateTime()
-      .withOffsetSameLocal(OffsetDateTime.now().getOffset())
-      .toZonedDateTime();
+    final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
     IntStream.range(0, size)
       .forEach(i -> {
         final String expectedDateString = localDateTimeToString(finalStartOfUnit.minus((i), unit));
@@ -215,8 +212,6 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
   private String convertToExpectedBucketKey(final OffsetDateTime date, final GroupByDateUnit unit) {
     return localDateTimeToString(
       truncateToStartOfUnit(date, mapToChronoUnit(unit))
-        // currently, we always assume the current time zone
-        .toOffsetDateTime().withOffsetSameLocal(OffsetDateTime.now().getOffset()).toZonedDateTime()
     );
   }
 

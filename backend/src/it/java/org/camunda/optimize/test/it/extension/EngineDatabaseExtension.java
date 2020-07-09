@@ -422,11 +422,13 @@ public class EngineDatabaseExtension implements Extension {
     connection.commit();
   }
 
-  public void changeProcessInstanceStartDate(String processInstanceId, OffsetDateTime startDate) throws SQLException {
+  @SneakyThrows
+  public void changeProcessInstanceStartDate(String processInstanceId, OffsetDateTime startDate) {
     changeProcessInstanceStartAndEndDate(processInstanceId, startDate, null);
   }
 
-  public void changeProcessInstanceEndDate(String processInstanceId, OffsetDateTime endDate) throws SQLException {
+  @SneakyThrows
+  public void changeProcessInstanceEndDate(String processInstanceId, OffsetDateTime endDate) {
     changeProcessInstanceStartAndEndDate(processInstanceId, null, endDate);
   }
 
@@ -497,8 +499,9 @@ public class EngineDatabaseExtension implements Extension {
     return statement.getInt("total");
   }
 
+  @SneakyThrows
   public void changeDecisionInstanceEvaluationDate(OffsetDateTime fromEvaluationDateTime,
-                                                   OffsetDateTime newEvaluationDateTime) throws SQLException {
+                                                   OffsetDateTime newEvaluationDateTime) {
     final String sql = "UPDATE ACT_HI_DECINST " +
       "SET EVAL_TIME_ = ? WHERE EVAL_TIME_ >= ?";
     final PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));

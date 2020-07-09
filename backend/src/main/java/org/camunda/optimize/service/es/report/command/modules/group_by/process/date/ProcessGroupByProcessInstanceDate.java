@@ -32,6 +32,7 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInter
 import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -57,7 +58,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
   protected final IntervalAggregationService intervalAggregationService;
   private final DateTimeFormatter dateTimeFormatter;
 
-  protected static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
+  private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   protected ProcessGroupByProcessInstanceDate(final ConfigurationService configurationService,
                                               final IntervalAggregationService intervalAggregationService,
@@ -125,8 +126,8 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
       .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
       .order(BucketOrder.key(false))
       .field(getDateField())
-      .dateHistogramInterval(interval)
-      .timeZone(ZoneId.systemDefault());
+      .timeZone(context.getTimezone())
+      .dateHistogramInterval(interval);
 
     final List<DateFilterDataDto<?>> reportDateFilters = getReportDateFilters(context.getReportData());
 
@@ -162,7 +163,8 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
         context.getDateIntervalRange(),
         builder.query(),
         PROCESS_INSTANCE_INDEX_NAME,
-        getDateField()
+        getDateField(),
+        context.getTimezone()
       );
 
     return automaticIntervalAggregation.map(agg -> agg.subAggregation(distributedByPart.createAggregation(context)))
@@ -193,7 +195,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
 
       for (Histogram.Bucket entry : agg.getBuckets()) {
         ZonedDateTime keyAsDate = (ZonedDateTime) entry.getKey();
-        String formattedDate = keyAsDate.withZoneSameInstant(ZoneId.systemDefault()).format(dateTimeFormatter);
+        String formattedDate = keyAsDate.withZoneSameInstant(context.getTimezone()).format(dateTimeFormatter);
         final List<DistributedByResult> distributions =
           distributedByPart.retrieveResult(response, entry.getAggregations(), context);
         result.add(GroupByResult.createGroupByResult(formattedDate, distributions));
@@ -212,10 +214,16 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
       .entrySet()
       .stream()
       .map(stringBucketEntry -> GroupByResult.createGroupByResult(
-        stringBucketEntry.getKey(),
+        formatToCorrectTimezone(stringBucketEntry.getKey(), context.getTimezone()),
         distributedByPart.retrieveResult(response, stringBucketEntry.getValue().getAggregations(), context)
       ))
       .collect(Collectors.toList());
+  }
+
+  private String formatToCorrectTimezone(final String dateAsString, final ZoneId timezone) {
+    final OffsetDateTime date = OffsetDateTime.parse(dateAsString, dateTimeFormatter);
+    OffsetDateTime dateWithAdjustedTimezone = date.atZoneSameInstant(timezone).toOffsetDateTime();
+    return dateTimeFormatter.format(dateWithAdjustedTimezone);
   }
 
   @Override

@@ -8,8 +8,10 @@ package org.camunda.optimize.service.es.report.command;
 import lombok.Data;
 import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAULT_RECORD_LIMIT;
@@ -27,6 +29,16 @@ public class CommandContext<T extends ReportDefinitionDto> {
   // only used for group by number variable commands when evaluated for a combined report
   private Range<Double> numberVariableRange;
 
+  // users can define which timezone the date data should be based on
+  private ZoneId timezone = ZoneId.systemDefault();
+
+  public static CommandContext<ReportDefinitionDto<?>> fromReportEvaluation(final ReportEvaluationInfo evaluationInfo) {
+    CommandContext<ReportDefinitionDto<?>> context = new CommandContext<>();
+    context.setRecordLimit(evaluationInfo.getCustomRecordLimit());
+    context.setReportDefinition(evaluationInfo.getReport());
+    context.setTimezone(evaluationInfo.getTimezone());
+    return context;
+  }
 
   public void setRecordLimit(final Integer recordLimit) {
     this.recordLimit = Optional.ofNullable(recordLimit).orElse(DEFAULT_RECORD_LIMIT);

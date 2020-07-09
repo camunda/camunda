@@ -28,6 +28,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,17 +53,16 @@ public class CombinedReportEvaluator {
     this.esClient = esClient;
   }
 
-  public List<ReportEvaluationResult> evaluate(List<SingleProcessReportDefinitionDto> singleReportDefinitions) {
+  public List<ReportEvaluationResult> evaluate(final List<SingleProcessReportDefinitionDto> singleReportDefinitions,
+                                               final ZoneId timezone) {
     final SingleReportEvaluatorForCombinedReports singleReportEvaluator =
       new SingleReportEvaluatorForCombinedReports(singleReportEvaluatorInjected);
 
-    addIntervalsToReportEvaluator(singleReportDefinitions, singleReportEvaluator);
+    addIntervalsToReportEvaluator(singleReportDefinitions, singleReportEvaluator, timezone);
     List<ReportEvaluationResult> resultList = new ArrayList<>();
     for (SingleProcessReportDefinitionDto report : singleReportDefinitions) {
-      Optional<ReportEvaluationResult> singleReportResult = evaluateWithoutThrowingError(
-        report,
-        singleReportEvaluator
-      );
+      Optional<ReportEvaluationResult> singleReportResult =
+        evaluateWithoutThrowingError(report, singleReportEvaluator, timezone);
       singleReportResult.ifPresent(resultList::add);
     }
     return resultList;
@@ -113,8 +113,9 @@ public class CombinedReportEvaluator {
       .collect(toList());
   }
 
-  private void addIntervalsToReportEvaluator(List<SingleProcessReportDefinitionDto> singleReportDefinitions,
-                                             SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
+  private void addIntervalsToReportEvaluator(final List<SingleProcessReportDefinitionDto> singleReportDefinitions,
+                                             final SingleReportEvaluatorForCombinedReports singleReportEvaluator,
+                                             final ZoneId timezone) {
     CombinedAutomaticDateIntervalSelectionCalculator dateIntervalCalculator =
       new CombinedAutomaticDateIntervalSelectionCalculator(dateTimeFormatter);
     CombinedNumberIntervalSelectionCalculator numberRangeCalculator = new CombinedNumberIntervalSelectionCalculator();
@@ -125,6 +126,7 @@ public class CombinedReportEvaluator {
           Command<?> command = singleReportEvaluator.extractCommand(reportDefinition);
           CommandContext<SingleProcessReportDefinitionDto> commandContext = new CommandContext<>();
           commandContext.setReportDefinition(reportDefinition);
+          commandContext.setTimezone(timezone);
 
           Optional<MinMaxStatDto> dateStats = command.retrieveStatsForCombinedAutomaticGroupByDate(commandContext);
           dateStats.ifPresent(dateIntervalCalculator::addStat);
@@ -143,12 +145,14 @@ public class CombinedReportEvaluator {
     );
   }
 
-  private Optional<ReportEvaluationResult> evaluateWithoutThrowingError(SingleProcessReportDefinitionDto reportDefinition,
-                                                                        SingleReportEvaluatorForCombinedReports singleReportEvaluator) {
+  private Optional<ReportEvaluationResult> evaluateWithoutThrowingError(final SingleProcessReportDefinitionDto reportDefinition,
+                                                                        final SingleReportEvaluatorForCombinedReports singleReportEvaluator,
+                                                                        final ZoneId timezone) {
     Optional<ReportEvaluationResult> result = Optional.empty();
     try {
       CommandContext<SingleProcessReportDefinitionDto> commandContext = new CommandContext<>();
       commandContext.setReportDefinition(reportDefinition);
+      commandContext.setTimezone(timezone);
       ReportEvaluationResult singleResult = singleReportEvaluator.evaluate(commandContext);
       result = Optional.of(singleResult);
     } catch (OptimizeException | OptimizeValidationException onlyForLogging) {

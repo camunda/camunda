@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.PageResultDto;
@@ -28,7 +30,7 @@ import java.util.List;
 import java.util.function.Function;
 
 @Slf4j
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ElasticsearchReaderUtil {
 
   public static <T> List<T> retrieveAllScrollResults(final SearchResponse initialScrollResponse,

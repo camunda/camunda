@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.test.util;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public enum ProcessReportDataType {
 
   RAW_DATA,
@@ -60,5 +64,21 @@ public enum ProcessReportDataType {
   USER_TASK_DURATION_GROUP_BY_CANDIDATE,
   USER_TASK_DURATION_GROUP_BY_CANDIDATE_BY_USER_TASK,
 
-  VARIABLE_AGGREGATION_GROUP_BY_NONE
+  VARIABLE_AGGREGATION_GROUP_BY_NONE;
+
+  public static List<ProcessReportDataType> allDateReports() {
+    return Arrays.stream(
+      ProcessReportDataType.values())
+      .filter(type -> type.name().toLowerCase().contains("_date"))
+      .collect(Collectors.toList()
+      );
+  }
+
+  public static List<ProcessReportDataType> allVariableReports() {
+    return Arrays.stream(
+      ProcessReportDataType.values())
+      .filter(type -> type.name().toLowerCase().contains("_variable"))
+      .collect(Collectors.toList()
+      );
+  }
 }

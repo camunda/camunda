@@ -51,73 +51,37 @@ public abstract class ReportEvaluationHandler {
 
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
-  private final ReportReader reportReader;
+  protected final ReportReader reportReader;
   private final SingleReportEvaluator singleReportEvaluator;
   private final CombinedReportEvaluator combinedReportEvaluator;
   private final ProcessVariableService processVariableService;
 
-  public AuthorizedReportEvaluationResult evaluateSavedReport(final String userId,
-                                                              final String reportId) {
-    return evaluateSavedReport(userId, reportId, null);
-  }
-
-  public AuthorizedReportEvaluationResult evaluateSavedReport(final String userId,
-                                                              final String reportId,
-                                                              final Integer customRecordLimit) {
-    ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
-    return evaluateReport(userId, reportDefinition, customRecordLimit);
-  }
-
-  public AuthorizedReportEvaluationResult evaluateSavedReportWithAdditionalFilters(final String userId,
-                                                                                   final String reportId,
-                                                                                   final AdditionalProcessReportEvaluationFilterDto filterDto) {
-    ReportDefinitionDto<?> reportDefinition = reportReader.getReport(reportId);
-    return evaluateReport(userId, reportDefinition, null, filterDto);
-  }
-
-  public AuthorizedReportEvaluationResult evaluateReport(final String userId,
-                                                         final ReportDefinitionDto reportDefinition) {
-    return evaluateReport(userId, reportDefinition, null);
-  }
-
-  public AuthorizedReportEvaluationResult evaluateReport(final String userId,
-                                                         final ReportDefinitionDto report,
-                                                         final Integer customRecordLimit) {
-    return evaluateReport(userId, report, customRecordLimit, null);
-  }
-
-  public AuthorizedReportEvaluationResult evaluateReport(final String userId,
-                                                         final ReportDefinitionDto report,
-                                                         final Integer customRecordLimit,
-                                                         final AdditionalProcessReportEvaluationFilterDto filterDto) {
-    final RoleType currentUserRole = getAuthorizedRole(userId, report)
+  public AuthorizedReportEvaluationResult evaluateReport(final ReportEvaluationInfo evaluationInfo) {
+    evaluationInfo.postFetchSavedReport(reportReader);
+    final RoleType currentUserRole = getAuthorizedRole(evaluationInfo.getUserId(), evaluationInfo.getReport())
       .orElseThrow(() -> new ForbiddenException(String.format(
-        "User [%s] is not authorized to evaluate report [%s].", userId, report.getName()
+        "User [%s] is not authorized to evaluate report [%s].",
+        evaluationInfo.getUserId(),
+        evaluationInfo.getReport().getName()
       )));
-    final AuthorizedReportDefinitionDto authorizedReportDefinitionDto = new AuthorizedReportDefinitionDto(
-      report, currentUserRole
-    );
     final ReportEvaluationResult result;
-    if (!report.getCombined()) {
-      result = evaluateSingleReportWithErrorCheck(userId, authorizedReportDefinitionDto, customRecordLimit, filterDto);
+    if (!evaluationInfo.getReport().getCombined()) {
+      result = evaluateSingleReportWithErrorCheck(evaluationInfo, currentUserRole);
     } else {
-      result = evaluateCombinedReport(userId, authorizedReportDefinitionDto, filterDto);
+      result = evaluateCombinedReport(evaluationInfo, currentUserRole);
     }
     return new AuthorizedReportEvaluationResult(result, currentUserRole);
   }
 
-  private CombinedProcessReportResult evaluateCombinedReport(final String userId,
-                                                             final AuthorizedReportDefinitionDto authorizedReportDefinitionDto,
-                                                             final AdditionalProcessReportEvaluationFilterDto filterDto) {
+  private CombinedProcessReportResult evaluateCombinedReport(final ReportEvaluationInfo evaluationInfo,
+                                                             final RoleType currentUserRole) {
     final CombinedReportDefinitionDto combinedReportDefinitionDto =
-      (CombinedReportDefinitionDto) authorizedReportDefinitionDto.getDefinitionDto();
-    ValidationHelper.validateCombinedReportDefinition(authorizedReportDefinitionDto);
-    final List<SingleProcessReportDefinitionDto> singleReportDefinitions = getAuthorizedSingleReportDefinitions(
-      userId,
-      combinedReportDefinitionDto.getData().getReportIds(),
-      filterDto
-    );
-    final List<ReportEvaluationResult> resultList = combinedReportEvaluator.evaluate(singleReportDefinitions);
+      (CombinedReportDefinitionDto) evaluationInfo.getReport();
+    ValidationHelper.validateCombinedReportDefinition(combinedReportDefinitionDto, currentUserRole);
+    final List<SingleProcessReportDefinitionDto> singleReportDefinitions =
+      getAuthorizedSingleReportDefinitions(evaluationInfo);
+    final List<ReportEvaluationResult> resultList =
+      combinedReportEvaluator.evaluate(singleReportDefinitions, evaluationInfo.getTimezone());
     final long instanceCount = combinedReportEvaluator.evaluateCombinedReportInstanceCount(singleReportDefinitions);
     return transformToCombinedReportResult(combinedReportDefinitionDto, resultList, instanceCount);
   }
@@ -152,14 +116,15 @@ public abstract class ReportEvaluationHandler {
       ResultType.NUMBER.equals(resultType);
   }
 
-  private List<SingleProcessReportDefinitionDto> getAuthorizedSingleReportDefinitions(
-    final String userId,
-    final List<String> singleReportIds,
-    final AdditionalProcessReportEvaluationFilterDto filterDto) {
+  private List<SingleProcessReportDefinitionDto> getAuthorizedSingleReportDefinitions(final ReportEvaluationInfo evaluationInfo) {
+    final CombinedReportDefinitionDto combinedReportDefinitionDto =
+      (CombinedReportDefinitionDto) evaluationInfo.getReport();
+    final String userId = evaluationInfo.getUserId();
+    List<String> singleReportIds = combinedReportDefinitionDto.getData().getReportIds();
     return reportReader.getAllSingleProcessReportsForIdsOmitXml(singleReportIds)
       .stream()
       .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
-      .peek(reportDefinition -> addAdditionalFilters(userId, reportDefinition, filterDto))
+      .peek(reportDefinition -> addAdditionalFilters(userId, reportDefinition, evaluationInfo.getAdditionalFilters()))
       .collect(Collectors.toList());
   }
 
@@ -210,20 +175,19 @@ public abstract class ReportEvaluationHandler {
   /**
    * Checks if the user is allowed to see the given report.
    */
-  protected abstract Optional<RoleType> getAuthorizedRole(String userId, ReportDefinitionDto report);
+  protected abstract Optional<RoleType> getAuthorizedRole(final String userId,
+                                                          final ReportDefinitionDto report);
 
-  private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final String userId,
-                                                                    final AuthorizedReportDefinitionDto reportDefinition,
-                                                                    final Integer customRecordLimit,
-                                                                    final AdditionalProcessReportEvaluationFilterDto filterDto) {
-    addAdditionalFilters(userId, reportDefinition.getDefinitionDto(), filterDto);
+  private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final ReportEvaluationInfo evaluationInfo,
+                                                                    final RoleType currentUserRole) {
+    addAdditionalFilters(evaluationInfo.getUserId(), evaluationInfo.getReport(), evaluationInfo.getAdditionalFilters());
     try {
-      CommandContext<ReportDefinitionDto> context = new CommandContext<>();
-      context.setReportDefinition(reportDefinition.getDefinitionDto());
-      context.setRecordLimit(customRecordLimit);
+      CommandContext<ReportDefinitionDto<?>> context = CommandContext.fromReportEvaluation(evaluationInfo);
       return singleReportEvaluator.evaluate(context);
     } catch (OptimizeException | OptimizeValidationException e) {
-      throw new ReportEvaluationException(reportDefinition, e);
+      AuthorizedReportDefinitionDto authorizedReportDefinitionDto =
+        new AuthorizedReportDefinitionDto(evaluationInfo.getReport(), currentUserRole);
+      throw new ReportEvaluationException(authorizedReportDefinitionDto, e);
     }
   }
 

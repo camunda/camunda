@@ -39,10 +39,12 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
 import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
+import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
 @AllArgsConstructor
 @Secured
@@ -140,7 +142,7 @@ public class ReportRestService {
     List<AuthorizedReportDefinitionDto> reportDefinitions =
       reportService.findAndFilterPrivateReports(userId, queryParameters);
     reportDefinitions
-      .forEach(reportDefinition -> reportRestMapper.prepareRestResponse(reportDefinition));
+      .forEach(reportRestMapper::prepareRestResponse);
     return reportDefinitions;
   }
 
@@ -170,8 +172,14 @@ public class ReportRestService {
                                                                      @PathParam("id") String reportId,
                                                                      AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final ZoneId timezone = extractTimezone(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
-      reportEvaluationService.evaluateSavedReportWithAdditionalFilters(userId, reportId, reportEvaluationFilter);
+      reportEvaluationService.evaluateSavedReportWithAdditionalFilters(
+        userId,
+        timezone,
+        reportId,
+        reportEvaluationFilter
+      );
     return reportRestMapper.mapToEvaluationResultDto(reportEvaluationResult);
   }
 
@@ -187,10 +195,9 @@ public class ReportRestService {
   public AuthorizedEvaluationResultDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
                                                               @NotNull ReportDefinitionDto reportDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final AuthorizedReportEvaluationResult reportEvaluationResult = reportEvaluationService.evaluateUnsavedReport(
-      userId,
-      reportDefinitionDto
-    );
+    final ZoneId timezone = extractTimezone(requestContext);
+    final AuthorizedReportEvaluationResult reportEvaluationResult =
+      reportEvaluationService.evaluateUnsavedReport(userId, timezone, reportDefinitionDto);
     return reportRestMapper.mapToEvaluationResultDto(reportEvaluationResult);
   }
 

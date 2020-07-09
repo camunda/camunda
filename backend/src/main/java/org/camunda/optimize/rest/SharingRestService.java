@@ -34,6 +34,9 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.time.ZoneId;
+
+import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
 @AllArgsConstructor
 @Path("/share")
@@ -111,23 +114,25 @@ public class SharingRestService {
   @GET
   @Path("/report/{shareId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedEvaluationResultDto evaluateReport(@PathParam("shareId") String reportShareId) {
+  public AuthorizedEvaluationResultDto evaluateReport(@Context ContainerRequestContext requestContext,
+                                                      @PathParam("shareId") String reportShareId) {
+    final ZoneId timezone = extractTimezone(requestContext);
     return reportRestMapper.mapToEvaluationResultDto(
-      sharingService.evaluateReportShare(reportShareId)
+      sharingService.evaluateReportShare(reportShareId, timezone)
     );
   }
 
   @GET
   @Path("/dashboard/{shareId}/report/{reportId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
-  public AuthorizedEvaluationResultDto evaluateReport(
-    @PathParam("shareId") String dashboardShareId,
-    @PathParam("reportId") String reportId
+  public AuthorizedEvaluationResultDto evaluateReport(@Context ContainerRequestContext requestContext,
+                                                      @PathParam("shareId") String dashboardShareId,
+                                                      @PathParam("reportId") String reportId
   ) {
-    return reportRestMapper.mapToEvaluationResultDto(sharingService.evaluateReportForSharedDashboard(
-      dashboardShareId,
-      reportId
-    ));
+    final ZoneId timezone = extractTimezone(requestContext);
+    return reportRestMapper.mapToEvaluationResultDto(
+      sharingService.evaluateReportForSharedDashboard(dashboardShareId, reportId, timezone)
+    );
   }
 
   @GET

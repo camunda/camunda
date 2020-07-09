@@ -18,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -59,17 +58,15 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
   protected void adjustProcessInstanceDates(String processInstanceId,
                                             OffsetDateTime refDate,
                                             long daysToShift,
-                                            long durationInSec) {
+                                            Long durationInSec) {
     OffsetDateTime shiftedEndDate = refDate.plusDays(daysToShift);
-    try {
+    if (durationInSec != null) {
       engineDatabaseExtension.changeProcessInstanceStartDate(
         processInstanceId,
         shiftedEndDate.minusSeconds(durationInSec)
       );
-      engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedEndDate);
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException("Failed adjusting process instance dates", e);
     }
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedEndDate);
   }
 
   @Test

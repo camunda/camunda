@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
+import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.es.report.result.NumberResult;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -60,7 +61,10 @@ public class AlertJob implements Job {
 
     try {
       ReportDefinitionDto reportDefinition = reportReader.getReport(alert.getReportId());
-      NumberResult reportResult = (NumberResult) reportEvaluator.evaluateReport(reportDefinition).getEvaluationResult();
+      final ReportEvaluationInfo reportEvaluationInfo = ReportEvaluationInfo.builder(reportDefinition).build();
+      NumberResult reportResult = (NumberResult) reportEvaluator
+        .evaluateReport(reportEvaluationInfo)
+        .getEvaluationResult();
 
       AlertJobResult alertJobResult = null;
       if (thresholdExceeded(alert, reportResult)) {

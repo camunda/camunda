@@ -78,12 +78,16 @@ public class IntervalAggregationService {
     }
   }
 
-  public MinMaxStatDto getCrossFieldMinMaxStats(QueryBuilder query, String indexName, String minMaxField) {
+  public MinMaxStatDto getCrossFieldMinMaxStats(final QueryBuilder query,
+                                                final String indexName,
+                                                final String minMaxField) {
     return getCrossFieldMinMaxStats(query, indexName, minMaxField, minMaxField);
   }
 
-  public MinMaxStatDto getCrossFieldMinMaxStats(QueryBuilder query, String indexName,
-                                                String firstField, String secondField) {
+  public MinMaxStatDto getCrossFieldMinMaxStats(final QueryBuilder query,
+                                                 final String indexName,
+                                                 final String firstField,
+                                                 final String secondField) {
     AggregationBuilder minAgg1 = AggregationBuilders
       .min(MIN_AGGREGATION_FIRST_FIELD)
       .field(firstField);
@@ -123,27 +127,29 @@ public class IntervalAggregationService {
     return mapStatsAggregationToStatDto(response);
   }
 
-  public Optional<AggregationBuilder> createIntervalAggregation(Optional<org.apache.commons.lang3.Range<OffsetDateTime>> rangeToUse,
-                                                                QueryBuilder query,
-                                                                String indexName,
-                                                                String field) {
+  public Optional<AggregationBuilder> createIntervalAggregation(final Optional<org.apache.commons.lang3.Range<OffsetDateTime>> rangeToUse,
+                                                                final QueryBuilder query,
+                                                                final String indexName,
+                                                                final String field,
+                                                                final ZoneId timezone) {
     if (rangeToUse.isPresent()) {
       OffsetDateTime min = rangeToUse.get().getMinimum();
       OffsetDateTime max = rangeToUse.get().getMaximum();
-      return Optional.of(createIntervalAggregationFromGivenRange(field, min, max));
+      return Optional.of(createIntervalAggregationFromGivenRange(field, timezone, min, max));
     } else {
-      return createIntervalAggregation(query, indexName, field);
+      return createIntervalAggregation(query, indexName, field, timezone);
     }
   }
 
-  private Optional<AggregationBuilder> createIntervalAggregation(QueryBuilder query,
-                                                                 String indexName,
-                                                                 String field) {
+  private Optional<AggregationBuilder> createIntervalAggregation(final QueryBuilder query,
+                                                                 final String indexName,
+                                                                 final String field,
+                                                                 final ZoneId timezone) {
     MinMaxStatDto stats = getCrossFieldMinMaxStats(query, indexName, field);
     if (stats.isValidRange()) {
       OffsetDateTime min = OffsetDateTime.parse(stats.getMinAsString(), dateTimeFormatter);
       OffsetDateTime max = OffsetDateTime.parse(stats.getMaxAsString(), dateTimeFormatter);
-      return Optional.of(createIntervalAggregationFromGivenRange(field, min, max));
+      return Optional.of(createIntervalAggregationFromGivenRange(field, timezone, min, max));
     } else {
       return Optional.empty();
     }
@@ -158,9 +164,10 @@ public class IntervalAggregationService {
     return Math.max(intervalFromMinToMax, 1);
   }
 
-  public AggregationBuilder createIntervalAggregationFromGivenRange(String field,
-                                                                    OffsetDateTime min,
-                                                                    OffsetDateTime max) {
+  public AggregationBuilder createIntervalAggregationFromGivenRange(final String field,
+                                                                    final ZoneId timezone,
+                                                                    final OffsetDateTime min,
+                                                                    final OffsetDateTime max) {
     long msAsUnit = getDateHistogramIntervalInMsFromMinMax(min, max);
     RangeAggregationBuilder rangeAgg = AggregationBuilders
       .range(RANGE_AGGREGATION)
@@ -180,9 +187,9 @@ public class IntervalAggregationService {
 
       RangeAggregator.Range range =
         new RangeAggregator.Range(
-          dateTimeFormatter.format(start.atZoneSameInstant(ZoneId.systemDefault())), // key that's being used
-          dateTimeFormatter.format(start),
-          dateTimeFormatter.format(end)
+          dateTimeFormatter.format(start.atZoneSameInstant(timezone)), // key that's being used
+          dateTimeFormatter.format(start.atZoneSameInstant(timezone)),
+          dateTimeFormatter.format(end.atZoneSameInstant(timezone))
         );
       rangeAgg.addRange(range);
       start = nextStart;

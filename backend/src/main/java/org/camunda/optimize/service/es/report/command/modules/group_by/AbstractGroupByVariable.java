@@ -45,7 +45,6 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -196,7 +195,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
     for (double start = min.get();
          start <= max && numberOfBuckets < configurationService.getEsAggregationBucketLimit();
-         start += unit) {
+         start += unit, numberOfBuckets++) {
       RangeAggregator.Range range =
         new RangeAggregator.Range(
           getKeyForNumberBucket(getVariableType(context), start),
@@ -204,7 +203,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
           start + unit
         );
       rangeAgg.addRange(range);
-      numberOfBuckets++;
     }
     return Optional.of(rangeAgg);
   }
@@ -232,18 +230,20 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
         .field(getNestedVariableValueFieldLabel(VariableType.DATE))
         .dateHistogramInterval(interval)
         .format(OPTIMIZE_DATE_FORMAT)
-        .timeZone(ZoneId.systemDefault()));
+        .timeZone(context.getTimezone())
+    );
   }
 
   private AggregationBuilder createAutomaticIntervalAggregation(final MinMaxStatDto minMaxStats,
                                                                 final ExecutionContext<Data> context) {
     OffsetDateTime minDateTime =
-      OffsetDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMin())), ZoneId.systemDefault());
+      OffsetDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMin())), context.getTimezone());
     OffsetDateTime maxDateTime =
-      OffsetDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMax())), ZoneId.systemDefault());
+      OffsetDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMax())), context.getTimezone());
     AggregationBuilder automaticIntervalAggregation =
       intervalAggregationService.createIntervalAggregationFromGivenRange(
         getNestedVariableValueFieldLabel(VariableType.DATE),
+        context.getTimezone(),
         minDateTime,
         maxDateTime
       );
@@ -251,8 +251,8 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     return automaticIntervalAggregation.subAggregation(distributedByPart.createAggregation(context));
   }
 
-  protected MinMaxStatDto getMinMaxStats(final QueryBuilder baseQuery,
-                                         final ExecutionContext<Data> context) {
+  private MinMaxStatDto getMinMaxStats(final QueryBuilder baseQuery,
+                                       final ExecutionContext<Data> context) {
     AggregationBuilder statsAggregation = VariableType.DATE.equals(getVariableType(context))
       ? stats(STATS).field(getNestedVariableValueFieldLabel(VariableType.DATE)).format(OPTIMIZE_DATE_FORMAT)
       : stats(STATS).field(getNestedVariableValueFieldLabel(getVariableType(context)));
@@ -442,7 +442,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     return Math.pow(10, Math.round(Math.log10(numberToRound)));
   }
 
-  protected boolean isGroupedByNumberVariable(final VariableType varType) {
+  private boolean isGroupedByNumberVariable(final VariableType varType) {
     return VariableType.getNumericTypes().contains(varType);
   }
 }

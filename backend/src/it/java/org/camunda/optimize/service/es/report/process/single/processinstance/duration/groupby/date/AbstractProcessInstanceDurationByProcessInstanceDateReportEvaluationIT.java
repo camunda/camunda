@@ -318,7 +318,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   protected abstract void adjustProcessInstanceDates(String processInstanceId,
                                                      OffsetDateTime refDate,
                                                      long daysToShift,
-                                                     long durationInSec);
+                                                     Long durationInSec);
 
   @Test
   public void multipleBuckets_noFilter_resultLimitedByConfig() {

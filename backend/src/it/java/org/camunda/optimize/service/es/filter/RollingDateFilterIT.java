@@ -245,12 +245,11 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
                                           long daysToShift,
                                           long durationInSec) {
     OffsetDateTime shiftedStartDate = startDate.plusDays(daysToShift);
-    try {
-      engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
-      engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedStartDate.plusSeconds(durationInSec));
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException("Failed adjusting process instance dates", e);
-    }
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDate(
+      processInstanceId,
+      shiftedStartDate.plusSeconds(durationInSec)
+    );
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {

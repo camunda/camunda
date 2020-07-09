@@ -53,7 +53,7 @@ public class ExportServiceTest {
     rawDataProcessReportResultDto.setData(RawDataHelper.getRawDataProcessInstanceDtos());
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, new SingleProcessReportDefinitionDto());
-    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(new AuthorizedReportEvaluationResult(
+    when(reportService.evaluateReport(any())).thenReturn(new AuthorizedReportEvaluationResult(
       rawDataReportResult,
       RoleType.VIEWER
     ));
@@ -76,7 +76,7 @@ public class ExportServiceTest {
     rawDataDecisionReportResultDto.setData(RawDataHelper.getRawDataDecisionInstanceDtos());
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto, new SingleDecisionReportDefinitionDto());
-    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(new AuthorizedReportEvaluationResult(
+    when(reportService.evaluateReport(any())).thenReturn(new AuthorizedReportEvaluationResult(
       rawDataReportResult,
       RoleType.VIEWER
     ));

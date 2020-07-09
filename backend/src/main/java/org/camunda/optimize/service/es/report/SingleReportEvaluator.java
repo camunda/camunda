@@ -40,7 +40,8 @@ public class SingleReportEvaluator {
 
   @Autowired
   public SingleReportEvaluator(final NotSupportedCommand notSupportedCommand,
-                               final ApplicationContext applicationContext, final Collection<Command> commands) {
+                               final ApplicationContext applicationContext,
+                               final Collection<Command> commands) {
     this(
       notSupportedCommand,
       applicationContext,

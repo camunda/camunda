@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
+import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +23,7 @@ import java.util.Optional;
 @Slf4j
 public class ExportService {
 
-  private final AuthorizationCheckReportEvaluationHandler reportService;
+  private final AuthorizationCheckReportEvaluationHandler reportEvaluationHandler;
   private final ConfigurationService configurationService;
 
   public Optional<byte[]> getCsvBytesForEvaluatedReportResult(final String userId,
@@ -31,9 +32,11 @@ public class ExportService {
     final Integer exportCsvLimit = configurationService.getExportCsvLimit();
 
     try {
-      final AuthorizedReportEvaluationResult reportResult = reportService.evaluateSavedReport(
-        userId, reportId, exportCsvLimit
-      );
+      ReportEvaluationInfo evaluationInfo = ReportEvaluationInfo.builder(reportId)
+        .userId(userId)
+        .customRecordLimit(exportCsvLimit)
+        .build();
+      final AuthorizedReportEvaluationResult reportResult = reportEvaluationHandler.evaluateReport(evaluationInfo);
       final List<String[]> resultAsCsv = reportResult.getEvaluationResult().getResultAsCsv(exportCsvLimit, 0);
       return Optional.ofNullable(CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv));
     } catch (NotFoundException e) {
@@ -51,9 +54,12 @@ public class ExportService {
     final Integer exportCsvLimit = configurationService.getExportCsvLimit();
 
     try {
-      final AuthorizedReportEvaluationResult reportResult = reportService.evaluateReport(
-        userId, reportDefinition, exportCsvLimit
-      );
+      ReportEvaluationInfo evaluationInfo = ReportEvaluationInfo.builder(reportDefinition)
+        .userId(userId)
+        .customRecordLimit(exportCsvLimit)
+        .build();
+      final AuthorizedReportEvaluationResult reportResult =
+        reportEvaluationHandler.evaluateReport(evaluationInfo);
       final List<String[]> resultAsCsv = reportResult.getEvaluationResult()
         .getResultAsCsv(exportCsvLimit, 0);
       return CSVUtils.mapCsvLinesToCsvBytes(resultAsCsv);

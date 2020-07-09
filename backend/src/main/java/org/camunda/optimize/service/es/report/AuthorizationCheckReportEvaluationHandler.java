@@ -29,7 +29,8 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
   }
 
   @Override
-  protected Optional<RoleType> getAuthorizedRole(String userId, ReportDefinitionDto report) {
+  protected Optional<RoleType> getAuthorizedRole(final String userId,
+                                                 final ReportDefinitionDto report) {
     return authorizationService.getAuthorizedRole(userId, report);
   }
 }
