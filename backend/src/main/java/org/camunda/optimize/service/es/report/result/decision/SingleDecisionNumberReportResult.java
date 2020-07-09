@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResult
 import org.camunda.optimize.service.es.report.result.NumberResult;
 
 import javax.validation.constraints.NotNull;
+import java.time.ZoneId;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -24,7 +25,7 @@ public class SingleDecisionNumberReportResult
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset) {
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
     final List<String[]> csvStrings = new LinkedList<>();
     csvStrings.add(new String[]{String.valueOf(reportResult.getData())});
 

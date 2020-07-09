@@ -30,7 +30,10 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.time.ZoneId;
 import java.util.Optional;
+
+import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 
 @AllArgsConstructor
 @Path("/export")
@@ -49,8 +52,10 @@ public class ExportRestService {
                                @PathParam("reportId") String reportId,
                                @PathParam("fileName") String fileName) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final ZoneId timezone = extractTimezone(requestContext);
 
-    final Optional<byte[]> csvForReport = exportService.getCsvBytesForEvaluatedReportResult(userId, reportId);
+    final Optional<byte[]> csvForReport =
+      exportService.getCsvBytesForEvaluatedReportResult(userId, reportId, timezone);
 
     return csvForReport
       .map(csvBytes -> createOctetStreamResponse(fileName, csvBytes))
@@ -65,6 +70,7 @@ public class ExportRestService {
                                 @PathParam("fileName") final String fileName,
                                 @Valid final ProcessRawDataCsvExportRequestDto request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final ZoneId timezone = extractTimezone(requestContext);
 
     final SingleProcessReportDefinitionDto reportDefinitionDto = SingleProcessReportDefinitionDto.builder()
       .reportType(ReportType.PROCESS)
@@ -85,7 +91,7 @@ public class ExportRestService {
 
     return createOctetStreamResponse(
       fileName,
-      exportService.getCsvBytesForEvaluatedReportResult(userId, reportDefinitionDto)
+      exportService.getCsvBytesForEvaluatedReportResult(userId, reportDefinitionDto, timezone)
     );
   }
 

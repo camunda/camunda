@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.service.export.CSVUtils;
 
 import javax.validation.constraints.NotNull;
+import java.time.ZoneId;
 import java.util.List;
 
 public class SingleProcessMapReportResult
@@ -23,7 +24,7 @@ public class SingleProcessMapReportResult
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset) {
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
     if (reportDefinition.getData().isFrequencyReport()) {
       return frequencyMapResultAsCsv(limit, offset);
     } else {

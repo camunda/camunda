@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.SneakyThrows;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.io.IOUtils;
 
@@ -17,7 +18,8 @@ import java.time.OffsetDateTime;
 @UtilityClass
 public class RestTestUtil {
 
-  public static String getResponseContentAsString(final Response response) throws IOException {
+  @SneakyThrows
+  public static String getResponseContentAsString(final Response response) {
     byte[] result = getResponseContentAsByteArray(response);
     return new String(result);
   }

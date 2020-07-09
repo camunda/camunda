@@ -7,7 +7,10 @@ package org.camunda.optimize.rest;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -25,6 +28,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperM
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
@@ -56,6 +60,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
+import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
@@ -665,6 +670,79 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     assertThat(result.getData()).hasSize(1);
     RawDataDecisionInstanceDto rawInstance = result.getData().get(0);
     assertThat(getOffsetDiffInHours(rawInstance.getEvaluationDateTime(), now)).isOne();
+  }
+
+  @Test
+  public void adjustDatesInCSVExportToTimezone_byReportId() {
+    //given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now);
+
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto groupByDate = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.HOUR)
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .build();
+
+    final String reportId = reportClient.createSingleProcessReport(groupByDate);
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCsvExportRequest(reportId, "my_file.csv")
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+
+    String actualContent = getResponseContentAsString(response);
+    OffsetDateTime londonTime = now.truncatedTo(ChronoUnit.HOURS)
+      .atZoneSameInstant(ZoneId.of("Europe/London"))
+      .toOffsetDateTime();
+    String londonTimeAsString = embeddedOptimizeExtension.getDateTimeFormatter().format(londonTime);
+    assertThat(actualContent).containsOnlyOnce(londonTimeAsString);
+  }
+
+  @Test
+  public void adjustDatesInCSVExportToTimezone_byUnsavedRawProcessDataReport() {
+    //given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now);
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstance.getId(), now);
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessRawDataCsvExportRequestDto exportRequestDto = ProcessRawDataCsvExportRequestDto.builder()
+      .processDefinitionKey(processInstance.getProcessDefinitionKey())
+      .processDefinitionVersions(Lists.newArrayList(ReportConstants.ALL_VERSIONS))
+      .includedColumns(
+        Lists.newArrayList(
+          ProcessInstanceDto.Fields.startDate,
+          ProcessInstanceDto.Fields.endDate
+        )
+      )
+      .build();
+
+    // when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildDynamicRawProcessCsvExportRequest(exportRequestDto, "my_file.csv")
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+
+    String actualContent = getResponseContentAsString(response);
+    OffsetDateTime londonTime = now.atZoneSameInstant(ZoneId.of("Europe/London")).toOffsetDateTime();
+    String londonTimeAsString = londonTime.toString();
+    assertThat(StringUtils.countMatches(actualContent, londonTimeAsString)).isEqualTo(2);
   }
 
   private OffsetDateTime truncateToYearWithLondonTimezone(final OffsetDateTime now) {

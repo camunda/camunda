@@ -52,8 +52,9 @@ import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
 
 public class ExportRestServiceIT extends AbstractIT {
 
-  public static final String COLUMN_PROCESS_INSTANCE_ID = ProcessInstanceDto.Fields.processInstanceId;
-  public static final String SAMPLE_PROCESS_DEFINITION_KEY = "some";
+  private static final String COLUMN_PROCESS_INSTANCE_ID = ProcessInstanceDto.Fields.processInstanceId;
+  private static final String SAMPLE_PROCESS_DEFINITION_KEY = "some";
+
   @RegisterExtension
   @Order(4)
   public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(
@@ -94,7 +95,7 @@ public class ExportRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void exportExistingRawProcessReport() throws IOException {
+  public void exportExistingRawProcessReport() {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String reportId = createAndStoreDefaultValidRawProcessReportDefinition(
@@ -172,7 +173,7 @@ public class ExportRestServiceIT extends AbstractIT {
   @MethodSource("getInvalidDynamicRawProcessExportRequests")
   public void exportDynamicRawProcessReport_rejectInvalidRequests(final ProcessRawDataCsvExportRequestDto invalidRequest) {
     //given
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    deployAndStartSimpleProcess();
 
     importAllEngineEntitiesFromScratch();
 
@@ -186,7 +187,7 @@ public class ExportRestServiceIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  public static Stream<ProcessRawDataCsvExportRequestDto> getInvalidDynamicRawProcessExportRequests() {
+  private static Stream<ProcessRawDataCsvExportRequestDto> getInvalidDynamicRawProcessExportRequests() {
     return Stream.of(
       ProcessRawDataCsvExportRequestDto.builder()
         .processDefinitionKey(null)
@@ -239,7 +240,7 @@ public class ExportRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void exportDynamicRawProcessReport_withJustProcessInstanceId() throws IOException {
+  public void exportDynamicRawProcessReport_withJustProcessInstanceId() {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
@@ -265,9 +266,9 @@ public class ExportRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void exportDynamicRawProcessReport_withJustProcessInstanceIdSpecificVersion() throws IOException {
+  public void exportDynamicRawProcessReport_withJustProcessInstanceIdSpecificVersion() {
     //given
-    ProcessInstanceEngineDto processInstanceVersion1 = deployAndStartSimpleProcess();
+    deployAndStartSimpleProcess();
     ProcessInstanceEngineDto processInstanceVersion2 = deployAndStartSimpleProcess();
 
     importAllEngineEntitiesFromScratch();
@@ -292,7 +293,7 @@ public class ExportRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void exportDynamicRawProcessReport_withJustProcessInstanceIdAllVersions() throws IOException {
+  public void exportDynamicRawProcessReport_withJustProcessInstanceIdAllVersions() {
     //given
     ProcessInstanceEngineDto processInstanceVersion1 = deployAndStartSimpleProcess();
     ProcessInstanceEngineDto processInstanceVersion2 = deployAndStartSimpleProcess();
@@ -323,7 +324,7 @@ public class ExportRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void exportDynamicRawProcessReport_withJustProcessInstanceIdSpecificTenant() throws IOException {
+  public void exportDynamicRawProcessReport_withJustProcessInstanceIdSpecificTenant() {
     //given
     final String tenantId1 = "tenant1";
     engineIntegrationExtension.createTenant(tenantId1);

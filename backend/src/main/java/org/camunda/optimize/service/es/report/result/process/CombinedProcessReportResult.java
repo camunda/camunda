@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.validation.constraints.NotNull;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -39,7 +40,7 @@ public class CombinedProcessReportResult
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset) {
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
     Optional<ResultType> resultType = reportResult.getSingleReportResultType();
     return resultType.map(r -> mapCombinedReportResultsToCsvList(limit, offset, r))
       .orElseGet(() -> {
@@ -125,7 +126,7 @@ public class CombinedProcessReportResult
     return combinedResult.getData().values()
       .stream()
       .map(reportResultMapper::apply)
-      .map(reportResult -> reportResult.getResultAsCsv(limit, offset))
+      .map(reportResult -> reportResult.getResultAsCsv(limit, offset, ZoneId.systemDefault()))
       .collect(Collectors.toList());
   }
 

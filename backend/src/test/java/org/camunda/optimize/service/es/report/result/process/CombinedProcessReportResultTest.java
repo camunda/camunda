@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -56,7 +57,7 @@ public class CombinedProcessReportResultTest {
 
 
     // when
-    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0);
+    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
 
     // then
@@ -71,7 +72,7 @@ public class CombinedProcessReportResultTest {
 
 
     // when (limit = 0)
-    resultAsCsv = underTest.getResultAsCsv(0, 0);
+    resultAsCsv = underTest.getResultAsCsv(0, 0, ZoneId.systemDefault());
 
 
     // then
@@ -85,7 +86,7 @@ public class CombinedProcessReportResultTest {
 
 
     // when (offset = 1)
-    resultAsCsv = underTest.getResultAsCsv(0, 1);
+    resultAsCsv = underTest.getResultAsCsv(0, 1, ZoneId.systemDefault());
 
 
     // then
@@ -120,7 +121,7 @@ public class CombinedProcessReportResultTest {
     );
 
     // when
-    final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0);
+    final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
 
     // then
@@ -156,7 +157,7 @@ public class CombinedProcessReportResultTest {
     );
 
     // when
-    final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0);
+    final List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
     assertCsvByAggregationType(resultAsCsv, aggregationType);
@@ -203,7 +204,7 @@ public class CombinedProcessReportResultTest {
     );
 
     // when
-    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0);
+    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
     assertThat(
@@ -224,7 +225,7 @@ public class CombinedProcessReportResultTest {
     assertThat(new String[]{"test2", "6.0", "", "test2", "6.0"}, is(resultAsCsv.get(4)));
 
     // when (limit = 0)
-    resultAsCsv = underTest.getResultAsCsv(0, 0);
+    resultAsCsv = underTest.getResultAsCsv(0, 0, ZoneId.systemDefault());
 
 
     //then
@@ -246,7 +247,7 @@ public class CombinedProcessReportResultTest {
 
 
     // when (offset = 1)
-    resultAsCsv = underTest.getResultAsCsv(0, 1);
+    resultAsCsv = underTest.getResultAsCsv(0, 1, ZoneId.systemDefault());
 
 
     //then
@@ -277,7 +278,7 @@ public class CombinedProcessReportResultTest {
     );
 
     // when
-    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0);
+    List<String[]> resultAsCsv = underTest.getResultAsCsv(10, 0, ZoneId.systemDefault());
 
     // then
     assertThat(new String[]{}, is((resultAsCsv.get(0))));

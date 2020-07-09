@@ -16,6 +16,7 @@ import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawD
 import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
 import org.junit.jupiter.api.Test;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -77,7 +78,7 @@ public class CSVUtilsTest {
     //when
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -100,7 +101,7 @@ public class CSVUtilsTest {
     //when
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -130,7 +131,7 @@ public class CSVUtilsTest {
     //when
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -156,7 +157,7 @@ public class CSVUtilsTest {
     //when
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -181,7 +182,7 @@ public class CSVUtilsTest {
     //when
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -212,7 +213,7 @@ public class CSVUtilsTest {
     //when
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -252,7 +253,7 @@ public class CSVUtilsTest {
     //when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -277,7 +278,7 @@ public class CSVUtilsTest {
     //when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -307,7 +308,7 @@ public class CSVUtilsTest {
     //when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -332,7 +333,7 @@ public class CSVUtilsTest {
     //when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -356,7 +357,7 @@ public class CSVUtilsTest {
     //when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -387,7 +388,7 @@ public class CSVUtilsTest {
     //when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -413,7 +414,7 @@ public class CSVUtilsTest {
     //when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -438,7 +439,7 @@ public class CSVUtilsTest {
     //when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -469,7 +470,7 @@ public class CSVUtilsTest {
     //when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -499,7 +500,7 @@ public class CSVUtilsTest {
     //when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -527,7 +528,7 @@ public class CSVUtilsTest {
     //when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);
@@ -564,7 +565,7 @@ public class CSVUtilsTest {
     //when
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDatadecisionReportResultDto, reportDefinition);
-    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null);
+    List<String[]> result = rawDataReportResult.getResultAsCsv(10, null, ZoneId.systemDefault());
 
     //then
     assertThat(result).hasSize(4);

@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.report.result.NumberResult;
 import org.camunda.optimize.service.export.CSVUtils;
 
 import javax.validation.constraints.NotNull;
+import java.time.ZoneId;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class SingleProcessNumberReportResult
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset) {
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
     if (reportDefinition.getData().isFrequencyReport()) {
       return frequencyNumberAsCsv();
     } else {

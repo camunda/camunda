@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.query.report;
 
 import lombok.NonNull;
 
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Objects;
 
@@ -31,7 +32,7 @@ public abstract class ReportEvaluationResult<Result extends ReportResultDto,
     return reportResult;
   }
 
-  public abstract List<String[]> getResultAsCsv(final Integer limit, final Integer offset);
+  public abstract List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone);
 
   public ReportDefinition getReportDefinition() {
     return reportDefinition;

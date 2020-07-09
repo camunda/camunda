@@ -24,6 +24,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.ZoneId;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,7 +61,7 @@ public class ExportServiceTest {
     ));
 
     // when
-    byte[] csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "")
+    byte[] csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.systemDefault())
       .orElseThrow(() -> new OptimizeIntegrationTestException("Got no csv response"));
     String actualContent = new String(csvContent);
     String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator(
@@ -82,7 +84,7 @@ public class ExportServiceTest {
     ));
 
     // when
-    byte[] csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "")
+    byte[] csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.systemDefault())
       .orElseThrow(() -> new OptimizeIntegrationTestException("Got no csv response"));
     String actualContent = new String(csvContent);
     String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator(

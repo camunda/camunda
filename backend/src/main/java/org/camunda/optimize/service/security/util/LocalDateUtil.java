@@ -7,6 +7,7 @@ package org.camunda.optimize.service.security.util;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
 public class LocalDateUtil {
@@ -35,6 +36,13 @@ public class LocalDateUtil {
 
   private static OffsetDateTime normalize(final OffsetDateTime dateTime) {
     return dateTime.truncatedTo(ChronoUnit.MILLIS);
+  }
+
+  public static OffsetDateTime atSameTimezoneOffsetDateTime(final OffsetDateTime date, final ZoneId timezone) {
+    if (date != null) {
+      return date.atZoneSameInstant(timezone).toOffsetDateTime();
+    }
+    return null;
   }
 
 }
