@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
@@ -33,7 +34,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
@@ -94,6 +97,102 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     // when
     final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
       getCombinedReportResult(singleReports);
+
+    // then both reports have the same buckets
+    assertThat(combinedResult.getData()).isNotNull();
+    assertSameBucketKeys(combinedResult);
+  }
+
+  @ParameterizedTest
+  @MethodSource("staticGroupByDateUnits")
+  public void dateVariableReports_staticIntervals_sameResultsAsSingleReportEvaluation(final GroupByDateUnit unit) {
+    // given
+    final ChronoUnit chronoUnit = mapToChronoUnit(unit);
+    final int numberOfInstances = 3;
+    final String dateVarName = "dateVar";
+    final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcessAndGetDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    OffsetDateTime dateVariableValue = OffsetDateTime.parse("2020-06-15T00:00:00+02:00");
+
+    for (int i = 0; i < numberOfInstances; i++) {
+      dateVariableValue = dateVariableValue.plus(1, chronoUnit);
+      variables.put(dateVarName, dateVariableValue);
+      engineIntegrationExtension.startProcessInstance(def.getId(), variables);
+    }
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData1 = createDateVariableReport(
+      def.getKey(),
+      def.getVersionAsString()
+    );
+    reportData1.getConfiguration().setGroupByDateVariableUnit(unit);
+    ProcessReportDataDto reportData2 = createDateVariableReport(
+      def.getKey(),
+      def.getVersionAsString()
+    );
+    reportData2.getConfiguration().setGroupByDateVariableUnit(unit);
+
+    List<SingleProcessReportDefinitionDto> reportDefs = Arrays.asList(
+      new SingleProcessReportDefinitionDto(reportData1),
+      new SingleProcessReportDefinitionDto(reportData2)
+    );
+
+    final List<String> reportIds = reportDefs.stream()
+      .map(reportClient::createSingleProcessReport)
+      .collect(toList());
+    final ReportMapResultDto[] singleReportResults = reportIds
+      .stream()
+      .map(reportId -> reportClient.evaluateMapReportById(reportId).getResult())
+      .toArray(ReportMapResultDto[]::new);
+    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+      reportClient.saveAndEvaluateCombinedReport(reportIds);
+
+    // then the combined combinedResult evaluation yields the same results as the single report evaluations
+    assertThat(combinedResult.getData()).isNotNull();
+    assertThat(combinedResult.getData().values())
+      .extracting(AuthorizedEvaluationResultDto::getResult)
+      .containsExactlyInAnyOrder(singleReportResults);
+  }
+
+  @Test
+  public void dateVariableReports_automaticInterval_combinedReportsHaveSameBucketRanges() {
+    // given
+    final int numberOfInstances = 3;
+    final String dateVarName = "dateVar";
+    final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcessAndGetDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    OffsetDateTime dateVariableValue = OffsetDateTime.parse("2020-06-15T00:00:00+02:00");
+
+    for (int i = 0; i < numberOfInstances; i++) {
+      dateVariableValue = dateVariableValue.plus(60, ChronoUnit.SECONDS);
+      variables.put(dateVarName, dateVariableValue);
+      engineIntegrationExtension.startProcessInstance(def.getId(), variables);
+    }
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData1 = createDateVariableReport(
+      def.getKey(),
+      def.getVersionAsString()
+    );
+    reportData1.getConfiguration().setGroupByDateVariableUnit(GroupByDateUnit.AUTOMATIC);
+    ProcessReportDataDto reportData2 = createDateVariableReport(
+      def.getKey(),
+      def.getVersionAsString()
+    );
+    reportData2.getConfiguration().setGroupByDateVariableUnit(GroupByDateUnit.AUTOMATIC);
+
+    List<SingleProcessReportDefinitionDto> reportDefs = Arrays.asList(
+      new SingleProcessReportDefinitionDto(reportData1),
+      new SingleProcessReportDefinitionDto(reportData2)
+    );
+
+    // when
+    final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =
+      getCombinedReportResult(reportDefs);
 
     // then both reports have the same buckets
     assertThat(combinedResult.getData()).isNotNull();
@@ -287,7 +386,8 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
 
       return Arrays.asList(
         Pair.of(unit, Arrays.asList(runningDateReport, startDateReport)),
-        Pair.of(unit, Arrays.asList(runningDateReport, endDateReport))
+        Pair.of(unit, Arrays.asList(runningDateReport, endDateReport)),
+        Pair.of(unit, Arrays.asList(startDateReport, endDateReport))
       ).stream();
     });
   }
@@ -323,6 +423,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     return Stream.of(
       Arrays.asList(runningDateReport, startDateReport),
       Arrays.asList(runningDateReport, endDateReport),
+      Arrays.asList(startDateReport, endDateReport),
       Arrays.asList(emptyRunningDateReport, emptyStartDateReport),
       Arrays.asList(runningDateReport, emptyStartDateReport)
     );
@@ -335,6 +436,18 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
         .map(reportClient::createSingleProcessReport)
         .collect(toList())
     );
+  }
+
+  private ProcessReportDataDto createDateVariableReport(final String processDefinitionKey,
+                                                        final String processDefinitionVersion) {
+    return TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersion(processDefinitionVersion)
+      .setVariableName("dateVar")
+      .setVariableType(VariableType.DATE)
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
+      .build();
   }
 
   private static SingleProcessReportDefinitionDto createReport(final ProcessReportDataType reportDataType,
