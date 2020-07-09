@@ -494,6 +494,7 @@ public final class RaftRule extends ExternalResource {
             .withDirectory(memberDirectory)
             .withMaxEntriesPerSegment(10)
             .withMaxSegmentSize(1024 * 10)
+            .withFreeDiskSpace(100)
             .withSnapshotStore(
                 new FileBasedSnapshotStoreFactory()
                     .createSnapshotStore(memberDirectory.toPath(), "1"))
@@ -589,33 +590,6 @@ public final class RaftRule extends ExternalResource {
     return servers.get(followerB).getContext().getPersistedSnapshotStore();
   }
 
-  private final class RaftSnapshotListener implements PersistedSnapshotListener {
-
-    private final MemberId memberId;
-
-    public RaftSnapshotListener(final MemberId memberId) {
-      this.memberId = memberId;
-    }
-
-    @Override
-    public void onNewSnapshot(final PersistedSnapshot persistedSnapshot) {
-      final var raftServer = servers.get(memberId.id());
-      final var raftContext = raftServer.getContext();
-      final var serviceManager = raftContext.getServiceManager();
-      serviceManager.setCompactableIndex(persistedSnapshot.getIndex());
-
-      raftServer
-          .compact()
-          .whenComplete(
-              (v, t) -> {
-                final var latch = compactAwaiters.get(memberId.id()).get();
-                if (latch != null) {
-                  latch.countDown();
-                }
-              });
-    }
-  }
-
   private static final class CommitAwaiter {
 
     private final long awaitedIndex;
@@ -662,6 +636,33 @@ public final class RaftRule extends ExternalResource {
 
     public long awaitCommit() throws Exception {
       return commitFuture.get(30, TimeUnit.SECONDS);
+    }
+  }
+
+  private final class RaftSnapshotListener implements PersistedSnapshotListener {
+
+    private final MemberId memberId;
+
+    public RaftSnapshotListener(final MemberId memberId) {
+      this.memberId = memberId;
+    }
+
+    @Override
+    public void onNewSnapshot(final PersistedSnapshot persistedSnapshot) {
+      final var raftServer = servers.get(memberId.id());
+      final var raftContext = raftServer.getContext();
+      final var serviceManager = raftContext.getServiceManager();
+      serviceManager.setCompactableIndex(persistedSnapshot.getIndex());
+
+      raftServer
+          .compact()
+          .whenComplete(
+              (v, t) -> {
+                final var latch = compactAwaiters.get(memberId.id()).get();
+                if (latch != null) {
+                  latch.countDown();
+                }
+              });
     }
   }
 }

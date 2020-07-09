@@ -209,6 +209,12 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
                             partition,
                             pushRequest.deploymentKey());
 
+                      } else if (errorResponse.getErrorCode() == ErrorCode.RESOURCE_EXHAUSTED) {
+                        LOG.warn(
+                            "Received rejected deployment push due to error of type {}: '{}'. Will be retried after a delay",
+                            errorResponse.getErrorCode().name(),
+                            BufferUtil.bufferAsString(errorResponse.getErrorData()));
+                        return;
                       } else {
                         LOG.warn(
                             "Received rejected deployment push due to error of type {}: '{}'",

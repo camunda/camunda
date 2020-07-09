@@ -82,6 +82,10 @@ public final class ErrorResponseWriter implements BufferWriter {
     return errorCode(ErrorCode.RESOURCE_EXHAUSTED).errorMessage(RESOURCE_EXHAUSTED);
   }
 
+  public ErrorResponseWriter resourceExhausted(final String message) {
+    return errorCode(ErrorCode.RESOURCE_EXHAUSTED).errorMessage(message);
+  }
+
   public ErrorResponseWriter malformedRequest(Throwable e) {
     final StringBuilder builder = new StringBuilder();
 

@@ -9,6 +9,7 @@ package io.zeebe.broker.transport.commandapi;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
+import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
 import io.zeebe.engine.processor.CommandResponseWriter;
@@ -24,7 +25,8 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
 
-public final class CommandApiService extends Actor implements PartitionListener {
+public final class CommandApiService extends Actor
+    implements PartitionListener, DiskSpaceUsageListener {
 
   private final PartitionAwareRequestLimiter limiter;
   private final ServerTransport serverTransport;
@@ -116,5 +118,15 @@ public final class CommandApiService extends Actor implements PartitionListener 
         partitionLimiter.onResponse(typedRecord.getRequestStreamId(), typedRecord.getRequestId());
       }
     };
+  }
+
+  @Override
+  public void onDiskSpaceNotAvailable() {
+    actor.run(requestHandler::onDiskSpaceNotAvailable);
+  }
+
+  @Override
+  public void onDiskSpaceAvailable() {
+    actor.run(requestHandler::onDiskSpaceAvailable);
   }
 }

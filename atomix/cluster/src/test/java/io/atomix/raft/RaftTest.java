@@ -771,13 +771,13 @@ public class RaftTest extends ConcurrentTestCase {
     }
 
     @Override
-    public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {
-      fail("Unexpected write error: " + error.getMessage());
+    public void onCommit(final Indexed<ZeebeEntry> indexed) {
+      commitFuture.complete(indexed.index());
     }
 
     @Override
-    public void onCommit(final Indexed<ZeebeEntry> indexed) {
-      commitFuture.complete(indexed.index());
+    public void onCommitError(final Indexed<ZeebeEntry> indexed, final Throwable error) {
+      fail("Unexpected write error: " + error.getMessage());
     }
 
     public long awaitCommit() throws Exception {

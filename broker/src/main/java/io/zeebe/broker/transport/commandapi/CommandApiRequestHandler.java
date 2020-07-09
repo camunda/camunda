@@ -56,6 +56,7 @@ final class CommandApiRequestHandler implements RequestHandler {
 
   private final Map<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
   private final BackpressureMetrics metrics;
+  private boolean isDiskSpaceAvailable = true;
 
   CommandApiRequestHandler() {
     this.metrics = new BackpressureMetrics();
@@ -81,6 +82,17 @@ final class CommandApiRequestHandler implements RequestHandler {
       final DirectBuffer buffer,
       final int messageOffset,
       final int messageLength) {
+
+    if (!isDiskSpaceAvailable) {
+      errorResponseWriter
+          .resourceExhausted(
+              String.format(
+                  "Cannot accept requests for partition %d. Broker is out of disk space",
+                  partitionId))
+          .tryWriteResponse(output, partitionId, requestId);
+      return;
+    }
+
     executeCommandRequestDecoder.wrap(
         buffer,
         messageOffset + messageHeaderDecoder.encodedLength(),
@@ -199,6 +211,18 @@ final class CommandApiRequestHandler implements RequestHandler {
           leadingStreams.remove(partitionId);
           partitionLimiters.remove(partitionId);
         });
+  }
+
+  void onDiskSpaceNotAvailable() {
+    cmdQueue.add(
+        () -> {
+          this.isDiskSpaceAvailable = false;
+          LOG.debug("Broker is out of disk space. All client requests will be rejected");
+        });
+  }
+
+  void onDiskSpaceAvailable() {
+    cmdQueue.add(() -> this.isDiskSpaceAvailable = true);
   }
 
   @Override
