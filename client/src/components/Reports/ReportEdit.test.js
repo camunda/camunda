@@ -27,8 +27,6 @@ jest.mock('services', () => {
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
 
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
 const report = {
   id: '1',
   name: 'name',

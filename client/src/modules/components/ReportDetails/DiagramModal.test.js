@@ -12,19 +12,6 @@ import {loadProcessDefinitionXml, loadDecisionDefinitionXml} from 'services';
 
 import {DiagramModal} from './DiagramModal';
 
-jest.mock('react', () => {
-  const outstandingEffects = [];
-  return {
-    ...jest.requireActual('react'),
-    useEffect: (fn) => outstandingEffects.push(fn),
-    runLastEffect: () => {
-      if (outstandingEffects.length) {
-        outstandingEffects.pop()();
-      }
-    },
-  };
-});
-
 jest.mock('services', () => {
   return {
     ...jest.requireActual('services'),

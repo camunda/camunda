@@ -32,8 +32,6 @@ beforeEach(() => {
   loadOutputVariables.mockClear();
 });
 
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
 const props = {
   report: {
     data: {

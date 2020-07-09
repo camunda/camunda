@@ -15,8 +15,6 @@ import {DefinitionSelection} from 'components';
 
 const ReportControlPanel = ReportControlPanelWithErrorHandling.WrappedComponent;
 
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
 

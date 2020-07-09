@@ -11,19 +11,6 @@ import {Dropdown, DatePicker} from 'components';
 
 import DateFilter from './DateFilter';
 
-jest.mock('react', () => {
-  const outstandingEffects = [];
-  return {
-    ...jest.requireActual('react'),
-    useEffect: (fn) => outstandingEffects.push(fn),
-    runLastEffect: () => {
-      if (outstandingEffects.length) {
-        outstandingEffects.pop()();
-      }
-    },
-  };
-});
-
 const props = {
   filter: null,
   setFilter: jest.fn(),

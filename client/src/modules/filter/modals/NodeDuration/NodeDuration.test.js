@@ -43,8 +43,6 @@ const props = {
   data: [],
 };
 
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
 it('should display the bpmn diagram in the modal', () => {
   const node = shallow(<NodeDuration {...props} />);
 

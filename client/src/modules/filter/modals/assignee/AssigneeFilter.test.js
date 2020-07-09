@@ -4,11 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-// using mount to support the useEffect lifecycle
-// see: https://github.com/enzymejs/enzyme/issues/2086
-import {shallow, mount} from 'enzyme';
-import {act} from 'react-dom/test-utils';
+import React, {runAllEffects} from 'react';
+import {shallow} from 'enzyme';
 import {AssigneeFilter} from './AssigneeFilter';
 import {loadUsers} from './service';
 import {Button, LabeledInput} from 'components';
@@ -23,7 +20,9 @@ const props = {
 };
 
 it('should load existing roles', () => {
-  mount(<AssigneeFilter {...props} filterType="assignee" />);
+  shallow(<AssigneeFilter {...props} filterType="assignee" />);
+
+  runAllEffects();
 
   expect(loadUsers).toHaveBeenCalledWith('assignee', {
     processDefinitionKey: props.processDefinitionKey,
@@ -46,7 +45,7 @@ it('should add a role', () => {
 });
 
 it('should remove a role from the list', async () => {
-  const node = mount(
+  const node = shallow(
     <AssigneeFilter
       {...props}
       filterType="assignee"
@@ -54,10 +53,9 @@ it('should remove a role from the list', async () => {
     />
   );
 
-  act(() => {
-    node.find(LabeledInput).prop('onChange')();
-  });
-  await node.update();
+  runAllEffects();
 
-  expect(node.find('.addedValues')).toMatchSnapshot();
+  node.find(LabeledInput).prop('onChange')();
+
+  expect(node.find('.addedValues').find('[label="john"]')).not.toExist();
 });

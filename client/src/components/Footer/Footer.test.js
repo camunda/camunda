@@ -12,8 +12,6 @@ import {Server} from 'mock-socket';
 import Footer from './Footer';
 import {getOptimizeVersion} from 'config';
 
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
 jest.mock('config', () => {
   return {
     getOptimizeVersion: jest.fn(),

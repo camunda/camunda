@@ -26,19 +26,6 @@ jest.mock('services', () => ({
   evaluateReport: jest.fn().mockReturnValue({}),
 }));
 
-jest.mock('react', () => {
-  const outstandingEffects = [];
-  return {
-    ...jest.requireActual('react'),
-    useEffect: (fn) => outstandingEffects.push(fn),
-    runLastEffect: () => {
-      if (outstandingEffects.length) {
-        outstandingEffects.pop()();
-      }
-    },
-  };
-});
-
 it('should contain ReportRenderer', () => {
   const node = shallow(<RawDataModal {...props} />);
   runLastEffect();

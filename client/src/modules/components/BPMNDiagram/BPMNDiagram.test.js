@@ -19,10 +19,6 @@ const props = {
   xml: 'diagram-xml',
 };
 
-// since jest does not offer an out of the box way to flush promises:
-// https://github.com/facebook/jest/issues/2157
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
   const attachSpy = jest.fn();
   return class NavigatedViewer {

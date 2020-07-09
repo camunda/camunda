@@ -65,10 +65,6 @@ jest.mock('services', () => {
   };
 });
 
-function flushPromises() {
-  return new Promise((resolve) => setImmediate(resolve));
-}
-
 const spy = jest.fn();
 
 const props = {

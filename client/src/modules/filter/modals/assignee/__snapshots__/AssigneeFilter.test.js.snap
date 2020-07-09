@@ -14,19 +14,3 @@ exports[`should add a role 1`] = `
   />
 </FormGroup>
 `;
-
-exports[`should remove a role from the list 1`] = `
-Array [
-  <FormGroup
-    className="addedValues"
-    noSpacing={true}
-  >
-    <div
-      className="FormGroup noSpacing addedValues"
-    />
-  </FormGroup>,
-  <div
-    className="FormGroup noSpacing addedValues"
-  />,
-]
-`;

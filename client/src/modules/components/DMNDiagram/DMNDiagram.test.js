@@ -40,8 +40,6 @@ jest.mock('react', () => {
   };
 });
 
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
 jest.mock('@bpmn-io/dmn-migrate', () => ({migrateDiagram: (xml) => xml}));
 
 const props = {
