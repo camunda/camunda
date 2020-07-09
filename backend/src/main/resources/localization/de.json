@@ -1001,6 +1001,7 @@
     "conflict": "Die Änderung konnten aufgrund von Konflikten nicht ausgeführt werden.",
     "reportConflict": "Die Änderung am Bericht konnte aufgrund von Konflikten nicht ausgeführt werden.",
     "collectionConflict": "Die Änderung an der Sammlung konnte aufgrund von Konflikten nicht ausgeführt werden.",
+    "invalidDashboardVariableFilter": "Dashboard konnte nicht gespeichert werden, da ein oder mehrere Variablenfilter nicht mehr gültig sind. Berichte könnten geändert worden sein seitdem der Variablenfilter hinzugefügt wurde.",
     "sharingNotAllowed": "Teilen nicht möglich, da diese Funktion momentan gesperrt ist.",
     "reportEvaluationError": "Der Bericht konnte nicht evaluiert werden.",
     "reportsNotCombinable": "Die ausgewählten Berichte sind nicht miteinander kombinierbar.",

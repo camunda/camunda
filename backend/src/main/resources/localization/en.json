@@ -1001,6 +1001,7 @@
     "conflict": "Could not apply the changes due to conflicts.",
     "reportConflict": "Could not apply the report changes due to conflicts.",
     "collectionConflict": "Could not apply the collection changes due to conflicts.",
+    "invalidDashboardVariableFilter": "Could not save the dashboard because one or more variable filters are not valid anymore. Reports may have been changed since the variable filter was added.",
     "sharingNotAllowed": "Could not share as this functionality is currently disabled.",
     "reportsNotCombinable": "It is not possible to combine the selected reports.",
     "reportEvaluationError": "Could not evaluate the report.",
