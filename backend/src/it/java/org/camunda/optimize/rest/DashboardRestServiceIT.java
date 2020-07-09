@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -155,13 +156,13 @@ public class DashboardRestServiceIT extends AbstractIT {
     dashboardDefinitionDto.setAvailableFilters(variableFilter);
 
     // when
-    final Response response = embeddedOptimizeExtension
+    final ErrorResponseDto errorResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateDashboardRequest(dashboardDefinitionDto)
-      .execute();
+      .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    // then the response has the expected error code
+    assertThat(errorResponse.getErrorCode()).isEqualTo("invalidDashboardVariableFilter");
   }
 
   @Test
@@ -389,13 +390,13 @@ public class DashboardRestServiceIT extends AbstractIT {
 
     // when
     dashboardDefinitionDto.setAvailableFilters(variableFilter());
-    final Response response = embeddedOptimizeExtension
+    final ErrorResponseDto errorResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
-      .execute();
+      .execute(ErrorResponseDto.class, Response.Status.BAD_REQUEST.getStatusCode());
 
-    // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    // then the response has the expected error code
+    assertThat(errorResponse.getErrorCode()).isEqualTo("invalidDashboardVariableFilter");
   }
 
   @ParameterizedTest

@@ -29,6 +29,7 @@ import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.es.reader.DashboardReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.DashboardWriter;
+import org.camunda.optimize.service.exceptions.InvalidDashboardVariableFilterException;
 import org.camunda.optimize.service.relations.CollectionReferencingService;
 import org.camunda.optimize.service.relations.DashboardRelationService;
 import org.camunda.optimize.service.relations.ReportReferencingService;
@@ -346,7 +347,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       .filter(isInvalidVariableFilter(possibleVarTypesByName))
       .collect(Collectors.toList());
     if (!invalidFilters.isEmpty()) {
-      throw new BadRequestException(String.format(
+      throw new InvalidDashboardVariableFilterException(String.format(
         "The following variable filter names/types do not exist in any report in dashboard: [%s]",
         invalidFilters
       ));
