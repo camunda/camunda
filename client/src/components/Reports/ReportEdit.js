@@ -41,6 +41,7 @@ export class ReportEdit extends React.Component {
     redirect: '',
     conflict: null,
     originalData: this.props.report,
+    updatePromise: null,
     optimizeVersion: 'latest',
     report: this.props.report,
   };
@@ -85,8 +86,8 @@ export class ReportEdit extends React.Component {
                 },
                 {alert: [], combined_report: []}
               ),
+              updatePromise: resolve,
             });
-            resolve(null);
           } else {
             reject(this.showSaveError(error));
           }
@@ -114,6 +115,10 @@ export class ReportEdit extends React.Component {
 
   saveAndGoBack = async () => {
     const id = await this.save();
+    if (this.state.updatePromise) {
+      this.state.updatePromise(id);
+      this.setState({updatePromise: null});
+    }
     if (id) {
       nowPristine();
       this.props.updateOverview(update(this.state.report, {id: {$set: id}}));
@@ -199,7 +204,10 @@ export class ReportEdit extends React.Component {
     return !report.result.isComplete;
   };
 
-  closeConflictModal = () => this.setState({conflict: null});
+  closeConflictModal = () => {
+    this.state.updatePromise(null);
+    this.setState({conflict: null, updatePromise: null});
+  };
 
   render() {
     const {report, loadingReportData, conflict, redirect, optimizeVersion} = this.state;

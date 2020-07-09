@@ -27,6 +27,8 @@ jest.mock('services', () => {
 jest.mock('notifications', () => ({addNotification: jest.fn()}));
 jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
 
+const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+
 const report = {
   id: '1',
   name: 'name',
@@ -298,6 +300,33 @@ it('should notify the saveGuard of changes', () => {
   node.find(ReportControlPanel).prop('updateReport')({processDefinitionKey: {$set: null}});
 
   expect(nowPristine).toHaveBeenCalled();
+});
+
+it('should only resolve the save promise if a decision for conflicts has been made', async () => {
+  const mightFail = jest.fn().mockImplementation((promise, cb) => cb(promise));
+  nowDirty.mockClear();
+  const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
+
+  mightFail.mockImplementationOnce((promise, cb, err) =>
+    err({status: 409, json: () => ({conflictedItems: [{id: '1', name: 'alert', type: 'alert'}]})})
+  );
+
+  let promiseResolved = false;
+  node
+    .instance()
+    .save()
+    .then(() => (promiseResolved = true));
+
+  await flushPromises();
+
+  expect(promiseResolved).toBe(false);
+  expect(node.state().conflict).not.toBe(null);
+
+  node.find('ConflictModal').simulate('confirm');
+
+  await flushPromises();
+
+  expect(promiseResolved).toBe(true);
 });
 
 describe('showIncompleteResultWarning', () => {
