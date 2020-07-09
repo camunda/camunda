@@ -7,6 +7,10 @@
  */
 package io.zeebe.util;
 
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
+import java.util.Locale;
+
 public final class ByteValue {
   private static final int CONVERSION_FACTOR_KB = 1024;
   private static final int CONVERSION_FACTOR_MB = CONVERSION_FACTOR_KB * 1024;
@@ -40,5 +44,22 @@ public final class ByteValue {
    */
   public static long ofGigabytes(final long value) {
     return value * CONVERSION_FACTOR_GB;
+  }
+
+  public static String prettyPrint(final long bytes) {
+    if (bytes < 0) {
+      throw new IllegalArgumentException("Value must be >= 0");
+    }
+    if (bytes < 1024) {
+      return bytes + " B";
+    }
+    long value = bytes;
+    final CharacterIterator ci = new StringCharacterIterator("KMGTPE");
+    for (int i = 40; i >= 0 && bytes > 0xfffccccccccccccL >> i; i -= 10) {
+      value >>= 10;
+      ci.next();
+    }
+    value *= Long.signum(bytes);
+    return String.format(Locale.US, "%.1f %cB", value / 1024.0, ci.current());
   }
 }
