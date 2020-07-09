@@ -33,6 +33,7 @@ import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
 import static org.camunda.optimize.service.util.EventModelBuilderUtil.generateGatewayIdForNode;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
+import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
 
 public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEventProcessAutogenerationIT {
 
@@ -129,6 +130,48 @@ public class EventBasedProcessAutogenerationExternalSourceIT extends AbstractEve
     assertNodeConnection(idOf(EVENT_B), INTERMEDIATE_EVENT, idOf(EVENT_C), INTERMEDIATE_EVENT, modelInstance);
     assertNodeConnection(idOf(EVENT_C), INTERMEDIATE_EVENT, idOf(EVENT_D), END_EVENT, modelInstance);
     assertNodeConnection(idOf(EVENT_D), END_EVENT, null, null, modelInstance);
+    // and the expected number of sequence flows exists
+    assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(3);
+
+    final List<EventTypeDto> eventCounts = getEventCountsAsEventTypeDtos(externalSource);
+    assertThat(eventCounts).containsAll(getMappedEventTypeDtosFromMappings(mappings));
+  }
+
+  @Test
+  public void createFromExternalSource_simpleLinearModel_eventsWithNoGroupProperty() {
+    // given
+    final EventTypeDto eventA = createMappedEventDto().toBuilder().group(null).build();
+    final EventTypeDto eventB = createMappedEventDto().toBuilder().group(null).build();
+    final EventTypeDto eventC = createMappedEventDto().toBuilder().group(null).build();
+    final EventTypeDto eventD = createMappedEventDto().toBuilder().group(null).build();
+    final String traceId = "tracingId";
+    final Instant now = Instant.now();
+    ingestEventAndProcessTraces(Arrays.asList(
+      createCloudEventOfType(eventA, traceId, now),
+      createCloudEventOfType(eventB, traceId, now.plusSeconds(10)),
+      createCloudEventOfType(eventC, traceId, now.plusSeconds(20)),
+      createCloudEventOfType(eventD, traceId, now.plusSeconds(30))
+    ));
+    final List<EventSourceEntryDto> externalSource = Collections.singletonList(createExternalEventSourceEntry());
+    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(externalSource);
+
+    // when
+    final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
+
+    // then the created process is configured correctly
+    final Map<String, EventMappingDto> mappings = processMapping.getMappings();
+    final BpmnModelInstance modelInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    assertProcessMappingConfiguration(processMapping, externalSource, EventProcessState.MAPPED);
+
+    // then the mappings contain the correct events and are all in the model
+    assertCorrectMappingsAndContainsEvents(mappings, modelInstance, Arrays.asList(eventA, eventB, eventC, eventD));
+    assertThat(modelInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size());
+
+    // then the model elements are of the correct type and connected to expected nodes correctly
+    assertNodeConnection(idOf(eventA), START_EVENT, idOf(eventB), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(idOf(eventB), INTERMEDIATE_EVENT, idOf(eventC), INTERMEDIATE_EVENT, modelInstance);
+    assertNodeConnection(idOf(eventC), INTERMEDIATE_EVENT, idOf(eventD), END_EVENT, modelInstance);
+    assertNodeConnection(idOf(eventD), END_EVENT, null, null, modelInstance);
     // and the expected number of sequence flows exists
     assertThat(modelInstance.getModelElementsByType(SequenceFlow.class)).hasSize(3);
 

@@ -32,6 +32,7 @@ import static org.camunda.optimize.service.es.schema.index.events.EventTraceStat
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.functionScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -113,16 +114,23 @@ public class EventTraceStateReader {
 
   private BoolQueryBuilder createContainsAtLeastOneEventFromQuery(final List<EventTypeDto> startEvents) {
     final BoolQueryBuilder containStartEventQuery = boolQuery();
-    startEvents.forEach(startEvent -> containStartEventQuery.should(
-      nestedQuery(
-        EVENT_TRACE,
-        boolQuery()
-          .must(termQuery(getEventTraceNestedField(GROUP), startEvent.getGroup()))
-          .must(termQuery(getEventTraceNestedField(SOURCE), startEvent.getSource()))
-          .must(termQuery(getEventTraceNestedField(EVENT_NAME), startEvent.getEventName())),
-        ScoreMode.None
-      )
-    ));
+    startEvents.forEach(startEvent -> {
+      final BoolQueryBuilder containsEventQuery = boolQuery()
+        .must(termQuery(getEventTraceNestedField(SOURCE), startEvent.getSource()))
+        .must(termQuery(getEventTraceNestedField(EVENT_NAME), startEvent.getEventName()));
+      if (startEvent.getGroup() == null) {
+        containsEventQuery.mustNot(existsQuery(getEventTraceNestedField(GROUP)));
+      } else {
+        containsEventQuery.must(termQuery(getEventTraceNestedField(GROUP), startEvent.getGroup()));
+      }
+      containStartEventQuery.should(
+        nestedQuery(
+          EVENT_TRACE,
+          containsEventQuery,
+          ScoreMode.None
+        )
+      );
+    });
     return containStartEventQuery;
   }
 
