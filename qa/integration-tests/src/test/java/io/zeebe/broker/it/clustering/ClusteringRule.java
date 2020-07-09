@@ -384,6 +384,7 @@ public final class ClusteringRule extends ExternalResource {
     return Awaitility.await()
         .pollInterval(Duration.ofMillis(100))
         .atMost(Duration.ofSeconds(10))
+        .ignoreExceptions()
         .until(() -> client.newTopologyRequest().send().join(), Objects::nonNull);
   }
 
@@ -600,6 +601,7 @@ public final class ClusteringRule extends ExternalResource {
     Awaitility.await()
         .pollInterval(Duration.ofMillis(100))
         .atMost(Duration.ofSeconds(10))
+        .ignoreExceptions()
         .until(() -> getTopologyFromClient().getBrokers(), topologyPredicate);
   }
 
