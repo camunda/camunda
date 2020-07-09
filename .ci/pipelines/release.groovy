@@ -195,7 +195,7 @@ pipeline {
               docker push ${IMAGE_NAME}:${IMAGE_TAG}
 
               if ${IS_LATEST}; then
-                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE}:latest
+                docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest
                 docker push ${IMAGE_NAME}:latest
               fi
             """
