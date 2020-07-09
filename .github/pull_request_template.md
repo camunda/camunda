@@ -12,10 +12,7 @@ closes #
 
 _Not all items need to be done depending on the issue and the pull request._
 
-* [ ] All commit messages match our [commit message guidelines](https://github.com/zeebe-io/zeebe/blob/develop/CONTRIBUTING.md#commit-message-guidelines)
-
 Code changes:
-* [ ] The submitting code follows our [code style](https://github.com/zeebe-io/zeebe/wiki/Code-Style) (verify by running `mvn clean install -DskipTests` locally)
 * [ ] The changes are backwards compatibility with previous versions
 * [ ] If it fixes a bug then PRs are created to backport the fix to the last two minor versions
 
