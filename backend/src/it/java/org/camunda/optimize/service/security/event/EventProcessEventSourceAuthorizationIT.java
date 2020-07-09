@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.security.event;
 
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
@@ -53,7 +52,7 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
@@ -74,7 +73,7 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private EventProcessMappingDto createEventProcessMapping() {

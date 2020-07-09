@@ -8,7 +8,6 @@ package org.camunda.optimize.service.security.collection;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -240,7 +239,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     );
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
     final ConflictResponseDto conflictResponse = response.readEntity(ConflictResponseDto.class);
     assertThat(conflictResponse.getErrorCode()).isEqualTo(getNonTenantScopeCompliantErrorCode());
   }
@@ -268,7 +267,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     );
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
     final ConflictResponseDto conflictResponse = response.readEntity(ConflictResponseDto.class);
     assertThat(conflictResponse.getErrorCode()).isEqualTo(getNonTenantScopeCompliantErrorCode());
   }
@@ -293,7 +292,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     );
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
     final ConflictResponseDto conflictResponse = response.readEntity(ConflictResponseDto.class);
     assertThat(conflictResponse.getErrorCode()).isEqualTo(getNonDefinitionScopeCompliantErrorCode());
   }
@@ -458,7 +457,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
         singletonList(null)
       );
       final Response response = updateProcessReportRequest(processReportId, scenario);
-      assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+      assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
       return processReportId;
     };
   }
@@ -550,7 +549,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
         singletonList(null)
       );
       final Response response = updateDecisionReportRequest(decisionReportId, scenario);
-      assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+      assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
       return decisionReportId;
     };
   }

@@ -6,11 +6,13 @@
 package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.AbstractIT;
-import org.junit.jupiter.api.Test;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
@@ -21,67 +23,67 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 
 public class SecurityCookiesInResponseIT extends AbstractIT {
 
-  @Test
-  public void cookieIsInsecureIfHttpIsEnabled() {
-    //when
-    Response authResponse = embeddedOptimizeExtension
-      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-
-    //then
-    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure()).isFalse();
-  }
-
-
-  @Test
-  public void cookieIsSecureIfHttpIsDisabled() {
-    // given
-    embeddedOptimizeExtension.getConfigurationService().setContainerHttpPort(Optional.empty());
-
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void cookieIsSecureForHttpsOnly(final boolean useHttps) {
     // when
-    Response authResponse = embeddedOptimizeExtension
-      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    final Response authResponse = authWithDefaultCredentials(useHttps);
 
     // then
-    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure()).isTrue();
+    assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isSecure()).isEqualTo(useHttps);
   }
 
-  @Test
-  public void cookieIsHttpOnly() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void cookieIsHttpOnly(final boolean useHttps) {
     // when
-    Response authResponse = embeddedOptimizeExtension
-      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    final Response authResponse = authWithDefaultCredentials(useHttps);
 
     // then
+    assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(authResponse.getCookies().get(OPTIMIZE_AUTHORIZATION).isHttpOnly()).isTrue();
   }
 
-  @Test
-  public void canDisableSameSiteCookieFlag() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void canDisableSameSiteCookieFlag(final boolean useHttps) {
     // given
     embeddedOptimizeExtension.getConfigurationService().setSameSiteCookieFlagEnabled(false);
 
     // when
-    Response authResponse = embeddedOptimizeExtension
-      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    final Response authResponse = authWithDefaultCredentials(useHttps);
 
     // then
     assertThat(authResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE).toString())
       .doesNotContain(SAME_SITE_COOKIE_FLAG);
 
     // cleanup
+    assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     embeddedOptimizeExtension.getConfigurationService().setSameSiteCookieFlagEnabled(true);
   }
 
-  @Test
-  public void cookieHasSameSiteCookieFlagEnabledByDefault() {
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  public void cookieHasSameSiteCookieFlagEnabledByDefault(final boolean useHttps) {
     // when
-    Response authResponse = embeddedOptimizeExtension
-      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    final Response authResponse = authWithDefaultCredentials(useHttps);
 
     // then
+    assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(authResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE).toString())
       .contains(SAME_SITE_COOKIE_FLAG + "=" + SAME_SITE_COOKIE_STRICT_VALUE);
   }
 
+  private Response authWithDefaultCredentials(final boolean useHttps) {
+    if (useHttps) {
+      return embeddedOptimizeExtension.securedRootTarget()
+        .path("api/authentication")
+        .request()
+        .post(Entity.json(new CredentialsDto(DEFAULT_USERNAME, DEFAULT_PASSWORD)));
+    }
+    return embeddedOptimizeExtension
+      .authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  }
 
 }

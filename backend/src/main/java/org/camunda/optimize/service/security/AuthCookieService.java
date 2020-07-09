@@ -9,6 +9,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.rest.constants.RestConstants;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -34,7 +35,7 @@ public class AuthCookieService {
 
   private final ConfigurationService configurationService;
 
-  public NewCookie createDeleteOptimizeAuthCookie() {
+  public NewCookie createDeleteOptimizeAuthCookie(String requestScheme) {
     log.trace("Deleting Optimize authentication cookie.");
     return new NewCookie(
       OPTIMIZE_AUTHORIZATION,
@@ -43,12 +44,12 @@ public class AuthCookieService {
       null,
       "delete cookie",
       0,
-      configurationService.isHttpDisabled(),
+      RestConstants.HTTPS_SCHEME.equalsIgnoreCase(requestScheme),
       true
     );
   }
 
-  public String createNewOptimizeAuthCookie(final String securityToken) {
+  public String createNewOptimizeAuthCookie(final String securityToken, final String requestScheme) {
     log.trace("Creating Optimize authentication cookie.");
     NewCookie newCookie = new NewCookie(
       OPTIMIZE_AUTHORIZATION,
@@ -63,7 +64,7 @@ public class AuthCookieService {
         .map(issuedAt -> issuedAt.plus(configurationService.getTokenLifeTimeMinutes(), ChronoUnit.MINUTES))
         .map(Date::from)
         .orElse(null),
-      configurationService.isHttpDisabled(),
+      RestConstants.HTTPS_SCHEME.equalsIgnoreCase(requestScheme),
       true
     );
 

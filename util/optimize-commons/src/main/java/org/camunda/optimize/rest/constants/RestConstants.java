@@ -19,4 +19,7 @@ public class RestConstants {
 
   public static final String SAME_SITE_COOKIE_FLAG = "SameSite";
   public static final String SAME_SITE_COOKIE_STRICT_VALUE = "Strict";
+
+  public static final String HTTPS_SCHEME = "https";
+
 }

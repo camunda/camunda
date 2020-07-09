@@ -6,7 +6,6 @@
 package org.camunda.optimize.rest.eventprocess;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -90,7 +89,7 @@ public class EventIngestionRestIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(ingestResponse.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(ingestResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     assertEventDtosArePersisted(eventDtos);
   }

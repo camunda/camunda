@@ -46,11 +46,18 @@ public class AuthenticationRestService {
   @POST
   @Produces("application/json")
   @Consumes("application/json")
-  public Response authenticateUser(CredentialsDto credentials) {
+  public Response authenticateUser(@Context ContainerRequestContext requestContext,
+                                   CredentialsDto credentials) {
     String securityToken = authenticationService.authenticateUser(credentials);
     // Return the token on the response
     return Response.ok(securityToken)
-      .header(HttpHeaders.SET_COOKIE, authCookieService.createNewOptimizeAuthCookie(securityToken))
+      .header(
+        HttpHeaders.SET_COOKIE,
+        authCookieService.createNewOptimizeAuthCookie(
+          securityToken,
+          requestContext.getUriInfo().getRequestUri().getScheme()
+        )
+      )
       .build();
   }
 
@@ -78,7 +85,7 @@ public class AuthenticationRestService {
     sessionService.invalidateSession(requestContext);
     return Response.status(Response.Status.OK)
       .entity("OK")
-      .cookie(authCookieService.createDeleteOptimizeAuthCookie())
+      .cookie(authCookieService.createDeleteOptimizeAuthCookie(requestContext.getUriInfo().getRequestUri().getScheme()))
       .build();
   }
 }

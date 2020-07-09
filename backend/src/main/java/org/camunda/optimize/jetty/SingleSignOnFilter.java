@@ -122,7 +122,7 @@ public class SingleSignOnFilter implements Filter {
       logger.debug("User [{}] was authorized to access Optimize, creating new session token.", userId);
       String securityToken = sessionService.createAuthToken(userId);
       authorizeCurrentRequest(servletRequest, securityToken);
-      writeOptimizeAuthorizationCookieToResponse(servletResponse, securityToken);
+      writeOptimizeAuthorizationCookieToResponse(servletRequest, servletResponse, securityToken);
     }
   }
 
@@ -132,9 +132,10 @@ public class SingleSignOnFilter implements Filter {
     servletRequest.setAttribute(OPTIMIZE_AUTHORIZATION, optimizeAuthToken);
   }
 
-  private void writeOptimizeAuthorizationCookieToResponse(final HttpServletResponse servletResponse,
+  private void writeOptimizeAuthorizationCookieToResponse(final HttpServletRequest servletRequest,
+                                                          final HttpServletResponse servletResponse,
                                                           final String token) {
-    final String optimizeAuthCookie = authCookieService.createNewOptimizeAuthCookie(token);
+    final String optimizeAuthCookie = authCookieService.createNewOptimizeAuthCookie(token, servletRequest.getScheme());
     servletResponse.addHeader(HttpHeaders.SET_COOKIE, optimizeAuthCookie);
   }
 

@@ -69,7 +69,8 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
     } else {
       Response.ResponseBuilder responseBuilder = Response.status(Response.Status.UNAUTHORIZED);
       if (sessionService.isTokenPresent(requestContext)) {
-        responseBuilder.cookie(authCookieService.createDeleteOptimizeAuthCookie());
+        responseBuilder.cookie(authCookieService.createDeleteOptimizeAuthCookie(
+          requestContext.getUriInfo().getRequestUri().getScheme()));
       }
       requestContext.abortWith(
         responseBuilder
@@ -87,7 +88,8 @@ public class RequestAuthenticationFilter implements ContainerRequestFilter {
     }
     requestContext.abortWith(
       Response.temporaryRedirect(loginUri)
-        .cookie(authCookieService.createDeleteOptimizeAuthCookie())
+        .cookie(authCookieService.createDeleteOptimizeAuthCookie(
+          requestContext.getUriInfo().getRequestUri().getScheme()))
         .build()
     );
   }

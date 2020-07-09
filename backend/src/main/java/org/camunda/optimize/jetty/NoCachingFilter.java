@@ -27,9 +27,6 @@ import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO
  */
 public class NoCachingFilter implements Filter {
 
-  public NoCachingFilter() {
-  }
-
   @Override
   public void init(FilterConfig filterConfig) {
     // nothing to do here
