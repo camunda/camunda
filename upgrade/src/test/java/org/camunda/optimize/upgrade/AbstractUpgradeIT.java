@@ -103,6 +103,7 @@ public abstract class AbstractUpgradeIT {
     CreateIndexRequest request = new CreateIndexRequest(indexName);
     request.alias(new Alias(aliasName));
     request.settings(indexSettings);
+    request.mapping(indexMapping.getSource());
     indexMapping.setDynamic("false");
     prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
   }

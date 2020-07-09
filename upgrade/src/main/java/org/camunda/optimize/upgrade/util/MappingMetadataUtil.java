@@ -11,6 +11,7 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.client.GetAliasesResponse;
@@ -96,11 +97,11 @@ public class MappingMetadataUtil {
       .collect(toList());
   }
 
-  public static List<EventSequenceCountIndex> retrieveAllEventTraceIndices(
+  public static List<EventTraceStateIndex> retrieveAllEventTraceIndices(
     final OptimizeElasticsearchClient esClient) {
     return retrieveAllDynamicIndexKeysForPrefix(esClient, EVENT_TRACE_STATE_INDEX_PREFIX)
       .stream()
-      .map(EventSequenceCountIndex::new)
+      .map(EventTraceStateIndex::new)
       .collect(toList());
   }
 

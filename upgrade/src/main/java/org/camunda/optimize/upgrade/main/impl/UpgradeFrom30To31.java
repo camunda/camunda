@@ -28,6 +28,7 @@ import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.DeleteDataStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
+import org.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.DeleteIndexIfExistsStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
@@ -106,8 +107,8 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
       .addUpgradeStep(addDateVariableUnitAndCustomBucketFieldsToReportConfiguration(SINGLE_DECISION_REPORT_INDEX_NAME))
       .addUpgradeSteps(addProcessInstanceIdToEventsMigrationSteps());
     fixCamundaActivityEventActivityInstanceIdFields(upgradeBuilder);
-    deleteTraceStateIndices(upgradeBuilder);
-    deleteSequenceCountIndices(upgradeBuilder);
+    clearTraceStateIndices(upgradeBuilder);
+    clearSequenceCountIndices(upgradeBuilder);
     upgradeBuilder.addUpgradeStep(deleteTraceStateImportIndexData());
     return upgradeBuilder.build();
   }
@@ -440,15 +441,21 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
   }
 
   @SneakyThrows
-  private void deleteTraceStateIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
+  private void clearTraceStateIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
     retrieveAllEventTraceIndices(upgradeDependencies.getEsClient())
-      .forEach(index -> upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(index)));
+      .forEach(index -> upgradeBuilder
+        .addUpgradeStep(new DeleteIndexIfExistsStep(index, index.getVersion() - 1))
+        .addUpgradeStep(new CreateIndexStep(index))
+      );
   }
 
   @SneakyThrows
-  private void deleteSequenceCountIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
+  private void clearSequenceCountIndices(final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder) {
     retrieveAllSequenceCountIndices(upgradeDependencies.getEsClient())
-      .forEach(index -> upgradeBuilder.addUpgradeStep(new DeleteIndexIfExistsStep(index)));
+      .forEach(index -> upgradeBuilder
+        .addUpgradeStep(new DeleteIndexIfExistsStep(index, index.getVersion() - 1))
+        .addUpgradeStep(new CreateIndexStep(index))
+      );
   }
 
   @SneakyThrows

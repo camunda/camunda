@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom30To31;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
+import org.camunda.optimize.upgrade.version30.indices.EventTraceStateIndexV1;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +21,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-public class DeleteTraceStateIndicesUpgradeIT extends AbstractUpgrade30IT {
+public class ClearTraceStateIndicesUpgradeIT extends AbstractUpgrade30IT {
 
   private static final String CAMUNDA_DEFINITION_KEY_ONE = "invoice";
   private static final String CAMUNDA_DEFINITION_KEY_TWO = "reviewinvoice";
@@ -44,7 +45,7 @@ public class DeleteTraceStateIndicesUpgradeIT extends AbstractUpgrade30IT {
 
   @SneakyThrows
   @Test
-  public void allCamundaTraceStateIndicesGetDeleted() {
+  public void allTraceStateIndicesGetCleared() {
     // given
     final UpgradePlan upgradePlan = new UpgradeFrom30To31().buildUpgradePlan();
     assertThat(getAllDocumentsForKey(CAMUNDA_DEFINITION_KEY_ONE)).hasSize(1);
@@ -55,9 +56,9 @@ public class DeleteTraceStateIndicesUpgradeIT extends AbstractUpgrade30IT {
     upgradePlan.execute();
 
     // then
-    assertThat(indexExists(new EventTraceStateIndex(CAMUNDA_DEFINITION_KEY_ONE).getIndexName())).isFalse();
-    assertThat(indexExists(new EventTraceStateIndex(CAMUNDA_DEFINITION_KEY_TWO).getIndexName())).isFalse();
-    assertThat(indexExists(new EventTraceStateIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName())).isFalse();
+    assertThat(getAllDocumentsForKey(CAMUNDA_DEFINITION_KEY_ONE)).isEmpty();
+    assertThat(getAllDocumentsForKey(CAMUNDA_DEFINITION_KEY_TWO)).isEmpty();
+    assertThat(getAllDocumentsForKey(EXTERNAL_EVENTS_INDEX_SUFFIX)).isEmpty();
   }
 
   private List<EventTraceStateDto> getAllDocumentsForKey(String definitionKey) {
@@ -69,7 +70,7 @@ public class DeleteTraceStateIndicesUpgradeIT extends AbstractUpgrade30IT {
 
   @SneakyThrows
   private void createTraceStateIndexForDefinitionKey(final String definitionKey) {
-    createOptimizeIndexWithTypeAndVersion(new EventTraceStateIndex(definitionKey), EventTraceStateIndex.VERSION);
+    createOptimizeIndexWithTypeAndVersion(new EventTraceStateIndexV1(definitionKey), EventTraceStateIndexV1.VERSION);
   }
 
 }
