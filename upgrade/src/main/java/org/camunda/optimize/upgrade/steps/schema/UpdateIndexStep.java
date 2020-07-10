@@ -65,10 +65,11 @@ public class UpdateIndexStep implements UpgradeStep {
         }
         final String targetIndexNameWithSuffix = targetIndexName + suffix;
 
-        esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexNameWithSuffix);
+        final Set<AliasMetaData> existingAliases = esIndexAdjuster.getAllAliasesForIndex(sourceIndexNameWithSuffix);
+        esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexNameWithSuffix, existingAliases);
         esIndexAdjuster.createIndexFromTemplate(targetIndexNameWithSuffix);
         esIndexAdjuster.reindex(sourceIndexNameWithSuffix, targetIndexNameWithSuffix, mappingScript);
-        for (AliasMetaData alias : indexAliasMap.get(sourceIndex)) {
+        for (AliasMetaData alias : existingAliases) {
           esIndexAdjuster.addAlias(
             alias.getAlias(),
             targetIndexNameWithSuffix,
@@ -80,7 +81,8 @@ public class UpdateIndexStep implements UpgradeStep {
       }
     } else {
       // create new index and reindex data to it
-      esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexName);
+      final Set<AliasMetaData> existingAliases = esIndexAdjuster.getAllAliasesForIndex(sourceIndexName);
+      esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexName, existingAliases);
       esIndexAdjuster.createIndex(index);
       esIndexAdjuster.reindex(sourceIndexName, targetIndexName, mappingScript);
       esIndexAdjuster.deleteIndex(sourceIndexName);
