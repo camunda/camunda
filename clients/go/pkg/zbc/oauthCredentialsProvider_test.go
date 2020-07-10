@@ -29,6 +29,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -560,6 +561,8 @@ func mockAuthorizationServerWithAudience(t *testing.T, token *mutableToken, audi
 		require.Equal(t, audience, query.Get("audience"))
 		require.Equal(t, clientID, query.Get("client_id"))
 		require.Equal(t, clientSecret, query.Get("client_secret"))
+		require.Regexp(t, regexp.MustCompile(`zeebe-client-go/\d+\.\d+\.\d+.*`),
+			request.Header.Get("User-Agent"))
 
 		writer.Header().Set("Content-Type", "application/json")
 		responsePayload := []byte("{\"access_token\": \"" + token.value + "\"," +

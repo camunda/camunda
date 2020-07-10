@@ -18,6 +18,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/zeebe-io/zeebe/clients/go/internal/embedded"
 	"log"
 	"os"
 	"strconv"
@@ -146,6 +147,8 @@ func NewClient(config *ClientConfig) (Client, error) {
 		return nil, err
 	}
 
+	config.DialOpts = append(config.DialOpts, grpc.WithUserAgent("zeebe-client-go/"+getVersion()))
+
 	conn, err := grpc.Dial(config.GatewayAddress, config.DialOpts...)
 	if err != nil {
 		return nil, err
@@ -254,4 +257,13 @@ func configureKeepAlive(config *ClientConfig) error {
 	config.DialOpts = append(config.DialOpts, grpc.WithKeepaliveParams(keepalive.ClientParameters{Time: keepAlive}))
 
 	return nil
+}
+
+func getVersion() string {
+	zbVersion := "development"
+	if readVersion, err := embedded.Asset("VERSION"); err == nil {
+		zbVersion = strings.TrimSpace(string(readVersion))
+	}
+
+	return zbVersion
 }

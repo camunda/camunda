@@ -124,6 +124,10 @@ spec:
                 container('maven') {
                     sh '.ci/scripts/release/github-release.sh'
                 }
+    
+                container('golang') {
+                    sh '.ci/scripts/release/post-github.sh'
+                }
             }
         }
 
