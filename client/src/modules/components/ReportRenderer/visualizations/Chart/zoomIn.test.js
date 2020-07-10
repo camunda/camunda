@@ -62,8 +62,8 @@ it('should create a startDate filter on zoom interaction', () => {
         $set: [
           {
             data: {
-              end: '2019-01-22T00:00:00',
-              start: '2019-01-07T00:00:00',
+              end: moment('2019-01-22T00:00:00').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
+              start: moment('2019-01-07T00:00:00').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
               type: 'fixed',
             },
             type: 'startDate',

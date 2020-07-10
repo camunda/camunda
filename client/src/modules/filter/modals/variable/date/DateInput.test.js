@@ -26,8 +26,8 @@ const exampleFilter = {
     name: 'aVariableName',
     type: 'Date',
     data: {
-      start: '2018-07-09T00:00:00',
-      end: '2018-07-12T23:59:59',
+      start: moment('2018-07-09T00:00:00').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
+      end: moment('2018-07-12T23:59:59.999').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
       type: 'fixed',
     },
   },

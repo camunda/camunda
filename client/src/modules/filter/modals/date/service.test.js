@@ -36,8 +36,8 @@ it('create correct filter from state object', () => {
 
   expect(filter3).toEqual({
     type: 'fixed',
-    start: '2015-01-20T00:00:00',
-    end: '2019-05-11T23:59:59',
+    start: moment('2015-01-20T00:00:00').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
+    end: moment('2019-05-11T23:59:59.999').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
   });
 });
 

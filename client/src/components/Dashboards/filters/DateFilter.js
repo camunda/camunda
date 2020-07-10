@@ -89,8 +89,8 @@ export default function DateFilter({
               if (valid) {
                 setFilter({
                   type: 'fixed',
-                  start: startDate?.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
-                  end: endDate?.endOf('day').format('YYYY-MM-DDTHH:mm:ss'),
+                  start: startDate?.startOf('day').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
+                  end: endDate?.endOf('day').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
                 });
               }
             }}

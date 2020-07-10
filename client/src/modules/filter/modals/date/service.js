@@ -71,8 +71,8 @@ export function convertStateToFilter({
     case 'fixed':
       filter = {
         type: 'fixed',
-        start: startDate?.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
-        end: endDate?.endOf('day').format('YYYY-MM-DDTHH:mm:ss'),
+        start: startDate?.startOf('day').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
+        end: endDate?.endOf('day').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
       };
       break;
     case 'custom':
