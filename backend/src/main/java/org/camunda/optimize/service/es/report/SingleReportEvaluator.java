@@ -6,12 +6,8 @@
 package org.camunda.optimize.service.es.report;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.NotSupportedCommand;
@@ -22,11 +18,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
-import static org.camunda.optimize.service.es.filter.DateFilterQueryService.truncateDateFiltersToStartOfDay;
 
 @RequiredArgsConstructor
 @Component
@@ -52,8 +45,6 @@ public class SingleReportEvaluator {
 
   <T extends ReportDefinitionDto<?>> ReportEvaluationResult<?, T> evaluate(CommandContext<T> commandContext)
     throws OptimizeException {
-    // Currently, Optimize does not support time settings in DateFilters, so truncate all date filters to day
-    truncateDateFiltersInReport(commandContext.getReportDefinition());
     Command<T> evaluationCommand = extractCommandWithValidation(commandContext.getReportDefinition());
     return evaluationCommand.evaluate(commandContext);
   }
@@ -66,19 +57,5 @@ public class SingleReportEvaluator {
   @SuppressWarnings(value = "unchecked")
   <T extends ReportDefinitionDto<?>> Command<T> extractCommand(T reportDefinition) {
     return commandSuppliers.getOrDefault(reportDefinition.getData().createCommandKey(), notSupportedCommand);
-  }
-
-  private void truncateDateFiltersInReport(final ReportDefinitionDto reportDefinition) {
-    if (reportDefinition.getCombined()) {
-      // reports in combined reports will have already been saved and had their filters truncated then
-      return;
-    }
-    List<FilterDataDto> filters;
-    if (ReportType.PROCESS.equals(reportDefinition.getReportType())) {
-      filters = ((SingleProcessReportDefinitionDto) reportDefinition).getFilterData();
-    } else {
-      filters = ((SingleDecisionReportDefinitionDto) reportDefinition).getFilterData();
-    }
-    truncateDateFiltersToStartOfDay(filters);
   }
 }
