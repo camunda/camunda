@@ -8,11 +8,16 @@
 package io.zeebe.engine.util.client;
 
 import io.zeebe.engine.util.StreamProcessorRule;
+import io.zeebe.msgpack.value.StringValue;
+import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.util.buffer.BufferUtil;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.BiFunction;
 
 public final class JobActivationClient {
@@ -63,7 +68,18 @@ public final class JobActivationClient {
 
   public JobActivationClient withTimeout(final long timeout) {
     jobBatchRecord.setTimeout(timeout);
+    return this;
+  }
 
+  public JobActivationClient withFetchVariables(final String... fetchVariables) {
+    return withFetchVariables(Arrays.asList(fetchVariables));
+  }
+
+  public JobActivationClient withFetchVariables(final List<String> fetchVariables) {
+    final ValueArray<StringValue> variables = jobBatchRecord.variables();
+    fetchVariables.stream()
+        .map(BufferUtil::wrapString)
+        .forEach(buffer -> variables.add().wrap(buffer));
     return this;
   }
 

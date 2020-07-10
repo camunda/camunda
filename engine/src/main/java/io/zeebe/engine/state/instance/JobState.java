@@ -140,6 +140,11 @@ public final class JobState {
     metrics.jobCanceled(record.getType());
   }
 
+  public void disable(final long key, final JobRecord record) {
+    updateJob(key, record, State.FAILED);
+    makeJobNotActivatable(record.getTypeBuffer());
+  }
+
   public void throwError(final long key, final JobRecord updatedValue) {
     updateJob(key, updatedValue, State.ERROR_THROWN);
     makeJobNotActivatable(updatedValue.getTypeBuffer());
