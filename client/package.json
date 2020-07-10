@@ -92,7 +92,7 @@
     "http-proxy-middleware": "^1.0.5",
     "husky": "^4.2.5",
     "jest-enzyme": "^7.1.2",
-    "jest-junit": "^10.0.0",
+    "jest-junit": "^11.0.1",
     "js-yaml": "^3.14.0",
     "license-checker": "^25.0.1",
     "lint-staged": "^10.2.11",
