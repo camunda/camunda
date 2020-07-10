@@ -116,7 +116,7 @@ public class Generator {
     try {
       generator.ingestExternalEvents();
       // sleeping to ensure event sequence count processing has been performed
-      Thread.sleep(10_000L);
+      Thread.sleep(30_000L);
 
       final ProcessDefinitionEngineDto engineProcessDefinition = generator.getDefaultEngineProcessDefinition();
       final DecisionDefinitionEngineDto engineDecisionDefinition = generator.getDefaultEngineDecisionDefinition();
