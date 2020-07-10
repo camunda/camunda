@@ -4256,12 +4256,12 @@ bpmn-js-disable-collapsed-subprocess@^0.1.2:
   dependencies:
     min-dash "^3.5.2"
 
-bpmn-js@6.5.1:
-  version "6.5.1"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-6.5.1.tgz#d0eecba2afeeb430a1c609137e9ef92520a47037"
-  integrity sha512-qmxY+vaFndUa4e65WMjSMUVPDz0qAc79JHODJoLXJBklSS5XatUfqzKR6UGfeT7s0IGA7qje1afMVKMz4YJsEw==
+bpmn-js@7.2.1:
+  version "7.2.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-7.2.1.tgz#0204e309c220e74ad601120733b2501ec5ea6da7"
+  integrity sha512-i3OY8HzLxA0L1BWe+qZJ1lMyZy8TK3ff43A7q/IOZg2xiqKBbZicFSEnk40TWlX9uw7G+oIaADvcvtLGzUCCMQ==
   dependencies:
-    bpmn-moddle "^6.0.6"
+    bpmn-moddle "^7.0.3"
     css.escape "^1.5.1"
     diagram-js "^6.6.1"
     diagram-js-direct-editing "^1.6.1"
@@ -4272,14 +4272,14 @@ bpmn-js@6.5.1:
     object-refs "^0.3.0"
     tiny-svg "^2.2.1"
 
-bpmn-moddle@^6.0.6:
-  version "6.0.6"
-  resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-6.0.6.tgz#129059a62cc8b0f022589b27c233835bf0ea2eb2"
-  integrity sha512-GbriI2Jt+qiLCaZV/oo9B7PM1fzBz+Mt0ls1irAXEUZek9VMaM71lL0KiN2wCHMcvEVqCMQLMdR9hTW42ji/iQ==
+bpmn-moddle@^7.0.3:
+  version "7.0.3"
+  resolved "https://registry.yarnpkg.com/bpmn-moddle/-/bpmn-moddle-7.0.3.tgz#d6ce6045d9e4eebd0f0eaafd8f33cd42bc9c7180"
+  integrity sha512-DylEgndbBNm37v/jEdZTUD1i7XzbpCA5mIAFqkbqof3nYbIOAIycIrkhnRIaBJPvtlxTd3wDdG1ts1IzUfEduA==
   dependencies:
     min-dash "^3.0.0"
     moddle "^5.0.1"
-    moddle-xml "^8.0.7"
+    moddle-xml "^9.0.3"
 
 brace-expansion@^1.1.7:
   version "1.1.11"
@@ -10713,10 +10713,10 @@ moddle-xml@^8.0.1:
     moddle "^5.0.1"
     saxen "^8.1.0"
 
-moddle-xml@^8.0.7:
-  version "8.0.7"
-  resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-8.0.7.tgz#ac53e8d80e0e0b2614d08d964e281fe0b93745b6"
-  integrity sha512-ynoIED3UwDuvhwpLzSjBX2qXAAgXeMvkjU0xlG2Q9eZGHakNOFJ6TYHEnEOSuaxUrGe3k5c2rZ8jMM7nvlpU7g==
+moddle-xml@^9.0.3:
+  version "9.0.3"
+  resolved "https://registry.yarnpkg.com/moddle-xml/-/moddle-xml-9.0.3.tgz#e17843bf7dc7c23c6466dbca08482546c16f52af"
+  integrity sha512-3r1c+CA7k9GLqONKtM87DltyLmeWtqz6wbw+SQWNJd66iidmYL4VudN/qpJHt6TP8qxeQrZLTpEYkDQgW6HIDQ==
   dependencies:
     min-dash "^3.0.0"
     moddle "^5.0.1"
