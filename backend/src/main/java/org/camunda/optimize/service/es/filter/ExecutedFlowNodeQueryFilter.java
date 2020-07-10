@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
@@ -29,7 +30,8 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
   private Logger logger = LoggerFactory.getLogger(getClass());
 
   @Override
-  public void addFilters(BoolQueryBuilder query, List<ExecutedFlowNodeFilterDataDto> flowNodeFilter) {
+  public void addFilters(BoolQueryBuilder query, List<ExecutedFlowNodeFilterDataDto> flowNodeFilter,
+                         final ZoneId timezone) {
     List<QueryBuilder> filters = query.filter();
     for (ExecutedFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
       filters.add(createFilterQueryBuilder(executedFlowNode));

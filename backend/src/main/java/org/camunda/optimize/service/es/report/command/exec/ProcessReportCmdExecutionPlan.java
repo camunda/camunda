@@ -49,9 +49,13 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
   }
 
   @Override
-  public BoolQueryBuilder setupBaseQuery(final ProcessReportDataDto reportData) {
-    BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(reportData);
-    queryFilterEnhancer.addFilterToQuery(boolQueryBuilder, getAllFilters(reportData));
+  public BoolQueryBuilder setupBaseQuery(final ExecutionContext<ProcessReportDataDto> context) {
+    BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(context.getReportData());
+    queryFilterEnhancer.addFilterToQuery(
+      boolQueryBuilder,
+      getAllFilters(context.getReportData()),
+      context.getTimezone()
+    );
     return boolQueryBuilder;
   }
 
@@ -77,11 +81,11 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
   }
 
   public Optional<MinMaxStatDto> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context) {
-    return groupByPart.calculateDateRangeForAutomaticGroupByDate(context, setupBaseQuery(context.getReportData()));
+    return groupByPart.calculateDateRangeForAutomaticGroupByDate(context, setupBaseQuery(context));
   }
 
   public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<ProcessReportDataDto> context) {
-    return groupByPart.calculateNumberRangeForGroupByNumberVariable(context, setupBaseQuery(context.getReportData()));
+    return groupByPart.calculateNumberRangeForGroupByNumberVariable(context, setupBaseQuery(context));
   }
 
   private List<ProcessFilterDto<?>> getAllFilters(final ProcessReportDataDto reportData) {

@@ -23,6 +23,7 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -58,8 +59,9 @@ public class ProcessGroupByProcessInstanceEndDate extends ProcessGroupByProcessI
 
   @Override
   protected void addFiltersToQuery(final BoolQueryBuilder limitFilterQuery,
-                                   final List<DateFilterDataDto<?>> limitedFilters) {
-    queryFilterEnhancer.getEndDateQueryFilter().addFilters(limitFilterQuery, limitedFilters);
+                                   final List<DateFilterDataDto<?>> limitedFilters,
+                                   final ZoneId timezone) {
+    queryFilterEnhancer.getEndDateQueryFilter().addFilters(limitFilterQuery, limitedFilters, timezone);
   }
 
   @Override
@@ -70,14 +72,16 @@ public class ProcessGroupByProcessInstanceEndDate extends ProcessGroupByProcessI
   @Override
   protected BoolQueryBuilder createDefaultLimitingFilter(final GroupByDateUnit unit,
                                                          final QueryBuilder query,
-                                                         final ProcessReportDataDto reportData) {
+                                                         final ProcessReportDataDto reportData,
+                                                         final ZoneId timezone) {
     final BoolQueryBuilder limitFilterQuery;
     limitFilterQuery = createProcessEndDateHistogramBucketLimitingFilterFor(
       reportData.getFilter(),
       unit,
       configurationService.getEsAggregationBucketLimit(),
       ProcessInstanceQueryUtil.getLatestDate(query, getDateField(), esClient).orElse(null),
-      queryFilterEnhancer
+      queryFilterEnhancer,
+      timezone
     );
     return limitFilterQuery;
   }

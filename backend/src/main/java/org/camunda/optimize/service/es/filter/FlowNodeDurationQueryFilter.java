@@ -14,6 +14,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.getDurationFilterScript;
@@ -29,7 +30,9 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 public class FlowNodeDurationQueryFilter implements QueryFilter<FlowNodeDurationFiltersDataDto> {
 
-  public void addFilters(final BoolQueryBuilder query, final List<FlowNodeDurationFiltersDataDto> durationFilters) {
+  public void addFilters(final BoolQueryBuilder query,
+                         final List<FlowNodeDurationFiltersDataDto> durationFilters,
+                         final ZoneId timezone) {
     if (!CollectionUtils.isEmpty(durationFilters)) {
       final List<QueryBuilder> filters = query.filter();
       for (FlowNodeDurationFiltersDataDto flowNodeDurationFilterDto : durationFilters) {

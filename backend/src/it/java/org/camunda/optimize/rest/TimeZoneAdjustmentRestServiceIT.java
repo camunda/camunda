@@ -10,15 +10,21 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
@@ -745,6 +751,143 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     assertThat(StringUtils.countMatches(actualContent, londonTimeAsString)).isEqualTo(2);
   }
 
+  @Test
+  public void adjustReportEvaluationResultToTimezone_reportDateFilter_fixedDate() {
+    // given
+    OffsetDateTime now = dateFreezer()
+      .dateToFreeze(OffsetDateTime.of(2020, 7, 5, 20, 0, 0, 0, ZoneOffset.UTC))
+      .freezeDateAndReturn();
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now);
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .build();
+
+    List<ProcessFilterDto<?>> fixedStartDateFilter =
+      ProcessFilterBuilder.filter()
+        .fixedStartDate()
+        // the offset of the filter should be ignored
+        .start(now.withOffsetSameLocal(ZoneOffset.ofHours(+18)))
+        .end(now.plusDays(1).withOffsetSameLocal(ZoneOffset.ofHours(+18)))
+        .add()
+        .buildList();
+    reportData.setFilter(fixedStartDateFilter);
+
+    // when
+    final ReportMapResultDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // I adjust timezone that should be used for the filter as well
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "UTC")
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      // @formatter:on
+      .getResult();
+
+    // then there should be data in here. If the filter timezone isn't used the result will be 0.0
+    assertThat(result.getData())
+      .hasSize(2)
+      .first()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.0);
+  }
+
+  @Test
+  public void adjustReportEvaluationResultToTimezone_reportDateFilter_relativeDate() {
+    // given
+    // the timezone of the server is berlin time
+    final OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    // the instance is truncated to the beginning of the year
+    final OffsetDateTime instanceStartDate =
+      truncateToStartOfUnit(now, ChronoUnit.YEARS, ZoneId.of("Europe/Berlin")).toOffsetDateTime();
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), instanceStartDate);
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setDateInterval(GroupByDateUnit.YEAR)
+      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .build();
+
+    List<ProcessFilterDto<?>> relativeStartDateFilter =
+      ProcessFilterBuilder.filter()
+        .relativeStartDate()
+        // add a relative date filter for this year
+        .start(0L, DateFilterUnit.YEARS)
+        .add()
+        .buildList();
+    reportData.setFilter(relativeStartDateFilter);
+
+    // when
+    final ReportMapResultDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // difference between UTC and Berlin time is +1 (UTC) or +2 (UTC DST)
+      // this offset will be subtracted from the given date. Since the only instance
+      // is in beginning of the year Berlin time it will fall into the year before.
+      // Thus, the instance will not be part of the result if the timezone of this request is respected.
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "UTC")
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      // @formatter:on
+      .getResult();
+
+    // then
+    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getData().get(0).getValue()).isEqualTo(0.0);
+    // if the timezone of the request is not respected then this value will be one
+    assertThat(result.getData().get(1).getValue()).isEqualTo(0.0);
+  }
+
+  @Test
+  public void branchAnalysis_adjustsFilterToTimezone() {
+    // given
+    OffsetDateTime now = dateFreezer()
+      .dateToFreeze(OffsetDateTime.of(2020, 7, 5, 20, 0, 0, 0, ZoneOffset.UTC))
+      .freezeDateAndReturn();
+    final ProcessDefinitionEngineDto gatewayDefinition = deploySimpleGatewayProcessDefinition();
+    ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.startProcessInstance(gatewayDefinition.getId(), ImmutableMap.of("goToTask1", true));
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now.plusHours(1));
+    importAllEngineEntitiesFromScratch();
+
+    BranchAnalysisQueryDto branchAnalysisQueryDto = analysisClient.createAnalysisDto(
+      gatewayDefinition.getKey(),
+      Lists.newArrayList(String.valueOf(gatewayDefinition.getVersion())),
+      Collections.singletonList(null),
+      "splittingGateway",
+      "endEvent"
+    );
+
+    List<ProcessFilterDto<?>> fixedStartDateFilter =
+      ProcessFilterBuilder.filter()
+        .fixedStartDate()
+        // the offset of the filter should be ignored
+        .start(now.withOffsetSameLocal(ZoneOffset.ofHours(+18)))
+        .end(now.plusHours(1).withOffsetSameLocal(ZoneOffset.ofHours(+18)))
+        .add()
+        .buildList();
+    branchAnalysisQueryDto.setFilter(fixedStartDateFilter);
+
+    // when
+    final BranchAnalysisDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "UTC")
+      .buildProcessDefinitionCorrelation(branchAnalysisQueryDto)
+      .execute(BranchAnalysisDto.class, Response.Status.OK.getStatusCode());
+
+    // then only if the timezone is being ignored for the fixed date filter the
+    // process instance falls into the filter range.
+    assertThat(result.getTotal()).isEqualTo(1L);
+  }
+
   private OffsetDateTime truncateToYearWithLondonTimezone(final OffsetDateTime now) {
     return truncateToStartOfUnit(now, ChronoUnit.YEARS, (ZoneId.of("Europe/London"))).toOffsetDateTime();
   }
@@ -759,4 +902,5 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .format(lastDateOfAutomaticInterval.atZoneSameInstant(ZoneId.of("Europe/London")).toOffsetDateTime());
     return expectedDateAsString;
   }
+
 }

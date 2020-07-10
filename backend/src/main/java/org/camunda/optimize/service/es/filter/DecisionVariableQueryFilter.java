@@ -22,6 +22,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -52,16 +53,17 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
   abstract String getVariablePath();
 
   @Override
-  public void addFilters(BoolQueryBuilder query, List<VariableFilterDataDto<?>> variableFilters) {
+  public void addFilters(BoolQueryBuilder query, List<VariableFilterDataDto<?>> variableFilters, final ZoneId timezone) {
     if (variableFilters != null) {
       List<QueryBuilder> filters = query.filter();
       for (VariableFilterDataDto<?> variable : variableFilters) {
-        filters.add(createFilterQueryBuilder(variable));
+        filters.add(createFilterQueryBuilder(variable, timezone));
       }
     }
   }
 
-  private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto<?> dto) {
+  private QueryBuilder createFilterQueryBuilder(final VariableFilterDataDto<?> dto,
+                                                final ZoneId timezone) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
 
     QueryBuilder queryBuilder = matchAllQuery();
@@ -84,7 +86,7 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
         break;
       case DATE:
         DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
-        queryBuilder = createDateQueryBuilder(dateVarDto);
+        queryBuilder = createDateQueryBuilder(dateVarDto, timezone);
         break;
       default:
         logger.warn(
@@ -190,7 +192,8 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     return resultQuery;
   }
 
-  private QueryBuilder createDateQueryBuilder(DateVariableFilterDataDto dto) {
+  private QueryBuilder createDateQueryBuilder(final DateVariableFilterDataDto dto,
+                                              final ZoneId timezone) {
     final BoolQueryBuilder dateFilterBuilder = boolQuery().minimumShouldMatch(1);
 
     if (dto.getData().isIncludeUndefined()) {
@@ -202,7 +205,10 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
     final BoolQueryBuilder dateValueFilterQuery = boolQuery()
       .must(termQuery(getVariableIdField(), getVariableId(dto)));
     dateFilterQueryService.addFilters(
-      dateValueFilterQuery, Collections.singletonList(dto.getData()), getVariableValueFieldForType(dto.getType())
+      dateValueFilterQuery,
+      Collections.singletonList(dto.getData()),
+      getVariableValueFieldForType(dto.getType()),
+      timezone
     );
     if (!dateValueFilterQuery.filter().isEmpty()) {
       dateFilterBuilder.should(nestedQuery(getVariablePath(), dateValueFilterQuery, ScoreMode.None));

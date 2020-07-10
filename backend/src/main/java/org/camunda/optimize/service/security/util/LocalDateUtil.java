@@ -15,7 +15,7 @@ public class LocalDateUtil {
   private volatile static OffsetDateTime CURRENT_TIME = null;
 
   public static void setCurrentTime(OffsetDateTime currentTime) {
-    LocalDateUtil.CURRENT_TIME = currentTime;
+    LocalDateUtil.CURRENT_TIME = normalize(currentTime);
   }
 
   public static void reset() {
@@ -28,6 +28,10 @@ public class LocalDateUtil {
       value = normalize(OffsetDateTime.now());
     }
     return normalize(value);
+  }
+
+  public static OffsetDateTime getCurrentTimeWithTimezone(final ZoneId timezone) {
+    return atSameTimezoneOffsetDateTime(getCurrentDateTime(), timezone);
   }
 
   public static LocalDateTime getCurrentLocalDateTime() {

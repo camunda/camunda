@@ -12,6 +12,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.filter.UserTaskFilterQueryUtil.createCandidateGroupFilterQuery;
@@ -22,7 +23,8 @@ import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 public class CandidateGroupQueryFilter implements QueryFilter<IdentityLinkFilterDataDto> {
 
   public void addFilters(final BoolQueryBuilder query,
-                         final List<IdentityLinkFilterDataDto> candidateGroupFilters) {
+                         final List<IdentityLinkFilterDataDto> candidateGroupFilters,
+                         final ZoneId timezone) {
     if (!CollectionUtils.isEmpty(candidateGroupFilters)) {
       final List<QueryBuilder> filters = query.filter();
       for (IdentityLinkFilterDataDto assigneeFilter : candidateGroupFilters) {

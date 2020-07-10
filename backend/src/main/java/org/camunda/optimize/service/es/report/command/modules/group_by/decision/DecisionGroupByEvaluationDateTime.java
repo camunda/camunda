@@ -99,7 +99,7 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
     final BoolQueryBuilder limitFilterQuery;
     if (!dateFilterDataDtos.isEmpty()) {
       final List<DateFilterDataDto<?>> limitedFilters = limitFiltersToMaxBucketsForGroupByUnit(
-        dateFilterDataDtos, unit, configurationService.getEsAggregationBucketLimit()
+        dateFilterDataDtos, unit, configurationService.getEsAggregationBucketLimit(), context.getTimezone()
       );
 
       getExtendedBoundsFromDateFilters(
@@ -108,14 +108,16 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
       ).ifPresent(dateHistogramAggregation::extendedBounds);
 
       limitFilterQuery = boolQuery();
-      queryFilterEnhancer.getEvaluationDateQueryFilter().addFilters(limitFilterQuery, limitedFilters);
+      queryFilterEnhancer.getEvaluationDateQueryFilter()
+        .addFilters(limitFilterQuery, limitedFilters, context.getTimezone());
     } else {
       limitFilterQuery = createDateHistogramBucketLimitedOrDefaultLimitedFilter(
         dateFilterDataDtos,
         unit,
         configurationService.getEsAggregationBucketLimit(),
         DecisionInstanceQueryUtil.getLatestEvaluationDate(searchSourceBuilder.query(), esClient).orElse(null),
-        queryFilterEnhancer.getEvaluationDateQueryFilter()
+        queryFilterEnhancer.getEvaluationDateQueryFilter(),
+        context.getTimezone()
       );
     }
 

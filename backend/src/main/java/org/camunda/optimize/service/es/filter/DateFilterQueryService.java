@@ -25,6 +25,7 @@ import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -39,19 +40,22 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 public class DateFilterQueryService {
   private final DateTimeFormatter formatter;
 
-  public void addFilters(final BoolQueryBuilder query, final List<DateFilterDataDto<?>> dates, final String dateField) {
+  public void addFilters(final BoolQueryBuilder query,
+                         final List<DateFilterDataDto<?>> dates,
+                         final String dateField,
+                         final ZoneId timezone) {
     if (dates != null) {
       for (DateFilterDataDto<?> dateDto : dates) {
         final Optional<RangeQueryBuilder> dateRangeQuery;
         if (DateFilterType.FIXED.equals(dateDto.getType())) {
           FixedDateFilterDataDto fixedDateFilterDataDto = (FixedDateFilterDataDto) dateDto;
-          dateRangeQuery = createFixedDateFilter(fixedDateFilterDataDto, dateField);
+          dateRangeQuery = createFixedDateFilter(fixedDateFilterDataDto, dateField, timezone);
         } else if (DateFilterType.ROLLING.equals(dateDto.getType())) {
           RollingDateFilterDataDto rollingDateFilterDataDto = (RollingDateFilterDataDto) dateDto;
-          dateRangeQuery = createRollingDateFilter(rollingDateFilterDataDto, dateField);
+          dateRangeQuery = createRollingDateFilter(rollingDateFilterDataDto, dateField, timezone);
         } else if (DateFilterType.RELATIVE.equals(dateDto.getType())) {
           RelativeDateFilterDataDto relativeDateFilterDataDto = (RelativeDateFilterDataDto) dateDto;
-          dateRangeQuery = createRelativeDateFilter(relativeDateFilterDataDto, dateField);
+          dateRangeQuery = createRelativeDateFilter(relativeDateFilterDataDto, dateField, timezone);
         } else {
           dateRangeQuery = Optional.empty();
           log.warn("Cannot execute date filter. Unknown type [{}]", dateDto.getType());
@@ -65,30 +69,50 @@ public class DateFilterQueryService {
   }
 
   private Optional<RangeQueryBuilder> createFixedDateFilter(final FixedDateFilterDataDto dateDto,
-                                                            final String dateField) {
+                                                            final String dateField,
+                                                            final ZoneId timezone) {
     if (dateDto.getEnd() == null && dateDto.getStart() == null) {
       return Optional.empty();
     }
 
     final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
     if (dateDto.getEnd() != null) {
-      queryDate.lte(formatter.format(dateDto.getEnd()));
+      final OffsetDateTime endDateWithCorrectTimezone =
+        overwriteTimezone(dateDto.getEnd(), timezone);
+      queryDate.lte(formatter.format(endDateWithCorrectTimezone));
     }
     if (dateDto.getStart() != null) {
-      queryDate.gte(formatter.format(dateDto.getStart()));
+      final OffsetDateTime startDateWithCorrectTimezone =
+        overwriteTimezone(dateDto.getStart(), timezone);
+      queryDate.gte(formatter.format(startDateWithCorrectTimezone));
     }
     return Optional.of(queryDate);
   }
 
+  private OffsetDateTime overwriteTimezone(final OffsetDateTime date, final ZoneId timezone) {
+    if (date != null) {
+      // Please note that we call atZoneSimilarLocal(...) on purpose here to disregard
+      // the already set timezone of the filter and overwrite it with the provided one.
+      // This is special behavior just for the filters since here we can't assume that the
+      // correct timezone is set. However, we do know that the local date time (date + time without timezone)
+      // is the correct one.
+      // Example: before 2020-5-7T12:00:00.000Z+02 (Europe/Berlin)
+      //          -> after conversion to Europe/London 2020-5-7T11:00:00.000Z+01
+      return date.atZoneSimilarLocal(timezone).toOffsetDateTime();
+    }
+    return null;
+  }
+
   private Optional<RangeQueryBuilder> createRollingDateFilter(final RollingDateFilterDataDto dateDto,
-                                                              final String dateField) {
+                                                              final String dateField,
+                                                              final ZoneId timezone) {
     final RollingDateFilterStartDto startDto = dateDto.getStart();
     if (startDto == null || startDto.getUnit() == null || startDto.getValue() == null) {
       return Optional.empty();
     }
 
     final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
-    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+    final OffsetDateTime now = LocalDateUtil.getCurrentTimeWithTimezone(timezone);
     queryDate.lte(formatter.format(now));
 
     if (QUARTERS.equals(startDto.getUnit())) {
@@ -106,14 +130,15 @@ public class DateFilterQueryService {
   }
 
   private Optional<RangeQueryBuilder> createRelativeDateFilter(final RelativeDateFilterDataDto dateDto,
-                                                               final String dateField) {
+                                                               final String dateField,
+                                                               final ZoneId timezone) {
     final RelativeDateFilterStartDto startDto = dateDto.getStart();
     if (startDto == null || startDto.getUnit() == null || startDto.getValue() == null) {
       return Optional.empty();
     }
 
     final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
-    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
+    final OffsetDateTime now = LocalDateUtil.getCurrentTimeWithTimezone(timezone);
     if (startDto.getValue() == 0) {
       queryDate.lte(formatter.format(now));
       queryDate.gte(formatter.format(DateFilterUtil.getStartOfCurrentInterval(now, startDto.getUnit())));
@@ -141,7 +166,7 @@ public class DateFilterQueryService {
     });
   }
 
-  public static void truncateDateFilterStartAndEndDates(final FixedDateFilterDataDto dateFilterDataDto) {
+  private static void truncateDateFilterStartAndEndDates(final FixedDateFilterDataDto dateFilterDataDto) {
     if (dateFilterDataDto.getStart() != null) {
       dateFilterDataDto.setStart(dateFilterDataDto.getStart().truncatedTo(ChronoUnit.DAYS));
     }

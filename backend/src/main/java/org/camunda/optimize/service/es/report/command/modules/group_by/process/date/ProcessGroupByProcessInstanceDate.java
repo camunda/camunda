@@ -100,11 +100,12 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
   protected abstract List<DateFilterDataDto<?>> getReportDateFilters(final ProcessReportDataDto reportData);
 
   protected abstract void addFiltersToQuery(final BoolQueryBuilder limitFilterQuery,
-                                            final List<DateFilterDataDto<?>> limitedFilters);
+                                            final List<DateFilterDataDto<?>> limitedFilters, final ZoneId timezone);
 
   protected abstract BoolQueryBuilder createDefaultLimitingFilter(final GroupByDateUnit unit,
                                                                   final QueryBuilder query,
-                                                                  final ProcessReportDataDto reportData);
+                                                                  final ProcessReportDataDto reportData,
+                                                                  final ZoneId timezone);
 
 
   @Override
@@ -134,7 +135,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
     final BoolQueryBuilder limitFilterQuery;
     if (!reportDateFilters.isEmpty()) {
       final List<DateFilterDataDto<?>> limitedFilters = limitFiltersToMaxBucketsForGroupByUnit(
-        reportDateFilters, unit, configurationService.getEsAggregationBucketLimit()
+        reportDateFilters, unit, configurationService.getEsAggregationBucketLimit(), context.getTimezone()
       );
 
       getExtendedBoundsFromDateFilters(
@@ -143,9 +144,14 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
       ).ifPresent(dateHistogramAggregation::extendedBounds);
 
       limitFilterQuery = boolQuery();
-      addFiltersToQuery(limitFilterQuery, limitedFilters);
+      addFiltersToQuery(limitFilterQuery, limitedFilters, context.getTimezone());
     } else {
-      limitFilterQuery = createDefaultLimitingFilter(unit, searchSourceBuilder.query(), context.getReportData());
+      limitFilterQuery = createDefaultLimitingFilter(
+        unit,
+        searchSourceBuilder.query(),
+        context.getReportData(),
+        context.getTimezone()
+      );
     }
 
     return Collections.singletonList(

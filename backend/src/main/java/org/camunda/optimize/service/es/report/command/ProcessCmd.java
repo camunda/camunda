@@ -38,7 +38,7 @@ public abstract class ProcessCmd<R extends ProcessReportResultDto>
   }
 
   public BoolQueryBuilder getBaseQuery(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
-    return executionPlan.setupBaseQuery(commandContext.getReportDefinition().getData());
+    return executionPlan.setupBaseQuery(new ExecutionContext<>(commandContext));
   }
 
   @Override

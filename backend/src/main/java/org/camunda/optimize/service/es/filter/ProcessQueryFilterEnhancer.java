@@ -27,6 +27,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Vari
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -51,31 +52,47 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final CandidateGroupQueryFilter candidateGroupQueryFilter;
 
   @Override
-  public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filters) {
+  public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto<?>> filters, final ZoneId timezone) {
     if (!CollectionUtils.isEmpty(filters)) {
-      startDateQueryFilter.addFilters(query, extractFilters(filters, StartDateFilterDto.class));
-      endDateQueryFilter.addFilters(query, extractFilters(filters, EndDateFilterDto.class));
-      variableQueryFilter.addFilters(query, extractFilters(filters, VariableFilterDto.class));
-      executedFlowNodeQueryFilter.addFilters(query, extractFilters(filters, ExecutedFlowNodeFilterDto.class));
-      executingFlowNodeQueryFilter.addFilters(query, extractFilters(filters, ExecutingFlowNodeFilterDto.class));
-      durationQueryFilter.addFilters(query, extractFilters(filters, DurationFilterDto.class));
-      runningInstancesOnlyQueryFilter.addFilters(query, extractFilters(filters, RunningInstancesOnlyFilterDto.class));
-      completedInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, CompletedInstancesOnlyFilterDto.class)
+      startDateQueryFilter.addFilters(query, extractFilters(filters, StartDateFilterDto.class), timezone);
+      endDateQueryFilter.addFilters(query, extractFilters(filters, EndDateFilterDto.class), timezone);
+      variableQueryFilter.addFilters(query, extractFilters(filters, VariableFilterDto.class), timezone);
+      executedFlowNodeQueryFilter.addFilters(query, extractFilters(filters, ExecutedFlowNodeFilterDto.class), timezone);
+      executingFlowNodeQueryFilter.addFilters(
+        query,
+        extractFilters(filters, ExecutingFlowNodeFilterDto.class),
+        timezone
       );
-      canceledInstancesOnlyQueryFilter.addFilters(query, extractFilters(filters, CanceledInstancesOnlyFilterDto.class));
+      durationQueryFilter.addFilters(query, extractFilters(filters, DurationFilterDto.class), timezone);
+      runningInstancesOnlyQueryFilter.addFilters(
+        query,
+        extractFilters(filters, RunningInstancesOnlyFilterDto.class),
+        timezone
+      );
+      completedInstancesOnlyQueryFilter.addFilters(
+        query, extractFilters(filters, CompletedInstancesOnlyFilterDto.class),
+        timezone
+      );
+      canceledInstancesOnlyQueryFilter.addFilters(
+        query,
+        extractFilters(filters, CanceledInstancesOnlyFilterDto.class),
+        timezone
+      );
       nonCanceledInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, NonCanceledInstancesOnlyFilterDto.class)
+        query, extractFilters(filters, NonCanceledInstancesOnlyFilterDto.class),
+        timezone
       );
       suspendedInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, SuspendedInstancesOnlyFilterDto.class)
+        query, extractFilters(filters, SuspendedInstancesOnlyFilterDto.class),
+        timezone
       );
       nonSuspendedInstancesOnlyQueryFilter.addFilters(
-        query, extractFilters(filters, NonSuspendedInstancesOnlyFilterDto.class)
+        query, extractFilters(filters, NonSuspendedInstancesOnlyFilterDto.class),
+        timezone
       );
-      flowNodeDurationQueryFilter.addFilters(query, extractFilters(filters, FlowNodeDurationFilterDto.class));
-      assigneeQueryFilter.addFilters(query, extractFilters(filters, AssigneeFilterDto.class));
-      candidateGroupQueryFilter.addFilters(query, extractFilters(filters, CandidateGroupFilterDto.class));
+      flowNodeDurationQueryFilter.addFilters(query, extractFilters(filters, FlowNodeDurationFilterDto.class), timezone);
+      assigneeQueryFilter.addFilters(query, extractFilters(filters, AssigneeFilterDto.class), timezone);
+      candidateGroupQueryFilter.addFilters(query, extractFilters(filters, CandidateGroupFilterDto.class), timezone);
     }
   }
 

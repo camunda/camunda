@@ -53,7 +53,7 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
     this.esClient = esClient;
   }
 
-  public abstract BoolQueryBuilder setupBaseQuery(final Data reportData);
+  public abstract BoolQueryBuilder setupBaseQuery(final ExecutionContext<Data> context);
 
   protected abstract BoolQueryBuilder setupUnfilteredBaseQuery(final Data reportData);
 
@@ -66,7 +66,7 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
   protected R evaluate(final ExecutionContext<Data> executionContext) {
     final Data reportData = executionContext.getReportData();
 
-    SearchRequest searchRequest = createBaseQuerySearchRequest(reportData, executionContext);
+    SearchRequest searchRequest = createBaseQuerySearchRequest(executionContext);
     CountRequest unfilteredInstanceCountRequest = createUnfilteredInstanceCountSearchRequest(reportData);
 
     SearchResponse response;
@@ -93,9 +93,8 @@ public abstract class ReportCmdExecutionPlan<R extends SingleReportResultDto, Da
     return retrieveQueryResult(response, executionContext);
   }
 
-  private SearchRequest createBaseQuerySearchRequest(final Data reportData,
-                                                     final ExecutionContext<Data> executionContext) {
-    final BoolQueryBuilder baseQuery = setupBaseQuery(reportData);
+  private SearchRequest createBaseQuerySearchRequest(final ExecutionContext<Data> executionContext) {
+    final BoolQueryBuilder baseQuery = setupBaseQuery(executionContext);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(baseQuery)
       .trackTotalHits(true)

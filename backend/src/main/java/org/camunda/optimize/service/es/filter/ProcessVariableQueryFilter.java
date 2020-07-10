@@ -22,6 +22,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -53,16 +54,18 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
   private final DateFilterQueryService dateFilterQueryService;
 
   @Override
-  public void addFilters(BoolQueryBuilder query, List<VariableFilterDataDto<?>> variables) {
+  public void addFilters(final BoolQueryBuilder query,
+                         final List<VariableFilterDataDto<?>> variables,
+                         final ZoneId timezone) {
     if (variables != null) {
       List<QueryBuilder> filters = query.filter();
       for (VariableFilterDataDto<?> variable : variables) {
-        filters.add(createFilterQueryBuilder(variable));
+        filters.add(createFilterQueryBuilder(variable, timezone));
       }
     }
   }
 
-  private QueryBuilder createFilterQueryBuilder(VariableFilterDataDto<?> dto) {
+  private QueryBuilder createFilterQueryBuilder(final VariableFilterDataDto<?> dto, final ZoneId timezone) {
     ValidationHelper.ensureNotNull("Variable filter data", dto.getData());
 
     QueryBuilder queryBuilder = matchAllQuery();
@@ -81,7 +84,7 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
         break;
       case DATE:
         DateVariableFilterDataDto dateVarDto = (DateVariableFilterDataDto) dto;
-        queryBuilder = createDateQueryBuilder(dateVarDto);
+        queryBuilder = createDateQueryBuilder(dateVarDto, timezone);
         break;
       case BOOLEAN:
         BooleanVariableFilterDataDto booleanVarDto = (BooleanVariableFilterDataDto) dto;
@@ -185,7 +188,7 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
     return resultQuery;
   }
 
-  private QueryBuilder createDateQueryBuilder(final DateVariableFilterDataDto dto) {
+  private QueryBuilder createDateQueryBuilder(final DateVariableFilterDataDto dto, final ZoneId timezone) {
     final BoolQueryBuilder dateFilterBuilder = boolQuery().minimumShouldMatch(1);
 
     if (dto.getData().isIncludeUndefined()) {
@@ -198,7 +201,10 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
       .must(termsQuery(getNestedVariableNameField(), dto.getName()))
       .must(termQuery(getNestedVariableTypeField(), dto.getType().getId()));
     dateFilterQueryService.addFilters(
-      dateValueFilterQuery, Collections.singletonList(dto.getData()), getVariableValueFieldForType(dto.getType())
+      dateValueFilterQuery,
+      Collections.singletonList(dto.getData()),
+      getVariableValueFieldForType(dto.getType()),
+      timezone
     );
     if (!dateValueFilterQuery.filter().isEmpty()) {
       dateFilterBuilder.should(nestedQuery(VARIABLES, dateValueFilterQuery, ScoreMode.None));

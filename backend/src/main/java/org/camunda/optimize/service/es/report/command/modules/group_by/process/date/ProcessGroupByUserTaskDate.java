@@ -138,7 +138,8 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
 
     final Optional<OffsetDateTime> latestDate =
       getMostRecentUserTaskDate(searchSourceBuilder.query(), getDateField(), context);
-    final BoolQueryBuilder limitFilterQuery = createLimitFilterQuery(unit, latestDate.orElse(OffsetDateTime.now()));
+    final BoolQueryBuilder limitFilterQuery =
+      createLimitFilterQuery(unit, latestDate.orElse(OffsetDateTime.now()), context.getTimezone());
     FilterAggregationBuilder bucketLimitedHistogramAggregation = wrapWithFilterLimitedParentAggregation(
       limitFilterQuery,
       dateHistogramAggregation.subAggregation(distributedByPart.createAggregation(context))
@@ -151,7 +152,8 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
   }
 
   private BoolQueryBuilder createLimitFilterQuery(final GroupByDateUnit unit,
-                                                  final OffsetDateTime endDate) {
+                                                  final OffsetDateTime endDate,
+                                                  final ZoneId timezone) {
     final BoolQueryBuilder limitFilterQuery = boolQuery();
     List<QueryBuilder> filters = limitFilterQuery.filter();
 
@@ -159,7 +161,8 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
     final OffsetDateTime startDate = getNewLimitedStartDate(
       chronoUnit,
       configurationService.getEsAggregationBucketLimit(),
-      endDate
+      endDate,
+      timezone
     );
 
     RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(getDateField());
