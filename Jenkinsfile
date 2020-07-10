@@ -277,7 +277,7 @@ pipeline {
         }
         changed {
             script {
-                if (env.BRANCH_NAME == 'develop') {
+                if (env.BRANCH_NAME == 'develop' && !agentDisconnected()) {
                     slackSend(
                         channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
                         message: "Zeebe ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
