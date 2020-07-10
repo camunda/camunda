@@ -5,218 +5,66 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
-
-import {BrowserRouter as Router} from 'react-router-dom';
-import {PAGE_TITLE, LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
-
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
-
-import {
-  incidentsByError,
-  instancesByWorkflow,
-  fetchError,
-  emptyData,
-} from './index.setup';
+import {render, screen} from '@testing-library/react';
+import {MemoryRouter} from 'react-router-dom';
+import {PAGE_TITLE} from 'modules/constants';
+import {statistics} from 'modules/stores/statistics';
+import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
 
 import {Dashboard} from './index';
-import {MetricPanel} from './MetricPanel';
-import InstancesByWorkflow from './InstancesByWorkflow';
-import IncidentsByError from './IncidentsByError';
-import EmptyPanel from 'modules/components/EmptyPanel';
 
-import InstancesBar from 'modules/components/InstancesBar';
+import PropTypes from 'prop-types';
 
-jest.mock('modules/components/InstancesBar');
+jest.mock('modules/api/instances');
 
-const mountDashboard = () => {
-  const dataManager = createMockDataManager();
-
-  const node = mount(
-    <Router>
-      <Dashboard dataManager={dataManager} />
-    </Router>
-  );
-  return node;
+const Wrapper = ({children}) => {
+  return <MemoryRouter>{children} </MemoryRouter>;
 };
-
-const publish = ({node, state, topic, response}) => {
-  const dashboard = node.find(Dashboard);
-  const {
-    subscriptions,
-    props: {dataManager},
-  } = dashboard.instance();
-
-  dataManager.publish({
-    subscription: subscriptions[topic],
-    state,
-    response,
-  });
+Wrapper.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
 };
-
 describe('Dashboard', () => {
   beforeEach(() => {
-    InstancesBar.mockImplementation(() => <div></div>);
+    statistics.reset();
   });
-
   afterEach(() => {
-    jest.resetAllMocks();
+    fetchWorkflowCoreStatistics.mockReset();
   });
+  it('should render', async () => {
+    fetchWorkflowCoreStatistics.mockResolvedValueOnce({
+      coreStatistics: {
+        running: 821,
+        active: 90,
+        withIncidents: 731,
+      },
+    });
+    render(<Dashboard />, {wrapper: Wrapper});
 
-  it('should set proper page title', () => {
-    // when
-    mountDashboard();
-
-    // then
+    await statistics.fetchStatistics();
     expect(document.title).toBe(PAGE_TITLE.DASHBOARD);
+    expect(screen.getByText('Camunda Operate Dashboard')).toBeInTheDocument();
+    expect(
+      screen.getByText('821 Running Instances in total')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Instances by Workflow')).toBeInTheDocument();
+    expect(screen.getByText('Incidents by Error Message')).toBeInTheDocument();
   });
 
-  it('should render transparent heading', () => {
-    // when
-    const node = mountDashboard();
-
-    // then
-    expect(node.contains('Camunda Operate Dashboard')).toBe(true);
-  });
-
-  it('should render MetricPanel component', () => {
-    // when
-    const node = mountDashboard();
-
-    const MetricPanelNode = node.find(MetricPanel);
-
-    // then
-    expect(MetricPanelNode).toExist();
-  });
-
-  describe('Instances by Workflow', () => {
-    it('should display the Instances by Workflow box', () => {
-      const node = mountDashboard();
-
-      // when
-      publish({
-        node,
-        topic: SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
-        state: LOADING_STATE.LOADED,
-        response: instancesByWorkflow,
-      });
-
-      node.update();
-
-      // then
-      expect(node.text()).toContain('Instances by Workflow');
-      expect(node.find(InstancesByWorkflow)).toExist();
+  it('should display error', async () => {
+    fetchWorkflowCoreStatistics.mockResolvedValueOnce({
+      coreStatistics: {
+        error: 'an error occured',
+      },
     });
+    render(<Dashboard />, {wrapper: Wrapper});
 
-    it('should show empty state on fetch error', () => {
-      const node = mountDashboard();
-
-      // when
-      publish({
-        node,
-        topic: SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
-        state: LOADING_STATE.LOAD_FAILED,
-        response: fetchError,
-      });
-
-      node.update();
-
-      const EmptyPanelNode = node
-        .find('[data-test="instances-byWorkflow"]')
-        .find(EmptyPanel);
-
-      // then
-      expect(EmptyPanelNode).toExist();
-      expect(EmptyPanelNode.props().label).toBe(
-        'Instances by Workflow could not be fetched.'
-      );
-    });
-
-    it('should show empty state when no workflows', () => {
-      const node = mountDashboard();
-
-      // when
-      publish({
-        node,
-        topic: SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
-        state: LOADING_STATE.LOADED,
-        response: emptyData,
-      });
-
-      node.update();
-
-      const EmptyPanelNode = node
-        .find('[data-test="instances-byWorkflow"]')
-        .find(EmptyPanel);
-
-      // then
-      expect(EmptyPanelNode).toExist();
-      expect(EmptyPanelNode.props().label).toBe('There are no Workflows.');
-    });
-  });
-
-  describe('Incidents by Error', () => {
-    it('should display the Incidents by Error box', () => {
-      const node = mountDashboard();
-
-      // when
-      publish({
-        node,
-        topic: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
-        state: LOADING_STATE.LOADED,
-        response: incidentsByError,
-      });
-
-      node.update();
-
-      // then
-      expect(node.text()).toContain('Incidents by Error');
-      expect(node.find(IncidentsByError)).toExist();
-    });
-
-    it('should show empty state on fetch error', () => {
-      const node = mountDashboard();
-
-      // when
-      publish({
-        node,
-        topic: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
-        state: LOADING_STATE.LOAD_FAILED,
-        response: fetchError,
-      });
-
-      node.update();
-
-      const EmptyPanelNode = node
-        .find('[data-test="incidents-byError"]')
-        .find(EmptyPanel);
-
-      expect(EmptyPanelNode).toExist();
-      expect(EmptyPanelNode.text()).toContain(
-        'Incidents by Error Message could not be fetched.'
-      );
-    });
-
-    it('should show empty state when no workflows', () => {
-      const node = mountDashboard();
-
-      // when
-      publish({
-        node,
-        topic: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
-        state: LOADING_STATE.LOADED,
-        response: emptyData,
-      });
-
-      node.update();
-      const EmptyPanelNode = node
-        .find('[data-test="incidents-byError"]')
-        .find(EmptyPanel);
-
-      expect(EmptyPanelNode).toExist();
-      expect(EmptyPanelNode.text()).toBe(
-        'There are no Instances with Incident.'
-      );
-    });
+    await statistics.fetchStatistics();
+    expect(screen.queryByText('Metric Panel')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Workflow statistics could not be fetched.')
+    ).toBeInTheDocument();
   });
 });

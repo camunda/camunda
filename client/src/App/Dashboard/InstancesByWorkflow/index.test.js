@@ -5,233 +5,216 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
-import InstancesByWorkflow from './index';
-import InstancesBar from 'modules/components/InstancesBar';
-import Collapse from '../Collapse';
-import * as Styled from './styled';
-import {createWorkflow, createInstanceByWorkflow} from 'modules/testUtils';
+import {Router} from 'react-router-dom';
+import {render, fireEvent, within, screen} from '@testing-library/react';
+import {createMemoryHistory} from 'history';
+import {InstancesByWorkflow} from './index';
+import {
+  mockWithSingleVersion,
+  mockErrorResponse,
+  mockEmptyResponse,
+  mockWithMultipleVersions,
+} from './index.setup';
 
-const mockInstancesByWorkflow = [
-  createInstanceByWorkflow({
-    workflows: [createWorkflow()],
-  }),
-  createInstanceByWorkflow({
-    instancesWithActiveIncidentsCount: 65,
-    activeInstancesCount: 136,
-    workflowName: 'Order process',
-    bpmnProcessId: 'orderProcess',
-    workflows: [
-      createWorkflow({name: 'First Version', version: 1}),
-      createWorkflow({name: 'Second Version', version: 2}),
-    ],
-  }),
-  createInstanceByWorkflow({
-    bpmnProcessId: 'noIncidentsProcess',
-    workflowName: 'Without Incidents Process',
-    instancesWithActiveIncidentsCount: 0,
-    activeInstancesCount: 23,
-    workflows: [createWorkflow()],
-  }),
-  createInstanceByWorkflow({
-    instancesWithActiveIncidentsCount: 0,
-    activeInstancesCount: 0,
-    bpmnProcessId: 'noInstancesProcess',
-    workflowName: 'Without Instances Process',
-    workflows: [createWorkflow()],
-  }),
-];
+const fetchMock = jest.spyOn(window, 'fetch');
+
+const createWrapper = (historyMock = createMemoryHistory()) => ({children}) => (
+  <Router history={historyMock}>{children}</Router>
+);
 
 describe('InstancesByWorkflow', () => {
-  it('should render a list', () => {
-    const node = shallow(
-      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
-    );
-
-    expect(node.type()).toBe('ul');
+  afterEach(() => {
+    fetchMock.mockClear();
   });
 
-  it('should render an li for each incident statistic', () => {
-    const node = shallow(
-      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
-    );
-
-    expect(node.find(Styled.Li).length).toBe(mockInstancesByWorkflow.length);
+  afterAll(() => {
+    fetchMock.mockRestore();
   });
 
-  it('should pass the right data to InstancesBar', () => {
-    const node = shallow(
-      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
-    );
-    const nodeInstancesBar = node.find(InstancesBar).at(0);
-    const statisticsAnchor = nodeInstancesBar.parent();
+  describe('Empty Panel', () => {
+    it('should display skeleton when loading', async () => {
+      fetchMock.mockResolvedValueOnce(
+        Promise.resolve({
+          json: () => mockWithSingleVersion,
+        })
+      );
 
-    expect(statisticsAnchor.props().to).toBe(
-      '/instances?filter={"workflow":"loanProcess","version":"1","incidents":true,"active":true}&name="loanProcess"'
-    );
-    expect(statisticsAnchor.props().title).toBe(
-      'View 138 Instances in 1 Version of Workflow loanProcess'
-    );
+      render(<InstancesByWorkflow />, {
+        wrapper: createWrapper(),
+      });
 
-    expect(nodeInstancesBar.props().label).toContain(
-      mockInstancesByWorkflow[0].workflowName ||
-        mockInstancesByWorkflow[0].bpmnProcessId
-    );
-    expect(nodeInstancesBar.props().label).toContain(
-      mockInstancesByWorkflow[0].workflows[0].version
-    );
-    expect(nodeInstancesBar.props().incidentsCount).toBe(
-      mockInstancesByWorkflow[0].instancesWithActiveIncidentsCount
-    );
-    expect(nodeInstancesBar.props().activeCount).toBe(
-      mockInstancesByWorkflow[0].activeInstancesCount
-    );
+      // display skeleton when loading
+      expect(screen.getByTestId('skeleton')).toBeInTheDocument();
 
-    expect(nodeInstancesBar).toMatchSnapshot();
+      // wait for request to be completed
+      expect(
+        await screen.findByTestId('instances-by-workflow')
+      ).toBeInTheDocument();
+
+      // remove skeleton when loaded
+      expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument();
+    });
+
+    it('should display error message when api fails', async () => {
+      fetchMock.mockResolvedValueOnce(
+        Promise.resolve({
+          json: () => mockErrorResponse,
+        })
+      );
+
+      render(<InstancesByWorkflow />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(
+        await screen.findByText('Instances by Workflow could not be fetched.')
+      ).toBeInTheDocument();
+    });
+
+    it('should display information message when there are no workflows', async () => {
+      fetchMock.mockResolvedValueOnce(
+        Promise.resolve({
+          json: () => mockEmptyResponse,
+        })
+      );
+
+      render(<InstancesByWorkflow />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(
+        await screen.findByText('There are no Workflows.')
+      ).toBeInTheDocument();
+    });
   });
 
-  it('should render a statistics/collapsable statistics based on number of versions', () => {
-    const node = shallow(
-      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
-    );
-    const firstStatistic = node.find('[data-test="incident-byWorkflow-0"]');
-    const secondStatistic = node.find('[data-test="incident-byWorkflow-1"]');
-    const thirdStatistic = node.find('[data-test="incident-byWorkflow-2"]');
-    expect(firstStatistic.find(InstancesBar).length).toBe(1);
-    expect(secondStatistic.find(Collapse).length).toBe(1);
-    expect(thirdStatistic.find(InstancesBar).length).toBe(1);
-  });
+  describe('Content', () => {
+    it('should render items with more than one workflows versions', async () => {
+      fetchMock.mockResolvedValueOnce(
+        Promise.resolve({
+          json: () => mockWithMultipleVersions,
+        })
+      );
 
-  it('passes the right data to the statistics collapse', () => {
-    const node = shallow(
-      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
-    );
-    const secondStatistic = node.find('[data-test="incident-byWorkflow-1"]');
-    const collapseNode = secondStatistic.find(Collapse);
-    const headerCollapseNode = collapseNode.props().header;
-    const contentCollapseNode = collapseNode.props().content;
-    const headerNode = shallow(headerCollapseNode);
-    const headerStatistic = headerNode.find(InstancesBar);
-    const contentNode = shallow(contentCollapseNode);
+      const historyMock = createMemoryHistory();
+      render(<InstancesByWorkflow />, {
+        wrapper: createWrapper(historyMock),
+      });
 
-    // collapse button node
-    expect(collapseNode.props().buttonTitle).toBe(
-      'Expand 201 Instances of Workflow Order process'
-    );
+      const withinIncident = within(
+        await screen.findByTestId('incident-byWorkflow-0')
+      );
 
-    // header anchor
-    expect(headerNode.props().to).toBe(
-      '/instances?filter={"workflow":"orderProcess","version":"all","incidents":true,"active":true}&name="Order process"'
-    );
-    expect(headerNode.props().title).toBe(
-      'View 201 Instances in 2 Versions of Workflow Order process'
-    );
+      const workflowLink = withinIncident.getByText(
+        'Order process – 201 Instances in 2 Versions'
+      );
+      expect(workflowLink).toBeInTheDocument();
+      fireEvent.click(workflowLink);
+      expect(historyMock.location.search).toBe(
+        '?filter={"workflow":"orderProcess","version":"all","incidents":true,"active":true}&name="Order process"'
+      );
 
-    expect(headerStatistic.props().label).toContain(
-      mockInstancesByWorkflow[1].workflowName ||
-        mockInstancesByWorkflow[1].bpmnProcessId
-    );
-    expect(headerStatistic.props().label).toContain(
-      mockInstancesByWorkflow[1].workflows[0].version
-    );
-    expect(headerStatistic.props().label).toContain(
-      mockInstancesByWorkflow[1].workflows[1].version
-    );
-    expect(headerStatistic.props().incidentsCount).toBe(
-      mockInstancesByWorkflow[1].instancesWithActiveIncidentsCount
-    );
-    expect(headerStatistic.props().activeCount).toBe(
-      mockInstancesByWorkflow[1].activeInstancesCount
-    );
-    // should render a list with 2 items
-    expect(contentNode.find(Styled.VersionLi).length).toBe(2);
+      expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
+        '65'
+      );
+      expect(screen.getByTestId('active-instances-badge')).toHaveTextContent(
+        '136'
+      );
 
-    // should render two statistics
-    expect(contentNode.find(InstancesBar).length).toBe(2);
-    // should pass the right props to a statistic
+      // click expand button to list versions
+      const expandButton = withinIncident.getByTitle(
+        'Expand 201 Instances of Workflow Order process'
+      );
 
-    const versionStatisticNode = contentNode.find(InstancesBar).at(0);
+      expect(expandButton).toBeInTheDocument();
+      fireEvent.click(expandButton);
 
-    expect(versionStatisticNode.props().label).toContain(
-      `Version ${mockInstancesByWorkflow[1].workflows[0].version}`
-    );
-    expect(versionStatisticNode.props().label).toContain(
-      `${mockInstancesByWorkflow[1].workflows[0].name}`
-    );
-    expect(versionStatisticNode.props().size).toBe('small');
-    expect(versionStatisticNode.props().incidentsCount).toBe(
-      mockInstancesByWorkflow[1].workflows[0].instancesWithActiveIncidentsCount
-    );
-    expect(versionStatisticNode.props().activeCount).toBe(
-      mockInstancesByWorkflow[1].workflows[0].activeInstancesCount
-    );
-  });
+      // contents of first version should be correct
+      const firstVersion = screen.getByTitle(
+        'View 42 Instances in Version 1 of Workflow First Version'
+      );
 
-  it('should pass the right data to workflow without incidents', () => {
-    const node = shallow(
-      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
-    );
+      expect(
+        within(firstVersion).getByTestId('incident-instances-badge')
+      ).toHaveTextContent('37');
+      expect(
+        within(firstVersion).getByTestId('active-instances-badge')
+      ).toHaveTextContent('5');
+      expect(
+        within(firstVersion).getByText(
+          'First Version – 42 Instances in Version 1'
+        )
+      ).toBeInTheDocument();
 
-    const workflowNode = node
-      .find('[data-test="incident-byWorkflow-2"]')
-      .dive();
+      // the link of the first version should go to the correct route
+      fireEvent.click(firstVersion);
+      expect(historyMock.location.search).toBe(
+        '?filter={"workflow":"mockWorkflow","version":"1","incidents":true,"active":true}&name="First Version"'
+      );
 
-    const nodeInstancesBar = workflowNode.find(InstancesBar);
-    const statisticsAnchor = nodeInstancesBar.parent();
+      // contents of second version should be correct
+      const secondVersion = screen.getByTitle(
+        'View 42 Instances in Version 2 of Workflow Second Version'
+      );
 
-    expect(statisticsAnchor.props().to).toBe(
-      '/instances?filter={"workflow":"noIncidentsProcess","version":"1","incidents":true,"active":true}&name="Without Incidents Process"'
-    );
-    expect(statisticsAnchor.props().title).toBe(
-      'View 23 Instances in 1 Version of Workflow Without Incidents Process'
-    );
+      expect(
+        within(secondVersion).getByTestId('incident-instances-badge')
+      ).toHaveTextContent('37');
+      expect(
+        within(secondVersion).getByTestId('active-instances-badge')
+      ).toHaveTextContent('5');
+      expect(
+        within(secondVersion).getByText(
+          'Second Version – 42 Instances in Version 2'
+        )
+      ).toBeInTheDocument();
 
-    expect(nodeInstancesBar.props().label).toContain(
-      mockInstancesByWorkflow[2].workflowName ||
-        mockInstancesByWorkflow[2].bpmnProcessId
-    );
-    expect(nodeInstancesBar.props().label).toContain(
-      mockInstancesByWorkflow[2].workflows[0].version
-    );
-    expect(nodeInstancesBar.props().incidentsCount).toBe(
-      mockInstancesByWorkflow[2].instancesWithActiveIncidentsCount
-    );
-    expect(nodeInstancesBar.props().activeCount).toBe(
-      mockInstancesByWorkflow[2].activeInstancesCount
-    );
-  });
+      // the link of the second version should go to the correct route
+      fireEvent.click(secondVersion);
+      expect(historyMock.location.search).toBe(
+        '?filter={"workflow":"mockWorkflow","version":"2","incidents":true,"active":true}&name="Second Version"'
+      );
+    });
 
-  it('should pass the right data to workflow without instances', () => {
-    const node = shallow(
-      <InstancesByWorkflow incidents={mockInstancesByWorkflow} />
-    );
+    it('should render items with one workflow version', async () => {
+      fetchMock.mockResolvedValueOnce(
+        Promise.resolve({
+          json: () => mockWithSingleVersion,
+        })
+      );
 
-    const workflowNode = node
-      .find('[data-test="incident-byWorkflow-3"]')
-      .dive();
+      const historyMock = createMemoryHistory();
+      render(<InstancesByWorkflow />, {
+        wrapper: createWrapper(historyMock),
+      });
 
-    const nodeInstancesBar = workflowNode.find(InstancesBar);
-    const statisticsAnchor = nodeInstancesBar.parent();
+      const withinIncident = within(
+        await screen.findByTestId('incident-byWorkflow-0')
+      );
 
-    expect(statisticsAnchor.props().to).toBe(
-      '/instances?filter={"workflow":"noInstancesProcess","version":"1","incidents":true,"active":true,"completed":true,"canceled":true}&name="Without Instances Process"'
-    );
-    expect(statisticsAnchor.props().title).toBe(
-      'View 0 Instances in 1 Version of Workflow Without Instances Process'
-    );
+      expect(
+        withinIncident.queryByTestId('expand-button')
+      ).not.toBeInTheDocument();
 
-    expect(nodeInstancesBar.props().label).toContain(
-      mockInstancesByWorkflow[3].workflowName ||
-        mockInstancesByWorkflow[3].bpmnProcessId
-    );
-    expect(nodeInstancesBar.props().label).toContain(
-      mockInstancesByWorkflow[3].workflows[0].version
-    );
-    expect(nodeInstancesBar.props().incidentsCount).toBe(
-      mockInstancesByWorkflow[3].instancesWithActiveIncidentsCount
-    );
-    expect(nodeInstancesBar.props().activeCount).toBe(
-      mockInstancesByWorkflow[3].activeInstancesCount
-    );
+      expect(
+        withinIncident.getByText('loanProcess – 138 Instances in 1 Version')
+      ).toBeInTheDocument();
+
+      const workflowLink = withinIncident.getByTitle(
+        'View 138 Instances in 1 Version of Workflow loanProcess'
+      );
+      expect(workflowLink).toBeInTheDocument();
+      fireEvent.click(workflowLink);
+      expect(historyMock.location.search).toBe(
+        '?filter={"workflow":"loanProcess","version":"1","incidents":true,"active":true}&name="loanProcess"'
+      );
+
+      expect(screen.getByTestId('incident-instances-badge')).toHaveTextContent(
+        '16'
+      );
+      expect(screen.getByTestId('active-instances-badge')).toHaveTextContent(
+        '122'
+      );
+    });
   });
 });

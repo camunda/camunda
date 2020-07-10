@@ -18,7 +18,7 @@ export const Dashboard = styled.main`
   height: calc(100vh - ${HEADER_HEIGHT}px);
 `;
 
-export const TitleWrapper = styled.div`
+export const TileWrapper = styled.div`
   display: flex;
   height: calc(100vh - ${HEADER_HEIGHT + METRIC_PANEL_HEIGHT}px);
 `;

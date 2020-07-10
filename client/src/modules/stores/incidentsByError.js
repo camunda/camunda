@@ -4,26 +4,26 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action} from 'mobx';
-import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
+import {observable, decorate, action, computed} from 'mobx';
+
+import {fetchIncidentsByError} from 'modules/api/incidents';
 
 const DEFAULT_STATE = {
-  running: 0,
-  active: 0,
-  withIncidents: 0,
+  incidents: [],
   isLoaded: false,
   isFailed: false,
 };
 
-class Statistics {
+class IncidentsByError {
   state = {...DEFAULT_STATE};
 
-  fetchStatistics = async () => {
-    const {coreStatistics} = await fetchWorkflowCoreStatistics();
-    if (coreStatistics.error) {
+  getIncidentsByError = async () => {
+    const {data} = await fetchIncidentsByError();
+
+    if (data.error) {
       this.setError();
     } else {
-      this.setStatistics(coreStatistics);
+      this.setIncidents(data);
     }
   };
 
@@ -32,28 +32,28 @@ class Statistics {
     this.state.isFailed = true;
   }
 
-  setStatistics = (coreStatistics) => {
-    const {running, active, withIncidents} = coreStatistics;
-    this.state = {
-      running,
-      active,
-      withIncidents,
-    };
-
+  setIncidents(incidents) {
+    this.state.incidents = incidents;
     this.state.isLoaded = true;
     this.state.isFailed = false;
-  };
+  }
+
+  get isDataAvailable() {
+    const {incidents, isLoaded, isFailed} = this.state;
+    return !isFailed && isLoaded && incidents.length > 0;
+  }
 
   reset = () => {
     this.state = {...DEFAULT_STATE};
   };
 }
 
-decorate(Statistics, {
+decorate(IncidentsByError, {
   state: observable,
   setError: action,
-  setStatistics: action,
+  setIncidents: action,
   reset: action,
+  isDataAvailable: computed,
 });
 
-export const statistics = new Statistics();
+export const incidentsByError = new IncidentsByError();

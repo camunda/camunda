@@ -5,110 +5,136 @@
  */
 
 import React from 'react';
-import {BrowserRouter as Router} from 'react-router-dom';
-import {shallow, mount} from 'enzyme';
-
-import IncidentsByError from './index';
-import InstancesBar from 'modules/components/InstancesBar';
-import ExpandButton from 'modules/components/ExpandButton';
-import {ThemeProvider} from 'modules/theme';
-import Collapse from '../Collapse';
-import * as Styled from './styled';
-
+import {Router} from 'react-router-dom';
 import {
-  createWorkflow,
-  createIncidentsByError,
-  createInstanceByError,
-} from 'modules/testUtils';
+  render,
+  fireEvent,
+  within,
+  screen,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
+import {createMemoryHistory} from 'history';
+import {IncidentsByError} from './index';
+import {
+  mockIncidentsByError,
+  mockErrorResponse,
+  mockEmptyResponse,
+} from './index.setup';
 
-const InstancesByErrorMessage = [
-  createInstanceByError({
-    workflows: [createWorkflow()],
-  }),
-  createInstanceByError({
-    errorMessage: 'No space left on device.',
-    workflows: [
-      createWorkflow({name: 'workflowA', version: 42}),
-      createWorkflow({name: 'workflowB', version: 23}),
-    ],
-  }),
-];
+const fetchMock = jest.spyOn(window, 'fetch');
 
-const mockIncidentsByError = createIncidentsByError(InstancesByErrorMessage);
+const createWrapper = (historyMock = createMemoryHistory()) => ({children}) => (
+  <Router history={historyMock}>{children}</Router>
+);
 
 describe('IncidentsByError', () => {
-  it('should render a list', () => {
-    const node = shallow(<IncidentsByError incidents={mockIncidentsByError} />);
-
-    expect(node.type()).toBe('ul');
+  afterEach(() => {
+    fetchMock.mockClear();
   });
 
-  it('should render an li for each incident statistic', () => {
-    const node = shallow(<IncidentsByError incidents={mockIncidentsByError} />);
-
-    expect(node.find(Styled.Li).length).toBe(mockIncidentsByError.length);
+  afterAll(() => {
+    fetchMock.mockRestore();
   });
 
-  it('should render a collapsable statistic for each error message', () => {
-    const node = shallow(<IncidentsByError incidents={mockIncidentsByError} />);
-    const firstStatistic = node.find('[data-test="incident-byError-0"]');
-    const secondStatistic = node.find('[data-test="incident-byError-1"]');
-    expect(firstStatistic.find(Collapse).length).toBe(1);
-    expect(secondStatistic.find(Collapse).length).toBe(1);
+  describe('Empty Panel', () => {
+    it('should display skeleton when loading', async () => {
+      fetchMock.mockResolvedValueOnce(
+        Promise.resolve({
+          json: () => mockIncidentsByError,
+        })
+      );
+
+      render(<IncidentsByError />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(screen.getByTestId('skeleton')).toBeInTheDocument();
+
+      await waitForElementToBeRemoved(screen.getByTestId('skeleton'));
+    });
+
+    it('should display error message when api fails', async () => {
+      fetchMock.mockResolvedValueOnce(
+        Promise.resolve({
+          json: () => mockErrorResponse,
+        })
+      );
+
+      render(<IncidentsByError />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(
+        await screen.findByText(
+          'Incidents by Error Message could not be fetched.'
+        )
+      ).toBeInTheDocument();
+    });
+
+    it('should display information message when there are no workflows', async () => {
+      fetchMock.mockResolvedValueOnce(
+        Promise.resolve({
+          json: () => mockEmptyResponse,
+        })
+      );
+
+      render(<IncidentsByError />, {
+        wrapper: createWrapper(),
+      });
+
+      expect(
+        await screen.findByText('There are no Instances with Incident.')
+      ).toBeInTheDocument();
+    });
   });
 
-  it('should render incident items correctly', () => {
-    const node = mount(
-      <Router>
-        <ThemeProvider>
-          <IncidentsByError incidents={mockIncidentsByError} />
-        </ThemeProvider>
-      </Router>
-    );
+  describe('Content', () => {
+    it('should render incidents by error message', async () => {
+      fetchMock.mockResolvedValueOnce(
+        Promise.resolve({
+          json: () => mockIncidentsByError,
+        })
+      );
 
-    const firstIncidentItem = node
-      .find('[data-test="incident-byError-0"]')
-      .last();
-    const firstIncidentLink = firstIncidentItem.find('a').props().href;
-    const firstFilter = `{"errorMessage":"JSON path '$.paid' has no result.","incidents":true}`;
+      const historyMock = createMemoryHistory();
+      render(<IncidentsByError />, {
+        wrapper: createWrapper(historyMock),
+      });
 
-    const secondIncidentItem = node
-      .find('[data-test="incident-byError-1"]')
-      .last();
-    const secondIncidentLink = secondIncidentItem.find('a').props().href;
-    const secondFilter = `{"errorMessage":"No space left on device.","incidents":true}`;
+      const withinIncident = within(
+        await screen.findByTestId('incident-byError-0')
+      );
 
-    expect(firstIncidentLink).toBe(`/instances?filter=${firstFilter}`);
-    expect(firstIncidentItem.find(InstancesBar).text()).toContain(
-      "JSON path '$.paid' has no result."
-    );
+      const expandButton = withinIncident.getByTitle(
+        "Expand 36 Instances with error JSON path '$.paid' has no result."
+      );
+      expect(expandButton).toBeInTheDocument();
 
-    expect(secondIncidentLink).toBe(`/instances?filter=${secondFilter}`);
-    expect(secondIncidentItem.find(InstancesBar).text()).toContain(
-      'No space left on device.'
-    );
-  });
+      fireEvent.click(
+        withinIncident.getByTitle(
+          "View 36 Instances with error JSON path '$.paid' has no result."
+        )
+      );
+      expect(historyMock.location.search).toBe(
+        '?filter={"errorMessage":"JSON path \'$.paid\' has no result.","incidents":true}'
+      );
 
-  it('should render all versions of incidents correctly', () => {
-    const node = mount(
-      <Router>
-        <ThemeProvider>
-          <IncidentsByError incidents={mockIncidentsByError} />
-        </ThemeProvider>
-      </Router>
-    );
+      fireEvent.click(expandButton);
 
-    const secondIncidentItem = node
-      .find('[data-test="incident-byError-1"]')
-      .last();
+      const firstVersion = withinIncident.getByTitle(
+        "View 37 Instances with error JSON path '$.paid' has no result. in version 1 of Workflow mockWorkflow"
+      );
+      expect(
+        within(firstVersion).getByTestId('incident-instances-badge')
+      ).toHaveTextContent('37');
+      expect(
+        within(firstVersion).getByText('mockWorkflow – Version 1')
+      ).toBeInTheDocument();
 
-    secondIncidentItem.find(ExpandButton).simulate('click');
-
-    const expandedVersionLi = node.find(Styled.VersionLiInstancesBar);
-
-    expect(expandedVersionLi.length).toBe(2);
-
-    expect(expandedVersionLi.at(0).text()).toContain('workflowA – Version 42');
-    expect(expandedVersionLi.at(1).text()).toContain('workflowB – Version 23');
+      fireEvent.click(firstVersion);
+      expect(historyMock.location.search).toBe(
+        '?filter={"workflow":"mockWorkflow","version":"1","errorMessage":"JSON path \'$.paid\' has no result.","incidents":true}'
+      );
+    });
   });
 });
