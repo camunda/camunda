@@ -10,7 +10,6 @@ package io.zeebe.gateway.impl.broker;
 import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.BrokerRejectionException;
 import io.zeebe.gateway.cmd.BrokerResponseException;
-import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
 import io.zeebe.gateway.cmd.ClientResponseException;
 import io.zeebe.gateway.cmd.IllegalBrokerResponseException;
 import io.zeebe.gateway.cmd.NoTopologyAvailableException;
@@ -122,24 +121,20 @@ final class BrokerRequestManager extends Actor {
     final ActorFuture<DirectBuffer> responseFuture =
         sender.send(clientTransport, nodeIdProvider, request, requestTimeout);
 
-    if (responseFuture != null) {
-      actor.runOnCompletion(
-          responseFuture,
-          (clientResponse, error) -> {
-            try {
-              if (error == null) {
-                final BrokerResponse<T> response = request.getResponse(clientResponse);
-                handleResponse(response, returnFuture);
-              } else {
-                returnFuture.completeExceptionally(error);
-              }
-            } catch (final RuntimeException e) {
-              returnFuture.completeExceptionally(new ClientResponseException(e));
+    actor.runOnCompletion(
+        responseFuture,
+        (clientResponse, error) -> {
+          try {
+            if (error == null) {
+              final BrokerResponse<T> response = request.getResponse(clientResponse);
+              handleResponse(response, returnFuture);
+            } else {
+              returnFuture.completeExceptionally(error);
             }
-          });
-    } else {
-      returnFuture.completeExceptionally(new ClientOutOfMemoryException());
-    }
+          } catch (final RuntimeException e) {
+            returnFuture.completeExceptionally(new ClientResponseException(e));
+          }
+        });
   }
 
   private <T> void handleResponse(
@@ -211,6 +206,7 @@ final class BrokerRequestManager extends Actor {
   }
 
   private interface TransportRequestSender {
+
     ActorFuture<DirectBuffer> send(
         ClientTransport transport,
         Supplier<String> nodeAddressSupplier,
@@ -219,6 +215,7 @@ final class BrokerRequestManager extends Actor {
   }
 
   private class BrokerAddressProvider implements Supplier<String> {
+
     private final ToIntFunction<BrokerClusterState> nodeIdSelector;
 
     BrokerAddressProvider() {
