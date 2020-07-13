@@ -3385,10 +3385,10 @@ boolbase@^1.0.0, boolbase@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/boolbase/-/boolbase-1.0.0.tgz#68dff5fbe60c51eb37725ea9e3ed310dcc1e776e"
 
-bpmn-js@^7.2.0:
-  version "7.2.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-7.2.0.tgz#b4ffb1011252d1ee6df6a336e2daa83a3b1bddb4"
-  integrity sha512-AvgNvYTqJ5EfQjJNWmWkjckVlA8Oc1yX2K2XtbXEeqD4KNjBBL1/5T+qXVaLTaax71DGM7tlxoTT+WuLdTwVdA==
+bpmn-js@^7.2.1:
+  version "7.2.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-7.2.1.tgz#0204e309c220e74ad601120733b2501ec5ea6da7"
+  integrity sha512-i3OY8HzLxA0L1BWe+qZJ1lMyZy8TK3ff43A7q/IOZg2xiqKBbZicFSEnk40TWlX9uw7G+oIaADvcvtLGzUCCMQ==
   dependencies:
     bpmn-moddle "^7.0.3"
     css.escape "^1.5.1"
