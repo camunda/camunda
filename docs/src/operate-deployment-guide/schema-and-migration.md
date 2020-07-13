@@ -37,7 +37,7 @@ PUT _template/template_operate
 
 ## Data migration
 
-Version of Operate is reflected in Elasticsearch object names, e.g. `operate-user-1.3.0_` index contains user data for Operate v. 1.3.0. When upgrading from one
+Version of Operate is reflected in Elasticsearch object names, e.g. `operate-user-0.24.0_` index contains user data for Operate 0.24.0. When upgrading from one
 version of Operate to another, migration of data must be performed. Operate distribution provides an application to perform data migration from previous versions.
 
 
