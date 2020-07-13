@@ -8,8 +8,10 @@
 package io.zeebe.engine.state.instance;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static java.util.function.Predicate.not;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.engine.util.ZeebeStateRule;
@@ -18,7 +20,9 @@ import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
@@ -32,10 +36,11 @@ public final class ElementInstanceStateTest {
   @Rule public final ZeebeStateRule stateRule = new ZeebeStateRule();
 
   private ElementInstanceState elementInstanceState;
+  private ZeebeState zeebeState;
 
   @Before
   public void setUp() {
-    final ZeebeState zeebeState = stateRule.getZeebeState();
+    zeebeState = stateRule.getZeebeState();
     elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
   }
 
@@ -422,7 +427,13 @@ public final class ElementInstanceStateTest {
     elementInstanceState.removeInstance(100);
 
     // then
-    Assertions.assertThat(elementInstanceState.isEmpty()).isTrue();
+    final var nonEmptyColumns =
+        Arrays.stream(ZbColumnFamilies.values())
+            .filter(not(ZbColumnFamilies.KEY::equals))
+            .filter(not(zeebeState::isEmpty))
+            .collect(Collectors.toList());
+
+    assertThat(nonEmptyColumns).describedAs("Expected all columns to be empty").isEmpty();
   }
 
   @Test
