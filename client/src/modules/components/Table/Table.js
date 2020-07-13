@@ -26,6 +26,7 @@ export default function Table({
   disablePagination,
   noHighlight,
   noData = t('common.noData'),
+  onScroll,
 }) {
   const columns = React.useMemo(() => Table.formatColumns(head), [head]);
   const data = React.useMemo(() => Table.formatData(head, body), [head, body]);
@@ -145,14 +146,24 @@ export default function Table({
             </tr>
           ))}
         </thead>
-        <tbody {...getTableBodyProps()}>
+        <tbody {...getTableBodyProps()} onScroll={onScroll}>
           {page.map((row) => {
             prepareRow(row);
             return (
               <tr {...row.getRowProps(row.original.__props)} ref={tr}>
-                {row.cells.map((cell) => (
-                  <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
-                ))}
+                {row.cells.map((cell) => {
+                  const props = cell.getCellProps();
+                  return (
+                    <td
+                      {...props}
+                      className={classnames(props.className, {
+                        noOverflow: cell.value?.type === Select,
+                      })}
+                    >
+                      {cell.render('Cell')}
+                    </td>
+                  );
+                })}
               </tr>
             );
           })}

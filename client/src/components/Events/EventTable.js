@@ -236,15 +236,6 @@ export default withErrorHandling(
                         showDropdown ? (
                           <Select
                             value={mappedAs}
-                            onOpen={(isOpen) => {
-                              if (isOpen) {
-                                // due to how we integrate Dropdowns in React Table, we need to manually
-                                // adjust to the scroll offset
-                                const container = this.container.current;
-                                container.querySelector('.Dropdown.is-open .menu').style.marginTop =
-                                  -container.querySelector('.Table tbody').scrollTop + 'px';
-                              }
-                            }}
                             onChange={(value) =>
                               mappedAs !== value && onMappingChange(eventAsMapping, true, value)
                             }

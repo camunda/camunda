@@ -557,11 +557,7 @@ test('heatmap target values', async (t) => {
 
   await t.click(e.targetValueButton);
   await t.typeText(e.targetValueInput('Approve Invoice'), '1');
-  await t.click(e.targetValueUnitSelect('Approve Invoice'));
-  await t.click(e.dropdownOption('minutes'));
   await t.typeText(e.targetValueInput('Prepare Bank Transfer'), '5');
-  await t.click(e.targetValueUnitSelect('Prepare Bank Transfer'));
-  await t.click(e.dropdownOption('minutes'));
   await t.typeText(e.targetValueInput('Review Invoice'), '1');
 
   await t.takeElementScreenshot(e.modalContainer, 'process/single-report/targetvalue-2.png');
@@ -570,7 +566,7 @@ test('heatmap target values', async (t) => {
 
   await t.hover(e.flowNode('approveInvoice'));
 
-  await t.expect(e.tooltip.textContent).contains('Target\u00A0duration:\u00A01min');
+  await t.expect(e.tooltip.textContent).contains('Target\u00A0duration:\u00A01h');
 
   await addAnnotation(e.targetValueButton, 'Toggle Target Value Mode');
   await addAnnotation(e.tooltip, 'Target Value Tooltip', {x: -50, y: 0});

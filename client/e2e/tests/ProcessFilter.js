@@ -231,11 +231,7 @@ test('add flow node duration filter', async (t) => {
   await t.click(Report.subFilterOption('Flow Node'));
 
   await t.typeText(Report.targetValueInput('Approve Invoice'), '1');
-  await t.click(Report.targetValueUnitSelect('Approve Invoice'));
-  await t.click(Report.dropdownOption('minutes'));
   await t.typeText(Report.targetValueInput('Prepare Bank Transfer'), '5');
-  await t.click(Report.targetValueUnitSelect('Prepare Bank Transfer'));
-  await t.click(Report.dropdownOption('minutes'));
   await t.click(Report.nodeFilterOperator('Prepare Bank Transfer'));
   await t.click(Report.dropdownOption('less than'));
   await t.typeText(Report.targetValueInput('Review Invoice'), '15');
