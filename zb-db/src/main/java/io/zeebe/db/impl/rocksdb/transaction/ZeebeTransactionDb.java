@@ -403,6 +403,12 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
   }
 
   @Override
+  public boolean isEmpty(final ColumnFamilyNames columnFamilyName, final DbContext context) {
+    final var columnFamilyHandle = columnFamilyMap.get(columnFamilyName);
+    return isEmpty(columnFamilyHandle, context);
+  }
+
+  @Override
   public void close() {
     // Correct order of closing
     // 1. transaction

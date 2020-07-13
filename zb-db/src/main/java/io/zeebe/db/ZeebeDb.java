@@ -52,4 +52,13 @@ public interface ZeebeDb<ColumnFamilyType extends Enum<ColumnFamilyType>> extend
   void createSnapshot(File snapshotDir);
 
   DbContext createContext();
+
+  /**
+   * Checks the database if the given column is empty.
+   *
+   * @param column the enum of the column to check
+   * @param context the context that is used to access the database
+   * @return {@code true} if the column is empty, otherwise {@code false}
+   */
+  boolean isEmpty(ColumnFamilyType column, DbContext context);
 }

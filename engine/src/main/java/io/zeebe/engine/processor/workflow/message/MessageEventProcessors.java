@@ -75,7 +75,8 @@ public final class MessageEventProcessors {
         .onCommand(
             ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
             MessageStartEventSubscriptionIntent.CLOSE,
-            new CloseMessageStartEventSubscriptionProcessor(startEventSubscriptionState))
+            new CloseMessageStartEventSubscriptionProcessor(
+                startEventSubscriptionState, eventScopeInstanceState))
         .withListener(
             new MessageObserver(messageState, subscriptionState, subscriptionCommandSender));
   }
