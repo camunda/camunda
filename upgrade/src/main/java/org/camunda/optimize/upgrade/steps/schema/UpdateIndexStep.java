@@ -69,14 +69,7 @@ public class UpdateIndexStep implements UpgradeStep {
         esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexNameWithSuffix, existingAliases);
         esIndexAdjuster.createIndexFromTemplate(targetIndexNameWithSuffix);
         esIndexAdjuster.reindex(sourceIndexNameWithSuffix, targetIndexNameWithSuffix, mappingScript);
-        for (AliasMetaData alias : existingAliases) {
-          esIndexAdjuster.addAlias(
-            alias.getAlias(),
-            targetIndexNameWithSuffix,
-            // defaulting to true if this flag is not set when only one index exists
-            Optional.ofNullable(alias.writeIndex()).orElse(true)
-          );
-        }
+        applyAliasesToIndex(esIndexAdjuster, targetIndexNameWithSuffix, existingAliases);
         esIndexAdjuster.deleteIndex(sourceIndexNameWithSuffix);
       }
     } else {
@@ -85,7 +78,21 @@ public class UpdateIndexStep implements UpgradeStep {
       esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexName, existingAliases);
       esIndexAdjuster.createIndex(index);
       esIndexAdjuster.reindex(sourceIndexName, targetIndexName, mappingScript);
+      applyAliasesToIndex(esIndexAdjuster, targetIndexName, existingAliases);
       esIndexAdjuster.deleteIndex(sourceIndexName);
+    }
+  }
+
+  private void applyAliasesToIndex(final ESIndexAdjuster esIndexAdjuster,
+                                   final String indexName,
+                                   final Set<AliasMetaData> aliases) {
+    for (AliasMetaData alias : aliases) {
+      esIndexAdjuster.addAlias(
+        alias.getAlias(),
+        indexName,
+        // defaulting to true if this flag is not set but only one index exists
+        Optional.ofNullable(alias.writeIndex()).orElse(aliases.size() == 1)
+      );
     }
   }
 }
