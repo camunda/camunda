@@ -23,6 +23,7 @@ import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.client.DeploymentClient;
 import io.zeebe.engine.util.client.IncidentClient;
 import io.zeebe.engine.util.client.JobActivationClient;
@@ -213,6 +214,10 @@ public final class EngineRule extends ExternalResource {
 
   public ControlledActorClock getClock() {
     return environmentRule.getClock();
+  }
+
+  public ZeebeState getZeebeState() {
+    return environmentRule.getZeebeState();
   }
 
   public DeploymentClient deployment() {

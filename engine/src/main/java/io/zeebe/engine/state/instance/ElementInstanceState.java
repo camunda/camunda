@@ -280,15 +280,6 @@ public final class ElementInstanceState {
     return records;
   }
 
-  public boolean isEmpty() {
-    return elementInstanceColumnFamily.isEmpty()
-        && parentChildColumnFamily.isEmpty()
-        && recordColumnFamily.isEmpty()
-        && recordParentChildColumnFamily.isEmpty()
-        && variablesState.isEmpty()
-        && awaitWorkflowInstanceResultMetadataColumnFamily.isEmpty();
-  }
-
   private void visitRecords(
       final long scopeKey, final Purpose purpose, final RecordVisitor visitor) {
     recordParentKey.wrapLong(scopeKey);

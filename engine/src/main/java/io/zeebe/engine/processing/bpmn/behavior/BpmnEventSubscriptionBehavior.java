@@ -291,7 +291,10 @@ public final class BpmnEventSubscriptionBehavior {
 
     final var eventElementInstanceKey = eventHandler.applyAsLong(eventTrigger);
 
-    variablesState.setTemporaryVariables(eventElementInstanceKey, eventTrigger.getVariables());
+    final var eventVariables = eventTrigger.getVariables();
+    if (eventVariables != null && eventVariables.capacity() > 0) {
+      variablesState.setTemporaryVariables(eventElementInstanceKey, eventVariables);
+    }
 
     eventScopeInstanceState.deleteTrigger(
         context.getElementInstanceKey(), eventTrigger.getEventKey());
