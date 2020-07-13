@@ -12,17 +12,17 @@ import {ReactComponent as FlowNodeStartEventIcon} from 'modules/components/Icon/
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 
 import {NoWrapBar} from './index';
-import TimeStampLabel from '../TimeStampLabel';
+import {TimeStampLabel} from '../TimeStampLabel';
 
 import {testData} from './index.setup';
 
-jest.mock(
-  '../TimeStampLabel',
-  () =>
-    function renderMockComponent(props) {
+jest.mock('../TimeStampLabel', () => {
+  return {
+    TimeStampLabel: function renderMockComponent(props) {
       return <div />;
-    }
-);
+    },
+  };
+});
 
 const renderComponent = () => {
   const mountedComponent = mount(

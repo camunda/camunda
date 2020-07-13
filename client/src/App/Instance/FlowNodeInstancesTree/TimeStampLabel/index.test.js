@@ -5,39 +5,24 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render, screen} from '@testing-library/react';
 
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import {FlowNodeTimeStampProvider} from 'modules/contexts/FlowNodeTimeStampContext';
+import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
 
-import TimeStampLabel from './index';
-
-import * as Styled from './styled';
-
-const renderNode = (node) => {
-  return mount(
-    <ThemeProvider>
-      <FlowNodeTimeStampProvider>{node}</FlowNodeTimeStampProvider>
-    </ThemeProvider>
-  );
-};
+import {TimeStampLabel} from './index';
 
 describe('TimeStampLabel', () => {
-  let node;
-
-  beforeEach(() => {
-    node = renderNode(
-      <TimeStampLabel isSelected={false} timestamp={'01 Dec 2018 00:00:00'} />
+  it('should hide/display time stamp on time stamp toggle', () => {
+    render(
+      <TimeStampLabel
+        isSelected={false}
+        timeStamp={'2020-07-09T12:26:22.237+0000'}
+      />
     );
-  });
-
-  it('should not render a time stamp as a default', () => {
-    expect(node.find(Styled.TimeStamp)).not.toExist();
-    expect(node.find(TimeStampLabel).text()).toBe('');
-  });
-
-  it('should not render a component if no timestamp is passed', () => {
-    node = renderNode(<TimeStampLabel isSelected={false} />);
-    expect(node.find(Styled.TimeStamp)).not.toExist();
+    expect(screen.queryByText('12 Dec 2018 00:00:00')).not.toBeInTheDocument();
+    flowNodeTimeStamp.toggleTimeStampVisibility();
+    expect(screen.getByText('12 Dec 2018 00:00:00')).toBeInTheDocument();
+    flowNodeTimeStamp.toggleTimeStampVisibility();
+    expect(screen.queryByText('12 Dec 2018 00:00:00')).not.toBeInTheDocument();
   });
 });

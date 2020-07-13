@@ -8,12 +8,11 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Copyright from 'modules/components/Copyright';
-import {FlowNodeTimeStampProvider} from 'modules/contexts/FlowNodeTimeStampContext';
 import {EXPAND_STATE} from 'modules/constants';
 
 import * as Styled from './styled';
 
-import TimeStampPill from './TimeStampPill';
+import {TimeStampPill} from './TimeStampPill';
 
 export default class BottomPanel extends React.PureComponent {
   static propTypes = {
@@ -38,18 +37,16 @@ export default class BottomPanel extends React.PureComponent {
   render() {
     return (
       <Styled.Pane {...this.props}>
-        <FlowNodeTimeStampProvider>
-          <Styled.PaneHeader>
-            <Styled.Headline>Instance History</Styled.Headline>
-            <Styled.Pills>
-              <TimeStampPill />
-            </Styled.Pills>
-          </Styled.PaneHeader>
-          <Styled.PaneBody>{this.renderChildren()}</Styled.PaneBody>
-          <Styled.PaneFooter>
-            <Copyright />
-          </Styled.PaneFooter>
-        </FlowNodeTimeStampProvider>
+        <Styled.PaneHeader>
+          <Styled.Headline>Instance History</Styled.Headline>
+          <Styled.Pills>
+            <TimeStampPill />
+          </Styled.Pills>
+        </Styled.PaneHeader>
+        <Styled.PaneBody>{this.renderChildren()}</Styled.PaneBody>
+        <Styled.PaneFooter>
+          <Copyright />
+        </Styled.PaneFooter>
       </Styled.Pane>
     );
   }

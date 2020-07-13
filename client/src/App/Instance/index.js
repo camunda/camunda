@@ -37,6 +37,7 @@ import {
 import {statistics} from 'modules/stores/statistics';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
 import {observer} from 'mobx-react';
 
 import * as Styled from './styled';
@@ -171,6 +172,7 @@ const Instance = observer(
       this.props.dataManager.poll.unregister(POLL_TOPICS.INSTANCE);
       flowNodeInstance.reset();
       currentInstance.reset();
+      flowNodeTimeStamp.reset();
     }
 
     handlePoll = () => {

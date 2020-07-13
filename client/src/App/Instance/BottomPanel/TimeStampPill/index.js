@@ -5,21 +5,23 @@
  */
 
 import React, {useEffect, useState} from 'react';
-import PropTypes from 'prop-types';
 
 import {PILL_TYPE, LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 import useSubscription from 'modules/hooks/useSubscription';
-import {withFlowNodeTimeStampContext} from 'modules/contexts/FlowNodeTimeStampContext';
 
 import * as Styled from './styled';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
 import {observer} from 'mobx-react';
 
-const TimeStampPill = observer(function TimeStampPill(props) {
-  const {showTimeStamp, onTimeStampToggle} = props;
+const TimeStampPill = observer(function TimeStampPill() {
   const [isDefLoaded, setIsDefLoaded] = useState(false);
   const {subscribe} = useSubscription();
   const {isInitialLoadComplete: isTreeLoaded} = flowNodeInstance.state;
+  const {
+    state: {isTimeStampVisible},
+    toggleTimeStampVisibility,
+  } = flowNodeTimeStamp;
 
   useEffect(() => {
     const unsubscribeDefinitions = subscribe(
@@ -34,22 +36,16 @@ const TimeStampPill = observer(function TimeStampPill(props) {
   }, []);
 
   const isDisabled = !isTreeLoaded && !isDefLoaded;
-
   return (
     <Styled.Pill
-      isActive={showTimeStamp}
-      onClick={onTimeStampToggle}
+      isActive={isTimeStampVisible}
+      onClick={toggleTimeStampVisibility}
       type={PILL_TYPE.TIMESTAMP}
       isDisabled={isDisabled}
     >
-      {`${showTimeStamp ? 'Hide' : 'Show'} End Time`}
+      {`${isTimeStampVisible ? 'Hide' : 'Show'} End Time`}
     </Styled.Pill>
   );
 });
 
-TimeStampPill.propTypes = {
-  onTimeStampToggle: PropTypes.func.isRequired,
-  showTimeStamp: PropTypes.bool.isRequired,
-};
-
-export default withFlowNodeTimeStampContext(TimeStampPill);
+export {TimeStampPill};

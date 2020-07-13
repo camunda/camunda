@@ -25,7 +25,6 @@ import {
 } from './index.setup';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {currentInstance} from 'modules/stores/currentInstance';
-import {FlowNodeTimeStampProvider} from 'modules/contexts/FlowNodeTimeStampContext';
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 
 let dataManager = createMockDataManager();
@@ -39,11 +38,7 @@ jest.mock('modules/api/instances', () => ({
 }));
 
 const Wrapper = ({children}) => {
-  return (
-    <DataManagerProvider>
-      <FlowNodeTimeStampProvider>{children} </FlowNodeTimeStampProvider>
-    </DataManagerProvider>
-  );
+  return <DataManagerProvider>{children}</DataManagerProvider>;
 };
 Wrapper.propTypes = {
   children: PropTypes.oneOfType([

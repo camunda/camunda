@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 
 import {TYPE} from 'modules/constants';
 
-import TimeStampLabel from '../TimeStampLabel';
+import {TimeStampLabel} from '../TimeStampLabel';
 
 import * as Styled from './styled';
 

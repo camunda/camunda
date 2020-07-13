@@ -13,13 +13,15 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import Copyright from 'modules/components/Copyright';
 
 import BottomPanel from './index';
-import TimeStampPill from './TimeStampPill';
+import {TimeStampPill} from './TimeStampPill';
 
 import * as Styled from './styled';
 
 jest.mock('./TimeStampPill', () => {
-  return function TimeStampPill() {
-    return <div />;
+  return {
+    TimeStampPill: function TimeStampPill() {
+      return <div />;
+    },
   };
 });
 

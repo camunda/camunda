@@ -69,8 +69,10 @@ jest.mock('./BottomPanel/VariablePanel', () => {
 });
 
 jest.mock('./BottomPanel/TimeStampPill', () => {
-  return function TimeStampPill() {
-    return <div />;
+  return {
+    TimeStampPill: function TimeStampPill() {
+      return <div />;
+    },
   };
 });
 
