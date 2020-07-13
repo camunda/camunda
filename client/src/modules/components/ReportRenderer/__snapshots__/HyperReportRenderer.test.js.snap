@@ -158,6 +158,8 @@ exports[`should convert a hypermap to a combined report 1`] = `
             },
           },
         },
+        "instanceCount": 1234,
+        "isComplete": true,
         "type": null,
       },
     }
