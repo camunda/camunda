@@ -100,6 +100,13 @@ public abstract class AbstractUpgrade30IT extends AbstractUpgradeIT {
       VARIABLE_UPDATE_INSTANCE_INDEX
     ));
     setMetadataIndexVersion(FROM_VERSION);
+
+    // event process instance index also are associated as read only with the process-instance alias
+    addAlias(
+      EVENT_PROCESS_INSTANCE_INDEX,
+      indexNameService.getOptimizeIndexAliasForIndex(PROCESS_INSTANCE_INDEX.getIndexName()),
+      false
+    );
   }
 
 }

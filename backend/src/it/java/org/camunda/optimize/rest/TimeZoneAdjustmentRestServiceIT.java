@@ -792,7 +792,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     // then there should be data in here. If the filter timezone isn't used the result will be 0.0
     assertThat(result.getData())
       .hasSize(2)
-      .first()
+      .last()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.0);
   }

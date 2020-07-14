@@ -185,19 +185,19 @@ public class ESIndexAdjuster {
     }
   }
 
-  public void setAllAliasesToReadOnly(final String indexName) {
+  public void setAllAliasesToReadOnly(final String indexName, final Set<AliasMetaData> aliases) {
     logger.debug("Setting all aliases pointing to {} to readonly.", indexName);
 
-    Set<String> existingAliasNames = getAllAliasNames(indexName);
+    final String[] aliasNames = aliases.stream().map(AliasMetaData::alias).toArray(String[]::new);
     try {
       final IndicesAliasesRequest indicesAliasesRequest = new IndicesAliasesRequest();
       final AliasActions removeAllAliasesAction = new AliasActions(AliasActions.Type.REMOVE)
         .index(indexName)
-        .aliases(String.join(",", existingAliasNames));
+        .aliases(aliasNames);
       final AliasActions addReadOnlyAliasAction = new AliasActions(AliasActions.Type.ADD)
         .index(indexName)
         .writeIndex(false)
-        .aliases(String.join(",", existingAliasNames));
+        .aliases(aliasNames);
       indicesAliasesRequest.addAliasAction(removeAllAliasesAction);
       indicesAliasesRequest.addAliasAction(addReadOnlyAliasAction);
       getPlainRestClient().indices().updateAliases(indicesAliasesRequest, RequestOptions.DEFAULT);
@@ -349,6 +349,25 @@ public class ESIndexAdjuster {
     return elasticsearchClient.getIndexNameService();
   }
 
+  public Set<String> getAllAliasNames(final String indexName) {
+    return getAllAliasesForIndex(indexName).stream().map(AliasMetaData::alias).collect(Collectors.toSet());
+  }
+
+  public Set<AliasMetaData> getAllAliasesForIndex(final String indexName) {
+    GetAliasesRequest getAliasesRequest = new GetAliasesRequest().indices(indexName);
+    try {
+      return getPlainRestClient().indices()
+        .getAlias(getAliasesRequest, RequestOptions.DEFAULT)
+        .getAliases()
+        .getOrDefault(indexName, Sets.newHashSet())
+        .stream()
+        .collect(Collectors.toSet());
+    } catch (IOException e) {
+      String message = String.format("Could not retrieve existing aliases for {%s}.", indexName);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
   private void closeIndex(final String indexName) {
     final CloseIndexRequest closeIndexRequest = new CloseIndexRequest(indexName);
     try {
@@ -449,22 +468,6 @@ public class ESIndexAdjuster {
     } catch (IOException e) {
       logger.error("Could not create settings!", e);
       throw new UpgradeRuntimeException("Could not create index settings");
-    }
-  }
-
-  private Set<String> getAllAliasNames(final String indexName) {
-    GetAliasesRequest getAliasesRequest = new GetAliasesRequest().indices(indexName);
-    try {
-      return getPlainRestClient().indices()
-        .getAlias(getAliasesRequest, RequestOptions.DEFAULT)
-        .getAliases()
-        .getOrDefault(indexName, Sets.newHashSet())
-        .stream()
-        .map(AliasMetaData::alias)
-        .collect(Collectors.toSet());
-    } catch (IOException e) {
-      String message = String.format("Could not retrieve existing aliases for {%s}.", indexName);
-      throw new OptimizeRuntimeException(message, e);
     }
   }
 }

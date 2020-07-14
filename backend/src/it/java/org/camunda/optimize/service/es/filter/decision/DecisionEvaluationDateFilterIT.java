@@ -10,10 +10,8 @@ import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -349,31 +347,6 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     assertThat(result.getInstanceCount()).isEqualTo(0L);
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).isEmpty();
-  }
-
-  @Test
-  public void fixedDateFilterIsTruncatedToDay_whenEvaluatingUnsavedReport() {
-    // given a report with date filters which include time information
-    final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
-    engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
-    importAllEngineEntitiesFromScratch();
-
-    final OffsetDateTime filterDateTime = OffsetDateTime.now().withHour(1);
-    final DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(filterDateTime, filterDateTime)));
-
-    // when
-    final SingleDecisionReportDefinitionDto resultReport =
-      reportClient.evaluateReportWithRawDataResult(reportData).getReportDefinition();
-
-    // then the resulting filter has been truncated to day
-    final OffsetDateTime expectedFilterDate = filterDateTime.truncatedTo(ChronoUnit.DAYS);
-    assertThat(resultReport.getData().getFilter())
-      .extracting(filter -> ((FixedDateFilterDataDto) filter.getData()).getStart())
-      .containsOnly(expectedFilterDate);
-    assertThat(resultReport.getData().getFilter())
-      .extracting(filter -> ((FixedDateFilterDataDto) filter.getData()).getEnd())
-      .containsOnly(expectedFilterDate);
   }
 
   @SneakyThrows

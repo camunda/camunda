@@ -149,6 +149,35 @@ public class DashboardRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void createNewDashboardWithFilterSpecification_dashboardContainsExternalReport() {
+    // given
+    final List<DashboardFilterDto> dashboardFilters = variableFilter();
+    final DashboardDefinitionDto dashboardDefinitionDto =
+      createDashboardForReportContainingAllVariables(dashboardFilters);
+    final ReportLocationDto variableReport = dashboardDefinitionDto.getReports().get(0);
+
+    ReportLocationDto externalReport = new ReportLocationDto();
+    externalReport.setId("");
+    externalReport.setConfiguration(ImmutableMap.of("external", "https://www.tunnelsnakes.com/"));
+    dashboardDefinitionDto.setReports(Arrays.asList(externalReport, variableReport));
+
+    // when
+    final IdDto idDto = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateDashboardRequest(dashboardDefinitionDto)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(idDto.getId()).isNotNull();
+    final DashboardDefinitionDto savedDefinition = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDashboardRequest(idDto.getId())
+      .execute(DashboardDefinitionDto.class, Response.Status.OK.getStatusCode());
+    assertThat(savedDefinition.getReports())
+      .containsExactlyInAnyOrder(variableReport, externalReport);
+    assertThat(savedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilters);
+  }
+
+  @Test
   public void createNewDashboardWithVariableFilter_variableNameNotInContainedReport() {
     // given
     final List<DashboardFilterDto> variableFilter = variableFilter();
@@ -375,6 +404,38 @@ public class DashboardRestServiceIT extends AbstractIT {
     } else {
       assertThat(updatedDefinition.getAvailableFilters()).containsExactlyInAnyOrderElementsOf(dashboardFilterDtos);
     }
+  }
+
+  @Test
+  public void updateDashboardWithFilterSpecification_dashboardContainsExternalReport() {
+    // given a dashboard with a variable filter
+    final List<DashboardFilterDto> dashboardFilters = variableFilter();
+    final DashboardDefinitionDto dashboardDefinitionDto =
+      createDashboardForReportContainingAllVariables(dashboardFilters);
+    final ReportLocationDto variableReport = dashboardDefinitionDto.getReports().get(0);
+    String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+
+    // then
+    assertThat(dashboardId).isNotNull();
+    final DashboardDefinitionDto savedDefinition = dashboardClient.getDashboard(dashboardId);
+    assertThat(savedDefinition.getAvailableFilters()).containsExactlyElementsOf(dashboardFilters);
+
+    // when an external report is added to the dashboard
+    ReportLocationDto externalReport = new ReportLocationDto();
+    externalReport.setId("");
+    externalReport.setConfiguration(ImmutableMap.of("external", "https://www.tunnelsnakes.com/"));
+    dashboardDefinitionDto.setReports(Arrays.asList(externalReport, variableReport));
+
+    embeddedOptimizeExtension.getRequestExecutor()
+      .buildUpdateDashboardRequest(dashboardId, dashboardDefinitionDto)
+      .execute(IdDto.class, Response.Status.NO_CONTENT.getStatusCode());
+
+    // then
+    assertThat(dashboardId).isNotNull();
+    final DashboardDefinitionDto updatedDefinition = dashboardClient.getDashboard(dashboardId);
+    assertThat(updatedDefinition.getAvailableFilters()).containsExactlyElementsOf(dashboardFilters);
+    assertThat(updatedDefinition.getReports())
+      .containsExactlyInAnyOrder(externalReport, variableReport);
   }
 
   @Test

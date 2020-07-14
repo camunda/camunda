@@ -332,6 +332,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
                                                      final List<DashboardFilterDto> availableFilters) {
     final List<String> reportIdsInDashboard = dashboardDefinitionDto.getReports().stream()
       .map(ReportLocationDto::getId)
+      .filter(IdGenerator::isValidId)
       .collect(Collectors.toList());
     final Map<String, List<VariableType>> possibleVarTypesByName = processVariableService.getVariableNamesForReports(
       userId,

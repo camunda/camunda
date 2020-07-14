@@ -8,10 +8,8 @@ package org.camunda.optimize.service.es.filter;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
@@ -488,41 +486,6 @@ public class FixedDateFilterIT extends AbstractFilterIT {
     assertThat(resultData.get(1).getKey())
       .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS));
     assertThat(resultData.get(1).getValue()).isEqualTo(2.);
-  }
-
-  @Test
-  public void startAndEndDateFilterAlwaysTruncatedToDay_whenEvaluatingUnsavedReport() {
-    // given a report with date filters which have time information
-    final ProcessInstanceEngineDto engineDto = startAndImportSimpleProcess();
-    final ProcessReportDataDto reportData = createReportWithInstance(engineDto);
-    final OffsetDateTime filterDateTime = OffsetDateTime.now().withHour(1);
-    // @formatter:off
-    final List<ProcessFilterDto<?>> filtersWithTime = ProcessFilterBuilder.filter()
-      .fixedStartDate()
-        .start(filterDateTime)
-        .end(filterDateTime)
-        .add()
-      .fixedEndDate()
-        .start(filterDateTime)
-        .end(filterDateTime)
-        .add()
-      .buildList();
-    // @formatter:on
-    reportData.setFilter(filtersWithTime);
-
-    // when
-    final SingleProcessReportDefinitionDto resultReport = reportClient.evaluateRawReport(reportData)
-      .getReportDefinition();
-
-    // then the resulting filter has been truncated to day
-    final OffsetDateTime expectedFilterDate = filterDateTime.truncatedTo(ChronoUnit.DAYS);
-
-    assertThat(resultReport.getData().getFilter())
-      .extracting(filter -> ((FixedDateFilterDataDto) filter.getData()).getStart())
-      .containsOnly(expectedFilterDate);
-    assertThat(resultReport.getData().getFilter())
-      .extracting(filter -> ((FixedDateFilterDataDto) filter.getData()).getEnd())
-      .containsOnly(expectedFilterDate);
   }
 
   private ProcessInstanceEngineDto startAndImportSimpleProcess() {

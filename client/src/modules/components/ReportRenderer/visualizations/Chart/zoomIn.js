@@ -89,8 +89,8 @@ export default ({updateReport, filters, type, valueRange: {min, max}}) => {
                 type,
                 data: {
                   type: 'fixed',
-                  start: start.format('YYYY-MM-DDTHH:mm:ss'),
-                  end: end.format('YYYY-MM-DDTHH:mm:ss'),
+                  start: start.format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
+                  end: end.format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
                 },
               },
             ],

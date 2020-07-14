@@ -25,6 +25,7 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 import org.elasticsearch.action.admin.indices.alias.Alias;
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.get.GetRequest;
@@ -117,6 +118,18 @@ public abstract class AbstractUpgradeIT {
     request.setEntity(entity);
     prefixAwareClient.getLowLevelClient().performRequest(request);
     prefixAwareClient.getHighLevelClient().indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
+  }
+
+  @SneakyThrows
+  protected void addAlias(final IndexMappingCreator index, final String alias, final boolean writeIndex) {
+    final IndicesAliasesRequest indicesAliasesRequest = new IndicesAliasesRequest();
+    final IndicesAliasesRequest.AliasActions aliasAction = new IndicesAliasesRequest.AliasActions(
+      IndicesAliasesRequest.AliasActions.Type.ADD)
+      .index(indexNameService.getVersionedOptimizeIndexNameForIndexMapping(index))
+      .writeIndex(writeIndex)
+      .alias(alias);
+    indicesAliasesRequest.addAliasAction(aliasAction);
+    prefixAwareClient.getHighLevelClient().indices().updateAliases(indicesAliasesRequest, RequestOptions.DEFAULT);
   }
 
   private String getVersionedIndexName(final String indexName, final int version) {

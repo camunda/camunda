@@ -10,17 +10,12 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomNumberBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
@@ -37,7 +32,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.GetAliasesResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -47,26 +41,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.IMPORT_INDEX_INDEX_NAME;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.util.MappingMetadataUtil.getAllNonDynamicMappings;
 import static org.camunda.optimize.upgrade.util.MappingMetadataUtil.retrieveAllCamundaActivityEventIndices;
+import static org.camunda.optimize.upgrade.util.MappingMetadataUtil.retrieveAllEventProcessInstanceIndices;
 import static org.camunda.optimize.upgrade.util.MappingMetadataUtil.retrieveAllEventTraceIndices;
 import static org.camunda.optimize.upgrade.util.MappingMetadataUtil.retrieveAllSequenceCountIndices;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Slf4j
@@ -127,12 +118,9 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
   }
 
   private List<UpgradeStep> addProcessInstanceIdToEventsMigrationSteps() {
-    List<ProcessInstanceIndex> processInstanceIndices = getAllEventProcessPublishStates().stream()
-      .map(EventProcessPublishStateDto::getId)
-      .filter(Objects::nonNull)
-      .map(EventProcessInstanceIndex::new)
-      .collect(toList());
+    List<ProcessInstanceIndex> processInstanceIndices = new ArrayList<>();
     processInstanceIndices.add(new ProcessInstanceIndex());
+    processInstanceIndices.addAll(retrieveAllEventProcessInstanceIndices(esClient));
     //@formatter:off
     final String script =
       "if (ctx._source.processInstanceId != null) {\n" +
@@ -148,31 +136,6 @@ public class UpgradeFrom30To31 extends UpgradeProcedure {
     return processInstanceIndices.stream()
       .map(index -> new UpdateIndexStep(index, script))
       .collect(toList());
-  }
-
-  private List<EventProcessPublishStateDto> getAllEventProcessPublishStates() {
-    log.debug("Fetching all available event process publish states with deleted state.");
-    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(matchAllQuery())
-      .size(LIST_FETCH_LIMIT);
-    final SearchRequest searchRequest = new SearchRequest(EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME)
-      .source(searchSourceBuilder)
-      .scroll(new TimeValue(upgradeDependencies.getConfigurationService().getElasticsearchScrollTimeout()));
-
-    final SearchResponse scrollResp;
-    try {
-      scrollResp = upgradeDependencies.getEsClient().search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Was not able to retrieve event process publish states!", e);
-    }
-
-    return ElasticsearchReaderUtil.retrieveAllScrollResults(
-      scrollResp,
-      IndexableEventProcessPublishStateDto.class,
-      upgradeDependencies.getObjectMapper(),
-      upgradeDependencies.getEsClient(),
-      upgradeDependencies.getConfigurationService().getElasticsearchScrollTimeout()
-    ).stream().map(IndexableEventProcessPublishStateDto::toEventProcessPublishStateDto).collect(toList());
   }
 
   private UpgradeStep migrateProcessReportFilterForUndefined() {
