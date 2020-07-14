@@ -61,6 +61,7 @@ public class NettyUnicastService implements ManagedUnicastService {
               .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
               .register(Message.class)
               .register(new AddressSerializer(), Address.class)
+              .setCompatible(true)
               .build());
 
   private final Logger log = LoggerFactory.getLogger(getClass());

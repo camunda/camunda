@@ -61,6 +61,7 @@ public class MulticastDiscoveryProvider
           .addType(Node.class)
           .addType(NodeId.class)
           .addSerializer(new AddressSerializer(), Address.class)
+          .withCompatibleSerialization(true)
           .build();
   private static final String DISCOVERY_SUBJECT = "atomix-discovery";
   private final MulticastDiscoveryConfig config;

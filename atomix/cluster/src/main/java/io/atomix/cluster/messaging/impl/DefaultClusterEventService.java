@@ -68,6 +68,7 @@ public class DefaultClusterEventService
               .register(MemberId.class)
               .register(LogicalTimestamp.class)
               .register(WallClockTimestamp.class)
+              .setCompatible(true)
               .build());
 
   private static final String SUBSCRIPTION_PROPERTY_NAME = "event-service-topics-subscribed";

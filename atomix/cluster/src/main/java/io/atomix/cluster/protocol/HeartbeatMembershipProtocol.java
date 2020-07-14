@@ -70,6 +70,7 @@ public class HeartbeatMembershipProtocol
               .register(MemberId.class)
               .register(GossipMember.class)
               .register(new AddressSerializer(), Address.class)
+              .setCompatible(true)
               .build("ClusterMembershipService"));
   private final HeartbeatMembershipProtocolConfig config;
   private volatile NodeDiscoveryService discoveryService;
