@@ -66,7 +66,9 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
     return actor.call(
         () -> {
           final var topicName = topicName(partitionId);
-          LOG.trace("Subscribe for topic {}", topicName);
+          if (LOG.isTraceEnabled()) {
+            LOG.trace("Subscribe for topic {}", topicName);
+          }
           partitionsRequestMap.put(partitionId, new Long2ObjectHashMap<>());
           messagingService.registerHandler(
               topicName,
@@ -81,7 +83,9 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   private void removePartition(final int partitionId) {
     final var topicName = topicName(partitionId);
-    LOG.trace("Unsubscribe from topic {}", topicName);
+    if (LOG.isTraceEnabled()) {
+      LOG.trace("Unsubscribe from topic {}", topicName);
+    }
 
     messagingService.unregisterHandler(topicName);
 
@@ -109,8 +113,9 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
             reusableRequestBuffer.wrap(requestBytes);
             requestHandler.onRequest(
                 this, partitionId, requestId, reusableRequestBuffer, 0, requestBytes.length);
-
-            LOG.trace("Handled request {} for topic {}", requestId, topicName(partitionId));
+            if (LOG.isTraceEnabled()) {
+              LOG.trace("Handled request {} for topic {}", requestId, topicName(partitionId));
+            }
             // we only add the request to the map after successful handling
             requestMap.put(requestId, completableFuture);
           } catch (final Exception exception) {
@@ -149,10 +154,13 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
           final var completableFuture = requestMap.remove(requestId);
           if (completableFuture != null) {
-            LOG.trace(
-                "Send response to request {} for topic {}", requestId, topicName(partitionId));
+            if (LOG.isTraceEnabled()) {
+              LOG.trace(
+                  "Send response to request {} for topic {}", requestId, topicName(partitionId));
+            }
+
             completableFuture.complete(bytes);
-          } else {
+          } else if (LOG.isTraceEnabled()) {
             LOG.trace(
                 "Wasn't able to send response to request {} for topic {}",
                 requestId,

@@ -91,17 +91,22 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
   private void tryToSend(final RequestContext requestContext) {
     if (requestContext.isDone()) {
-      LOG.trace("Request {} is already done", requestContext.hashCode());
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Request {} is already done", requestContext.hashCode());
+      }
+
       return;
     }
 
     final var calculateTimeout = requestContext.calculateTimeout();
     if (calculateTimeout.toMillis() <= 0L) {
-      LOG.trace(
-          "Request {} reached timeout of {}, current calculation {}",
-          requestContext.hashCode(),
-          requestContext.getTimeout(),
-          calculateTimeout);
+      if (LOG.isTraceEnabled()) {
+        LOG.trace(
+            "Request {} reached timeout of {}, current calculation {}",
+            requestContext.hashCode(),
+            requestContext.getTimeout(),
+            calculateTimeout);
+      }
       // we reached the timeout
       // our request future will be completedExceptionally from the scheduled timeout job
       return;
@@ -110,14 +115,18 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
     final var nodeAddress = requestContext.getNodeAddress();
     if (nodeAddress == null) {
       if (requestContext.shouldRetry()) {
-        LOG.trace(
-            "No target address for request {}, retry after {}.",
-            requestContext.hashCode(),
-            RETRY_DELAY);
+        if (LOG.isTraceEnabled()) {
+          LOG.trace(
+              "No target address for request {}, retry after {}.",
+              requestContext.hashCode(),
+              RETRY_DELAY);
+        }
         actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
       } else {
-        LOG.trace(
-            "No target address for request {}, will fail request.", requestContext.hashCode());
+        if (LOG.isTraceEnabled()) {
+          LOG.trace(
+              "No target address for request {}, will fail request.", requestContext.hashCode());
+        }
         requestContext.completeExceptionally(
             new ConnectException(
                 String.format(
@@ -126,11 +135,13 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       return;
     }
 
-    LOG.trace(
-        "Send request {} to {} with topic {}",
-        requestContext.hashCode(),
-        requestContext.getNodeAddress(),
-        requestContext.getTopicName());
+    if (LOG.isTraceEnabled()) {
+      LOG.trace(
+          "Send request {} to {} with topic {}",
+          requestContext.hashCode(),
+          requestContext.getNodeAddress(),
+          requestContext.getTopicName());
+    }
 
     final var requestBytes = requestContext.getRequestBytes();
     messagingService
@@ -143,7 +154,9 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
   private void handleResponse(
       final RequestContext requestContext, final byte[] response, final Throwable errorOnRequest) {
     if (requestContext.isDone()) {
-      LOG.trace("Handle response, but request {} is already done", requestContext.hashCode());
+      if (LOG.isTraceEnabled()) {
+        LOG.trace("Handle response, but request {} is already done", requestContext.hashCode());
+      }
       return;
     }
 
@@ -151,13 +164,17 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
       final var responseBuffer = new UnsafeBuffer(response);
       if (requestContext.verifyResponse(responseBuffer)) {
-        LOG.trace("Got valid response for request {}.", requestContext.hashCode());
+        if (LOG.isTraceEnabled()) {
+          LOG.trace("Got valid response for request {}.", requestContext.hashCode());
+        }
         requestContext.complete(responseBuffer);
       } else {
-        LOG.trace(
-            "Got invalid response for request {}, retry in {}.",
-            requestContext.hashCode(),
-            RETRY_DELAY);
+        if (LOG.isTraceEnabled()) {
+          LOG.trace(
+              "Got invalid response for request {}, retry in {}.",
+              requestContext.hashCode(),
+              RETRY_DELAY);
+        }
         // no valid response - retry in respect of the timeout
         actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
       }
@@ -168,16 +185,21 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       if ((exceptionShowsConnectionIssue(errorOnRequest) || exceptionShowsConnectionIssue(cause))
           && requestContext.shouldRetry()) {
 
-        LOG.trace(
-            "Request {} failed, but will retry after delay {}",
-            requestContext.hashCode(),
-            RETRY_DELAY,
-            errorOnRequest);
+        if (LOG.isTraceEnabled()) {
+          LOG.trace(
+              "Request {} failed, but will retry after delay {}",
+              requestContext.hashCode(),
+              RETRY_DELAY,
+              errorOnRequest);
+        }
+
         // no registered subscription yet
         actor.runDelayed(RETRY_DELAY, () -> tryToSend(requestContext));
       } else {
-
-        LOG.trace("Request {} failed, will not retry!", requestContext.hashCode(), errorOnRequest);
+        if (LOG.isTraceEnabled()) {
+          LOG.trace(
+              "Request {} failed, will not retry!", requestContext.hashCode(), errorOnRequest);
+        }
         requestContext.completeExceptionally(errorOnRequest);
       }
     }
