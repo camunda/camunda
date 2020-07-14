@@ -16,6 +16,8 @@ const palette = {
   ui05: '#d8dce3',
   ui06: '#62626e',
   ui07: '#45464e',
+  ui08: '#5b5e63',
+  ui09: '#393a41',
 } as const;
 
 const theme = {
@@ -61,6 +63,16 @@ const theme = {
         borderColor: '#a2c5ff',
       },
     },
+    icon: {
+      hover: {
+        backgroundColor: palette.ui05,
+        borderColor: '#9ea9b7',
+      },
+      active: {
+        backgroundColor: '#d3d6e0',
+        borderColor: '#f1f2f5',
+      },
+    },
     text: {
       button: 'rgba(69, 70, 78, 0.9)',
       copyrightNotice: 'rgba(98, 98, 110, 0.9)',
@@ -71,6 +83,9 @@ const theme = {
     label01: 'rgba(69, 70, 78, 0.9)', //charcoal-grey-90
     link: {
       active: '#eaf3ff',
+    },
+    input: {
+      placeholder: 'rgba(98, 98, 110, 0.9)',
     },
   },
   shadows: {

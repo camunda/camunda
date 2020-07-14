@@ -9,6 +9,7 @@
 import {Resolvers, gql} from 'apollo-boost';
 import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
+import {currentUser} from './constants/currentUser';
 
 interface ResolverMap {
   [field: string]: (parent: any, args: any, context: any) => any;
@@ -40,11 +41,7 @@ const getTaskState = (task: Task) => {
 const getAssignee = (task: Task) => {
   switch (isAssigned[task.id]) {
     case true:
-      return {
-        username: 'demo',
-        firstname: 'Demo',
-        lastname: 'User',
-      };
+      return currentUser;
     case false:
       return null;
     default:
@@ -66,6 +63,12 @@ const resolvers: AppResolvers = {
       } else {
         return null;
       }
+    },
+    variables: () => {
+      return [
+        {name: 'myVar', value: '123'},
+        {name: 'myVar2', value: 'true'},
+      ];
     },
   },
   Mutation: {

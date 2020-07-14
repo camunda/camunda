@@ -67,5 +67,17 @@ const mockCompleteTask = {
   },
 };
 
+const mockCompleteTaskWithVariable = {
+  request: {
+    query: COMPLETE_TASK,
+    variables: {id: '0', variables: [{name: 'myVar', value: 'newValue'}]},
+  },
+  result: {
+    data: {
+      completeTask: completedTask,
+    },
+  },
+};
+
 export type {CompleteTask, CompleteTaskVariables};
-export {COMPLETE_TASK, mockCompleteTask};
+export {COMPLETE_TASK, mockCompleteTask, mockCompleteTaskWithVariable};

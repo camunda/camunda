@@ -4,15 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {SmallButton} from 'modules/components/Button/styled';
+import {User} from 'modules/types';
 
-const Container = styled.div`
-  margin-top: 13px;
-`;
+const currentUser: User = {
+  username: 'demo',
+  firstname: 'Demo',
+  lastname: 'User',
+};
 
-const ClaimButton = styled(SmallButton)`
-  margin-left: 22px;
-`;
-
-export {Container, ClaimButton};
+export {currentUser};

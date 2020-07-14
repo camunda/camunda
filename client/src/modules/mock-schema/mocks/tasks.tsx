@@ -6,6 +6,7 @@
 
 import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
+import {currentUser} from '../constants/currentUser';
 
 const tasks: ReadonlyArray<Task> = [
   {
@@ -14,7 +15,7 @@ const tasks: ReadonlyArray<Task> = [
     workflowName: 'workflowName',
     creationTime: '2020-05-28 10:11:12',
     completionTime: new Date().toISOString(),
-    assignee: {username: 'Demo', firstname: 'Demo', lastname: 'User'},
+    assignee: currentUser,
     variables: [],
     taskState: TaskStates.Completed,
   },

@@ -7,6 +7,7 @@
 import {gql} from 'apollo-boost';
 
 import {User} from 'modules/types';
+import {currentUser} from 'modules/mock-schema/constants/currentUser';
 
 const GET_CURRENT_USER = gql`
   query GetCurrentUser {
@@ -26,9 +27,7 @@ const mockGetCurrentUser = {
   result: {
     data: {
       currentUser: {
-        firstname: 'Demo',
-        lastname: 'user',
-        username: 'demo',
+        ...currentUser,
         canLogout: true,
       },
     },
@@ -42,9 +41,7 @@ const mockSSOGetCurrentUser = {
   result: {
     data: {
       currentUser: {
-        firstname: 'Demo',
-        lastname: 'user',
-        username: 'demo',
+        ...currentUser,
         canLogout: false,
       },
     },

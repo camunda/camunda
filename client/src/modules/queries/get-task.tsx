@@ -44,7 +44,7 @@ const GET_TASK =
 const mockGetTaskCreated = {
   request: {
     query: GET_TASK,
-    variables: {id: '1'},
+    variables: {id: '0'},
   },
   result: {
     data: {

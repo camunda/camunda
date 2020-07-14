@@ -17,13 +17,8 @@ const taskWithVariables: TaskVariables = {
 };
 
 const taskWithoutVariables: TaskVariables = {
-  id: '1',
+  id: '0',
   variables: [],
 };
 
-const taskCompletedWithVariables: TaskVariables = {
-  id: '2',
-  variables: [{name: 'myVar', value: '22222'}],
-};
-
-export {taskWithVariables, taskWithoutVariables, taskCompletedWithVariables};
+export {taskWithVariables, taskWithoutVariables};

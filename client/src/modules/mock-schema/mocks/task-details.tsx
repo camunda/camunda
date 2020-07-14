@@ -6,9 +6,10 @@
 
 import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
+import {currentUser} from '../constants/currentUser';
 
 const unclaimedTask: Task = {
-  id: '1',
+  id: '0',
   name: 'My Task',
   workflowName: 'Nice Workflow',
   assignee: null,
@@ -20,12 +21,8 @@ const unclaimedTask: Task = {
 
 const claimedTask: Task = {
   ...unclaimedTask,
-  id: '2',
-  assignee: {
-    username: 'Demo',
-    firstname: 'Demo',
-    lastname: 'User',
-  },
+  id: '0',
+  assignee: currentUser,
 };
 
 const completedTask: Task = {

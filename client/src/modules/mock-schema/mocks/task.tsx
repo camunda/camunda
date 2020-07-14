@@ -6,17 +6,20 @@
 
 import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
+import {currentUser} from 'modules/mock-schema/constants/currentUser';
 
-type PartialTask = Pick<Task, 'id' | 'taskState'>;
+type PartialTask = Pick<Task, 'id' | 'taskState' | 'assignee'>;
 
 const taskCreated: PartialTask = {
   id: '0',
   taskState: TaskStates.Created,
+  assignee: currentUser,
 };
 
 const taskCompleted: PartialTask = {
-  id: '1',
+  id: '0',
   taskState: TaskStates.Completed,
+  assignee: currentUser,
 };
 
 export {taskCreated, taskCompleted};

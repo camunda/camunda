@@ -9,10 +9,10 @@ import {useParams} from 'react-router-dom';
 import {useQuery, useMutation} from '@apollo/react-hooks';
 import {Form} from 'react-final-form';
 
+import {useHistory} from 'react-router-dom';
+
 import {TaskStates} from 'modules/constants/taskStates';
 import {GET_TASK, GetTask, TaskQueryVariables} from 'modules/queries/get-task';
-import {GET_TASK_DETAILS} from 'modules/queries/get-task-details';
-import {GET_TASK_VARIABLES} from 'modules/queries/get-task-variables';
 import {
   COMPLETE_TASK,
   CompleteTaskVariables,
@@ -27,25 +27,22 @@ import {
   GetCurrentUser,
   GET_CURRENT_USER,
 } from 'modules/queries/get-current-user';
+import {Pages} from 'modules/constants/pages';
 
 const Task: React.FC = () => {
   const {id} = useParams();
+  const history = useHistory();
+
+  interface FormValues {
+    [name: string]: string;
+  }
 
   const {data, loading} = useQuery<GetTask, TaskQueryVariables>(GET_TASK, {
     variables: {id},
   });
-
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
-
   const [completeTask] = useMutation<GetTask, CompleteTaskVariables>(
     COMPLETE_TASK,
-    {
-      refetchQueries: [
-        {query: GET_TASK, variables: {id}},
-        {query: GET_TASK_DETAILS, variables: {id}},
-        {query: GET_TASK_VARIABLES, variables: {id}},
-      ],
-    },
   );
 
   if (data === undefined || loading) {
@@ -53,7 +50,6 @@ const Task: React.FC = () => {
   }
 
   const {taskState, assignee} = data.task;
-
   const canCompleteTask =
     userData?.currentUser.username === assignee?.username &&
     taskState === TaskStates.Created;
@@ -61,21 +57,42 @@ const Task: React.FC = () => {
   return (
     <>
       <Details />
-      <Form
-        onSubmit={() => {
-          completeTask({variables: {id, variables: []}});
+      <Form<FormValues>
+        onSubmit={async (values, form) => {
+          const {dirtyFields} = form.getState();
+
+          await completeTask({
+            variables: {
+              id,
+              variables: Object.keys(dirtyFields).map((name) => ({
+                name,
+                value: values[name],
+              })),
+            },
+          });
+          history.push({
+            pathname: Pages.Initial(),
+            search: history.location.search,
+          });
         }}
       >
-        {({handleSubmit}) => (
-          <StyledForm onSubmit={handleSubmit}>
-            <Variables />
-            {canCompleteTask && (
-              <Footer>
-                <PrimaryButton type="submit">Complete Task</PrimaryButton>
-              </Footer>
-            )}
-          </StyledForm>
-        )}
+        {({form, handleSubmit}) => {
+          return (
+            <StyledForm onSubmit={handleSubmit} hasFooter={canCompleteTask}>
+              <Variables canEdit={canCompleteTask} />
+              {canCompleteTask && (
+                <Footer>
+                  <PrimaryButton
+                    type="submit"
+                    disabled={form.getState().submitting}
+                  >
+                    Complete Task
+                  </PrimaryButton>
+                </Footer>
+              )}
+            </StyledForm>
+          );
+        }}
       </Form>
     </>
   );

@@ -60,7 +60,7 @@ const GET_TASK_DETAILS =
 const mockGetTaskUnclaimed = {
   request: {
     query: GET_TASK_DETAILS,
-    variables: {id: '1'},
+    variables: {id: '0'},
   },
   result: {
     data: {
@@ -72,7 +72,7 @@ const mockGetTaskUnclaimed = {
 const mockGetTaskClaimed = {
   request: {
     query: GET_TASK_DETAILS,
-    variables: {id: '1'},
+    variables: {id: '0'},
   },
   result: {
     data: {

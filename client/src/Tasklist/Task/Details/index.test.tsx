@@ -62,7 +62,7 @@ describe('<Details />', () => {
 
   it('should render unclaimed task details', async () => {
     render(<Details />, {
-      wrapper: getWrapper({id: '1', mocks: [mockGetTaskUnclaimed]}),
+      wrapper: getWrapper({id: '0', mocks: [mockGetTaskUnclaimed]}),
     });
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
@@ -78,7 +78,7 @@ describe('<Details />', () => {
   it('should render unclaimed task and claim it', async () => {
     render(<Details />, {
       wrapper: getWrapper({
-        id: '1',
+        id: '0',
         mocks: [mockGetTaskUnclaimed, mockClaimTask, mockGetTaskClaimed],
       }),
     });
@@ -97,7 +97,7 @@ describe('<Details />', () => {
   it('should render claimed task and unclaim it', async () => {
     render(<Details />, {
       wrapper: getWrapper({
-        id: '1',
+        id: '0',
         mocks: [mockGetTaskClaimed, mockUnclaimTask, mockGetTaskUnclaimed],
       }),
     });

@@ -6,10 +6,14 @@
 
 import styled from 'styled-components';
 
-const Form = styled.form`
+type FormProps = {
+  hasFooter?: boolean;
+};
+
+const Form = styled.form<FormProps>`
   display: grid;
   grid-template-columns: 100%;
-  grid-template-rows: auto 1fr 62px;
+  grid-template-rows: ${({hasFooter}) => (hasFooter ? '1fr 62px' : '1fr')};
 `;
 
 const Footer = styled.div`

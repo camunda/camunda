@@ -10,7 +10,6 @@ import {Task} from 'modules/types';
 import {
   taskWithVariables,
   taskWithoutVariables,
-  taskCompletedWithVariables,
 } from 'modules/mock-schema/mocks/task-variables';
 
 type TaskVariablesQueryVariables = {
@@ -37,10 +36,7 @@ const GET_TASK_VARIABLES =
         query GetTask($id: String!) {
           task(id: $id) {
             id
-            variables {
-              name
-              value
-            }
+            variables @client
           }
         }
       `;
@@ -60,7 +56,7 @@ const mockTaskWithVariables = {
 const mockTaskWithoutVariables = {
   request: {
     query: GET_TASK_VARIABLES,
-    variables: {id: '1'},
+    variables: {id: '0'},
   },
   result: {
     data: {
@@ -69,22 +65,5 @@ const mockTaskWithoutVariables = {
   },
 };
 
-const mockTaskCompletedWithVariables = {
-  request: {
-    query: GET_TASK_VARIABLES,
-    variables: {id: '0'},
-  },
-  result: {
-    data: {
-      task: taskCompletedWithVariables,
-    },
-  },
-};
-
 export type {GetTaskVariables, TaskVariablesQueryVariables};
-export {
-  GET_TASK_VARIABLES,
-  mockTaskWithVariables,
-  mockTaskWithoutVariables,
-  mockTaskCompletedWithVariables,
-};
+export {GET_TASK_VARIABLES, mockTaskWithVariables, mockTaskWithoutVariables};

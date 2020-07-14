@@ -35,7 +35,7 @@ const UNCLAIM_TASK =
 const mockUnclaimTask = {
   request: {
     query: UNCLAIM_TASK,
-    variables: {id: '1'},
+    variables: {id: '0'},
   },
   result: {
     data: {

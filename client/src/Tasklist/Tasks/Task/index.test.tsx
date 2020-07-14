@@ -11,6 +11,7 @@ import {Task} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Router} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
+import {currentUser} from 'modules/mock-schema/constants/currentUser';
 
 const createWrapper = (history = createMemoryHistory()) => {
   const Wrapper: React.FC = ({children}) => (
@@ -30,7 +31,7 @@ describe('<Task />', () => {
         name="name"
         workflowName="workflowName"
         creationTime="2020-05-29 14:00:00"
-        assignee={{firstname: 'Demo', lastname: 'user', username: 'Demouser'}}
+        assignee={currentUser}
       />,
       {
         wrapper: createWrapper(),
@@ -40,7 +41,7 @@ describe('<Task />', () => {
     expect(screen.getByText('name')).toBeInTheDocument();
     expect(screen.getByText('workflowName')).toBeInTheDocument();
     expect(screen.getByText('2020-05-29 14:00:00')).toBeInTheDocument();
-    expect(screen.getByText('Demo user')).toBeInTheDocument();
+    expect(screen.getByText('Demo User')).toBeInTheDocument();
   });
 
   it('should render -- as assignee if task is not assigned', () => {
@@ -69,7 +70,7 @@ describe('<Task />', () => {
         name="name"
         workflowName="workflowName"
         creationTime="invalid date"
-        assignee={{firstname: 'Demo', lastname: 'user', username: 'Demouser'}}
+        assignee={currentUser}
       />,
       {
         wrapper: createWrapper(),
@@ -88,7 +89,7 @@ describe('<Task />', () => {
         name="name"
         workflowName="workflowName"
         creationTime="2020-05-29 14:00:00"
-        assignee={{firstname: 'Demo', lastname: 'user', username: 'Demouser'}}
+        assignee={currentUser}
       />,
       {
         wrapper: createWrapper(historyMock),
@@ -110,7 +111,7 @@ describe('<Task />', () => {
         name="name"
         workflowName="workflowName"
         creationTime="2020-05-29 14:00:00"
-        assignee={{firstname: 'Demo', lastname: 'user', username: 'Demouser'}}
+        assignee={currentUser}
       />,
       {
         wrapper: createWrapper(historyMock),

@@ -34,7 +34,7 @@ const CLAIM_TASK =
 const mockClaimTask = {
   request: {
     query: CLAIM_TASK,
-    variables: {id: '1'},
+    variables: {id: '0'},
   },
   result: {
     data: {

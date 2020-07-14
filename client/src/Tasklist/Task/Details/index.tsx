@@ -66,7 +66,7 @@ const Details: React.FC = () => {
 
   return (
     <Container>
-      <Table>
+      <Table data-testid="details-table">
         <tbody>
           <TR>
             <RowTH>Name</RowTH>

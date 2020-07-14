@@ -29,6 +29,7 @@
     "react-final-form": "^6.5.0",
     "react-router-dom": "^5.2.0",
     "react-scripts": "3.4.1",
+    "react-textarea-autosize": "^8.0.1",
     "styled-components": "^5.1.1",
     "typescript": "~3.9.6"
   },

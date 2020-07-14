@@ -32,7 +32,7 @@ describe('<Header />', () => {
       wrapper: Wrapper,
     });
     expect(screen.getByText('Zeebe Tasklist')).toBeInTheDocument();
-    expect(await screen.findByText('Demo user')).toBeInTheDocument();
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(screen.getByTestId('logo')).toBeInTheDocument();
     expect(screen.getByTestId('dropdown-icon')).toBeInTheDocument();
   });
@@ -41,7 +41,7 @@ describe('<Header />', () => {
     render(<Header />, {
       wrapper: Wrapper,
     });
-    await screen.findByText('Demo user');
+    await screen.findByText('Demo User');
 
     fireEvent.click(screen.getByText('Zeebe Tasklist'));
 
@@ -53,7 +53,7 @@ describe('<Header />', () => {
       wrapper: Wrapper,
     });
 
-    fireEvent.click(await screen.findByText('Demo user'));
+    fireEvent.click(await screen.findByText('Demo User'));
     fireEvent.click(screen.getByText('Logout'));
 
     expect(login.handleLogout).toHaveBeenCalled();

@@ -40,7 +40,7 @@ describe.only('<Dropdown />', () => {
       wrapper: getWrapper([mockGetCurrentUser]),
     });
 
-    expect(await screen.findByText('Demo user')).toBeInTheDocument();
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(screen.getByTestId('dropdown-icon')).toBeInTheDocument();
   });
 
@@ -59,15 +59,15 @@ describe.only('<Dropdown />', () => {
     expect(screen.queryByText('Logout')).not.toBeInTheDocument();
 
     // menu should be displayed on dropdown click
-    fireEvent.click(await screen.findByText('Demo user'));
+    fireEvent.click(await screen.findByText('Demo User'));
     expect(screen.getByText('Logout')).toBeInTheDocument();
 
     // menu should not be displayed after clicking dropdown again
-    fireEvent.click(screen.getByText('Demo user'));
+    fireEvent.click(screen.getByText('Demo User'));
     expect(screen.queryByText('Logout')).not.toBeInTheDocument();
 
     // menu should be displayed on dropdown click
-    fireEvent.click(screen.getByText('Demo user'));
+    fireEvent.click(screen.getByText('Demo User'));
     expect(screen.getByText('Logout')).toBeInTheDocument();
 
     // menu should not be displayed if another element is clicked
@@ -75,18 +75,18 @@ describe.only('<Dropdown />', () => {
     expect(screen.queryByText('Logout')).not.toBeInTheDocument();
 
     // menu should be displayed on dropdown click
-    fireEvent.click(screen.getByText('Demo user'));
+    fireEvent.click(screen.getByText('Demo User'));
     expect(screen.getByText('Logout')).toBeInTheDocument();
 
     // menu should not be displayed if esc key is pressed
-    fireEvent.keyDown(screen.getByText('Demo user'), {
+    fireEvent.keyDown(screen.getByText('Demo User'), {
       key: 'Escape',
       code: 27,
     });
     expect(screen.queryByText('Logout')).not.toBeInTheDocument();
 
     // menu should be displayed on dropdown click
-    fireEvent.click(screen.getByText('Demo user'));
+    fireEvent.click(screen.getByText('Demo User'));
     expect(screen.getByText('Logout')).toBeInTheDocument();
   });
 
@@ -96,7 +96,7 @@ describe.only('<Dropdown />', () => {
       wrapper: getWrapper([mockGetCurrentUser]),
     });
 
-    fireEvent.click(await screen.findByText('Demo user'));
+    fireEvent.click(await screen.findByText('Demo User'));
     fireEvent.click(screen.getByText('Logout'));
 
     expect(screen.queryByText('Logout')).not.toBeInTheDocument();
@@ -107,10 +107,10 @@ describe.only('<Dropdown />', () => {
       wrapper: getWrapper([mockSSOGetCurrentUser]),
     });
 
-    expect(await screen.findByText('Demo user')).toBeInTheDocument();
+    expect(await screen.findByText('Demo User')).toBeInTheDocument();
     expect(screen.queryByTestId('dropdown-icon')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Demo user'));
+    fireEvent.click(screen.getByText('Demo User'));
 
     expect(screen.queryByText('Logout')).not.toBeInTheDocument();
   });

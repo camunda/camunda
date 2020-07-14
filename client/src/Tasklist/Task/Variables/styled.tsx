@@ -5,9 +5,11 @@
  */
 
 import styled from 'styled-components';
+import {ReactComponent as CloseIcon} from 'modules/icons/close.svg';
+import BasicTextareaAutosize from 'react-textarea-autosize';
 
 const Title = styled.h1`
-  margin: 44px 0 24px 20px;
+  margin: 44px 0 20px 20px;
   font-size: 20px;
   font-weight: 600;
   color: ${({theme}) => theme.colors.ui06};
@@ -19,4 +21,35 @@ const EmptyMessage = styled.div`
   color: ${({theme}) => theme.colors.text.black};
 `;
 
-export {Title, EmptyMessage};
+const Close = styled(CloseIcon)`
+  color: ${({theme}) => theme.colors.ui07};
+  opacity: 0.9;
+  margin-top: 4px;
+`;
+
+const EditTextarea = styled(BasicTextareaAutosize)`
+  padding: 6px 13px 4px 8px;
+  margin: 4px 0 4px 4px;
+
+  border: 1px solid ${({theme}) => theme.colors.ui05};
+  border-radius: 3px;
+
+  background-color: ${({theme}) => theme.colors.ui04};
+  color: ${({theme}) => theme.colors.ui09};
+
+  font-family: IBMPlexSans;
+  font-size: 14px;
+  line-height: 18px;
+
+  min-height: 20px;
+  max-height: 84px;
+
+  resize: vertical;
+
+  &::placeholder {
+    ${({theme}) => theme.colors.input.placeholder}
+    font-style: italic;
+  }
+`;
+
+export {Title, EmptyMessage, Close, EditTextarea};

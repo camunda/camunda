@@ -17,7 +17,7 @@ const Table = styled.table`
 `;
 
 const RowTH = styled.th`
-  width: 250px;
+  width: 198px;
   padding: 12px 20px;
   text-align: left;
   color: ${({theme}) => theme.colors.text.button};
