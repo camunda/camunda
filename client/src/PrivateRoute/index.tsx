@@ -15,7 +15,7 @@ interface Props extends RouteProps {
 }
 
 const PrivateRoute: React.FC<Props> = observer(
-  ({redirectPath, children, location, path, ...routeProps}) => {
+  ({redirectPath, children, location, ...routeProps}) => {
     const {isLoggedIn} = login;
 
     if (isLoggedIn) {
