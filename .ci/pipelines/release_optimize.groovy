@@ -430,7 +430,7 @@ pipeline {
             parameters: [
                 string(name: 'RELEASE_VERSION', value: "${params.RELEASE_VERSION}"),
                 string(name: 'DEVELOPMENT_VERSION', value: "${params.DEVELOPMENT_VERSION}"),
-                string(name: 'BRANCH', value: "${params.BRANCH}"),
+                string(name: 'BRANCH', value: "master"),
             ],
         wait: false
       }
