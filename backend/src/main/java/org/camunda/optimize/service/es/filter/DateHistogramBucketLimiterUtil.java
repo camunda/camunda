@@ -359,7 +359,7 @@ public class DateHistogramBucketLimiterUtil {
       default:
         result = result.truncatedTo(groupByUnit);
     }
-    return result.minus(bucketLimit - 1, groupByUnit).toOffsetDateTime();
+    return result.minus(bucketLimit - 1L, groupByUnit).toOffsetDateTime();
   }
 
   public static ChronoUnit mapToChronoUnit(final GroupByDateUnit unit) {
