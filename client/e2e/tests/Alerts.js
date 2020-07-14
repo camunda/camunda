@@ -46,7 +46,7 @@ test('create, edit, copy and remove an alert', async (t) => {
   await t.click(Alert.newAlertButton);
 
   await t.typeText(Alert.inputWithLabel('Alert Name'), 'Test Alert', {replace: true});
-  await t.typeText(Alert.inputWithLabel('Send Email to'), 'test@email.com', {
+  await t.typeText(Alert.inputWithLabel('Send Email to'), 'test@email.com test2@email.com', {
     replace: true,
   });
 

@@ -35,7 +35,7 @@ jest.mock('./service', () => ({
   loadAlerts: jest.fn().mockReturnValue([
     {
       id: 'alertID',
-      email: 'test@hotmail.com',
+      emails: ['test@hotmail.com'],
       name: 'Some Alert',
       lastModifier: 'Admin',
       lastModified: '2017-11-11T11:11:11.1111+0200',
@@ -75,7 +75,7 @@ it('should format durations with value and unit', async () => {
     {
       id: 'a1',
       name: 'New Alert',
-      email: 'test@hotmail.com',
+      emails: ['test@hotmail.com'],
       reportId: '2',
       thresholdOperator: '>',
       threshold: {
@@ -129,7 +129,7 @@ it('should Alert to Deleter', async () => {
 
   expect(node.state('deleting')).toEqual({
     id: 'alertID',
-    email: 'test@hotmail.com',
+    emails: ['test@hotmail.com'],
     name: 'Some Alert',
     lastModifier: 'Admin',
     lastModified: '2017-11-11T11:11:11.1111+0200',
@@ -146,7 +146,7 @@ it('should open a modal when editing an alert', async () => {
   expect(node.find(AlertModal)).toExist();
   expect(node.find(AlertModal).prop('initialAlert')).toEqual({
     id: 'alertID',
-    email: 'test@hotmail.com',
+    emails: ['test@hotmail.com'],
     name: 'Some Alert',
     lastModifier: 'Admin',
     lastModified: '2017-11-11T11:11:11.1111+0200',
@@ -164,7 +164,7 @@ it('should invoke addAlert when copying an alert', async () => {
 
   expect(addAlert).toHaveBeenCalledWith({
     id: 'alertID',
-    email: 'test@hotmail.com',
+    emails: ['test@hotmail.com'],
     name: 'testName',
     lastModifier: 'Admin',
     lastModified: '2017-11-11T11:11:11.1111+0200',
@@ -178,7 +178,7 @@ it('should show warning if alert is inactive due to missing webhoook', () => {
   loadAlerts.mockReturnValueOnce([
     {
       id: 'alertID',
-      email: '',
+      emails: [],
       name: 'Some Alert',
       lastModifier: 'Admin',
       lastModified: '2017-11-11T11:11:11.1111+0200',

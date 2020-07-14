@@ -35,7 +35,7 @@ jest.mock('services', () => {
 const initialAlert = {
   id: '71395',
   name: 'Sample Alert',
-  email: 'test@camunda.com',
+  emails: ['test@camunda.com'],
   reportId: '8',
   thresholdOperator: '<',
   threshold: 37,
@@ -66,7 +66,7 @@ it('should apply the alert property to the state when changing props', () => {
   expect(node.state()).toEqual({
     id: '71395',
     name: 'Sample Alert',
-    email: 'test@camunda.com',
+    emails: ['test@camunda.com'],
     reportId: '8',
     thresholdOperator: '<',
     threshold: '37',
@@ -77,6 +77,7 @@ it('should apply the alert property to the state when changing props', () => {
     reminder: null,
     fixNotification: true,
     invalid: false,
+    validEmails: true,
     webhook: null,
     inactive: null,
   });
@@ -106,7 +107,7 @@ it('should disable the submit button if the email is not valid', () => {
   const node = shallow(<AlertModal reports={reports} />);
 
   node.setProps({initialAlert});
-  node.setState({email: 'this is not a valid email'});
+  node.find('MultiEmailInput').prop('onChange')(['this is not a valid email'], false);
   expect(node.find('[primary]')).toBeDisabled();
 });
 
@@ -143,7 +144,7 @@ it('should enable the submit button if webhook is selected', () => {
   const node = shallow(<AlertModal reports={reports} webhooks={['testWebhook']} />);
 
   node.setProps({initialAlert});
-  node.setState({email: ''});
+  node.setState({emails: ['']});
   node.find('Typeahead').at(1).prop('onChange')('testWebhook');
 
   expect(node.find({variant: 'primary'})).not.toBeDisabled();
@@ -151,7 +152,7 @@ it('should enable the submit button if webhook is selected', () => {
 
 it('should show warning if alert is inactive due to missing webhook', async () => {
   const node = await shallow(<AlertModal reports={reports} webhooks={[]} />);
-  node.setProps({initialAlert: {...initialAlert, email: '', webhook: 'nonExistingWebhook'}});
+  node.setProps({initialAlert: {...initialAlert, emails: [], webhook: 'nonExistingWebhook'}});
 
   expect(node.find('MessageBox').exists()).toBe(true);
 });
@@ -181,7 +182,7 @@ it('should convert a duration threshold when opening', async () => {
     initialAlert: {
       name: 'New Alert',
       id: '1234',
-      email: '',
+      emails: [],
       reportId: '9',
       thresholdOperator: '>',
       threshold: '14000',

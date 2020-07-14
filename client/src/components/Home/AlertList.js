@@ -122,15 +122,15 @@ export default withErrorHandling(
             data={
               !isLoading &&
               this.state.alerts.map((alert) => {
-                const {name, email, webhook, reportId, threshold, thresholdOperator} = alert;
-                const inactive = webhook && !email && !webhooks?.includes(webhook);
+                const {name, webhook, emails, reportId, threshold, thresholdOperator} = alert;
+                const inactive = webhook && emails?.length === 0 && !webhooks?.includes(webhook);
 
                 return {
                   icon: 'alert',
                   type: t('alert.label'),
                   name,
                   meta: [
-                    email || webhook,
+                    emails?.join(', ') || webhook,
                     this.formatDescription(reportId, thresholdOperator, threshold),
                   ],
                   warning: inactive && t('alert.inactiveStatus'),
