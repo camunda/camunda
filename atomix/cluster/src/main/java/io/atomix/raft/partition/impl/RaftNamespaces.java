@@ -57,6 +57,20 @@ public final class RaftNamespaces {
       Namespace.builder()
           .register(Namespaces.BASIC)
           .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
+          .register(Void.class) // OpenSessionRequest
+          .register(Void.class) // OpenSessionResponse
+          .register(Void.class) // CloseSessionRequest
+          .register(Void.class) // CloseSessionResponse
+          .register(Void.class) // KeepAliveRequest
+          .register(Void.class) // KeepAliveResponse
+          .register(Void.class) // HeartbeatRequest
+          .register(Void.class) // HeartbeatResponse
+          .register(Void.class) // QueryRequest
+          .register(Void.class) // QueryResponse
+          .register(Void.class) // CommandRequest
+          .register(Void.class) // CommandResponse
+          .register(Void.class) // MetadataRequest
+          .register(Void.class) // MetadataResponse
           .register(JoinRequest.class)
           .register(JoinResponse.class)
           .register(LeaveRequest.class)
@@ -73,17 +87,34 @@ public final class RaftNamespaces {
           .register(VoteResponse.class)
           .register(AppendRequest.class)
           .register(AppendResponse.class)
+          .register(Void.class) // PublishRequest
+          .register(Void.class) // ResetRequest
           .register(RaftResponse.Status.class)
           .register(RaftError.class)
           .register(RaftError.Type.class)
+          .register(Void.class) // ReadConsistency
+          .register(Void.class) // SessionMetadata
+          .register(Void.class) // CloseSessionEntry
+          .register(Void.class) // CommandEntry
           .register(ConfigurationEntry.class)
           .register(InitializeEntry.class)
+          .register(Void.class) // KeepAliveEntry
+          .register(Void.class) // MetadataEntry
+          .register(Void.class) // OpenSessionEntry
+          .register(Void.class) // QueryEntry
+          .register(Void.class) // PrimitiveOperation
+          .register(Void.class) // PrimitiveEvent
+          .register(Void.class) // DefaultEventType
+          .register(Void.class) // DefaultOperationId
+          .register(Void.class) // OperationType
+          .register(Void.class) // ReadConsistency
           .register(ArrayList.class)
           .register(LinkedList.class)
           .register(Collections.emptyList().getClass())
           .register(HashSet.class)
           .register(DefaultRaftMember.class)
           .register(MemberId.class)
+          .register(Void.class) // SessionId
           .register(RaftMember.Type.class)
           .register(Instant.class)
           .register(Configuration.class)
