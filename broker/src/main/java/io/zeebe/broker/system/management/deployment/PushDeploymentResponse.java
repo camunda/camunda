@@ -9,7 +9,7 @@ package io.zeebe.broker.system.management.deployment;
 
 import io.zeebe.clustering.management.PushDeploymentResponseDecoder;
 import io.zeebe.clustering.management.PushDeploymentResponseEncoder;
-import io.zeebe.engine.util.SbeBufferWriterReader;
+import io.zeebe.protocol.impl.encoding.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -28,7 +28,7 @@ public final class PushDeploymentResponse
   }
 
   public int partitionId() {
-    return this.partitionId;
+    return partitionId;
   }
 
   public PushDeploymentResponse deploymentKey(final long deploymentKey) {
@@ -37,7 +37,7 @@ public final class PushDeploymentResponse
   }
 
   public long deploymentKey() {
-    return this.deploymentKey;
+    return deploymentKey;
   }
 
   @Override

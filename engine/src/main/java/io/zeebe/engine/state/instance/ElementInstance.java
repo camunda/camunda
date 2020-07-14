@@ -8,7 +8,7 @@
 package io.zeebe.engine.state.instance;
 
 import io.zeebe.db.DbValue;
-import io.zeebe.engine.processor.workflow.WorkflowInstanceLifecycle;
+import io.zeebe.engine.processing.bpmn.WorkflowInstanceLifecycle;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;

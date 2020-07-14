@@ -14,7 +14,7 @@ import io.zeebe.db.impl.DbByte;
 import io.zeebe.db.impl.DbCompositeKey;
 import io.zeebe.db.impl.DbLong;
 import io.zeebe.db.impl.DbNil;
-import io.zeebe.engine.processor.KeyGenerator;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;

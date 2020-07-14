@@ -12,8 +12,8 @@ import io.zeebe.broker.PartitionListener;
 import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
-import io.zeebe.engine.processor.CommandResponseWriter;
-import io.zeebe.engine.processor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.protocol.record.RecordType;
@@ -41,7 +41,7 @@ public final class CommandApiService extends Actor
     this.serverTransport = serverTransport;
     this.limiter = limiter;
     requestHandler = new CommandApiRequestHandler();
-    this.actorName = buildActorName(localBroker.getNodeId(), "CommandApiService");
+    actorName = buildActorName(localBroker.getNodeId(), "CommandApiService");
   }
 
   @Override
@@ -81,7 +81,7 @@ public final class CommandApiService extends Actor
                   (recordWriter, error) -> {
                     if (error == null) {
 
-                      final var requestLimiter = this.limiter.getLimiter(partitionId);
+                      final var requestLimiter = limiter.getLimiter(partitionId);
                       requestHandler.addPartition(partitionId, recordWriter, requestLimiter);
                       serverTransport.subscribe(partitionId, requestHandler);
                       future.complete(null);

@@ -40,9 +40,9 @@ import io.zeebe.broker.system.partitions.ZeebePartition;
 import io.zeebe.broker.system.partitions.impl.AtomixPartitionMessagingService;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
-import io.zeebe.engine.processor.ProcessingContext;
-import io.zeebe.engine.processor.workflow.EngineProcessors;
-import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
+import io.zeebe.engine.processing.EngineProcessors;
+import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.zeebe.engine.processing.streamprocessor.ProcessingContext;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.storage.atomix.ZeebeIndexAdapter;
@@ -90,8 +90,8 @@ public final class Broker implements AutoCloseable {
   private DiskSpaceUsageMonitor diskSpaceUsageMonitor;
 
   public Broker(final SystemContext systemContext, final SpringBrokerBridge springBrokerBridge) {
-    this.brokerContext = systemContext;
-    this.partitionListeners = new ArrayList<>();
+    brokerContext = systemContext;
+    partitionListeners = new ArrayList<>();
     this.springBrokerBridge = springBrokerBridge;
   }
 

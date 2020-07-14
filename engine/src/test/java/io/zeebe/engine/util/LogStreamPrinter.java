@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.util;
 
-import static io.zeebe.engine.processor.TypedEventRegistry.EVENT_REGISTRY;
+import static io.zeebe.engine.processing.streamprocessor.TypedEventRegistry.EVENT_REGISTRY;
 
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;

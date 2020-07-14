@@ -10,11 +10,11 @@ package io.zeebe.engine.util;
 import static io.zeebe.engine.util.Records.workflowInstance;
 
 import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.engine.processor.ReadonlyProcessingContext;
-import io.zeebe.engine.processor.StreamProcessor;
-import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.processor.TypedRecordProcessorFactory;
-import io.zeebe.engine.processor.TypedRecordProcessors;
+import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.msgpack.UnpackedObject;

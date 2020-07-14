@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.engine.processor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.state.instance.VariablesState.VariableListener;
 import io.zeebe.engine.util.ZeebeStateRule;

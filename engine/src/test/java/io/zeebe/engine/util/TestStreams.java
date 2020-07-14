@@ -17,11 +17,11 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.engine.processor.CommandResponseWriter;
-import io.zeebe.engine.processor.StreamProcessor;
-import io.zeebe.engine.processor.TypedEventRegistry;
-import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.processor.TypedRecordProcessorFactory;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.zeebe.engine.processing.streamprocessor.TypedEventRegistry;
+import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -261,7 +261,7 @@ public final class TestStreams {
     private long sourceRecordPosition = -1;
 
     public FluentLogWriter(final LogStreamRecordWriter logStreamRecordWriter) {
-      this.writer = logStreamRecordWriter;
+      writer = logStreamRecordWriter;
 
       metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
     }
@@ -276,12 +276,12 @@ public final class TestStreams {
     }
 
     public FluentLogWriter intent(final Intent intent) {
-      this.metadata.intent(intent);
+      metadata.intent(intent);
       return this;
     }
 
     public FluentLogWriter requestId(final long requestId) {
-      this.metadata.requestId(requestId);
+      metadata.requestId(requestId);
       return this;
     }
 
@@ -291,12 +291,12 @@ public final class TestStreams {
     }
 
     public FluentLogWriter requestStreamId(final int requestStreamId) {
-      this.metadata.requestStreamId(requestStreamId);
+      metadata.requestStreamId(requestStreamId);
       return this;
     }
 
     public FluentLogWriter recordType(final RecordType recordType) {
-      this.metadata.recordType(recordType);
+      metadata.recordType(recordType);
       return this;
     }
 
@@ -311,8 +311,8 @@ public final class TestStreams {
         throw new RuntimeException("No event type registered for getValue " + event.getClass());
       }
 
-      this.metadata.valueType(eventType);
-      this.value = event;
+      metadata.valueType(eventType);
+      value = event;
       return this;
     }
 

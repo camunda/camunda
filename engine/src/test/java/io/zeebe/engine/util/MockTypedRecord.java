@@ -7,7 +7,7 @@
  */
 package io.zeebe.engine.util;
 
-import io.zeebe.engine.processor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;

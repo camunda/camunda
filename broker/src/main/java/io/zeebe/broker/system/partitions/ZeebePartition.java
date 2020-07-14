@@ -42,7 +42,7 @@ import io.zeebe.broker.system.partitions.impl.StateReplication;
 import io.zeebe.broker.transport.commandapi.CommandApiService;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
-import io.zeebe.engine.processor.StreamProcessor;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStream;
