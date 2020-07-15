@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.24.0</version>
+    <version>0.24.1-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -22,10 +22,10 @@
   <properties>
     <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
   </properties>
-  
+
   <build>
     <plugins>
-      <plugin> 
+      <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>clirr-maven-plugin</artifactId>
       </plugin>
