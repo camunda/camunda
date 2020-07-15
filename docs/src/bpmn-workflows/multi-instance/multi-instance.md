@@ -71,6 +71,24 @@ The input mappings can access the local variables of the instance (e.g. `inputEl
 
 The output mappings can be used to update the `outputElement` variable. For example, to extract a part of the job variables.
 
+**Example:** say we have a call activity that is marked as a parallel multi-instance. When the
+called workflow instance completes, its variables get [merged](/reference/variables.html#variable-propagation)
+into the call activity's workflow instance. Its result is collected in the output collection
+variable, but this has become a race condition where each completed child instance again overwrites
+this same variable. We end up with a corrupted output collection. An output mapping can used to
+overcome this, because it restricts which variables get merged. In the case that:
+
+- parallel multi-instance call activity
+- multi-instance output element: `=output`
+- variable in the child instance that holds the result: `x`
+
+The output mapping on the call activity should then be:
+
+```
+source: =x
+target: output
+```
+
 ## Additional Resources
 
 <details>
