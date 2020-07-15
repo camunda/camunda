@@ -643,7 +643,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-jar-plugin</artifactId>
-            <version>3.2.0-alpha1-SNAPSHOT</version>
+            <version>3.2.0</version>
             <executions>
               <execution>
                 <id>create-invalid-optimize-testplugin-invalidVersion</id>
