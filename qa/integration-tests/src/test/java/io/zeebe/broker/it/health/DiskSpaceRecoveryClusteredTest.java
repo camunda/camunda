@@ -15,6 +15,7 @@ import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.client.api.response.DeploymentEvent;
+import io.zeebe.engine.processing.message.MessageObserver;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.record.intent.DeploymentIntent;
@@ -26,7 +27,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.awaitility.Awaitility;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -74,7 +74,6 @@ public class DiskSpaceRecoveryClusteredTest {
     clientRule.waitUntilDeploymentIsDone(deploymentKey);
   }
 
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/4786")
   @Test
   public void shouldCorrelateMessageAfterDiskSpaceAvailableAgain() throws InterruptedException {
     // given
@@ -115,6 +114,9 @@ public class DiskSpaceRecoveryClusteredTest {
                     .isEqualTo(2));
 
     waitUntilDiskSpaceAvailable(failingBroker);
+
+    final var timeout = MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.multipliedBy(2);
+    clusteringRule.getClock().addTime(timeout);
 
     // then
     Awaitility.await()
