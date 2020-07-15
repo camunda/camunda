@@ -75,30 +75,16 @@ public class DateFilterQueryService {
 
     final RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
     if (dateDto.getEnd() != null) {
-      final OffsetDateTime endDateWithCorrectTimezone =
-        overwriteTimezone(dateDto.getEnd(), timezone);
+       final OffsetDateTime endDateWithCorrectTimezone =
+              dateDto.getEnd().atZoneSameInstant(timezone).toOffsetDateTime();
       queryDate.lte(formatter.format(endDateWithCorrectTimezone));
     }
     if (dateDto.getStart() != null) {
       final OffsetDateTime startDateWithCorrectTimezone =
-        overwriteTimezone(dateDto.getStart(), timezone);
+       dateDto.getStart().atZoneSameInstant(timezone).toOffsetDateTime();
       queryDate.gte(formatter.format(startDateWithCorrectTimezone));
     }
     return Optional.of(queryDate);
-  }
-
-  private OffsetDateTime overwriteTimezone(final OffsetDateTime date, final ZoneId timezone) {
-    if (date != null) {
-      // Please note that we call atZoneSimilarLocal(...) on purpose here to disregard
-      // the already set timezone of the filter and overwrite it with the provided one.
-      // This is special behavior just for the filters since here we can't assume that the
-      // correct timezone is set. However, we do know that the local date time (date + time without timezone)
-      // is the correct one.
-      // Example: before 2020-5-7T12:00:00.000Z+02 (Europe/Berlin)
-      //          -> after conversion to Europe/London 2020-5-7T11:00:00.000Z+01
-      return date.atZoneSimilarLocal(timezone).toOffsetDateTime();
-    }
-    return null;
   }
 
   private Optional<RangeQueryBuilder> createRollingDateFilter(final RollingDateFilterDataDto dateDto,

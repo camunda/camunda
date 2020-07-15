@@ -72,6 +72,7 @@ import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT {
 
@@ -757,16 +758,12 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
   @Test
   public void adjustReportEvaluationResultToTimezone_reportDateFilter_fixedDate() {
     // given
-    OffsetDateTime now = dateFreezer()
-      .dateToFreeze(OffsetDateTime.of(2020, 7, 5, 20, 0, 0, 0, ZoneOffset.UTC))
-      .freezeDateAndReturn();
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now);
-    importAllEngineEntitiesFromScratch();
+    final OffsetDateTime now = OffsetDateTime.of(2019, 4, 15, 20, 0, 0, 0, ZoneOffset.UTC);
+    ProcessInstanceDto instanceDto = createTwoProcessInstancesWithStartDate(now);
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setDateInterval(GroupByDateUnit.DAY)
-      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+      .setProcessDefinitionKey(instanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .build();
@@ -774,9 +771,9 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     List<ProcessFilterDto<?>> fixedStartDateFilter =
       ProcessFilterBuilder.filter()
         .fixedStartDate()
-        // the offset of the filter should be ignored
-        .start(now.withOffsetSameLocal(ZoneOffset.ofHours(+18)))
-        .end(now.plusDays(1).withOffsetSameLocal(ZoneOffset.ofHours(+18)))
+        // the offset of the filter should be respected
+        .start(now.withOffsetSameInstant(ZoneOffset.ofHours(+18)))
+        .end(now.plusHours(1).withOffsetSameInstant(ZoneOffset.ofHours(+18)))
         .add()
         .buildList();
     reportData.setFilter(fixedStartDateFilter);
@@ -785,19 +782,52 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     final ReportMapResultDto result = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // I adjust timezone that should be used for the filter as well
+      // timezone that should be used for the filter is adjusted as well
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "UTC")
       // @formatter:off
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
       // @formatter:on
       .getResult();
 
-    // then there should be data in here. If the filter timezone isn't used the result will be 0.0
+    // then there should be a result
     assertThat(result.getData())
-      .hasSize(2)
+      .hasSize(1)
+      .last()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(2.0);
+  }
+
+  @Test
+  public void adjustReportEvaluationResultToTimezone_dateHistogramFilterBucketLimiting() {
+    // given
+    final OffsetDateTime now = OffsetDateTime.of(2019, 4, 15, 20, 0, 0, 0, ZoneOffset.UTC);
+    ProcessInstanceDto instanceDto = createTwoProcessInstancesWithStartDate(now);
+
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setDateInterval(GroupByDateUnit.MONTH)
+      .setProcessDefinitionKey(instanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(instanceDto.getProcessDefinitionVersion())
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
+      .build();
+
+    // when
+    final ReportMapResultDto result = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // I adjust timezone that should be used for the filter as well
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/Berlin")
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      // @formatter:on
+      .getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getData())
+      .hasSize(1)
       .first()
       .extracting(MapResultEntryDto::getValue)
-      .isEqualTo(1.0);
+      .isEqualTo(2.0);
   }
 
   @Test
@@ -850,13 +880,15 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
   @Test
   public void branchAnalysis_adjustsFilterToTimezone() {
     // given
-    OffsetDateTime now = dateFreezer()
-      .dateToFreeze(OffsetDateTime.of(2020, 7, 5, 20, 0, 0, 0, ZoneOffset.UTC))
-      .freezeDateAndReturn();
+    // the timezone of the server is berlin time
+    final OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    // the instance is truncated to the beginning of the year
+    final OffsetDateTime instanceStartDate =
+      truncateToStartOfUnit(now, ChronoUnit.YEARS, ZoneId.of("Europe/Berlin")).toOffsetDateTime();
     final ProcessDefinitionEngineDto gatewayDefinition = deploySimpleGatewayProcessDefinition();
     ProcessInstanceEngineDto processInstance =
       engineIntegrationExtension.startProcessInstance(gatewayDefinition.getId(), ImmutableMap.of("goToTask1", true));
-    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), now.plusHours(1));
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance.getId(), instanceStartDate);
     importAllEngineEntitiesFromScratch();
 
     BranchAnalysisQueryDto branchAnalysisQueryDto = analysisClient.createAnalysisDto(
@@ -867,15 +899,14 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       "endEvent"
     );
 
-    List<ProcessFilterDto<?>> fixedStartDateFilter =
+    List<ProcessFilterDto<?>> relativeStartDateFilter =
       ProcessFilterBuilder.filter()
-        .fixedStartDate()
-        // the offset of the filter should be ignored
-        .start(now.withOffsetSameLocal(ZoneOffset.ofHours(+18)))
-        .end(now.plusHours(1).withOffsetSameLocal(ZoneOffset.ofHours(+18)))
+        .relativeStartDate()
+        // add a relative date filter for this year
+        .start(0L, DateFilterUnit.YEARS)
         .add()
         .buildList();
-    branchAnalysisQueryDto.setFilter(fixedStartDateFilter);
+    branchAnalysisQueryDto.setFilter(relativeStartDateFilter);
 
     // when
     final BranchAnalysisDto result = embeddedOptimizeExtension
@@ -884,9 +915,35 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .buildProcessDefinitionCorrelation(branchAnalysisQueryDto)
       .execute(BranchAnalysisDto.class, Response.Status.OK.getStatusCode());
 
-    // then only if the timezone is being ignored for the fixed date filter the
-    // process instance falls into the filter range.
-    assertThat(result.getTotal()).isEqualTo(1L);
+    // then
+    // if the timezone of the request was not respected then the result would be not be empty
+    assertThat(result.getTotal()).isZero();
+  }
+
+  private ProcessInstanceDto createTwoProcessInstancesWithStartDate(final OffsetDateTime date) {
+    // we need to add the data by hand to ensure that the date is stored
+    // with the timezone given in the date parameter
+    ProcessInstanceDto instanceDto = ProcessInstanceDto.builder()
+      .processInstanceId("123")
+      .processDefinitionKey("aKey")
+      .processDefinitionVersion("1")
+      .startDate(date)
+      .endDate(date)
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_INSTANCE_INDEX_NAME,
+      instanceDto.getProcessInstanceId(),
+      instanceDto
+    );
+    instanceDto.setProcessInstanceId("124");
+    instanceDto.setStartDate(date.plusHours(1));
+    instanceDto.setEndDate(date.plusHours(1));
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_INSTANCE_INDEX_NAME,
+      instanceDto.getProcessInstanceId(),
+      instanceDto
+    );
+    return instanceDto;
   }
 
   private OffsetDateTime truncateToYearWithLondonTimezone(final OffsetDateTime now) {

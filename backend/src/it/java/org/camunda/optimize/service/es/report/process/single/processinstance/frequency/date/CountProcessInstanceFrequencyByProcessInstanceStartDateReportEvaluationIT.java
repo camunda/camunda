@@ -46,18 +46,17 @@ public class CountProcessInstanceFrequencyByProcessInstanceStartDateReportEvalua
   }
 
   @Override
-  protected void changeProcessInstanceDate(final String processInstanceId, final OffsetDateTime newDate) throws
-                                                                                                         SQLException {
+  protected void changeProcessInstanceDate(final String processInstanceId, final OffsetDateTime newDate) {
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, newDate);
   }
 
   @Override
-  protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> newIdToDates) throws SQLException {
+  protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> newIdToDates) {
     engineDatabaseExtension.changeProcessInstanceStartDates(newIdToDates);
   }
 
   @Test
-  public void testEmptyBucketsAreReturnedForStartDateFilterPeriod() throws Exception {
+  public void testEmptyBucketsAreReturnedForStartDateFilterPeriod() {
     // given
     final OffsetDateTime startDate = OffsetDateTime.now();
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
