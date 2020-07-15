@@ -631,8 +631,15 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    ProcessReportDataDto dataDto =
-      createGroupByStartDateReport("123", "1", GroupByDateUnit.DAY);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    deployAndStartSimpleServiceTaskProcess();
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto dataDto = createGroupByStartDateReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      GroupByDateUnit.DAY
+    );
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -645,7 +652,15 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
   @Test
   public void optimizeExceptionOnGroupByUnitIsNull() {
     // given
-    ProcessReportDataDto dataDto = createGroupByStartDateReport("123", "1", GroupByDateUnit.DAY);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    deployAndStartSimpleServiceTaskProcess();
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto dataDto = createGroupByStartDateReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      GroupByDateUnit.DAY
+    );
     StartDateGroupByDto groupByDto = (StartDateGroupByDto) dataDto.getGroupBy();
     groupByDto.getValue().setUnit(null);
 

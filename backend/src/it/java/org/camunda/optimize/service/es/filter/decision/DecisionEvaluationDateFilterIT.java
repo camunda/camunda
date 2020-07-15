@@ -375,6 +375,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     );
   }
 
+
   private AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateReportWithNewAuthToken(final DecisionReportDataDto reportData) {
     return embeddedOptimizeExtension
       .getRequestExecutor()

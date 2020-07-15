@@ -560,12 +560,14 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     final String reportShareId = sharingClient.shareReport(reportId);
 
     // when
+    // @formatter:off
     final ReportMapResultDto result = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildEvaluateSharedReportRequest(reportShareId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
       .getResult();
+    // @formatter:on
 
     // then
     assertThat(result.getData())
@@ -602,7 +604,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .getRequestExecutor()
       .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
-      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {
+      })
       .getResult();
 
     // then
@@ -840,10 +843,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .getResult();
 
     // then
-    assertThat(result.getData()).hasSize(2);
-    assertThat(result.getData().get(0).getValue()).isEqualTo(0.0);
-    // if the timezone of the request is not respected then this value will be one
-    assertThat(result.getData().get(1).getValue()).isEqualTo(0.0);
+    // if the timezone of the request was not respected then the result would be not be empty
+    assertThat(result.getData()).isEmpty();
   }
 
   @Test

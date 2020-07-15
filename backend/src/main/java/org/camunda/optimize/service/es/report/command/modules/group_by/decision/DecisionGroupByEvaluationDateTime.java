@@ -133,9 +133,6 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
 
     Optional<AggregationBuilder> automaticIntervalAggregation =
       intervalAggregationService.createIntervalAggregation(
-        // can be null since the ranged is only used for reports of a combined report and decision reports
-        // are not combinable
-        Optional.empty(),
         builder.query(),
         DECISION_INSTANCE_INDEX_NAME,
         EVALUATION_DATE_TIME,

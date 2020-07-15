@@ -63,8 +63,6 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReportEvaluationIT
   extends AbstractProcessDefinitionIT {
 
-  private static final String PROCESS_DEFINITION_KEY = "123";
-
   private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListWithoutSum();
 
   protected abstract ProcessReportDataType getTestReportDataType();
@@ -807,14 +805,15 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion("1")
-      .setDateInterval(GroupByDateUnit.DAY)
-      .setReportDataType(getTestReportDataType())
-      .build();
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    importAllEngineEntitiesFromScratch();
 
+    ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(getTestReportDataType())
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.DAY)
+      .build();
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -827,14 +826,15 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   @Test
   public void optimizeExceptionOnGroupByValueIsNull() {
     // given
-    ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion("1")
-      .setDateInterval(GroupByDateUnit.DAY)
-      .setReportDataType(getTestReportDataType())
-      .build();
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    importAllEngineEntitiesFromScratch();
 
+    ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder.createReportData()
+      .setReportDataType(getTestReportDataType())
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.DAY)
+      .build();
     DateGroupByValueDto groupByValueDto = (DateGroupByValueDto) dataDto.getGroupBy().getValue();
     groupByValueDto.setUnit(null);
 
@@ -848,11 +848,14 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   @Test
   public void optimizeExceptionOnGroupByUnitIsNull() {
     // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    importAllEngineEntitiesFromScratch();
+
     ProcessReportDataDto dataDto = TemplatedProcessReportDataBuilder.createReportData()
-      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion("1")
-      .setDateInterval(GroupByDateUnit.DAY)
       .setReportDataType(getTestReportDataType())
+      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.DAY)
       .build();
     ProcessGroupByDto<?> groupByDate = dataDto.getGroupBy();
     groupByDate.setValue(null);

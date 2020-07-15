@@ -8,8 +8,10 @@ package org.camunda.optimize.service.es.report.command.util;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
@@ -78,6 +80,27 @@ public class IntervalAggregationService {
     }
   }
 
+  public MinMaxStatDto getMinMaxDateRange(final ExecutionContext<ProcessReportDataDto> context,
+                                          final QueryBuilder query,
+                                          final String indexName,
+                                          final String field) {
+    final boolean combinedReportRangeProvided = context.getDateIntervalRange().isPresent();
+    if (combinedReportRangeProvided) {
+      return new MinMaxStatDto(
+        context.getDateIntervalRange().get().getMinimum().toEpochSecond(),
+        context.getDateIntervalRange().get().getMaximum().toEpochSecond(),
+        context.getDateIntervalRange().get().getMinimum().format(dateTimeFormatter),
+        context.getDateIntervalRange().get().getMaximum().format(dateTimeFormatter)
+      );
+    } else {
+      return getCrossFieldMinMaxStats(
+        query,
+        indexName,
+        field
+      );
+    }
+  }
+
   public MinMaxStatDto getCrossFieldMinMaxStats(final QueryBuilder query,
                                                 final String indexName,
                                                 final String minMaxField) {
@@ -85,9 +108,9 @@ public class IntervalAggregationService {
   }
 
   public MinMaxStatDto getCrossFieldMinMaxStats(final QueryBuilder query,
-                                                 final String indexName,
-                                                 final String firstField,
-                                                 final String secondField) {
+                                                final String indexName,
+                                                final String firstField,
+                                                final String secondField) {
     AggregationBuilder minAgg1 = AggregationBuilders
       .min(MIN_AGGREGATION_FIRST_FIELD)
       .field(firstField);
@@ -127,25 +150,23 @@ public class IntervalAggregationService {
     return mapStatsAggregationToStatDto(response);
   }
 
-  public Optional<AggregationBuilder> createIntervalAggregation(final Optional<org.apache.commons.lang3.Range<OffsetDateTime>> rangeToUse,
-                                                                final QueryBuilder query,
+  public Optional<AggregationBuilder> createIntervalAggregation(final QueryBuilder query,
                                                                 final String indexName,
                                                                 final String field,
                                                                 final ZoneId timezone) {
-    if (rangeToUse.isPresent()) {
-      OffsetDateTime min = rangeToUse.get().getMinimum();
-      OffsetDateTime max = rangeToUse.get().getMaximum();
+    MinMaxStatDto stats = getCrossFieldMinMaxStats(query, indexName, field);
+    if (stats.isValidRange()) {
+      OffsetDateTime min = OffsetDateTime.parse(stats.getMinAsString(), dateTimeFormatter);
+      OffsetDateTime max = OffsetDateTime.parse(stats.getMaxAsString(), dateTimeFormatter);
       return Optional.of(createIntervalAggregationFromGivenRange(field, timezone, min, max));
     } else {
-      return createIntervalAggregation(query, indexName, field, timezone);
+      return Optional.empty();
     }
   }
 
-  private Optional<AggregationBuilder> createIntervalAggregation(final QueryBuilder query,
-                                                                 final String indexName,
-                                                                 final String field,
-                                                                 final ZoneId timezone) {
-    MinMaxStatDto stats = getCrossFieldMinMaxStats(query, indexName, field);
+  public Optional<AggregationBuilder> createIntervalAggregation(final MinMaxStatDto stats,
+                                                                final String field,
+                                                                final ZoneId timezone) {
     if (stats.isValidRange()) {
       OffsetDateTime min = OffsetDateTime.parse(stats.getMinAsString(), dateTimeFormatter);
       OffsetDateTime max = OffsetDateTime.parse(stats.getMaxAsString(), dateTimeFormatter);

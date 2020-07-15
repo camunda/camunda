@@ -39,7 +39,8 @@ public class FilterLimitedAggregationUtil {
   public static boolean isResultComplete(final SearchResponse response) {
     boolean complete = true;
     final Aggregations aggregations = response.getAggregations();
-    if (aggregations.getAsMap().containsKey(FILTER_LIMITED_AGGREGATION)) {
+    if (aggregations != null
+      && aggregations.getAsMap().containsKey(FILTER_LIMITED_AGGREGATION)) {
       final ParsedFilter limitingAggregation = aggregations.get(FILTER_LIMITED_AGGREGATION);
       complete = limitingAggregation.getDocCount() == response.getHits().getTotalHits().value;
     }

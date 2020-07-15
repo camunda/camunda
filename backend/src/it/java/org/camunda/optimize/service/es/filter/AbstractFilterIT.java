@@ -9,6 +9,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
@@ -20,7 +21,11 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.List;
+import java.util.stream.Stream;
 
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
 
 public abstract class AbstractFilterIT extends AbstractIT {
@@ -65,6 +70,17 @@ public abstract class AbstractFilterIT extends AbstractIT {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
+  protected ProcessDefinitionEngineDto deployServiceTaskProcess() {
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
+      .name("aProcessName")
+      .startEvent()
+      .serviceTask()
+      .camundaExpression("${true}")
+      .endEvent()
+      .done();
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+  }
+
   protected ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
       .startEvent()
@@ -103,5 +119,24 @@ public abstract class AbstractFilterIT extends AbstractIT {
       .setFilter(filter)
       .build();
     return reportClient.evaluateRawReport(reportData).getResult();
+  }
+
+  protected ProcessReportDataDto getAutomaticGroupByDateReportData(final ProcessReportDataType type, final String key,
+                                                                   final String version) {
+    return TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(key)
+      .setProcessDefinitionVersion(version)
+      .setDateInterval(GroupByDateUnit.AUTOMATIC)
+      .setReportDataType(type)
+      .build();
+  }
+
+  private static Stream<ProcessReportDataType> simpleDateReportTypes() {
+    return Stream.of(
+      COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
+      COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
+      COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE
+    );
   }
 }

@@ -47,4 +47,10 @@ public class MinMaxStatDto {
       && min != max;
   }
 
+  public boolean isEmpty() {
+    // occurs when there is no data to be evaluated for min and max fields
+    return !isMinValid()
+      && !isMaxValid();
+  }
+
 }

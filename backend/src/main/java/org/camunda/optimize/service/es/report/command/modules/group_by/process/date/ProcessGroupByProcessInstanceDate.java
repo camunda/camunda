@@ -118,8 +118,18 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context,
                                                     final GroupByDateUnit unit) {
+    MinMaxStatDto stats = intervalAggregationService.getMinMaxDateRange(
+      context,
+      searchSourceBuilder.query(),
+      PROCESS_INSTANCE_INDEX_NAME,
+      getDateField()
+    );
+    if (stats.isEmpty()) {
+      return Collections.emptyList();
+    }
+
     if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
-      return createAutomaticIntervalAggregation(searchSourceBuilder, context);
+      return createAutomaticIntervalAggregation(searchSourceBuilder, context, stats);
     }
 
     final DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
@@ -162,13 +172,11 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
   }
 
   protected List<AggregationBuilder> createAutomaticIntervalAggregation(final SearchSourceBuilder builder,
-                                                                        final ExecutionContext<ProcessReportDataDto> context) {
-
+                                                                        final ExecutionContext<ProcessReportDataDto> context,
+                                                                        final MinMaxStatDto stats) {
     Optional<AggregationBuilder> automaticIntervalAggregation =
       intervalAggregationService.createIntervalAggregation(
-        context.getDateIntervalRange(),
-        builder.query(),
-        PROCESS_INSTANCE_INDEX_NAME,
+        stats,
         getDateField(),
         context.getTimezone()
       );
@@ -194,6 +202,10 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
   private List<GroupByResult> processAggregations(final SearchResponse response,
                                                   final Aggregations aggregations,
                                                   final ExecutionContext<ProcessReportDataDto> context) {
+    if (aggregations == null) {
+      // aggregations are null when there are no instances in the report
+      return Collections.emptyList();
+    }
     final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
     List<GroupByResult> result = new ArrayList<>();
     if (unwrappedLimitedAggregations.isPresent()) {
@@ -240,4 +252,5 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
   private GroupByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
     return ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();
   }
+
 }
