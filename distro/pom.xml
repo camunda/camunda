@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.2.0</version>
+    <version>3.2.0-alpha1-SNAPSHOT</version>
   </parent>
 
   <artifactId>camunda-optimize</artifactId>
@@ -74,7 +74,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.2.0</version>
+        <version>3.2.0-alpha1-SNAPSHOT</version>
         <executions>
           <!--Check if the version is alpha or snapshot, use latest if true, else leave docs.version = project.version-->
           <execution>
