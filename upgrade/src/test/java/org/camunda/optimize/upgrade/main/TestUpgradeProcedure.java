@@ -3,10 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.upgrade.main.impl;
+package org.camunda.optimize.upgrade.main;
 
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
-import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;

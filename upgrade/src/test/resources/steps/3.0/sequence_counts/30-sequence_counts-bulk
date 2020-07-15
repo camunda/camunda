@@ -1,6 +1,0 @@
-{"index":{"_index":"optimize-event-sequence-count-invoice","_type":"_doc","_id":"invoice:camunda:assignApprover_start%invoice:camunda:approveInvoice_start"}}
-{"id":"invoice:camunda:assignApprover_start%invoice:camunda:approveInvoice_start","sourceEvent":{"group":"invoice","source":"camunda","eventName":"assignApprover_start","eventLabel":null},"targetEvent":{"group":"invoice","source":"camunda","eventName":"approveInvoice_start","eventLabel":null},"count":1}
-{"index":{"_index":"optimize-event-sequence-count-reviewinvoice","_type":"_doc","_id":"ReviewInvoice:camunda:ReviewInvoice_processInstanceStart%ReviewInvoice:camunda:StartEvent_1"}}
-{"id":"ReviewInvoice:camunda:ReviewInvoice_processInstanceStart%ReviewInvoice:camunda:StartEvent_1","sourceEvent":{"group":"ReviewInvoice","source":"camunda","eventName":"ReviewInvoice_processInstanceStart","eventLabel":null},"targetEvent":{"group":"ReviewInvoice","source":"camunda","eventName":"StartEvent_1","eventLabel":null},"count":2}
-{"index":{"_index":"optimize-event-sequence-count-external","_type":"_doc","_id":"SomeID"}}
-{"id":"SomeId","sourceEvent":{"group":"ReviewInvoice","source":"camunda","eventName":"ReviewInvoice_processInstanceStart","eventLabel":null},"targetEvent":{"group":"ReviewInvoice","source":"camunda","eventName":"StartEvent_1","eventLabel":null},"count":2}

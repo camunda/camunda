@@ -20,9 +20,7 @@ import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest.AliasActions;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
-import org.elasticsearch.action.admin.indices.close.CloseIndexRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
-import org.elasticsearch.action.admin.indices.open.OpenIndexRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest;
@@ -54,7 +52,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildAnalysisSettings;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
 
 public class ESIndexAdjuster {
@@ -169,10 +166,6 @@ public class ESIndexAdjuster {
 
   public void createIndex(final IndexMappingCreator indexMapping) {
     schemaManager.createOptimizeIndex(elasticsearchClient, indexMapping);
-  }
-
-  public void createIndexFromTemplate(final IndexMappingCreator indexMappingCreator) {
-    createIndexFromTemplate(getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(indexMappingCreator));
   }
 
   public void createIndexFromTemplate(final String indexNameWithSuffix) {
@@ -328,29 +321,8 @@ public class ESIndexAdjuster {
     }
   }
 
-  public void updateIndexAnalysisSettings(final String indexName) {
-    closeIndex(indexName);
-
-    try {
-      final Settings analysisSettings = buildAnalysisSettings();
-      updateIndexSettings(indexName, analysisSettings);
-    } catch (IOException e) {
-      String msg = String.format(
-        "Could not update analysis index settings for index [%s].",
-        indexName
-      );
-      throw new UpgradeRuntimeException(msg, e);
-    } finally {
-      openIndex(indexName);
-    }
-  }
-
   public OptimizeIndexNameService getIndexNameService() {
     return elasticsearchClient.getIndexNameService();
-  }
-
-  public Set<String> getAllAliasNames(final String indexName) {
-    return getAllAliasesForIndex(indexName).stream().map(AliasMetaData::alias).collect(Collectors.toSet());
   }
 
   public Set<AliasMetaData> getAllAliasesForIndex(final String indexName) {
@@ -365,26 +337,6 @@ public class ESIndexAdjuster {
     } catch (IOException e) {
       String message = String.format("Could not retrieve existing aliases for {%s}.", indexName);
       throw new OptimizeRuntimeException(message, e);
-    }
-  }
-
-  private void closeIndex(final String indexName) {
-    final CloseIndexRequest closeIndexRequest = new CloseIndexRequest(indexName);
-    try {
-      getPlainRestClient().indices().close(closeIndexRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      final String msg = String.format("Could not close index [%s].", indexName);
-      throw new UpgradeRuntimeException(msg, e);
-    }
-  }
-
-  private void openIndex(final String indexName) {
-    final OpenIndexRequest openIndexRequest = new OpenIndexRequest(indexName);
-    try {
-      getPlainRestClient().indices().open(openIndexRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      final String msg = String.format("Could not open index [%s].", indexName);
-      throw new UpgradeRuntimeException(msg, e);
     }
   }
 
