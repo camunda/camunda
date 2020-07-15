@@ -27,6 +27,11 @@
     left: 50%;
     transform: translate(-50%, -50%);
   }
+
+  .djs-element.hover .djs-outline,
+  .djs-element.selected .djs-outline {
+    stroke-width: 0;
+  }
 }
 
 .bjs-powered-by {
