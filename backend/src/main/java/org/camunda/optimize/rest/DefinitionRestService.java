@@ -41,6 +41,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -112,6 +113,9 @@ public class DefinitionRestService {
       log.error(reason);
       throw new NotFoundException(reason);
     }
+
+    definitionVersions.sort(Comparator.comparing(
+      (DefinitionVersionDto definitionVersionDto) -> Integer.valueOf(definitionVersionDto.getVersion())).reversed());
     return definitionVersions;
   }
 

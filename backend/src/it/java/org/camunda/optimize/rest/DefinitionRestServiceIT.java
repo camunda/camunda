@@ -24,6 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -670,6 +671,34 @@ public class DefinitionRestServiceIT extends AbstractIT {
       );
   }
 
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void getDefinitionVersionsIsSortedNumerically(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    final List<String> descendingVersions = Arrays.asList("200", "30", "21", "20", "19", "3", "2");
+    // We add them to ES in random order
+    final List<String> randomOrderVersions = new ArrayList<>(descendingVersions);
+    Collections.shuffle(randomOrderVersions);
+    randomOrderVersions.forEach(version -> createDefinitionAndAddToElasticsearch(
+      definitionType,
+      definitionKey,
+      version,
+      null,
+      "the name"
+    ));
+
+    // when
+    final List<DefinitionVersionDto> versions = definitionClient.getDefinitionVersionsByTypeAndKey(
+      definitionType, definitionKey
+    );
+
+    // then
+    assertThat(versions)
+      .extracting(DefinitionVersionDto::getVersion)
+      .containsExactlyElementsOf(descendingVersions);
+  }
+
   @Test
   public void getDefinitionVersionsByTypeAndKey_eventBasedProcess() {
     // given
@@ -793,8 +822,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     // when all versions are included
     final List<TenantResponseDto> tenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
-      definitionType, definitionKey, Lists.newArrayList("1", "2")
-    );
+        definitionType, definitionKey, Lists.newArrayList("1", "2")
+      );
 
     // then all tenants are returned
     assertThat(tenantsForAllVersions)
@@ -806,8 +835,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     // when only some versions are included
     final List<TenantResponseDto> tenantsForVersion1 =
       definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
-      definitionType, definitionKey, Lists.newArrayList("1")
-    );
+        definitionType, definitionKey, Lists.newArrayList("1")
+      );
 
     // then only the tenants belonging to those versions are included
     assertThat(tenantsForVersion1)
@@ -832,8 +861,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     // when the "all" version is included
     final List<TenantResponseDto> tenantsForAllVersions =
       definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
-      definitionType, definitionKey, Lists.newArrayList("all")
-    );
+        definitionType, definitionKey, Lists.newArrayList("all")
+      );
 
     // then all tenants are returned
     assertThat(tenantsForAllVersions)
@@ -846,8 +875,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     // when "all" version is included among specific versions
     final List<TenantResponseDto> tenantsForSpecificAndAllVersion =
       definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
-      definitionType, definitionKey, Lists.newArrayList("all", "2")
-    );
+        definitionType, definitionKey, Lists.newArrayList("all", "2")
+      );
 
     // then all tenants are returned
     assertThat(tenantsForSpecificAndAllVersion)
@@ -887,8 +916,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     // when latest version is requested
     final List<TenantResponseDto> tenantsForLatestVersion =
       definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
-      definitionType, definitionKey, Lists.newArrayList("latest")
-    );
+        definitionType, definitionKey, Lists.newArrayList("latest")
+      );
 
     // then only the available tenant for the latest version are returned
     assertThat(tenantsForLatestVersion)
@@ -899,8 +928,8 @@ public class DefinitionRestServiceIT extends AbstractIT {
     // when latest version is requested along with other specific versions
     final List<TenantResponseDto> tenantsForLatestAndOtherVersion =
       definitionClient.resolveDefinitionTenantsByTypeKeyAndVersions(
-      definitionType, definitionKey, Lists.newArrayList("latest", "1")
-    );
+        definitionType, definitionKey, Lists.newArrayList("latest", "1")
+      );
 
     // then the available tenants for the latest version as well as the other version are returned
     assertThat(tenantsForLatestAndOtherVersion)
@@ -1227,13 +1256,21 @@ public class DefinitionRestServiceIT extends AbstractIT {
       "eventProcess1", "Event Process Definition1"
     );
     final SimpleDefinitionDto eventProcessDefinition1 = new SimpleDefinitionDto(
-      eventBasedDefinition1.getKey(), eventBasedDefinition1.getName(), DefinitionType.PROCESS, true, DEFAULT_ENGINE_ALIAS
+      eventBasedDefinition1.getKey(),
+      eventBasedDefinition1.getName(),
+      DefinitionType.PROCESS,
+      true,
+      DEFAULT_ENGINE_ALIAS
     );
     final DefinitionOptimizeDto eventBasedDefinition2 = createEventBasedDefinition(
       "eventProcess2", "An event Process Definition2"
     );
     final SimpleDefinitionDto eventProcessDefinition2 = new SimpleDefinitionDto(
-      eventBasedDefinition2.getKey(), eventBasedDefinition2.getName(), DefinitionType.PROCESS, true, DEFAULT_ENGINE_ALIAS
+      eventBasedDefinition2.getKey(),
+      eventBasedDefinition2.getName(),
+      DefinitionType.PROCESS,
+      true,
+      DEFAULT_ENGINE_ALIAS
     );
 
     // when
