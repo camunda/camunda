@@ -21,9 +21,9 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.DmnModelUtility.extractInputVariables;
-import static org.camunda.optimize.service.util.DmnModelUtility.extractOutputVariables;
-import static org.camunda.optimize.service.util.DmnModelUtility.parseDmnModel;
+import static org.camunda.optimize.service.util.DmnModelUtil.extractInputVariables;
+import static org.camunda.optimize.service.util.DmnModelUtil.extractOutputVariables;
+import static org.camunda.optimize.service.util.DmnModelUtil.parseDmnModel;
 
 @AllArgsConstructor
 @Slf4j

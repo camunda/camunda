@@ -52,7 +52,7 @@ import org.camunda.optimize.service.relations.ReportRelationService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.service.util.BpmnModelUtility;
+import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -77,7 +77,7 @@ import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.rest.ConflictedItemType.COMBINED_REPORT;
 import static org.camunda.optimize.dto.optimize.rest.ConflictedItemType.REPORT;
-import static org.camunda.optimize.service.util.BpmnModelUtility.extractFlowNodeNames;
+import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
 
 @RequiredArgsConstructor
 @Component
@@ -510,7 +510,7 @@ public class EventProcessService {
 
   private BpmnModelInstance parseXmlIntoBpmnModel(final String xmlString) {
     try {
-      return BpmnModelUtility.parseBpmnModel(xmlString);
+      return BpmnModelUtil.parseBpmnModel(xmlString);
     } catch (ModelParseException ex) {
       throw new BadRequestException("The provided xml is not valid");
     }

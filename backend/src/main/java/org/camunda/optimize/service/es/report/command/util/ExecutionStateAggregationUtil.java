@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.command.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -22,6 +24,7 @@ import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConst
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ExecutionStateAggregationUtil {
 
   public static BoolQueryBuilder addExecutionStateFilter(BoolQueryBuilder boolQueryBuilder,

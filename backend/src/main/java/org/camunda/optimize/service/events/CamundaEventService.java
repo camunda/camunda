@@ -79,7 +79,7 @@ import static org.camunda.bpm.engine.ActivityTypes.TASK_SEND_TASK;
 import static org.camunda.bpm.engine.ActivityTypes.TASK_SERVICE;
 import static org.camunda.bpm.engine.ActivityTypes.TASK_USER_TASK;
 import static org.camunda.bpm.engine.ActivityTypes.TRANSACTION;
-import static org.camunda.optimize.service.util.BpmnModelUtility.parseBpmnModel;
+import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;

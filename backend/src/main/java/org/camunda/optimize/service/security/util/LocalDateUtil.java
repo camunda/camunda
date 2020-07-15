@@ -5,11 +5,15 @@
  */
 package org.camunda.optimize.service.security.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class LocalDateUtil {
 
   private volatile static OffsetDateTime CURRENT_TIME = null;

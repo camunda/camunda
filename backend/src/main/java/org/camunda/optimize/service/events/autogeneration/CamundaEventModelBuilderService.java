@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.BpmnModelUtility;
+import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -32,8 +32,8 @@ import java.util.Optional;
 
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
-import static org.camunda.optimize.service.util.BpmnModelUtility.getEndEventsFromInstance;
-import static org.camunda.optimize.service.util.BpmnModelUtility.getStartEventsFromInstance;
+import static org.camunda.optimize.service.util.BpmnModelUtil.getEndEventsFromInstance;
+import static org.camunda.optimize.service.util.BpmnModelUtil.getStartEventsFromInstance;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaProcessEndEventTypeDto;
@@ -204,7 +204,7 @@ public class CamundaEventModelBuilderService {
       .map(def -> ((ProcessDefinitionOptimizeDto) def).getBpmn20Xml())
       .orElseThrow(() -> new OptimizeRuntimeException(String.format(
         "Process definition with definition key %s could not be loaded", sourceEntryDto.getProcessDefinitionKey())));
-    return BpmnModelUtility.parseBpmnModel(definitionXml);
+    return BpmnModelUtil.parseBpmnModel(definitionXml);
   }
 
   private Optional<DefinitionOptimizeDto> getDefinition(final EventSourceEntryDto sourceEntryDto) {

@@ -7,6 +7,8 @@ package org.camunda.optimize.service.export;
 
 import com.google.common.collect.Sets;
 import com.opencsv.CSVWriter;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
@@ -35,6 +37,7 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.joining;
 
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CSVUtils {
 
   static final String VARIABLE_PREFIX = "variable:";

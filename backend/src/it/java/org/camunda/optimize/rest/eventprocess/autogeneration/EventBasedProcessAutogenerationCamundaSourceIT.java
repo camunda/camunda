@@ -17,7 +17,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
-import org.camunda.optimize.service.util.BpmnModelUtility;
+import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -77,7 +77,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
 
     // then
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
-    final BpmnModelInstance generatedInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    final BpmnModelInstance generatedInstance = BpmnModelUtil.parseBpmnModel(processMapping.getXml());
     assertProcessMappingConfiguration(processMapping, sources, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
@@ -128,7 +128,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
 
     // then
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
-    final BpmnModelInstance generatedInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    final BpmnModelInstance generatedInstance = BpmnModelUtil.parseBpmnModel(processMapping.getXml());
     assertProcessMappingConfiguration(processMapping, sources, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
@@ -180,7 +180,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
 
     // then
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
-    final BpmnModelInstance generatedInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    final BpmnModelInstance generatedInstance = BpmnModelUtil.parseBpmnModel(processMapping.getXml());
     assertProcessMappingConfiguration(processMapping, sources, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
@@ -231,7 +231,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
 
     // then
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
-    final BpmnModelInstance generatedInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    final BpmnModelInstance generatedInstance = BpmnModelUtil.parseBpmnModel(processMapping.getXml());
     assertProcessMappingConfiguration(processMapping, sources, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
@@ -279,7 +279,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
 
     // then
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
-    final BpmnModelInstance generatedInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    final BpmnModelInstance generatedInstance = BpmnModelUtil.parseBpmnModel(processMapping.getXml());
     assertProcessMappingConfiguration(processMapping, sources, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
@@ -347,7 +347,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
 
     // then
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
-    final BpmnModelInstance generatedInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    final BpmnModelInstance generatedInstance = BpmnModelUtil.parseBpmnModel(processMapping.getXml());
     assertProcessMappingConfiguration(processMapping, sources, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model
@@ -390,7 +390,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
 
     // then
     final Map<String, EventMappingDto> mappings = processMapping.getMappings();
-    final BpmnModelInstance generatedInstance = BpmnModelUtility.parseBpmnModel(processMapping.getXml());
+    final BpmnModelInstance generatedInstance = BpmnModelUtil.parseBpmnModel(processMapping.getXml());
     assertProcessMappingConfiguration(processMapping, sources, EventProcessState.MAPPED);
 
     // then the mappings contain the correct events and are all in the model

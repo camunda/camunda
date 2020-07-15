@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.upgrade.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.AlertIndex;
@@ -51,6 +53,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACT
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class MappingMetadataUtil {
   public static List<IndexMappingCreator> getAllMappings(final OptimizeElasticsearchClient esClient) {
     List<IndexMappingCreator> allMappings = new ArrayList<>();
@@ -59,7 +62,7 @@ public class MappingMetadataUtil {
     return allMappings;
   }
 
-  public static List<IndexMappingCreator> getAllNonDynamicMappings() {
+  private static List<IndexMappingCreator> getAllNonDynamicMappings() {
     return Arrays.asList(
       new AlertIndex(),
       new BusinessKeyIndex(),
@@ -89,15 +92,7 @@ public class MappingMetadataUtil {
     );
   }
 
-  public static List<IndexMappingCreator> getAllDynamicMappings(final OptimizeElasticsearchClient esClient) {
-    List<IndexMappingCreator> dynamicMappings = new ArrayList<>();
-    dynamicMappings.addAll(retrieveAllCamundaActivityEventIndices(esClient));
-    dynamicMappings.addAll(retrieveAllSequenceCountIndices(esClient));
-    dynamicMappings.addAll(retrieveAllEventTraceIndices(esClient));
-    return dynamicMappings;
-  }
-
-  public static List<CamundaActivityEventIndex> retrieveAllCamundaActivityEventIndices(
+  private static List<CamundaActivityEventIndex> retrieveAllCamundaActivityEventIndices(
     final OptimizeElasticsearchClient esClient) {
     return retrieveAllDynamicIndexKeysForPrefix(esClient, CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX)
       .stream()
@@ -105,7 +100,7 @@ public class MappingMetadataUtil {
       .collect(toList());
   }
 
-  public static List<EventSequenceCountIndex> retrieveAllSequenceCountIndices(
+  private static List<EventSequenceCountIndex> retrieveAllSequenceCountIndices(
     final OptimizeElasticsearchClient esClient) {
     return retrieveAllDynamicIndexKeysForPrefix(esClient, EVENT_SEQUENCE_COUNT_INDEX_PREFIX)
       .stream()
@@ -113,12 +108,20 @@ public class MappingMetadataUtil {
       .collect(toList());
   }
 
-  public static List<EventTraceStateIndex> retrieveAllEventTraceIndices(
+  private static List<EventTraceStateIndex> retrieveAllEventTraceIndices(
     final OptimizeElasticsearchClient esClient) {
     return retrieveAllDynamicIndexKeysForPrefix(esClient, EVENT_TRACE_STATE_INDEX_PREFIX)
       .stream()
       .map(EventTraceStateIndex::new)
       .collect(toList());
+  }
+
+  private static List<IndexMappingCreator> getAllDynamicMappings(final OptimizeElasticsearchClient esClient) {
+    List<IndexMappingCreator> dynamicMappings = new ArrayList<>();
+    dynamicMappings.addAll(retrieveAllCamundaActivityEventIndices(esClient));
+    dynamicMappings.addAll(retrieveAllSequenceCountIndices(esClient));
+    dynamicMappings.addAll(retrieveAllEventTraceIndices(esClient));
+    return dynamicMappings;
   }
 
   private static List<String> retrieveAllDynamicIndexKeysForPrefix(final OptimizeElasticsearchClient esClient,

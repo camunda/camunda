@@ -20,7 +20,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.EventSequenceCountReader;
-import org.camunda.optimize.service.util.BpmnModelUtility;
+import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +36,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.service.util.BpmnModelUtility.extractFlowNodeNames;
+import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.fromEventCountDto;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
@@ -151,7 +151,7 @@ public class EventCountService {
 
   private BpmnModelInstance parseXmlIntoBpmnModel(final String xmlString) {
     try {
-      return BpmnModelUtility.parseBpmnModel(xmlString);
+      return BpmnModelUtil.parseBpmnModel(xmlString);
     } catch (ModelParseException ex) {
       throw new BadRequestException("The provided xml is not valid");
     }

@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.command.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -16,12 +18,10 @@ import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 
 import java.util.Optional;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FilterLimitedAggregationUtil {
 
   public static final String FILTER_LIMITED_AGGREGATION = "filterLimitedAggregation";
-
-  private FilterLimitedAggregationUtil() {
-  }
 
   public static FilterAggregationBuilder wrapWithFilterLimitedParentAggregation(
     final BoolQueryBuilder limitFilterQuery,

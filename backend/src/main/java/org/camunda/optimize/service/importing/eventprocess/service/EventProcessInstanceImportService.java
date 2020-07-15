@@ -54,7 +54,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.service.util.BpmnModelUtility.parseBpmnModel;
+import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 
 @AllArgsConstructor
 @Slf4j

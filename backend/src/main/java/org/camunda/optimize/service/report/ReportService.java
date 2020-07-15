@@ -69,8 +69,8 @@ import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_DEFINITION_COMPLIANT;
 import static org.camunda.optimize.dto.optimize.query.collection.ScopeComplianceType.NON_TENANT_COMPLIANT;
-import static org.camunda.optimize.service.util.BpmnModelUtility.extractProcessDefinitionName;
-import static org.camunda.optimize.service.util.DmnModelUtility.extractDecisionDefinitionName;
+import static org.camunda.optimize.service.util.BpmnModelUtil.extractProcessDefinitionName;
+import static org.camunda.optimize.service.util.DmnModelUtil.extractDecisionDefinitionName;
 
 @RequiredArgsConstructor
 @Component

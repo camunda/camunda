@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.service.EventProcessDefinitionService;
 import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceIndexManager;
 import org.camunda.optimize.service.report.ReportService;
-import org.camunda.optimize.service.util.BpmnModelUtility;
+import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
@@ -70,7 +70,7 @@ public class EventProcessDefinitionImportService {
   }
 
   private EventProcessDefinitionDto createEventProcessDefinitionDto(final EventProcessPublishStateDto eventProcessPublishStateDto) {
-    final BpmnModelInstance bpmnModelInstance = BpmnModelUtility.parseBpmnModel(eventProcessPublishStateDto.getXml());
+    final BpmnModelInstance bpmnModelInstance = BpmnModelUtil.parseBpmnModel(eventProcessPublishStateDto.getXml());
     return EventProcessDefinitionDto.eventProcessBuilder()
       .id(eventProcessPublishStateDto.getId())
       .key(eventProcessPublishStateDto.getProcessMappingId())
@@ -79,8 +79,8 @@ public class EventProcessDefinitionImportService {
       .tenantId(null)
       .engine(null)
       .bpmn20Xml(eventProcessPublishStateDto.getXml())
-      .flowNodeNames(BpmnModelUtility.extractFlowNodeNames(bpmnModelInstance))
-      .userTaskNames(BpmnModelUtility.extractUserTaskNames(bpmnModelInstance))
+      .flowNodeNames(BpmnModelUtil.extractFlowNodeNames(bpmnModelInstance))
+      .userTaskNames(BpmnModelUtil.extractUserTaskNames(bpmnModelInstance))
       .build();
   }
 

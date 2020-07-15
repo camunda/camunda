@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.command.process.processinstance.duration;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
@@ -26,13 +28,11 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.scriptedMetric;
 
-
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessPartQueryUtil {
 
   private static final String SCRIPT_AGGREGATION = "scriptAggregation";
   private static final String NESTED_AGGREGATION = "nestedAggregation";
-
-  private ProcessPartQueryUtil(){}
 
   public static Double processProcessPartAggregationOperations(Aggregations aggs) {
     Nested nested = aggs.get(NESTED_AGGREGATION);

@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
-import org.camunda.optimize.service.util.BpmnModelUtility;
+import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.springframework.stereotype.Component;
 
@@ -36,7 +36,7 @@ public class EventMappingCleanupService {
       .collect(Collectors.toSet());
 
     final Set<String> currentModelFlowNodeIds =
-      BpmnModelUtility.extractFlowNodeNames(parseXmlIntoBpmnModel(requestDto.getXml()))
+      BpmnModelUtil.extractFlowNodeNames(parseXmlIntoBpmnModel(requestDto.getXml()))
       .keySet();
     return requestDto.getMappings().entrySet()
       .stream()
@@ -48,7 +48,7 @@ public class EventMappingCleanupService {
 
   private BpmnModelInstance parseXmlIntoBpmnModel(final String xmlString) {
     try {
-      return BpmnModelUtility.parseBpmnModel(xmlString);
+      return BpmnModelUtil.parseBpmnModel(xmlString);
     } catch (ModelParseException ex) {
       throw new BadRequestException("The provided xml is not valid");
     }

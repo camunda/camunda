@@ -35,7 +35,7 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamund
 
 @Slf4j
 @UtilityClass
-public class BpmnModelUtility {
+public class BpmnModelUtil {
 
   public static BpmnModelInstance parseBpmnModel(final String bpmn20Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(bpmn20Xml.getBytes())) {

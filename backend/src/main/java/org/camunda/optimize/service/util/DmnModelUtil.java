@@ -22,16 +22,14 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 
 @Slf4j
 @UtilityClass
-public class DmnModelUtility {
+public class DmnModelUtil {
 
   public static DmnModelInstance parseDmnModel(final String dmn10Xml) {
     try (final ByteArrayInputStream stream = new ByteArrayInputStream(dmn10Xml.getBytes())) {
@@ -58,19 +56,18 @@ public class DmnModelUtility {
 
   public static List<DecisionVariableNameDto> extractInputVariables(final DmnModelInstance model,
                                                                     @NonNull final String decisionKey) {
-    return extractVariables(model, decisionKey, DmnModelUtility::extractInputVariablesFromDecision);
+    return extractVariables(model, decisionKey, DmnModelUtil::extractInputVariablesFromDecision);
   }
 
   public static List<DecisionVariableNameDto> extractOutputVariables(final DmnModelInstance model,
                                                                      @NonNull final String decisionKey) {
-    return extractVariables(model, decisionKey, DmnModelUtility::extractOutputVariablesFromDecision);
+    return extractVariables(model, decisionKey, DmnModelUtil::extractOutputVariablesFromDecision);
   }
 
   private static List<DecisionVariableNameDto> extractVariables(final DmnModelInstance model,
                                                                 @NonNull final String decisionKey,
                                                                 final Function<DecisionTable,
                                                                   List<DecisionVariableNameDto>> extractVariables) {
-    Map<String, List<DecisionVariableNameDto>> result = new HashMap<>();
     return model.getModelElementsByType(Decision.class)
       .stream()
       .filter(decision -> Objects.equals(decision.getId(), decisionKey))

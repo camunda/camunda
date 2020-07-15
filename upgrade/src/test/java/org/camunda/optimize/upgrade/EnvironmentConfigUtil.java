@@ -46,7 +46,7 @@ public class EnvironmentConfigUtil {
     }
   }
 
-  public static File getClasspathFolder() throws URISyntaxException {
+  private static File getClasspathFolder() throws URISyntaxException {
     String executionFolderPath = UpgradeValidationService.class.
       getProtectionDomain()
       .getCodeSource()

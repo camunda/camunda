@@ -66,7 +66,7 @@ public class UserTaskFilterQueryUtil {
     userTaskFilterBoolQuery.filter(QueryBuilders.termsQuery(USER_TASKS + "." + USER_TASK_ACTIVITY_ID, userTaskIds));
   }
 
-  public static BoolQueryBuilder addAssigneeFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
+  private static BoolQueryBuilder addAssigneeFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
                                                    final ProcessReportDataDto reportDataDto) {
     reportDataDto.getFilter().stream().filter(AssigneeFilterDto.class::isInstance)
       .map(filterDto -> (IdentityLinkFilterDataDto) filterDto.getData())
@@ -74,7 +74,7 @@ public class UserTaskFilterQueryUtil {
     return userTaskFilterBoolQuery;
   }
 
-  public static BoolQueryBuilder addCandidateGroupFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
+  private static BoolQueryBuilder addCandidateGroupFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
                                                          final ProcessReportDataDto reportDataDto) {
     reportDataDto.getFilter().stream().filter(CandidateGroupFilterDto.class::isInstance)
       .map(filterDto -> (IdentityLinkFilterDataDto) filterDto.getData())

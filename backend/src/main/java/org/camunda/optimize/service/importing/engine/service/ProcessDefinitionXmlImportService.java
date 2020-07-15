@@ -19,9 +19,9 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionXmlWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.BpmnModelUtility.extractFlowNodeNames;
-import static org.camunda.optimize.service.util.BpmnModelUtility.extractUserTaskNames;
-import static org.camunda.optimize.service.util.BpmnModelUtility.parseBpmnModel;
+import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
+import static org.camunda.optimize.service.util.BpmnModelUtil.extractUserTaskNames;
+import static org.camunda.optimize.service.util.BpmnModelUtil.parseBpmnModel;
 
 @Slf4j
 @AllArgsConstructor
