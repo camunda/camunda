@@ -46,6 +46,12 @@ it('should disable definition selection in editing mode', () => {
   expect(node.find(DefinitionSelection).props('disabledDefinition')).toBeTruthy();
 });
 
+it('should hide event type button group in editing', () => {
+  const node = shallow(<EventsSourceModal {...props} initialSource={testSource} />);
+
+  expect(node.find('.ButtonGroup')).not.toExist();
+});
+
 it('load variables after selecting a process definition', () => {
   const node = shallow(<EventsSourceModal {...props} />);
 

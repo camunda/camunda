@@ -148,18 +148,23 @@ export default withErrorHandling(
             {this.isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
           </Modal.Header>
           <Modal.Content>
-            <ButtonGroup>
-              <Button active={type === 'camunda'} onClick={() => this.setState({type: 'camunda'})}>
-                {t('events.sources.camundaEvents')}
-              </Button>
-              <Button
-                active={type === 'external'}
-                onClick={() => this.setState({type: 'external'})}
-                disabled={this.isEditing() || externalAlreadyAdded}
-              >
-                {t('events.sources.externalEvents')}
-              </Button>
-            </ButtonGroup>
+            {!this.isEditing() && (
+              <ButtonGroup>
+                <Button
+                  active={type === 'camunda'}
+                  onClick={() => this.setState({type: 'camunda'})}
+                >
+                  {t('events.sources.camundaEvents')}
+                </Button>
+                <Button
+                  active={type === 'external'}
+                  onClick={() => this.setState({type: 'external'})}
+                  disabled={externalAlreadyAdded}
+                >
+                  {t('events.sources.externalEvents')}
+                </Button>
+              </ButtonGroup>
+            )}
             {type === 'camunda' && (
               <>
                 <DefinitionSelection
