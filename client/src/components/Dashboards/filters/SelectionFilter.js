@@ -32,10 +32,12 @@ export default function SelectionFilter({filter, type, config, setFilter}) {
     }
   }
 
+  const {operator, values} = config;
+
   let hintText = '';
-  if (config.operator === 'in') {
+  if (operator === 'in' || operator === 'contains') {
     hintText = t('dashboard.filter.operatorLink', {operator: t('common.filter.list.operators.or')});
-  } else if (config.operator === 'not in') {
+  } else if (operator === 'not in' || operator === 'not contains') {
     hintText = t('dashboard.filter.operatorLink', {
       operator: t('common.filter.list.operators.nor'),
     });
@@ -54,6 +56,10 @@ export default function SelectionFilter({filter, type, config, setFilter}) {
         return t('common.filter.list.operators.less');
       case '>':
         return t('common.filter.list.operators.more');
+      case 'contains':
+        return t('common.filter.list.operators.contains');
+      case 'not contains':
+        return t('common.filter.list.operators.notContains');
       default:
         return t('common.filter.list.operators.is');
     }
@@ -68,7 +74,7 @@ export default function SelectionFilter({filter, type, config, setFilter}) {
             {filter ? (
               <VariablePreview filter={previewFilter} />
             ) : (
-              getOperatorText(config.operator) + ' ...'
+              getOperatorText(operator) + ' ...'
             )}
           </>
         }
@@ -76,7 +82,7 @@ export default function SelectionFilter({filter, type, config, setFilter}) {
         <Form compact>
           <fieldset>
             <div className="hint">{hintText}</div>
-            {config.values.map((value, idx) => (
+            {values.map((value, idx) => (
               <Switch
                 key={idx}
                 label={value === null ? t('common.nullOrUndefined') : value}

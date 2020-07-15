@@ -116,7 +116,7 @@ it('should create a new filter', () => {
   const node = shallow(<VariableFilter {...props} addFilter={spy} />);
 
   node.setState({
-    selectedVariable: {name: 'foo', type: 'String'},
+    selectedVariable: {name: 'foo', type: 'Boolean'},
     valid: true,
   });
 
@@ -126,7 +126,7 @@ it('should create a new filter', () => {
     type: 'variable',
     data: {
       name: 'foo',
-      type: 'String',
+      type: 'Boolean',
       data: {},
     },
   });

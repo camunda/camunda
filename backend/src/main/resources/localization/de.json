@@ -779,7 +779,9 @@
           "neither": "ist weder",
           "nor": "noch",
           "or": "oder",
-          "occurs": "ist"
+          "occurs": "ist",
+          "contains": "enthält",
+          "notContains": "enthält nicht"
         },
         "executedFlowNode": "Ausgeführter Prozessknoten",
         "executingFlowNode": "Prozessknoten in Ausführung"

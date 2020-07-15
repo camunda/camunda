@@ -1,24 +1,21 @@
-.NumberInput {
+.ValueListInput {
   .undefinedOption {
     margin-bottom: 15px;
   }
 
-  .valueList {
+  ul {
     list-style: none;
     padding: 0;
     margin: 0;
+    width: 50%;
     max-width: 90%;
     text-align: center;
+
     input[type='checkbox'] {
       margin-right: 0.75em;
     }
-
-    &.valueListInputs {
-      width: 50%;
-
-      input[type='text'] {
-        width: 100%;
-      }
+    input[type='text'] {
+      width: 100%;
     }
   }
 

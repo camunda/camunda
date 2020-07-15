@@ -60,4 +60,7 @@ it('should show a hint depending on the operator', () => {
 
   node.setProps({config: {operator: '<', values: []}});
   expect(node.find('.hint').text()).toBe('');
+
+  node.setProps({config: {operator: 'contains', values: []}});
+  expect(node.find('.hint').text()).toBe('Values linked by or logic');
 });

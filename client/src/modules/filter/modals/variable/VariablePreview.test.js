@@ -39,6 +39,14 @@ it('should use less/greater for comparison operators', () => {
   expect(node).toIncludeText('varName is less than varValue');
 });
 
+it('should use contains operators', () => {
+  const node = shallow(
+    <VariablePreview filter={{operator: 'contains', values: ['varValue']}} variableName="varName" />
+  );
+
+  expect(node).toIncludeText('varName contains varValue');
+});
+
 it('should display correct preview even if no operator is defined', () => {
   const node = shallow(<VariablePreview filter={{values: [true, false]}} variableName="varName" />);
 

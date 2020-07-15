@@ -8,9 +8,11 @@ import React from 'react';
 import debounce from 'debounce';
 
 import {ButtonGroup, Button, TypeaheadMultipleSelection} from 'components';
+import {t} from 'translation';
+
+import ValueListInput from '../ValueListInput';
 
 import './StringInput.scss';
-import {t} from 'translation';
 
 const valuesToLoad = 10;
 
@@ -87,7 +89,20 @@ export default class StringInput extends React.Component {
 
   setOperator = (operator) => (evt) => {
     evt.preventDefault();
-    this.props.changeFilter({operator, values: this.props.filter.values});
+    const {filter, changeFilter, setValid} = this.props;
+
+    let newValues = filter.values;
+    if (filter.operator.includes('contains') && !operator.includes('contains')) {
+      // if we switch from contains to is
+      newValues = [];
+      setValid(false);
+    } else if (!filter.operator.includes('contains') && operator.includes('contains')) {
+      // if we switch from is to contains
+      newValues = ['']; // make sure we start with an empty input field
+      setValid(false);
+    }
+
+    changeFilter({operator, values: newValues});
   };
 
   loadMore = (evt) => {
@@ -122,7 +137,10 @@ export default class StringInput extends React.Component {
   };
 
   render() {
-    const {operator} = this.props.filter;
+    const {changeFilter, setValid, filter} = this.props;
+    const {operator, values} = filter;
+
+    const notNullValues = values.filter((val) => val !== null);
 
     return (
       <React.Fragment>
@@ -134,36 +152,75 @@ export default class StringInput extends React.Component {
             <Button onClick={this.setOperator('not in')} active={operator === 'not in'}>
               {t('common.filter.list.operators.not')}
             </Button>
+            <Button onClick={this.setOperator('contains')} active={operator === 'contains'}>
+              {t('common.filter.list.operators.contains')}
+            </Button>
+            <Button onClick={this.setOperator('not contains')} active={operator === 'not contains'}>
+              {t('common.filter.list.operators.notContains')}
+            </Button>
           </ButtonGroup>
         </div>
-        <div className="valueFields">
-          <div className="StringInput__selection">
-            <TypeaheadMultipleSelection
-              availableValues={this.state.availableValues}
-              selectedValues={this.props.filter.values}
-              setFilter={this.setValueFilter}
-              toggleValue={this.toggleValue}
-              format={(val) => (val === null ? t('common.nullOrUndefined') : val)}
-              loading={this.state.loading ? 1 : 0}
-              labels={{
-                available: t('common.filter.variableModal.multiSelect.available'),
-                selected: t('common.filter.variableModal.multiSelect.selected'),
-                search: t('common.filter.variableModal.multiSelect.search'),
-                empty: t('common.filter.variableModal.multiSelect.empty'),
-              }}
-            />
-            {!this.state.valuesAreComplete && !this.state.loading && (
-              <Button
-                className="StringInput__load-more-button"
-                onClick={this.loadMore}
-                disabled={this.state.loading && this.props.disabled}
-              >
-                {t('common.filter.variableModal.loadMore')}
-              </Button>
-            )}
+        {operator.includes('contains') ? (
+          <ValueListInput
+            className="valueFields"
+            filter={{
+              operator,
+              values: notNullValues.length ? notNullValues : [''],
+              includeUndefined: values.includes(null),
+            }}
+            onChange={({operator, values, includeUndefined}) => {
+              changeFilter({operator, values: includeUndefined ? [...values, null] : values});
+
+              const nonEmptyValues = values.filter((val) => val !== '');
+              setValid(includeUndefined || nonEmptyValues.length === values.length);
+            }}
+            allowUndefined
+            allowMultiple
+          />
+        ) : (
+          <div className="valueFields">
+            <div className="StringInput__selection">
+              <TypeaheadMultipleSelection
+                availableValues={this.state.availableValues}
+                selectedValues={values}
+                setFilter={this.setValueFilter}
+                toggleValue={this.toggleValue}
+                format={(val) => (val === null ? t('common.nullOrUndefined') : val)}
+                loading={this.state.loading ? 1 : 0}
+                labels={{
+                  available: t('common.filter.variableModal.multiSelect.available'),
+                  selected: t('common.filter.variableModal.multiSelect.selected'),
+                  search: t('common.filter.variableModal.multiSelect.search'),
+                  empty: t('common.filter.variableModal.multiSelect.empty'),
+                }}
+              />
+              {!this.state.valuesAreComplete && !this.state.loading && (
+                <Button
+                  className="StringInput__load-more-button"
+                  onClick={this.loadMore}
+                  disabled={this.state.loading && this.props.disabled}
+                >
+                  {t('common.filter.variableModal.loadMore')}
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </React.Fragment>
     );
   }
+
+  static addFilter = (addFilter, type, variable, {operator, values}) => {
+    addFilter({
+      type,
+      data: {
+        name: variable.id || variable.name,
+        type: variable.type,
+        data: {
+          operator,
+          values: values.filter((val) => val !== ''),
+        },
+      },
+    });
+  };
 }

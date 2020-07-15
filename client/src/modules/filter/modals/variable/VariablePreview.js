@@ -13,7 +13,7 @@ export default function VariablePreview({variableName, filter: {operator, values
 
   const operatorText = (
     <span>
-      {operator === 'not in'
+      {operator === 'not in' || operator === 'not contains'
         ? createOperator(t('common.filter.list.operators.nor'))
         : createOperator(t('common.filter.list.operators.or'))}
     </span>
@@ -24,6 +24,8 @@ export default function VariablePreview({variableName, filter: {operator, values
       <span className="parameterName">{variableName}</span>
       {(!operator || operator === 'in' || operator === '=') &&
         createOperator(t('common.filter.list.operators.is'))}
+      {operator === 'contains' && createOperator(t('common.filter.list.operators.contains'))}
+      {operator === 'not contains' && createOperator(t('common.filter.list.operators.notContains'))}
       {operator === 'not in' &&
         (values.length === 1
           ? createOperator(t('common.filter.list.operators.not'))

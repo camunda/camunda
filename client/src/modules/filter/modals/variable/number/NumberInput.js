@@ -5,12 +5,12 @@
  */
 
 import React from 'react';
-
-import {ButtonGroup, Button, Input, LabeledInput} from 'components';
 import update from 'immutability-helper';
 
-import './NumberInput.scss';
+import {ButtonGroup, Button} from 'components';
 import {t} from 'translation';
+
+import ValueListInput from '../ValueListInput';
 
 export default class NumberInput extends React.Component {
   static defaultFilter = {operator: 'in', values: [''], includeUndefined: false};
@@ -46,20 +46,6 @@ export default class NumberInput extends React.Component {
 
   addValue = () => this.props.changeFilter(update(this.props.filter, {values: {$push: ['']}}));
 
-  removeValue = (index) => {
-    this.props.changeFilter({
-      ...this.props.filter,
-      values: this.props.filter.values.filter((_, idx) => idx !== index),
-    });
-  };
-
-  changeValue = ({target}) => {
-    const values = [...this.props.filter.values];
-    values[target.getAttribute('data-idx')] = target.value;
-
-    this.props.changeFilter({...this.props.filter, values});
-  };
-
   componentDidUpdate(prevProps) {
     if (prevProps.filter !== this.props.filter) {
       this.props.setValid(this.selectionIsValid());
@@ -67,8 +53,8 @@ export default class NumberInput extends React.Component {
   }
 
   render() {
-    const {operator, values} = this.props.filter;
-    const onlyOneValueAllowed = operator === '<' || operator === '>';
+    const {filter, changeFilter} = this.props;
+    const {operator} = filter;
 
     return (
       <div className="NumberInput">
@@ -86,54 +72,13 @@ export default class NumberInput extends React.Component {
             {t('common.filter.list.operators.greater')}
           </Button>
         </ButtonGroup>
-        <div className="valueFields">
-          <ul className="valueList valueListInputs">
-            {(operator === 'in' || operator === 'not in') && (
-              <LabeledInput
-                className="undefinedOption"
-                type="checkbox"
-                checked={this.props.filter.includeUndefined}
-                label={t('common.nullOrUndefined')}
-                onChange={({target: {checked}}) =>
-                  this.props.changeFilter(
-                    update(this.props.filter, {includeUndefined: {$set: checked}})
-                  )
-                }
-              />
-            )}
-            {(values || []).map((value, idx) => {
-              return (
-                <li key={idx} className="valueListItem">
-                  <Input
-                    type="text"
-                    value={value}
-                    data-idx={idx}
-                    onChange={this.changeValue}
-                    placeholder={t('common.filter.variableModal.enterValue')}
-                  />
-                  {values.length > 1 && (
-                    <Button
-                      onClick={(evt) => {
-                        evt.preventDefault();
-                        this.removeValue(idx);
-                      }}
-                      className="removeItemButton"
-                    >
-                      ×
-                    </Button>
-                  )}
-                </li>
-              );
-            })}
-            {!onlyOneValueAllowed && (
-              <li className="valueListButton">
-                <Button onClick={this.addValue} className="addValueButton">
-                  {t('common.filter.variableModal.addValue')}
-                </Button>
-              </li>
-            )}
-          </ul>
-        </div>
+        <ValueListInput
+          className="valueFields"
+          filter={filter}
+          onChange={changeFilter}
+          allowUndefined={operator === 'in' || operator === 'not in'}
+          allowMultiple={operator !== '<' && operator !== '>'}
+        />
       </div>
     );
   }

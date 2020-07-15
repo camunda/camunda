@@ -5,10 +5,11 @@
  */
 
 import React from 'react';
+import {shallow} from 'enzyme';
+
+import {Button, TypeaheadMultipleSelection} from 'components';
 
 import StringInput from './StringInput';
-
-import {shallow} from 'enzyme';
 
 jest.mock('debounce', () => (foo) => foo);
 
@@ -19,7 +20,13 @@ const props = {
   filter: StringInput.defaultFilter,
   config: {getValues: jest.fn().mockReturnValue(['val1', 'val2'])},
   setValid: jest.fn(),
+  changeFilter: jest.fn(),
 };
+
+beforeEach(() => {
+  props.changeFilter.mockClear();
+  props.setValid.mockClear();
+});
 
 it('should show a typeahead', () => {
   const node = shallow(<StringInput {...props} />);
@@ -73,4 +80,85 @@ it('should disable add filter button if no value is selected', () => {
 
   expect(changeSpy).toHaveBeenCalledWith({operator: 'in', values: []});
   expect(validSpy).toHaveBeenCalledWith(false);
+});
+
+it('should reset values when switching between operators types', () => {
+  const node = shallow(<StringInput {...props} filter={{operator: 'in', values: ['A']}} />);
+
+  node
+    .find('.buttonRow')
+    .find(Button)
+    .at(2)
+    .simulate('click', {preventDefault: () => {}});
+
+  const newFilter = {operator: 'contains', values: ['']};
+  expect(props.changeFilter).toHaveBeenCalledWith(newFilter);
+
+  node.setProps({filter: newFilter});
+  node
+    .find('.buttonRow')
+    .find(Button)
+    .at(1)
+    .simulate('click', {preventDefault: () => {}});
+
+  expect(props.changeFilter).toHaveBeenCalledWith({operator: 'not in', values: []});
+});
+
+it('should render input fields depending on the selected operator', () => {
+  const node = shallow(<StringInput {...props} />);
+
+  expect(node.find(TypeaheadMultipleSelection)).toExist();
+  expect(node.find('ValueListInput')).not.toExist();
+
+  node.setProps({filter: {operator: 'contains', values: ['']}});
+
+  expect(node.find(TypeaheadMultipleSelection)).not.toExist();
+  expect(node.find('ValueListInput')).toExist();
+});
+
+it('should provide an includeUndefined field for the ValueListInput', () => {
+  const node = shallow(
+    <StringInput {...props} filter={{operator: 'not contains', values: ['A', null]}} />
+  );
+
+  expect(node.find('ValueListInput').prop('filter')).toEqual({
+    operator: 'not contains',
+    values: ['A'],
+    includeUndefined: true,
+  });
+});
+
+it('should parse the includeUndefined field from the ValueListInput', () => {
+  const node = shallow(
+    <StringInput {...props} filter={{operator: 'not contains', values: ['A']}} />
+  );
+
+  node
+    .find('ValueListInput')
+    .simulate('change', {operator: 'not contains', values: ['A'], includeUndefined: true});
+
+  expect(props.changeFilter).toHaveBeenCalledWith({operator: 'not contains', values: ['A', null]});
+});
+
+it('should filter empty values when adding the filter', () => {
+  const spy = jest.fn();
+
+  StringInput.addFilter(
+    spy,
+    'variable',
+    {name: 'varName', type: 'String'},
+    {operator: 'contains', values: ['A', '', '', 'B', null]}
+  );
+
+  expect(spy).toHaveBeenCalledWith({
+    type: 'variable',
+    data: {
+      name: 'varName',
+      type: 'String',
+      data: {
+        operator: 'contains',
+        values: ['A', 'B', null],
+      },
+    },
+  });
 });

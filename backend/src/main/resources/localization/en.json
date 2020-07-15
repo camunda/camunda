@@ -779,7 +779,9 @@
           "neither": "is neither",
           "nor": "nor",
           "or": "or",
-          "occurs": "occurs"
+          "occurs": "occurs",
+          "contains": "contains",
+          "notContains": "does not contain"
         },
         "executedFlowNode": "Executed Flow Node",
         "executingFlowNode": "Executing Flow Node"
