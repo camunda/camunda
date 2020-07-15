@@ -1076,6 +1076,8 @@
           <version>${plugin.version.fmt}</version>
           <executions>
             <execution>
+              <id>format</id>
+              <phase>process-sources</phase>
               <goals>
                 <goal>format</goal>
               </goals>
@@ -1482,6 +1484,67 @@
                 <phase>verify</phase>
                 <goals>
                   <goal>sonar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- profile to disable the fmt-plugin on unsupported jdks -->
+    <profile>
+      <id>fmt-plugin</id>
+      <activation>
+        <jdk>[,9)</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>fmt-maven-plugin</artifactId>
+            <groupId>com.coveo</groupId>
+            <executions>
+              <execution>
+                <id>format</id>
+                <phase>none</phase>
+                <goals>
+                  <goal>check</goal>
+                  <goal>format</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- profile to perform strict validation checks -->
+    <profile>
+      <id>checks</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>license-maven-plugin</artifactId>
+            <groupId>com.mycila</groupId>
+            <executions>
+              <execution>
+                <id>check-license</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>fmt-maven-plugin</artifactId>
+            <groupId>com.coveo</groupId>
+            <executions>
+              <execution>
+                <id>format</id>
+                <phase>validate</phase>
+                <goals>
+                  <goal>check</goal>
                 </goals>
               </execution>
             </executions>

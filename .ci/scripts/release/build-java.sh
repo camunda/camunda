@@ -12,4 +12,4 @@ else
   echo "Version $RELEASE_VERSION"
 fi
 
-mvn -B -s ${MAVEN_SETTINGS_XML} -DskipTests clean com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check install -Pprepare-offline
+mvn -B -s ${MAVEN_SETTINGS_XML} -DskipTests clean install -Pchecks,prepare-offline
