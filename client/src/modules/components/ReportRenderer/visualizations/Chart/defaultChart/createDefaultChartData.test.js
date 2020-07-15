@@ -54,11 +54,11 @@ it('should return correct chart data object for a single report', () => {
   });
 
   expect(chartData).toEqual({
-    labels: ['bar', 'foo'],
+    labels: ['foo', 'bar'],
     datasets: [
       {
         legendColor: 'testColor',
-        data: [5, 123],
+        data: [123, 5],
         borderColor: 'testColor',
         backgroundColor: 'transparent',
         borderWidth: 2,

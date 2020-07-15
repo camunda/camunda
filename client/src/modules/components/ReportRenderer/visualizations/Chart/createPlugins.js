@@ -25,7 +25,6 @@ export default function createPlugins({updateReport, report: {combined, data, re
     ['line', 'bar'].includes(data.visualization)
   ) {
     const dataPoints = result.data.map(({key}) => key);
-    dataPoints.reverse();
 
     plugins.push(
       zoomIn({

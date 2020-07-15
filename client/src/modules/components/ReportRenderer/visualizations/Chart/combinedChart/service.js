@@ -42,7 +42,6 @@ export function getCombinedChartProps(reports, data) {
         singleReportResult = [{key: report.name, value: report.result.data}];
       } else {
         singleReportResult = formatReportResult(data, report.result.data);
-        singleReportResult.reverse();
       }
 
       return {
