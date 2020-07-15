@@ -82,13 +82,20 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     final var previousStatus = healthStatus;
     healthStatus = status;
 
-    if (failureListener != null && previousStatus != status) {
+    if (previousStatus != status) {
       switch (status) {
         case HEALTHY:
-          failureListener.onRecovered();
+          if (failureListener != null) {
+            failureListener.onRecovered();
+          }
+          log.debug(
+              "The components are healthy. The current health status of components: {}",
+              componentHealth);
           break;
         case UNHEALTHY:
-          failureListener.onFailure();
+          if (failureListener != null) {
+            failureListener.onFailure();
+          }
           log.debug(
               "Detected unhealthy components. The current health status of components: {}",
               componentHealth);
