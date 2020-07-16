@@ -161,7 +161,7 @@ it('should show warning that email is not configured', async () => {
   isEmailEnabled.mockReturnValue(false);
   const node = await shallow(<AlertModal reports={reports} />);
 
-  expect(node.find('MessageBox').exists()).toBe(true);
+  expect(node.find('DocsLink').exists()).toBe(true);
 });
 
 it('should not display warning if email is configured', async () => {

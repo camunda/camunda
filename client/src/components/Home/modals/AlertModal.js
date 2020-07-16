@@ -18,9 +18,10 @@ import {
   Typeahead,
   MessageBox,
   Form,
+  DocsLink,
 } from 'components';
 import {formatters, isDurationReport} from 'services';
-import {isEmailEnabled, getOptimizeVersion} from 'config';
+import {isEmailEnabled} from 'config';
 import {t} from 'translation';
 
 import ThresholdInput from './ThresholdInput';
@@ -60,12 +61,8 @@ export default class AlertModal extends React.Component {
       this.loadAlert();
     }
 
-    const version = (await getOptimizeVersion()).split('.');
-    version.length = 2;
-
     this.setState({
       emailNotificationIsEnabled: await isEmailEnabled(),
-      optimizeVersion: version.join('.'),
     });
   };
 
@@ -224,14 +221,12 @@ export default class AlertModal extends React.Component {
       emailNotificationIsEnabled,
       inactive,
       invalid,
-      optimizeVersion,
       webhook,
       validEmails,
     } = this.state;
 
     const {reports, webhooks, onClose} = this.props;
 
-    const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/setup/configuration/#email`;
     const selectedReport = reports.find((report) => report.id === reportId) || {};
     return (
       <Modal open onClose={onClose} className="AlertModal">
@@ -241,10 +236,14 @@ export default class AlertModal extends React.Component {
         <Modal.Content>
           <Form horizontal>
             {!emailNotificationIsEnabled && (
-              <MessageBox
-                type="warning"
-                dangerouslySetInnerHTML={{__html: t('alert.emailWarning', {docsLink})}}
-              />
+              <DocsLink location="technical-guide/setup/configuration/#email">
+                {(docsLink) => (
+                  <MessageBox
+                    type="warning"
+                    dangerouslySetInnerHTML={{__html: t('alert.emailWarning', {docsLink})}}
+                  />
+                )}
+              </DocsLink>
             )}
             {inactive && (
               <MessageBox type="warning">

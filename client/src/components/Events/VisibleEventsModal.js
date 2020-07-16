@@ -4,24 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useEffect, useState} from 'react';
-import {Form, LabeledInput, Modal, MessageBox, Button} from 'components';
-import {getOptimizeVersion} from 'config';
+import React, {useState} from 'react';
+
+import {Form, LabeledInput, Modal, MessageBox, Button, DocsLink} from 'components';
 import {t} from 'translation';
 
 export default function VisibleEventsModal({initialScope, onClose, onConfirm}) {
   const [scope, setScope] = useState(initialScope);
-  const [optimizeVersion, setOptimizeVersion] = useState();
-
-  useEffect(() => {
-    (async () => {
-      const version = (await getOptimizeVersion()).split('.');
-      version.length = 2;
-      setOptimizeVersion(version.join('.'));
-    })();
-  }, []);
-
-  const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/user-guide/event-based-processes/#camunda-events`;
 
   const toggleScopeItem = (item) => {
     if (scope.includes(item)) {
@@ -59,9 +48,13 @@ export default function VisibleEventsModal({initialScope, onClose, onConfirm}) {
           </Form.Group>
           <MessageBox type="warning">
             {t('events.sources.eventListChangeWarning')}{' '}
-            <a href={docsLink} target="_blank" rel="noopener noreferrer">
-              {t('events.sources.learnMore')}
-            </a>
+            <DocsLink location="user-guide/event-based-processes/#camunda-events">
+              {(docsLink) => (
+                <a href={docsLink} target="_blank" rel="noopener noreferrer">
+                  {t('events.sources.learnMore')}
+                </a>
+              )}
+            </DocsLink>
           </MessageBox>
         </Form>
       </Modal.Content>

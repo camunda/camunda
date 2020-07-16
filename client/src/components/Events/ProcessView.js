@@ -16,6 +16,7 @@ import {
   MessageBox,
   EntityName,
   LastModifiedInfo,
+  DocsLink,
 } from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -25,7 +26,6 @@ import ProcessRenderer from './ProcessRenderer';
 import PublishModal from './PublishModal';
 import {removeProcess, cancelPublish, loadProcess} from './service';
 import {checkDeleteConflict} from 'services';
-import {getOptimizeVersion} from 'config';
 
 import './ProcessView.scss';
 
@@ -42,13 +42,6 @@ export default withErrorHandling(
     async componentDidMount() {
       this.load();
       this.setupPoll();
-
-      const version = (await getOptimizeVersion()).split('.');
-      version.length = 2;
-
-      this.setState({
-        optimizeVersion: version.join('.'),
-      });
     }
 
     componentWillUnmount() {
@@ -98,13 +91,11 @@ export default withErrorHandling(
       const {
         deleting,
         publishing,
-        optimizeVersion,
         data: {id, name, xml, mappings, state, publishingProgress},
       } = this.state;
 
       const isPublishing = state === 'publish_pending';
       const canPublish = state === 'mapped' || state === 'unpublished_changes';
-      const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/user-guide/event-based-processes#autogenerate`;
 
       return (
         <div className="ProcessView">
@@ -154,9 +145,13 @@ export default withErrorHandling(
             {this.props.generated && (
               <MessageBox type="warning">
                 {t('events.generationWarning')}{' '}
-                <a href={docsLink} target="_blank" rel="noopener noreferrer">
-                  {t('common.seeDocs')}
-                </a>
+                <DocsLink location="user-guide/event-based-processes#autogenerate">
+                  {(docsLink) => (
+                    <a href={docsLink} target="_blank" rel="noopener noreferrer">
+                      {t('common.seeDocs')}
+                    </a>
+                  )}
+                </DocsLink>
               </MessageBox>
             )}
           </div>

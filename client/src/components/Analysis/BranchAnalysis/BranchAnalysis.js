@@ -7,17 +7,16 @@
 import React from 'react';
 import equal from 'deep-equal';
 
-import BranchControlPanel from './BranchControlPanel';
-import {BPMNDiagram, MessageBox} from 'components';
-import {getOptimizeVersion} from 'config';
-
-import {loadFrequencyData} from './service';
+import {BPMNDiagram, MessageBox, DocsLink} from 'components';
 import {incompatibleFilters, containsSuspensionFilter, loadProcessDefinitionXml} from 'services';
+import {t} from 'translation';
+
 import DiagramBehavior from './DiagramBehavior';
 import Statistics from './Statistics';
+import BranchControlPanel from './BranchControlPanel';
+import {loadFrequencyData} from './service';
 
 import './BranchAnalysis.scss';
-import {t} from 'translation';
 
 export default class BranchAnalysis extends React.Component {
   constructor(props) {
@@ -40,28 +39,8 @@ export default class BranchAnalysis extends React.Component {
     };
   }
 
-  async componentDidMount() {
-    const version = (await getOptimizeVersion()).split('.');
-    version.length = 2;
-
-    this.setState({
-      optimizeVersion: version.join('.'),
-    });
-  }
-
   render() {
-    const {
-      xml,
-      config,
-      hoveredControl,
-      hoveredNode,
-      gateway,
-      endEvent,
-      data,
-      optimizeVersion,
-    } = this.state;
-
-    const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/update/2.7-to-3.0/#suspension-filter`;
+    const {xml, config, hoveredControl, hoveredNode, gateway, endEvent, data} = this.state;
 
     return (
       <div className="BranchAnalysis">
@@ -80,12 +59,16 @@ export default class BranchAnalysis extends React.Component {
           <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
         )}
         {config.filter && containsSuspensionFilter(config.filter) && (
-          <MessageBox
-            type="warning"
-            dangerouslySetInnerHTML={{
-              __html: t('common.filter.suspensionFilterWarning', {docsLink}),
-            }}
-          />
+          <DocsLink location="technical-guide/update/2.7-to-3.0/#suspension-filter">
+            {(docsLink) => (
+              <MessageBox
+                type="warning"
+                dangerouslySetInnerHTML={{
+                  __html: t('common.filter.suspensionFilterWarning', {docsLink}),
+                }}
+              />
+            )}
+          </DocsLink>
         )}
         <div className="content">
           <div className="BranchAnalysis__diagram">

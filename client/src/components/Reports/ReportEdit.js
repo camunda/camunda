@@ -17,9 +17,8 @@ import {
   MessageBox,
   EntityNameForm,
   InstanceCount,
+  DocsLink,
 } from 'components';
-import {getOptimizeVersion} from 'config';
-
 import {
   incompatibleFilters,
   containsSuspensionFilter,
@@ -29,10 +28,11 @@ import {
   getCollection,
 } from 'services';
 import {showError} from 'notifications';
+import {t} from 'translation';
+
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
-import {t} from 'translation';
 import ConflictModal from './ConflictModal';
 
 export class ReportEdit extends React.Component {
@@ -48,13 +48,6 @@ export class ReportEdit extends React.Component {
 
   async componentDidMount() {
     const {report} = this.state;
-
-    const version = (await getOptimizeVersion()).split('.');
-    version.length = 2;
-
-    this.setState({
-      optimizeVersion: version.join('.'),
-    });
 
     if (this.isReportComplete(report) && !report.result) {
       this.loadReport(report);
@@ -210,14 +203,12 @@ export class ReportEdit extends React.Component {
   };
 
   render() {
-    const {report, loadingReportData, conflict, redirect, optimizeVersion} = this.state;
+    const {report, loadingReportData, conflict, redirect} = this.state;
     const {name, data, combined, reportType} = report;
 
     if (redirect) {
       return <Redirect to={redirect} />;
     }
-
-    const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/update/2.7-to-3.0/#suspension-filter`;
 
     return (
       <div className="Report">
@@ -254,12 +245,16 @@ export class ReportEdit extends React.Component {
         )}
 
         {data?.filter && containsSuspensionFilter(data.filter) && (
-          <MessageBox
-            type="warning"
-            dangerouslySetInnerHTML={{
-              __html: t('common.filter.suspensionFilterWarning', {docsLink}),
-            }}
-          />
+          <DocsLink location="technical-guide/update/2.7-to-3.0/#suspension-filter">
+            {(docsLink) => (
+              <MessageBox
+                type="warning"
+                dangerouslySetInnerHTML={{
+                  __html: t('common.filter.suspensionFilterWarning', {docsLink}),
+                }}
+              />
+            )}
+          </DocsLink>
         )}
 
         {data?.groupBy?.type === 'endDate' &&

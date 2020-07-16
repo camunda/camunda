@@ -4,31 +4,23 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect} from 'react';
+import React, {useState} from 'react';
 import {Redirect} from 'react-router';
-import {Button, Modal, EntityList, Icon} from 'components';
+
+import {Button, Modal, EntityList, Icon, DocsLink} from 'components';
 import {t} from 'translation';
-import EventsSourceModal from './EventsSourceModal';
-import {createProcess} from './service';
-import {getOptimizeVersion} from 'config';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
+
+import EventsSourceModal from './EventsSourceModal';
+import {createProcess} from './service';
 
 import './GenerationModal.scss';
 
 export function GenerationModal({onClose, mightFail}) {
   const [sources, setSources] = useState([]);
   const [openEventsSourceModal, setOpenEventsSourceModal] = useState(false);
-  const [version, setVersion] = useState();
   const [redirect, setRedirect] = useState();
-
-  useEffect(() => {
-    (async () => {
-      const version = (await getOptimizeVersion()).split('.');
-      version.length = 2;
-      setVersion(version.join('.'));
-    })();
-  }, []);
 
   const removeSource = (target) => setSources(sources.filter((src) => src !== target));
 
@@ -39,7 +31,6 @@ export function GenerationModal({onClose, mightFail}) {
     return <Redirect to={`/eventBasedProcess/${redirect}/generated`} />;
   }
 
-  const docsLink = `https://docs.camunda.org/optimize/${version}/user-guide/event-based-processes#autogenerate`;
   return (
     <Modal
       className="GenerationModal"
@@ -51,9 +42,13 @@ export function GenerationModal({onClose, mightFail}) {
       <Modal.Content>
         <p className="description">
           {t('events.generationInfo')}{' '}
-          <a href={docsLink} target="_blank" rel="noopener noreferrer">
-            {t('events.sources.learnMore')}
-          </a>
+          <DocsLink location="user-guide/event-based-processes#autogenerate">
+            {(link) => (
+              <a href={link} target="_blank" rel="noopener noreferrer">
+                {t('events.sources.learnMore')}
+              </a>
+            )}
+          </DocsLink>
         </p>
         <EntityList
           embedded
