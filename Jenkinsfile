@@ -200,8 +200,18 @@ pipeline {
             }
 
             post {
+                always {
+                    jacoco(
+                          execPattern: '**/*.exec',
+                          classPattern: '**/target/classes',
+                          sourcePattern: '**/src/main/java',
+                          exclusionPattern: '**/src/test*,**/generated-sources/**,**/generated-test-sources/**,/benchmarks/**',
+                          runAlways: true
+                    )
+                }
                 failure {
                     zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
+                    zip zipFile: 'test-coverage-reports.zip', archive: true, glob: "**/target/site/jacoco/**"
 
                     script {
                       if (fileExists('./target/FlakyTests.txt')) {

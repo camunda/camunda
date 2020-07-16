@@ -120,6 +120,7 @@
     <plugin.version.clirr>2.8</plugin.version.clirr>
     <plugin.version.maven-jar>3.2.0</plugin.version.maven-jar>
     <plugin.version.dependency-analyzer>1.11.1</plugin.version.dependency-analyzer>
+    <plugin.version.jacoco>0.8.3</plugin.version.jacoco>
 
 
     <!-- maven extensions -->
@@ -1124,6 +1125,29 @@
           </configuration>
         </plugin>
 
+        <!-- JaCoCo Plugin -->
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>${plugin.version.jacoco}</version>
+          <executions>
+            <execution>
+              <id>coverage-initialize</id>
+              <goals>
+                <goal>prepare-agent</goal>
+              </goals>
+            </execution>
+            <execution>
+              <id>coverage-report</id>
+              <phase>post-integration-test</phase>
+              <goals>
+                <goal>report</goal>
+              </goals>
+            </execution>
+            <!-- Threshold -->
+          </executions>
+        </plugin>
+
       </plugins>
 
     </pluginManagement>
@@ -1162,6 +1186,11 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
+      </plugin>
+
+      <plugin>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>
