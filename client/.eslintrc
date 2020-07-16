@@ -4,5 +4,8 @@
     "prettier/prettier": "warn",
     "curly": "error"
   },
+  "globals": {
+    "flushPromises": "readonly"
+  },
   "extends": ["react-app", "plugin:camunda-licensed/commercial", "plugin:testcafe/recommended"]
 }
