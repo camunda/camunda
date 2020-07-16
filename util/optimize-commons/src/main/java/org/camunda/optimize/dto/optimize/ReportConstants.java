@@ -1,13 +1,16 @@
-  /*
+/*
  * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
 package org.camunda.optimize.dto.optimize;
 
+import com.google.common.collect.ImmutableList;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+
+import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ReportConstants {
@@ -113,7 +116,7 @@ public class ReportConstants {
   public static final String DATE_TYPE = "Date";
   public static final String DATE_TYPE_LOWERCASE = "date";
 
-  public static final VariableType[] ALL_SUPPORTED_VARIABLE_TYPES = VariableType.values();
+  public static final List<VariableType> ALL_SUPPORTED_VARIABLE_TYPES = ImmutableList.copyOf(VariableType.values());
 
   // A report result can have three states in theory for duration reports:
   // * an arbitrary positive value,
