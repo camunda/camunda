@@ -922,7 +922,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
   }
 
   @Test
-  public void dateVariablesAreSortedDescByDefault() {
+  public void dateVariablesAreSortedAscByDefault() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("dateVar", OffsetDateTime.now());
@@ -951,7 +951,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     // then
     final List<MapResultEntryDto> resultData = response.getResult().getData();
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
@@ -1093,10 +1093,11 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(resultData).isNotNull();
     // there is one bucket per instance since the date variables are each one bucket span apart
     assertThat(resultData).hasSize(numberOfInstances);
-    // buckets are in descending order, so the first bucket is based on the date variable of the last instance
+    // buckets are in ascending order, so the first bucket is based on the date variable of the first instance
+    dateVariableValue = dateVariableValue.minus(numberOfInstances - 1, chronoUnit);
     for (int i = 0; i < numberOfInstances; i++) {
       final String expectedBucketKey = embeddedOptimizeExtension.formatToHistogramBucketKey(
-        dateVariableValue.minus(i, chronoUnit),
+        dateVariableValue.plus(i, chronoUnit),
         chronoUnit
       );
       assertThat(resultData.get(i).getValue()).isEqualTo(1);

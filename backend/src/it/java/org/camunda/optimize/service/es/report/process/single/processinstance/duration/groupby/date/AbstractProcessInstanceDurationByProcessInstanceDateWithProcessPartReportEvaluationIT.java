@@ -27,6 +27,8 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
@@ -44,6 +46,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
@@ -184,7 +187,11 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     assertThat(resultData).isNotNull();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
-    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 2000., 9000.));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(
+      1000.,
+      2000.,
+      9000.
+    ));
   }
 
   @Test
@@ -234,7 +241,6 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
       .setReportDataType(getTestReportDataType())
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -243,12 +249,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
       .isNotNull()
       .hasSize(2);
     ZonedDateTime startOfToday = truncateToStartOfUnit(procInstRefDate, ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
-    assertThat(
-      resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 2000., 9000.));
-    assertThat(resultData.get(1).getKey()).isEqualTo(localDateTimeToString(startOfToday.minusDays(1)));
-    assertThat(
-      resultData.get(1).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(2000., 4000., 12000.));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday.minusDays(1)));
+    assertThat(resultData.get(0).getValue())
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(2000., 4000., 12000.));
+    assertThat(resultData.get(1).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(1).getValue())
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 2000., 9000.));
   }
 
   @Test
@@ -437,7 +443,11 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     final List<MapResultEntryDto> resultData = result.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
-    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(
+      1000.,
+      9000.,
+      2000.
+    ));
   }
 
   @Test
@@ -555,7 +565,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(getTestReportDataType())
       .build();
-
+    reportData.getConfiguration().setSorting(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC));
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -563,13 +573,17 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     assertThat(resultData).hasSize(2);
     ZonedDateTime startOfToday = truncateToStartOfUnit(procInstRefDate, ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
-    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(
+      1000.,
+      9000.,
+      2000.
+    ));
     assertThat(resultData.get(1).getKey()).isEqualTo(localDateTimeToString(startOfToday.minusDays(1)));
     assertThat(resultData.get(1).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
 
   @Test
-  public void resultIsSortedInDescendingOrder() {
+  public void resultIsSortedInAscendingOrder() {
     // given
     OffsetDateTime procInstRefDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -603,9 +617,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(resultKeys)
-      // expect descending order
-      .isSortedAccordingTo(Comparator.reverseOrder());
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
@@ -733,7 +745,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(getTestReportDataType())
       .build();
-
+    reportData.getConfiguration().setSorting(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC));
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -741,146 +753,43 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     assertThat(resultData).hasSize(3);
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
-    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 2000., 9000.));
+    assertThat(resultData.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(
+      1000.,
+      2000.,
+      9000.
+    ));
     assertThat(resultData.get(1).getKey()).isEqualTo(localDateTimeToString(startOfToday.minusDays(1)));
     assertThat(resultData.get(1).getValue()).isNull();
     assertThat(resultData.get(2).getKey()).isEqualTo(localDateTimeToString(startOfToday.minusDays(2)));
     assertThat(resultData.get(2).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(2000.));
   }
 
-  @Test
-  public void groupedByHour() {
+  @ParameterizedTest
+  @MethodSource("staticGroupByDateUnits")
+  public void groupedByStaticDateUnit(final GroupByDateUnit unit) {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(5);
     OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.HOURS);
+    updateProcessInstancesDates(processInstanceDtos, now, mapToChronoUnit(unit));
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setDateInterval(GroupByDateUnit.HOUR)
+      .setDateInterval(unit)
       .setProcessDefinitionKey(dto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(getTestReportDataType())
       .build();
-
+    reportData.getConfiguration().setSorting(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC));
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData()).isNotNull();
-    assertDateResultMap(result.getData(), 5, now, ChronoUnit.HOURS);
-  }
-
-  @Test
-  public void groupedByDay() {
-    // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.DAYS);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
-      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(getTestReportDataType())
-      .build();
-
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData()).isNotNull();
-    assertDateResultMap(result.getData(), 8, now, ChronoUnit.DAYS);
-  }
-
-  @Test
-  public void groupedByWeek() {
-    // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.WEEKS);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setDateInterval(GroupByDateUnit.WEEK)
-      .setProcessDefinitionKey(dto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(getTestReportDataType())
-      .build();
-
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData()).isNotNull();
-    assertDateResultMap(result.getData(), 8, now, ChronoUnit.WEEKS);
-  }
-
-  @Test
-  public void groupedByMonth() {
-    // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.MONTHS);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setDateInterval(GroupByDateUnit.MONTH)
-      .setProcessDefinitionKey(dto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(getTestReportDataType())
-      .build();
-
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData()).isNotNull();
-    assertDateResultMap(result.getData(), 8, now, ChronoUnit.MONTHS);
-  }
-
-  @Test
-  public void groupedByYear() {
-    // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.YEARS);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setDateInterval(GroupByDateUnit.YEAR)
-      .setProcessDefinitionKey(dto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
-      .setStartFlowNodeId(START_EVENT)
-      .setEndFlowNodeId(END_EVENT)
-      .setReportDataType(getTestReportDataType())
-      .build();
-
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData()).isNotNull();
-    assertDateResultMap(result.getData(), 8, now, ChronoUnit.YEARS);
+    assertDateResultMap(result.getData(), 5, now, mapToChronoUnit(unit));
   }
 
   private void assertDateResultMap(List<MapResultEntryDto> resultData,
@@ -989,10 +898,6 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
                                                      OffsetDateTime referenceDate,
                                                      long daysToShift,
                                                      Long durationInSec);
-
-  private String localDateTimeToString(ZonedDateTime time) {
-    return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
-  }
 
   protected void startThreeProcessInstances(OffsetDateTime procInstRefDate,
                                             int daysToShiftProcessInstance,

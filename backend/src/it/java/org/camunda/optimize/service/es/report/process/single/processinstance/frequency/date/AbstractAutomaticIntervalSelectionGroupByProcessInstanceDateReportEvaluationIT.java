@@ -80,8 +80,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    assertThat(resultData.get(0).getValue(), is(2.));
-    assertThat(resultData.get(resultData.size() - 1).getValue(), is(1.));
+    assertThat(resultData.get(0).getValue(), is(1.));
+    assertThat(resultData.get(resultData.size() - 1).getValue(), is(2.));
   }
 
   @Test
@@ -268,8 +268,8 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
       final List<MapResultEntryDto> resultData = result.getResult().getData();
       assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-      assertThat(resultData.get(resultData.size() - 1).getKey(), is(localDateTimeToString(startRange)));
-      assertIsInRangeOfLastInterval(resultData.get(0).getKey(), startRange, endRange);
+      assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startRange)));
+      assertIsInRangeOfLastInterval(resultData.get(resultData.size() - 1).getKey(), startRange, endRange);
     }
   }
 

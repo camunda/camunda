@@ -120,9 +120,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
 
     // when
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
-      reportClient.evaluateMapReportById(
-      reportId
-    );
+      reportClient.evaluateMapReportById(reportId);
 
     // then
     final ReportMapResultDto result = evaluationResponse.getResult();
@@ -862,10 +860,6 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
       .map(MapResultEntryDto::getValue)
       .filter(Objects::nonNull)
       .count();
-  }
-
-  protected String localDateTimeToString(ZonedDateTime time) {
-    return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
   }
 
   protected abstract ProcessGroupByType getGroupByType();

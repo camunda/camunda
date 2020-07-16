@@ -88,11 +88,11 @@ public class ProcessInstanceDurationByProcessInstanceEndDateWithProcessPartRepor
     assertThat(resultData.size()).isEqualTo(5);
 
     assertThat(resultData.get(0).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
-    assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS));
+    assertThat(resultData.get(0).getValue()).isNull();
 
     assertThat(resultData.get(1).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS));
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS));
     assertThat(resultData.get(1).getValue()).isNull();
 
     assertThat(resultData.get(2).getKey())
@@ -100,11 +100,11 @@ public class ProcessInstanceDurationByProcessInstanceEndDateWithProcessPartRepor
     assertThat(resultData.get(2).getValue()).isEqualTo(2000.);
 
     assertThat(resultData.get(3).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS));
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS));
     assertThat(resultData.get(3).getValue()).isNull();
 
     assertThat(resultData.get(4).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS));
-    assertThat(resultData.get(4).getValue()).isNull();
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
+    assertThat(resultData.get(4).getValue()).isEqualTo(1000.);
   }
 }

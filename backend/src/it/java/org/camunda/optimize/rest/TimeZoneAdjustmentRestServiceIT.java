@@ -358,12 +358,12 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .format(now.atZoneSameInstant(ZoneId.of("Europe/London")).toOffsetDateTime());
     assertThat(dateAsStringDateResultEntries)
       .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    final String lastElement = dateAsStringDateResultEntries.get(dateAsStringDateResultEntries.size() - 1);
-    assertThat(lastElement).isEqualTo(expectedDateAsString);
-
-    expectedDateAsString = expectedLastDateAsStringForAutomaticInterval(now);
     final String firstElement = dateAsStringDateResultEntries.get(0);
     assertThat(firstElement).isEqualTo(expectedDateAsString);
+
+    expectedDateAsString = expectedLastDateAsStringForAutomaticInterval(now);
+    final String lastElement = dateAsStringDateResultEntries.get(dateAsStringDateResultEntries.size() - 1);
+    assertThat(lastElement).isEqualTo(expectedDateAsString);
   }
 
   @Test
@@ -494,12 +494,12 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
         .format(now.atZoneSameInstant(ZoneId.of("Europe/London")).toOffsetDateTime());
       assertThat(dateAsStringDateResultEntries)
         .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-      final String lastElement = dateAsStringDateResultEntries.get(dateAsStringDateResultEntries.size() - 1);
-      assertThat(lastElement).isEqualTo(expectedDateAsString);
-
-      expectedDateAsString = expectedLastDateAsStringForAutomaticInterval(now);
       final String firstElement = dateAsStringDateResultEntries.get(0);
       assertThat(firstElement).isEqualTo(expectedDateAsString);
+
+      expectedDateAsString = expectedLastDateAsStringForAutomaticInterval(now);
+      final String lastElement = dateAsStringDateResultEntries.get(dateAsStringDateResultEntries.size() - 1);
+      assertThat(lastElement).isEqualTo(expectedDateAsString);
     }
   }
 
@@ -795,7 +795,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     // then there should be data in here. If the filter timezone isn't used the result will be 0.0
     assertThat(result.getData())
       .hasSize(2)
-      .last()
+      .first()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(1.0);
   }

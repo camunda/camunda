@@ -77,7 +77,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListWithoutSum();
 
   @Test
-  public void simpleReportEvaluation() throws SQLException {
+  public void simpleReportEvaluation() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -126,7 +126,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void simpleReportEvaluationById() throws SQLException {
+  public void simpleReportEvaluationById() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -250,7 +250,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void dateVariablesAreSortedDescByDefault() {
+  public void dateVariablesAreSortedAscByDefault() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("dateVar", OffsetDateTime.now());
@@ -281,12 +281,11 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // then
     final List<MapResultEntryDto> resultData = response.getResult().getData();
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    // expect descending order
-    assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
-  public void otherProcessDefinitionsDoNoAffectResult() throws SQLException {
+  public void otherProcessDefinitionsDoNoAffectResult() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -886,7 +885,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void calculateDurationForRunningProcessInstances() throws SQLException {
+  public void calculateDurationForRunningProcessInstances() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -941,7 +940,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void calculateDurationForCompletedProcessInstances() throws SQLException {
+  public void calculateDurationForCompletedProcessInstances() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -996,7 +995,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void calculateDurationForRunningAndCompletedProcessInstances() throws SQLException {
+  public void calculateDurationForRunningAndCompletedProcessInstances() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -1049,7 +1048,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void durationFilterWorksForRunningProcessInstances() throws SQLException {
+  public void durationFilterWorksForRunningProcessInstances() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -1107,7 +1106,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void variableTypeIsImportant() throws SQLException {
+  public void variableTypeIsImportant() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -1151,7 +1150,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void otherVariablesDoNotDistortTheResult() throws SQLException {
+  public void otherVariablesDoNotDistortTheResult() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -1192,7 +1191,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void worksWithAllVariableTypes() throws SQLException {
+  public void worksWithAllVariableTypes() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -1377,7 +1376,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void filterInReportWorks() throws SQLException {
+  public void filterInReportWorks() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
@@ -1565,12 +1564,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // there is one bucket per instance since the date variables are each one bucket span apart
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(numberOfInstances);
-    // buckets are in descending order, so the first bucket is based on the date variable of the last instance
+    // buckets are in ascending order, so the first bucket is based on the date variable of the first instance
+    variableValue = variableValue.minus(numberOfInstances - 1, chronoUnit);
     final DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
     for (int i = 0; i < numberOfInstances; i++) {
       final String expectedBucketKey = formatter.format(
         truncateToStartOfUnit(
-          variableValue.minus(chronoUnit.getDuration().multipliedBy(i)),
+          variableValue.plus(chronoUnit.getDuration().multipliedBy(i)),
           chronoUnit
         ));
       assertThat(resultData.get(i).getValue())
@@ -1666,7 +1666,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
   private void startProcessInstanceShiftedBySeconds(Map<String, Object> variables,
                                                     String processDefinitionId,
-                                                    int secondsToShift) throws SQLException {
+                                                    int secondsToShift) {
     ProcessInstanceEngineDto processInstanceDto2;
     OffsetDateTime startDate;
     OffsetDateTime endDate;
@@ -1691,7 +1691,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   private ProcessInstanceEngineDto startProcessWithVariablesAndDates(final ProcessDefinitionEngineDto definition,
                                                                      final Map<String, Object> variables,
                                                                      final OffsetDateTime startDate,
-                                                                     final OffsetDateTime endDate) throws SQLException {
+                                                                     final OffsetDateTime endDate) {
     ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(
       definition.getId(),
       variables

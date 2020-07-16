@@ -195,7 +195,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
     result.setSorting(
       context.getReportConfiguration()
         .getSorting()
-        .orElseGet(() -> new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC))
+        .orElseGet(() -> new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.ASC))
     );
   }
 

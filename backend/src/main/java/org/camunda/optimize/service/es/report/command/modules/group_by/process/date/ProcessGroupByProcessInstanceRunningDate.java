@@ -123,7 +123,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
       result.setSorting(
         context.getReportConfiguration()
           .getSorting()
-          .orElseGet(() -> new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC))
+          .orElseGet(() -> new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.ASC))
       );
     }
   }

@@ -70,12 +70,12 @@ public class CountProcessInstanceFrequencyByProcessInstanceEndDateReportEvaluati
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(getTestReportDataType())
-      .build();
+    ProcessReportDataDto reportData = createReportDataSortedDesc(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      getTestReportDataType(),
+      GroupByDateUnit.DAY
+    );
 
     final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(
       new RollingDateFilterStartDto(4L, DateFilterUnit.DAYS)

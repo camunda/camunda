@@ -18,7 +18,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.sql.SQLException;
@@ -69,14 +68,12 @@ public class CountProcessInstanceFrequencyByProcessInstanceStartDateReportEvalua
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.DAY)
-      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
-      .build();
-
+    final ProcessReportDataDto reportData = createReportDataSortedDesc(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      getTestReportDataType(),
+      GroupByDateUnit.DAY
+    );
     final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(
       new RollingDateFilterStartDto(4L, DateFilterUnit.DAYS)
     );
@@ -129,12 +126,12 @@ public class CountProcessInstanceFrequencyByProcessInstanceStartDateReportEvalua
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
-      .setProcessDefinitionKey(processDefinition.getKey())
-      .setProcessDefinitionVersion(processDefinition.getVersionAsString())
-      .setReportDataType(getTestReportDataType())
-      .build();
+    ProcessReportDataDto reportData = createReportDataSortedDesc(
+      processDefinition.getKey(),
+      processDefinition.getVersionAsString(),
+      getTestReportDataType(),
+      GroupByDateUnit.DAY
+    );
 
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);

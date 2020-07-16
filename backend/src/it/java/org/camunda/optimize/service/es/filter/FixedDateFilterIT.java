@@ -355,7 +355,7 @@ public class FixedDateFilterIT extends AbstractFilterIT {
     assertThat(resultData).hasSize(2);
     assertThat(result.getIsComplete()).isFalse();
 
-    assertThat(resultData.get(0).getKey())
+    assertThat(resultData.get(resultData.size() - 1).getKey())
       .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(oldStartDate, ChronoUnit.DAYS));
   }
 
@@ -481,11 +481,11 @@ public class FixedDateFilterIT extends AbstractFilterIT {
     assertThat(result.getIsComplete()).isFalse();
 
     assertThat(resultData.get(0).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
-    assertThat(resultData.get(0).getValue()).isEqualTo(0.);
-    assertThat(resultData.get(1).getKey())
       .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS));
-    assertThat(resultData.get(1).getValue()).isEqualTo(2.);
+    assertThat(resultData.get(0).getValue()).isEqualTo(2.);
+    assertThat(resultData.get(1).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
+    assertThat(resultData.get(1).getValue()).isEqualTo(0.);
   }
 
   private ProcessInstanceEngineDto startAndImportSimpleProcess() {

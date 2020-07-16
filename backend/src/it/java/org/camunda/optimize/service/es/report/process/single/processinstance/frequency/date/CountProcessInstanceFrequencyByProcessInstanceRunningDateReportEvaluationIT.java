@@ -97,7 +97,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
     IntStream.range(0, expectedNumberOfBuckets)
       .forEach(i -> {
         final String expectedBucketKey = convertToExpectedBucketKey(
-          lastBucketStartDate.toOffsetDateTime().minus(i, mapToChronoUnit(unit)),
+          startOfFirstInstance.plus(i, mapToChronoUnit(unit)),
           unit
         );
         assertThat(resultData.get(i).getKey()).isEqualTo(expectedBucketKey);
@@ -138,8 +138,8 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
 
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(2);
-    assertThat(resultData.get(0).getKey()).isEqualTo(convertToExpectedBucketKey(startOfSecondInstance, unit));
-    assertThat(resultData.get(1).getKey()).isEqualTo(convertToExpectedBucketKey(startOfFirstInstance, unit));
+    assertThat(resultData.get(0).getKey()).isEqualTo(convertToExpectedBucketKey(startOfFirstInstance, unit));
+    assertThat(resultData.get(1).getKey()).isEqualTo(convertToExpectedBucketKey(startOfSecondInstance, unit));
   }
 
   @SneakyThrows
@@ -177,8 +177,8 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
 
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(4);
-    assertThat(resultData.get(0).getKey()).isEqualTo(convertToExpectedBucketKey(latestStartDate, unit));
-    assertThat(resultData.get(3).getKey()).isEqualTo(convertToExpectedBucketKey(earliestStartDate, unit));
+    assertThat(resultData.get(0).getKey()).isEqualTo(convertToExpectedBucketKey(earliestStartDate, unit));
+    assertThat(resultData.get(3).getKey()).isEqualTo(convertToExpectedBucketKey(latestStartDate, unit));
   }
 
   @Override

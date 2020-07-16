@@ -759,9 +759,10 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // then
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(numberOfInstances);
+    dateVariableValue = dateVariableValue.minus(numberOfInstances - 1, chronoUnit); // reset to first variable value
     for (int i = 0; i < numberOfInstances; i++) {
       final String expectedBucketKey = embeddedOptimizeExtension.formatToHistogramBucketKey(
-        dateVariableValue.minus(chronoUnit.getDuration().multipliedBy(i)),
+        dateVariableValue.plus(chronoUnit.getDuration().multipliedBy(i)),
         chronoUnit
       );
       assertThat(resultData.get(i).getValue()).isEqualTo(1);
@@ -870,12 +871,12 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
-    assertThat(resultData.get(resultData.size() - 1).getValue()).isEqualTo(2.);
+    assertThat(resultData.get(resultData.size() - 1).getValue()).isEqualTo(1.);
+    assertThat(resultData.get(0).getValue()).isEqualTo(2.);
   }
 
   @Test
-  public void dateVariablesAreSortedDescByDefault() {
+  public void dateVariablesAreSortedAscByDefault() {
     // given
     final String inputClauseId = "inputClauseId";
     final String camInputVariable = "input";
@@ -907,7 +908,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test

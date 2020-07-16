@@ -1046,11 +1046,6 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
         }
       );
   }
-
-  protected String localDateTimeToString(ZonedDateTime time) {
-    return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
-  }
-
   private String groupedByDayDateAsString(final OffsetDateTime referenceDate) {
     return groupedByDateAsString(referenceDate, ChronoUnit.DAYS);
   }

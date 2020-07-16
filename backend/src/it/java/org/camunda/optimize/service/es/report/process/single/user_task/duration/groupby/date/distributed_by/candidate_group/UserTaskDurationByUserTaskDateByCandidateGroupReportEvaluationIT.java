@@ -934,10 +934,6 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
     engineIntegrationExtension.finishAllRunningUserTasks();
   }
 
-  private String localDateTimeToString(ZonedDateTime time) {
-    return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
-  }
-
   protected String groupedByDayDateAsString(final OffsetDateTime referenceDate) {
     return groupedByDateAsString(referenceDate, ChronoUnit.DAYS);
   }

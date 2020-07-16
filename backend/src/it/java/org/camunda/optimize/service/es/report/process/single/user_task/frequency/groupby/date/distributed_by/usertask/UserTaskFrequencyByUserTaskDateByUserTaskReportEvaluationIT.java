@@ -1010,10 +1010,6 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private String localDateTimeToString(ZonedDateTime time) {
-    return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
-  }
-
   protected String groupedByDayDateAsString(final OffsetDateTime referenceDate) {
     return groupedByDateAsString(referenceDate, ChronoUnit.DAYS);
   }

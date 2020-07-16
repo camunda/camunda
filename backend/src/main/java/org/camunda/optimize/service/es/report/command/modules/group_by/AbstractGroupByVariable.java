@@ -332,7 +332,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     compositeCommandResult.setGroups(groupedData);
     compositeCommandResult.setIsComplete(isResultComplete(filteredVariables, variableTerms));
     if (VariableType.DATE.equals(getVariableType(context))) {
-      compositeCommandResult.setSorting(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC));
+      compositeCommandResult.setSorting(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.ASC));
     }
     compositeCommandResult.setKeyIsOfNumericType(getSortByKeyIsOfNumericType(context));
   }

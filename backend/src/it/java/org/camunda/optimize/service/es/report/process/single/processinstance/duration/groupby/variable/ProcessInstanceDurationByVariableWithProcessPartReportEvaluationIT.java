@@ -1209,11 +1209,12 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // there is one bucket per instance since the date variables are each one bucket span apart
     assertThat(resultData).hasSize(numberOfInstances);
     final DateTimeFormatter formatter = embeddedOptimizeExtension.getDateTimeFormatter();
-    // buckets are in descending order, so the first bucket is based on the date variable of the last instance
+    // buckets are in ascending order, so the first bucket is based on the date variable of the first instance
+    dateVariableValue = dateVariableValue.minus(numberOfInstances - 1, chronoUnit);
     for (int i = 0; i < numberOfInstances; i++) {
       final String expectedBucketKey = formatter.format(
         truncateToStartOfUnit(
-          dateVariableValue.minus(i, chronoUnit),
+          dateVariableValue.plus(i, chronoUnit),
           chronoUnit
         ));
       assertThat(resultData.get(i).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));

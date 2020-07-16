@@ -29,7 +29,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
 
 public class RollingDateFilterIT extends AbstractDateFilterIT {
@@ -167,15 +167,13 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
     assertThat(result.getIsComplete()).isFalse();
 
     assertThat(resultData.get(0).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(
-        startDate,
-        ChronoUnit.DAYS
-      ));
-    assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS));
+    assertThat(resultData.get(0).getValue()).isNull();
 
     assertThat(resultData.get(1).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS));
-    assertThat(resultData.get(1).getValue()).isNull();
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
+    assertThat(resultData.get(1).getValue())
+      .isEqualTo(1000.);
   }
 
   @Test
@@ -234,10 +232,9 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
     assertThat(result.getIsComplete()).isFalse();
 
     assertThat(resultData.get(0).getKey())
-      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
-
-    assertThat(resultData.get(1).getKey())
       .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS));
+    assertThat(resultData.get(1).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS));
   }
 
   @ParameterizedTest

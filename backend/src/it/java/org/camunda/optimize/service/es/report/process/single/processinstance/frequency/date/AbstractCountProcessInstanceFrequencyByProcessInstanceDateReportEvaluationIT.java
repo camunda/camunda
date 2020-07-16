@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.date;
 
+import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -26,6 +27,8 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
@@ -43,6 +46,7 @@ import java.util.stream.IntStream;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,6 +59,26 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
   protected abstract ProcessReportDataType getTestReportDataType();
 
   protected abstract ProcessGroupByType getGroupByType();
+
+  protected abstract void changeProcessInstanceDate(final String processInstanceId,
+                                                    final OffsetDateTime newDate) throws SQLException;
+
+  protected ProcessDefinitionEngineDto deployTwoRunningAndOneCompletedUserTaskProcesses(final OffsetDateTime now) {
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleOneUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
+    final ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance2.getId(), now.minusDays(1));
+    final ProcessInstanceEngineDto processInstance3 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance3.getId(), now.minusDays(2));
+    return processDefinition;
+  }
+
+  protected abstract void updateProcessInstanceDates(Map<String, OffsetDateTime> newIdToDates) throws SQLException;
 
   @Test
   public void simpleReportEvaluation() {
@@ -126,25 +150,8 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     assertThat(resultData.get(0).getValue(), is(1.));
   }
 
-
-  protected ProcessDefinitionEngineDto deployTwoRunningAndOneCompletedUserTaskProcesses(
-    final OffsetDateTime now) throws SQLException {
-    final ProcessDefinitionEngineDto processDefinition = deploySimpleOneUserTasksDefinition();
-
-    final ProcessInstanceEngineDto processInstance1 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
-    final ProcessInstanceEngineDto processInstance2 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance2.getId(), now.minusDays(1));
-    final ProcessInstanceEngineDto processInstance3 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance3.getId(), now.minusDays(2));
-    return processDefinition;
-  }
-
   @Test
-  public void resultIsSortedInDescendingOrder() throws Exception {
+  public void resultIsSortedInAscendingOrder() throws Exception {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -171,14 +178,10 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
     assertThat(
       resultKeys,
-      // expect descending order
-      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
+      // expect ascending order
+      contains(resultKeys.stream().sorted(Comparator.naturalOrder()).toArray())
     );
   }
-
-  protected abstract void changeProcessInstanceDate(String processInstanceId,
-                                                    final OffsetDateTime newDate) throws
-                                                                                  SQLException;
 
   @Test
   public void testCustomOrderOnResultKeyIsApplied() throws SQLException {
@@ -381,170 +384,38 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     assertThat(yesterdayEntry.get().getValue(), is(0.));
 
     final String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
-    final Optional<MapResultEntryDto> dayBeforYesterdayEntry = resultData.stream()
+    final Optional<MapResultEntryDto> dayBeforeYesterdayEntry = resultData.stream()
       .filter(e -> expectedStringDayBeforeYesterday.equals(e.getKey()))
       .findFirst();
-    assertThat(dayBeforYesterdayEntry.isPresent(), is(true));
-    assertThat(dayBeforYesterdayEntry.get().getValue(), is(1.));
+    assertThat(dayBeforeYesterdayEntry.isPresent(), is(true));
+    assertThat(dayBeforeYesterdayEntry.get().getValue(), is(1.));
   }
 
-  @Test
-  public void countGroupedByHour() throws Exception {
+  @SneakyThrows
+  @ParameterizedTest
+  @MethodSource("staticGroupByDateUnits")
+  public void countGroupedByStaticDateUnit(final GroupByDateUnit unit) {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(5);
     OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesTime(processInstanceDtos, now, ChronoUnit.HOURS);
-
+    updateProcessInstancesTime(processInstanceDtos, now, mapToChronoUnit(unit));
 
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.HOUR)
-      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
-      .setReportDataType(getTestReportDataType())
-      .build();
+    ProcessReportDataDto reportData = createReportDataSortedDesc(
+      processInstanceEngineDto.getProcessDefinitionKey(),
+      processInstanceEngineDto.getProcessDefinitionVersion(),
+      getTestReportDataType(),
+      unit
+    );
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
-    assertStartDateResultMap(resultData, 5, now, ChronoUnit.HOURS);
-  }
-
-  private void assertStartDateResultMap(List<MapResultEntryDto> resultData,
-                                        int size,
-                                        OffsetDateTime now,
-                                        ChronoUnit unit) {
-    assertStartDateResultMap(resultData, size, now, unit, 1.);
-  }
-
-  protected void assertStartDateResultMap(List<MapResultEntryDto> resultData,
-                                          int size,
-                                          OffsetDateTime now,
-                                          ChronoUnit unit,
-                                          Double expectedValue) {
-    assertThat(resultData.size(), is(size));
-    final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
-    IntStream.range(0, size)
-      .forEach(i -> {
-        final String expectedDateString = localDateTimeToString(finalStartOfUnit.minus((i), unit));
-        assertThat(resultData.get(i).getKey(), is(expectedDateString));
-        assertThat(resultData.get(i).getValue(), is(expectedValue));
-      });
-  }
-
-  private void updateProcessInstancesTime(List<ProcessInstanceEngineDto> procInsts,
-                                          OffsetDateTime now,
-                                          ChronoUnit unit) throws SQLException {
-    Map<String, OffsetDateTime> idToNewStartDate = new HashMap<>();
-    IntStream.range(0, procInsts.size())
-      .forEach(i -> {
-        String id = procInsts.get(i).getId();
-        OffsetDateTime newStartDate = now.minus(i, unit);
-        idToNewStartDate.put(id, newStartDate);
-      });
-    updateProcessInstanceDates(idToNewStartDate);
-  }
-
-  protected abstract void updateProcessInstanceDates(Map<String, OffsetDateTime> newIdToDates) throws SQLException;
-
-  @Test
-  public void countGroupedByDay() throws Exception {
-    // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesTime(processInstanceDtos, now, ChronoUnit.DAYS);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
-      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
-      .setReportDataType(getTestReportDataType())
-      .build();
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertStartDateResultMap(resultData, 8, now, ChronoUnit.DAYS);
-  }
-
-  @Test
-  public void countGroupedByWeek() throws Exception {
-    // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesTime(processInstanceDtos, now, ChronoUnit.WEEKS);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.WEEK)
-      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
-      .setReportDataType(getTestReportDataType())
-      .build();
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertStartDateResultMap(resultData, 8, now, ChronoUnit.WEEKS);
-  }
-
-  @Test
-  public void countGroupedByMonth() throws Exception {
-    // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(3);
-    OffsetDateTime now = OffsetDateTime.parse("2019-06-15T12:00:00+01:00").truncatedTo(ChronoUnit.DAYS);
-    updateProcessInstancesTime(processInstanceDtos, now, ChronoUnit.MONTHS);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.MONTH)
-      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
-      .setReportDataType(getTestReportDataType())
-      .build();
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertStartDateResultMap(resultData, 3, now, ChronoUnit.MONTHS);
-  }
-
-  @Test
-  public void countGroupedByYear() throws Exception {
-    // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesTime(processInstanceDtos, now, ChronoUnit.YEARS);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.YEAR)
-      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
-      .setReportDataType(getTestReportDataType())
-      .build();
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertStartDateResultMap(resultData, 8, now, ChronoUnit.YEARS);
+    assertStartDateResultMap(resultData, 5, now, mapToChronoUnit(unit));
   }
 
   @Test
@@ -693,7 +564,39 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .build();
   }
 
-  protected String localDateTimeToString(ZonedDateTime time) {
-    return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
+  private void assertStartDateResultMap(List<MapResultEntryDto> resultData,
+                                        int size,
+                                        OffsetDateTime now,
+                                        ChronoUnit unit) {
+    assertStartDateResultMap(resultData, size, now, unit, 1.);
   }
+
+  protected void assertStartDateResultMap(List<MapResultEntryDto> resultData,
+                                          int size,
+                                          OffsetDateTime now,
+                                          ChronoUnit unit,
+                                          Double expectedValue) {
+    assertThat(resultData.size(), is(size));
+    final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
+    IntStream.range(0, size)
+      .forEach(i -> {
+        final String expectedDateString = localDateTimeToString(finalStartOfUnit.minus((i), unit));
+        assertThat(resultData.get(i).getKey(), is(expectedDateString));
+        assertThat(resultData.get(i).getValue(), is(expectedValue));
+      });
+  }
+
+  private void updateProcessInstancesTime(List<ProcessInstanceEngineDto> procInsts,
+                                          OffsetDateTime now,
+                                          ChronoUnit unit) throws SQLException {
+    Map<String, OffsetDateTime> idToNewStartDate = new HashMap<>();
+    IntStream.range(0, procInsts.size())
+      .forEach(i -> {
+        String id = procInsts.get(i).getId();
+        OffsetDateTime newStartDate = now.minus(i, unit);
+        idToNewStartDate.put(id, newStartDate);
+      });
+    updateProcessInstanceDates(idToNewStartDate);
+  }
+
 }

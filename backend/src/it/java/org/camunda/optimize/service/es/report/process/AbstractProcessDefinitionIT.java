@@ -17,11 +17,15 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -31,6 +35,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -214,6 +219,34 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       );
     }
     return processInstanceDtos;
+  }
+
+  protected ProcessReportDataDto createReportDataSortedDesc(final String definitionKey,
+                                                            final String definitionVersion,
+                                                            final ProcessReportDataType reportType,
+                                                            final GroupByDateUnit unit) {
+    return createReportData(
+      definitionKey,
+      definitionVersion,
+      reportType,
+      unit,
+      new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC)
+    );
+  }
+
+  protected ProcessReportDataDto createReportData(final String definitionKey,
+                                                  final String definitionVersion,
+                                                  final ProcessReportDataType reportType,
+                                                  final GroupByDateUnit unit,
+                                                  final SortingDto sorting) {
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
+      .setProcessDefinitionKey(definitionKey)
+      .setProcessDefinitionVersion(definitionVersion)
+      .setReportDataType(reportType)
+      .setDateInterval(unit)
+      .build();
+    reportData.getConfiguration().setSorting(sorting);
+    return reportData;
   }
 
   protected String createNewReport(ProcessReportDataDto processReportDataDto) {
@@ -400,6 +433,10 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       assertThat(resultData.get(0).getKey()).isEqualTo(decimalFormat.format(startRange));
       assertThat(resultData.get(resultData.size() - 1).getKey()).isEqualTo(decimalFormat.format(endRange));
     }
+  }
+
+  protected String localDateTimeToString(ZonedDateTime time) {
+    return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
   }
 
 }

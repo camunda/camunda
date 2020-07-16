@@ -39,7 +39,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
@@ -891,10 +890,6 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     // finish user task 2 and B with second candidate group
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
     engineIntegrationExtension.finishAllRunningUserTasks();
-  }
-
-  private String localDateTimeToString(ZonedDateTime time) {
-    return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
   }
 
   protected String groupedByDayDateAsString(final OffsetDateTime referenceDate) {

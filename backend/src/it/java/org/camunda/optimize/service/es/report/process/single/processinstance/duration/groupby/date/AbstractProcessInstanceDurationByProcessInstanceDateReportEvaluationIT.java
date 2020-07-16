@@ -31,9 +31,10 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -50,6 +51,8 @@ import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
@@ -68,6 +71,31 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   protected abstract ProcessReportDataType getTestReportDataType();
 
   protected abstract ProcessGroupByType getGroupByType();
+
+  protected abstract void adjustProcessInstanceDates(String processInstanceId,
+                                                     OffsetDateTime refDate,
+                                                     long daysToShift,
+                                                     Long durationInSec);
+
+  protected ProcessDefinitionEngineDto deployTwoRunningAndOneCompletedUserTaskProcesses(
+    final OffsetDateTime now) {
+    final ProcessDefinitionEngineDto processDefinition = deploySimpleOneUserTasksDefinition();
+
+    final ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
+
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance1.getId(), now.minusSeconds(1));
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstance1.getId(), now);
+
+    final ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance2.getId(), now.minusDays(1));
+    final ProcessInstanceEngineDto processInstance3 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance3.getId(), now.minusDays(2));
+    return processDefinition;
+  }
 
   @Test
   public void simpleReportEvaluation() {
@@ -167,23 +195,21 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(getTestReportDataType())
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setDateInterval(GroupByDateUnit.DAY)
-      .build();
+    ProcessReportDataDto reportData = createReportDataSortedDesc(
+      processDefinitionKey,
+      processDefinitionVersion,
+      getTestReportDataType(),
+      GroupByDateUnit.DAY
+    );
 
-    final Map<AggregationType, ReportMapResultDto> results =
-      evaluateMapReportForAllAggTypes(reportData);
+    final Map<AggregationType, ReportMapResultDto> results = evaluateMapReportForAllAggTypes(reportData);
 
     // then
     assertDurationMapReportResults(results, new Double[]{1000., 9000., 2000.});
   }
 
-
   @Test
-  public void resultIsSortedInDescendingOrder() {
+  public void resultIsSortedInAscendingOrder() {
     // given
     OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -216,7 +242,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     assertThat(
       resultKeys,
       // expect descending order
-      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
+      contains(resultKeys.stream().sorted(Comparator.naturalOrder()).toArray())
     );
   }
 
@@ -313,11 +339,6 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     });
   }
 
-  protected abstract void adjustProcessInstanceDates(String processInstanceId,
-                                                     OffsetDateTime refDate,
-                                                     long daysToShift,
-                                                     Long durationInSec);
-
   @Test
   public void multipleBuckets_noFilter_resultLimitedByConfig() {
     // given
@@ -360,7 +381,6 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     assertThat(result.getIsComplete(), is(false));
   }
 
-
   @Test
   public void emptyIntervalBetweenTwoProcessInstances() {
     // given
@@ -380,12 +400,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(getTestReportDataType())
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setDateInterval(GroupByDateUnit.DAY)
-      .build();
+    ProcessReportDataDto reportData = createReportDataSortedDesc(
+      processDefinitionKey,
+      processDefinitionVersion,
+      getTestReportDataType(),
+      GroupByDateUnit.DAY
+    );
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -422,12 +442,12 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(getTestReportDataType())
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setDateInterval(GroupByDateUnit.AUTOMATIC)
-      .build();
+    ProcessReportDataDto reportData = createReportDataSortedDesc(
+      processDefinitionKey,
+      processDefinitionVersion,
+      getTestReportDataType(),
+      GroupByDateUnit.AUTOMATIC
+    );
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -445,7 +465,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   }
 
   @Test
-  public void calculateDurationForCompletedProcessInstances() throws SQLException {
+  public void calculateDurationForCompletedProcessInstances() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -493,7 +513,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   }
 
   @Test
-  public void durationFilterWorksForCompletedProcessInstances() throws SQLException {
+  public void durationFilterWorksForCompletedProcessInstances() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -542,154 +562,29 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     assertThat(resultData.get(0).getValue(), is(1000.));
   }
 
-  @Test
-  public void groupedByHour() {
+  @ParameterizedTest
+  @MethodSource("staticGroupByDateUnits")
+  public void groupedByStaticDateUnit(final GroupByDateUnit unit) {
     // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(5);
-    OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.HOURS);
+    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
+    OffsetDateTime now = dateFreezer().freezeDateAndReturn();
+    updateProcessInstancesDates(processInstanceDtos, now, mapToChronoUnit(unit));
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.HOUR)
-      .setProcessDefinitionKey(dto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
-      .setReportDataType(getTestReportDataType())
-      .build();
+    ProcessReportDataDto reportData = createReportDataSortedDesc(
+      dto.getProcessDefinitionKey(),
+      dto.getProcessDefinitionVersion(),
+      getTestReportDataType(),
+      unit
+    );
 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     assertThat(result.getData(), is(notNullValue()));
-    assertDateResultMap(result.getData(), 5, now, ChronoUnit.HOURS);
-  }
-
-  private void assertDateResultMap(List<MapResultEntryDto> resultData,
-                                   int size,
-                                   OffsetDateTime now,
-                                   ChronoUnit unit) {
-    assertThat(resultData.size(), is(size));
-    final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
-    IntStream.range(0, size)
-      .forEach(i -> {
-        final String expectedDateString = localDateTimeToString(finalStartOfUnit.minus(i, unit));
-        assertThat(resultData.get(i).getKey(), is(expectedDateString));
-        assertThat(resultData.get(i).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000.)));
-      });
-  }
-
-  private void updateProcessInstancesDates(List<ProcessInstanceEngineDto> procInsts,
-                                           OffsetDateTime now,
-                                           ChronoUnit unit) {
-    Map<String, OffsetDateTime> idToNewStartDate = new HashMap<>();
-    Map<String, OffsetDateTime> idToNewEndDate = new HashMap<>();
-    IntStream.range(0, procInsts.size())
-      .forEach(i -> {
-        String id = procInsts.get(i).getId();
-        OffsetDateTime newStartDate = now.minus(i, unit);
-        idToNewStartDate.put(id, newStartDate);
-        idToNewEndDate.put(id, newStartDate.plusSeconds(1L));
-      });
-
-    engineDatabaseExtension.changeProcessInstanceStartDates(idToNewStartDate);
-    engineDatabaseExtension.changeProcessInstanceEndDates(idToNewEndDate);
-  }
-
-  @Test
-  public void groupedByDay() {
-    // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.DAYS);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessInstanceEngineDto processInstanceEngineDto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(getTestReportDataType())
-      .setProcessDefinitionVersion(processInstanceEngineDto.getProcessDefinitionVersion())
-      .setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
-      .setDateInterval(GroupByDateUnit.DAY)
-      .build();
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertDateResultMap(result.getData(), 8, now, ChronoUnit.DAYS);
-  }
-
-  @Test
-  public void groupedByWeek() {
-    // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.WEEKS);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setProcessDefinitionKey(dto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.WEEK)
-      .setReportDataType(getTestReportDataType())
-      .build();
-
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertDateResultMap(result.getData(), 8, now, ChronoUnit.WEEKS);
-  }
-
-  @Test
-  public void groupedByMonth() {
-    // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.MONTHS);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.MONTH)
-      .setProcessDefinitionKey(dto.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
-      .setReportDataType(getTestReportDataType())
-      .build();
-
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertDateResultMap(result.getData(), 8, now, ChronoUnit.MONTHS);
-  }
-
-  @Test
-  public void groupedByYear() {
-    // given
-    List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    OffsetDateTime now = OffsetDateTime.now();
-    updateProcessInstancesDates(processInstanceDtos, now, ChronoUnit.YEARS);
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    ProcessInstanceEngineDto dto = processInstanceDtos.get(0);
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(getTestReportDataType())
-      .setProcessDefinitionVersion(dto.getProcessDefinitionVersion())
-      .setProcessDefinitionKey(dto.getProcessDefinitionKey())
-      .setDateInterval(GroupByDateUnit.YEAR)
-      .build();
-
-    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertDateResultMap(result.getData(), 8, now, ChronoUnit.YEARS);
+    assertDateResultMap(result.getData(), 8, now, mapToChronoUnit(unit));
   }
 
   @Test
@@ -878,10 +773,6 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  protected String localDateTimeToString(ZonedDateTime time) {
-    return embeddedOptimizeExtension.getDateTimeFormatter().format(time);
-  }
-
   private Map<AggregationType, ReportMapResultDto> evaluateMapReportForAllAggTypes(
     final ProcessReportDataDto reportData) {
 
@@ -907,24 +798,35 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
     });
   }
 
-  protected ProcessDefinitionEngineDto deployTwoRunningAndOneCompletedUserTaskProcesses(
-    final OffsetDateTime now) throws SQLException {
-    final ProcessDefinitionEngineDto processDefinition = deploySimpleOneUserTasksDefinition();
+  private void assertDateResultMap(List<MapResultEntryDto> resultData,
+                                   int size,
+                                   OffsetDateTime now,
+                                   ChronoUnit unit) {
+    assertThat(resultData.size(), is(size));
+    final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
+    IntStream.range(0, size)
+      .forEach(i -> {
+        final String expectedDateString = localDateTimeToString(finalStartOfUnit.minus(i, unit));
+        assertThat(resultData.get(i).getKey(), is(expectedDateString));
+        assertThat(resultData.get(i).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000.)));
+      });
+  }
 
-    final ProcessInstanceEngineDto processInstance1 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
+  private void updateProcessInstancesDates(List<ProcessInstanceEngineDto> procInsts,
+                                           OffsetDateTime now,
+                                           ChronoUnit unit) {
+    Map<String, OffsetDateTime> idToNewStartDate = new HashMap<>();
+    Map<String, OffsetDateTime> idToNewEndDate = new HashMap<>();
+    IntStream.range(0, procInsts.size())
+      .forEach(i -> {
+        String id = procInsts.get(i).getId();
+        OffsetDateTime newStartDate = now.minus(i, unit);
+        idToNewStartDate.put(id, newStartDate);
+        idToNewEndDate.put(id, newStartDate.plusSeconds(1L));
+      });
 
-    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance1.getId(), now.minusSeconds(1));
-    engineDatabaseExtension.changeProcessInstanceEndDate(processInstance1.getId(), now);
-
-    final ProcessInstanceEngineDto processInstance2 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance2.getId(), now.minusDays(1));
-    final ProcessInstanceEngineDto processInstance3 =
-      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeProcessInstanceStartDate(processInstance3.getId(), now.minusDays(2));
-    return processDefinition;
+    engineDatabaseExtension.changeProcessInstanceStartDates(idToNewStartDate);
+    engineDatabaseExtension.changeProcessInstanceEndDates(idToNewEndDate);
   }
 
 }

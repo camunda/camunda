@@ -838,12 +838,12 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
-    assertThat(resultData.get(resultData.size() - 1).getValue()).isEqualTo(2.);
+    assertThat(resultData.get(0).getValue()).isEqualTo(2.);
+    assertThat(resultData.get(resultData.size() - 1).getValue()).isEqualTo(1.);
   }
 
   @Test
-  public void dateVariablesAreSortedDescByDefault() {
+  public void dateVariablesAreSortedAscByDefault() {
     // given
     final String outputClauseId = "outputClauseId";
     final String camInputVariable = "input";
@@ -875,7 +875,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(toList());
-    assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @ParameterizedTest
@@ -909,9 +909,11 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     // then
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(numberOfInstances);
+    // start at variable value of first instance due to default ascending order
+    dateVariableValue = dateVariableValue.minus(numberOfInstances - 1, chronoUnit);
     for (int i = 0; i < numberOfInstances; i++) {
       final String expectedBucketKey = embeddedOptimizeExtension.formatToHistogramBucketKey(
-        dateVariableValue.minus(chronoUnit.getDuration().multipliedBy(i)),
+        dateVariableValue.plus(chronoUnit.getDuration().multipliedBy(i)),
         chronoUnit
       );
       assertThat(resultData.get(i).getValue()).isEqualTo(1);

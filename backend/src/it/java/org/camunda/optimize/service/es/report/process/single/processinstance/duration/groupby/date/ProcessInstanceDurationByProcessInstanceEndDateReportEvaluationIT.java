@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.date;
 
+import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
@@ -20,19 +21,15 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
   extends AbstractProcessInstanceDurationByProcessInstanceDateReportEvaluationIT {
@@ -86,29 +83,27 @@ public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(getTestReportDataType())
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setDateInterval(GroupByDateUnit.DAY)
-      .build();
-
+    ProcessReportDataDto reportData = createReportDataSortedDesc(
+      processDefinitionKey,
+      processDefinitionVersion,
+      getTestReportDataType(),
+      GroupByDateUnit.DAY
+    );
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     ZonedDateTime startOfEndDate = truncateToStartOfUnit(endDate, ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfEndDate)));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfEndDate));
     assertThat(
-      resultData.get(0).getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(
+      resultData.get(0).getValue())
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(
         between.toMillis() + 1000.,
         between.toMillis() + 9000.,
         between.toMillis() + 2000.
-      ))
-    );
-    assertThat(resultData.get(1).getKey(), is(localDateTimeToString(startOfEndDate.minusDays(1))));
-    assertThat(resultData.get(1).getValue(), is(between.toMillis() + 1000.));
+      ));
+    assertThat(resultData.get(1).getKey()).isEqualTo(localDateTimeToString(startOfEndDate.minusDays(1)));
+    assertThat(resultData.get(1).getValue()).isEqualTo(between.toMillis() + 1000.);
   }
 
   @Test
@@ -121,7 +116,8 @@ public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
     final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
     adjustProcessInstanceDates(processInstanceDto1.getId(), endDate, 0L, 1L);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+      processDefinitionId);
     adjustProcessInstanceDates(processInstanceDto2.getId(), endDate, -2L, 2L);
 
     importAllEngineEntitiesFromScratch();
@@ -132,49 +128,41 @@ public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
     );
     final EndDateFilterDto endDateFilterDto = new EndDateFilterDto(dateFilterDataDto);
 
-    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
-      .setProcessDefinitionKey(processDefinitionKey)
-      .setProcessDefinitionVersion(processDefinitionVersion)
-      .setReportDataType(getTestReportDataType())
-      .setFilter(endDateFilterDto)
-      .build();
+    final ProcessReportDataDto reportData = createReportDataSortedDesc(
+      processDefinitionKey,
+      processDefinitionVersion,
+      getTestReportDataType(),
+      GroupByDateUnit.DAY
+    );
+    reportData.setFilter(Lists.newArrayList(endDateFilterDto));
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(5));
+    assertThat(resultData).hasSize(5);
+
+    assertThat(resultData.get(0).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate, ChronoUnit.DAYS));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
+
+    assertThat(resultData.get(1).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(1), ChronoUnit.DAYS));
+    assertThat(resultData.get(1).getValue()).isNull();
+
+    assertThat(resultData.get(2).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(2), ChronoUnit.DAYS));
+    assertThat(resultData.get(2).getValue()).isEqualTo(2000.);
 
     assertThat(
-      resultData.get(0).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate, ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(0).getValue(), is(1000.));
+      resultData.get(3).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(3), ChronoUnit.DAYS));
+    assertThat(resultData.get(3).getValue()).isNull();
 
     assertThat(
-      resultData.get(1).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(1), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(1).getValue(), is(nullValue()));
-
-    assertThat(
-      resultData.get(2).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(2), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(2).getValue(), is(2000.));
-
-    assertThat(
-      resultData.get(3).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(3), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(3).getValue(), is(nullValue()));
-
-    assertThat(
-      resultData.get(4).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(4), ChronoUnit.DAYS))
-    );
-    assertThat(resultData.get(4).getValue(), is(nullValue()));
+      resultData.get(4).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(endDate.minusDays(4), ChronoUnit.DAYS));
+    assertThat(resultData.get(4).getValue()).isNull();
   }
 
   @Test
@@ -198,14 +186,14 @@ public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete(), is(true));
+    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(0));
+    assertThat(resultData).isEmpty();
 
   }
 
   @Test
-  public void evaluateReportWithSeveralRunningAndCompletedProcessInstances() throws SQLException {
+  public void evaluateReportWithSeveralRunningAndCompletedProcessInstances() {
     // given 1 completed + 2 running process instances
     final OffsetDateTime now = OffsetDateTime.now();
 
@@ -225,17 +213,17 @@ public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
 
 
     // then
-    assertThat(result.getInstanceCount(), is(1L));
-    assertThat(result.getIsComplete(), is(true));
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getIsComplete()).isTrue();
 
     final List<MapResultEntryDto> resultData = result.getData();
 
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1);
 
     ZonedDateTime startOfToday = truncateToStartOfUnit(now, ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(1000.));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
   }
 }
 
