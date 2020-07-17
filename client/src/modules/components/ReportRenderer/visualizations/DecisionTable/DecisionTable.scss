@@ -1,21 +1,19 @@
 .DecisionTable {
-  .hit.header {
-    vertical-align: bottom;
-  }
+  .dmn-decision-table-container .tjs-container {
+    grid-template-columns: unset;
 
-  .CustomCell,
-  .hit.header,
-  tfoot td {
-    border: 1px solid lightgray;
-  }
+    table {
+      width: 100%;
 
-  .dmn-decision-table-container table thead {
-    border-bottom: 0;
+      thead {
+        .annotation {
+          width: 192px !important;
+        }
 
-    tr:last-child th,
-    .hit-policy,
-    .annotation {
-      border-bottom: 3px double #444;
+        tr:last-child th {
+          border-bottom: 0;
+        }
+      }
     }
   }
 }
