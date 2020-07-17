@@ -8,11 +8,9 @@ package org.camunda.optimize.service.es.schema.index;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
 public class ReportShareIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 3;
@@ -35,6 +33,7 @@ public class ReportShareIndex extends DefaultIndexMappingCreator {
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+    // @formatter:off
     XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
         .field("type", "keyword")
@@ -48,11 +47,12 @@ public class ReportShareIndex extends DefaultIndexMappingCreator {
       .startObject(REPORT_ID)
         .field("type", "keyword")
       .endObject();
-
+    // @formatter:on
     return newBuilder;
   }
 
   private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
+    // @formatter:off
     return builder
       .startObject(X_POSITION)
         .field("type", "keyword")
@@ -60,5 +60,6 @@ public class ReportShareIndex extends DefaultIndexMappingCreator {
       .startObject(Y_POSITION)
         .field("type", "keyword")
       .endObject();
+    // @formatter:on
   }
 }

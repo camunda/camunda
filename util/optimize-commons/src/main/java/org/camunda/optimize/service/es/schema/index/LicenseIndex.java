@@ -30,11 +30,13 @@ public class LicenseIndex extends DefaultIndexMappingCreator {
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+    // @formatter:off
     return xContentBuilder
       .startObject(LICENSE)
         .field("type", "text")
         .field("index", false)
       .endObject();
+    // @formatter:on
   }
 
 }

@@ -18,7 +18,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_FIELD_
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTING;
 
-@Component
 public class EventIndex extends DefaultIndexMappingCreator {
 
   public static final String ID = EventDto.Fields.id;

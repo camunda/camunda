@@ -9,10 +9,34 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.AlertIndex;
+import org.camunda.optimize.service.es.schema.index.BusinessKeyIndex;
+import org.camunda.optimize.service.es.schema.index.CollectionIndex;
+import org.camunda.optimize.service.es.schema.index.DashboardIndex;
+import org.camunda.optimize.service.es.schema.index.DashboardShareIndex;
+import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.LicenseIndex;
+import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.es.schema.index.OnboardingStateIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.ReportShareIndex;
+import org.camunda.optimize.service.es.schema.index.TenantIndex;
+import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndex;
+import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
+import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
+import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
+import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -30,9 +54,12 @@ import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import org.elasticsearch.client.indices.PutMappingRequest;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.rest.RestStatus;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -44,7 +71,6 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
 
-@RequiredArgsConstructor
 @Component
 @Slf4j
 public class ElasticSearchSchemaManager {
@@ -57,6 +83,31 @@ public class ElasticSearchSchemaManager {
 
   private final List<IndexMappingCreator> mappings;
   private final ObjectMapper objectMapper;
+
+  @Autowired
+  public ElasticSearchSchemaManager(final ElasticsearchMetadataService metadataService,
+                                    final ConfigurationService configurationService,
+                                    final OptimizeIndexNameService indexNameService,
+                                    final ObjectMapper objectMapper) {
+    this.metadataService = metadataService;
+    this.configurationService = configurationService;
+    this.indexNameService = indexNameService;
+    this.mappings = new ArrayList<>();
+    mappings.addAll(getAllNonDynamicMappings());
+    this.objectMapper = objectMapper;
+  }
+
+  public ElasticSearchSchemaManager(final ElasticsearchMetadataService metadataService,
+                                    final ConfigurationService configurationService,
+                                    final OptimizeIndexNameService indexNameService,
+                                    final List<IndexMappingCreator> mappings,
+                                    final ObjectMapper objectMapper) {
+    this.metadataService = metadataService;
+    this.configurationService = configurationService;
+    this.indexNameService = indexNameService;
+    this.mappings = mappings;
+    this.objectMapper = objectMapper;
+  }
 
   public void validateExistingSchemaVersion(final OptimizeElasticsearchClient esClient) {
     metadataService.validateSchemaVersionCompatibility(esClient);
@@ -366,6 +417,36 @@ public class ElasticSearchSchemaManager {
       log.error("Could not create settings!", e);
       throw new OptimizeRuntimeException("Could not create index settings");
     }
+  }
+
+  private List<IndexMappingCreator> getAllNonDynamicMappings() {
+    return Arrays.asList(
+      new AlertIndex(),
+      new BusinessKeyIndex(),
+      new CollectionIndex(),
+      new DashboardIndex(),
+      new DashboardShareIndex(),
+      new DecisionDefinitionIndex(),
+      new DecisionInstanceIndex(),
+      new LicenseIndex(),
+      new MetadataIndex(),
+      new OnboardingStateIndex(),
+      new ProcessDefinitionIndex(),
+      new ProcessInstanceIndex(),
+      new ReportShareIndex(),
+      new TenantIndex(),
+      new TerminatedUserSessionIndex(),
+      new VariableUpdateInstanceIndex(),
+      new EventIndex(),
+      new EventProcessDefinitionIndex(),
+      new EventProcessMappingIndex(),
+      new EventProcessPublishStateIndex(),
+      new ImportIndexIndex(),
+      new TimestampBasedImportIndex(),
+      new CombinedReportIndex(),
+      new SingleDecisionReportIndex(),
+      new SingleProcessReportIndex()
+    );
   }
 
 }

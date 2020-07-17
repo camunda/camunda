@@ -8,14 +8,11 @@ package org.camunda.optimize.service.es.schema.index;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-
-@Component
 public class AlertIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 3;
@@ -52,6 +49,7 @@ public class AlertIndex extends DefaultIndexMappingCreator {
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+    // @formatter:off
     return xContentBuilder
       .startObject(ID)
         .field("type", "keyword")
@@ -119,6 +117,7 @@ public class AlertIndex extends DefaultIndexMappingCreator {
           .endObject()
         .endObject()
       .endObject();
+    // @formatter:on
   }
 
 }

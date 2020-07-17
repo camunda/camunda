@@ -6,13 +6,11 @@
 package org.camunda.optimize.service.es.schema.index.report;
 
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 
-@Component
 public class SingleDecisionReportIndex extends AbstractReportIndex {
 
   public static final int VERSION = 3;

@@ -14,7 +14,6 @@ import java.io.IOException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
 
-@Component
 public class TimestampBasedImportIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 4;
@@ -36,20 +35,22 @@ public class TimestampBasedImportIndex extends DefaultIndexMappingCreator {
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+    // @formatter:off
     return xContentBuilder
       .startObject(ENGINE)
-      .field("type", "keyword")
+        .field("type", "keyword")
       .endObject()
       .startObject(ES_TYPE_INDEX_REFERS_TO)
-      .field("type", "keyword")
+        .field("type", "keyword")
       .endObject()
       .startObject(TIMESTAMP_OF_LAST_ENTITY)
-      .field("type", "date")
-      .field("format", OPTIMIZE_DATE_FORMAT)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
       .startObject(LAST_IMPORT_EXECUTION_TIMESTAMP)
-      .field("type", "date")
-      .field("format", OPTIMIZE_DATE_FORMAT)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject();
+    // @formatter:on
   }
 }

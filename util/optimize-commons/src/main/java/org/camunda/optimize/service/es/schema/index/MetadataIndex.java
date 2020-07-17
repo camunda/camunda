@@ -8,14 +8,11 @@ package org.camunda.optimize.service.es.schema.index;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE_SCHEMA_VERSION;
 
-
-@Component
 public class MetadataIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 3;
@@ -35,9 +32,11 @@ public class MetadataIndex extends DefaultIndexMappingCreator {
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+    // @formatter:off
     return xContentBuilder
       .startObject(SCHEMA_VERSION)
         .field("type", "keyword")
       .endObject();
+    // @formatter:on
   }
 }

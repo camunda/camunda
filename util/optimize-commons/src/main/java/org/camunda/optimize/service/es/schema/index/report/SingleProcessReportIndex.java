@@ -7,13 +7,11 @@ package org.camunda.optimize.service.es.schema.index.report;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 
-@Component
 public class SingleProcessReportIndex extends AbstractReportIndex {
 
   public static final int VERSION = 3;
