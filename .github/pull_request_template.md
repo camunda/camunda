@@ -24,4 +24,4 @@ Testing:
 
 Documentation: 
 * [ ] The documentation is updated (e.g. BPMN reference, configuration, examples, get-started guides, etc.)
-* [ ] New content is added to the release annoncement 
+* [ ] New content is added to the release announcement 
