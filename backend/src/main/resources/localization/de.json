@@ -426,7 +426,7 @@
       },
       "tooltips": {
         "legend": "Tooltips",
-        "showRelative": "Relativen Wert anzeigen",
+        "showRelative": "Relativen Wert basierend auf der Anzahl der Prozessinstanzen anzeigen",
         "showAbsolute": "Absolutwert anzeigen"
       },
       "axisLabels": {

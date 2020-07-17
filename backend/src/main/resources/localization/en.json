@@ -426,7 +426,7 @@
       },
       "tooltips": {
         "legend": "Tooltips",
-        "showRelative": "Show Relative Value",
+        "showRelative": "Show Relative Value based on process instance count",
         "showAbsolute": "Show Absolute Value"
       },
       "axisLabels": {
