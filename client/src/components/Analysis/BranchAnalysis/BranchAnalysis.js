@@ -7,9 +7,10 @@
 import React from 'react';
 import equal from 'deep-equal';
 
-import {BPMNDiagram, MessageBox, DocsLink} from 'components';
+import {BPMNDiagram, MessageBox} from 'components';
 import {incompatibleFilters, containsSuspensionFilter, loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
+import {withDocs} from 'HOC';
 
 import DiagramBehavior from './DiagramBehavior';
 import Statistics from './Statistics';
@@ -18,7 +19,7 @@ import {loadFrequencyData} from './service';
 
 import './BranchAnalysis.scss';
 
-export default class BranchAnalysis extends React.Component {
+export class BranchAnalysis extends React.Component {
   constructor(props) {
     super(props);
 
@@ -59,16 +60,15 @@ export default class BranchAnalysis extends React.Component {
           <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
         )}
         {config.filter && containsSuspensionFilter(config.filter) && (
-          <DocsLink location="technical-guide/update/2.7-to-3.0/#suspension-filter">
-            {(docsLink) => (
-              <MessageBox
-                type="warning"
-                dangerouslySetInnerHTML={{
-                  __html: t('common.filter.suspensionFilterWarning', {docsLink}),
-                }}
-              />
-            )}
-          </DocsLink>
+          <MessageBox
+            type="warning"
+            dangerouslySetInnerHTML={{
+              __html: t('common.filter.suspensionFilterWarning', {
+                docsLink:
+                  this.props.docsLink + 'technical-guide/update/2.7-to-3.0/#suspension-filter',
+              }),
+            }}
+          />
         )}
         <div className="content">
           <div className="BranchAnalysis__diagram">
@@ -162,3 +162,5 @@ export default class BranchAnalysis extends React.Component {
     this.setState(changes);
   };
 }
+
+export default withDocs(BranchAnalysis);

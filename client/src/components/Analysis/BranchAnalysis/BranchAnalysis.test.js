@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {loadFrequencyData} from './service';
 
-import BranchAnalysis from './BranchAnalysis';
+import {BranchAnalysis} from './BranchAnalysis';
 
 import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
 

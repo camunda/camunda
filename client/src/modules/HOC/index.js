@@ -6,3 +6,4 @@
 
 export {default as withErrorHandling} from './withErrorHandling';
 export {UserProvider, default as withUser} from './withUser';
+export {DocsProvider, default as withDocs} from './withDocs';

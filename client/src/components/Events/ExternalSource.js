@@ -17,11 +17,7 @@ export default function ExternalSource({empty}) {
       <div className="ExternalSource empty">
         {t('events.table.seeDocs')}
         <DocsLink location="technical-guide/setup/configuration/#ingestion-configuration">
-          {(link) => (
-            <a href={link} target="_blank" rel="noopener noreferrer">
-              {t('events.table.documentation')}
-            </a>
-          )}
+          {t('events.table.documentation')}
         </DocsLink>
         .
       </div>

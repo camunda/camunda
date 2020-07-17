@@ -18,11 +18,11 @@ import {
   Typeahead,
   MessageBox,
   Form,
-  DocsLink,
 } from 'components';
 import {formatters, isDurationReport} from 'services';
 import {isEmailEnabled} from 'config';
 import {t} from 'translation';
+import {withDocs} from 'HOC';
 
 import ThresholdInput from './ThresholdInput';
 import MultiEmailInput from './MultiEmailInput';
@@ -43,7 +43,7 @@ const newAlert = {
   webhook: undefined,
 };
 
-export default class AlertModal extends React.Component {
+export class AlertModal extends React.Component {
   constructor(props) {
     super(props);
 
@@ -236,14 +236,14 @@ export default class AlertModal extends React.Component {
         <Modal.Content>
           <Form horizontal>
             {!emailNotificationIsEnabled && (
-              <DocsLink location="technical-guide/setup/configuration/#email">
-                {(docsLink) => (
-                  <MessageBox
-                    type="warning"
-                    dangerouslySetInnerHTML={{__html: t('alert.emailWarning', {docsLink})}}
-                  />
-                )}
-              </DocsLink>
+              <MessageBox
+                type="warning"
+                dangerouslySetInnerHTML={{
+                  __html: t('alert.emailWarning', {
+                    docsLink: this.props.docsLink + 'technical-guide/setup/configuration/#email',
+                  }),
+                }}
+              />
             )}
             {inactive && (
               <MessageBox type="warning">
@@ -432,3 +432,5 @@ export default class AlertModal extends React.Component {
     );
   }
 }
+
+export default withDocs(AlertModal);

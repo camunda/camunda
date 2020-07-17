@@ -231,11 +231,7 @@ export default withErrorHandling(
                             : t('events.sources.display')}
                         </h4>
                         <DocsLink location="user-guide/event-based-processes/#camunda-events">
-                          {(link) => (
-                            <a href={link} target="_blank" rel="noopener noreferrer">
-                              {t('events.sources.learnMore')}
-                            </a>
-                          )}
+                          {t('events.sources.learnMore')}
                         </DocsLink>
                       </div>
                       <LabeledInput
@@ -264,11 +260,7 @@ export default withErrorHandling(
                     <MessageBox type="warning">
                       {t('events.sources.definitionChangeWarning')}{' '}
                       <DocsLink location="user-guide/event-based-processes/#camunda-events">
-                        {(link) => (
-                          <a href={link} target="_blank" rel="noopener noreferrer">
-                            {t('events.sources.learnMore')}
-                          </a>
-                        )}
+                        {t('events.sources.learnMore')}
                       </DocsLink>
                     </MessageBox>
                   )}

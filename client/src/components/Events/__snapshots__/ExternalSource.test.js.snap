@@ -5,11 +5,11 @@ exports[`display empty state with link to docs 1`] = `
   className="ExternalSource empty"
 >
   No Events available. To add events, see 
-  <DocsLink
+  <Component
     location="technical-guide/setup/configuration/#ingestion-configuration"
   >
-    <Component />
-  </DocsLink>
+    Documentation
+  </Component>
   .
 </div>
 `;

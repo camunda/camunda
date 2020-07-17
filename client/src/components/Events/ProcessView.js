@@ -146,11 +146,7 @@ export default withErrorHandling(
               <MessageBox type="warning">
                 {t('events.generationWarning')}{' '}
                 <DocsLink location="user-guide/event-based-processes#autogenerate">
-                  {(docsLink) => (
-                    <a href={docsLink} target="_blank" rel="noopener noreferrer">
-                      {t('common.seeDocs')}
-                    </a>
-                  )}
+                  {t('common.seeDocs')}
                 </DocsLink>
               </MessageBox>
             )}

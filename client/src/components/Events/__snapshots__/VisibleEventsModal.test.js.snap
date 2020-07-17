@@ -29,11 +29,11 @@ exports[`should match snapshot 1`] = `
   >
     Changing the event list may add or remove events. Existing event mappings may be removed.
      
-    <DocsLink
+    <Component
       location="user-guide/event-based-processes/#camunda-events"
     >
-      <Component />
-    </DocsLink>
+      Learn more
+    </Component>
   </MessageBox>
 </Form>
 `;

@@ -43,11 +43,7 @@ export function GenerationModal({onClose, mightFail}) {
         <p className="description">
           {t('events.generationInfo')}{' '}
           <DocsLink location="user-guide/event-based-processes#autogenerate">
-            {(link) => (
-              <a href={link} target="_blank" rel="noopener noreferrer">
-                {t('events.sources.learnMore')}
-              </a>
-            )}
+            {t('events.sources.learnMore')}
           </DocsLink>
         </p>
         <EntityList

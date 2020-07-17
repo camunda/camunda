@@ -17,7 +17,6 @@ import {
   MessageBox,
   EntityNameForm,
   InstanceCount,
-  DocsLink,
 } from 'components';
 import {
   incompatibleFilters,
@@ -29,6 +28,7 @@ import {
 } from 'services';
 import {showError} from 'notifications';
 import {t} from 'translation';
+import {withDocs} from 'HOC';
 
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
@@ -245,16 +245,15 @@ export class ReportEdit extends React.Component {
         )}
 
         {data?.filter && containsSuspensionFilter(data.filter) && (
-          <DocsLink location="technical-guide/update/2.7-to-3.0/#suspension-filter">
-            {(docsLink) => (
-              <MessageBox
-                type="warning"
-                dangerouslySetInnerHTML={{
-                  __html: t('common.filter.suspensionFilterWarning', {docsLink}),
-                }}
-              />
-            )}
-          </DocsLink>
+          <MessageBox
+            type="warning"
+            dangerouslySetInnerHTML={{
+              __html: t('common.filter.suspensionFilterWarning', {
+                docsLink:
+                  this.props.docsLink + 'technical-guide/update/2.7-to-3.0/#suspension-filter',
+              }),
+            }}
+          />
         )}
 
         {data?.groupBy?.type === 'endDate' &&
@@ -282,4 +281,4 @@ export class ReportEdit extends React.Component {
   }
 }
 
-export default withRouter(withErrorHandling(ReportEdit));
+export default withRouter(withErrorHandling(withDocs(ReportEdit)));

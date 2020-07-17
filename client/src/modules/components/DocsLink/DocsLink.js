@@ -4,20 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useEffect, useState} from 'react';
+import React from 'react';
 
-import {getOptimizeVersion} from 'config';
+import {withDocs} from 'HOC';
 
-export default function DocsLink({children, location}) {
-  const [optimizeVersion, setOptimizeVersion] = useState('latest');
-
-  useEffect(() => {
-    (async () => {
-      const version = (await getOptimizeVersion()).split('.');
-      version.length = 2;
-      setOptimizeVersion(version.join('.'));
-    })();
-  }, []);
-
-  return children(`https://docs.camunda.org/optimize/${optimizeVersion}/${location}`);
-}
+export default withDocs(function ({docsLink, location, children}) {
+  return (
+    <a href={docsLink + location} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  );
+});
