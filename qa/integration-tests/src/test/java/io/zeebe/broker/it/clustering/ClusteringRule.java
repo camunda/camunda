@@ -105,14 +105,14 @@ public final class ClusteringRule extends ExternalResource {
   private final Map<Integer, BrokerCfg> brokerCfgs;
   private final List<Integer> partitionIds;
   private final String clusterName;
-  private final ControlledActorClock controlledClock = new ControlledActorClock();
-  private final Map<Integer, LogStream> logstreams = new ConcurrentHashMap<>();
+  private final ControlledActorClock controlledClock;
+  private final Map<Integer, LogStream> logstreams;
 
   // cluster
   private ZeebeClient client;
   private Gateway gateway;
   private CountDownLatch partitionLatch;
-  private final Map<Integer, Leader> partitionLeader = new ConcurrentHashMap<>();
+  private final Map<Integer, Leader> partitionLeader;
 
   public ClusteringRule() {
     this(3);
@@ -155,8 +155,11 @@ public final class ClusteringRule extends ExternalResource {
     this.gatewayConfigurator = gatewayConfigurator;
     this.clientConfigurator = clientConfigurator;
 
+    controlledClock = new ControlledActorClock();
     brokers = new HashMap<>();
     brokerCfgs = new HashMap<>();
+    partitionLeader = new ConcurrentHashMap<>();
+    logstreams = new ConcurrentHashMap<>();
     partitionIds =
         IntStream.range(START_PARTITION_ID, START_PARTITION_ID + partitionCount)
             .boxed()
@@ -219,6 +222,8 @@ public final class ClusteringRule extends ExternalResource {
     brokers.values().parallelStream().forEach(Broker::close);
     brokers.clear();
     brokerCfgs.clear();
+    logstreams.clear();
+    partitionLeader.clear();
   }
 
   public Broker getBroker(final int nodeId) {
