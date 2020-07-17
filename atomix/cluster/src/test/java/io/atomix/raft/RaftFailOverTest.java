@@ -312,11 +312,9 @@ public class RaftFailOverTest {
     raftRule.doSnapshot(65);
     // Leader and Follower A Log [65-100].
     // Follower B Log [0-50]
-    final var oldLeader = raftRule.shutdownLeader();
 
     // when
-    // Follower B comes back we should be able to form a healthy cluster again
-    // Follower A need to replicate snapshot to Follower B
+    // Follower B comes back and receives a snapshot from the leader
     raftRule.joinCluster(followerB);
     raftRule.appendEntries(entryCount);
 
@@ -327,13 +325,6 @@ public class RaftFailOverTest {
     // Follower B should have truncated his log to not have any gaps in his log
     // entries after snapshot should be replicated
     assertThat(entries.get(0).index()).isEqualTo(66);
-
-    for (final String member : memberLogs.keySet()) {
-      if (!oldLeader.equals(member)) {
-        final var memberEntries = memberLogs.get(member);
-        assertThat(memberEntries).endsWith(entries.toArray(new Indexed[0]));
-      }
-    }
   }
 
   @Test
@@ -346,7 +337,6 @@ public class RaftFailOverTest {
     raftRule.doSnapshot(65);
     // Leader and Follower A Log [65-100].
     // Follower B Log [0-50]
-    final var oldLeader = raftRule.shutdownLeader();
 
     // Follower B has old log AND snapshot
     final var nodes = raftRule.getNodes();
@@ -364,13 +354,6 @@ public class RaftFailOverTest {
     // Follower B should have truncated his log to not have any gaps in his log
     // entries after snapshot should be replicated
     assertThat(entries.get(0).index()).isEqualTo(66);
-
-    for (final String member : memberLogs.keySet()) {
-      if (!oldLeader.equals(member)) {
-        final var memberEntries = memberLogs.get(member);
-        assertThat(memberEntries).endsWith(entries.toArray(new Indexed[0]));
-      }
-    }
   }
 
   private void assertMemberLogs(final Map<String, List<Indexed<?>>> memberLog) {
