@@ -204,7 +204,7 @@ public class NettyMessagingServiceTest {
     final String subject = nextSubject();
     final CompletableFuture<byte[]> response =
         netty1.sendAndReceive(
-            address2, subject, "hello world".getBytes(), false, Duration.ofSeconds(5));
+            address2, subject, "hello world".getBytes(), true, Duration.ofSeconds(5));
 
     // when
     netty1.stop().join();
