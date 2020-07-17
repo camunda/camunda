@@ -522,6 +522,7 @@ public final class ClusteringRule extends ExternalResource {
     return Awaitility.await()
         .pollInterval(Duration.ofMillis(100))
         .atMost(Duration.ofMinutes(1))
+        .ignoreExceptions()
         .until(
             () -> getLeaderForPartition(partitionId),
             (leader) -> leader.getNodeId() != previousLeader);
