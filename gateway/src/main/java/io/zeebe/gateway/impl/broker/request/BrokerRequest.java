@@ -63,6 +63,8 @@ public abstract class BrokerRequest<T> implements ClientRequest {
 
   protected abstract T toResponseDto(DirectBuffer buffer);
 
+  public abstract String getType();
+
   public BrokerResponse<T> getResponse(final DirectBuffer responseBuffer) {
     try {
       if (isValidResponse(responseBuffer)) {
