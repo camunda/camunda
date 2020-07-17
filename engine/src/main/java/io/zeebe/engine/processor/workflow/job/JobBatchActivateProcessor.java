@@ -7,6 +7,8 @@
  */
 package io.zeebe.engine.processor.workflow.job;
 
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
 import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.processor.TypedRecord;
 import io.zeebe.engine.processor.TypedRecordProcessor;
@@ -18,11 +20,15 @@ import io.zeebe.msgpack.value.DocumentValue;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.msgpack.value.StringValue;
 import io.zeebe.msgpack.value.ValueArray;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.record.RejectionType;
+import io.zeebe.protocol.record.intent.IncidentIntent;
 import io.zeebe.protocol.record.intent.JobBatchIntent;
 import io.zeebe.protocol.record.intent.JobIntent;
+import io.zeebe.protocol.record.value.ErrorType;
+import io.zeebe.util.ByteValue;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -37,6 +43,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   private final JobState jobState;
   private final VariablesState variablesState;
   private final KeyGenerator keyGenerator;
+  private final long maxRecordLength;
   private final long maxJobBatchLength;
 
   private final ObjectHashSet<DirectBuffer> variableNames = new ObjectHashSet<>();
@@ -51,6 +58,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     this.variablesState = variablesState;
     this.keyGenerator = keyGenerator;
 
+    this.maxRecordLength = maxRecordLength;
     // we can only add the half of the max record length to the job batch
     // because the jobs itself are also written to the same batch
     maxJobBatchLength = (maxRecordLength - Long.BYTES) / 2;
@@ -85,7 +93,7 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
     final long jobBatchKey = keyGenerator.nextKey();
 
     final AtomicInteger amount = new AtomicInteger(value.getMaxJobsToActivate());
-    collectJobsToActivate(record, amount);
+    collectJobsToActivate(record, amount, streamWriter);
 
     // Collecting of jobs and update state and write ACTIVATED job events should be separate,
     // since otherwise this will cause some problems (weird behavior) with the reusing of objects
@@ -99,7 +107,9 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
   }
 
   private void collectJobsToActivate(
-      final TypedRecord<JobBatchRecord> record, final AtomicInteger amount) {
+      final TypedRecord<JobBatchRecord> record,
+      final AtomicInteger amount,
+      final TypedStreamWriter streamWriter) {
     final JobBatchRecord value = record.getValue();
     final ValueArray<JobRecord> jobIterator = value.jobs();
     final ValueArray<LongValue> jobKeyIterator = value.jobKeys();
@@ -144,6 +154,12 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
             arrayValueJob.wrap(buffer);
           } else {
             value.setTruncated(true);
+
+            if (value.getJobs().isEmpty()) {
+              raiseIncidentJobTooLargeForMessageSize(key, jobRecord, streamWriter);
+              jobState.disable(key, jobRecord);
+            }
+
             return false;
           }
 
@@ -220,5 +236,32 @@ public final class JobBatchActivateProcessor implements TypedRecordProcessor<Job
 
     streamWriter.appendRejection(record, rejectionType, rejectionReason);
     responseWriter.writeRejectionOnCommand(record, rejectionType, rejectionReason);
+  }
+
+  private void raiseIncidentJobTooLargeForMessageSize(
+      long jobKey, final JobRecord job, final TypedStreamWriter streamWriter) {
+
+    final String messageSize = ByteValue.prettyPrint(maxRecordLength);
+
+    final DirectBuffer incidentMessage =
+        wrapString(
+            String.format(
+                "The job with key '%s' can not be activated because it is larger than the configured message size (%s). "
+                    + "Try to reduce the size by reducing the number of fetched variables or modifying the variable values.",
+                jobKey, messageSize));
+
+    final IncidentRecord incidentEvent =
+        new IncidentRecord()
+            .setErrorType(ErrorType.MESSAGE_SIZE_EXCEEDED)
+            .setErrorMessage(incidentMessage)
+            .setBpmnProcessId(job.getBpmnProcessIdBuffer())
+            .setWorkflowKey(job.getWorkflowKey())
+            .setWorkflowInstanceKey(job.getWorkflowInstanceKey())
+            .setElementId(job.getElementIdBuffer())
+            .setElementInstanceKey(job.getElementInstanceKey())
+            .setJobKey(jobKey)
+            .setVariableScopeKey(job.getElementInstanceKey());
+
+    streamWriter.appendNewCommand(IncidentIntent.CREATE, incidentEvent);
   }
 }

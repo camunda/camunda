@@ -260,7 +260,7 @@ public final class StreamProcessorRule implements TestRule {
 
     @Override
     protected void failed(final Throwable e, final Description description) {
-      LOG.info("Test failed, following records where exported:");
+      LOG.info("Test failed, following records were exported:");
       printAllRecords();
     }
   }
