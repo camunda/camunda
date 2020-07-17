@@ -65,11 +65,13 @@ import java.security.cert.Certificate;
 import java.time.Duration;
 import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.StringJoiner;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.RejectedExecutionException;
@@ -88,6 +90,7 @@ import org.slf4j.LoggerFactory;
 
 /** Netty based MessagingService. */
 public class NettyMessagingService implements ManagedMessagingService {
+
   protected boolean enableNettyTls;
   protected TrustManagerFactory trustManager;
   protected KeyManagerFactory keyManager;
@@ -108,6 +111,7 @@ public class NettyMessagingService implements ManagedMessagingService {
   private Class<? extends Channel> clientChannelClass;
   private ScheduledExecutorService timeoutExecutor;
   private Channel serverChannel;
+  private final List<CompletableFuture> openFutures;
 
   public NettyMessagingService(
       final String cluster, final Address address, final MessagingConfig config) {
@@ -123,6 +127,7 @@ public class NettyMessagingService implements ManagedMessagingService {
     this.returnAddress = address;
     this.config = config;
     this.protocolVersion = protocolVersion;
+    this.openFutures = new CopyOnWriteArrayList<>();
     this.channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
   }
 
@@ -175,6 +180,11 @@ public class NettyMessagingService implements ManagedMessagingService {
       final boolean keepAlive,
       final Duration timeout,
       final Executor executor) {
+    if (!started.get()) {
+      return CompletableFuture.failedFuture(
+          new IllegalStateException("MessagingService is closed."));
+    }
+
     final long messageId = messageIdGenerator.incrementAndGet();
     final ProtocolRequest message = new ProtocolRequest(messageId, returnAddress, type, payload);
     if (keepAlive) {
@@ -296,6 +306,19 @@ public class NettyMessagingService implements ManagedMessagingService {
                 interrupted = true;
               }
               timeoutExecutor.shutdown();
+
+              for (final var entry : connections.entrySet()) {
+                final var channel = entry.getKey();
+                channel.close();
+                final var connection = entry.getValue();
+                connection.close();
+              }
+
+              for (final CompletableFuture openFuture : openFutures) {
+                openFuture.completeExceptionally(
+                    new IllegalStateException("MessagingService has been closed."));
+              }
+              openFutures.clear();
             } finally {
               log.info("Stopped");
               if (interrupted) {
@@ -393,7 +416,8 @@ public class NettyMessagingService implements ManagedMessagingService {
     } catch (final Throwable e) {
       log.debug(
           "Failed to initialize native (epoll) transport. " + "Reason: {}. Proceeding with nio.",
-          e.getMessage());
+          e.getMessage(),
+          e);
     }
     clientGroup =
         new NioEventLoopGroup(0, namedThreads("netty-messaging-event-nio-client-%d", log));
@@ -453,12 +477,15 @@ public class NettyMessagingService implements ManagedMessagingService {
       return;
     }
 
+    // we need these to close them on stop
+    openFutures.add(future);
     channelPool
         .getChannel(address, type)
         .whenComplete(
             (channel, channelError) -> {
               if (channelError == null) {
                 final ClientConnection connection = getOrCreateClientConnection(channel);
+                openFutures.remove(future);
                 callback
                     .apply(connection)
                     .whenComplete(
@@ -706,6 +733,7 @@ public class NettyMessagingService implements ManagedMessagingService {
 
   /** Channel initializer for TLS clients. */
   private class SslClientChannelInitializer extends ChannelInitializer<SocketChannel> {
+
     private final CompletableFuture<Channel> future;
     private final Address address;
     private final SslContext sslContext;
@@ -729,6 +757,7 @@ public class NettyMessagingService implements ManagedMessagingService {
 
   /** Channel initializer for TLS servers. */
   private final class SslServerChannelInitializer extends ChannelInitializer<SocketChannel> {
+
     private final SslContext sslContext;
 
     private SslServerChannelInitializer() throws SSLException {
@@ -750,6 +779,7 @@ public class NettyMessagingService implements ManagedMessagingService {
 
   /** Channel initializer for basic connections. */
   private class BasicClientChannelInitializer extends ChannelInitializer<SocketChannel> {
+
     private final CompletableFuture<Channel> future;
 
     BasicClientChannelInitializer(final CompletableFuture<Channel> future) {
@@ -764,6 +794,7 @@ public class NettyMessagingService implements ManagedMessagingService {
 
   /** Channel initializer for basic connections. */
   private class BasicServerChannelInitializer extends ChannelInitializer<SocketChannel> {
+
     @Override
     protected void initChannel(final SocketChannel channel) throws Exception {
       channel.pipeline().addLast("handshake", new ServerHandshakeHandlerAdapter());
@@ -829,6 +860,7 @@ public class NettyMessagingService implements ManagedMessagingService {
 
   /** Client handshake handler. */
   private class ClientHandshakeHandlerAdapter extends HandshakeHandlerAdapter<ProtocolReply> {
+
     private final CompletableFuture<Channel> future;
 
     ClientHandshakeHandlerAdapter(final CompletableFuture<Channel> future) {
@@ -887,6 +919,7 @@ public class NettyMessagingService implements ManagedMessagingService {
 
   /** Server handshake handler. */
   private class ServerHandshakeHandlerAdapter extends HandshakeHandlerAdapter<ProtocolRequest> {
+
     @Override
     public void channelRead(final ChannelHandlerContext context, final Object message)
         throws Exception {
@@ -924,6 +957,7 @@ public class NettyMessagingService implements ManagedMessagingService {
   /** Connection message dispatcher. */
   private class MessageDispatcher<M extends ProtocolMessage>
       extends SimpleChannelInboundHandler<Object> {
+
     private final Connection<M> connection;
 
     MessageDispatcher(final Connection<M> connection) {

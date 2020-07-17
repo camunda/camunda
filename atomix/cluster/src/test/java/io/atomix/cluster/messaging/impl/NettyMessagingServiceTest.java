@@ -16,6 +16,7 @@
  */
 package io.atomix.cluster.messaging.impl;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -196,6 +197,95 @@ public class NettyMessagingServiceTest {
     assertTrue(handlerInvoked.get());
     assertTrue(Arrays.equals(request.get(), "hello world".getBytes()));
     assertEquals(address1.address(), sender.get().address());
+  }
+
+  @Test
+  public void shouldCompleteExistingRequestFutureExceptionallyWhenMessagingServiceIsClosed() {
+    final String subject = nextSubject();
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(
+            address2, subject, "hello world".getBytes(), false, Duration.ofSeconds(5));
+
+    // when
+    netty1.stop().join();
+
+    // then
+    assertThat(response).isCompletedExceptionally();
+  }
+
+  @Test
+  public void
+      shouldCompleteExistingRequestWithKeepAliveExceptionallyWhenMessagingServiceIsClosed() {
+    final String subject = nextSubject();
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(
+            address2, subject, "hello world".getBytes(), true, Duration.ofSeconds(5));
+
+    // when
+    netty1.stop().join();
+
+    // then
+    assertThat(response).isCompletedExceptionally();
+  }
+
+  @Test
+  public void shouldCompleteFutureExceptionallyIfMessagingServiceIsClosedInBetween() {
+    final String subject = nextSubject();
+
+    // when
+    final var stopFuture = netty1.stop();
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(
+            address2, subject, "hello world".getBytes(), false, Duration.ofSeconds(5));
+
+    stopFuture.join();
+
+    // then
+    assertThat(response).isCompletedExceptionally();
+  }
+
+  @Test
+  public void shouldCompleteRequestWithKeepAliveExceptionallyIfMessagingServiceIsClosedInBetween() {
+    final String subject = nextSubject();
+
+    // when
+    final var stopFuture = netty1.stop();
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(
+            address2, subject, "hello world".getBytes(), true, Duration.ofSeconds(5));
+
+    stopFuture.join();
+
+    // then
+    assertThat(response).isCompletedExceptionally();
+  }
+
+  @Test
+  public void shouldCompleteFutureExceptionallyIfMessagingServiceHasAlreadyClosed() {
+    final String subject = nextSubject();
+    netty1.stop().join();
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(
+            address2, subject, "hello world".getBytes(), false, Duration.ofSeconds(5));
+
+    // then
+    assertThat(response).isCompletedExceptionally();
+  }
+
+  @Test
+  public void shouldCompleteRequestWithKeepAliveExceptionallyIfMessagingServiceHasAlreadyClosed() {
+    final String subject = nextSubject();
+    netty1.stop().join();
+
+    // when
+    final CompletableFuture<byte[]> response =
+        netty1.sendAndReceive(
+            address2, subject, "hello world".getBytes(), true, Duration.ofSeconds(5));
+
+    // then
+    assertThat(response).isCompletedExceptionally();
   }
 
   @Test

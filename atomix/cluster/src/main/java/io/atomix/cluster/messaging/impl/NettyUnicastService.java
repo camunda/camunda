@@ -81,6 +81,11 @@ public class NettyUnicastService implements ManagedUnicastService {
 
   @Override
   public void unicast(final Address address, final String subject, final byte[] payload) {
+    if (!started.get()) {
+      LOGGER.debug("Failed sending unicast message, unicast service was not started.");
+      return;
+    }
+
     final InetAddress resolvedAddress = address.address();
     if (resolvedAddress == null) {
       LOGGER.debug(
@@ -214,31 +219,34 @@ public class NettyUnicastService implements ManagedUnicastService {
 
   @Override
   public CompletableFuture<Void> stop() {
+    if (!started.compareAndSet(true, false)) {
+      return CompletableFuture.completedFuture(null);
+    }
+
     if (channel != null) {
       final CompletableFuture<Void> future = new CompletableFuture<>();
       channel
           .close()
           .addListener(
-              f -> {
-                started.set(false);
-                group.shutdownGracefully();
-                future.complete(null);
-              });
+              f ->
+                  group
+                      .shutdownGracefully()
+                      .addListener(
+                          f2 -> {
+                            future.complete(null);
+                          }));
+      channel = null;
       return future;
     }
-    started.set(false);
+
     return CompletableFuture.completedFuture(null);
   }
 
   /** Internal unicast service message. */
-  static class Message {
+  static final class Message {
     private final Address source;
     private final String subject;
     private final byte[] payload;
-
-    Message() {
-      this(null, null, null);
-    }
 
     Message(final Address source, final String subject, final byte[] payload) {
       this.source = source;
