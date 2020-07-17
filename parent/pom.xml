@@ -41,7 +41,7 @@
     <version.awaitility>4.0.3</version.awaitility>
     <version.camunda>7.13.0</version.camunda>
     <version.awaitility>4.0.3</version.awaitility>
-    <version.commons-lang>3.10</version.commons-lang>
+    <version.commons-lang>3.11</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.14</version.commons-codec>
@@ -59,7 +59,7 @@
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
     <version.junit>4.13</version.junit>
     <version.log4j>2.13.3</version.log4j>
-    <version.mockito>3.4.0</version.mockito>
+    <version.mockito>3.4.3</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.20</version.msgpack>
     <version.netty-tcnative>2.0.31.Final</version.netty-tcnative>
