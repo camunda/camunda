@@ -50,8 +50,8 @@
 
   <scm>
     <url>https://github.com/zeebe-io/zeebe</url>
-    <connection>scm:git:git@github.com:zeebe-io/zeebe.git</connection>
-    <developerConnection>scm:git:git@github.com:zeebe-io/zeebe.git</developerConnection>
+    <connection>project:scm:git:git@github.com:zeebe-io/zeebe.git</connection>
+    <developerConnection>project:scm:git:git@github.com:zeebe-io/zeebe.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 

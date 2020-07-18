@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
@@ -40,7 +42,6 @@
     <version.assertj>3.16.1</version.assertj>
     <version.awaitility>4.0.3</version.awaitility>
     <version.camunda>7.13.0</version.camunda>
-    <version.awaitility>4.0.3</version.awaitility>
     <version.commons-lang>3.11</version.commons-lang>
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
@@ -211,12 +212,6 @@
       </dependency>
 
       <dependency>
-        <groupId>org.awaitility</groupId>
-        <artifactId>awaitility</artifactId>
-        <version>${version.awaitility}</version>
-      </dependency>
-
-      <dependency>
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>${version.mockito}</version>
@@ -239,12 +234,6 @@
         <groupId>io.rest-assured</groupId>
         <artifactId>rest-assured</artifactId>
         <version>${version.restassert}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>org.awaitility</groupId>
-        <artifactId>awaitility</artifactId>
-        <version>${version.awaitility}</version>
       </dependency>
 
       <dependency>
@@ -616,11 +605,6 @@
       </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-autoconfigure</artifactId>
-        <version>${version.spring-boot}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-web</artifactId>
         <version>${version.spring-boot}</version>
 
@@ -977,7 +961,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1070,7 +1054,18 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence/>
+                </rules>
+              </configuration>
+            </execution>
+             <execution>
+              <id>enforce-unique-dependencies</id>
+              <goals>
+                <goal>enforce</goal>
+              </goals>
+              <configuration>
+                <rules>
+                  <banDuplicatePomDependencyVersions/>
                 </rules>
               </configuration>
             </execution>
@@ -1308,7 +1303,7 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>zeebe-io</sonar.organization>
         <sonar.login>${env.SONARCLOUD_TOKEN}</sonar.login>
-        <sonar.links.issue>${scm.url}/issues</sonar.links.issue>
+        <sonar.links.issue>${project.scm.url}/issues</sonar.links.issue>
         <sonar.cpd.exclusions>
           broker/src/main/java/io/zeebe/broker/system/configuration/backpressure/Gradient2Cfg.java,broker/src/main/java/io/zeebe/broker/system/configuration/backpressure/GradientCfg.java
         </sonar.cpd.exclusions>
