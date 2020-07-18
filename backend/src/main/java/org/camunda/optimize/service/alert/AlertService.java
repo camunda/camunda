@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.alert;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
@@ -25,6 +26,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
@@ -64,10 +66,8 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.bpm.engine.EntityTypes.REPORT;
 import static org.camunda.optimize.service.es.schema.index.AlertIndex.CHECK_INTERVAL;
-import static org.camunda.optimize.service.es.schema.index.AlertIndex.EMAIL;
 import static org.camunda.optimize.service.es.schema.index.AlertIndex.INTERVAL_UNIT;
 import static org.camunda.optimize.service.es.schema.index.AlertIndex.THRESHOLD_OPERATOR;
-import static org.camunda.optimize.service.es.schema.index.AlertIndex.WEBHOOK;
 
 @RequiredArgsConstructor
 @Component
@@ -271,7 +271,12 @@ public class AlertService implements ReportReferencingService {
     ValidationHelper.ensureNotNull(CHECK_INTERVAL, toCreate.getCheckInterval());
     ValidationHelper.ensureNotEmpty(INTERVAL_UNIT, toCreate.getCheckInterval().getUnit());
 
-    ValidationHelper.ensureNotBothEmpty(EMAIL, WEBHOOK, toCreate.getEmail(), toCreate.getWebhook());
+    final boolean emailsDefined = CollectionUtils.isNotEmpty(toCreate.getEmails());
+    final boolean webhookDefined = StringUtils.isNotBlank(toCreate.getWebhook());
+    if (!emailsDefined && !webhookDefined) {
+      throw new OptimizeValidationException("The fields [emails] and [webhook] are not allowed to " +
+                                              "both be empty. At least one of them must be set.");
+    }
   }
 
   private AlertDefinitionDto createAlertForUser(AlertCreationDto toCreate, String userId) {

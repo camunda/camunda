@@ -20,6 +20,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.List;
 import java.util.Map;
 
 @AllArgsConstructor
@@ -29,7 +30,11 @@ public class WebhookNotificationService implements NotificationService {
   private final ConfigurationService configurationService;
 
   @Override
-  public void notifyRecipient(final String alertContent, final String destination) {
+  public void notifyRecipients(final String text, final List<String> recipients) {
+    recipients.forEach(recipient -> notifyRecipient(text, recipient));
+  }
+
+  private void notifyRecipient(final String alertContent, final String destination) {
     if (StringUtils.isEmpty(destination)) {
       return;
     }
@@ -75,7 +80,7 @@ public class WebhookNotificationService implements NotificationService {
 
   private MediaType resolveMediaTypeFromHeaders(final WebhookConfiguration webhook) {
     if (webhook.getHeaders() == null
-      || !webhook.getHeaders().keySet().contains(HttpHeaders.CONTENT_TYPE)) {
+      || !webhook.getHeaders().containsKey(HttpHeaders.CONTENT_TYPE)) {
       return MediaType.APPLICATION_JSON_TYPE;
     } else {
       return MediaType.valueOf(webhook.getHeaders().get(HttpHeaders.CONTENT_TYPE));

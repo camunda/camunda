@@ -16,6 +16,8 @@ import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfig
 import org.camunda.optimize.service.util.configuration.EmailSecurityProtocol;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
 @AllArgsConstructor
 @Component
 @Slf4j
@@ -24,29 +26,32 @@ public class EmailNotificationService implements NotificationService {
   private final ConfigurationService configurationService;
 
   @Override
-  public void notifyRecipient(String text, String destination) {
-    if (configurationService.getEmailEnabled()
-      && StringUtils.isNotEmpty(destination)) {
-      try {
-        log.debug("Sending email [{}] to [{}]", text, destination);
-        sendEmail(destination, text);
-      } catch (EmailException e) {
-        log.error(
-          "Was not able to send email from [{}] to [{}]!",
-          configurationService.getAlertEmailAddress(),
-          destination,
-          e
-        );
-      }
-    } else {
-      if (StringUtils.isEmpty(destination)) {
+  public void notifyRecipients(String text, List<String> recipients) {
+    recipients.forEach(recipient -> notifyRecipient(text, recipient));
+  }
+
+  private void notifyRecipient(final String text, final String recipient) {
+    if (configurationService.getEmailEnabled()) {
+      if (StringUtils.isNotEmpty(recipient)) {
+        try {
+          log.debug("Sending email [{}] to [{}]", text, recipient);
+          sendEmail(recipient, text);
+        } catch (EmailException e) {
+          log.error(
+            "Was not able to send email from [{}] to [{}]!",
+            configurationService.getAlertEmailAddress(),
+            recipient,
+            e
+          );
+        }
+      } else {
         log.debug(
           "There is no email destination specified in the alert, therefore not sending any email notifications.");
-      } else if (!configurationService.getEmailEnabled()) {
-        log.warn(
-          "There is an email destination specified in the alert but the email service is not enabled and thus no " +
-            "email could be sent. Please check the Optimize documentation on how to enable email notifications!");
       }
+    } else if (StringUtils.isNotEmpty(recipient)) {
+      log.warn(
+        "There is an email destination specified in the alert but the email service is not enabled and thus no " +
+          "email could be sent. Please check the Optimize documentation on how to enable email notifications!");
     }
   }
 

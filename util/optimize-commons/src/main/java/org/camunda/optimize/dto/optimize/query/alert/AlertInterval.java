@@ -6,8 +6,10 @@
 package org.camunda.optimize.dto.optimize.query.alert;
 
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
 
 @Data
+@FieldNameConstants
 public class AlertInterval {
   protected int value;
   protected String unit;

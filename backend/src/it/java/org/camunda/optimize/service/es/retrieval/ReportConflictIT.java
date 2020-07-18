@@ -385,7 +385,7 @@ public class ReportConflictIT extends AbstractIT {
     alertCreationDto.setCheckInterval(interval);
     alertCreationDto.setThreshold(0.0);
     alertCreationDto.setThresholdOperator(AlertThresholdOperator.GREATER);
-    alertCreationDto.setEmail("test@camunda.com");
+    alertCreationDto.setEmails(Collections.singletonList("test@camunda.com"));
     alertCreationDto.setName("test alert");
     alertCreationDto.setReportId(reportId);
     return embeddedOptimizeExtension

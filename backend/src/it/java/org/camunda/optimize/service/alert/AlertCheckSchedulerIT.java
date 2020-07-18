@@ -120,7 +120,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     setEmailConfiguration();
 
     // when
-    String id = alertClient.createAlert(simpleAlert);
+    alertClient.createAlert(simpleAlert);
 
     // then
     assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
@@ -257,15 +257,6 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
         reportId
       ))
     );
-  }
-
-  private String startProcessAndCreateReport() {
-    ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
-
-    importAllEngineEntitiesFromScratch();
-
-    String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
-    return createNewProcessReportAsUser(collectionId, processDefinition);
   }
 
   @Test

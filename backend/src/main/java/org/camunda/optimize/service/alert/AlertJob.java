@@ -28,6 +28,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -131,13 +133,13 @@ public class AlertJob implements Job {
   private void notifyAvailableTargets(final String alertContent, final AlertDefinitionDto alert) {
     for (NotificationService notificationService : notificationServices) {
       try {
-        String destination = "";
+        List<String> recipients = new ArrayList<>();
         if (notificationService instanceof EmailNotificationService) {
-          destination = alert.getEmail();
+          recipients = alert.getEmails();
         } else if (notificationService instanceof WebhookNotificationService) {
-          destination = alert.getWebhook();
+          recipients = Collections.singletonList(alert.getWebhook());
         }
-        notificationService.notifyRecipient(alertContent, destination);
+        notificationService.notifyRecipients(alertContent, recipients);
       } catch (Exception e) {
         log.error("Exception thrown while trying to send notification", e);
       }

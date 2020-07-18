@@ -338,7 +338,7 @@ public class Generator {
 
     alertCreation.setReportId(id);
     alertCreation.setThreshold(700.0);
-    alertCreation.setEmail("foo@gmail.bar");
+    alertCreation.setEmails(Collections.singletonList("foo@gmail.bar"));
     alertCreation.setName("alertFoo");
     alertCreation.setThresholdOperator(AlertThresholdOperator.LESS);
     alertCreation.setFixNotification(true);

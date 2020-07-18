@@ -17,9 +17,11 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
@@ -55,8 +57,9 @@ public class AlertClient {
       .execute();
   }
 
-  public Response deleteAlert(String alertId) {
-    return deleteAlertAsUser(alertId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+  public void deleteAlert(String alertId) {
+    final Response response = deleteAlertAsUser(alertId, DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public List<AlertDefinitionDto> getAllAlerts() {
@@ -76,17 +79,17 @@ public class AlertClient {
         List<AlertDefinitionDto> alertsOfCollection = getRequestExecutor()
           .buildGetAlertsForCollectionRequest(e.getId())
           .withUserAuthentication(username, password)
-          .executeAndReturnList(AlertDefinitionDto.class, 200);
+          .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
         result.addAll(alertsOfCollection);
       });
 
     return result;
   }
 
-  public Response updateAlert(String id, AlertCreationDto simpleAlert) {
-    return getRequestExecutor()
+  public void updateAlert(String id, AlertCreationDto simpleAlert) {
+    getRequestExecutor()
       .buildUpdateAlertRequest(id, simpleAlert)
-      .execute();
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public Response deleteAlertAsUser(final String alertId, final String username, final String password) {
@@ -116,7 +119,7 @@ public class AlertClient {
     alertCreationDto.setCheckInterval(interval);
     alertCreationDto.setThreshold(0.0);
     alertCreationDto.setThresholdOperator(AlertThresholdOperator.GREATER);
-    alertCreationDto.setEmail("test@camunda.com");
+    alertCreationDto.setEmails(Collections.singletonList("test@camunda.com"));
     alertCreationDto.setName("test alert");
     alertCreationDto.setReportId(reportId);
 

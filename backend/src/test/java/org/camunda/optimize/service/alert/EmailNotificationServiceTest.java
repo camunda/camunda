@@ -21,15 +21,18 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import javax.mail.Message;
+import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
 import java.security.Security;
 import java.util.stream.Stream;
 
+import static com.google.common.collect.Lists.newArrayList;
+import static java.util.Collections.singletonList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.NONE;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.SSL_TLS;
 import static org.camunda.optimize.service.util.configuration.EmailSecurityProtocol.STARTTLS;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 public class EmailNotificationServiceTest {
@@ -73,12 +76,12 @@ public class EmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
-    notificationService.notifyRecipient("some body text", "to@localhost.com");
+    notificationService.notifyRecipients("some body text", singletonList("to@localhost.com"));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(1));
-    assertThat(GreenMailUtil.getBody(emails[0]), is("some body text"));
+    assertThat(emails).hasSize(1);
+    assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo("some body text");
   }
 
   @Test
@@ -89,12 +92,12 @@ public class EmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTPS);
 
     // when
-    notificationService.notifyRecipient("some body text", "to@localhost.com");
+    notificationService.notifyRecipients("some body text", singletonList("to@localhost.com"));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(1));
-    assertThat(GreenMailUtil.getBody(emails[0]), is("some body text"));
+    assertThat(emails).hasSize(1);
+    assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo("some body text");
   }
 
   @Test
@@ -104,12 +107,12 @@ public class EmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTP);
 
     // when
-    notificationService.notifyRecipient("some body text", "to@localhost.com");
+    notificationService.notifyRecipients("some body text", singletonList("to@localhost.com"));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(1));
-    assertThat(GreenMailUtil.getBody(emails[0]), is("some body text"));
+    assertThat(emails).hasSize(1);
+    assertThat(GreenMailUtil.getBody(emails[0])).isEqualTo("some body text");
   }
 
   @Test
@@ -120,11 +123,62 @@ public class EmailNotificationServiceTest {
     initGreenMail(ServerSetup.PROTOCOL_SMTPS);
 
     // when
-    notificationService.notifyRecipient("some body text", "to@localhost.com");
+    notificationService.notifyRecipients("some body text", singletonList("to@localhost.com"));
 
     // then
     MimeMessage[] emails = greenMail.getReceivedMessages();
-    assertThat(emails.length, is(0));
+    assertThat(emails).isEmpty();
+  }
+
+  @Test
+  public void sendEmailToMultipleRecipients() throws MessagingException {
+    // given
+    mockConfig(true, "demo", "demo", NONE);
+    initGreenMail(ServerSetup.PROTOCOL_SMTP);
+
+    // when
+    notificationService.notifyRecipients("some body text", newArrayList("to1@localhost.com", "to2@localhost.com"));
+
+    // then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails).hasSize(2);
+    assertThat(emails[0].getRecipients(Message.RecipientType.TO)[0]).hasToString("to1@localhost.com");
+    assertThat(emails[1].getRecipients(Message.RecipientType.TO)[0]).hasToString("to2@localhost.com");
+  }
+
+  @Test
+  public void sendEmailToRemainingRecipientsIfOneFails() throws MessagingException {
+    // given
+    mockConfig(true, "demo", "demo", NONE);
+    initGreenMail(ServerSetup.PROTOCOL_SMTP);
+
+    // when
+    notificationService.notifyRecipients(
+      "some body text",
+      newArrayList("invalidAddressThatThrowsError", "to2@localhost.com")
+    );
+
+    // then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails).hasSize(1);
+    assertThat(emails[0].getRecipients(Message.RecipientType.TO)[0]).hasToString("to2@localhost.com");
+  }
+
+  @Test
+  public void notifyRecipientsFails() {
+    // given
+    mockConfig(true, "demo", "demo", NONE);
+    initGreenMail(ServerSetup.PROTOCOL_SMTP);
+
+    // when
+    notificationService.notifyRecipients(
+      "some body text",
+      newArrayList("invalidAddressThatThrowsError")
+    );
+
+    // then
+    MimeMessage[] emails = greenMail.getReceivedMessages();
+    assertThat(emails).isEmpty();
   }
 
   private static Stream<EmailSecurityProtocol> getSecurityProtocolVariations() {
