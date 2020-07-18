@@ -60,7 +60,7 @@
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
     <version.junit>4.13</version.junit>
     <version.log4j>2.13.3</version.log4j>
-    <version.mockito>3.4.3</version.mockito>
+    <version.mockito>3.4.4</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.20</version.msgpack>
     <version.netty-tcnative>2.0.31.Final</version.netty-tcnative>
