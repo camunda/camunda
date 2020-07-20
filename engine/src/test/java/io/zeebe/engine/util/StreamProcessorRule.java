@@ -253,6 +253,7 @@ public final class StreamProcessorRule implements TestRule {
     @Override
     protected void after() {
       streams = null;
+      streamProcessingComposite = null;
     }
   }
 
