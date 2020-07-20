@@ -14,6 +14,7 @@ import io.zeebe.engine.processor.workflow.handlers.element.ElementActivatedHandl
 import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.state.instance.IndexedRecord;
 import io.zeebe.engine.state.instance.StoredRecord.Purpose;
+import io.zeebe.engine.state.instance.VariablesState;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import java.util.List;
@@ -21,6 +22,7 @@ import java.util.List;
 public final class ContainerElementActivatedHandler<T extends ExecutableFlowElementContainer>
     extends ElementActivatedHandler<T> {
   private final WorkflowState workflowState;
+  private final VariablesState variablesState;
 
   public ContainerElementActivatedHandler(final WorkflowState workflowState) {
     this(null, workflowState);
@@ -30,6 +32,7 @@ public final class ContainerElementActivatedHandler<T extends ExecutableFlowElem
       final WorkflowInstanceIntent nextState, final WorkflowState workflowState) {
     super(nextState);
     this.workflowState = workflowState;
+    variablesState = workflowState.getElementInstanceState().getVariablesState();
   }
 
   @Override
@@ -57,7 +60,16 @@ public final class ContainerElementActivatedHandler<T extends ExecutableFlowElem
       // event subprocess is activated
       // - activate the corresponding start event
       final var startEvent = element.getStartEvents().get(0);
-      activateStartEvent(context, startEvent);
+      final var childInstanceKey = activateStartEvent(context, startEvent);
+
+      // the event variables are stored as temporary variables in the scope of the subprocess
+      // - move them to the scope of the start event to apply the output variable mappings
+      final var subprocessInstanceKey = context.getKey();
+      final var variables = variablesState.getTemporaryVariables(subprocessInstanceKey);
+      if (variables != null) {
+        variablesState.setTemporaryVariables(childInstanceKey, variables);
+        variablesState.removeTemporaryVariables(subprocessInstanceKey);
+      }
     }
 
     context
@@ -68,14 +80,14 @@ public final class ContainerElementActivatedHandler<T extends ExecutableFlowElem
     return true;
   }
 
-  private void activateStartEvent(
+  private long activateStartEvent(
       final BpmnStepContext<T> context, final ExecutableStartEvent startEvent) {
     final WorkflowInstanceRecord value = context.getValue();
 
     value.setElementId(startEvent.getId());
     value.setBpmnElementType(startEvent.getElementType());
     value.setFlowScopeKey(context.getKey());
-    context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, value);
+    return context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING, value);
   }
 
   private IndexedRecord getDeferredRecord(final BpmnStepContext<T> context) {
