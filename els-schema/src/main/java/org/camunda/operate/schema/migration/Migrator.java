@@ -28,6 +28,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.GetIndexResponse;
+import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -165,38 +166,55 @@ public class Migrator{
 
   protected void deleteSrcSchema(final String srcVersion) {
     if (shouldDeleteSrcSchema) {
-      if (deleteSchema(srcVersion)) {
-        logger.info("Templates and indices for version {} are deleted", srcVersion);
-      } else {
-        logger.info("Templates and indices for version {} are NOT deleted", srcVersion);
-      }
+      deleteSchema(srcVersion);
     }
   }
   
-  private boolean deleteSchema(final String version) {
-    return deleteTemplates(version) && deleteIndices(version);
+  private void deleteSchema(final String version) {
+    deleteTemplates(version); 
+    deleteIndices(version);
   }
 
-  protected boolean deleteTemplates(final String version) {
-    try {
-      return esClient.indices()
-          .deleteTemplate(new DeleteIndexTemplateRequest(getIndexPrefix() + "-*-" + version + "_template"), RequestOptions.DEFAULT)
-          .isAcknowledged();
-    } catch (IOException e) {
-      logger.error("Deleting {} templates for {} failed", getIndexPrefix(), version, e);
+  protected void deleteTemplates(final String version) {
+    final String templatesPattern = getIndexPrefix() + "-*-" + version + "_template";
+    
+    if (!templatesExist(templatesPattern)) {
+      return;
     }
-    return false;
+    
+    try {
+      boolean templatesDeleted = esClient.indices()
+            .deleteTemplate(new DeleteIndexTemplateRequest(templatesPattern), RequestOptions.DEFAULT)
+            .isAcknowledged();
+      if (templatesDeleted) {
+        logger.info("Templates with pattern {} deleted", templatesPattern);
+      } else {
+        logger.info("Templates with pattern {} NOT deleted", templatesPattern);
+      }
+    } catch (Exception e) {
+      logger.error("Deleting templates with pattern {} failed", getIndexPrefix(),e);
+    }
   }
 
-  protected boolean deleteIndices(final String version) {
-    try {
-      return esClient.indices()
-          .delete(new DeleteIndexRequest(getIndexPrefix() + "-*-" + version + "_*"), RequestOptions.DEFAULT)
-          .isAcknowledged();
-    } catch (IOException e) {
-      logger.error("Deleting {} indices for {} failed", getIndexPrefix(), version, e);
+  protected void deleteIndices(final String version) {
+    final String indexPattern = getIndexPrefix() + "-*-" + version + "_*";
+    
+    if (!indicesExist(indexPattern)) {
+      return;
     }
-    return false;
+    
+    try {
+      boolean indicesDeleted = esClient.indices()
+          .delete(new DeleteIndexRequest(indexPattern), RequestOptions.DEFAULT)
+          .isAcknowledged();
+      if (indicesDeleted) {
+        logger.info("Indices with pattern {} deleted ", indexPattern);
+      } else {
+        logger.info("Indices with pattern {} NOT deleted ", indexPattern);
+      }
+    } catch (Exception e) {
+      logger.error("Deleting indices with pattern {} failed", indexPattern, e);
+    }
   }
 
   protected Plan createPlanFor(final String indexName,final String srcVersion, final String dstVersion,final List<Step> steps) {
@@ -221,6 +239,24 @@ public class Migrator{
 
   protected String getIndexPrefix() {
     return operateProperties.getElasticsearch().getIndexPrefix();
+  }
+  
+  protected boolean templatesExist(final String templatePattern) {
+    try {
+      return esClient.indices().existsTemplate(new IndexTemplatesExistRequest(templatePattern), RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Failed to check existence of templates with pattern {}, continue assuming they don't exist", templatePattern, e);
+      return false;
+    }
+  }
+  
+  protected boolean indicesExist(final String indexPattern) {
+    try {
+      return esClient.indices().exists(new GetIndexRequest(indexPattern), RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      logger.error("Failed to check existence of indices with pattern {}, continue assuming they don't exist",indexPattern, e);
+      return false;
+    }
   }
 
 }
