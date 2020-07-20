@@ -71,7 +71,7 @@ public final class EngineRule extends ExternalResource {
 
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
-  private StreamProcessorRule environmentRule;
+  private final StreamProcessorRule environmentRule;
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
   private final int partitionCount;
@@ -80,7 +80,7 @@ public final class EngineRule extends ExternalResource {
 
   private final Int2ObjectHashMap<SubscriptionCommandMessageHandler> subscriptionHandlers =
       new Int2ObjectHashMap<>();
-  private final ExecutorService subscriptionHandlerExecutor = Executors.newSingleThreadExecutor();
+  private ExecutorService subscriptionHandlerExecutor;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, false);
@@ -115,6 +115,8 @@ public final class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
+    subscriptionHandlerExecutor = Executors.newSingleThreadExecutor();
+
     if (!explicitStart) {
       startProcessors();
     }
@@ -123,7 +125,6 @@ public final class EngineRule extends ExternalResource {
   @Override
   protected void after() {
     subscriptionHandlerExecutor.shutdown();
-    environmentRule = null;
     subscriptionHandlers.clear();
   }
 
