@@ -19,13 +19,13 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.util.asserts.TopologyAssert;
 import io.zeebe.util.VersionUtil;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -133,10 +133,10 @@ public class RollingUpdateTest {
 
         container.shutdownGracefully(Duration.ofSeconds(30));
 
-        // until previous version points to 0.24, we cannot yet tune failure detection to be very
-        // fast, so
+        // until previous version points to 0.24, we cannot yet tune failure detection to be fast,
+        // so wait long enough for the broker to be removed even in slower systems
         Awaitility.await("broker is removed from topology")
-            .atMost(Duration.ofSeconds(10))
+            .atMost(Duration.ofSeconds(20))
             .pollInterval(Duration.ofMillis(100))
             .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, brokerId));
 
@@ -160,7 +160,8 @@ public class RollingUpdateTest {
           activatedJobs.compute(
               job.getWorkflowInstanceKey(),
               (ignored, list) -> {
-                final var appendedList = Optional.ofNullable(list).orElse(new ArrayList<>());
+                final var appendedList =
+                    Optional.ofNullable(list).orElse(new CopyOnWriteArrayList<>());
                 appendedList.add(job.getType());
                 return appendedList;
               });
@@ -254,7 +255,7 @@ public class RollingUpdateTest {
         .withEnv("ZEEBE_BROKER_CLUSTER_INITIALCONTACTPOINTS", initialContactPoints)
         .withEnv("ZEEBE_BROKER_CLUSTER_GOSSIPFAILURETIMEOUT", "5000")
         .withEnv("ZEEBE_BROKER_CLUSTER_GOSSIPINTERVAL", "100")
-        .withEnv("ZEEBE_BROKER_CLUSTER_GOSSIPPROBEINTERVAL", "250")
+        .withEnv("ZEEBE_BROKER_CLUSTER_GOSSIPPROBEINTERVAL", "100")
         .withLogLevel(Level.DEBUG)
         .withDebug(false);
   }
