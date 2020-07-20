@@ -45,13 +45,9 @@ class Modeler {
     },
   };
 
-  importXML = jest.fn((_, callback) => {
-    callback();
-  });
+  importXML = jest.fn();
 
-  saveXML = jest.fn((callback) => {
-    callback(undefined, 'some xml');
-  });
+  saveXML = jest.fn().mockReturnValue({xml: 'some xml'});
 
   attachTo = jest.fn();
   detach = jest.fn();

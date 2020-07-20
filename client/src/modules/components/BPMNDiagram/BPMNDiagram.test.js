@@ -35,7 +35,7 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
     }
     attachTo = attachSpy;
     detach = jest.fn();
-    importXML = jest.fn((xml, cb) => cb());
+    importXML = jest.fn();
     _container = {
       querySelector: () => {
         return {
@@ -70,7 +70,7 @@ jest.mock('bpmn-js/lib/Viewer', () => {
     }
     attachTo = attachSpy;
     detach = jest.fn();
-    importXML = jest.fn((xml, cb) => cb());
+    importXML = jest.fn();
     _container = {
       querySelector: () => {
         return {

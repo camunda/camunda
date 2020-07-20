@@ -26,15 +26,10 @@ export default function ProcessRenderer({
 }) {
   let isRemoveEvent = false;
 
-  function onChangeWithViewer() {
-    viewer.saveXML((err, xml) => {
-      if (err) {
-        throw err;
-      } else {
-        onChange(xml, isRemoveEvent);
-        isRemoveEvent = false;
-      }
-    });
+  async function onChangeWithViewer() {
+    const {xml} = await viewer.saveXML();
+    onChange(xml, isRemoveEvent);
+    isRemoveEvent = false;
   }
 
   function onElementRemove() {

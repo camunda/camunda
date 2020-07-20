@@ -29,7 +29,7 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
       };
     }
     attachTo = jest.fn();
-    importXML = jest.fn((xml, cb) => cb());
+    importXML = jest.fn();
     get = () => {
       return this.elementRegistry;
     };

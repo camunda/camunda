@@ -41,29 +41,26 @@ export default class NodeDuration extends React.Component {
     });
   }
 
-  constructValues = () => {
-    return new Promise((resolve) => {
-      const viewer = new Viewer();
-      viewer.importXML(this.props.xml, () => {
-        const predefinedValues = this.props.filterData?.data || {};
-        const values = {};
-        const nodeNames = {};
+  constructValues = async () => {
+    const viewer = new Viewer();
+    await viewer.importXML(this.props.xml);
+    const predefinedValues = this.props.filterData?.data || {};
+    const values = {};
+    const nodeNames = {};
 
-        const set = new Set();
-        viewer
-          .get('elementRegistry')
-          .filter((element) => element.businessObject.$instanceOf('bpmn:FlowNode'))
-          .map((element) => element.businessObject)
-          .forEach((element) => set.add(element));
+    const set = new Set();
+    viewer
+      .get('elementRegistry')
+      .filter((element) => element.businessObject.$instanceOf('bpmn:FlowNode'))
+      .map((element) => element.businessObject)
+      .forEach((element) => set.add(element));
 
-        set.forEach((element) => {
-          values[element.id] = copyObjectIfExistsAndStringifyValue(predefinedValues[element.id]);
-          nodeNames[element.id] = element.name || element.id;
-        });
-
-        resolve({values, nodeNames});
-      });
+    set.forEach((element) => {
+      values[element.id] = copyObjectIfExistsAndStringifyValue(predefinedValues[element.id]);
+      nodeNames[element.id] = element.name || element.id;
     });
+
+    return {values, nodeNames};
   };
 
   cleanUpValues = () => {

@@ -12,7 +12,7 @@ import Modeler from 'bpmn-js/lib/Modeler';
 
 jest.mock('react', () => ({...jest.requireActual('react'), useEffect: (fn) => fn()}));
 
-it('should call onChange with the xml', () => {
+it('should call onChange with the xml', async () => {
   const viewer = new Modeler();
   const spy = jest.fn();
 
@@ -21,10 +21,13 @@ it('should call onChange with the xml', () => {
   viewer.eventBus.on.mock.calls[0][1]();
 
   expect(viewer.saveXML).toHaveBeenCalled();
+
+  await flushPromises();
+
   expect(spy).toHaveBeenCalledWith('some xml', false);
 });
 
-it('should set the the change as remove is shape is removed', () => {
+it('should set the the change as remove is shape is removed', async () => {
   const viewer = new Modeler();
   const spy = jest.fn();
   shallow(<ProcessRenderer viewer={viewer} onChange={spy} />);
@@ -34,6 +37,8 @@ it('should set the the change as remove is shape is removed', () => {
 
   // commandStack.changed
   viewer.eventBus.on.mock.calls[0][1]();
+
+  await flushPromises();
 
   expect(spy).toHaveBeenCalledWith('some xml', true);
 });

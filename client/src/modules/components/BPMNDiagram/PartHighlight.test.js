@@ -17,11 +17,11 @@ console.error = jest.fn();
 
 const xml = fs.readFileSync('demo-data/subProcesses.bpmn', {encoding: 'utf-8'});
 
-const loadXml = async (xml) =>
-  new Promise((resolve) => {
-    const viewer = new Viewer();
-    viewer.importXML(xml, () => resolve(viewer));
-  });
+const loadXml = async (xml) => {
+  const viewer = new Viewer();
+  await viewer.importXML(xml);
+  return viewer;
+};
 
 jest.mock('services', () => {
   return {

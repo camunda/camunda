@@ -88,7 +88,7 @@ export default themed(
         }
       };
 
-      findOrCreateViewerFor = (xml, theme) => {
+      findOrCreateViewerFor = async (xml, theme) => {
         const idx = availableViewers.findIndex(
           (conf) =>
             conf.xml === xml &&
@@ -121,19 +121,17 @@ export default themed(
           additionalModules,
         });
 
-        return new Promise((resolve) => {
-          viewer.importXML(xml, () => {
-            const defs = viewer._container.querySelector('defs');
-            if (defs) {
-              const highlightMarker = defs.querySelector('marker').cloneNode(true);
+        await viewer.importXML(xml);
+        const defs = viewer._container.querySelector('defs');
+        if (defs) {
+          const highlightMarker = defs.querySelector('marker').cloneNode(true);
 
-              highlightMarker.setAttribute('id', 'sequenceflow-end-highlight');
+          highlightMarker.setAttribute('id', 'sequenceflow-end-highlight');
 
-              defs.appendChild(highlightMarker);
-            }
-            resolve(viewer);
-          });
-        });
+          defs.appendChild(highlightMarker);
+        }
+
+        return viewer;
       };
 
       importXML = (xml) => {
