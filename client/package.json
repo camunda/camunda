@@ -15,7 +15,7 @@
     "@types/react-router-dom": "^5.1.5",
     "@types/styled-components": "^5.1.1",
     "apollo-boost": "^0.4.9",
-    "date-fns": "^2.14.0",
+    "date-fns": "^2.15.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-prettier": "^3.1.4",
     "eslint-plugin-testing-library": "^3.3.1",
