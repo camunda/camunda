@@ -316,9 +316,9 @@ public final class StreamProcessorReprocessingTest {
   }
 
   @Test
-  public void shouldStartFromLastProcessedEvent() throws Exception {
+  public void shouldStartAfterLastProcessedEventInSnapshot() throws Exception {
     // given
-    final CountDownLatch processingLatch = new CountDownLatch(2);
+    final CountDownLatch onProcessedListenerLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onEvent(
@@ -331,17 +331,19 @@ public final class StreamProcessorReprocessingTest {
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {
-                    processingLatch.countDown();
-                  }
-                }));
+                      final Consumer<SideEffectProducer> sideEffect) {}
+                }),
+        (t) -> onProcessedListenerLatch.countDown());
 
     streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING);
-    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING);
-    processingLatch.await();
+    streamProcessorRule.writeWorkflowInstanceEvent(
+        ELEMENT_ACTIVATING); // should be processed and included in the snapshot
+    onProcessedListenerLatch.await();
     streamProcessorRule.closeStreamProcessor();
 
     // when
+    // The processor restarts with a snapshot that was the state of the processor before it
+    // was closed.
     final List<Long> processedPositions = new ArrayList<>();
     final CountDownLatch newProcessLatch = new CountDownLatch(1);
     streamProcessorRule.startTypedStreamProcessor(
@@ -372,7 +374,7 @@ public final class StreamProcessorReprocessingTest {
   @Test
   public void shouldNotReprocessEventAtLastProcessedEvent() throws Exception {
     // given
-    final CountDownLatch processingLatch = new CountDownLatch(3);
+    final CountDownLatch onProcessedListenerLatch = new CountDownLatch(2);
     streamProcessorRule.startTypedStreamProcessor(
         (processors, context) ->
             processors.onEvent(
@@ -385,18 +387,14 @@ public final class StreamProcessorReprocessingTest {
                       final TypedRecord<UnifiedRecordValue> record,
                       final TypedResponseWriter responseWriter,
                       final TypedStreamWriter streamWriter,
-                      final Consumer<SideEffectProducer> sideEffect) {
-                    processingLatch.countDown();
-                  }
-                }));
+                      final Consumer<SideEffectProducer> sideEffect) {}
+                }),
+        t -> onProcessedListenerLatch.countDown());
 
     streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
     final long snapshotPosition =
         streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
-    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
-    // we write three event to make sure that the second event was committed and is part of the
-    // state (lastProcessedEvent)
-    processingLatch.await();
+    onProcessedListenerLatch.await();
     streamProcessorRule.closeStreamProcessor();
     final long lastSourceEvent =
         streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
