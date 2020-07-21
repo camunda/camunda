@@ -394,9 +394,14 @@ public final class RaftRule extends ExternalResource {
     return memberLogs;
   }
 
-  public void awaitSameLogSizeOnAllNodes() {
+  public void awaitSameLogSizeOnAllNodes(final long lastIndex) {
     waitUntil(
-        () -> memberLog.values().stream().distinct().count() == 1, () -> memberLog.toString());
+        () -> {
+          final var lastIndexes =
+              memberLog.values().stream().distinct().collect(Collectors.toList());
+          return lastIndexes.size() == 1 && lastIndexes.get(0) == lastIndex;
+        },
+        () -> memberLog.toString());
   }
 
   private void waitUntil(final BooleanSupplier condition, final Supplier<String> errorMessage) {
@@ -518,7 +523,7 @@ public final class RaftRule extends ExternalResource {
     final var leader = getLeader().orElseThrow();
 
     for (int i = 0; i < count - 1; i++) {
-      appendEntryAsync(leader, 1024);
+      appendEntry();
     }
 
     return appendEntry();
