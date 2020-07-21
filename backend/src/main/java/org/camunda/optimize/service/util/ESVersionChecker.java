@@ -7,6 +7,7 @@ package org.camunda.optimize.service.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.Getter;
 import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.EntityUtils;
@@ -16,45 +17,38 @@ import org.elasticsearch.client.RestHighLevelClient;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 
 import static org.camunda.optimize.service.metadata.Version.getMajorAndMinor;
+import static org.camunda.optimize.service.metadata.Version.getMajorVersionFrom;
+import static org.camunda.optimize.service.metadata.Version.getMinorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 
 @UtilityClass
 @Slf4j
 public class ESVersionChecker {
-  private static List<String> supportedES = new ArrayList<>();
-  private static List<String> warningES = new ArrayList<>();
+  @Getter
+  private static List<String> supportedVersions = new ArrayList<>();
 
   static {
-    supportedES.add("7.0.0");
-    supportedES.add("7.1.0");
-    supportedES.add("7.2.0");
-    supportedES.add("7.3.0");
-    supportedES.add("7.4.0");
-    supportedES.add("7.5.0");
-    supportedES.add("7.6.0");
-    warningES.add("7.7.0");
-    warningES.add("7.8.0");
-    warningES.add("7.9.0");
+    supportedVersions.add("7.0.0");
+    supportedVersions.add("7.1.0");
+    supportedVersions.add("7.2.0");
+    supportedVersions.add("7.3.0");
+    supportedVersions.add("7.4.0");
+    supportedVersions.add("7.5.0");
+    supportedVersions.add("7.6.0");
   }
 
   public static void checkESVersionSupport(RestHighLevelClient esClient) throws IOException {
-    String responseJson = EntityUtils.toString(esClient.getLowLevelClient()
-                                                 .performRequest(new Request("GET", "/"))
-                                                 .getEntity());
-    ObjectNode node = new ObjectMapper().readValue(responseJson, ObjectNode.class);
+    String currentVersion = getCurrentESVersion(esClient);
 
-    String currentVersion = node.get("version").get("number").toString().replaceAll("\"", "");
+    if (!isCurrentVersionSupported(currentVersion)) {
+      String latestSupportedES = getLatestSupportedESVersion();
 
-    Optional<String> matchedVersion = findMatchedVersion(currentVersion, supportedES);
-
-    if (!matchedVersion.isPresent()) {
-      Optional<String> unsupportedVersion = findMatchedVersion(currentVersion, warningES);
-      if (unsupportedVersion.isPresent()) {
+      if (doesVersionNeedWarning(currentVersion, latestSupportedES)) {
         log.warn("The version of Elasticsearch you're using is not officially supported by Camunda Optimize." +
                    "\nWe can not guarantee full functionality." +
                    "\nPlease check the technical guide for the list of supported Elasticsearch versions");
@@ -64,27 +58,45 @@ public class ESVersionChecker {
     }
   }
 
-  private static Optional<String> findMatchedVersion(String currentVersion, List<String> supportedVersions) {
+  public static boolean doesVersionNeedWarning(String currentVersion, String latestSupportedES) {
+    return getMajorVersionFrom(latestSupportedES).equals(getMajorVersionFrom(currentVersion)) &&
+      Integer.parseInt(getMinorVersionFrom(latestSupportedES)) < Integer.parseInt(getMinorVersionFrom(currentVersion));
+  }
+
+  private static String getCurrentESVersion(RestHighLevelClient esClient) throws IOException {
+    String responseJson = EntityUtils.toString(esClient.getLowLevelClient()
+                                                 .performRequest(new Request("GET", "/"))
+                                                 .getEntity());
+    ObjectNode node = new ObjectMapper().readValue(responseJson, ObjectNode.class);
+
+    return node.get("version").get("number").toString().replaceAll("\"", "");
+  }
+
+  public static boolean isCurrentVersionSupported(String currentVersion) {
     String currentMajorAndMinor = getMajorAndMinor(currentVersion);
-    return supportedVersions.stream().filter(v -> {
+    return supportedVersions.stream().anyMatch(v -> {
       String neededVersion = stripToPlainVersion(v);
       String neededMajorAndMinor = getMajorAndMinor(neededVersion);
 
       return currentMajorAndMinor.equals(neededMajorAndMinor)
         && Integer.parseInt(getPatchVersionFrom(currentVersion)) >= Integer.parseInt(getPatchVersionFrom
                                                                                        (neededVersion));
-    }).findFirst();
+    });
   }
 
-  private static String buildUnsupportedESErrorMessage(String ESVersion) {
+  public static String getLatestSupportedESVersion() {
+    return supportedVersions.stream().max(Comparator.naturalOrder()).get();
+  }
+
+  private static String buildUnsupportedESErrorMessage(String esVersion) {
     StringBuilder message = new StringBuilder("Elasticsearch version is not supported by Optimize.\n");
 
     message.append("Current version of Optimize supports following Elasticsearch versions:\n");
-    for (String version : supportedES) {
+    for (String version : supportedVersions) {
       message.append(version).append("+\n");
     }
 
-    message.append("Your current Elasticsearch version is: ").append(ESVersion);
+    message.append("Your current Elasticsearch version is: ").append(esVersion);
     return message.toString();
   }
 
