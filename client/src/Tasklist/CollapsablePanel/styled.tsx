@@ -11,7 +11,6 @@ import {ReactComponent as LeftBar} from 'modules/icons/left-bar.svg';
 
 const ExpandedPanel = styled.div`
   height: 100%;
-  overflow-x: hidden;
 `;
 
 const CollapsedPanel = styled.div`

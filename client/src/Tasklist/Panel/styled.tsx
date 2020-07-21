@@ -51,6 +51,7 @@ const Body = styled.div<BodyProps>`
   grid-template-rows: auto 1fr;
   background-color: ${({hasTransparentBackground, theme}) =>
     hasTransparentBackground ? 'transparent' : theme.colors.ui04};
+  overflow: hidden;
 `;
 
 const Footer = styled.div`
