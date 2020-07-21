@@ -16,10 +16,6 @@
  */
 package io.atomix.storage.buffer;
 
-import static io.zeebe.test.util.TestEnvironment.getTestForkNumber;
-import static io.zeebe.test.util.TestEnvironment.getTestMavenId;
-import static java.lang.String.format;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -31,23 +27,14 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.UUID;
 
 public abstract class FileTesting {
-
-  private static final String getTestRunPathElement() {
-    return format("fork-%d_mavenID-%d/", getTestForkNumber(), getTestMavenId());
-  }
-
-  private static final String getFolderNameForTestData() {
-    return "target/test-files/" + getTestRunPathElement();
-  }
-
   public static File createFile() {
-    final File file = new File(getFolderNameForTestData() + UUID.randomUUID().toString());
+    final File file = new File("target/test-files/" + UUID.randomUUID().toString());
     file.getParentFile().mkdirs();
     return file;
   }
 
   public static void cleanFiles() {
-    final Path directory = Paths.get(getFolderNameForTestData());
+    final Path directory = Paths.get("target/test-files/");
     try {
       Files.walkFileTree(
           directory,
