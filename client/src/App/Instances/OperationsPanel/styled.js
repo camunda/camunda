@@ -8,7 +8,6 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const OperationsList = themed(styled.ul`
-  overflow-y: auto;
   li:first-child {
     border-top: none;
   }

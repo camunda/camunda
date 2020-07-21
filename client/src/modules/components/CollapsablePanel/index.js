@@ -79,7 +79,6 @@ function CollapsablePanel({
         hasBackgroundColor={hasBackgroundColor}
         transitionTimeout={TRANSITION_TIMEOUT}
         data-test="expanded-panel"
-        scrollable={scrollable}
       >
         <Styled.Header panelPosition={panelPosition}>
           <Styled.CollapseButton

@@ -80,8 +80,6 @@ export const ExpandedPanel = themed(styled(BasicPanel)`
   ${({hasBackgroundColor}) => {
     return hasBackgroundColor ? backgroundColors : '';
   }}
-  overflow: ${({scrollable}) => (scrollable ? 'auto' : 'hidden')};
-
 `);
 
 export const CollapsedPanel = styled(BasicPanel)`

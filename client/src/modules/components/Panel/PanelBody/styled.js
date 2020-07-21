@@ -7,7 +7,7 @@
 import styled from 'styled-components';
 
 export const Body = styled.div`
-  overflow: ${({scrollable}) => (scrollable ? 'visible' : 'hidden')};
+  overflow: ${({scrollable}) => (scrollable ? 'auto' : 'hidden')};
   flex-grow: 1;
   display: flex;
   flex-direction: column;
