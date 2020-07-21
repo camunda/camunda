@@ -85,7 +85,9 @@ public class ESVersionChecker {
   }
 
   public static String getLatestSupportedESVersion() {
-    return supportedVersions.stream().max(Comparator.naturalOrder()).get();
+    return supportedVersions.stream()
+      .max(Comparator.naturalOrder())
+      .orElseThrow(() -> new IllegalStateException("No supported versions found"));
   }
 
   private static String buildUnsupportedESErrorMessage(String esVersion) {

@@ -94,7 +94,10 @@ public class VariableImportIT extends AbstractImportIT {
     // when
     BpmnModelInstance processModel = createSimpleProcessDefinition();
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
-    ProcessInstanceEngineDto instanceDto = engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+    ProcessInstanceEngineDto instanceDto = engineIntegrationExtension.deployAndStartProcessWithVariables(
+      processModel,
+      variables
+    );
 
     // whenES update writes fail
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();

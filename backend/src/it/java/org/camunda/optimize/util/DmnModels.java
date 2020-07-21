@@ -5,11 +5,14 @@
  */
 package org.camunda.optimize.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.HitPolicy;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DmnModels {
   //invoice variables
   public static final String OUTPUT_CLASSIFICATION_ID = "classificationOutput";

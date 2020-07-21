@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.engine.service;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricVariableUpdateInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.plugin.VariableImportAdapterProvider;
 import org.camunda.optimize.plugin.importing.variable.PluginVariableDto;
 import org.camunda.optimize.plugin.importing.variable.VariableImportAdapter;
@@ -22,8 +23,11 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.util.DateFormatterUtil.getDateStringInOptimizeDateFormat;
+import static org.camunda.optimize.service.util.DateFormatterUtil.isValidOptimizeDateFormat;
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 
 @Slf4j
@@ -91,6 +95,7 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
         dto.setTimestamp(OffsetDateTime.now());
       }
       if (isValidVariable(dto)) {
+        normalizeDateVariableFormats(dto);
         if (dto instanceof ProcessVariableDto) {
           variableImportList.add((ProcessVariableDto) dto);
         } else {
@@ -212,6 +217,24 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
     return true;
   }
 
+  private void normalizeDateVariableFormats(final PluginVariableDto dto) {
+    if (VariableType.DATE.getId().equalsIgnoreCase(dto.getType())) {
+      final String dateVariableValue = dto.getValue();
+      if (dto.getValue() != null && !isValidOptimizeDateFormat(dto.getValue())) {
+        final Optional<String> optimizeDateFormat = getDateStringInOptimizeDateFormat(dateVariableValue);
+        if (optimizeDateFormat.isPresent()) {
+          dto.setValue(optimizeDateFormat.get());
+        } else {
+          log.trace(
+            "Could not convert date variable with name {} and value {} to valid Optimize date format",
+            dto.getName(),
+            dateVariableValue
+          );
+        }
+      }
+    }
+  }
+
   private boolean isNullOrEmpty(String value) {
     return value == null || value.isEmpty();
   }
@@ -221,14 +244,14 @@ public class VariableUpdateInstanceImportService implements ImportService<Histor
   }
 
   private ElasticsearchImportJob<ProcessVariableDto> createElasticsearchImportJob(
-    List<ProcessVariableDto> processInstances,
+    List<ProcessVariableDto> processVariables,
     Runnable callback) {
     VariableUpdateElasticsearchImportJob importJob = new VariableUpdateElasticsearchImportJob(
       variableWriter,
       camundaEventService,
       callback
     );
-    importJob.setEntitiesToImport(processInstances);
+    importJob.setEntitiesToImport(processVariables);
     return importJob;
   }
 
