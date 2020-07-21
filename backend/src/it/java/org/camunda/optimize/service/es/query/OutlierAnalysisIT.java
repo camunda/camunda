@@ -40,6 +40,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThan;
 
 public class OutlierAnalysisIT extends AbstractIT {
@@ -439,7 +440,7 @@ public class OutlierAnalysisIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    Response response = analysisClient.getVariableTermDtosActivityRawResponse(
+    List<VariableTermDto> result = analysisClient.getVariableTermDtosActivity(
       activityHigherOutlierBound,
       processDefinition.getKey(),
       Collections.singletonList("1"),
@@ -449,7 +450,7 @@ public class OutlierAnalysisIT extends AbstractIT {
     );
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(result, hasSize(0));
   }
 
   @Test

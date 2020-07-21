@@ -47,12 +47,14 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -231,7 +233,13 @@ public class AlertService implements ReportReferencingService {
   }
 
   private AlertDefinitionDto getAlert(String alertId) {
-    return alertReader.getAlert(alertId);
+    Optional<AlertDefinitionDto> alertOptional = alertReader.getAlert(alertId);
+
+    if (!alertOptional.isPresent()) {
+      throw new NotFoundException("Alert does not exist!");
+    }
+
+    return alertOptional.get();
   }
 
   public IdDto createAlert(AlertCreationDto toCreate, String userId) {
@@ -311,7 +319,7 @@ public class AlertService implements ReportReferencingService {
   private void updateAlertForUser(String alertId, AlertCreationDto toCreate, String userId) {
     verifyUserAuthorizedToEditAlertOrFail(toCreate, userId);
 
-    AlertDefinitionDto toUpdate = alertReader.getAlert(alertId);
+    AlertDefinitionDto toUpdate = getAlert(alertId);
     unscheduleJob(toUpdate);
     toUpdate.setLastModified(LocalDateUtil.getCurrentDateTime());
     toUpdate.setLastModifier(userId);
@@ -323,7 +331,7 @@ public class AlertService implements ReportReferencingService {
   public void deleteAlert(String alertId, String userId) {
     verifyUserAuthorizedToEditAlertOrFail(getAlert(alertId), userId);
 
-    AlertDefinitionDto toDelete = alertReader.getAlert(alertId);
+    AlertDefinitionDto toDelete = getAlert(alertId);
     alertWriter.deleteAlert(alertId);
     unscheduleJob(toDelete);
   }

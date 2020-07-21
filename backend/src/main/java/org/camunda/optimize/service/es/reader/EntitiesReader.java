@@ -41,7 +41,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -168,12 +167,12 @@ public class EntitiesReader {
     return runEntitiesSearchRequest(searchSourceBuilder);
   }
 
-  public EntityNameDto getEntityNames(final EntityNameRequestDto requestDto) {
+  public Optional<EntityNameDto> getEntityNames(final EntityNameRequestDto requestDto) {
     log.debug(String.format("Performing get entity names search request %s", requestDto.toString()));
     MultiGetResponse multiGetItemResponse = runGetEntityNamesRequest(requestDto);
+
     if (!atLeastOneResponseExistsForMultiGet(multiGetItemResponse)) {
-      String reason = String.format("Could not get entity names search request %s", requestDto.toString());
-      throw new NotFoundException(reason);
+      return Optional.empty();
     }
 
     EntityNameDto result = new EntityNameDto();
@@ -193,7 +192,8 @@ public class EntitiesReader {
         }
       }
     }
-    return result;
+
+    return Optional.ofNullable(result);
   }
 
   private Map<EntityType, Long> extractEntityIndexCounts(final Filter collectionFilterAggregation) {

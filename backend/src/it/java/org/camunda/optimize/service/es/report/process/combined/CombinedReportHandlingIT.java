@@ -1491,7 +1491,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       evaluateUnsavedCombinedReportAndReturnResponse(createCombinedReportData(combinedReportId, singleReportId2));
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test

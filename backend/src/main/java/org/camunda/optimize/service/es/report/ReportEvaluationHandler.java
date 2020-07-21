@@ -121,11 +121,18 @@ public abstract class ReportEvaluationHandler {
       (CombinedReportDefinitionDto) evaluationInfo.getReport();
     final String userId = evaluationInfo.getUserId();
     List<String> singleReportIds = combinedReportDefinitionDto.getData().getReportIds();
-    return reportReader.getAllSingleProcessReportsForIdsOmitXml(singleReportIds)
+    List<SingleProcessReportDefinitionDto> foundSingleReports = reportReader.getAllSingleProcessReportsForIdsOmitXml(
+      singleReportIds)
       .stream()
       .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
       .peek(reportDefinition -> addAdditionalFilters(userId, reportDefinition, evaluationInfo.getAdditionalFilters()))
       .collect(Collectors.toList());
+
+    if (foundSingleReports.size() != singleReportIds.size()) {
+      throw new OptimizeValidationException("Some of the single reports contained in the combined report with id ["
+                                              + combinedReportDefinitionDto.getId() + "]could not be found");
+    }
+    return foundSingleReports;
   }
 
   private void addAdditionalFilters(final String userId,

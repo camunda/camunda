@@ -55,7 +55,6 @@ import org.elasticsearch.search.aggregations.metrics.StatsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -204,9 +203,7 @@ public class DurationOutliersReader {
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
       if (outlierProcessInstanceCount == 0) {
-        throw new NotFoundException(
-          String.format("No outliers found for the provided parameters [%s]", outlierParams.toString())
-        );
+        return new ArrayList<>();
       }
 
       // #2 get counts of the same terms from non outlier instances

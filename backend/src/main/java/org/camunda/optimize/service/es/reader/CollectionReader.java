@@ -23,9 +23,9 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
@@ -38,7 +38,7 @@ public class CollectionReader {
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
 
-  public CollectionDefinitionDto getCollection(String collectionId) {
+  public Optional<CollectionDefinitionDto> getCollection(String collectionId) {
     log.debug("Fetching collection with id [{}]", collectionId);
     GetRequest getRequest = new GetRequest(COLLECTION_INDEX_NAME).id(collectionId);
 
@@ -51,22 +51,21 @@ public class CollectionReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (getResponse.isExists()) {
-      String responseAsString = getResponse.getSourceAsString();
-      try {
-        return objectMapper.readValue(responseAsString, CollectionDefinitionDto.class);
-      } catch (IOException e) {
-        String reason = "Could not deserialize collection information for collection " + collectionId;
-        log.error(
-          "Was not able to retrieve collection with id [{}] from Elasticsearch. Reason: {}",
-          collectionId,
-          reason
-        );
-        throw new OptimizeRuntimeException(reason, e);
-      }
-    } else {
-      log.error("Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);
-      throw new NotFoundException("Collection does not exist! Tried to retrieve collection with id " + collectionId);
+    if (!getResponse.isExists()) {
+      return Optional.empty();
+    }
+
+    String responseAsString = getResponse.getSourceAsString();
+    try {
+      return Optional.ofNullable(objectMapper.readValue(responseAsString, CollectionDefinitionDto.class));
+    } catch (IOException e) {
+      String reason = "Could not deserialize collection information for collection " + collectionId;
+      log.error(
+        "Was not able to retrieve collection with id [{}] from Elasticsearch. Reason: {}",
+        collectionId,
+        reason
+      );
+      throw new OptimizeRuntimeException(reason, e);
     }
   }
 

@@ -38,6 +38,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.ReportWriter;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.UncombinableReportsException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeNonDefinitionScopeCompliantException;
@@ -52,6 +53,7 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -190,7 +192,10 @@ public class ReportService implements CollectionReferencingService {
   }
 
   public AuthorizedReportDefinitionDto getReportDefinition(final String reportId, final String userId) {
-    final ReportDefinitionDto report = reportReader.getReport(reportId);
+    final ReportDefinitionDto report = reportReader.getReport(reportId)
+      .orElseThrow(() -> new NotFoundException("Was not able to retrieve report with id [" + reportId + "]"
+                                                 + "from Elasticsearch. Report does not exist."));
+
     final RoleType currentUserRole = reportAuthorizationService.getAuthorizedRole(userId, report)
       .orElseThrow(() -> new ForbiddenException(String.format(
         "User [%s] is not authorized to access report [%s].", userId, reportId
@@ -271,6 +276,10 @@ public class ReportService implements CollectionReferencingService {
     if (data.getReportIds() != null && !data.getReportIds().isEmpty()) {
       final List<SingleProcessReportDefinitionDto> reportsOfCombinedReport = reportReader
         .getAllSingleProcessReportsForIdsOmitXml(data.getReportIds());
+
+      if (reportsOfCombinedReport.size() != data.getReports().size()) {
+        throw new OptimizeValidationException("At least one report id could not be found or is not a single process report");
+      }
 
       final SingleProcessReportDefinitionDto firstReport = reportsOfCombinedReport.get(0);
       final boolean allReportsCanBeCombined = reportsOfCombinedReport.stream()
@@ -356,8 +365,10 @@ public class ReportService implements CollectionReferencingService {
   }
 
   public void deleteReport(String userId, String reportId, boolean force) {
+    final ReportDefinitionDto reportDefinition = reportReader.getReport(reportId)
+      .orElseThrow(() -> new NotFoundException("Was not able to retrieve report with id [" + reportId + "]"
+                                                 + "from Elasticsearch. Report does not exist."));
 
-    final ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
     getReportWithEditAuthorization(userId, reportDefinition);
 
     if (!force) {
@@ -491,7 +502,11 @@ public class ReportService implements CollectionReferencingService {
         .peek(report -> ensureCompliesWithCollectionScope(userId, newCollectionId, report.getId()))
         .forEach(combinedReportItemDto -> {
           final String originalSubReportId = combinedReportItemDto.getId();
-          final String reportName = keepSubReportNames ? reportReader.getReport(originalSubReportId).getName() : null;
+          final ReportDefinitionDto report = reportReader.getReport(originalSubReportId)
+            .orElseThrow(() -> new NotFoundException("Was not able to retrieve report with id [" + originalSubReportId + "]"
+                                                       + "from Elasticsearch. Report does not exist."));
+
+          final String reportName = keepSubReportNames ? report.getName() : null;
           String subReportCopyId = existingReportCopies.get(originalSubReportId);
           if (subReportCopyId == null) {
             subReportCopyId = copyAndMoveReport(
@@ -522,7 +537,10 @@ public class ReportService implements CollectionReferencingService {
   }
 
   public void ensureCompliesWithCollectionScope(final String userId, final String collectionId, final String reportId) {
-    final ReportDefinitionDto<?> reportDefinition = reportReader.getReport(reportId);
+    final ReportDefinitionDto reportDefinition = reportReader.getReport(reportId)
+      .orElseThrow(() -> new NotFoundException("Was not able to retrieve report with id [" + reportId + "]"
+                                                 + "from Elasticsearch. Report does not exist."));
+
     if (!reportDefinition.getCombined()) {
       SingleReportDefinitionDto<?> singleProcessReportDefinitionDto =
         (SingleReportDefinitionDto<?>) reportDefinition;
@@ -677,7 +695,9 @@ public class ReportService implements CollectionReferencingService {
 
   private SingleProcessReportDefinitionDto getSingleProcessReportDefinition(String reportId,
                                                                             String userId) {
-    SingleProcessReportDefinitionDto report = reportReader.getSingleProcessReportOmitXml(reportId);
+    SingleProcessReportDefinitionDto report = reportReader.getSingleProcessReportOmitXml(reportId)
+      .orElseThrow(() -> new NotFoundException("Single process report with id [" + reportId + "] does not exist!"));
+
     if (!reportAuthorizationService.isAuthorizedToReport(userId, report)) {
       throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
                                      report.getName() + "].");
@@ -687,7 +707,9 @@ public class ReportService implements CollectionReferencingService {
 
   private SingleDecisionReportDefinitionDto getSingleDecisionReportDefinition(String reportId,
                                                                               String userId) {
-    SingleDecisionReportDefinitionDto report = reportReader.getSingleDecisionReportOmitXml(reportId);
+    SingleDecisionReportDefinitionDto report = reportReader.getSingleDecisionReportOmitXml(reportId)
+      .orElseThrow(() -> new NotFoundException("Single decision report with id [" + reportId + "] does not exist!"));
+
     if (!reportAuthorizationService.isAuthorizedToReport(userId, report)) {
       throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
                                      report.getName() + "].");

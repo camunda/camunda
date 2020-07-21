@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.dashboard;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.DashboardFilterType;
@@ -42,16 +43,19 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
+import javax.ws.rs.NotFoundException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+@Slf4j
 @AllArgsConstructor
 @Component
 public class DashboardService implements ReportReferencingService, CollectionReferencingService {
@@ -95,7 +99,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   @Override
   public void handleReportUpdated(final String reportId, final ReportDefinitionDto updateDefinition) {
-    final ReportDefinitionDto existingReport = reportReader.getReport(reportId);
+    final ReportDefinitionDto existingReport = reportReader.getReport(reportId)
+      .orElseThrow(() -> new NotFoundException("Report with id [" + reportId + "] does not exist"));
     if (existingReport instanceof SingleProcessReportDefinitionDto) {
       final SingleProcessReportDefinitionDto existingReportDefinition =
         (SingleProcessReportDefinitionDto) existingReport;
@@ -166,7 +171,11 @@ public class DashboardService implements ReportReferencingService, CollectionRef
         if (IdGenerator.isValidId(originalReportId)) {
           String reportCopyId = uniqueReportCopies.get(originalReportId);
           if (reportCopyId == null) {
-            final String newReportName = keepReportNames ? reportReader.getReport(originalReportId).getName() : null;
+            ReportDefinitionDto report = reportReader.getReport(originalReportId)
+              .orElseThrow(() -> new NotFoundException("Was not able to retrieve report with id [" + originalReportId + "]"
+                                                         + "from Elasticsearch. Report does not exist."));
+
+            final String newReportName = keepReportNames ? report.getName() : null;
             reportCopyId = reportService.copyAndMoveReport(
               originalReportId, userId, collectionId, newReportName, uniqueReportCopies, keepReportNames
             ).getId();
@@ -263,7 +272,14 @@ public class DashboardService implements ReportReferencingService, CollectionRef
   }
 
   public DashboardDefinitionDto getDashboardDefinitionAsService(final String dashboardId) {
-    return dashboardReader.getDashboard(dashboardId);
+    Optional<DashboardDefinitionDto> dashboard = dashboardReader.getDashboard(dashboardId);
+
+    if (!dashboard.isPresent()) {
+      log.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);
+      throw new NotFoundException("Dashboard does not exist! Tried to retrieve dashboard with id " + dashboardId);
+    }
+
+    return dashboard.get();
   }
 
   public void updateDashboard(final DashboardDefinitionDto updatedDashboard, final String userId) {

@@ -35,7 +35,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -81,7 +80,7 @@ public class ReportReader {
    * @throws OptimizeRuntimeException if report with specified ID does not
    *                                  exist or deserialization was not successful.
    */
-  public ReportDefinitionDto getReport(String reportId) {
+  public Optional<ReportDefinitionDto> getReport(String reportId) {
     log.debug("Fetching report with id [{}]", reportId);
     MultiGetResponse multiGetItemResponses = performMultiGetReportRequest(reportId);
 
@@ -95,16 +94,10 @@ public class ReportReader {
       }
     }
 
-    if (!result.isPresent()) {
-      String reason = "Was not able to retrieve report with id [" + reportId + "]"
-        + "from Elasticsearch. Report does not exist.";
-      log.error(reason);
-      throw new NotFoundException(reason);
-    }
-    return result.get();
+    return result;
   }
 
-  public SingleProcessReportDefinitionDto getSingleProcessReportOmitXml(String reportId) {
+  public Optional<SingleProcessReportDefinitionDto> getSingleProcessReportOmitXml(String reportId) {
     log.debug("Fetching single process report with id [{}]", reportId);
     GetRequest getRequest = getGetRequestOmitXml(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
     GetResponse getResponse;
@@ -116,21 +109,20 @@ public class ReportReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (getResponse.isExists()) {
-      String responseAsString = getResponse.getSourceAsString();
-      try {
-        return objectMapper.readValue(responseAsString, SingleProcessReportDefinitionDto.class);
-      } catch (IOException e) {
-        log.error("Was not able to retrieve single process report with id [{}] from Elasticsearch.", reportId);
-        throw new OptimizeRuntimeException("Can't fetch alert");
-      }
-    } else {
+    if (!getResponse.isExists()) {
+      return Optional.empty();
+    }
+
+    String responseAsString = getResponse.getSourceAsString();
+    try {
+      return Optional.ofNullable(objectMapper.readValue(responseAsString, SingleProcessReportDefinitionDto.class));
+    } catch (IOException e) {
       log.error("Was not able to retrieve single process report with id [{}] from Elasticsearch.", reportId);
-      throw new NotFoundException("Single process report does not exist!");
+      throw new OptimizeRuntimeException("Can't fetch report");
     }
   }
 
-  public SingleDecisionReportDefinitionDto getSingleDecisionReportOmitXml(String reportId) {
+  public Optional<SingleDecisionReportDefinitionDto> getSingleDecisionReportOmitXml(String reportId) {
     log.debug("Fetching single decision report with id [{}]", reportId);
     GetRequest getRequest = getGetRequestOmitXml(SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
 
@@ -143,17 +135,16 @@ public class ReportReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (getResponse.isExists()) {
-      String responseAsString = getResponse.getSourceAsString();
-      try {
-        return objectMapper.readValue(responseAsString, SingleDecisionReportDefinitionDto.class);
-      } catch (IOException e) {
-        log.error("Was not able to retrieve single decision report with id [{}] from Elasticsearch.", reportId);
-        throw new OptimizeRuntimeException("Can't fetch alert");
-      }
-    } else {
+    if (!getResponse.isExists()) {
+      return Optional.empty();
+    }
+
+    String responseAsString = getResponse.getSourceAsString();
+    try {
+      return Optional.ofNullable(objectMapper.readValue(responseAsString, SingleDecisionReportDefinitionDto.class));
+    } catch (IOException e) {
       log.error("Was not able to retrieve single decision report with id [{}] from Elasticsearch.", reportId);
-      throw new NotFoundException("single decision report does not exist!");
+      throw new OptimizeRuntimeException("Can't fetch report");
     }
   }
 
@@ -285,25 +276,11 @@ public class ReportReader {
       indices,
       reportIdsAsArray.length
     );
-    final List<T> reportDefinitionDtos =
-      mapResponseToReportList(searchResponse, reportType).stream()
-        // make sure that the order of the reports corresponds to the one from the single report ids list
-        .sorted(Comparator.comparingInt(a -> reportIds.indexOf(a.getId())))
-        .collect(Collectors.toList());
 
-    if (reportIds.size() != reportDefinitionDtos.size()) {
-      List<String> fetchedReportIds = reportDefinitionDtos.stream()
-        .map(T::getId)
-        .collect(Collectors.toList());
-      String errorMessage =
-        String.format("Error trying to fetch reports for given ids. Given ids [%s] and fetched [%s]. " +
-                        "There is a mismatch here. Maybe one report does not exist?",
-                      reportIds, fetchedReportIds
-        );
-      log.error(errorMessage);
-      throw new NotFoundException(errorMessage);
-    }
-    return reportDefinitionDtos;
+    return mapResponseToReportList(searchResponse, reportType).stream()
+      // make sure that the order of the reports corresponds to the one from the single report ids list
+      .sorted(Comparator.comparingInt(a -> reportIds.indexOf(a.getId())))
+      .collect(Collectors.toList());
   }
 
   private <T extends ReportDefinitionDto> List<T> mapResponseToReportList(SearchResponse searchResponse, Class<T> c) {

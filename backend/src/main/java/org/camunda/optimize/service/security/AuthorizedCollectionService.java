@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.security;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.GroupDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
@@ -26,6 +27,7 @@ import java.util.function.BinaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+@Slf4j
 @AllArgsConstructor
 @Component
 public class AuthorizedCollectionService {
@@ -99,8 +101,14 @@ public class AuthorizedCollectionService {
   private Optional<AuthorizedCollectionDefinitionDto> getAuthorizedCollectionDefinition(
     final String userId,
     final String collectionId) {
-    final CollectionDefinitionDto collectionDefinition = collectionReader.getCollection(collectionId);
-    return resolveToAuthorizedCollection(userId, collectionDefinition);
+    final Optional<CollectionDefinitionDto> collectionDefinition = collectionReader.getCollection(collectionId);
+
+    if (!collectionDefinition.isPresent()) {
+      log.error("Was not able to retrieve collection with id [{}] from Elasticsearch.", collectionId);
+      throw new NotFoundException("Collection does not exist! Tried to retrieve collection with id " + collectionId);
+    }
+
+    return resolveToAuthorizedCollection(userId, collectionDefinition.get());
   }
 
   private Optional<AuthorizedCollectionDefinitionDto> resolveToAuthorizedCollection(

@@ -18,6 +18,7 @@ import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.es.report.result.NumberResult;
 import org.camunda.optimize.service.es.writer.AlertWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -57,10 +58,14 @@ public class AlertJob implements Job {
     String alertId = dataMap.getString("alertId");
     log.debug("Executing status check for alert [{}]", alertId);
 
-    AlertDefinitionDto alert = alertReader.getAlert(alertId);
+    AlertDefinitionDto alert = alertReader.getAlert(alertId)
+      .orElseThrow(() -> new OptimizeRuntimeException("Alert does not exist!"));
 
     try {
-      ReportDefinitionDto reportDefinition = reportReader.getReport(alert.getReportId());
+      ReportDefinitionDto reportDefinition = reportReader.getReport(alert.getReportId())
+        .orElseThrow(() -> new OptimizeRuntimeException("Was not able to retrieve report with id "
+                                                          + "[" + alert.getReportId() + "]"
+                                                          + "from Elasticsearch. Report does not exist."));
       final ReportEvaluationInfo reportEvaluationInfo = ReportEvaluationInfo.builder(reportDefinition).build();
       NumberResult reportResult = (NumberResult) reportEvaluator
         .evaluateReport(reportEvaluationInfo)
@@ -244,7 +249,12 @@ public class AlertJob implements Job {
   }
 
   private String createViewLinkFragment(final AlertDefinitionDto alert) {
-    String collectionId = reportReader.getReport(alert.getReportId()).getCollectionId();
+    ReportDefinitionDto reportDefinition = reportReader.getReport(alert.getReportId())
+      .orElseThrow(() -> new OptimizeRuntimeException("Was not able to retrieve report with id "
+                                                        + "[" + alert.getReportId() + "]"
+                                                        + "from Elasticsearch. Report does not exist."));
+
+    String collectionId = reportDefinition.getCollectionId();
     if (collectionId != null) {
       return String.format(
         "/#/collection/%s/report/%s/",

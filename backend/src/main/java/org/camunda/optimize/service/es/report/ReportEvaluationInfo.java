@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEva
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
 
+import javax.ws.rs.NotFoundException;
 import java.time.ZoneId;
 
 import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAULT_RECORD_LIMIT;
@@ -34,7 +35,8 @@ public class ReportEvaluationInfo {
 
   public void postFetchSavedReport(final ReportReader reportReader) {
     if (reportId != null) {
-      report = reportReader.getReport(reportId);
+      report = reportReader.getReport(reportId)
+        .orElseThrow(() -> new NotFoundException("Report with id [" + reportId + "] does not exist"));
     }
   }
 

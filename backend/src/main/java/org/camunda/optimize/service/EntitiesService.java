@@ -16,9 +16,11 @@ import org.camunda.optimize.service.es.reader.EntitiesReader;
 import org.camunda.optimize.service.security.AuthorizedEntitiesService;
 import org.springframework.stereotype.Component;
 
+import javax.ws.rs.NotFoundException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -52,7 +54,14 @@ public class EntitiesService {
   }
 
   public EntityNameDto getEntityNames(final EntityNameRequestDto requestDto) {
-    return entitiesReader.getEntityNames(requestDto);
+    Optional<EntityNameDto> entityNames = entitiesReader.getEntityNames(requestDto);
+
+    if (!entityNames.isPresent()) {
+      String reason = String.format("Could not get entity names search request %s", requestDto.toString());
+      throw new NotFoundException(reason);
+    }
+
+    return entityNames.get();
   }
 
 }
