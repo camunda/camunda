@@ -7,15 +7,13 @@
  */
 package io.zeebe.test.util.socket;
 
+import io.zeebe.test.util.TestEnvironment;
 import io.zeebe.util.ZbLogger;
 import java.net.InetSocketAddress;
 import org.slf4j.Logger;
 
 public final class SocketUtil {
   static final Logger LOG = new ZbLogger("io.zeebe.test.util.SocketUtil");
-
-  private static final String TEST_FORK_NUMBER_PROPERTY_NAME = "testForkNumber";
-  private static final String TEST_MAVEN_ID_PROPERTY_NAME = "testMavenId";
 
   private static final String DEFAULT_HOST = "localhost";
   private static final int BASE_PORT = 25600;
@@ -25,8 +23,8 @@ public final class SocketUtil {
   private static final PortRange PORT_RANGE;
 
   static {
-    final int testForkNumber = getTestForkNumber();
-    final int testMavenId = getTestMavenId();
+    final int testForkNumber = TestEnvironment.getTestForkNumber();
+    final int testMavenId = TestEnvironment.getTestMavenId();
 
     LOG.info(
         "Starting socket assignment with testForkNumber {} and testMavenId {}",
@@ -49,41 +47,5 @@ public final class SocketUtil {
 
   public static InetSocketAddress getNextAddress() {
     return PORT_RANGE.next();
-  }
-
-  private static int getTestForkNumber() {
-    int testForkNumber = 0;
-    try {
-      final String testForkNumberProperty = System.getProperty(TEST_FORK_NUMBER_PROPERTY_NAME);
-      if (testForkNumberProperty != null) {
-        testForkNumber = Integer.valueOf(testForkNumberProperty);
-      } else {
-        LOG.warn(
-            "No system property '{}' set, using default value {}",
-            TEST_FORK_NUMBER_PROPERTY_NAME,
-            testForkNumber);
-      }
-    } catch (final Exception e) {
-      LOG.warn("Failed to read test fork number system property", e);
-    }
-    return testForkNumber;
-  }
-
-  private static int getTestMavenId() {
-    int testMavenId = 0;
-    try {
-      final String testMavenIdProperty = System.getProperty(TEST_MAVEN_ID_PROPERTY_NAME);
-      if (testMavenIdProperty != null) {
-        testMavenId = Integer.valueOf(testMavenIdProperty);
-      } else {
-        LOG.warn(
-            "No system property '{}' set, using default value {}",
-            TEST_MAVEN_ID_PROPERTY_NAME,
-            testMavenId);
-      }
-    } catch (final Exception e) {
-      LOG.warn("Failed to read test maven id system property", e);
-    }
-    return testMavenId;
   }
 }
