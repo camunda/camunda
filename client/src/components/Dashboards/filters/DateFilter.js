@@ -5,9 +5,10 @@
  */
 
 import React, {useState, useEffect} from 'react';
-import moment from 'moment';
 import classnames from 'classnames';
+import {parseISO, startOfDay, endOfDay} from 'date-fns';
 
+import {format} from 'dates';
 import {Dropdown, Icon, Popover, DatePicker, Button} from 'components';
 import {t} from 'translation';
 
@@ -55,6 +56,9 @@ export default function DateFilter({
     );
   }
 
+  const startDate = filter?.start ? parseISO(filter.start) : null;
+  const endDate = filter?.end ? parseISO(filter.end) : null;
+
   function getFixedDateFilterName(filter) {
     if (!filter) {
       return t('common.filter.dateModal.unit.fixed');
@@ -62,9 +66,9 @@ export default function DateFilter({
 
     return (
       <>
-        {moment(filter.start).format('YYYY-MM-DD')}
+        {format(startDate, 'yyyy-MM-dd')}
         <span className="to"> {t('common.filter.dateModal.to')} </span>
-        {moment(filter.end).format('YYYY-MM-DD')}
+        {format(endDate, 'yyyy-MM-dd')}
       </>
     );
   }
@@ -84,13 +88,13 @@ export default function DateFilter({
         >
           <DatePicker
             forceOpen
-            initialDates={{startDate: filter?.start, endDate: filter?.end}}
+            initialDates={{startDate, endDate}}
             onDateChange={({startDate, endDate, valid}) => {
               if (valid) {
                 setFilter({
                   type: 'fixed',
-                  start: startDate?.startOf('day').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
-                  end: endDate?.endOf('day').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
+                  start: format(startOfDay(startDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+                  end: format(endOfDay(endDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
                 });
               }
             }}

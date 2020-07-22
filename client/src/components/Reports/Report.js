@@ -5,8 +5,8 @@
  */
 
 import React from 'react';
-import moment from 'moment';
 
+import {format} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {ErrorPage, LoadingIndicator} from 'components';
 import {evaluateReport} from 'services';
@@ -136,5 +136,5 @@ export class Report extends React.Component {
 export default withErrorHandling(withUser(Report));
 
 function getFormattedNowDate() {
-  return moment().format('Y-MM-DDTHH:mm:ss.SSSZZ');
+  return format(new Date(), "y-MM-dd'T'HH:mm:ss.SSSXX");
 }

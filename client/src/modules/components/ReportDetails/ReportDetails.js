@@ -5,8 +5,9 @@
  */
 
 import React from 'react';
-import moment from 'moment';
+import {parseISO} from 'date-fns';
 
+import {format} from 'dates';
 import {t} from 'translation';
 
 import SingleReportDetails from './SingleReportDetails';
@@ -30,7 +31,7 @@ export default function ReportDetails({report}) {
 
         <dt>{t('common.entity.modifiedTitle')}</dt>
         <dd>
-          {moment(report.lastModified).format('lll')}
+          {format(parseISO(report.lastModified), 'PPp')}
           <br />
           {t('common.entity.byModifier', {modifier: report.lastModifier})}
         </dd>

@@ -6,13 +6,14 @@
 
 import React from 'react';
 import {Redirect} from 'react-router-dom';
-import moment from 'moment';
+import {parseISO} from 'date-fns';
 
 import {EntityList, Deleter, Dropdown} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
 import {t} from 'translation';
 import {checkDeleteConflict} from 'services';
+import {format} from 'dates';
 
 import PublishModal from './PublishModal';
 import UsersModal from './UsersModal';
@@ -189,7 +190,7 @@ export default withErrorHandling(
                   name,
                   link,
                   meta: [
-                    moment(lastModified).format('YYYY-MM-DD HH:mm'),
+                    format(parseISO(lastModified), 'yyyy-MM-dd HH:mm'),
                     t(`events.state.${state}`, {publishingProgress}),
                   ],
                   actions,

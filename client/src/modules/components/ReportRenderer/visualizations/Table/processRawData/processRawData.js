@@ -4,11 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import moment from 'moment';
+import {parseISO} from 'date-fns';
 
+import {format} from 'dates';
 import {formatters} from 'services';
-import {sortColumns, cockpitLink, getNoDataMessage} from './service';
 import {t} from 'translation';
+
+import {sortColumns, cockpitLink, getNoDataMessage} from './service';
 
 const {duration} = formatters;
 
@@ -46,7 +48,7 @@ export default function processRawData(
         return cockpitLink(endpoints, instance, 'process');
       }
       if ((entry === 'startDate' || entry === 'endDate') && instance[entry]) {
-        return moment(instance[entry]).format('YYYY-MM-DD HH:mm:ss [UTC]Z');
+        return format(parseISO(instance[entry]), "yyyy-MM-dd HH:mm:ss 'UTC'X");
       }
       if (entry === 'duration') {
         return duration(instance[entry]);

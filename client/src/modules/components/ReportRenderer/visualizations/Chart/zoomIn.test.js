@@ -4,7 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import moment from 'moment';
+import {parseISO} from 'date-fns';
+
+import {format} from 'dates';
+
 import zoomIn from './zoomIn';
 
 function simulateEvent(node, evt, payload = {}) {
@@ -36,8 +39,8 @@ beforeEach(() => {
     filters: [],
     type: 'startDate',
     valueRange: {
-      min: moment('2019-01-01T00:00:00.000'),
-      max: moment('2019-01-31T00:00:00.000'),
+      min: parseISO('2019-01-01T00:00:00.000'),
+      max: parseISO('2019-01-31T00:00:00.000'),
     },
   });
   plugin.afterInit(chart);
@@ -62,8 +65,8 @@ it('should create a startDate filter on zoom interaction', () => {
         $set: [
           {
             data: {
-              end: moment('2019-01-22T00:00:00').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
-              start: moment('2019-01-07T00:00:00').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
+              end: format(parseISO('2019-01-22T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+              start: format(parseISO('2019-01-07T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
               type: 'fixed',
             },
             type: 'startDate',

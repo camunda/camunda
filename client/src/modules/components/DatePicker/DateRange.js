@@ -6,8 +6,10 @@
 
 import React from 'react';
 import {DateRange as ReactDateRange} from 'react-date-range';
+import {isValid, isAfter, isEqual} from 'date-fns';
+
 import {getLanguage} from 'translation';
-import {de} from 'react-date-range/dist/locale';
+import {globalLocale} from 'dates';
 
 import 'react-date-range/dist/styles.css'; // main style file
 import 'react-date-range/dist/theme/default.css'; // theme css file
@@ -15,10 +17,14 @@ import './DateRange.scss';
 
 export default function DateRange({startDate, endDate, onDateChange, endDateSelected}) {
   let range;
-  if (startDate.isValid() && endDate.isValid() && endDate.isSameOrAfter(startDate)) {
+  if (
+    isValid(startDate) &&
+    isValid(endDate) &&
+    (isEqual(startDate, endDate) || isAfter(endDate, startDate))
+  ) {
     range = {
-      startDate: startDate.toDate(),
-      endDate: endDate.toDate(),
+      startDate,
+      endDate,
     };
   } else {
     range = {
@@ -30,7 +36,7 @@ export default function DateRange({startDate, endDate, onDateChange, endDateSele
   return (
     <ReactDateRange
       focusedRange={endDateSelected ? [0, 1] : [0, 0]}
-      locale={getLanguage() === 'de' ? de : undefined}
+      locale={getLanguage() !== 'en' ? globalLocale : undefined}
       ranges={[range]}
       months={2}
       onChange={({range1}) => onDateChange(range1)}

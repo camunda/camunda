@@ -5,10 +5,11 @@
  */
 
 import React from 'react';
-import moment from 'moment';
+import {parseISO, isAfter, isBefore} from 'date-fns';
+
+import {format} from 'dates';
 
 import DateFields from './DateFields';
-
 import {isDateValid, DATE_FORMAT} from './service';
 
 export default class DatePicker extends React.Component {
@@ -18,8 +19,8 @@ export default class DatePicker extends React.Component {
     const {startDate, endDate} = props.initialDates || {};
     if (startDate && endDate) {
       this.state = {
-        startDate: moment(startDate).format(DATE_FORMAT),
-        endDate: moment(endDate).format(DATE_FORMAT),
+        startDate: format(startDate, DATE_FORMAT),
+        endDate: format(endDate, DATE_FORMAT),
         valid: true,
       };
     } else {
@@ -36,7 +37,7 @@ export default class DatePicker extends React.Component {
   setDates = (dates) => this.setState({...dates});
 
   onDateChange = (name, date) => {
-    const dateObj = moment(date, DATE_FORMAT);
+    const dateObj = parseISO(date);
 
     this.setState(
       {
@@ -45,17 +46,19 @@ export default class DatePicker extends React.Component {
       () => {
         const isAllValid = isDateValid(this.state.startDate) && isDateValid(this.state.endDate);
         this.setState({valid: isAllValid});
+        const startDate = parseISO(this.state.startDate);
+        const endDate = parseISO(this.state.endDate);
 
         this.props.onDateChange({
-          startDate: moment(this.state.startDate, DATE_FORMAT),
-          endDate: moment(this.state.endDate, DATE_FORMAT),
+          startDate,
+          endDate,
           valid: isAllValid,
         });
 
         if (
           isAllValid &&
-          ((name === 'startDate' && dateObj.isAfter(moment(this.state.endDate, DATE_FORMAT))) ||
-            (name === 'endDate' && dateObj.isBefore(moment(this.state.startDate, DATE_FORMAT))))
+          ((name === 'startDate' && isAfter(dateObj, endDate)) ||
+            (name === 'endDate' && isBefore(dateObj, startDate)))
         ) {
           return this.setState({
             startDate: date,

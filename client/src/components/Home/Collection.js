@@ -5,10 +5,11 @@
  */
 
 import React from 'react';
-import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 import classnames from 'classnames';
+import {parseISO} from 'date-fns';
 
+import {format} from 'dates';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {Icon, Dropdown, EntityList, Deleter} from 'components';
@@ -206,7 +207,7 @@ export default withErrorHandling(
                       name,
                       meta: [
                         formatSubEntities(data.subEntityCounts),
-                        moment(lastModified).format('YYYY-MM-DD HH:mm'),
+                        format(parseISO(lastModified), 'yyyy-MM-dd HH:mm'),
                       ],
                       actions,
                     };

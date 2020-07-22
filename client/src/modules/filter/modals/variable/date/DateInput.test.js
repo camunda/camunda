@@ -6,7 +6,9 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
-import moment from 'moment';
+import {parseISO} from 'date-fns';
+
+import {format} from 'dates';
 
 import DateInput from './DateInput';
 
@@ -26,8 +28,8 @@ const exampleFilter = {
     name: 'aVariableName',
     type: 'Date',
     data: {
-      start: moment('2018-07-09T00:00:00').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
-      end: moment('2018-07-12T23:59:59.999').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
+      start: format(parseISO('2018-07-09T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+      end: format(parseISO('2018-07-12T23:59:59.999'), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
       type: 'fixed',
     },
   },
@@ -61,8 +63,8 @@ it('should convert a start and end-date to two compatible variable filters', () 
       type: 'fixed',
       unit: '',
       customNum: '2',
-      startDate: moment('2018-07-09'),
-      endDate: moment('2018-07-12'),
+      startDate: parseISO('2018-07-09'),
+      endDate: parseISO('2018-07-12'),
     },
     false
   );

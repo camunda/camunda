@@ -4,7 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import moment from 'moment';
+import {parseISO, startOfDay, endOfDay} from 'date-fns';
+
+import {format} from 'dates';
 import {numberParser} from 'services';
 
 export function convertFilterToState(filter) {
@@ -17,8 +19,8 @@ export function convertFilterToState(filter) {
     } else {
       state = {
         type: 'fixed',
-        startDate: start ? moment(start) : null,
-        endDate: end ? moment(end) : null,
+        startDate: start ? parseISO(start) : null,
+        endDate: end ? parseISO(end) : null,
         valid: start && end,
       };
     }
@@ -71,8 +73,8 @@ export function convertStateToFilter({
     case 'fixed':
       filter = {
         type: 'fixed',
-        start: startDate?.startOf('day').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
-        end: endDate?.endOf('day').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
+        start: startDate && format(startOfDay(startDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+        end: endDate && format(endOfDay(endDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
       };
       break;
     case 'custom':

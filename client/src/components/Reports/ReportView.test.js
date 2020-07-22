@@ -27,11 +27,9 @@ jest.mock('./service', () => {
   };
 });
 
-jest.mock('moment', () => () => {
-  return {
-    format: () => 'some date',
-  };
-});
+jest.mock('dates', () => ({
+  format: () => 'some date',
+}));
 
 const report = {
   id: '1',

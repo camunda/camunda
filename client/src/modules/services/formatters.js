@@ -5,7 +5,9 @@
  */
 
 import React from 'react';
-import moment from 'moment';
+import {parseISO} from 'date-fns';
+
+import {format} from 'dates';
 import {t} from 'translation';
 
 const timeUnits = {
@@ -202,7 +204,7 @@ export function formatReportResult(data, result) {
 
   const formattedResult = result.map((entry) => ({
     ...entry,
-    label: moment(entry.label).format(dateFormat),
+    label: format(parseISO(entry.label), dateFormat),
   }));
 
   return formattedResult;
@@ -258,9 +260,9 @@ function determineUnit(unit, resultData) {
 
 function determineUnitForAutomaticIntervalSelection(resultData) {
   if (resultData.length > 1) {
-    const firstEntry = moment(resultData[0].key);
-    const secondEntry = moment(resultData[1].key);
-    const intervalInMs = Math.abs(firstEntry.diff(secondEntry));
+    const firstEntry = parseISO(resultData[0].key);
+    const secondEntry = parseISO(resultData[1].key);
+    const intervalInMs = Math.abs(firstEntry - secondEntry);
 
     const intervals = [
       {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'year'},
@@ -280,21 +282,21 @@ function getDateFormat(unit) {
   let dateFormat;
   switch (unit) {
     case 'hour':
-      dateFormat = 'YYYY-MM-DD HH:00:00';
+      dateFormat = 'yyyy-MM-dd HH:00:00';
       break;
     case 'day':
     case 'week':
-      dateFormat = 'YYYY-MM-DD';
+      dateFormat = 'yyyy-MM-dd';
       break;
     case 'month':
-      dateFormat = 'MMM YYYY';
+      dateFormat = 'MMM yyyy';
       break;
     case 'year':
-      dateFormat = 'YYYY';
+      dateFormat = 'yyyy';
       break;
     case 'second':
     default:
-      dateFormat = 'YYYY-MM-DD HH:mm:ss';
+      dateFormat = 'yyyy-MM-dd HH:mm:ss';
   }
   return dateFormat;
 }

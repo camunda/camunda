@@ -6,9 +6,12 @@
 
 import React from 'react';
 import classnames from 'classnames';
+import {parseISO} from 'date-fns';
+
+import {format} from 'dates';
+
 import DateRange from './DateRange';
 import PickerDateInput from './PickerDateInput';
-import moment from 'moment';
 import {isDateValid} from './service';
 
 import './DateFields.scss';
@@ -45,10 +48,10 @@ export default class DateFields extends React.PureComponent {
   };
 
   render() {
-    const {startDate, endDate, format, forceOpen} = this.props;
+    const {startDate, endDate, forceOpen} = this.props;
 
-    const startDateObj = moment(startDate, format, true);
-    const endDateObj = moment(endDate, format, true);
+    const startDateObj = parseISO(startDate);
+    const endDateObj = parseISO(endDate);
 
     return (
       <div className="DateFields" onKeyDown={this.handleKeyPress}>
@@ -117,7 +120,7 @@ export default class DateFields extends React.PureComponent {
     }
   };
 
-  formatDate = (date) => moment(date).format(this.props.format);
+  formatDate = (date) => format(date, this.props.format);
 
   onDateRangeChange = ({startDate, endDate}) => {
     this.props.onDateChange('startDate', this.formatDate(startDate));

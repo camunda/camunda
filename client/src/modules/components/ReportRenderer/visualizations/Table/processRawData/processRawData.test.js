@@ -5,8 +5,9 @@
  */
 
 import React from 'react';
-import moment from 'moment';
+import {parseISO} from 'date-fns';
 
+import {format} from 'dates';
 import {NoDataNotice} from 'components';
 
 import processRawData from './processRawData';
@@ -98,11 +99,9 @@ it('should make the processInstanceId a link', () => {
 });
 
 it('should format start and end dates', () => {
-  const dateFormat = 'YYYY-MM-DD HH:mm:ss [UTC]Z';
-
-  // using moment here to dynamically return date with client timezone
-  const startDate = moment('2019-06-07T10:33:19.192').format();
-  const endDate = moment('2019-06-09T16:12:49.875').format();
+  // using format here to dynamically return date with client timezone
+  const startDate = format(parseISO('2019-06-07'), 'yyyy-MM-dd');
+  const endDate = format(parseISO('2019-06-09'), 'yyyy-MM-dd');
 
   const cells = processRawData({
     report: {
@@ -119,8 +118,9 @@ it('should format start and end dates', () => {
     },
   }).body[0];
 
-  expect(cells[0]).toBe(moment(startDate).format(dateFormat));
-  expect(cells[1]).toBe(moment(endDate).format(dateFormat));
+  const expectedDateFormat = "yyyy-MM-dd HH:mm:ss 'UTC'X";
+  expect(cells[0]).toBe(format(parseISO(startDate), expectedDateFormat));
+  expect(cells[1]).toBe(format(parseISO(endDate), expectedDateFormat));
 });
 
 it('should format duration', () => {

@@ -5,8 +5,9 @@
  */
 
 import React from 'react';
-import moment from 'moment';
+import {parseISO} from 'date-fns';
 
+import {format} from 'dates';
 import {t} from 'translation';
 
 export default function LastModifiedInfo({entity}) {
@@ -25,7 +26,7 @@ export default function LastModifiedInfo({entity}) {
         <>
           <dt>{t('common.entity.modifiedTitle')}</dt>
           <dd>
-            {moment(lastModified).format('lll')}
+            {format(parseISO(lastModified), 'PPp')}
             <br />
             {t('common.entity.byModifier', {modifier: lastModifier})}
           </dd>

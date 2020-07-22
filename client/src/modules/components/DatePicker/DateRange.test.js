@@ -5,15 +5,19 @@
  */
 
 import React from 'react';
-import moment from 'moment';
+import {shallow} from 'enzyme';
 
 import DateRange from './DateRange';
 
-import {shallow} from 'enzyme';
+jest.mock('date-fns', () => ({
+  ...jest.requireActual('date-fns'),
+  isValid: () => true,
+  isAfter: () => true,
+}));
 
 const props = {
-  startDate: moment.utc('2012-12-15'),
-  endDate: moment.utc('2018-05-02'),
+  startDate: new Date('2019-01-01'),
+  endDate: new Date('2020-01-05'),
   onDateChange: jest.fn(),
 };
 

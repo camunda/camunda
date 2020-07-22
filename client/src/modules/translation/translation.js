@@ -5,17 +5,15 @@
  */
 
 import {get} from 'request';
-import moment from 'moment';
-import 'moment/locale/de';
 import {getOptimizeVersion} from 'config';
+import {loadDateTranslation} from 'dates';
 
 let translationObject = {};
 export async function init() {
   const localeCode = getLanguage();
+  await loadDateTranslation(localeCode);
   const response = await get(`api/localization`, {version: await getOptimizeVersion(), localeCode});
   translationObject = await response.json();
-  moment.locale(localeCode);
-  document.documentElement.lang = localeCode;
 }
 
 export function t(key, data) {

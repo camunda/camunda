@@ -4,8 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {parseISO} from 'date-fns';
+
+import {format} from 'dates';
+
 import {convertStateToFilter, convertFilterToState} from './service';
-import moment from 'moment';
 
 it('create correct filter from state object', () => {
   const filter1 = convertStateToFilter({
@@ -30,14 +33,14 @@ it('create correct filter from state object', () => {
 
   const filter3 = convertStateToFilter({
     type: 'fixed',
-    startDate: moment('2015-01-20T00:00:00'),
-    endDate: moment('2019-05-11T00:00:00'),
+    startDate: parseISO('2015-01-20T00:00:00'),
+    endDate: parseISO('2019-05-11T00:00:00'),
   });
 
   expect(filter3).toEqual({
     type: 'fixed',
-    start: moment('2015-01-20T00:00:00').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
-    end: moment('2019-05-11T23:59:59.999').format('YYYY-MM-DDTHH:mm:ss.SSSZZ'),
+    start: format(parseISO('2015-01-20T00:00:00'), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+    end: format(parseISO('2019-05-11T23:59:59.999'), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
   });
 });
 

@@ -6,8 +6,8 @@
 
 import React from 'react';
 import {Redirect} from 'react-router-dom';
-import moment from 'moment';
 
+import {format} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {loadEntity, updateEntity, createEntity, getCollection} from 'services';
 import {isSharingEnabled} from 'config';
@@ -233,5 +233,5 @@ export class Dashboard extends React.Component {
 export default withErrorHandling(withUser(Dashboard));
 
 function getFormattedNowDate() {
-  return moment().format('Y-MM-DDTHH:mm:ss.SSSZZ');
+  return format(new Date(), "y-MM-dd'T'HH:mm:ss.SSSXX");
 }

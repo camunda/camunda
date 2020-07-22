@@ -5,8 +5,12 @@
  */
 
 import React from 'react';
+
+import {format} from 'dates';
 import {t} from 'translation';
+
 import {convertFilterToState} from './service';
+
 import './DateFilterPreview.scss';
 
 export default function DateFilterPreview({filter, filterType, variableName}) {
@@ -54,8 +58,8 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
   } else if (type === 'fixed') {
     previewText = (
       <>
-        {t('common.filter.list.operators.between')} {highlight(startDate.format('YYYY-MM-DD'))}
-        {' ' + t('common.and')} {highlight(endDate.format('YYYY-MM-DD'))}
+        {t('common.filter.list.operators.between')} {highlight(format(startDate, 'yyyy-MM-dd'))}
+        {' ' + t('common.and')} {highlight(format(endDate, 'yyyy-MM-dd'))}
       </>
     );
   }

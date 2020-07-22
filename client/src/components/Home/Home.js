@@ -5,9 +5,10 @@
  */
 
 import React from 'react';
-import moment from 'moment';
 import {Redirect} from 'react-router-dom';
+import {parseISO} from 'date-fns';
 
+import {format} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -127,7 +128,7 @@ export class Home extends React.Component {
                   name,
                   meta: [
                     formatSubEntities(data.subEntityCounts),
-                    moment(lastModified).format('YYYY-MM-DD HH:mm'),
+                    format(parseISO(lastModified), 'yyyy-MM-dd HH:mm'),
                     formatUserCount(data.roleCounts),
                   ],
                   actions: (entityType !== 'collection' || currentUserRole === 'manager') && [
