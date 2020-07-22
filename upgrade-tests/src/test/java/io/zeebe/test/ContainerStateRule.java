@@ -12,21 +12,43 @@ import io.zeebe.containers.ZeebeBrokerContainer;
 import io.zeebe.containers.ZeebePort;
 import io.zeebe.containers.ZeebeStandaloneGatewayContainer;
 import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.jodah.failsafe.Failsafe;
+import net.jodah.failsafe.RetryPolicy;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
+import org.testcontainers.containers.ContainerFetchException;
+import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.Network;
 
 class ContainerStateRule extends TestWatcher {
 
+  private static final RetryPolicy<Void> CONTAINER_START_RETRY_POLICY =
+      new RetryPolicy().withMaxRetries(5).withBackoff(3, 30, ChronoUnit.SECONDS);
+
   private static final Pattern DOUBLE_NEWLINE = Pattern.compile("\n\n");
   private static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(30);
   private static final Logger LOG = LoggerFactory.getLogger(ContainerStateRule.class);
+
+  static {
+    CONTAINER_START_RETRY_POLICY
+        .handleIf(
+            error ->
+                error instanceof ContainerLaunchException
+                    && error.getCause() instanceof ContainerFetchException)
+        .onRetry(
+            event -> {
+              LOG.info("Attempt " + event.getAttemptCount());
+              LOG.info("Retrying container start after exception:", event.getLastFailure());
+            });
+  }
+
   private ZeebeBrokerContainer broker;
   private ZeebeStandaloneGatewayContainer gateway;
   private ZeebeClient client;
@@ -79,7 +101,8 @@ class ContainerStateRule extends TestWatcher {
             .withLogLevel(Level.DEBUG)
             .withDebug(false);
 
-    broker.start();
+    Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> broker.start());
+
     String contactPoint = broker.getExternalAddress(ZeebePort.GATEWAY);
 
     if (gatewayVersion != null) {
@@ -89,7 +112,8 @@ class ContainerStateRule extends TestWatcher {
               .withEnv("ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME", "zeebe-cluster")
               .withNetwork(network)
               .withLogLevel(Level.DEBUG);
-      gateway.start();
+
+      Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> gateway.start());
 
       contactPoint = gateway.getExternalAddress(ZeebePort.GATEWAY);
     }

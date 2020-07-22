@@ -12,12 +12,11 @@ require (
 	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/go-bindata/go-bindata v3.1.2+incompatible // indirect
 	github.com/go-ozzo/ozzo-validation/v4 v4.2.1
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/mock v1.4.3
 	github.com/golang/protobuf v1.4.2
-	github.com/google/go-cmp v0.5.0
+	github.com/google/go-cmp v0.5.1
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/sirupsen/logrus v1.4.2 // indirect
