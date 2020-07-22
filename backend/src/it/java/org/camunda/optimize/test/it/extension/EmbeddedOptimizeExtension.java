@@ -6,6 +6,7 @@
 package org.camunda.optimize.test.it.extension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -79,19 +80,18 @@ public class EmbeddedOptimizeExtension
 
   public static final String DEFAULT_ENGINE_ALIAS = "camunda-bpm";
 
-  private String context = null;
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
 
+  private String context = null;
   private boolean beforeAllMode = false;
   private boolean resetImportOnStart = true;
 
-  public EmbeddedOptimizeExtension(final boolean beforeAllMode) {
-    this.beforeAllMode = beforeAllMode;
-  }
-
-  public EmbeddedOptimizeExtension(final String context) {
+  @Builder(builderMethodName = "customPropertiesBuilder")
+  public EmbeddedOptimizeExtension(final String context,
+                                   final boolean beforeAllMode) {
     this.context = context;
+    this.beforeAllMode = beforeAllMode;
   }
 
   @Override

@@ -24,9 +24,9 @@ public abstract class AbstractConnectToElasticsearchIT {
   @RegisterExtension
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = getEmbeddedOptimizeExtension();
 
-  protected abstract EmbeddedOptimizeExtension getEmbeddedOptimizeExtension();
-
   protected abstract String getCustomConfigFile();
+
+  protected abstract String getContextFile();
 
   @BeforeEach
   public void before() throws Exception {
@@ -66,6 +66,12 @@ public abstract class AbstractConnectToElasticsearchIT {
 
     // then
     testUpgradeProcedure.performUpgrade();
+  }
+
+  private EmbeddedOptimizeExtension getEmbeddedOptimizeExtension() {
+    return EmbeddedOptimizeExtension.customPropertiesBuilder()
+      .context(getContextFile())
+      .build();
   }
 
 }

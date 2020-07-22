@@ -48,6 +48,7 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import java.io.ByteArrayInputStream;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -107,7 +108,6 @@ public class ReportsGenerator {
         .setStartFlowNodeId(processPart.getStart())
         .setEndFlowNodeId(processPart.getEnd())
         .setFilter(createProcessFilter());
-
       ProcessReportDataDto reportDataLatestDefinitionVersion =
         reportDataBuilder.build();
       reports.add(reportDataLatestDefinitionVersion);
@@ -119,14 +119,10 @@ public class ReportsGenerator {
   }
 
   private static List<DecisionReportDataDto> createDecisionReportsFromDefinition(DecisionDefinitionEngineDto definition) {
-    List<DecisionReportDataDto> reports = new ArrayList<>();
-
     DmnFilterData dmnFilterData = retrieveVariablesForDecision(definition);
     List<DecisionFilterDto<?>> decisionFilters = createDecisionFilters(dmnFilterData);
-
-
-    for (DecisionReportDataType type : DecisionReportDataType.values()) {
-      DecisionReportDataDto reportDataDto = DecisionReportDataBuilder.create().setReportDataType(type)
+    return Arrays.stream(DecisionReportDataType.values())
+      .map(type -> DecisionReportDataBuilder.create().setReportDataType(type)
         .setDecisionDefinitionKey(definition.getKey())
         .setDecisionDefinitionVersion(definition.getVersionAsString())
         .setDateInterval(GroupByDateUnit.DAY)
@@ -134,10 +130,8 @@ public class ReportsGenerator {
         .setVariableType(VariableType.DOUBLE)
         .setVariableId(INPUT_AMOUNT_ID)
         .setFilter(decisionFilters)
-        .build();
-      reports.add(reportDataDto);
-    }
-    return reports;
+        .build())
+      .collect(Collectors.toList());
   }
 
   private static ProcessPartDto createProcessPart(ProcessDefinitionEngineDto definition) {

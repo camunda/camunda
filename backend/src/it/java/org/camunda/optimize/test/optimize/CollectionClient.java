@@ -138,7 +138,6 @@ public class CollectionClient {
       .execute(AuthorizedCollectionDefinitionRestDto.class, Response.Status.OK.getStatusCode());
   }
 
-
   public List<AuthorizedReportDefinitionDto> getReportsForCollection(final String collectionId) {
     return getRequestExecutor()
       .buildGetReportsForCollectionRequest(collectionId)

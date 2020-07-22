@@ -1,0 +1,108 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.test.query.performance;
+
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
+import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
+import org.camunda.optimize.test.util.PropertyUtil;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.extension.RegisterExtension;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Properties;
+import java.util.function.Function;
+
+import static java.util.stream.Collectors.toMap;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
+
+public abstract class AbstractQueryPerformanceTest {
+
+  private static final String PROPERTY_LOCATION = "query-performance.properties";
+  private static final Properties PROPERTIES = PropertyUtil.loadProperties(PROPERTY_LOCATION);
+
+  @RegisterExtension
+  @Order(1)
+  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
+    new ElasticSearchIntegrationTestExtension();
+
+  @RegisterExtension
+  @Order(2)
+  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+
+  protected long getMaxAllowedQueryTime() {
+    String maxQueryTimeString =
+      PROPERTIES.getProperty("camunda.optimize.test.query.max.time.in.ms");
+    return Long.parseLong(maxQueryTimeString);
+  }
+
+  protected int getNumberOfEntities() {
+    String entityCountString =
+      PROPERTIES.getProperty("camunda.optimize.test.query.entity.count");
+    return Integer.parseInt(entityCountString);
+  }
+
+  protected int getNumberOfEvents() {
+    String eventCountString =
+      PROPERTIES.getProperty("camunda.optimize.test.query.event.count");
+    return Integer.parseInt(eventCountString);
+  }
+
+  protected int getNumberOfDefinitions() {
+    String definitionCountString =
+      PROPERTIES.getProperty("camunda.optimize.test.query.definition.count");
+    return Integer.parseInt(definitionCountString);
+  }
+
+  protected static long getImportTimeout() {
+    String timeoutString =
+      PROPERTIES.getProperty("camunda.optimize.test.import.timeout.in.hours");
+    return Long.parseLong(timeoutString);
+  }
+
+  protected static ProcessDefinitionOptimizeDto createProcessDefinition(final String key,
+                                                                        final String version,
+                                                                        final String tenantId,
+                                                                        final String name,
+                                                                        final String engineAlias) {
+    return ProcessDefinitionOptimizeDto.builder()
+      .id(key + "-" + version + "-" + tenantId + "-" + engineAlias)
+      .key(key)
+      .name(name)
+      .version(version)
+      .versionTag("aVersionTag")
+      .tenantId(tenantId)
+      .engine(engineAlias)
+      .bpmn20Xml(key + version + tenantId)
+      .build();
+  }
+
+  protected static DecisionDefinitionOptimizeDto createDecisionDefinition(final String key, final String version,
+                                                                          final String tenantId, final String name,
+                                                                          final String engineAlias) {
+    return DecisionDefinitionOptimizeDto.builder()
+      .id(key + "-" + version + "-" + tenantId + "-" + engineAlias)
+      .key(key)
+      .version(version)
+      .versionTag("aVersionTag")
+      .tenantId(tenantId)
+      .engine(engineAlias)
+      .name(name)
+      .dmn10Xml("id-" + key + "-version-" + version + "-" + tenantId)
+      .build();
+  }
+
+  protected void addToElasticsearch(final String indexName, final Map<String, Object> docsById) {
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(indexName, docsById);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+}

@@ -83,7 +83,6 @@ public class SchemaManagerIT extends AbstractIT {
 
   @Test
   public void optimizeIndexExistsAfterSchemaInitialization() {
-
     // when
     initializeSchema();
 

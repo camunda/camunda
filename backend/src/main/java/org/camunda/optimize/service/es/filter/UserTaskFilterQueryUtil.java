@@ -67,7 +67,7 @@ public class UserTaskFilterQueryUtil {
   }
 
   private static BoolQueryBuilder addAssigneeFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
-                                                   final ProcessReportDataDto reportDataDto) {
+                                                    final ProcessReportDataDto reportDataDto) {
     reportDataDto.getFilter().stream().filter(AssigneeFilterDto.class::isInstance)
       .map(filterDto -> (IdentityLinkFilterDataDto) filterDto.getData())
       .forEach(addAssigneeFilter -> userTaskFilterBoolQuery.filter(createAssigneeFilterQuery(addAssigneeFilter)));
@@ -75,7 +75,7 @@ public class UserTaskFilterQueryUtil {
   }
 
   private static BoolQueryBuilder addCandidateGroupFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
-                                                         final ProcessReportDataDto reportDataDto) {
+                                                          final ProcessReportDataDto reportDataDto) {
     reportDataDto.getFilter().stream().filter(CandidateGroupFilterDto.class::isInstance)
       .map(filterDto -> (IdentityLinkFilterDataDto) filterDto.getData())
       .forEach(addAssigneeFilter -> userTaskFilterBoolQuery.filter(createCandidateGroupFilterQuery(addAssigneeFilter)));

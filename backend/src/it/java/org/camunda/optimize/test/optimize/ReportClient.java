@@ -573,15 +573,6 @@ public class ReportClient {
       // @formatter:on
   }
 
-  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateReportWithRawDataResult(
-    final DecisionReportDataDto reportData) {
-    return getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
-      // @formatter:on
-  }
-
   public AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReport(ProcessReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)

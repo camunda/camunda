@@ -183,7 +183,7 @@ public class ProcessVariableUpdateWriter {
         "  if (v == null) {" +
         "    return var;"   +
         "  } else {" +
-        "    return v.version > var.version? v : var;" +
+        "    return v.version > var.version ? v : var;" +
         "  }" +
         "});" +
       "}" +
