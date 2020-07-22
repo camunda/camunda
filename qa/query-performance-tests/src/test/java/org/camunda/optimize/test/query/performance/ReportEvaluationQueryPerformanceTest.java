@@ -73,7 +73,7 @@ public class ReportEvaluationQueryPerformanceTest extends AbstractQueryPerforman
   }
 
   @ParameterizedTest
-  @MethodSource("getExportableReports")
+  @MethodSource("getPossibleReports")
   public void testQueryPerformance_savedReportEvaluation(SingleReportDataDto report) {
     // given a saved report
     final Response saveReportResponse = saveReportToOptimize(report);
@@ -101,7 +101,7 @@ public class ReportEvaluationQueryPerformanceTest extends AbstractQueryPerforman
   }
 
   @ParameterizedTest
-  @MethodSource("getExportableReports")
+  @MethodSource("getPossibleReports")
   public void testQueryPerformance_savedReportCsvExport(SingleReportDataDto report) {
     // given a saved report
     final Response saveReportResponse = saveReportToOptimize(report);
@@ -169,19 +169,6 @@ public class ReportEvaluationQueryPerformanceTest extends AbstractQueryPerforman
     long timeElapsed = Duration.between(start, finish).toMillis();
     log.info("Evaluation of unsaved report took {} milliseconds", timeElapsed);
     return timeElapsed;
-  }
-
-  // Will be fixed in https://jira.camunda.com/browse/OPT-4018 and the test can use all possible reports instead
-  private static Stream<SingleReportDataDto> getExportableReports() {
-    return getPossibleReports()
-      .filter(report -> {
-        if (report instanceof ProcessReportDataDto) {
-          final ProcessVisualization reportVisualisation = ((ProcessReportDataDto) report).getVisualization();
-          return !ProcessVisualization.NUMBER.equals(reportVisualisation) &&
-            !ProcessVisualization.HEAT.equals(reportVisualisation);
-        }
-        return true;
-      });
   }
 
   private static Stream<SingleReportDataDto> getPossibleReports() {

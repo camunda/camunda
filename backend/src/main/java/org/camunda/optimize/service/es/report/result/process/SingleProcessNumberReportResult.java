@@ -48,10 +48,7 @@ public class SingleProcessNumberReportResult
   private List<String[]> durationNumberAsCsv() {
     final List<String[]> csvStrings = new LinkedList<>();
     Double result = reportResult.getData();
-    csvStrings.add(
-      new String[]{
-        result.toString()
-      });
+    csvStrings.add(new String[]{String.valueOf(result)});
 
     final String normalizedCommandKey =
       reportDefinition.getData().getView().createCommandKey().replace("-", "_");
