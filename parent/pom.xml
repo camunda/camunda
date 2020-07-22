@@ -84,6 +84,8 @@
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.0</version.config>
     <version.kryo>4.0.2</version.kryo>
+    <version.failsafe>2.4.0</version.failsafe>
+
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
@@ -581,6 +583,12 @@
         <artifactId>classgraph</artifactId>
         <groupId>io.github.classgraph</groupId>
         <version>${version.classgraph}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.jodah</groupId>
+        <artifactId>failsafe</artifactId>
+        <version>${version.failsafe}</version>
       </dependency>
 
     </dependencies>
