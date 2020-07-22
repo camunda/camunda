@@ -10,7 +10,6 @@ package io.zeebe.engine.processing.deployment;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
-import io.zeebe.engine.state.deployment.WorkflowState;
 import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -23,6 +22,8 @@ import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.util.buffer.BufferUtil;
+import java.util.ArrayList;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,14 +38,16 @@ public final class DeploymentCreatedProcessorTest {
   public final StreamProcessorRule rule =
       new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION + 1);
 
-  private WorkflowState workflowState;
+  private List<Long> processedRecordPositions;
 
   @Before
   public void setUp() {
+    processedRecordPositions = new ArrayList<>();
+
     rule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {
           final var zeebeState = processingContext.getZeebeState();
-          workflowState = zeebeState.getWorkflowState();
+          final var workflowState = zeebeState.getWorkflowState();
 
           DeploymentEventProcessors.addDeploymentCreateProcessor(
               typedRecordProcessors,
@@ -56,7 +59,8 @@ public final class DeploymentCreatedProcessorTest {
               DeploymentIntent.CREATED,
               new DeploymentCreatedProcessor(workflowState, false));
           return typedRecordProcessors;
-        });
+        },
+        processedRecord -> processedRecordPositions.add(processedRecord.getPosition()));
   }
 
   @Test
@@ -132,13 +136,22 @@ public final class DeploymentCreatedProcessorTest {
                 .exists());
 
     writeMessageStartRecord(3, 1);
+
     waitUntil(
-        () ->
-            rule.events()
-                .onlyDeploymentRecords()
-                .withIntent(DeploymentIntent.CREATED)
-                .filter(d -> d.getKey() == 3)
-                .exists());
+        () -> {
+          final var deploymentCreated =
+              rule.events()
+                  .onlyDeploymentRecords()
+                  .withIntent(DeploymentIntent.CREATED)
+                  .filter(d -> d.getKey() == 3)
+                  .findFirst();
+
+          // need to wait until the event is processed completely because the state is updated after
+          // the event is written
+          return deploymentCreated
+              .map(record -> processedRecordPositions.contains(record.getPosition()))
+              .orElse(false);
+        });
 
     // then
     Assertions.assertThat(
