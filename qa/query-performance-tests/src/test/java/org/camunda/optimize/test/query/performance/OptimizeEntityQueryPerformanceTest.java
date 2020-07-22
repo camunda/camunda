@@ -64,8 +64,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDE
 @Slf4j
 public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformanceTest {
 
-  private static final String DEFAULT_USER = "demo";
-
   private static ProcessDefinitionOptimizeDto processDefinitionOptimizeDto;
   private static DecisionDefinitionOptimizeDto decisionDefinitionOptimizeDto;
 

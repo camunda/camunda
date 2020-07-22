@@ -7,24 +7,18 @@ package org.camunda.optimize.test.query.performance;
 
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.util.PropertyUtil;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Properties;
-import java.util.function.Function;
-
-import static java.util.stream.Collectors.toMap;
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
 public abstract class AbstractQueryPerformanceTest {
+
+  protected static final String DEFAULT_USER = "demo";
 
   private static final String PROPERTY_LOCATION = "query-performance.properties";
   private static final Properties PROPERTIES = PropertyUtil.loadProperties(PROPERTY_LOCATION);
