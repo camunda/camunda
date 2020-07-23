@@ -205,7 +205,7 @@ pipeline {
                           execPattern: '**/*.exec',
                           classPattern: '**/target/classes',
                           sourcePattern: '**/src/main/java,**/generated-sources',
-                          sourceExclusionPattern: '**/generated-sources/**,/benchmarks/**',
+                          exclusionPattern: '**/io/zeebe/gateway/protocol/**', // classes from generated resources
                           runAlways: true
                     )
                 }
