@@ -7,6 +7,7 @@
 import * as React from 'react';
 import {useHistory} from 'react-router-dom';
 import {Form, Field} from 'react-final-form';
+import {FORM_ERROR} from 'final-form';
 
 import {login} from 'modules/stores/login';
 import {Pages} from 'modules/constants/pages';
@@ -29,7 +30,6 @@ interface FormValues {
 }
 
 const Login: React.FC = () => {
-  const [hasError, setHasError] = React.useState(false);
   const history = useHistory();
   const {handleLogin} = login;
 
@@ -37,16 +37,15 @@ const Login: React.FC = () => {
     <Container>
       <Form<FormValues>
         onSubmit={async ({username, password}) => {
-          setHasError(false);
           try {
             await handleLogin(username, password);
-            history.push(Pages.Initial());
+            return history.push(Pages.Initial());
           } catch {
-            setHasError(true);
+            return {[FORM_ERROR]: 'Username and Password do not match.'};
           }
         }}
       >
-        {({handleSubmit, form}) => {
+        {({handleSubmit, form, submitError}) => {
           const {submitting} = form.getState();
 
           return (
@@ -57,7 +56,7 @@ const Login: React.FC = () => {
               <FormContainer>
                 <Logo />
                 <Title>Zeebe Tasklist</Title>
-                {hasError && <Error>Username and Password do not match.</Error>}
+                {submitError !== undefined && <Error>{submitError}</Error>}
                 <Field<FormValues['username']> name="username" type="text">
                   {({input}) => (
                     <Input
