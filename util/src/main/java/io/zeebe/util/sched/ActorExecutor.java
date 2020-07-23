@@ -7,6 +7,7 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -26,10 +27,10 @@ public final class ActorExecutor {
   private Duration blockingTasksShutdownTime;
 
   public ActorExecutor(final ActorSchedulerBuilder builder) {
-    this.ioBoundThreads = builder.getIoBoundActorThreads();
-    this.cpuBoundThreads = builder.getCpuBoundActorThreads();
-    this.blockingTasksRunner = builder.getBlockingTasksRunner();
-    this.blockingTasksShutdownTime = builder.getBlockingTasksShutdownTime();
+    ioBoundThreads = builder.getIoBoundActorThreads();
+    cpuBoundThreads = builder.getCpuBoundActorThreads();
+    blockingTasksRunner = builder.getBlockingTasksRunner();
+    blockingTasksShutdownTime = builder.getBlockingTasksShutdownTime();
   }
 
   /**
@@ -70,6 +71,7 @@ public final class ActorExecutor {
   }
 
   public CompletableFuture<Void> closeAsync() {
+    Loggers.ACTOR_LOGGER.debug("Closing blocking task runner");
     blockingTasksRunner.shutdown();
 
     final CompletableFuture<Void> resultFuture =
@@ -78,8 +80,11 @@ public final class ActorExecutor {
     try {
       blockingTasksRunner.awaitTermination(
           blockingTasksShutdownTime.getSeconds(), TimeUnit.SECONDS);
+      Loggers.ACTOR_LOGGER.debug("Closing blocking task runner: closed successfully");
+
     } catch (final InterruptedException e) {
-      e.printStackTrace();
+      Loggers.ACTOR_LOGGER.error(
+          "Closing blocking task runner: interrupted while awaiting termination", e);
     }
 
     return resultFuture;
