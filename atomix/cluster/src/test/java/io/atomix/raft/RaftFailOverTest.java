@@ -54,7 +54,7 @@ public class RaftFailOverTest {
     final var lastIndex = raftRule.appendEntries(entryCount);
 
     // then
-    raftRule.awaitSameLogSizeOnAllNodes();
+    raftRule.awaitSameLogSizeOnAllNodes(lastIndex);
     final var memberLog = raftRule.getMemberLogs();
 
     final var maxIndex =
@@ -79,7 +79,7 @@ public class RaftFailOverTest {
     final var lastIndex = raftRule.appendEntries(entryCount);
 
     // then
-    raftRule.awaitSameLogSizeOnAllNodes();
+    raftRule.awaitSameLogSizeOnAllNodes(lastIndex);
     final var memberLog = raftRule.getMemberLogs();
 
     final var maxIndex =
@@ -104,7 +104,7 @@ public class RaftFailOverTest {
     final var lastIndex = raftRule.appendEntries(entryCount);
 
     // then
-    raftRule.awaitSameLogSizeOnAllNodes();
+    raftRule.awaitSameLogSizeOnAllNodes(lastIndex);
     final var memberLog = raftRule.getMemberLogs();
 
     final var maxIndex =
@@ -132,8 +132,8 @@ public class RaftFailOverTest {
   @Test
   public void shouldCompactLogOnSnapshot() throws Exception {
     // given
-    raftRule.appendEntries(128);
-    raftRule.awaitSameLogSizeOnAllNodes();
+    final var lastIndex = raftRule.appendEntries(128);
+    raftRule.awaitSameLogSizeOnAllNodes(lastIndex);
     final var memberLogs = raftRule.getMemberLogs();
 
     // when
