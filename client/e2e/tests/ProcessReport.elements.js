@@ -29,7 +29,7 @@ export const configurationOption = (text) =>
   Selector('.Configuration .DropdownOption').withExactText(text);
 export const reportTable = reportRenderer.find('.Table');
 export const reportChart = reportRenderer.find('canvas');
-export const reportDiagram = reportRenderer.find('svg');
+export const reportDiagram = reportRenderer.find('.djs-container > svg');
 export const reportNumber = reportRenderer.find('.Number');
 export const instanceCount = reportRenderer.find('.additionalInfo');
 export const reportProgressBar = reportRenderer.find('.ProgressBar');

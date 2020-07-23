@@ -43,6 +43,7 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.optionsButton(e.processTypeahead));
   await t.typeText(e.typeaheadInput(e.processTypeahead), 'Invoice', {replace: true});
   await t.click(e.typeaheadOption(e.processTypeahead, 'Invoice Receipt'));
+  await t.wait(500);
   await t.click(e.optionsButton(e.variableTypeahead));
   await t.click(e.typeaheadOption(e.variableTypeahead, 'longVar'));
   await t.click(e.startAndEndEvents);
@@ -104,8 +105,7 @@ test('auto generate a process', async (t) => {
   await t.click(e.optionsButton(e.processTypeahead));
   await t.typeText(e.typeaheadInput(e.processTypeahead), 'Invoice', {replace: true});
   await t.click(e.typeaheadOption(e.processTypeahead, 'Invoice Receipt'));
-  await t.click(e.optionsButton(e.variableTypeahead));
-  await t.click(e.typeaheadOption(e.variableTypeahead, 'longVar'));
+  await t.click(e.businessKey);
   await t.click(e.primaryModalButton.nth(1));
 
   await t.click(e.buttonWithText('Add Event Source'));

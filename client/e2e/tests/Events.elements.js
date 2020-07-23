@@ -42,3 +42,4 @@ export const usersTypeahead = Selector('.UserTypeahead');
 export const buttonWithText = (text) => Selector('.Modal__content-container button').withText(text);
 export const zoomButton = Selector('.zoomIn');
 export const diagram = Selector('.ProcessView .BPMNDiagram');
+export const businessKey = Selector('.label').withText('Business Key').prevSibling();
