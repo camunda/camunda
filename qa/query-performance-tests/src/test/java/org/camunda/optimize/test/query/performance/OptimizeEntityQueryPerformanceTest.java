@@ -48,6 +48,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -81,15 +83,16 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     addSingleProcessReportsToOptimize(numberOfReports);
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<ReportDefinitionDto> reportDefinitionDtos = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(reportDefinitionDtos).hasSize(numberOfReports);
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
@@ -100,15 +103,16 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     addSingleDecisionReportsToOptimize(numberOfReports);
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<ReportDefinitionDto> reportDefinitionDtos = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(reportDefinitionDtos).hasSize(numberOfReports);
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
@@ -119,15 +123,16 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     addCombinedReportsToOptimize(numberOfReports);
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<ReportDefinitionDto> reportDefinitionDtos = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(reportDefinitionDtos).hasSize(numberOfReports);
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
@@ -148,18 +153,18 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     addCollectionsToOptimize(numOfEachEntityToAdd);
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<EntityDto> entityDtos = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetAllEntitiesRequest()
       .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(entityDtos).hasSize(totalNumberOfEntities);
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
-
 
   @Test
   public void testQueryPerformance_getAllCollectionEntities() {
@@ -178,15 +183,16 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     addDashboardsToOptimize(numOfEachEntityToAdd + extraDashboardsToAdd, collectionId);
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<EntityDto> entityDtos = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetCollectionEntitiesRequest(collectionId)
       .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(entityDtos).hasSize(totalNumberOfEntities);
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
@@ -200,15 +206,16 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     addAlertsToOptimize(numberOfAlerts, reportIds);
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<AlertDefinitionDto> entityDtos = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetAlertsForCollectionRequest(collectionId)
       .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(entityDtos).hasSize(numberOfAlerts);
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 

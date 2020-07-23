@@ -10,9 +10,12 @@ import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Properties;
 
@@ -22,6 +25,7 @@ public abstract class AbstractQueryPerformanceTest {
 
   private static final String PROPERTY_LOCATION = "query-performance.properties";
   private static final Properties PROPERTIES = PropertyUtil.loadProperties(PROPERTY_LOCATION);
+  private static String testDisplayName;
 
   @RegisterExtension
   @Order(1)
@@ -31,6 +35,11 @@ public abstract class AbstractQueryPerformanceTest {
   @RegisterExtension
   @Order(2)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+
+  @BeforeEach
+  public void init(TestInfo testInfo) {
+    testDisplayName = testInfo.getTestMethod().map(Method::getName).orElseGet(testInfo::getDisplayName);
+  }
 
   protected long getMaxAllowedQueryTime() {
     String maxQueryTimeString =
@@ -60,6 +69,10 @@ public abstract class AbstractQueryPerformanceTest {
     String timeoutString =
       PROPERTIES.getProperty("camunda.optimize.test.import.timeout.in.hours");
     return Long.parseLong(timeoutString);
+  }
+
+  protected static String getTestDisplayName() {
+    return testDisplayName;
   }
 
   protected static ProcessDefinitionOptimizeDto createProcessDefinition(final String key,

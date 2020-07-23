@@ -20,6 +20,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -56,15 +58,16 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
       .build();
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<EventCountDto> eventCounts = embeddedOptimizeExtension.getRequestExecutor()
       .buildPostEventCountRequest(countRequest)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(eventCounts).hasSize(numberOfDifferentEvents);
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 

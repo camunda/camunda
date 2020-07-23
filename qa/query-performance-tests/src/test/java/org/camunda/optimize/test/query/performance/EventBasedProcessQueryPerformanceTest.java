@@ -17,6 +17,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
@@ -44,15 +46,16 @@ public class EventBasedProcessQueryPerformanceTest extends AbstractQueryPerforma
     addEventProcessMappingsToOptimize(numberOfEntities);
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    Instant start = Instant.now();
     final List<EventProcessMappingResponseDto> eventBasedProcesses = embeddedOptimizeExtension.getRequestExecutor()
       .buildGetAllEventProcessMappingsRequests()
       .executeAndReturnList(EventProcessMappingResponseDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
 
     // then
     assertThat(eventBasedProcesses).hasSize(numberOfEntities);
-    log.info("responseTime {}", responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 

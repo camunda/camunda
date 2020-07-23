@@ -20,6 +20,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import javax.ws.rs.core.Response;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,16 +54,17 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<DefinitionWithTenantsDto> definitionWithTenantsDtos = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitions()
       .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(definitionWithTenantsDtos).hasSize(definitionCount);
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
@@ -86,16 +89,17 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<DefinitionWithTenantsDto> definitionWithTenantsDtos = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitions()
       .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(definitionWithTenantsDtos).hasSize(definitionCount);
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
@@ -114,12 +118,13 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<TenantWithDefinitionsDto> definitionWithTenantsDtos = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitionsGroupedByTenant()
       .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(definitionWithTenantsDtos)
@@ -128,7 +133,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       .allSatisfy(definitions -> {
         assertThat(definitions).hasSize(definitionCount);
       });
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
@@ -154,12 +159,13 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<TenantWithDefinitionsDto> definitionWithTenantsDtos = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitionsGroupedByTenant()
       .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(definitionWithTenantsDtos)
@@ -168,7 +174,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       .allSatisfy(definitions -> {
         assertThat(definitions).hasSize(definitionCount);
       });
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
@@ -185,16 +191,17 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<DefinitionKeyDto> definitionsKeys = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitionKeysByType(definitionType.getId())
       .executeAndReturnList(DefinitionKeyDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(definitionsKeys).hasSize(definitionCount);
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
@@ -219,20 +226,21 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    long startTimeMs = System.currentTimeMillis();
+    final Instant start = Instant.now();
     final List<DefinitionKeyDto> definitionsKeys = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetDefinitionKeysByType(definitionType.getId())
       .executeAndReturnList(DefinitionKeyDto.class, Response.Status.OK.getStatusCode());
-    long responseTimeMs = System.currentTimeMillis() - startTimeMs;
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
 
     // then
     assertThat(definitionsKeys).hasSize(definitionCount);
-    log.info("responseTime {}", responseTimeMs);
+    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
-  protected void addSecondEngineToConfiguration() {
+  private void addSecondEngineToConfiguration() {
     final EngineConfiguration defaultEngineConfiguration = embeddedOptimizeExtension.getDefaultEngineConfiguration();
     final EngineConfiguration engineConfiguration = EngineConfiguration.builder()
       .name(SECOND_ENGINE_ALIAS)
