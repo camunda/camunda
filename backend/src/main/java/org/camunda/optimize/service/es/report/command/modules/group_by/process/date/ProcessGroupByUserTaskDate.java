@@ -17,32 +17,21 @@ import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
-import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
-import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
+import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.FilterAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
-import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.range.Range;
-import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilder;
 import org.elasticsearch.search.aggregations.metrics.Stats;
@@ -52,30 +41,20 @@ import org.elasticsearch.search.sort.SortBuilders;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.getNewLimitedStartDate;
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
 import static org.camunda.optimize.service.es.filter.UserTaskFilterQueryUtil.createUserTaskAggregationFilter;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
-import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
@@ -87,9 +66,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
 
   private static final String USER_TASKS_AGGREGATION = "userTasks";
   private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
-  private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
-  private static final String RANGE_AGGREGATION = "rangeAggregation";
   private static final String STATS_AGGREGATION = "minMaxValueOfData";
   private static final String USER_TASK_MOST_RECENT_DATE_AGGREGATION = "userTaskMostRecentDateAggregation";
   private static final String FILTER_USER_TASKS_WITH_DATE_FIELD_SET_AGGREGATION =
@@ -97,8 +74,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
 
   private final DateTimeFormatter dateTimeFormatter;
   private final OptimizeElasticsearchClient esClient;
-  private final IntervalAggregationService intervalAggregationService;
-  private final ConfigurationService configurationService;
+  private final DateAggregationService dateAggregationService;
 
   @Override
   public Optional<MinMaxStatDto> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context,
@@ -128,54 +104,26 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
       return createAutomaticIntervalAggregation(searchSourceBuilder, context);
     }
 
-    final DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
-    final DateHistogramAggregationBuilder dateHistogramAggregation = AggregationBuilders
-      .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
-      .order(BucketOrder.key(false))
-      .field(getDateField())
-      .timeZone(context.getTimezone())
-      .dateHistogramInterval(interval);
-
     final Optional<OffsetDateTime> latestDate =
       getMostRecentUserTaskDate(searchSourceBuilder.query(), getDateField(), context);
-    final BoolQueryBuilder limitFilterQuery =
-      createLimitFilterQuery(unit, latestDate.orElse(OffsetDateTime.now()), context.getTimezone());
-    FilterAggregationBuilder bucketLimitedHistogramAggregation = wrapWithFilterLimitedParentAggregation(
-      limitFilterQuery,
-      dateHistogramAggregation.subAggregation(distributedByPart.createAggregation(context))
-    );
+
+    final AggregationBuilder bucketLimitedHistogramAggregation =
+      dateAggregationService.createFilterLimitedUserTaskDateHistogramWithSubAggregation(
+        unit,
+        getDateField(),
+        context.getTimezone(),
+        latestDate.orElse(OffsetDateTime.now()),
+        distributedByPart.createAggregation(context)
+      );
 
     final NestedAggregationBuilder groupByUserTaskDateAggregation =
-      wrapInNestedUserTaskAggregation(context, bucketLimitedHistogramAggregation);
+      wrapInNestedUserTaskAggregation(
+        context,
+        bucketLimitedHistogramAggregation,
+        distributedByPart.createAggregation(context)
+      );
 
     return Collections.singletonList(groupByUserTaskDateAggregation);
-  }
-
-  private BoolQueryBuilder createLimitFilterQuery(final GroupByDateUnit unit,
-                                                  final OffsetDateTime endDate,
-                                                  final ZoneId timezone) {
-    final BoolQueryBuilder limitFilterQuery = boolQuery();
-    List<QueryBuilder> filters = limitFilterQuery.filter();
-
-    final ChronoUnit chronoUnit = mapToChronoUnit(unit);
-    final OffsetDateTime startDate = getNewLimitedStartDate(
-      chronoUnit,
-      configurationService.getEsAggregationBucketLimit(),
-      endDate,
-      timezone
-    );
-
-    RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(getDateField());
-    if (endDate != null) {
-      queryDate.lte(dateTimeFormatter.format(endDate));
-    }
-    if (startDate != null) {
-      queryDate.gte(dateTimeFormatter.format(startDate));
-    }
-
-    queryDate.format(OPTIMIZE_DATE_FORMAT);
-    filters.add(queryDate);
-    return limitFilterQuery;
   }
 
   private Optional<OffsetDateTime> getMostRecentUserTaskDate(final QueryBuilder baseQuery,
@@ -187,7 +135,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
       .format(OPTIMIZE_DATE_FORMAT)
       .size(1);
     final NestedAggregationBuilder groupByUserTaskDateAggregation =
-      wrapInNestedUserTaskAggregation(context, mostRecentDateAggregation);
+      wrapInNestedUserTaskAggregation(context, mostRecentDateAggregation, distributedByPart.createAggregation(context));
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(baseQuery)
@@ -215,7 +163,8 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
   }
 
   private NestedAggregationBuilder wrapInNestedUserTaskAggregation(final ExecutionContext<ProcessReportDataDto> context,
-                                                                   final AggregationBuilder aggregationToWrap) {
+                                                                   final AggregationBuilder aggregationToWrap,
+                                                                   final AggregationBuilder distributedBySubAggregation) {
     return nested(USER_TASKS, USER_TASKS_AGGREGATION)
       .subAggregation(
         filter(FILTERED_USER_TASKS_AGGREGATION, createUserTaskAggregationFilter(context.getReportData()))
@@ -224,7 +173,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
       )
       // sibling aggregation for distributedByPart for retrieval of all keys that
       // should be present in distributedBy result
-      .subAggregation(distributedByPart.createAggregation(context));
+      .subAggregation(distributedBySubAggregation);
   }
 
   private List<AggregationBuilder> createAutomaticIntervalAggregation(final SearchSourceBuilder builder,
@@ -250,57 +199,10 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
     if (rangeToUse.isPresent()) {
       OffsetDateTime min = rangeToUse.get().getMinimum();
       OffsetDateTime max = rangeToUse.get().getMaximum();
-      return Optional.of(createIntervalAggregationFromGivenRange(context, field, min, max));
+      return Optional.of(createNestedIntervalAggregationFromGivenRange(context, field, min, max));
     } else {
       return createIntervalAggregation(context, query, field);
     }
-  }
-
-  private AggregationBuilder createIntervalAggregationFromGivenRange(final ExecutionContext<ProcessReportDataDto> context,
-                                                                     String field,
-                                                                     OffsetDateTime min,
-                                                                     OffsetDateTime max) {
-    long msAsUnit = getDateHistogramIntervalFromMinMax(min, max);
-    RangeAggregationBuilder rangeAgg = AggregationBuilders
-      .range(RANGE_AGGREGATION)
-      .field(field);
-    AggregationBuilder nestedRangeAgg =
-      wrapInNestedUserTaskAggregation(context, rangeAgg.subAggregation(distributedByPart.createAggregation(context)));
-
-    OffsetDateTime start = min;
-    int bucketCount = 0;
-
-    do {
-      if (bucketCount >= configurationService.getEsAggregationBucketLimit()) {
-        break;
-      }
-      // this is a do while loop to ensure there's always at least one bucket, even when min and max are equal
-      OffsetDateTime nextStart = start.plus(msAsUnit, ChronoUnit.MILLIS);
-      boolean isLast = nextStart.isAfter(max) || nextStart.isEqual(max);
-      // plus 1 ms because the end of the range is exclusive yet we want to make sure max falls into the last bucket
-      OffsetDateTime end = isLast ? nextStart.plus(1, ChronoUnit.MILLIS) : nextStart;
-
-      ZoneId timezone = context.getTimezone();
-      RangeAggregator.Range range =
-        new RangeAggregator.Range(
-          dateTimeFormatter.format(start.atZoneSameInstant(timezone)), // key that's being used
-          dateTimeFormatter.format(start.atZoneSameInstant(timezone)),
-          dateTimeFormatter.format(end.atZoneSameInstant(timezone))
-        );
-      rangeAgg.addRange(range);
-      start = nextStart;
-      bucketCount++;
-    } while (start.isBefore(max));
-    return nestedRangeAgg;
-  }
-
-  private long getDateHistogramIntervalFromMinMax(OffsetDateTime min, OffsetDateTime max) {
-    long minInMs = min.toInstant().toEpochMilli();
-    long maxInMs = max.toInstant().toEpochMilli();
-    final long intervalFromMinToMax = (maxInMs - minInMs) / NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-    // we need to ensure that the interval is > 1 since we create the range buckets based on this
-    // interval and it will cause an endless loop if the interval is 0.
-    return Math.max(intervalFromMinToMax, 1);
   }
 
   private Optional<AggregationBuilder> createIntervalAggregation(final ExecutionContext<ProcessReportDataDto> context,
@@ -310,10 +212,27 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
     if (stats.isValidRange()) {
       OffsetDateTime min = OffsetDateTime.parse(stats.getMinAsString(), dateTimeFormatter);
       OffsetDateTime max = OffsetDateTime.parse(stats.getMaxAsString(), dateTimeFormatter);
-      return Optional.of(createIntervalAggregationFromGivenRange(context, field, min, max));
+      return Optional.of(createNestedIntervalAggregationFromGivenRange(context, field, min, max));
     } else {
       return Optional.empty();
     }
+  }
+
+  private AggregationBuilder createNestedIntervalAggregationFromGivenRange(final ExecutionContext<ProcessReportDataDto> context,
+                                                                           final String field,
+                                                                           final OffsetDateTime min,
+                                                                           final OffsetDateTime max) {
+    AggregationBuilder rangeAgg = dateAggregationService.createIntervalAggregationFromGivenRange(
+      field,
+      context.getTimezone(),
+      min,
+      max
+    );
+    return wrapInNestedUserTaskAggregation(
+      context,
+      rangeAgg.subAggregation(distributedByPart.createAggregation(context)),
+      distributedByPart.createAggregation(context)
+    );
   }
 
   private MinMaxStatDto getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
@@ -324,7 +243,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
       .field(field)
       .format(OPTIMIZE_DATE_FORMAT);
     final NestedAggregationBuilder statsAgg =
-      wrapInNestedUserTaskAggregation(context, minMaxOfUserTaskDate);
+      wrapInNestedUserTaskAggregation(context, minMaxOfUserTaskDate, distributedByPart.createAggregation(context));
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(query)
@@ -392,61 +311,35 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
       userTasks.getAggregations()
     );
 
-    List<GroupByResult> result = new ArrayList<>();
+    Map<String, Aggregations> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
-      final Aggregations filterLimitedAggregation = unwrappedLimitedAggregations.get();
-      final Histogram agg = filterLimitedAggregation.get(DATE_HISTOGRAM_AGGREGATION);
-
-      for (Histogram.Bucket entry : agg.getBuckets()) {
-        ZonedDateTime keyAsDate = (ZonedDateTime) entry.getKey();
-        String formattedDate = keyAsDate.withZoneSameInstant(context.getTimezone()).format(dateTimeFormatter);
-        final List<DistributedByResult> distributions =
-          distributedByPart.retrieveResult(response, entry.getAggregations(), context);
-        result.add(GroupByResult.createGroupByResult(formattedDate, distributions));
-      }
+      keyToAggregationMap = dateAggregationService.mapHistogramAggregationsToKeyAggregationMap(
+        unwrappedLimitedAggregations.get(),
+        context.getTimezone()
+      );
     } else {
-      result = processAutomaticIntervalAggregations(response, filteredUserTasks.getAggregations(), context);
+      keyToAggregationMap = dateAggregationService.mapRangeAggregationsToKeyAggregationMap(
+        filteredUserTasks.getAggregations(),
+        context.getTimezone()
+      );
     }
-    return result;
-  }
-
-  private List<GroupByResult> processAutomaticIntervalAggregations(final SearchResponse response,
-                                                                   final Aggregations aggregations,
-                                                                   final ExecutionContext<ProcessReportDataDto> context) {
-    return mapIntervalAggregationsToKeyBucketMap(aggregations)
-      .entrySet()
-      .stream()
-      .map(stringBucketEntry -> GroupByResult.createGroupByResult(
-        formatToCorrectTimezone(stringBucketEntry.getKey(), context.getTimezone()),
-        distributedByPart.retrieveResult(response, stringBucketEntry.getValue().getAggregations(), context)
-      ))
-      .collect(Collectors.toList());
-  }
-
-  private String formatToCorrectTimezone(final String dateAsString, final ZoneId timezone) {
-    final OffsetDateTime date = OffsetDateTime.parse(dateAsString, dateTimeFormatter);
-    OffsetDateTime dateWithAdjustedTimezone = date.atZoneSameInstant(timezone).toOffsetDateTime();
-    return dateTimeFormatter.format(dateWithAdjustedTimezone);
-  }
-
-  private Map<String, Range.Bucket> mapIntervalAggregationsToKeyBucketMap(Aggregations aggregations) {
-    Range agg = aggregations.get(RANGE_AGGREGATION);
-
-    Map<String, Range.Bucket> result = new LinkedHashMap<>();
-    for (Range.Bucket entry : agg.getBuckets()) {
-      String formattedDate = entry.getKeyAsString();
-      result.put(formattedDate, entry);
-    }
-    // sort in descending order
-    result = result.entrySet().stream()
-      .sorted(Collections.reverseOrder(Map.Entry.comparingByKey()))
-      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (u, v) -> {
-        throw new IllegalStateException(String.format("Duplicate key %s", u));
-      }, LinkedHashMap::new));
-    return result;
+    return mapKeyToAggMapToGroupByResults(keyToAggregationMap, response, context);
   }
 
   protected abstract String getDateField();
+
+  private List<GroupByResult> mapKeyToAggMapToGroupByResults(final Map<String, Aggregations> keyToAggregationMap,
+                                                             final SearchResponse response,
+                                                             final ExecutionContext<ProcessReportDataDto> context) {
+    return keyToAggregationMap
+      .entrySet()
+      .stream()
+      .map(stringBucketEntry -> GroupByResult.createGroupByResult(
+        stringBucketEntry.getKey(),
+        distributedByPart.retrieveResult(response, stringBucketEntry.getValue(), context)
+      ))
+      .collect(Collectors.toList());
+  }
 
   private GroupByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
     return ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();

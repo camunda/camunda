@@ -21,7 +21,7 @@ public class EndDateQueryFilter implements QueryFilter<DateFilterDataDto<?>> {
   private final DateFilterQueryService dateFilterQueryService;
 
   @Override
-  public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto<?>> filter, final ZoneId timezone) {
-    dateFilterQueryService.addFilters(query, filter, END_DATE, timezone);
+  public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto<?>> filters, final ZoneId timezone) {
+    dateFilterQueryService.addFilters(query, filters, END_DATE, timezone);
   }
 }

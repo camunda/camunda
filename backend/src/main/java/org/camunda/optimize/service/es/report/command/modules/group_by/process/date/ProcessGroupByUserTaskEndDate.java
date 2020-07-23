@@ -9,8 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -27,9 +26,8 @@ public class ProcessGroupByUserTaskEndDate extends ProcessGroupByUserTaskDate {
 
   public ProcessGroupByUserTaskEndDate(final DateTimeFormatter dateTimeFormatter,
                                        final OptimizeElasticsearchClient esClient,
-                                       final IntervalAggregationService intervalAggregationService,
-                                       final ConfigurationService configurationService) {
-    super(dateTimeFormatter, esClient, intervalAggregationService, configurationService);
+                                       final DateAggregationService dateAggregationService) {
+    super(dateTimeFormatter, esClient, dateAggregationService);
   }
 
   @Override

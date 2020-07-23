@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.filter;
 
+import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.FixedDateFilterDataDto;
@@ -16,9 +18,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUn
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.util.DateFilterUtil;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.histogram.ExtendedBounds;
 
 import java.time.DayOfWeek;
@@ -37,6 +44,7 @@ import java.util.stream.Stream;
 import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
 import static java.time.temporal.TemporalAdjusters.firstDayOfYear;
 import static java.time.temporal.TemporalAdjusters.previousOrSame;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 
@@ -45,13 +53,53 @@ public class DateHistogramBucketLimiterUtil {
   private DateHistogramBucketLimiterUtil() {
   }
 
-  public static BoolQueryBuilder createProcessStartDateHistogramBucketLimitingFilterFor(
+  public static BoolQueryBuilder extendBoundsAndCreateProcessDateHistogramBucketLimitingFilterFor(
+    final ProcessGroupByType groupByDateType,
+    final DateHistogramAggregationBuilder dateHistogramAggregation,
     final List<ProcessFilterDto<?>> processFilterDtos,
     final GroupByDateUnit unit,
     final int bucketLimit,
     final OffsetDateTime defaultFilterEndTime,
     final ProcessQueryFilterEnhancer queryFilterEnhancer,
-    final ZoneId timezone) {
+    final ZoneId timezone,
+    final DateTimeFormatter dateFormatter) {
+    switch (groupByDateType) {
+      case START_DATE:
+        return extendBoundsAndCreateProcessStartDateHistogramBucketLimitingFilterFor(
+          dateHistogramAggregation,
+          processFilterDtos,
+          unit,
+          bucketLimit,
+          defaultFilterEndTime,
+          queryFilterEnhancer,
+          timezone,
+          dateFormatter
+        );
+      case END_DATE:
+        return extendBoundsAndCreateProcessEndDateHistogramBucketLimitingFilterFor(
+          dateHistogramAggregation,
+          processFilterDtos,
+          unit,
+          bucketLimit,
+          defaultFilterEndTime,
+          queryFilterEnhancer,
+          timezone,
+          dateFormatter
+        );
+      default:
+        throw new IllegalStateException("Unsupported process groupBy type: " + groupByDateType);
+    }
+  }
+
+  public static BoolQueryBuilder extendBoundsAndCreateProcessStartDateHistogramBucketLimitingFilterFor(
+    final DateHistogramAggregationBuilder dateHistogramAggregation,
+    final List<ProcessFilterDto<?>> processFilterDtos,
+    final GroupByDateUnit unit,
+    final int bucketLimit,
+    final OffsetDateTime defaultFilterEndTime,
+    final ProcessQueryFilterEnhancer queryFilterEnhancer,
+    final ZoneId timezone,
+    final DateTimeFormatter dateFormatter) {
 
     final BoolQueryBuilder limitFilterQuery;
 
@@ -67,27 +115,39 @@ public class DateHistogramBucketLimiterUtil {
       limitFilterQuery = createDateHistogramBucketLimitingFilter(
         endDateFilters, unit, bucketLimit, queryFilterEnhancer.getEndDateQueryFilter(), timezone
       );
-    } else { // otherwise go for startDate filters, even if they are empty, default filters are to be created
-      limitFilterQuery = createDateHistogramBucketLimitedOrDefaultLimitedFilter(
-        startDateFilters,
-        unit,
-        bucketLimit,
-        defaultFilterEndTime,
+    } else {
+      // otherwise go for startDate filters, even if they are empty, default filters are to be created and
+      // dateHistogram bounds extended
+      final List<DateFilterDataDto<?>> limitedFilters = limitDateFiltersOrCreateDefaultFilter(
+        startDateFilters, unit, bucketLimit, defaultFilterEndTime, timezone
+      );
+
+      limitFilterQuery = createFilterBoolQueryBuilder(
+        limitedFilters,
         queryFilterEnhancer.getStartDateQueryFilter(),
         timezone
       );
+
+      if (!startDateFilters.isEmpty()) {
+        getExtendedBoundsFromDateFilters(
+          limitedFilters,
+          dateFormatter
+        ).ifPresent(dateHistogramAggregation::extendedBounds);
+      }
     }
 
     return limitFilterQuery;
   }
 
-  public static BoolQueryBuilder createProcessEndDateHistogramBucketLimitingFilterFor(
+  public static BoolQueryBuilder extendBoundsAndCreateProcessEndDateHistogramBucketLimitingFilterFor(
+    final DateHistogramAggregationBuilder dateHistogramAggregation,
     final List<ProcessFilterDto<?>> processFilterDtos,
     final GroupByDateUnit unit,
     final int bucketLimit,
     final OffsetDateTime defaultFilterEndTime,
     final ProcessQueryFilterEnhancer queryFilterEnhancer,
-    final ZoneId timezone) {
+    final ZoneId timezone,
+    final DateTimeFormatter dateFormatter) {
 
     final BoolQueryBuilder limitFilterQuery;
 
@@ -103,10 +163,86 @@ public class DateHistogramBucketLimiterUtil {
       limitFilterQuery = createDateHistogramBucketLimitingFilter(
         startDateFilters, unit, bucketLimit, queryFilterEnhancer.getStartDateQueryFilter(), timezone
       );
-    } else { // otherwise go for startDate filters, even if they are empty, default filters are to be created
-      limitFilterQuery = createDateHistogramBucketLimitedOrDefaultLimitedFilter(
-        endDateFilters, unit, bucketLimit, defaultFilterEndTime, queryFilterEnhancer.getEndDateQueryFilter(), timezone
+    } else {
+      // otherwise go for endDate filters, even if they are empty, default filters are to be created and
+      // dateHistogram bounds extended
+      final List<DateFilterDataDto<?>> limitedFilters = limitDateFiltersOrCreateDefaultFilter(
+        endDateFilters, unit, bucketLimit, defaultFilterEndTime, timezone
       );
+
+      limitFilterQuery = createFilterBoolQueryBuilder(
+        limitedFilters,
+        queryFilterEnhancer.getEndDateQueryFilter(),
+        timezone
+      );
+
+      if (!endDateFilters.isEmpty()) {
+        getExtendedBoundsFromDateFilters(
+          limitedFilters,
+          dateFormatter
+        ).ifPresent(dateHistogramAggregation::extendedBounds);
+      }
+    }
+
+    return limitFilterQuery;
+  }
+
+  public static BoolQueryBuilder createUserTaskDateHistogramBucketLimitingFilterFor(
+    final GroupByDateUnit unit,
+    final int bucketLimit,
+    final OffsetDateTime endDate,
+    final String dateField,
+    final ZoneId timezone,
+    final DateTimeFormatter dateFormatter) {
+    final BoolQueryBuilder limitFilterQuery = boolQuery();
+    List<QueryBuilder> filters = limitFilterQuery.filter();
+
+    final OffsetDateTime newLimitedStartDate = getNewLimitedStartDate(
+      mapToChronoUnit(unit),
+      bucketLimit,
+      endDate,
+      timezone
+    );
+
+    RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(dateField);
+    queryDate.gte(dateFormatter.format(newLimitedStartDate));
+    queryDate.lte(dateFormatter.format(endDate));
+
+    queryDate.format(OPTIMIZE_DATE_FORMAT);
+    filters.add(queryDate);
+    return limitFilterQuery;
+  }
+
+  public static BoolQueryBuilder extendBoundsAndCreateDecisionDateHistogramBucketLimitingFilterFor(
+    final DateHistogramAggregationBuilder dateHistogramAggregation,
+    final List<DecisionFilterDto<?>> decisionFilterDtos,
+    final GroupByDateUnit unit,
+    final int bucketLimit,
+    final OffsetDateTime defaultFilterEndTime,
+    final DecisionQueryFilterEnhancer queryFilterEnhancer,
+    final ZoneId timezone,
+    final DateTimeFormatter dateFormatter) {
+
+    final BoolQueryBuilder limitFilterQuery;
+
+    final List<DateFilterDataDto<?>> evaluationDateFilter = queryFilterEnhancer.extractFilters(
+      decisionFilterDtos, EvaluationDateFilterDto.class);
+
+    final List<DateFilterDataDto<?>> limitedFilters = limitDateFiltersOrCreateDefaultFilter(
+      evaluationDateFilter, unit, bucketLimit, defaultFilterEndTime, timezone
+    );
+
+    limitFilterQuery = createFilterBoolQueryBuilder(
+      limitedFilters,
+      queryFilterEnhancer.getEvaluationDateQueryFilter(),
+      timezone
+    );
+
+    if (!evaluationDateFilter.isEmpty()) {
+      getExtendedBoundsFromDateFilters(
+        limitedFilters,
+        dateFormatter
+      ).ifPresent(dateHistogramAggregation::extendedBounds);
     }
 
     return limitFilterQuery;

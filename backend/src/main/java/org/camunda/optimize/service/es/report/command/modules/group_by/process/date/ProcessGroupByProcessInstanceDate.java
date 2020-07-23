@@ -5,67 +5,56 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.date;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
-import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
+import org.camunda.optimize.service.es.report.command.process.util.ProcessInstanceQueryUtil;
+import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
-import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.getExtendedBoundsFromDateFilters;
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.limitFiltersToMaxBucketsForGroupByUnit;
-import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
-import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
 public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<ProcessReportDataDto> {
 
   protected final ConfigurationService configurationService;
-  protected final IntervalAggregationService intervalAggregationService;
-  private final DateTimeFormatter dateTimeFormatter;
+  protected final DateAggregationService dateAggregationService;
+  protected final OptimizeElasticsearchClient esClient;
+  protected final ProcessQueryFilterEnhancer queryFilterEnhancer;
 
-  private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   protected ProcessGroupByProcessInstanceDate(final ConfigurationService configurationService,
-                                              final IntervalAggregationService intervalAggregationService,
-                                              final DateTimeFormatter dateTimeFormatter) {
+                                              final DateAggregationService dateAggregationService,
+                                              final OptimizeElasticsearchClient esClient,
+                                              final ProcessQueryFilterEnhancer queryFilterEnhancer) {
     this.configurationService = configurationService;
-    this.intervalAggregationService = intervalAggregationService;
-    this.dateTimeFormatter = dateTimeFormatter;
+    this.dateAggregationService = dateAggregationService;
+    this.esClient = esClient;
+    this.queryFilterEnhancer = queryFilterEnhancer;
   }
 
   @Override
@@ -75,7 +64,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
       DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
         return Optional.of(
-          intervalAggregationService.getCrossFieldMinMaxStats(
+          dateAggregationService.getCrossFieldMinMaxStats(
             baseQuery,
             PROCESS_INSTANCE_INDEX_NAME,
             getDateField()
@@ -97,17 +86,6 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
 
   public abstract String getDateField();
 
-  protected abstract List<DateFilterDataDto<?>> getReportDateFilters(final ProcessReportDataDto reportData);
-
-  protected abstract void addFiltersToQuery(final BoolQueryBuilder limitFilterQuery,
-                                            final List<DateFilterDataDto<?>> limitedFilters, final ZoneId timezone);
-
-  protected abstract BoolQueryBuilder createDefaultLimitingFilter(final GroupByDateUnit unit,
-                                                                  final QueryBuilder query,
-                                                                  final ProcessReportDataDto reportData,
-                                                                  final ZoneId timezone);
-
-
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
@@ -118,7 +96,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context,
                                                     final GroupByDateUnit unit) {
-    MinMaxStatDto stats = intervalAggregationService.getMinMaxDateRange(
+    MinMaxStatDto stats = dateAggregationService.getMinMaxDateRange(
       context,
       searchSourceBuilder.query(),
       PROCESS_INSTANCE_INDEX_NAME,
@@ -132,41 +110,16 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
       return createAutomaticIntervalAggregation(searchSourceBuilder, context, stats);
     }
 
-    final DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
-    final DateHistogramAggregationBuilder dateHistogramAggregation = AggregationBuilders
-      .dateHistogram(DATE_HISTOGRAM_AGGREGATION)
-      .order(BucketOrder.key(false))
-      .field(getDateField())
-      .timeZone(context.getTimezone())
-      .dateHistogramInterval(interval);
-
-    final List<DateFilterDataDto<?>> reportDateFilters = getReportDateFilters(context.getReportData());
-
-    final BoolQueryBuilder limitFilterQuery;
-    if (!reportDateFilters.isEmpty()) {
-      final List<DateFilterDataDto<?>> limitedFilters = limitFiltersToMaxBucketsForGroupByUnit(
-        reportDateFilters, unit, configurationService.getEsAggregationBucketLimit(), context.getTimezone()
-      );
-
-      getExtendedBoundsFromDateFilters(
-        limitedFilters,
-        DateTimeFormatter.ofPattern(configurationService.getEngineDateFormat())
-      ).ifPresent(dateHistogramAggregation::extendedBounds);
-
-      limitFilterQuery = boolQuery();
-      addFiltersToQuery(limitFilterQuery, limitedFilters, context.getTimezone());
-    } else {
-      limitFilterQuery = createDefaultLimitingFilter(
-        unit,
-        searchSourceBuilder.query(),
-        context.getReportData(),
-        context.getTimezone()
-      );
-    }
-
     return Collections.singletonList(
-      wrapWithFilterLimitedParentAggregation(
-        limitFilterQuery, dateHistogramAggregation.subAggregation(distributedByPart.createAggregation(context))
+      dateAggregationService.createFilterLimitedProcessDateHistogramWithSubAggregation(
+        unit,
+        getDateField(),
+        context.getTimezone(),
+        getGroupByType().getType(),
+        context.getReportData().getFilter(),
+        ProcessInstanceQueryUtil.getLatestDate(searchSourceBuilder.query(), getDateField(), esClient).orElse(null),
+        queryFilterEnhancer,
+        distributedByPart.createAggregation(context)
       )
     );
   }
@@ -175,7 +128,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
                                                                         final ExecutionContext<ProcessReportDataDto> context,
                                                                         final MinMaxStatDto stats) {
     Optional<AggregationBuilder> automaticIntervalAggregation =
-      intervalAggregationService.createIntervalAggregation(
+      dateAggregationService.createAutomaticIntervalAggregation(
         stats,
         getDateField(),
         context.getTimezone()
@@ -206,47 +159,39 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
       // aggregations are null when there are no instances in the report
       return Collections.emptyList();
     }
+
     final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
-    List<GroupByResult> result = new ArrayList<>();
+    Map<String, Aggregations> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
-      final Histogram agg = unwrappedLimitedAggregations.get().get(DATE_HISTOGRAM_AGGREGATION);
-
-      for (Histogram.Bucket entry : agg.getBuckets()) {
-        ZonedDateTime keyAsDate = (ZonedDateTime) entry.getKey();
-        String formattedDate = keyAsDate.withZoneSameInstant(context.getTimezone()).format(dateTimeFormatter);
-        final List<DistributedByResult> distributions =
-          distributedByPart.retrieveResult(response, entry.getAggregations(), context);
-        result.add(GroupByResult.createGroupByResult(formattedDate, distributions));
-      }
+      keyToAggregationMap = dateAggregationService.mapHistogramAggregationsToKeyAggregationMap(
+        unwrappedLimitedAggregations.get(),
+        context.getTimezone()
+      );
     } else {
-      result = processAutomaticIntervalAggregations(response, aggregations, context);
+      keyToAggregationMap = dateAggregationService.mapRangeAggregationsToKeyAggregationMap(
+        aggregations,
+        context.getTimezone()
+      );
     }
-    return result;
-  }
-
-  private List<GroupByResult> processAutomaticIntervalAggregations(final SearchResponse response,
-                                                                   final Aggregations aggregations,
-                                                                   final ExecutionContext<ProcessReportDataDto> context) {
-    return intervalAggregationService.mapIntervalAggregationsToKeyBucketMap(
-      aggregations)
-      .entrySet()
-      .stream()
-      .map(stringBucketEntry -> GroupByResult.createGroupByResult(
-        formatToCorrectTimezone(stringBucketEntry.getKey(), context.getTimezone()),
-        distributedByPart.retrieveResult(response, stringBucketEntry.getValue().getAggregations(), context)
-      ))
-      .collect(Collectors.toList());
-  }
-
-  private String formatToCorrectTimezone(final String dateAsString, final ZoneId timezone) {
-    final OffsetDateTime date = OffsetDateTime.parse(dateAsString, dateTimeFormatter);
-    OffsetDateTime dateWithAdjustedTimezone = date.atZoneSameInstant(timezone).toOffsetDateTime();
-    return dateTimeFormatter.format(dateWithAdjustedTimezone);
+    return mapKeyToAggMapToGroupByResults(keyToAggregationMap, response, context);
   }
 
   @Override
   protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto reportData) {
     reportData.setGroupBy(getGroupByType());
+  }
+
+  private List<GroupByResult> mapKeyToAggMapToGroupByResults(final Map<String, Aggregations> keyToAggregationMap,
+                                                             final SearchResponse response,
+                                                             final ExecutionContext<ProcessReportDataDto> context) {
+    return keyToAggregationMap
+      .entrySet()
+      .stream()
+      .map(stringBucketEntry -> GroupByResult.createGroupByResult(
+        stringBucketEntry.getKey(),
+        distributedByPart.retrieveResult(response, stringBucketEntry.getValue(), context)
+      ))
+      .collect(Collectors.toList());
   }
 
   private GroupByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {

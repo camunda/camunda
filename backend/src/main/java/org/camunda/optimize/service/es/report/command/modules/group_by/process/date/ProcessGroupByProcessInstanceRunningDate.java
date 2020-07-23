@@ -16,7 +16,7 @@ import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
-import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
+import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -42,8 +42,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static org.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezone;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
-import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.getDateHistogramIntervalInMsFromMinMax;
+import static org.camunda.optimize.service.es.report.command.util.DateAggregationService.getDateHistogramIntervalDurationFromMinMax;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
@@ -55,14 +56,14 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
 
   protected final DateTimeFormatter formatter;
   protected final ConfigurationService configurationService;
-  protected final IntervalAggregationService intervalAggregationService;
+  protected final DateAggregationService dateAggregationService;
 
   public ProcessGroupByProcessInstanceRunningDate(final DateTimeFormatter formatter,
                                                   final ConfigurationService configurationService,
-                                                  final IntervalAggregationService intervalAggregationService) {
+                                                  final DateAggregationService dateAggregationService) {
     this.formatter = formatter;
     this.configurationService = configurationService;
-    this.intervalAggregationService = intervalAggregationService;
+    this.dateAggregationService = dateAggregationService;
   }
 
   @Override
@@ -72,7 +73,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
       DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
         return Optional.of(
-          intervalAggregationService.getCrossFieldMinMaxStats(
+          dateAggregationService.getCrossFieldMinMaxStats(
             baseQuery,
             PROCESS_INSTANCE_INDEX_NAME,
             START_DATE,
@@ -86,7 +87,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final MinMaxStatDto minMaxStats = intervalAggregationService.getCrossFieldMinMaxStats(
+    final MinMaxStatDto minMaxStats = dateAggregationService.getCrossFieldMinMaxStats(
       searchSourceBuilder.query(),
       PROCESS_INSTANCE_INDEX_NAME,
       START_DATE,
@@ -99,10 +100,8 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
       return Collections.emptyList();
     }
 
-    final OffsetDateTime startOfRange = OffsetDateTime.parse(minMaxStats.getMinAsString(), formatter)
-      .atZoneSameInstant(context.getTimezone()).toOffsetDateTime();
-    final OffsetDateTime endOfRange = OffsetDateTime.parse(minMaxStats.getMaxAsString(), formatter)
-      .atZoneSameInstant(context.getTimezone()).toOffsetDateTime();
+    final OffsetDateTime startOfRange = OffsetDateTime.parse(minMaxStats.getMinAsString(), formatter);
+    final OffsetDateTime endOfRange = OffsetDateTime.parse(minMaxStats.getMaxAsString(), formatter);
 
     return createAggregation(
       startOfRange,
@@ -146,7 +145,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
     List<CompositeCommandResult.GroupByResult> results = new ArrayList<>();
 
     for (Filters.Bucket entry : agg.getBuckets()) {
-      String key = formatToCorrectTimezone(entry.getKeyAsString(), context.getTimezone());
+      String key = formatToCorrectTimezone(entry.getKeyAsString(), context.getTimezone(), formatter);
       final List<CompositeCommandResult.DistributedByResult> distributions =
         distributedByPart.retrieveResult(response, entry.getAggregations(), context);
       results.add(
@@ -159,12 +158,6 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
     return results;
   }
 
-  private String formatToCorrectTimezone(final String dateAsString, final ZoneId timezone) {
-    final OffsetDateTime date = OffsetDateTime.parse(dateAsString, formatter);
-    OffsetDateTime dateWithAdjustedTimezone = date.atZoneSameInstant(timezone).toOffsetDateTime();
-    return formatter.format(dateWithAdjustedTimezone);
-  }
-
   @Override
   protected void addGroupByAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
     dataForCommandKey.setGroupBy(new RunningDateGroupByDto());
@@ -175,17 +168,18 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
                                                     final GroupByDateUnit unit,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     List<FiltersAggregator.KeyedFilter> filters = new ArrayList<>();
-    final Duration automaticIntervalDuration = getDurationOfAutomaticInterval(
+    final Duration automaticIntervalDuration = getDateHistogramIntervalDurationFromMinMax(
       startOfFirstInstance,
       endOfLastInstance
     );
 
     // to do correct date arithmetic (e.g. daylight saving time, timezones, etc.) we need to switch
     // here to zoned date time.
-    final ZonedDateTime startOfFirstBucket = truncateToUnit(startOfFirstInstance, unit, context.getTimezone());
+    final ZoneId timezone = context.getTimezone();
+    final ZonedDateTime startOfFirstBucket = truncateToUnit(startOfFirstInstance.atZoneSameInstant(timezone), unit);
     final ZonedDateTime endOfLastBucket = GroupByDateUnit.AUTOMATIC.equals(unit)
       ? endOfLastInstance.atZoneSameInstant(context.getTimezone())
-      : truncateToUnit(endOfLastInstance, unit, context.getTimezone()).plus(1, mapToChronoUnit(unit));
+      : truncateToUnit(endOfLastInstance.atZoneSameInstant(timezone), unit).plus(1, mapToChronoUnit(unit));
 
     for (ZonedDateTime currentBucketStart = startOfFirstBucket;
          currentBucketStart.isBefore(endOfLastBucket);
@@ -221,48 +215,36 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
         .subAggregation(distributedByPart.createAggregation(context)));
   }
 
-  private ZonedDateTime truncateToUnit(final OffsetDateTime dateToTruncate,
-                                       final GroupByDateUnit unit,
-                                       final ZoneId timezone) {
+  private ZonedDateTime truncateToUnit(final ZonedDateTime dateToTruncate,
+                                       final GroupByDateUnit unit) {
     switch (unit) {
       case YEAR:
         return dateToTruncate
-          .atZoneSameInstant(timezone)
           .withMonth(1)
           .withDayOfMonth(1)
           .truncatedTo(ChronoUnit.DAYS);
       case MONTH:
         return dateToTruncate
-          .atZoneSameInstant(timezone)
           .withDayOfMonth(1)
           .truncatedTo(ChronoUnit.DAYS);
       case WEEK:
         return dateToTruncate
-          .atZoneSameInstant(timezone)
           .minusDays(getDistanceToStartOfWeekInDays(dateToTruncate))
           .truncatedTo(ChronoUnit.DAYS);
       case DAY:
       case HOUR:
       case MINUTE:
-        return dateToTruncate.atZoneSameInstant(timezone).truncatedTo(mapToChronoUnit(unit));
+        return dateToTruncate.truncatedTo(mapToChronoUnit(unit));
       case AUTOMATIC:
-        return dateToTruncate.atZoneSameInstant(timezone);
+        return dateToTruncate;
       default:
         throw new IllegalArgumentException("Unsupported unit: " + unit);
     }
   }
 
-  private Duration getDurationOfAutomaticInterval(final OffsetDateTime startOfFirstInstance,
-                                                  final OffsetDateTime endOfLastInstance) {
-    return Duration.of(
-      getDateHistogramIntervalInMsFromMinMax(startOfFirstInstance, endOfLastInstance),
-      ChronoUnit.MILLIS
-    );
-  }
-
   private ZonedDateTime getEndOfBucket(final ZonedDateTime startOfBucket,
-                                        final GroupByDateUnit unit,
-                                        final Duration durationOfAutomaticInterval) {
+                                       final GroupByDateUnit unit,
+                                       final Duration durationOfAutomaticInterval) {
     return GroupByDateUnit.AUTOMATIC.equals(unit)
       ? startOfBucket.plus(durationOfAutomaticInterval)
       : startOfBucket.plus(1, mapToChronoUnit(unit));
@@ -272,7 +254,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
    * Currently, the start of a week in Optimize is Monday.
    * TODO: This will need adjusted with OPT-3162.
    */
-  private int getDistanceToStartOfWeekInDays(final OffsetDateTime date) {
+  private int getDistanceToStartOfWeekInDays(final ZonedDateTime date) {
     return date.getDayOfWeek().getValue() - 1;
   }
 

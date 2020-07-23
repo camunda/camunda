@@ -5,46 +5,28 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.date;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
-import org.camunda.optimize.service.es.report.command.process.util.ProcessInstanceQueryUtil;
-import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
+import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.List;
-
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createProcessStartDateHistogramBucketLimitingFilterFor;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByProcessInstanceStartDate extends ProcessGroupByProcessInstanceDate {
 
-  private final ProcessQueryFilterEnhancer queryFilterEnhancer;
-  private final OptimizeElasticsearchClient esClient;
-
   protected ProcessGroupByProcessInstanceStartDate(final ConfigurationService configurationService,
-                                                   final IntervalAggregationService intervalAggregationService,
-                                                   final DateTimeFormatter dateTimeFormatter,
-                                                   final ProcessQueryFilterEnhancer processQueryFilterEnhancer,
-                                                   final OptimizeElasticsearchClient esClient) {
-    super(configurationService, intervalAggregationService, dateTimeFormatter);
-    this.esClient = esClient;
-    this.queryFilterEnhancer = processQueryFilterEnhancer;
+                                                   final DateAggregationService dateAggregationService,
+                                                   final OptimizeElasticsearchClient esClient,
+                                                   final ProcessQueryFilterEnhancer queryFilterEnhancer) {
+    super(configurationService, dateAggregationService, esClient, queryFilterEnhancer);
   }
 
   @Override
@@ -55,33 +37,5 @@ public class ProcessGroupByProcessInstanceStartDate extends ProcessGroupByProces
   @Override
   public String getDateField() {
     return START_DATE;
-  }
-
-  @Override
-  protected void addFiltersToQuery(final BoolQueryBuilder limitFilterQuery,
-                                   final List<DateFilterDataDto<?>> limitedFilters,
-                                   final ZoneId timezone) {
-    queryFilterEnhancer.getStartDateQueryFilter().addFilters(limitFilterQuery, limitedFilters, timezone);
-  }
-
-  @Override
-  protected List<DateFilterDataDto<?>> getReportDateFilters(final ProcessReportDataDto reportData) {
-    return queryFilterEnhancer.extractFilters(reportData.getFilter(), StartDateFilterDto.class);
-  }
-
-  @Override
-  protected BoolQueryBuilder createDefaultLimitingFilter(final GroupByDateUnit unit, final QueryBuilder query,
-                                                         final ProcessReportDataDto reportData,
-                                                         final ZoneId timezone) {
-    final BoolQueryBuilder limitFilterQuery;
-    limitFilterQuery = createProcessStartDateHistogramBucketLimitingFilterFor(
-      reportData.getFilter(),
-      unit,
-      configurationService.getEsAggregationBucketLimit(),
-      ProcessInstanceQueryUtil.getLatestDate(query, getDateField(), esClient).orElse(null),
-      queryFilterEnhancer,
-      timezone
-    );
-    return limitFilterQuery;
   }
 }

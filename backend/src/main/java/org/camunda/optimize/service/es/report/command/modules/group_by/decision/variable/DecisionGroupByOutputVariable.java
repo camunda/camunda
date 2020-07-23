@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable;
-import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
+import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.camunda.optimize.service.util.DecisionVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -31,9 +31,9 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 public class DecisionGroupByOutputVariable extends AbstractGroupByVariable<DecisionReportDataDto> {
 
   public DecisionGroupByOutputVariable(final ConfigurationService configurationService,
-                                       final IntervalAggregationService intervalAggregationService,
+                                       final DateAggregationService dateAggregationService,
                                        final OptimizeElasticsearchClient esClient) {
-    super(configurationService, intervalAggregationService, esClient);
+    super(configurationService, dateAggregationService, esClient);
   }
 
   private DecisionGroupByVariableValueDto getVariableGroupByDto(final ExecutionContext<DecisionReportDataDto> context) {

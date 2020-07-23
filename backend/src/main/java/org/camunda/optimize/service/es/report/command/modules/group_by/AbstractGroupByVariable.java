@@ -17,7 +17,7 @@ import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
-import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
+import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
@@ -30,7 +30,6 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
-import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
@@ -54,7 +53,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
-import static org.camunda.optimize.service.es.report.command.util.IntervalAggregationService.RANGE_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.util.DateAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -78,7 +77,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   private static final String STATS = "stats";
 
   private final ConfigurationService configurationService;
-  private final IntervalAggregationService intervalAggregationService;
+  private final DateAggregationService dateAggregationService;
   private final OptimizeElasticsearchClient esClient;
 
   protected abstract String getVariableName(final ExecutionContext<Data> context);
@@ -222,15 +221,13 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       unit = GroupByDateUnit.MONTH;
     }
 
-    final DateHistogramInterval interval = intervalAggregationService.getDateHistogramInterval(unit);
-
     return Optional.of(
-      AggregationBuilders
-        .dateHistogram(AbstractGroupByVariable.VARIABLES_AGGREGATION)
-        .field(getNestedVariableValueFieldLabel(VariableType.DATE))
-        .dateHistogramInterval(interval)
-        .format(OPTIMIZE_DATE_FORMAT)
-        .timeZone(context.getTimezone())
+      dateAggregationService.createDateHistogramAggregation(
+        unit,
+        getNestedVariableValueFieldLabel(VariableType.DATE),
+        VARIABLES_AGGREGATION,
+        context.getTimezone()
+      )
     );
   }
 
@@ -241,7 +238,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     OffsetDateTime maxDateTime =
       OffsetDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMax())), context.getTimezone());
     AggregationBuilder automaticIntervalAggregation =
-      intervalAggregationService.createIntervalAggregationFromGivenRange(
+      dateAggregationService.createIntervalAggregationFromGivenRange(
         getNestedVariableValueFieldLabel(VariableType.DATE),
         context.getTimezone(),
         minDateTime,
