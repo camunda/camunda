@@ -84,7 +84,7 @@ public final class ZeebePartition extends Actor
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
   private final CommandApiService commandApiService;
   private final List<PartitionListener> partitionListeners;
-  private final List<AsyncClosable> managedResources = new ArrayList<>();
+  private final List<ClosingStep> closingSteps = new ArrayList<>();
   private final int partitionId;
   private final int maxFragmentSize;
   private final BrokerInfo localBroker;
@@ -123,9 +123,9 @@ public final class ZeebePartition extends Actor
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
     this.commandApiService = commandApiService;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
-    this.partitionId = atomixRaftPartition.id().id();
-    this.scheduler = actorScheduler;
-    this.maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
+    partitionId = atomixRaftPartition.id().id();
+    scheduler = actorScheduler;
+    maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
     this.zeebeIndexMapping = zeebeIndexMapping;
 
     final var exporterEntries = brokerCfg.getExporters().entrySet();
@@ -141,7 +141,7 @@ public final class ZeebePartition extends Actor
       }
     }
 
-    this.actorName = buildActorName(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
+    actorName = buildActorName(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
     criticalComponentsHealthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
     raftPartitionHealth = new RaftPartitionHealth(atomixRaftPartition, actor, this::onRaftFailed);
     zeebePartitionHealth = new ZeebePartitionHealth(partitionId);
@@ -160,7 +160,7 @@ public final class ZeebePartition extends Actor
   }
 
   private void onRoleChange(final Role newRole, final long newTerm) {
-    this.term = newTerm;
+    term = newTerm;
     switch (newRole) {
       case LEADER:
         if (raftRole != Role.LEADER) {
@@ -199,7 +199,7 @@ public final class ZeebePartition extends Actor
                     t -> {
                       // Compare with the current term in case a new role transition
                       // happened
-                      if (t != null && this.term == newTerm) {
+                      if (t != null && term == newTerm) {
                         onInstallFailure();
                       }
                     });
@@ -225,7 +225,7 @@ public final class ZeebePartition extends Actor
                     t -> {
                       // Compare with the current term in case a new role transition
                       // happened
-                      if (t != null && this.term == newTerm) {
+                      if (t != null && term == newTerm) {
                         onInstallFailure();
                       }
                     });
@@ -375,8 +375,8 @@ public final class ZeebePartition extends Actor
         .onComplete(
             (log, error) -> {
               if (error == null) {
-                managedResources.add(this::closeLogStream);
-                this.logStream = log;
+                addClosingStep("log stream", this::closeLogStream);
+                logStream = log;
                 if (deferredCommitPosition > 0) {
                   logStream.setCommitPosition(deferredCommitPosition);
                   deferredCommitPosition = -1;
@@ -397,20 +397,20 @@ public final class ZeebePartition extends Actor
     persistedSnapshotStore = atomixRaftPartition.getServer().getPersistedSnapshotStore();
 
     final var controller = createSnapshotController();
-    managedResources.add(this::closeSnapshotController);
+    addClosingStep("snapshot controller", this::closeSnapshotController);
     snapshotController = controller;
 
     final LogCompactor logCompactor = new AtomixLogCompactor(atomixRaftPartition.getServer());
     final LogDeletionService deletionService =
         new LogDeletionService(
             localBroker.getNodeId(), partitionId, logCompactor, persistedSnapshotStore);
-    managedResources.add(deletionService);
+    addClosingStep("deletion service", deletionService);
 
     return scheduler.submitActor(deletionService);
   }
 
   private void registerSnapshotListenerForReplication() {
-    managedResources.add(this::removeSnapshotListenerForReplication);
+    addClosingStep("snapshot listener for replication", this::removeSnapshotListenerForReplication);
     persistedSnapshotStore.addSnapshotListener(snapshotController);
   }
 
@@ -422,7 +422,7 @@ public final class ZeebePartition extends Actor
   private StateControllerImpl createSnapshotController() {
     final var runtimeDirectory = atomixRaftPartition.dataDirectory().toPath().resolve("runtime");
     final RaftLogReader reader = createReader();
-    managedResources.add(this::closeStateReplication);
+    addClosingStep("state replication", this::closeStateReplication);
     stateReplication =
         shouldReplicateSnapshots()
             ? new StateReplication(messagingService, partitionId, localBroker.getNodeId())
@@ -440,7 +440,8 @@ public final class ZeebePartition extends Actor
 
   private RaftLogReader createReader() {
     final var reader = atomixRaftPartition.getServer().openReader(-1, Mode.COMMITS);
-    managedResources.add(
+    addClosingStep(
+        "raft log reader",
         () -> {
           reader.close();
           return CompletableActorFuture.completed(null);
@@ -454,7 +455,7 @@ public final class ZeebePartition extends Actor
 
   private void installProcessingPartition(final CompletableActorFuture<Void> installFuture) {
     final StreamProcessor streamProcessor = createStreamProcessor(zeebeDb);
-    managedResources.add(streamProcessor);
+    addClosingStep("stream processor", streamProcessor);
     streamProcessor
         .openAsync()
         .onComplete(
@@ -495,7 +496,8 @@ public final class ZeebePartition extends Actor
                 metricExporter.exportMetrics();
               }
             });
-    managedResources.add(
+    addClosingStep(
+        "RocksDB metric timer",
         () -> {
           metricsTimer.cancel();
           return CompletableActorFuture.completed(null);
@@ -530,7 +532,7 @@ public final class ZeebePartition extends Actor
             snapshotController,
             logStream,
             snapshotPeriod);
-    managedResources.add(asyncSnapshotDirector);
+    addClosingStep("snapshot director", asyncSnapshotDirector);
     return scheduler.submitActor(asyncSnapshotDirector);
   }
 
@@ -551,20 +553,24 @@ public final class ZeebePartition extends Actor
             .descriptors(exporterDescriptors);
 
     final var exporterDirector = new ExporterDirector(context);
-    managedResources.add(exporterDirector);
+    addClosingStep("exporter director", exporterDirector);
 
     return exporterDirector.startAsync(scheduler);
   }
 
   private CompletableActorFuture<Void> closePartition() {
-    Collections.reverse(managedResources);
+    Collections.reverse(closingSteps);
     final var closeActorsFuture = new CompletableActorFuture<Void>();
-    stepByStepClosing(closeActorsFuture, managedResources);
+    stepByStepClosing(closeActorsFuture, closingSteps);
 
     final var closingPartitionFuture = new CompletableActorFuture<Void>();
     closeActorsFuture.onComplete(closingPartitionFuture);
 
     return closingPartitionFuture;
+  }
+
+  private void addClosingStep(final String name, final AsyncClosable closable) {
+    closingSteps.add(new ClosingStep(name, closable));
   }
 
   private ActorFuture<Void> closeLogStream() {
@@ -611,22 +617,31 @@ public final class ZeebePartition extends Actor
   }
 
   private void stepByStepClosing(
-      final CompletableActorFuture<Void> closingFuture, final List<AsyncClosable> actorsToClose) {
+      final CompletableActorFuture<Void> closingFuture, final List<ClosingStep> actorsToClose) {
     if (actorsToClose.isEmpty()) {
       closingFuture.complete(null);
       return;
     }
 
-    final AsyncClosable asyncClosable = actorsToClose.remove(0);
-    asyncClosable
+    final ClosingStep closingStep = actorsToClose.remove(0);
+    LOG.debug("Closing Zeebe-Partition-{}: {}", partitionId, closingStep.getName());
+    closingStep
+        .getClosable()
         .closeAsync()
         .onComplete(
             (v, t) -> {
               if (t == null) {
-                LOG.debug("Closed {} successfully", asyncClosable);
+                LOG.debug(
+                    "Closing Zeebe-Partition-{}: {} closed successfully",
+                    partitionId,
+                    closingStep.getName());
                 stepByStepClosing(closingFuture, actorsToClose);
               } else {
-                LOG.debug("Unexpected exception on closing.", t);
+                LOG.error(
+                    "Closing Zeebe-Partition-{}: {} failed to close",
+                    partitionId,
+                    closingStep.getName(),
+                    t);
                 closingFuture.completeExceptionally(t);
               }
             });
@@ -638,11 +653,11 @@ public final class ZeebePartition extends Actor
       actor.run(
           () -> {
             final long commitPosition = indexed.<ZeebeEntry>cast().entry().highestPosition();
-            if (this.logStream == null) {
-              this.deferredCommitPosition = commitPosition;
+            if (logStream == null) {
+              deferredCommitPosition = commitPosition;
               return;
             }
-            this.logStream.setCommitPosition(commitPosition);
+            logStream.setCommitPosition(commitPosition);
           });
     }
   }
@@ -769,10 +784,29 @@ public final class ZeebePartition extends Actor
       final String name, final HealthMonitorable healthMonitorable) {
     criticalComponentsHealthMonitor.registerComponent(name, healthMonitorable);
 
-    managedResources.add(
+    addClosingStep(
+        "health component registration",
         () -> {
           criticalComponentsHealthMonitor.removeComponent(name);
           return CompletableActorFuture.completed(null);
         });
+  }
+
+  private static final class ClosingStep {
+    private final String name;
+    private final AsyncClosable closable;
+
+    private ClosingStep(final String name, final AsyncClosable closable) {
+      this.name = name;
+      this.closable = closable;
+    }
+
+    private String getName() {
+      return name;
+    }
+
+    private AsyncClosable getClosable() {
+      return closable;
+    }
   }
 }
