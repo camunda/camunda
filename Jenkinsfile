@@ -189,7 +189,7 @@ pipeline {
 
             post {
                 failure {
-                    zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**,hs_err*.log"
+                    zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
                     archive "**/hs_err_*.log"
 
                     script {
