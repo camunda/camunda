@@ -100,7 +100,7 @@ export default function Table({
   }
 
   const thead = useRef();
-  const tr = useRef();
+  const tbody = useRef();
   useEffect(() => {
     if (window.ResizeObserver) {
       const ro = new ResizeObserver((entries) => {
@@ -109,13 +109,13 @@ export default function Table({
           if (!Array.isArray(entries) || !entries.length) {
             return;
           }
-          if (tr.current && thead.current) {
-            thead.current.style.width = tr.current.clientWidth + 'px';
+          if (tbody.current && thead.current) {
+            thead.current.style.width = tbody.current.clientWidth + 'px';
           }
         });
       });
-      if (tr.current) {
-        ro.observe(tr.current);
+      if (tbody.current) {
+        ro.observe(tbody.current);
       }
     }
   }, []);
@@ -146,11 +146,11 @@ export default function Table({
             </tr>
           ))}
         </thead>
-        <tbody {...getTableBodyProps()} onScroll={onScroll}>
+        <tbody {...getTableBodyProps()} onScroll={onScroll} ref={tbody}>
           {page.map((row) => {
             prepareRow(row);
             return (
-              <tr {...row.getRowProps(row.original.__props)} ref={tr}>
+              <tr {...row.getRowProps(row.original.__props)}>
                 {row.cells.map((cell) => {
                   const props = cell.getCellProps();
                   return (
