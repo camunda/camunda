@@ -1,7 +1,12 @@
 // vim: set filetype=groovy:
 
+@Library(["camunda-ci", "zeebe-jenkins-shared-library"]) _
 
 def buildName = "${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
+
+//for develop branch keep builds for 7 days to be able to analyse build errors, for all other branches, keep the last 10 builds
+def daysToKeep = (env.BRANCH_NAME=='develop') ? '7' : '-1'
+def numToKeep = (env.BRANCH_NAME=='develop') ? '-1' : '10'
 
 pipeline {
     agent {
@@ -19,7 +24,7 @@ pipeline {
     }
 
     options {
-        buildDiscarder(logRotator(daysToKeepStr: '-1', numToKeepStr: '10'))
+        buildDiscarder(logRotator(daysToKeepStr: daysToKeep, numToKeepStr: numToKeep))
         timestamps()
         timeout(time: 45, unit: 'MINUTES')
     }
@@ -27,6 +32,17 @@ pipeline {
     stages {
         stage('Prepare') {
             steps {
+                script {
+                    commit_summary = sh([returnStdout: true, script: 'git show -s --format=%s']).trim()
+                    displayNameFull = "#" + BUILD_NUMBER + ': ' + commit_summary
+
+                    if (displayNameFull.length() <= 45) {
+                      currentBuild.displayName = displayNameFull
+                    } else {
+                      displayStringHardTruncate = displayNameFull.take(45)
+                      currentBuild.displayName = displayStringHardTruncate.take(displayStringHardTruncate.lastIndexOf(" "))
+                    }
+                }
                 container('maven') {
                     sh '.ci/scripts/distribution/prepare.sh'
                 }
@@ -36,6 +52,7 @@ pipeline {
                 container('golang') {
                     sh '.ci/scripts/distribution/prepare-go.sh'
                 }
+
             }
         }
 
@@ -100,6 +117,10 @@ pipeline {
                 }
 
                 stage('Unit (Java)') {
+                    environment {
+                      SUREFIRE_REPORT_NAME_SUFFIX = 'java'
+                    }
+
                     steps {
                         container('maven') {
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
@@ -107,8 +128,18 @@ pipeline {
                             }
                         }
                     }
+
+                    post {
+                        always {
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true
+                        }
+                    }
                 }
                 stage('Unit 8 (Java 8)') {
+                    environment {
+                      SUREFIRE_REPORT_NAME_SUFFIX = 'java8'
+                    }
+
                     steps {
                         container('maven-jdk8') {
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
@@ -116,9 +147,19 @@ pipeline {
                             }
                         }
                     }
+
+                    post {
+                        always {
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true
+                        }
+                    }
                 }
 
                 stage('IT (Java)') {
+                    environment {
+                      SUREFIRE_REPORT_NAME_SUFFIX = 'it'
+                    }
+
                     steps {
                         container('maven') {
                             configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
@@ -126,25 +167,36 @@ pipeline {
                             }
                         }
                     }
+
+                    post {
+                        always {
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true
+                        }
+                    }
                 }
 
                 stage('Build Docs') {
                     steps {
+                      retry(3) {
                         container('maven') {
                             sh '.ci/scripts/docs/prepare.sh'
                             sh '.ci/scripts/docs/build.sh'
                         }
+                      }
                     }
                 }
             }
 
             post {
-                always {
-                    junit testResults: "**/*/TEST-*.xml", keepLongStdio: true
-                }
-
                 failure {
-                    archive "**/*/surefire-reports/*-output.txt"
+                    zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
+                    archive "**/hs_err_*.log"
+
+                    script {
+                      if (fileExists('./target/FlakyTests.txt')) {
+                          currentBuild.description = "Flaky Tests: <br>" + readFile('./target/FlakyTests.txt').split('\n').join('<br>')
+                      }
+                    }
                 }
             }
         }
@@ -152,9 +204,11 @@ pipeline {
         stage('Upload') {
             when { anyOf { branch 'develop'; branch 'stable/0.23' } }
             steps {
-                container('maven') {
-                    configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
-                        sh '.ci/scripts/distribution/upload.sh'
+                retry(3) {
+                    container('maven') {
+                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                            sh '.ci/scripts/distribution/upload.sh'
+                        }
                     }
                 }
             }
@@ -170,21 +224,25 @@ pipeline {
                     }
 
                     steps {
-                        build job: 'zeebe-docker', parameters: [
-                            string(name: 'BRANCH', value: env.BRANCH_NAME),
-                            string(name: 'VERSION', value: 'SNAPSHOT-0.23'),
-                            booleanParam(name: 'IS_LATEST', value: env.BRANCH_NAME == 'master')
-                        ]
+                        retry(3) {
+                            build job: 'zeebe-docker', parameters: [
+                                string(name: 'BRANCH', value: env.BRANCH_NAME),
+                                string(name: 'VERSION', value: 'SNAPSHOT-0.23'),
+                                booleanParam(name: 'IS_LATEST', value: env.BRANCH_NAME == 'master')
+                             ]
+                        }
                     }
                 }
 
                 stage('Docs') {
                     when { anyOf { branch 'master'; branch 'develop' } }
                     steps {
-                        build job: 'zeebe-docs', parameters: [
-                            string(name: 'BRANCH', value: env.BRANCH_NAME),
-                            booleanParam(name: 'LIVE', value: env.BRANCH_NAME == 'master')
-                        ]
+                        retry(3) {
+                            build job: 'zeebe-docs', parameters: [
+                                string(name: 'BRANCH', value: env.BRANCH_NAME),
+                                booleanParam(name: 'LIVE', value: env.BRANCH_NAME == 'master')
+                            ]
+                        }
                     }
                 }
             }
@@ -195,14 +253,22 @@ pipeline {
         always {
             // Retrigger the build if there were connection issues
             script {
-                if (connectionProblem()) {
+                if (agentDisconnected()) {
+                    currentBuild.result = 'ABORTED'
+                    currentBuild.description = "Aborted due to connection error"
+
                     build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
                 }
             }
         }
+        changed {
+            script {
+                if (env.BRANCH_NAME == 'develop') {
+                    slackSend(
+                        channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+                        message: "Zeebe ${env.BRANCH_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
+                }
+            }
+        }
     }
-}
-
-boolean connectionProblem() {
-  return currentBuild.rawBuild.getLog(500).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|Connection reset|ProtocolException).*/
 }

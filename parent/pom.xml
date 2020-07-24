@@ -763,6 +763,7 @@
                 <value>io.zeebe.ZeebeTestListener</value>
               </property>
             </properties>
+            <reportNameSuffix>${env.SUREFIRE_REPORT_NAME_SUFFIX}</reportNameSuffix>
           </configuration>
         </plugin>
 
