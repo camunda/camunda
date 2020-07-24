@@ -31,7 +31,10 @@ import org.springframework.stereotype.Component;
 @Component("webSecurityConfig")
 public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-  public static final String ROOT = "/";
+  public static final String ROOT_URL = "/";
+  public static final String ERROR_URL = "/error";
+  public static final String GRAPHQL_URL = "/graphql";
+  public static final String ROOT = ROOT_URL;
   public static final String SSO_AUTH_PROFILE = "sso-auth";
   public static final String LOGIN_RESOURCE = "/api/login";
   public static final String LOGOUT_RESOURCE = "/api/logout";
@@ -40,21 +43,16 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
   public static final String ACTUATOR_ENDPOINTS = "/actuator/**";
   public static final String REQUESTED_URL = "requestedUrl";
   private static final Logger LOGGER = LoggerFactory.getLogger(SSOController.class);
-  private static final String API = "/api/**";
+
   private static final String[] AUTH_WHITELIST = {
-    // -- swagger ui
-    "/swagger-resources",
-    "/swagger-resources/**",
-    "/swagger-ui.html",
-    "/documentation",
     "/webjars/**",
-    "/error",
+    ERROR_URL,
+    CLIENT_CONFIG_RESOURCE,
     HealthCheckRestService.HEALTH_CHECK_URL,
-    NO_PERMISSION,
-    LOGOUT_RESOURCE,
     ACTUATOR_ENDPOINTS,
+    NO_PERMISSION,
     LOGIN_RESOURCE,
-    CLIENT_CONFIG_RESOURCE
+    LOGOUT_RESOURCE
   };
   /**
    * Defines the domain which the user always sees<br>
@@ -107,7 +105,7 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
         .authorizeRequests()
         .antMatchers(AUTH_WHITELIST)
         .permitAll()
-        .antMatchers(API, ROOT)
+        .antMatchers(GRAPHQL_URL, ROOT_URL, ERROR_URL)
         .authenticated()
         .and()
         .exceptionHandling()

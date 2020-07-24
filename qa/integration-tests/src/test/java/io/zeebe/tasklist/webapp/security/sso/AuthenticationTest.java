@@ -6,18 +6,23 @@
 package io.zeebe.tasklist.webapp.security.sso;
 
 import static io.zeebe.tasklist.util.CollectionUtil.asMap;
+import static io.zeebe.tasklist.webapp.security.WebSecurityConfig.X_CSRF_HEADER;
+import static io.zeebe.tasklist.webapp.security.WebSecurityConfig.X_CSRF_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNotNull;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
 
 import com.auth0.AuthenticationController;
 import com.auth0.AuthorizeUrl;
 import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
-import io.zeebe.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.graphql.spring.boot.test.GraphQLResponse;
+import io.zeebe.tasklist.util.TasklistIntegrationTest;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
@@ -25,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.json.JSONObject;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,13 +47,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = {
-      TestApplicationWithNoBeans.class,
-      SSOWebSecurityConfig.class,
-      SSOController.class,
-      TokenAuthentication.class,
-      SSOUserReader.class
-    },
     properties = {
       "zeebe.tasklist.auth0.clientId=1",
       "zeebe.tasklist.auth0.clientSecret=2",
@@ -59,8 +56,15 @@ import org.springframework.test.context.junit4.SpringRunner;
       "zeebe.tasklist.auth0.claimName=claimName"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("sso-auth")
-public class AuthenticationTest {
+@ActiveProfiles({"sso-auth", "test"})
+public class AuthenticationTest extends TasklistIntegrationTest {
+
+  private static final String CURRENT_USER_QUERY =
+      "{currentUser{ username \n lastname \n firstname }}";
+
+  private static final String COOKIE_KEY = "Cookie";
+
+  private static final String TASKLIST_TESTUSER = "tasklist-testuser";
 
   @LocalServerPort int randomServerPort;
 
@@ -69,6 +73,8 @@ public class AuthenticationTest {
   @Autowired SSOWebSecurityConfig ssoConfig;
 
   @MockBean AuthenticationController authenticationController;
+
+  @Autowired private ObjectMapper objectMapper;
 
   @Before
   public void setUp() throws Throwable {
@@ -85,30 +91,9 @@ public class AuthenticationTest {
 
   @Test
   public void testLoginSuccess() throws Exception {
-    // Step 1 try to access document root
-    ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
-    final HttpEntity<?> cookies = httpEntityWithCookie(response);
+    final HttpEntity<?> cookies = loginWithSSO();
+    final ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT, cookies);
 
-    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
-
-    // Step 2 Get Login provider url
-    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE, cookies);
-    assertThat(redirectLocationIn(response))
-        .contains(
-            ssoConfig.getDomain(),
-            SSOWebSecurityConfig.CALLBACK_URI,
-            ssoConfig.getClientId(),
-            ssoConfig.getBackendDomain());
-    // Step 3 Call back uri with valid userinfos
-    // mock building tokens
-    given(authenticationController.handle(isNotNull(), isNotNull()))
-        .willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
-
-    response = get(SSOWebSecurityConfig.CALLBACK_URI, cookies);
-    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.ROOT));
-
-    response = get(SSOWebSecurityConfig.ROOT, cookies);
-    // Check if access to url possible
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
 
@@ -173,14 +158,9 @@ public class AuthenticationTest {
   @Test
   public void testLogout() throws Throwable {
     // Step 1 Login
-    ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
-    final HttpEntity<?> cookies = httpEntityWithCookie(response);
-    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE, cookies);
-    given(authenticationController.handle(isNotNull(), isNotNull()))
-        .willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
-    response = get(SSOWebSecurityConfig.CALLBACK_URI, cookies);
-    response = get(SSOWebSecurityConfig.ROOT, cookies);
-
+    final HttpEntity<?> cookies = loginWithSSO();
+    // Step 3 Now we should have access to root
+    ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT, cookies);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     // Step 2 logout
     response = get(SSOWebSecurityConfig.LOGOUT_RESOURCE, cookies);
@@ -195,41 +175,49 @@ public class AuthenticationTest {
     assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
   }
 
-  @Ignore("Will be done in #145")
   @Test
   public void testLoginToAPIResource() throws Exception {
-    // Step 1 try to access user info
-    final String userInfoUrl = "/api/authentications/user";
-    ResponseEntity<String> response = get(userInfoUrl);
+    // Step 1: try to access current user
+    ResponseEntity<String> response = getCurrentUserByGraphQL(new HttpEntity<>(new HttpHeaders()));
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
+
     assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
 
-    // Save cookie for further requests
-    final HttpEntity<?> httpEntity = httpEntityWithCookie(response);
-
-    // Step 2 Get Login provider url
-    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE, httpEntity);
-
+    // Step 2: Get Login provider url
+    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response))
         .contains(
             ssoConfig.getDomain(),
             SSOWebSecurityConfig.CALLBACK_URI,
             ssoConfig.getClientId(),
             ssoConfig.getBackendDomain());
-    // Step 3 Call back uri
+    // Step 3 Call back uri with valid userinfos
+    // mock building tokens
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
 
-    response = get(SSOWebSecurityConfig.CALLBACK_URI, httpEntity);
-    assertThatRequestIsRedirectedTo(response, urlFor(userInfoUrl));
-    response = get(userInfoUrl, httpEntity);
-    assertThat(response.getBody()).contains("\"lastname\":\"tasklist-testuser\"");
+    response = get(SSOWebSecurityConfig.CALLBACK_URI, cookies);
+    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.GRAPHQL_URL));
+
+    // when
+    final ResponseEntity<String> responseEntity = getCurrentUserByGraphQL(cookies);
+
+    // then
+    assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+    final GraphQLResponse graphQLResponse = new GraphQLResponse(responseEntity, objectMapper);
+    assertThat(graphQLResponse.get("$.data.currentUser.username")).isEqualTo(TASKLIST_TESTUSER);
+    assertThat(graphQLResponse.get("$.data.currentUser.firstname")).isEqualTo("");
+    assertThat(graphQLResponse.get("$.data.currentUser.lastname")).isEqualTo(TASKLIST_TESTUSER);
   }
 
-  private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
-    final HttpHeaders headers = new HttpHeaders();
-    headers.add("Cookie", response.getHeaders().get("Set-Cookie").get(0));
-    final HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>(), headers);
-    return httpEntity;
+  private ResponseEntity<String> getCurrentUserByGraphQL(final HttpEntity<?> cookies) {
+    final ResponseEntity<String> responseEntity =
+        testRestTemplate.exchange(
+            SSOWebSecurityConfig.GRAPHQL_URL,
+            HttpMethod.POST,
+            prepareRequestWithCookies(cookies.getHeaders(), CURRENT_USER_QUERY),
+            String.class);
+    return responseEntity;
   }
 
   @Test
@@ -260,7 +248,7 @@ public class AuthenticationTest {
   }
 
   protected Tokens tokensFrom(String claim, String organization) {
-    final String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
+    final String emptyJSONEncoded = toEncodedToken(Collections.emptyMap());
     final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
     final String accountData =
         toEncodedToken(
@@ -270,7 +258,7 @@ public class AuthenticationTest {
                 "exp",
                 expiresInSeconds,
                 "name",
-                "tasklist-testuser"));
+                TASKLIST_TESTUSER));
     return new Tokens(
         "accessToken",
         emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
@@ -289,5 +277,65 @@ public class AuthenticationTest {
 
   protected String toJSON(Map<String, ?> map) {
     return new JSONObject(map).toString();
+  }
+
+  private HttpEntity<?> loginWithSSO() throws IdentityVerificationException {
+    // Step 1 try to access document root
+    ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
+    final HttpEntity<?> cookies = httpEntityWithCookie(response);
+
+    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
+
+    // Step 2 Get Login provider url
+    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE, cookies);
+    assertThat(redirectLocationIn(response))
+        .contains(
+            ssoConfig.getDomain(),
+            SSOWebSecurityConfig.CALLBACK_URI,
+            ssoConfig.getClientId(),
+            ssoConfig.getBackendDomain());
+    // Step 3 Call back uri with valid userinfos
+    // mock building tokens
+    given(authenticationController.handle(isNotNull(), isNotNull()))
+        .willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
+
+    get(SSOWebSecurityConfig.CALLBACK_URI, cookies);
+    return cookies;
+  }
+
+  private HttpEntity<?> httpEntityWithCookie(ResponseEntity<String> response) {
+    final HttpHeaders headers = new HttpHeaders();
+    if (response.getHeaders().containsKey("Set-Cookie")) {
+      headers.add(COOKIE_KEY, response.getHeaders().get("Set-Cookie").get(0));
+    }
+    final HttpEntity<?> httpEntity = new HttpEntity<>(new HashMap<>(), headers);
+    return httpEntity;
+  }
+
+  private HttpEntity<Map<String, ?>> prepareRequestWithCookies(
+      HttpHeaders httpHeaders, String graphQlQuery) {
+
+    final HttpHeaders headers = getHeaderWithCSRF(httpHeaders);
+    headers.setContentType(APPLICATION_JSON);
+    if (httpHeaders.containsKey(COOKIE_KEY)) {
+      headers.add(COOKIE_KEY, httpHeaders.get(COOKIE_KEY).get(0));
+    }
+
+    final HashMap<String, String> body = new HashMap<>();
+    if (graphQlQuery != null) {
+      body.put("query", graphQlQuery);
+    }
+
+    return new HttpEntity<>(body, headers);
+  }
+
+  private HttpHeaders getHeaderWithCSRF(HttpHeaders responseHeaders) {
+    final HttpHeaders headers = new HttpHeaders();
+    if (responseHeaders.containsKey(X_CSRF_HEADER)) {
+      final String csrfHeader = responseHeaders.get(X_CSRF_HEADER).get(0);
+      final String csrfToken = responseHeaders.get(X_CSRF_TOKEN).get(0);
+      headers.set(csrfHeader, csrfToken);
+    }
+    return headers;
   }
 }
