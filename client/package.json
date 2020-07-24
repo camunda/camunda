@@ -28,7 +28,7 @@
     "react-date-range": "^1.0.3",
     "react-dom": "^16.13.1",
     "react-full-screen": "^0.2.5",
-    "react-grid-layout": "^0.18.3",
+    "react-grid-layout": "^1.0.0",
     "react-markdown": "^4.3.1",
     "react-resizable": "^1.10.1",
     "react-router": "^5.0.1",
