@@ -68,7 +68,7 @@ export default function NumVariableBucket({
           isInvalid={!baseValid}
           onBlur={flush}
           onChange={(evt) => {
-            const valid = !isNaN(evt.target.value);
+            const valid = numberParser.isFloatNumber(evt.target.value);
             setBaseValid(valid);
             applyChanges('baseline', evt.target.value, valid);
           }}

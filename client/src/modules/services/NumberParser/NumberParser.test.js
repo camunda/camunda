@@ -14,6 +14,8 @@ it('should check for valid float number', () => {
   expect(numberParser.isFloatNumber('-123.123')).toBe(true);
   expect(numberParser.isFloatNumber('123.a')).toBe(false);
   expect(numberParser.isFloatNumber('as.12')).toBe(false);
+  expect(numberParser.isFloatNumber('-323e8')).toBe(true);
+  expect(numberParser.isFloatNumber('12.233.3')).toBe(false);
 });
 
 it('should check for positive number', () => {
