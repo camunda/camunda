@@ -12,7 +12,6 @@ import static io.zeebe.engine.processor.TypedRecordProcessors.processors;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.zeebe.engine.state.ZeebeState;
@@ -82,13 +81,14 @@ public class StreamProcessorHealthTest {
     final long firstPosition =
         streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
     streamProcessorRule.writeWorkflowInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
-    assertThat(
+
+    waitUntil(
+        () ->
             streamProcessorRule
                 .events()
                 .onlyWorkflowInstanceRecords()
                 .withIntent(ELEMENT_ACTIVATED)
-                .exists())
-        .isTrue();
+                .exists());
 
     streamProcessor = getErrorProneStreamProcessor();
     final var healthStatusCheck = HealthStatusCheck.of(streamProcessor);
@@ -199,13 +199,31 @@ public class StreamProcessorHealthTest {
 
                           invocation.getAndIncrement();
                           if (shouldProcessingThrowException.get()) {
-                            throw new RuntimeException("processing failed");
+                            throw new RuntimeException("Expected failure on processing");
                           }
                         }
                       });
             });
 
     return streamProcessor;
+  }
+
+  private static final class HealthStatusCheck extends Actor {
+    private final StreamProcessor streamProcessor;
+
+    private HealthStatusCheck(final StreamProcessor streamProcessor) {
+      this.streamProcessor = streamProcessor;
+    }
+
+    public static HealthStatusCheck of(final StreamProcessor streamProcessor) {
+      return new HealthStatusCheck(streamProcessor);
+    }
+
+    public boolean hasHealthStatus(final HealthStatus healthStatus) {
+      return actor
+          .call(() -> streamProcessor.getHealthStatus() == healthStatus)
+          .join(5, TimeUnit.SECONDS);
+    }
   }
 
   private final class WrappedStreamWriter implements TypedStreamWriter {
@@ -242,7 +260,7 @@ public class StreamProcessorHealthTest {
     public void appendFollowUpEvent(
         final long key, final Intent intent, final UnpackedObject value) {
       if (shouldFailErrorHandlingInTransaction.get()) {
-        throw new RuntimeException("append followup event failed");
+        throw new RuntimeException("Expected failure on append followup event");
       }
       wrappedWriter.appendFollowUpEvent(key, intent, value);
     }
@@ -254,7 +272,7 @@ public class StreamProcessorHealthTest {
         final UnpackedObject value,
         final Consumer<RecordMetadata> metadata) {
       if (shouldFailErrorHandlingInTransaction.get()) {
-        throw new RuntimeException("append followup event failed");
+        throw new RuntimeException("Expected failure on append followup event");
       }
       wrappedWriter.appendFollowUpEvent(key, intent, value, metadata);
     }
@@ -292,27 +310,9 @@ public class StreamProcessorHealthTest {
     @Override
     public long flush() {
       if (shouldFlushThrowException.get()) {
-        throw new RuntimeException("flush failed");
+        throw new RuntimeException("Expected failure on flush");
       }
       return wrappedWriter.flush();
-    }
-  }
-
-  private static final class HealthStatusCheck extends Actor {
-    private final StreamProcessor streamProcessor;
-
-    private HealthStatusCheck(final StreamProcessor streamProcessor) {
-      this.streamProcessor = streamProcessor;
-    }
-
-    public static HealthStatusCheck of(final StreamProcessor streamProcessor) {
-      return new HealthStatusCheck(streamProcessor);
-    }
-
-    public boolean hasHealthStatus(final HealthStatus healthStatus) {
-      return actor
-          .call(() -> streamProcessor.getHealthStatus() == healthStatus)
-          .join(5, TimeUnit.SECONDS);
     }
   }
 }
