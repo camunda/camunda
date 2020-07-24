@@ -20,7 +20,11 @@
         "alwaysShowAbsolute": false,
         "showGradientBars": true,
         "xml": null,
-        "excludedColumns": [],
+        "tableColumns": {
+          "includeNewVariables": true,
+          "includedColumns": [],
+          "excludedColumns": []
+        },
         "columnOrder": {
           "inputVariables": [],
           "instanceProps": [],
@@ -132,7 +136,11 @@
         "alwaysShowAbsolute": false,
         "showGradientBars": true,
         "xml": null,
-        "excludedColumns": [],
+        "tableColumns": {
+          "includeNewVariables": true,
+          "includedColumns": [],
+          "excludedColumns": []
+        },
         "columnOrder": {
           "inputVariables": [],
           "instanceProps": [],

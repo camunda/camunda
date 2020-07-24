@@ -454,6 +454,7 @@
         }
       },
       "includeTableColumn": "Table columns to include",
+      "includeNewVariables": "Display data from new variables",
       "showGradientBars": "Show Gradient Bars",
       "bucket": {
         "buckets": "Buckets",

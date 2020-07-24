@@ -90,7 +90,13 @@ export default withErrorHandling(
         processDefinitionVersions: {$set: versions},
         tenantIds: {$set: tenantIds},
         configuration: {
-          excludedColumns: {$set: []},
+          tableColumns: {
+            $set: {
+              includeNewVariables: true,
+              includedColumns: [],
+              excludedColumns: [],
+            },
+          },
           columnOrder: {
             $set: {
               inputVariables: [],

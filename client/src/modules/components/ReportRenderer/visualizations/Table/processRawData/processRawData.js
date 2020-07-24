@@ -10,7 +10,7 @@ import {format} from 'dates';
 import {formatters} from 'services';
 import {t} from 'translation';
 
-import {sortColumns, cockpitLink, getNoDataMessage} from './service';
+import {sortColumns, cockpitLink, getNoDataMessage, isVisibleColumn} from './service';
 
 const {duration} = formatters;
 
@@ -19,7 +19,7 @@ export default function processRawData(
     report: {
       data: {
         configuration: {
-          excludedColumns = [],
+          tableColumns,
           columnOrder = {instanceProps: [], variables: [], inputVariables: [], outputVariables: []},
         },
       },
@@ -28,19 +28,17 @@ export default function processRawData(
   },
   endpoints = {}
 ) {
-  const allColumnsLength =
-    Object.keys(result[0]).length - 1 + Object.keys(result[0].variables).length;
-  // If all columns is excluded return a message to enable one
-  if (allColumnsLength === excludedColumns.length) {
+  const instanceProps = Object.keys(result[0]).filter(
+    (entry) => entry !== 'variables' && isVisibleColumn(entry, tableColumns)
+  );
+  const variableNames = Object.keys(result[0].variables).filter((entry) =>
+    isVisibleColumn('variable:' + entry, tableColumns)
+  );
+
+  // If all columns are excluded return a message to enable one
+  if (instanceProps.length + variableNames.length === 0) {
     return getNoDataMessage();
   }
-
-  const instanceProps = Object.keys(result[0]).filter(
-    (entry) => entry !== 'variables' && !excludedColumns.includes(entry)
-  );
-  const variableNames = Object.keys(result[0].variables).filter(
-    (entry) => !excludedColumns.includes('variable:' + entry)
-  );
 
   const body = result.map((instance) => {
     const row = instanceProps.map((entry) => {

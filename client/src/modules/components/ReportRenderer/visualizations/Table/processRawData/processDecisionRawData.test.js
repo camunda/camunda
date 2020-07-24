@@ -10,7 +10,11 @@ import React from 'react';
 
 const data = {
   configuration: {
-    excludedColumns: [],
+    tableColumns: {
+      includeNewVariables: true,
+      includedColumns: [],
+      excludedColumns: [],
+    },
   },
 };
 
@@ -109,12 +113,16 @@ it('should show no data message when all column are excluded for decision tables
         result,
         data: {
           configuration: {
-            excludedColumns: [
-              'decisionInstanceId',
-              'decisionDefinitionId',
-              'input:var1',
-              'output:result',
-            ],
+            tableColumns: {
+              includeNewVariables: true,
+              includedColumns: [],
+              excludedColumns: [
+                'decisionInstanceId',
+                'decisionDefinitionId',
+                'input:var1',
+                'output:result',
+              ],
+            },
           },
         },
       },

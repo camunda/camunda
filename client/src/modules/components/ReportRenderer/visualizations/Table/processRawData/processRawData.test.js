@@ -14,7 +14,11 @@ import processRawData from './processRawData';
 
 const data = {
   configuration: {
-    excludedColumns: [],
+    tableColumns: {
+      includeNewVariables: true,
+      includedColumns: [],
+      excludedColumns: [],
+    },
   },
 };
 
@@ -56,22 +60,27 @@ it('should transform data to table compatible format', () => {
 it('should not include columns that are hidden', () => {
   const data = {
     configuration: {
-      excludedColumns: ['processDefinitionId'],
+      tableColumns: {
+        includeNewVariables: false,
+        includedColumns: ['processInstanceId'],
+        excludedColumns: ['processDefinitionId', 'variable:var1', 'variable:var1'],
+      },
     },
   };
   expect(processRawData({report: {data, result}})).toEqual({
-    head: ['Process Instance Id', {label: 'Variables', columns: ['var1', 'var2']}],
-    body: [
-      ['foo', '12', ''],
-      ['xyz', '', 'true'],
-    ],
+    body: [['foo'], ['xyz']],
+    head: ['Process Instance Id'],
   });
 });
 
 it('should exclude variable columns using the variable prefix', () => {
   const data = {
     configuration: {
-      excludedColumns: ['variable:var1'],
+      tableColumns: {
+        includeNewVariables: true,
+        includedColumns: [],
+        excludedColumns: ['variable:var1'],
+      },
     },
   };
   expect(processRawData({report: {data, result}})).toEqual({
@@ -155,12 +164,16 @@ it('should not make the processInstanceId a link if no endpoint is specified', (
 it('should show no data message when all column are excluded', () => {
   const data = {
     configuration: {
-      excludedColumns: [
-        'processInstanceId',
-        'processDefinitionId',
-        'variable:var1',
-        'variable:var2',
-      ],
+      tableColumns: {
+        includeNewVariables: true,
+        includedColumns: [],
+        excludedColumns: [
+          'processInstanceId',
+          'processDefinitionId',
+          'variable:var1',
+          'variable:var2',
+        ],
+      },
     },
   };
   expect(processRawData({report: {data, result}})).toEqual({

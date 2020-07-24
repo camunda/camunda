@@ -454,6 +454,7 @@
         }
       },
       "includeTableColumn": "Zu berücksichtigende Tabellenspalten",
+      "includeNewVariables": "Daten von neuen Variablen anzeigen",
       "showGradientBars": "Verlaufsbalken anzeigen",
       "bucket": {
         "buckets": "Buckets",
