@@ -334,22 +334,31 @@ public class InterruptingEventSubprocessTest {
             "timer-event-subprocess",
             s -> s.startEvent("other-timer").timerWithDuration("P1D").endEvent());
 
-    final long wfInstanceKey = createInstanceAndTriggerEvent(workflow(eventSubprocess));
+    final long wfInstanceKey = createInstanceAndWaitForTask(workflow(eventSubprocess));
+
+    RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.OPENED)
+        .withWorkflowInstanceKey(wfInstanceKey)
+        .withMessageName("other-message")
+        .await();
+
+    triggerEventSubprocess.accept(wfInstanceKey);
 
     // then
     assertThat(
-            RecordingExporter.messageSubscriptionRecords()
+            RecordingExporter.records()
+                .limitToWorkflowInstance(wfInstanceKey)
+                .messageSubscriptionRecords()
                 .withWorkflowInstanceKey(wfInstanceKey)
-                .withMessageName("other-message")
-                .limit(4))
+                .withMessageName("other-message"))
         .extracting(Record::getIntent)
         .contains(MessageSubscriptionIntent.CLOSED);
 
     assertThat(
-            RecordingExporter.timerRecords()
+            RecordingExporter.records()
+                .limitToWorkflowInstance(wfInstanceKey)
+                .timerRecords()
                 .withWorkflowInstanceKey(wfInstanceKey)
-                .withHandlerNodeId("other-timer")
-                .limit(4))
+                .withHandlerNodeId("other-timer"))
         .extracting(Record::getIntent)
         .contains(TimerIntent.CANCELED);
   }
