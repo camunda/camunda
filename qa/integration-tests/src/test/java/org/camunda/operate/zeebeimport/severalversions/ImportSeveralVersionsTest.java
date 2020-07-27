@@ -76,6 +76,7 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
     testContainerUtil.stopAll();
   }
 
+  @Ignore("OPE-1044")
   @Test
   public void shouldImportFromSeveralZeebeVersions() throws PersistenceException {
     //when
