@@ -20,6 +20,7 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.Ignore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.SpyBean;
