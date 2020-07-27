@@ -10,11 +10,17 @@ import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_IS_DEPLOYED_CHECK;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
+import com.graphql.spring.boot.test.GraphQLResponse;
+import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
+import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
@@ -69,6 +75,10 @@ public class TasklistTester {
 
   @Autowired private TasklistProperties tasklistProperties;
 
+  @Autowired private GraphQLTestTemplate graphQLTestTemplate;
+
+  private GraphQLResponse graphQLResponse;
+
   //
   //  private boolean operationExecutorEnabled = true;
   //
@@ -92,6 +102,80 @@ public class TasklistTester {
             .endEvent()
             .done();
     workflowId = ZeebeTestUtil.deployWorkflow(zeebeClient, workflow, processId + ".bpmn");
+    return this;
+  }
+
+  public TasklistTester createCreatedAndCompletedTasks(
+      String processId, String flowNodeBpmnId, int created, int completed) {
+    createAndDeploySimpleWorkflow(processId, flowNodeBpmnId).waitUntil().workflowIsDeployed();
+    // complete tasks
+    for (int i = 0; i < completed; i++) {
+      startWorkflowInstance(processId).and().completeHumanTask(flowNodeBpmnId);
+    }
+    // start more workflow instances
+    for (int i = 0; i < created; i++) {
+      startWorkflowInstance(processId).waitUntil().taskIsCreated(flowNodeBpmnId);
+    }
+    return this;
+  }
+
+  public GraphQLResponse getByQueryResource(String resource) throws IOException {
+    graphQLResponse = graphQLTestTemplate.postForResource(resource);
+    return graphQLResponse;
+  }
+
+  public GraphQLResponse getByQuery(String query) {
+    graphQLResponse = graphQLTestTemplate.postMultipart(query, "{}");
+    return graphQLResponse;
+  }
+
+  public GraphQLResponse getTaskByQuery(String query) {
+    graphQLResponse = graphQLTestTemplate.postMultipart(query, "{}");
+    return graphQLResponse;
+  }
+
+  public List<TaskDTO> getTasksByQuery(String query) {
+    graphQLResponse = graphQLTestTemplate.postMultipart(query, "{}");
+    return getTasksByPath("$.data.tasks");
+  }
+
+  public List<TaskDTO> getCreatedTasks() throws IOException {
+    graphQLResponse =
+        graphQLTestTemplate.postForResource("graphql/taskIT/get-created-tasks.graphql");
+    return getTasksByPath("$.data.tasks");
+  }
+
+  public GraphQLResponse getCompletedTasks() throws IOException {
+    graphQLResponse =
+        graphQLTestTemplate.postForResource("graphql/taskIT/get-completed-tasks.graphql");
+    return graphQLResponse;
+  }
+
+  public GraphQLResponse getAllTasks() throws IOException {
+    graphQLResponse = graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+    return graphQLResponse;
+  }
+
+  public List<TaskDTO> getTasksByPath(String path) {
+    return graphQLResponse.getList(path, TaskDTO.class);
+  }
+
+  @SuppressWarnings("unchecked")
+  public Map<String, Object> getByPath(String path) {
+    return graphQLResponse.get(path, Map.class);
+  }
+
+  public String get(String path) {
+    return graphQLResponse.get(path);
+  }
+
+  public TasklistTester claimTask(String claimRequest) {
+    getByQuery(claimRequest);
+    return this;
+  }
+
+  public TasklistTester unclaimTask(String unclaimRequest) {
+    getByQuery(unclaimRequest);
     return this;
   }
 
@@ -176,7 +260,24 @@ public class TasklistTester {
     return this;
   }
 
+  public TasklistTester then() {
+    return this;
+  }
+
+  public TasklistTester having() {
+    return this;
+  }
+
+  public TasklistTester when() {
+    return this;
+  }
+
   public TasklistTester waitUntil() {
+    return this;
+  }
+
+  public TasklistTester waitFor(long milliseconds) {
+    ThreadUtil.sleepFor(milliseconds);
     return this;
   }
   //

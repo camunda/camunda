@@ -48,4 +48,6 @@ type Query {
 
 type Mutation {
     completeTask(taskId: String!, variables: [VariableInput!]!): Boolean!
+    claimTask(taskId: String!): Task!				
+	unclaimTask(taskId: String!): Task!
 }

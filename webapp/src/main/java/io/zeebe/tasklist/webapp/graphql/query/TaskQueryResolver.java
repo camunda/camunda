@@ -20,15 +20,17 @@ import org.springframework.stereotype.Component;
 @Component
 public final class TaskQueryResolver implements GraphQLQueryResolver {
 
-  @Autowired private TaskReaderWriter taskReader;
+  @Autowired private TaskReaderWriter taskReaderWriter;
 
   public List<TaskDTO> tasks(TaskQueryDTO query, DataFetchingEnvironment dataFetchingEnvironment) {
-    final List<SelectedField> fields = dataFetchingEnvironment.getSelectionSet().getFields();
-    return taskReader.getTasks(query, map(fields, sf -> sf.getName()));
+    return taskReaderWriter.getTasks(query, getFieldNames(dataFetchingEnvironment));
   }
 
   public TaskDTO task(String id, DataFetchingEnvironment dataFetchingEnvironment) {
-    final List<SelectedField> fields = dataFetchingEnvironment.getSelectionSet().getFields();
-    return taskReader.getTask(id, map(fields, sf -> sf.getName()));
+    return taskReaderWriter.getTask(id, getFieldNames(dataFetchingEnvironment));
+  }
+
+  private List<String> getFieldNames(DataFetchingEnvironment dataFetchingEnvironment) {
+    return map(dataFetchingEnvironment.getSelectionSet().getFields(), SelectedField::getName);
   }
 }

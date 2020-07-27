@@ -13,14 +13,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.graphql.spring.boot.test.GraphQLResponse;
-import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
-import io.zeebe.tasklist.zeebe.ImportValueType;
+import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -35,7 +34,10 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   public static final String BPMN_PROCESS_ID = "testProcess";
   public static final String GET_TASK_QUERY_PATTERN =
       "{task(id: \"%s\"){id name workflowName creationTime completionTime assignee {username} variables {name} taskState}}";
-  @Autowired private GraphQLTestTemplate graphQLTestTemplate;
+  public static final String TASK_RESULT_PATTERN =
+      "{id name assignee {username firstname lastname}}";
+  public static final String CLAIM_TASK_MUTATION_PATTERN =
+      "mutation {claimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
 
   @Autowired
   @Qualifier(TASK_IS_CREATED_CHECK)
@@ -43,23 +45,23 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldReturnAllTasks() throws IOException {
-    // having
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
-    tester
-        .createAndDeploySimpleWorkflow(bpmnProcessId, flowNodeBpmnId)
-        .waitUntil()
-        .workflowIsDeployed()
-        .and()
-        .startWorkflowInstance(bpmnProcessId)
-        .startWorkflowInstance(bpmnProcessId)
-        .startWorkflowInstance(bpmnProcessId)
-        .waitUntil()
-        .taskIsCreated(flowNodeBpmnId);
 
-    // when
     final GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+        tester
+            .having()
+            .createAndDeploySimpleWorkflow(bpmnProcessId, flowNodeBpmnId)
+            .waitUntil()
+            .workflowIsDeployed()
+            .and()
+            .startWorkflowInstance(bpmnProcessId)
+            .startWorkflowInstance(bpmnProcessId)
+            .startWorkflowInstance(bpmnProcessId)
+            .waitUntil()
+            .taskIsCreated(flowNodeBpmnId)
+            .when()
+            .getAllTasks();
 
     // then
     assertTrue(response.isOk());
@@ -90,21 +92,21 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldReturnCompletedTask() throws IOException {
-    // having
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
-    tester
-        .createAndDeploySimpleWorkflow(bpmnProcessId, flowNodeBpmnId)
-        .waitUntil()
-        .workflowIsDeployed()
-        .and()
-        .startWorkflowInstance(bpmnProcessId)
-        .and()
-        .completeHumanTask(flowNodeBpmnId);
 
-    // when
     final GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+        tester
+            .having()
+            .createAndDeploySimpleWorkflow(bpmnProcessId, flowNodeBpmnId)
+            .waitUntil()
+            .workflowIsDeployed()
+            .and()
+            .startWorkflowInstance(bpmnProcessId)
+            .and()
+            .completeHumanTask(flowNodeBpmnId)
+            .when()
+            .getAllTasks();
 
     // then
     assertTrue(response.isOk());
@@ -133,47 +135,46 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .endEvent()
             .done();
 
-    tester
-        .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
-        .waitUntil()
-        .workflowIsDeployed()
-        .and()
-        .startWorkflowInstance(bpmnProcessId)
-        .waitUntil()
-        .taskIsCreated(wrongFlowNodeBpmnId); // this waiting must time out
-
-    // when
     final GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+        tester
+            .having()
+            .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
+            .waitUntil()
+            .workflowIsDeployed()
+            .and()
+            .startWorkflowInstance(bpmnProcessId)
+            .waitUntil()
+            .taskIsCreated(wrongFlowNodeBpmnId) // this waiting must time out
+            .when()
+            .getAllTasks();
+    // then
     assertTrue(response.isOk());
     assertEquals("0", response.get("$.data.tasks.length()"));
   }
 
   @Test
   public void shouldReturnAllOpenTasks() throws IOException {
-    // having
-    createCreatedAndCompletedTasks(2, 3);
-    // when
-    final GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-created-tasks.graphql");
+    final List<TaskDTO> createdTasks =
+        tester
+            .having()
+            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 2, 3)
+            .and()
+            .when()
+            .getCreatedTasks();
 
     // then
-    assertTrue(response.isOk());
-    assertEquals("2", response.get("$.data.tasks.length()"));
-    for (int i = 0; i < 2; i++) {
-      assertEquals(
-          TaskState.CREATED.name(), response.get(String.format("$.data.tasks[%d].taskState", i)));
-    }
+    assertEquals(2, createdTasks.size());
+    createdTasks.forEach(t -> assertEquals(TaskState.CREATED, t.getTaskState()));
   }
 
   @Test
   public void shouldReturnAllCompletedTasks() throws IOException {
-    // having
-    createCreatedAndCompletedTasks(2, 3);
-    // when
     final GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-completed-tasks.graphql");
-
+        tester
+            .having()
+            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 2, 3)
+            .when()
+            .getCompletedTasks();
     // then
     assertTrue(response.isOk());
     assertEquals("3", response.get("$.data.tasks.length()"));
@@ -183,9 +184,97 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     }
   }
 
-  // TODO #47
-  // test Unclaimed and Claimed by me filters
-  // test tasks claimed by different users
+  @Test
+  public void shouldReturnUnclaimedTasks() throws IOException {
+    // when #1
+    final List<TaskDTO> tasks =
+        tester
+            .having()
+            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 3, 0)
+            .when()
+            .getTasksByQuery("{tasks(query: {assigned: false}) {id}}");
+    // then #1
+    assertEquals(3, tasks.size());
+
+    // when #2
+    haveLoggedInUser(new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User"));
+    final List<TaskDTO> tasksAfterOneClaimed =
+        tester
+            .when()
+            .claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, tasks.get(0).getId()))
+            .and()
+            .waitFor(1000)
+            .then() // then #2
+            .getTasksByQuery("{tasks(query: {assigned: false}) {id}}");
+    assertEquals(2, tasksAfterOneClaimed.size());
+  }
+
+  @Test
+  public void shouldReturnClaimedByUser() throws IOException {
+    haveLoggedInUser(new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User"));
+    List<TaskDTO> tasks =
+        tester
+            .having()
+            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 2, 1)
+            .when()
+            .getTasksByQuery("{tasks(query: {assignee: \"demo\"}) {id}}");
+    assertEquals(0, tasks.size());
+
+    tasks = tester.getCreatedTasks();
+
+    tasks =
+        tester
+            .when()
+            .claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, tasks.get(0).getId()))
+            .and()
+            .claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, tasks.get(1).getId()))
+            .then()
+            .waitFor(1000)
+            .getTasksByQuery("{tasks(query: { assignee: \"demo\"}) {id}}");
+    assertEquals(2, tasks.size());
+  }
+
+  @Test
+  public void shouldReturnTasksClaimedByDifferentUsers() throws IOException {
+    // create users
+    final UserDTO joe = new UserDTO().setUsername("joe").setFirstname("Joe").setLastname("Doe");
+    final UserDTO jane = new UserDTO().setUsername("jane").setFirstname("Jane").setLastname("Doe");
+    final UserDTO demo = new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User");
+    // create tasks
+    final List<TaskDTO> createdTasks =
+        tester
+            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 5, 2)
+            .then()
+            .getCreatedTasks();
+    List<TaskDTO> unclaimedTasks = tester.getTasksByQuery("{tasks(query: {assigned: false}) {id}}");
+    assertEquals(7, unclaimedTasks.size());
+    // when
+    haveLoggedInUser(joe);
+    tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, createdTasks.get(2).getId()));
+    haveLoggedInUser(jane);
+    tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, createdTasks.get(1).getId()));
+    haveLoggedInUser(demo);
+    tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, createdTasks.get(4).getId()));
+
+    tester.waitFor(2000);
+    unclaimedTasks = tester.getTasksByQuery("{tasks(query: {assigned: false}) {id}}");
+    assertEquals(4, unclaimedTasks.size());
+
+    final List<TaskDTO> joesTasks =
+        tester.getTasksByQuery("{tasks(query: {assignee: \"joe\"}) {id}}");
+    assertEquals(1, joesTasks.size());
+    assertEquals(createdTasks.get(2).getId(), joesTasks.get(0).getId());
+
+    final List<TaskDTO> janesTasks =
+        tester.getTasksByQuery("{tasks(query: {assignee: \"jane\"}) {id}}");
+    assertEquals(1, janesTasks.size());
+    assertEquals(createdTasks.get(1).getId(), janesTasks.get(0).getId());
+
+    final List<TaskDTO> demoTasks =
+        tester.getTasksByQuery("{tasks(query: {assignee: \"demo\"}) {id}}");
+    assertEquals(1, demoTasks.size());
+    assertEquals(createdTasks.get(4).getId(), demoTasks.get(0).getId());
+  }
 
   @Test
   public void shouldReturnWorkflowAndTaskName() throws IOException {
@@ -204,18 +293,18 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .endEvent()
             .done();
 
-    tester
-        .deployWorkflow(workflow, "testWorkflow.bpmn")
-        .waitUntil()
-        .workflowIsDeployed()
-        .and()
-        .startWorkflowInstance(bpmnProcessId)
-        .waitUntil()
-        .taskIsCreated(taskId);
-
-    // when
     final GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+        tester
+            .having()
+            .deployWorkflow(workflow, "testWorkflow.bpmn")
+            .waitUntil()
+            .workflowIsDeployed()
+            .and()
+            .startWorkflowInstance(bpmnProcessId)
+            .waitUntil()
+            .taskIsCreated(taskId)
+            .when()
+            .getAllTasks();
 
     // then
     assertTrue(response.isOk());
@@ -231,41 +320,46 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     final String taskId = "taskA";
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(bpmnProcessId)
-            .name("Test process name")
+            // .name("Test process name")
             .startEvent("start")
             .serviceTask(taskId)
-            .name("Task A")
+            // .name("Task A")
             .zeebeJobType(tasklistProperties.getImporter().getJobType())
             .endEvent()
             .done();
 
-    tester.deployWorkflow(workflow, "testWorkflow.bpmn").and().startWorkflowInstance(bpmnProcessId);
-    // load all but workflow
-    elasticsearchTestRule.processRecordsWithTypeAndWait(
-        ImportValueType.JOB, taskIsCreatedCheck, tester.getWorkflowInstanceId(), taskId);
-
-    // when
     final GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+        tester
+            .having()
+            .deployWorkflow(workflow, "testWorkflow.bpmn")
+            .and()
+            .startWorkflowInstance(bpmnProcessId)
+            .waitUntil()
+            .taskIsCreated(taskId)
+            .when()
+            .getAllTasks();
 
     // then
     assertTrue(response.isOk());
     assertEquals("1", response.get("$.data.tasks.length()"));
-    assertEquals(taskId, response.get("$.data.tasks[0].name"));
-    assertEquals(bpmnProcessId, response.get("$.data.tasks[0].workflowName"));
+    assertEquals("taskA", response.get("$.data.tasks[0].name"));
+    assertEquals("testProcess", response.get("$.data.tasks[0].workflowName"));
   }
 
   @Test
   public void shouldReturnOneTask() throws IOException {
-    // having
-    createCreatedAndCompletedTasks(1, 0);
     final GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+        tester
+            .having()
+            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 1, 0)
+            .when()
+            .getAllTasks();
+
     final String taskId = response.get("$.data.tasks[0].id");
 
     // when
     final GraphQLResponse taskResponse =
-        graphQLTestTemplate.postMultipart(String.format(GET_TASK_QUERY_PATTERN, taskId), "{}");
+        tester.when().getTaskByQuery(String.format(GET_TASK_QUERY_PATTERN, taskId));
 
     // then
     assertEquals(taskId, taskResponse.get("$.data.task.id"));
@@ -280,33 +374,15 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldNotReturnTaskWithWrongId() throws IOException {
-    // having
-    createCreatedAndCompletedTasks(1, 0);
-    final String taskId = "wrongTaskId";
-
-    // when
     final GraphQLResponse taskResponse =
-        graphQLTestTemplate.postMultipart(String.format(GET_TASK_QUERY_PATTERN, taskId), "{}");
-
+        tester
+            .having()
+            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 1, 0)
+            .when()
+            .getTaskByQuery(String.format(GET_TASK_QUERY_PATTERN, "wrongTaskId"));
     // then
     assertNull(taskResponse.get("$.data"));
     assertEquals("1", taskResponse.get("$.errors.length()"));
     assertEquals("Task with id wrongTaskId was not found", taskResponse.get("$.errors[0].message"));
-  }
-
-  private void createCreatedAndCompletedTasks(int created, int completed) {
-    tester
-        .createAndDeploySimpleWorkflow(BPMN_PROCESS_ID, ELEMENT_ID)
-        .waitUntil()
-        .workflowIsDeployed()
-        .and();
-    // complete tasks
-    for (int i = 0; i < completed; i++) {
-      tester.startWorkflowInstance(BPMN_PROCESS_ID).and().completeHumanTask(ELEMENT_ID);
-    }
-    // start more workflow instances
-    for (int i = 0; i < created; i++) {
-      tester.startWorkflowInstance(BPMN_PROCESS_ID).waitUntil().taskIsCreated(ELEMENT_ID);
-    }
   }
 }

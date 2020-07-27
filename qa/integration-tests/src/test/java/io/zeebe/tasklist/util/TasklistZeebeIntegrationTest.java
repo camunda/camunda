@@ -7,6 +7,8 @@ package io.zeebe.tasklist.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -14,10 +16,13 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
+import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
+import io.zeebe.tasklist.webapp.security.UserReader;
 import io.zeebe.tasklist.zeebe.PartitionHolder;
 import io.zeebe.tasklist.zeebeimport.ImportPositionHolder;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
+import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,18 +38,16 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   public EmbeddedBrokerRule brokerRule;
   @Rule public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
-  @MockBean
-  protected ZeebeClient
-      mockedZeebeClient; // we don't want to create ZeebeClient, we will rather use the one from
+  @MockBean protected ZeebeClient mockedZeebeClient;
+  // we don't want to create ZeebeClient, we will rather use the one from
   // test rule
-
   protected ZeebeClient zeebeClient;
   protected ClientRule clientRule;
   @Autowired protected PartitionHolder partitionHolder;
-
   @Autowired protected ImportPositionHolder importPositionHolder;
   @Autowired protected TasklistProperties tasklistProperties;
   protected TasklistTester tester;
+  @MockBean protected UserReader userReader;
   @Autowired private WorkflowCache workflowCache;
   private String workerName;
   @Autowired private MeterRegistry meterRegistry;
@@ -99,5 +102,10 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
     for (Meter meter : meterRegistry.getMeters()) {
       meterRegistry.remove(meter);
     }
+  }
+
+  protected void haveLoggedInUser(UserDTO user) {
+    when(userReader.getCurrentUser()).thenReturn(user);
+    when(userReader.getUsersByUsernames(any())).thenReturn(List.of(user));
   }
 }

@@ -5,6 +5,7 @@
  */
 package io.zeebe.tasklist.webapp.es;
 
+import static io.zeebe.tasklist.util.CollectionUtil.asMap;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -66,7 +67,7 @@ public class TaskReaderWriter {
 
     // TODO #104 define list of fields
 
-    // TODO specity sourceFields to fetch
+    // TODO specify sourceFields to fetch
     final GetResponse response = getTaskRawResponse(id);
     if (!response.isExists()) {
       throw new NotFoundException(String.format("Task with id %s was not found", id));
@@ -78,7 +79,7 @@ public class TaskReaderWriter {
   }
 
   @NotNull
-  private GetResponse getTaskRawResponse(final String id) {
+  public GetResponse getTaskRawResponse(final String id) {
     final GetRequest getRequest = new GetRequest(taskTemplate.getAlias()).id(id);
 
     try {
@@ -130,12 +131,12 @@ public class TaskReaderWriter {
     if (query.getAssigned() != null) {
       if (query.getAssigned()) {
         assignedQ = existsQuery(TaskTemplate.ASSIGNEE);
-        if (query.getAssignee() != null) {
-          assigneeQ = termQuery(TaskTemplate.ASSIGNEE, query.getAssignee());
-        }
       } else {
         assignedQ = boolQuery().mustNot(existsQuery(TaskTemplate.ASSIGNEE));
       }
+    }
+    if (query.getAssignee() != null) {
+      assigneeQ = termQuery(TaskTemplate.ASSIGNEE, query.getAssignee());
     }
     QueryBuilder jointQ = joinWithAnd(stateQ, assignedQ, assigneeQ);
     if (jointQ == null) {
@@ -144,34 +145,66 @@ public class TaskReaderWriter {
     return constantScoreQuery(jointQ);
   }
 
-  public void persistTaskCompletion(String taskId) {
+  public void persistTaskCompletion(GetResponse taskBeforeRawResponse) {
     try {
-      final GetResponse taskRawResponse = getTaskRawResponse(taskId);
-      if (taskRawResponse.isExists()) {
-        final TaskEntity taskEntity =
-            fromSearchHit(taskRawResponse.getSourceAsString(), objectMapper, TaskEntity.class);
-        // we update only task in state CREATED
-        if (TaskState.CREATED.equals(taskEntity.getState())) {
-          // update task with optimistic locking
-          final Map<String, Object> updateFields = new HashMap<>();
-          updateFields.put(TaskTemplate.STATE, TaskState.COMPLETED);
-          updateFields.put(TaskTemplate.COMPLETION_TIME, OffsetDateTime.now());
+      // update task with optimistic locking
+      final Map<String, Object> updateFields = new HashMap<>();
+      updateFields.put(TaskTemplate.STATE, TaskState.COMPLETED);
+      updateFields.put(TaskTemplate.COMPLETION_TIME, OffsetDateTime.now());
 
-          // format date fields properly
-          final Map<String, Object> jsonMap =
-              objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-          final UpdateRequest updateRequest =
-              new UpdateRequest(
-                      taskTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, taskId)
-                  .doc(jsonMap)
-                  .setIfSeqNo(taskRawResponse.getSeqNo())
-                  .setIfPrimaryTerm(taskRawResponse.getPrimaryTerm());
-          ElasticsearchUtil.executeUpdate(esClient, updateRequest);
-        }
-      }
+      // format date fields properly
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+      final UpdateRequest updateRequest =
+          new UpdateRequest(
+                  taskTemplate.getMainIndexName(),
+                  ElasticsearchUtil.ES_INDEX_TYPE,
+                  taskBeforeRawResponse.getId())
+              .doc(jsonMap)
+              .setIfSeqNo(taskBeforeRawResponse.getSeqNo())
+              .setIfPrimaryTerm(taskBeforeRawResponse.getPrimaryTerm());
+      ElasticsearchUtil.executeUpdate(esClient, updateRequest);
     } catch (Exception e) {
       // we're OK with not updating the task here, it will be marked as completed within import
       LOGGER.error(e.getMessage(), e);
+    }
+  }
+
+  public void persistTaskAssignee(TaskDTO task, final String currentUser) {
+    TaskValidator taskValidator = null;
+    if (currentUser != null) {
+      taskValidator = TaskValidator.CAN_CLAIM;
+    } else {
+      taskValidator = TaskValidator.CAN_UNCLAIM;
+    }
+    updateTask(task.getId(), currentUser, taskValidator, asMap(TaskTemplate.ASSIGNEE, currentUser));
+  }
+
+  public void updateTask(
+      final String taskId,
+      final String currentUser,
+      final TaskValidator taskValidator,
+      final Map<String, Object> updateFields) {
+    final GetResponse taskRawResponse = getTaskRawResponse(taskId);
+    if (taskRawResponse.isExists()) {
+      try {
+        final TaskEntity taskBefore =
+            fromSearchHit(taskRawResponse.getSourceAsString(), objectMapper, TaskEntity.class);
+        // update task with optimistic locking
+        // format date fields properly
+        taskValidator.validate(taskBefore, currentUser);
+        final Map<String, Object> jsonMap =
+            objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+        final UpdateRequest updateRequest =
+            new UpdateRequest(
+                    taskTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, taskId)
+                .doc(jsonMap)
+                .setIfSeqNo(taskRawResponse.getSeqNo())
+                .setIfPrimaryTerm(taskRawResponse.getPrimaryTerm());
+        ElasticsearchUtil.executeUpdate(esClient, updateRequest);
+      } catch (Exception e) {
+        throw new TasklistRuntimeException(e.getMessage(), e);
+      }
     }
   }
 }
