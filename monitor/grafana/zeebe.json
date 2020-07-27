@@ -71,7 +71,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1595513646440,
+  "iteration": 1595865377824,
   "links": [],
   "panels": [
     {
@@ -2643,7 +2643,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 4
+            "y": 28
           },
           "hiddenSeries": false,
           "id": 33,
@@ -2745,7 +2745,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 4
+            "y": 28
           },
           "hiddenSeries": false,
           "id": 98,
@@ -2857,7 +2857,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 36
           },
           "hiddenSeries": false,
           "id": 64,
@@ -2953,7 +2953,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 36
           },
           "hiddenSeries": false,
           "id": 35,
@@ -3043,7 +3043,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 20
+            "y": 44
           },
           "hiddenSeries": false,
           "id": 37,
@@ -3106,6 +3106,7 @@
           },
           "yaxes": [
             {
+              "$$hashKey": "object:556",
               "format": "percent",
               "label": null,
               "logBase": 1,
@@ -3114,6 +3115,7 @@
               "show": true
             },
             {
+              "$$hashKey": "object:557",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3139,7 +3141,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 20
+            "y": 44
           },
           "hiddenSeries": false,
           "id": 40,
@@ -3229,7 +3231,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 28
+            "y": 52
           },
           "hiddenSeries": false,
           "id": 39,
@@ -3342,7 +3344,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 70
+            "y": 60
           },
           "hiddenSeries": false,
           "id": 122,
@@ -3430,7 +3432,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 70
+            "y": 60
           },
           "hiddenSeries": false,
           "id": 124,
@@ -3518,7 +3520,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 78
+            "y": 68
           },
           "hiddenSeries": false,
           "id": 126,
@@ -3606,7 +3608,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 78
+            "y": 68
           },
           "hiddenSeries": false,
           "id": 127,
@@ -4423,257 +4425,258 @@
         "y": 7
       },
       "id": 162,
-      "panels": [],
+      "panels": [
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#b4ff00",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateSpectral",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "tsbuckets",
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the latency (RTT) of a sent from the gateway to the broker.",
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 79
+          },
+          "heatmap": {},
+          "hideZeroBuckets": true,
+          "highlightCards": true,
+          "id": 164,
+          "legend": {
+            "show": false
+          },
+          "reverseYBuckets": false,
+          "targets": [
+            {
+              "expr": "sum(increase(zeebe_gateway_request_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
+              "format": "heatmap",
+              "interval": "30s",
+              "legendFormat": "{{le}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Gateway Request Latency",
+          "tooltip": {
+            "show": true,
+            "showHistogram": false
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "dtdurations",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows rate of each error type.",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 87
+          },
+          "hiddenSeries": false,
+          "id": 166,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "hideZero": true,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "rate(zeebe_gateway_failed_requests{namespace=~\"$namespace\", partition=~\"$partition\", error=~\".*\"}[15s]) / rate(zeebe_gateway_failed_requests{namespace=~\"$namespace\", partition=~\"$partition\"}[15s])",
+              "interval": "",
+              "legendFormat": "{{error}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Failure Error Code",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:334",
+              "format": "percentunit",
+              "label": null,
+              "logBase": 1,
+              "max": "1",
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:335",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows failure rate of requests sent from gateway to the broker.",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 87
+          },
+          "hiddenSeries": false,
+          "id": 168,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "hideZero": true,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum by (requestType) (rate(zeebe_gateway_failed_requests{namespace=~\"$namespace\", partition=~\"$partition\"}[30s])) / \nsum by (requestType) (rate(zeebe_gateway_total_requests{namespace=~\"$namespace\", partition=~\"$partition\"}[30s]))",
+              "interval": "",
+              "legendFormat": "{{requestType}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Failure Rate by Request Type",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:420",
+              "format": "percentunit",
+              "label": null,
+              "logBase": 1,
+              "max": "1",
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:421",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        }
+      ],
       "title": "Gateway",
       "type": "row"
-    },
-    {
-      "cards": {
-        "cardPadding": null,
-        "cardRound": null
-      },
-      "color": {
-        "cardColor": "#b4ff00",
-        "colorScale": "sqrt",
-        "colorScheme": "interpolateOranges",
-        "exponent": 0.5,
-        "mode": "spectrum"
-      },
-      "dataFormat": "tsbuckets",
-      "datasource": "$DS_PROMETHEUS",
-      "description": "Shows the latency (RTT) of a sent from the gateway to the broker.",
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 8
-      },
-      "heatmap": {},
-      "hideZeroBuckets": true,
-      "highlightCards": true,
-      "id": 164,
-      "legend": {
-        "show": false
-      },
-      "reverseYBuckets": false,
-      "targets": [
-        {
-          "expr": "sum(increase(zeebe_gateway_request_latency_bucket{namespace=~\"$namespace\",partition=~\"$partition\"}[30s])) by (le)",
-          "format": "heatmap",
-          "interval": "30s",
-          "legendFormat": "{{le}}",
-          "refId": "A"
-        }
-      ],
-      "timeFrom": null,
-      "timeShift": null,
-      "title": "Gateway Request Latency",
-      "tooltip": {
-        "show": true,
-        "showHistogram": false
-      },
-      "type": "heatmap",
-      "xAxis": {
-        "show": true
-      },
-      "xBucketNumber": null,
-      "xBucketSize": null,
-      "yAxis": {
-        "decimals": null,
-        "format": "dtdurations",
-        "logBase": 1,
-        "max": null,
-        "min": null,
-        "show": true,
-        "splitFactor": null
-      },
-      "yBucketBound": "auto",
-      "yBucketNumber": null,
-      "yBucketSize": null
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "$DS_PROMETHEUS",
-      "description": "Shows rate of each error type.",
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 16
-      },
-      "hiddenSeries": false,
-      "id": 166,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "hideZero": true,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "rate(zeebe_gateway_failed_requests{namespace=~\"$namespace\", partition=~\"$partition\", error=~\".*\"}[15s]) / rate(zeebe_gateway_failed_requests{namespace=~\"$namespace\", partition=~\"$partition\"}[15s])",
-          "interval": "",
-          "legendFormat": "{{error}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Failure Error Code",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:334",
-          "format": "percentunit",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:335",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "$DS_PROMETHEUS",
-      "description": "Shows failure rate of requests sent from gateway to the broker.",
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 16
-      },
-      "hiddenSeries": false,
-      "id": 168,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "hideZero": true,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "options": {
-        "dataLinks": []
-      },
-      "percentage": false,
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum by (requestType) (rate(zeebe_gateway_failed_requests{namespace=~\"$namespace\", partition=~\"$partition\"}[30s])) / \nsum by (requestType) (rate(zeebe_gateway_total_requests{namespace=~\"$namespace\", partition=~\"$partition\"}[30s]))",
-          "interval": "",
-          "legendFormat": "{{requestType}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Failure Rate by Request Type",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:420",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:421",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
     },
     {
       "collapsed": true,
@@ -4682,7 +4685,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 8
       },
       "id": 76,
       "panels": [
@@ -4704,7 +4707,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 8
+            "y": 80
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4768,7 +4771,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 8
+            "y": 80
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4827,7 +4830,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 14
+            "y": 86
           },
           "hiddenSeries": false,
           "id": 79,
@@ -4919,7 +4922,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 14
+            "y": 86
           },
           "hiddenSeries": false,
           "id": 114,
@@ -5012,7 +5015,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 21
+            "y": 93
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5076,7 +5079,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 21
+            "y": 93
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5141,7 +5144,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 100
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5201,7 +5204,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 100
           },
           "hiddenSeries": false,
           "id": 72,
@@ -5295,7 +5298,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 36
+            "y": 108
           },
           "hiddenSeries": false,
           "id": 95,
@@ -5394,7 +5397,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 25
+        "y": 9
       },
       "id": 140,
       "panels": [
@@ -5411,7 +5414,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 9
+            "y": 10
           },
           "hiddenSeries": false,
           "id": 154,
@@ -5502,7 +5505,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 9
+            "y": 10
           },
           "hiddenSeries": false,
           "id": 144,
@@ -5593,7 +5596,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 15
+            "y": 16
           },
           "hiddenSeries": false,
           "id": 142,
@@ -5684,7 +5687,7 @@
             "h": 12,
             "w": 12,
             "x": 0,
-            "y": 21
+            "y": 22
           },
           "hiddenSeries": false,
           "id": 151,
@@ -5775,7 +5778,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 21
+            "y": 22
           },
           "hiddenSeries": false,
           "id": 152,
@@ -5866,7 +5869,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 27
+            "y": 28
           },
           "hiddenSeries": false,
           "id": 150,
@@ -5957,7 +5960,7 @@
             "h": 13,
             "w": 12,
             "x": 0,
-            "y": 33
+            "y": 34
           },
           "hiddenSeries": false,
           "id": 147,
@@ -6048,7 +6051,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 33
+            "y": 34
           },
           "hiddenSeries": false,
           "id": 149,
@@ -6140,7 +6143,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 40
+            "y": 41
           },
           "hiddenSeries": false,
           "id": 148,
@@ -6231,7 +6234,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 46
+            "y": 47
           },
           "hiddenSeries": false,
           "id": 155,
@@ -6322,7 +6325,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 46
+            "y": 47
           },
           "hiddenSeries": false,
           "id": 156,
@@ -6415,7 +6418,7 @@
             "h": 6,
             "w": 6,
             "x": 0,
-            "y": 54
+            "y": 55
           },
           "id": 158,
           "pageSize": null,
@@ -6523,7 +6526,7 @@
             "h": 6,
             "w": 6,
             "x": 6,
-            "y": 54
+            "y": 55
           },
           "hiddenSeries": false,
           "id": 157,
@@ -6614,7 +6617,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 54
+            "y": 55
           },
           "hiddenSeries": false,
           "id": 146,
@@ -6705,7 +6708,7 @@
             "h": 7,
             "w": 6,
             "x": 0,
-            "y": 60
+            "y": 61
           },
           "hiddenSeries": false,
           "id": 159,
@@ -6796,7 +6799,7 @@
             "h": 7,
             "w": 6,
             "x": 6,
-            "y": 60
+            "y": 61
           },
           "hiddenSeries": false,
           "id": 160,
@@ -6887,7 +6890,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 60
+            "y": 61
           },
           "hiddenSeries": false,
           "id": 153,
@@ -6976,7 +6979,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 26
+        "y": 10
       },
       "id": 50,
       "panels": [
@@ -7234,7 +7237,7 @@
     "list": [
       {
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "Prometheus",
           "value": "Prometheus"
         },
@@ -7356,5 +7359,5 @@
   "variables": {
     "list": []
   },
-  "version": 16
+  "version": 17
 }
