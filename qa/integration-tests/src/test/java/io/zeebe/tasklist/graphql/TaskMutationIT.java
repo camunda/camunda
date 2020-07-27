@@ -10,9 +10,12 @@ import static org.assertj.core.api.Assertions.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import com.graphql.spring.boot.test.GraphQLResponse;
 import com.graphql.spring.boot.test.GraphQLTestTemplate;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
@@ -73,8 +76,6 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     final String taskId = response.get("$.data.tasks[0].id");
 
     // when
-    haveLoggedInUser(new UserDTO().setUsername("demo"));
-
     final String completeTaskRequest =
         String.format(COMPLETE_TASK_QUERY_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
     response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
@@ -93,8 +94,6 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     final String taskId = response.get("$.data.tasks[0].id");
 
     // when
-    haveLoggedInUser(new UserDTO().setUsername("demo"));
-
     final String completeTaskRequest =
         String.format(COMPLETE_TASK_QUERY_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
 
@@ -106,25 +105,28 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldFailCompleteNotAssignedToMe() throws IOException {
-    // having
-    createCreatedAndCompletedTasks(1, 0);
+    try {
+      // having
+      createCreatedAndCompletedTasks(1, 0);
 
-    GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
-    final String taskId = response.get("$.data.tasks[0].id");
+      GraphQLResponse response =
+          graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+      final String taskId = response.get("$.data.tasks[0].id");
 
-    haveLoggedInUser(new UserDTO().setUsername("demo"));
-    tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
+      tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
 
-    // when
-    haveLoggedInUser(new UserDTO().setUsername("joe"));
-    final String completeTaskRequest =
-        String.format(COMPLETE_TASK_QUERY_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
+      // when
+      setCurrentUser(new UserDTO().setUsername("joe"));
+      final String completeTaskRequest =
+          String.format(COMPLETE_TASK_QUERY_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
 
-    response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
+      response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
 
-    // then
-    assertEquals("Task is not assigned to joe", response.get("$.errors[0].message"));
+      // then
+      assertEquals("Task is not assigned to joe", response.get("$.errors[0].message"));
+    } finally {
+      setDefaultCurrentUser();
+    }
   }
 
   @Test
@@ -137,7 +139,6 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     final String taskId = response.get("$.data.tasks[0].id");
 
     // when
-    haveLoggedInUser(new UserDTO().setUsername("demo"));
     tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
 
     final String completeTaskRequest =
@@ -155,6 +156,81 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
+  public void shouldStoreSnapshotVariablesOnTaskCompletion() throws IOException {
+    // having
+    final String flowNodeBpmnIdA = "taskA";
+    final String flowNodeBpmnIdB = "taskB";
+    createTwoTasksInstance(flowNodeBpmnIdA, flowNodeBpmnIdB);
+
+    GraphQLResponse response =
+        graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+    final String taskAId = response.get("$.data.tasks[0].id");
+
+    // complete task A
+    tester.claimHumanTask(flowNodeBpmnIdA);
+    String completeTaskRequest =
+        String.format(
+            COMPLETE_TASK_QUERY_PATTERN,
+            taskAId,
+            "{name: \"var\", value: \"\\\"taskAValue\\\"\"}, {name: \"varTaskA\", value: \"123\"}");
+    response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
+    assertEquals("true", response.get("$.data.completeTask"));
+    tester.waitUntil().taskIsCompleted(flowNodeBpmnIdA).waitUntil().taskIsCreated(flowNodeBpmnIdB);
+
+    // complete task B
+    tester.claimHumanTask(flowNodeBpmnIdB);
+    response = graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+    final String taskBId = response.get("$.data.tasks[0].id");
+    completeTaskRequest =
+        String.format(
+            COMPLETE_TASK_QUERY_PATTERN,
+            taskBId,
+            "{name: \"var\", value: \"\\\"taskBValue\\\"\"}, {name: \"varTaskB\", value: \"true\"}");
+    response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
+    assertEquals("true", response.get("$.data.completeTask"));
+    tester.waitUntil().taskIsCompleted(flowNodeBpmnIdB);
+    sleepFor(1000L);
+
+    // when
+    response = tester.getAllTasks();
+    assertTrue(response.isOk());
+    assertEquals("2", response.get("$.data.tasks.length()"));
+
+    // then
+    // task B
+    assertEquals(taskBId, response.get("$.data.tasks[0].id"));
+    assertEquals("var", response.get("$.data.tasks[0].variables[0].name"));
+    assertEquals("\"taskBValue\"", response.get("$.data.tasks[0].variables[0].value"));
+
+    // task A
+    assertEquals(taskAId, response.get("$.data.tasks[1].id"));
+    assertEquals("var", response.get("$.data.tasks[1].variables[0].name"));
+    assertEquals("\"taskAValue\"", response.get("$.data.tasks[1].variables[0].value"));
+  }
+
+  private void createTwoTasksInstance(String flowNodeBpmnIdA, String flowNodeBpmnIdB) {
+    final String payload = "{\"var\": \"value\"}";
+    final String bpmnProcessId = "testProcess";
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess(bpmnProcessId)
+            .startEvent()
+            .serviceTask(flowNodeBpmnIdA)
+            .zeebeJobType(tasklistProperties.getImporter().getJobType())
+            .serviceTask(flowNodeBpmnIdB)
+            .zeebeJobType(tasklistProperties.getImporter().getJobType())
+            .endEvent()
+            .done();
+    tester
+        .deployWorkflow(workflow, bpmnProcessId + ".bpmn")
+        .waitUntil()
+        .workflowIsDeployed()
+        .and()
+        .startWorkflowInstance(BPMN_PROCESS_ID, payload)
+        .waitUntil()
+        .taskIsCreated(flowNodeBpmnIdA);
+  }
+
+  @Test
   public void shouldCompleteWithoutVariablesTask() throws IOException {
     // having
     createCreatedAndCompletedTasks(1, 0);
@@ -164,7 +240,6 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     final String taskId = response.get("$.data.tasks[0].id");
 
     // when
-    haveLoggedInUser(new UserDTO().setUsername("demo"));
     tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
 
     final String completeTaskRequest = String.format(COMPLETE_TASK_QUERY_PATTERN, taskId, "");
@@ -202,7 +277,6 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
   @Test
   public void shouldFailClaimNotActive() throws IOException {
     // having
-    haveLoggedInUser(new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User"));
     tester
         .having()
         .and()
@@ -223,31 +297,33 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldFailClaimAlreadyAssigned() throws IOException {
-    haveLoggedInUser(new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User"));
-    tester
-        .having()
-        .and()
-        .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 1, 0)
-        .when()
-        .getAllTasks();
+    try {
+      tester
+          .having()
+          .and()
+          .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 1, 0)
+          .when()
+          .getAllTasks();
 
-    final TaskDTO unclaimedTask = tester.getTasksByPath("$.data.tasks").get(0);
-    tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, unclaimedTask.getId()));
+      final TaskDTO unclaimedTask = tester.getTasksByPath("$.data.tasks").get(0);
+      tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, unclaimedTask.getId()));
 
-    // when
-    haveLoggedInUser(new UserDTO().setUsername("joe"));
-    final Map<String, Object> errors =
-        tester
-            .when()
-            .claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, unclaimedTask.getId()))
-            .then()
-            .getByPath("$.errors[0]");
-    assertEquals("Task is already assigned", errors.get("message"));
+      // when
+      setCurrentUser(new UserDTO().setUsername("joe"));
+      final Map<String, Object> errors =
+          tester
+              .when()
+              .claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, unclaimedTask.getId()))
+              .then()
+              .getByPath("$.errors[0]");
+      assertEquals("Task is already assigned", errors.get("message"));
+    } finally {
+      setDefaultCurrentUser();
+    }
   }
 
   @Test
-  public void shouldClaimUserToTask() throws IOException {
-    haveLoggedInUser(new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User"));
+  public void shouldClaimTask() throws IOException {
     tester
         .having()
         .and()
@@ -277,7 +353,6 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     tester.having().createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 0, 1).getAllTasks();
 
     final String taskId = tester.get("$.data.tasks[0].id");
-    haveLoggedInUser(new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User"));
 
     // when
     final Map<String, Object> errors =
@@ -297,7 +372,6 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     tester.having().createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 1, 0).getAllTasks();
 
     final String taskId = tester.get("$.data.tasks[0].id");
-    haveLoggedInUser(new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User"));
 
     // when
     final Map<String, Object> errors =
@@ -317,7 +391,6 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     tester.having().createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 1, 0).getAllTasks();
 
     final String taskId = tester.get("$.data.tasks[0].id");
-    haveLoggedInUser(new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User"));
     tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
 
     // when
@@ -343,7 +416,12 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     sleepFor(5000);
     // complete tasks
     for (int i = 0; i < completed; i++) {
-      tester.startWorkflowInstance(BPMN_PROCESS_ID, payload).and().completeHumanTask(ELEMENT_ID);
+      tester
+          .startWorkflowInstance(BPMN_PROCESS_ID, payload)
+          .waitUntil()
+          .taskIsCreated(ELEMENT_ID)
+          .and()
+          .claimAndCompleteHumanTask(ELEMENT_ID);
     }
     // start more workflow instances
     for (int i = 0; i < created; i++) {

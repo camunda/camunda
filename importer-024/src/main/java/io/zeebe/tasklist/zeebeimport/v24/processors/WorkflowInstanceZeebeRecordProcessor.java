@@ -12,7 +12,7 @@ import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.tasklist.entities.FlowNodeInstanceEntity;
 import io.zeebe.tasklist.entities.FlowNodeType;
-import io.zeebe.tasklist.es.schema.templates.FlowNodeInstanceTemplate;
+import io.zeebe.tasklist.es.schema.indices.FlowNodeInstanceIndex;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.util.ConversionUtils;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
@@ -51,7 +51,7 @@ public class WorkflowInstanceZeebeRecordProcessor {
 
   @Autowired private ObjectMapper objectMapper;
 
-  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
+  @Autowired private FlowNodeInstanceIndex flowNodeInstanceIndex;
 
   public void processWorkflowInstanceRecord(Record record, BulkRequest bulkRequest)
       throws PersistenceException {
@@ -87,9 +87,7 @@ public class WorkflowInstanceZeebeRecordProcessor {
       LOGGER.debug("Flow node instance for list view: id {}", entity.getId());
 
       return new IndexRequest(
-              flowNodeInstanceTemplate.getMainIndexName(),
-              ElasticsearchUtil.ES_INDEX_TYPE,
-              entity.getId())
+              flowNodeInstanceIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
           .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
 
     } catch (IOException e) {

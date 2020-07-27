@@ -5,6 +5,7 @@
  */
 package io.zeebe.tasklist.webapp.graphql.entity;
 
+import io.zeebe.tasklist.entities.TaskVariableEntity;
 import java.util.Objects;
 
 public class VariableDTO {
@@ -28,6 +29,10 @@ public class VariableDTO {
   public VariableDTO setValue(final String value) {
     this.value = value;
     return this;
+  }
+
+  public static VariableDTO createFrom(TaskVariableEntity variableEntity) {
+    return new VariableDTO().setName(variableEntity.getName()).setValue(variableEntity.getValue());
   }
 
   @Override

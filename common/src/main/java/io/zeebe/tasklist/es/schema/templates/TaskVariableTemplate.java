@@ -8,13 +8,13 @@ package io.zeebe.tasklist.es.schema.templates;
 import org.springframework.stereotype.Component;
 
 @Component
-public class VariableTemplate extends AbstractTemplateDescriptor {
+public class TaskVariableTemplate extends AbstractTemplateDescriptor {
 
-  public static final String INDEX_NAME = "variable";
+  public static final String INDEX_NAME = "task-variable";
 
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String SCOPE_FLOW_NODE_ID = "scopeFlowNodeId";
+  public static final String TASK_ID = "taskId";
   public static final String NAME = "name";
   public static final String VALUE = "value";
 

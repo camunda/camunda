@@ -10,7 +10,7 @@ import static io.zeebe.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.tasklist.entities.VariableEntity;
-import io.zeebe.tasklist.es.schema.templates.VariableTemplate;
+import io.zeebe.tasklist.es.schema.indices.VariableIndex;
 import io.zeebe.tasklist.exceptions.PersistenceException;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.zeebeimport.v24.record.Intent;
@@ -42,7 +42,7 @@ public class VariableZeebeRecordProcessor {
 
   @Autowired private ObjectMapper objectMapper;
 
-  @Autowired private VariableTemplate variableTemplate;
+  @Autowired private VariableIndex variableIndex;
 
   public void processVariableRecord(Record record, BulkRequest bulkRequest)
       throws PersistenceException {
@@ -70,10 +70,10 @@ public class VariableZeebeRecordProcessor {
     try {
       LOGGER.debug("Variable instance for list view: id {}", entity.getId());
       final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(VariableTemplate.VALUE, entity.getValue());
+      updateFields.put(VariableIndex.VALUE, entity.getValue());
 
       return new UpdateRequest(
-              variableTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
+              variableIndex.getIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
           .upsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
           .doc(updateFields)
           .retryOnConflict(UPDATE_RETRY_COUNT);

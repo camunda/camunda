@@ -11,8 +11,8 @@ import static io.zeebe.tasklist.webapp.graphql.TasklistGraphQLContextBuilder.VAR
 import graphql.kickstart.execution.context.GraphQLContext;
 import graphql.kickstart.tools.GraphQLResolver;
 import graphql.schema.DataFetchingEnvironment;
+import io.zeebe.tasklist.webapp.es.VariableReaderWriter.GetVariablesRequest;
 import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
-import io.zeebe.tasklist.webapp.es.reader.VariableReader.GetVariablesRequest;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
 import io.zeebe.tasklist.webapp.graphql.entity.VariableDTO;
@@ -47,9 +47,7 @@ public class TaskResolver implements GraphQLResolver<TaskDTO> {
             .getDataLoaderRegistry()
             .get()
             .getDataLoader(VARIABLE_DATA_LOADER);
-
-    return dataloader.load(
-        new GetVariablesRequest(task.getFlowNodeInstanceId(), task.getWorkflowInstanceId()));
+    return dataloader.load(GetVariablesRequest.createFrom(task));
   }
 
   public String getWorkflowName(TaskDTO task) {

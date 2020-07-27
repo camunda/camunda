@@ -54,8 +54,18 @@ public class TaskReaderWriter {
 
   @Autowired private ObjectMapper objectMapper;
 
-  public TaskDTO getTask(String id) {
+  public TaskEntity getTask(String id) {
     return getTask(id, null);
+  }
+
+  private TaskEntity getTask(final String id, List<String> fieldNames) {
+    // TODO #104 define list of fields and specify sourceFields to fetch
+    final GetResponse response = getTaskRawResponse(id);
+    if (!response.isExists()) {
+      throw new NotFoundException(String.format("Task with id %s was not found", id));
+    }
+
+    return fromSearchHit(response.getSourceAsString(), objectMapper, TaskEntity.class);
   }
 
   /**
@@ -63,18 +73,9 @@ public class TaskReaderWriter {
    * @param fieldNames list of field names to return. When null, return all fields.
    * @return
    */
-  public TaskDTO getTask(String id, List<String> fieldNames) {
+  public TaskDTO getTaskDTO(String id, List<String> fieldNames) {
+    final TaskEntity taskEntity = getTask(id, fieldNames);
 
-    // TODO #104 define list of fields
-
-    // TODO specify sourceFields to fetch
-    final GetResponse response = getTaskRawResponse(id);
-    if (!response.isExists()) {
-      throw new NotFoundException(String.format("Task with id %s was not found", id));
-    }
-
-    final TaskEntity taskEntity =
-        fromSearchHit(response.getSourceAsString(), objectMapper, TaskEntity.class);
     return TaskDTO.createFrom(taskEntity);
   }
 
@@ -145,6 +146,11 @@ public class TaskReaderWriter {
     return constantScoreQuery(jointQ);
   }
 
+  /**
+   * Persist that task is completed even before the corresponding events are imported from Zeebe.
+   *
+   * @param taskBeforeRawResponse
+   */
   public void persistTaskCompletion(GetResponse taskBeforeRawResponse) {
     try {
       // update task with optimistic locking

@@ -5,9 +5,11 @@
  */
 package io.zeebe.tasklist.util;
 
-import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_COMPLETED_CHECK;
-import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_ASSIGNED_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_IS_DEPLOYED_CHECK;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.graphql.spring.boot.test.GraphQLResponse;
@@ -15,12 +17,18 @@ import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.tasklist.entities.TaskEntity;
+import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
+import io.zeebe.tasklist.webapp.graphql.entity.VariableDTO;
+import io.zeebe.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
@@ -40,18 +48,23 @@ public class TasklistTester {
   //
   private String workflowId;
   private String workflowInstanceId;
+  private String taskId;
 
   @Autowired
   @Qualifier(WORKFLOW_IS_DEPLOYED_CHECK)
   private TestCheck workflowIsDeployedCheck;
 
   @Autowired
-  @Qualifier(TASK_IS_CREATED_CHECK)
+  @Qualifier(TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCreatedCheck;
 
   @Autowired
-  @Qualifier(TASK_IS_COMPLETED_CHECK)
+  @Qualifier(TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCompletedCheck;
+
+  @Autowired
+  @Qualifier(TASK_IS_ASSIGNED_CHECK)
+  private TestCheck taskIsAssignedCheck;
 
   //  @Autowired
   //  @Qualifier("operationsByWorkflowInstanceAreCompletedCheck")
@@ -75,6 +88,10 @@ public class TasklistTester {
 
   @Autowired private TasklistProperties tasklistProperties;
 
+  @Autowired private ElasticsearchHelper elasticsearchHelper;
+
+  @Autowired private TaskMutationResolver taskMutationResolver;
+
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
 
   private GraphQLResponse graphQLResponse;
@@ -88,6 +105,7 @@ public class TasklistTester {
     this.zeebeClient = zeebeClient;
     this.elasticsearchTestRule = elasticsearchTestRule;
   }
+
   //
   //  public Long getWorkflowInstanceKey() {
   //    return workflowInstanceKey;
@@ -110,7 +128,11 @@ public class TasklistTester {
     createAndDeploySimpleWorkflow(processId, flowNodeBpmnId).waitUntil().workflowIsDeployed();
     // complete tasks
     for (int i = 0; i < completed; i++) {
-      startWorkflowInstance(processId).and().completeHumanTask(flowNodeBpmnId);
+      startWorkflowInstance(processId)
+          .waitUntil()
+          .taskIsCreated(flowNodeBpmnId)
+          .and()
+          .claimAndCompleteHumanTask(flowNodeBpmnId);
     }
     // start more workflow instances
     for (int i = 0; i < created; i++) {
@@ -224,7 +246,25 @@ public class TasklistTester {
   public TasklistTester taskIsCreated(String flowNodeBpmnId) {
     elasticsearchTestRule.processAllRecordsAndWait(
         taskIsCreatedCheck, workflowInstanceId, flowNodeBpmnId);
+    // update taskId
+    resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
     return this;
+  }
+
+  private void resolveTaskId(final String flowNodeBpmnId, final TaskState state) {
+    try {
+      final List<TaskEntity> tasks =
+          elasticsearchHelper.getTask(workflowInstanceId, flowNodeBpmnId);
+      final Optional<TaskEntity> teOptional =
+          tasks.stream().filter(te -> state.equals(te.getState())).findFirst();
+      if (teOptional.isPresent()) {
+        taskId = teOptional.get().getId();
+      } else {
+        taskId = null;
+      }
+    } catch (Exception ex) {
+      taskId = null;
+    }
   }
 
   public TasklistTester taskIsCompleted(String flowNodeBpmnId) {
@@ -233,22 +273,47 @@ public class TasklistTester {
     return this;
   }
 
-  public TasklistTester completeHumanTask(String flowNodeBpmnId, String payload) {
-    ZeebeTestUtil.completeTask(
-        zeebeClient,
-        tasklistProperties.getImporter().getJobType(),
-        TestUtil.createRandomString(10),
-        payload);
+  public TasklistTester taskIsAssigned(String taskId) {
+    elasticsearchTestRule.processAllRecordsAndWait(taskIsAssignedCheck, taskId);
+    return this;
+  }
+
+  public TasklistTester claimAndCompleteHumanTask(String flowNodeBpmnId, String... variables) {
+    claimHumanTask(flowNodeBpmnId);
+
+    return completeHumanTask(flowNodeBpmnId, variables);
+  }
+
+  public TasklistTester claimHumanTask(final String flowNodeBpmnId) {
+    // resolve taskId, if not yet resolved
+    if (taskId == null) {
+      resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
+    }
+    taskMutationResolver.claimTask(taskId);
+
+    taskIsAssigned(taskId);
+
+    return this;
+  }
+
+  public TasklistTester completeHumanTask(String flowNodeBpmnId, String... variables) {
+    // resolve taskId, if not yet resolved
+    if (taskId == null) {
+      resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
+    }
+
+    taskMutationResolver.completeTask(taskId, createVariablesList(variables));
+
     return taskIsCompleted(flowNodeBpmnId);
   }
 
-  public TasklistTester completeHumanTask(String flowNodeBpmnId) {
-    ZeebeTestUtil.completeTask(
-        zeebeClient,
-        tasklistProperties.getImporter().getJobType(),
-        TestUtil.createRandomString(10),
-        null);
-    return taskIsCompleted(flowNodeBpmnId);
+  private List<VariableDTO> createVariablesList(String... variables) {
+    assertThat(variables.length % 2).isEqualTo(0);
+    final List<VariableDTO> result = new ArrayList<>();
+    for (int i = 0; i < variables.length; i = i + 2) {
+      result.add(new VariableDTO().setName(variables[i]).setValue(variables[i + 1]));
+    }
+    return result;
   }
 
   public TasklistTester completeServiceTask(String jobType) {

@@ -10,8 +10,8 @@ import graphql.kickstart.execution.context.GraphQLContext;
 import graphql.kickstart.servlet.context.DefaultGraphQLServletContext;
 import graphql.kickstart.servlet.context.DefaultGraphQLWebSocketContext;
 import graphql.kickstart.servlet.context.GraphQLServletContextBuilder;
-import io.zeebe.tasklist.webapp.es.reader.VariableReader;
-import io.zeebe.tasklist.webapp.es.reader.VariableReader.GetVariablesRequest;
+import io.zeebe.tasklist.webapp.es.VariableReaderWriter;
+import io.zeebe.tasklist.webapp.es.VariableReaderWriter.GetVariablesRequest;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
 import io.zeebe.tasklist.webapp.graphql.entity.VariableDTO;
 import io.zeebe.tasklist.webapp.security.UserReader;
@@ -34,7 +34,7 @@ public class TasklistGraphQLContextBuilder implements GraphQLServletContextBuild
 
   @Autowired private UserReader userReader;
 
-  @Autowired private VariableReader variableReader;
+  @Autowired private VariableReaderWriter variableReaderWriter;
 
   @Override
   public GraphQLContext build(HttpServletRequest req, HttpServletResponse response) {
@@ -67,7 +67,7 @@ public class TasklistGraphQLContextBuilder implements GraphQLServletContextBuild
     dataLoaderRegistry.register(
         VARIABLE_DATA_LOADER,
         new DataLoader<GetVariablesRequest, List<VariableDTO>>(
-            req -> CompletableFuture.supplyAsync(() -> variableReader.getVariablesByTaskIds(req))));
+            req -> CompletableFuture.supplyAsync(() -> variableReaderWriter.getVariables(req))));
     return dataLoaderRegistry;
   }
 }

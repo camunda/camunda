@@ -8,7 +8,6 @@ package io.zeebe.tasklist.util;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -26,6 +25,7 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.mockito.Mockito;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +33,7 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 
 public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTest {
 
+  public static final String USERNAME_DEFAULT = "demo";
   @Autowired public BeanFactory beanFactory;
   @Rule public final TasklistZeebeRule zeebeRule;
   public EmbeddedBrokerRule brokerRule;
@@ -78,10 +79,23 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
     } catch (NoSuchFieldException e) {
       fail("Failed to inject ZeebeClient into some of the beans");
     }
+
+    setDefaultCurrentUser();
+  }
+
+  protected void setDefaultCurrentUser() {
+    setCurrentUser(
+        new UserDTO().setUsername(USERNAME_DEFAULT).setFirstname("Demo").setLastname("User"));
+  }
+
+  protected void setCurrentUser(UserDTO user) {
+    Mockito.when(userReader.getCurrentUser()).thenReturn(user);
+    Mockito.when(userReader.getUsersByUsernames(any())).thenReturn(List.of(user));
   }
 
   @After
   public void after() {
+    setDefaultCurrentUser();
     workflowCache.clearCache();
     importPositionHolder.clearCache();
   }
@@ -102,10 +116,5 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
     for (Meter meter : meterRegistry.getMeters()) {
       meterRegistry.remove(meter);
     }
-  }
-
-  protected void haveLoggedInUser(UserDTO user) {
-    when(userReader.getCurrentUser()).thenReturn(user);
-    when(userReader.getUsersByUsernames(any())).thenReturn(List.of(user));
   }
 }

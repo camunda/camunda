@@ -6,6 +6,7 @@
 package io.zeebe.tasklist.graphql;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -14,10 +15,13 @@ import com.graphql.spring.boot.test.GraphQLTestTemplate;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
+import io.zeebe.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class VariableIT extends TasklistZeebeIntegrationTest {
@@ -28,6 +32,21 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
       "{task(id: \"%s\"){id variables {name value}}}";
 
   @Autowired private GraphQLTestTemplate graphQLTestTemplate;
+
+  @Autowired private TaskMutationResolver taskMutationResolver;
+
+  @Before
+  public void before() {
+    super.before();
+    try {
+      FieldSetter.setField(
+          taskMutationResolver,
+          TaskMutationResolver.class.getDeclaredField("zeebeClient"),
+          super.getClient());
+    } catch (NoSuchFieldException e) {
+      fail("Failed to inject ZeebeClient into some of the beans");
+    }
+  }
 
   @Test
   public void shouldReturnOverwrittenVariable() throws IOException {
@@ -163,7 +182,7 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
         .waitUntil()
         .taskIsCreated(flowNodeBpmnId)
         .and()
-        .completeHumanTask(flowNodeBpmnId, "{\"result\": \"SUCCESS\"}")
+        .claimAndCompleteHumanTask(flowNodeBpmnId, "result", "\"SUCCESS\"")
         .waitUntil()
         .taskIsCreated(flowNodeBpmnId);
 
@@ -178,7 +197,9 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
 
     for (int i = 0; i < 2; i++) {
       final String taskJsonPath = String.format("$.data.tasks[%d]", i);
-      assertEquals("7", response.get(taskJsonPath + ".variables.length()"));
+      assertThat(response.get(taskJsonPath + ".variables.length()"))
+          .as("Task %d variables count", i)
+          .isEqualTo("7");
       assertThat(Arrays.asList(response.get(taskJsonPath + ".variables", Object[].class)))
           .extracting(o -> ((Map) o).get("name"))
           .containsExactlyInAnyOrder(

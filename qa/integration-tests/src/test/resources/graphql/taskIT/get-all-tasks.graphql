@@ -9,6 +9,7 @@
     }
     variables {
         name
+        value
     }
     taskState
 }

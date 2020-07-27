@@ -1,8 +1,8 @@
 {
-	"order": 30,
-	"index_patterns": [
-		"tasklist-variable-${schema.version}_*"
-	],
+	"aliases": {
+		"tasklist-variable-${schema.version}_alias": {
+		}
+	},
 	"mappings": {
 		"dynamic": "strict",
 		"properties": {
@@ -28,10 +28,6 @@
 			"key": {
 				"type": "long"
 			}
-		}
-	},
-	"aliases": {
-		"tasklist-variable-${schema.version}_alias": {
 		}
 	}
 }

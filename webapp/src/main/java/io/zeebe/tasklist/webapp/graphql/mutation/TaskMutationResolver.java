@@ -11,14 +11,17 @@ import static io.zeebe.tasklist.webapp.es.TaskValidator.CAN_COMPLETE;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import graphql.kickstart.tools.GraphQLMutationResolver;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.exceptions.TaskValidationException;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.webapp.es.TaskReaderWriter;
+import io.zeebe.tasklist.webapp.es.VariableReaderWriter;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
-import io.zeebe.tasklist.webapp.graphql.entity.VariableInputDTO;
+import io.zeebe.tasklist.webapp.graphql.entity.VariableDTO;
 import io.zeebe.tasklist.webapp.security.UserReader;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -35,12 +38,13 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
 
   @Autowired private TaskReaderWriter taskReaderWriter;
 
+  @Autowired private VariableReaderWriter variableReaderWriter;
+
   @Autowired private ObjectMapper objectMapper;
 
-  public boolean completeTask(String taskId, List<VariableInputDTO> variables) {
-    final Map<String, String> variablesMap =
-        variables.stream()
-            .collect(Collectors.toMap(VariableInputDTO::getName, VariableInputDTO::getValue));
+  public boolean completeTask(String taskId, List<VariableDTO> variables) {
+    final Map<String, Object> variablesMap =
+        variables.stream().collect(Collectors.toMap(VariableDTO::getName, this::extractTypedValue));
     // validate
     final GetResponse taskRawResponse = taskReaderWriter.getTaskRawResponse(taskId);
     if (!taskRawResponse.isExists()) {
@@ -54,14 +58,28 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
       throw new TasklistRuntimeException(e.getMessage(), e);
     }
     // complete
-    zeebeClient.newCompleteCommand(Long.valueOf(taskId)).variables(variablesMap).send().join();
-    // persist completion
+    CompleteJobCommandStep1 completeJobCommand =
+        zeebeClient.newCompleteCommand(Long.valueOf(taskId));
+    if (variablesMap != null) {
+      completeJobCommand = completeJobCommand.variables(variablesMap);
+    }
+    completeJobCommand.send().join();
+    // persist completion and variables
     taskReaderWriter.persistTaskCompletion(taskRawResponse);
+    variableReaderWriter.persistTaskVariables(taskId, variables);
     return true;
   }
 
+  private Object extractTypedValue(VariableDTO var) {
+    try {
+      return objectMapper.readValue(var.getValue(), Object.class);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
+
   public TaskDTO claimTask(String taskId) {
-    final TaskDTO task = taskReaderWriter.getTask(taskId);
+    final TaskDTO task = taskReaderWriter.getTaskDTO(taskId, null);
     final String currentUsername = getCurrentUsername();
     task.setAssigneeUsername(currentUsername);
     taskReaderWriter.persistTaskAssignee(task, currentUsername);
@@ -69,7 +87,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
   }
 
   public TaskDTO unclaimTask(String taskId) {
-    final TaskDTO task = taskReaderWriter.getTask(taskId);
+    final TaskDTO task = taskReaderWriter.getTaskDTO(taskId, null);
     task.setAssigneeUsername(null);
     taskReaderWriter.persistTaskAssignee(task, null);
     return task;

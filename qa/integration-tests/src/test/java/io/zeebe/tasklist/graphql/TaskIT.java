@@ -5,8 +5,9 @@
  */
 package io.zeebe.tasklist.graphql;
 
-import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -20,11 +21,14 @@ import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
 import io.zeebe.tasklist.webapp.graphql.entity.TaskDTO;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
+import io.zeebe.tasklist.webapp.graphql.mutation.TaskMutationResolver;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -40,8 +44,23 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
       "mutation {claimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
 
   @Autowired
-  @Qualifier(TASK_IS_CREATED_CHECK)
+  @Qualifier(TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCreatedCheck;
+
+  @Autowired private TaskMutationResolver taskMutationResolver;
+
+  @Before
+  public void before() {
+    super.before();
+    try {
+      FieldSetter.setField(
+          taskMutationResolver,
+          TaskMutationResolver.class.getDeclaredField("zeebeClient"),
+          super.getClient());
+    } catch (NoSuchFieldException e) {
+      fail("Failed to inject ZeebeClient into some of the beans");
+    }
+  }
 
   @Test
   public void shouldReturnAllTasks() throws IOException {
@@ -94,17 +113,16 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   public void shouldReturnCompletedTask() throws IOException {
     final String bpmnProcessId = "testProcess";
     final String flowNodeBpmnId = "taskA";
-
     final GraphQLResponse response =
         tester
-            .having()
             .createAndDeploySimpleWorkflow(bpmnProcessId, flowNodeBpmnId)
             .waitUntil()
             .workflowIsDeployed()
             .and()
             .startWorkflowInstance(bpmnProcessId)
-            .and()
-            .completeHumanTask(flowNodeBpmnId)
+            .waitUntil()
+            .taskIsCreated(flowNodeBpmnId)
+            .claimAndCompleteHumanTask(flowNodeBpmnId)
             .when()
             .getAllTasks();
 
@@ -117,7 +135,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertNotNull(response.get("$.data.tasks[0].creationTime"));
     assertNotNull(response.get("$.data.tasks[0].completionTime"));
     assertEquals(TaskState.COMPLETED.name(), response.get("$.data.tasks[0].taskState"));
-    assertNull(response.get("$.data.tasks[0].assignee"));
+    assertNotNull(response.get("$.data.tasks[0].assignee.username"));
     assertEquals("0", response.get("$.data.tasks[0].variables.length()"));
   }
 
@@ -197,7 +215,6 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
     assertEquals(3, tasks.size());
 
     // when #2
-    haveLoggedInUser(new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User"));
     final List<TaskDTO> tasksAfterOneClaimed =
         tester
             .when()
@@ -211,13 +228,12 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldReturnClaimedByUser() throws IOException {
-    haveLoggedInUser(new UserDTO().setUsername("demo").setFirstname("Demo").setLastname("User"));
     List<TaskDTO> tasks =
         tester
             .having()
             .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 2, 1)
             .when()
-            .getTasksByQuery("{tasks(query: {assignee: \"demo\"}) {id}}");
+            .getTasksByQuery("{tasks(query: {assignee: \"demo\", state: CREATED}) {id}}");
     assertEquals(0, tasks.size());
 
     tasks = tester.getCreatedTasks();
@@ -230,7 +246,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, tasks.get(1).getId()))
             .then()
             .waitFor(1000)
-            .getTasksByQuery("{tasks(query: { assignee: \"demo\"}) {id}}");
+            .getTasksByQuery("{tasks(query: { assignee: \"demo\", state: CREATED}) {id}}");
     assertEquals(2, tasks.size());
   }
 
@@ -247,33 +263,77 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .then()
             .getCreatedTasks();
     List<TaskDTO> unclaimedTasks = tester.getTasksByQuery("{tasks(query: {assigned: false}) {id}}");
-    assertEquals(7, unclaimedTasks.size());
+    assertEquals(5, unclaimedTasks.size());
     // when
-    haveLoggedInUser(joe);
+    setCurrentUser(joe);
     tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, createdTasks.get(2).getId()));
-    haveLoggedInUser(jane);
+    setCurrentUser(jane);
     tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, createdTasks.get(1).getId()));
-    haveLoggedInUser(demo);
+    setCurrentUser(demo);
     tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, createdTasks.get(4).getId()));
 
     tester.waitFor(2000);
-    unclaimedTasks = tester.getTasksByQuery("{tasks(query: {assigned: false}) {id}}");
-    assertEquals(4, unclaimedTasks.size());
+    unclaimedTasks =
+        tester.getTasksByQuery("{tasks(query: {assigned: false, state: CREATED}) {id}}");
+    assertEquals(2, unclaimedTasks.size());
 
     final List<TaskDTO> joesTasks =
-        tester.getTasksByQuery("{tasks(query: {assignee: \"joe\"}) {id}}");
+        tester.getTasksByQuery("{tasks(query: {assignee: \"joe\", state: CREATED}) {id}}");
     assertEquals(1, joesTasks.size());
     assertEquals(createdTasks.get(2).getId(), joesTasks.get(0).getId());
 
     final List<TaskDTO> janesTasks =
-        tester.getTasksByQuery("{tasks(query: {assignee: \"jane\"}) {id}}");
+        tester.getTasksByQuery("{tasks(query: {assignee: \"jane\", state: CREATED}) {id}}");
     assertEquals(1, janesTasks.size());
     assertEquals(createdTasks.get(1).getId(), janesTasks.get(0).getId());
 
     final List<TaskDTO> demoTasks =
-        tester.getTasksByQuery("{tasks(query: {assignee: \"demo\"}) {id}}");
+        tester.getTasksByQuery("{tasks(query: {assignee: \"demo\", state: CREATED}) {id}}");
     assertEquals(1, demoTasks.size());
     assertEquals(createdTasks.get(4).getId(), demoTasks.get(0).getId());
+  }
+  /** Tests variables loader. */
+  @Test
+  public void shouldReturnManyTasksWithVariables() throws IOException {
+    // having
+    createCreatedAndCompletedTasksWithVariables("testProcess_", "task_");
+
+    // when
+    final GraphQLResponse response = tester.getAllTasks();
+
+    // then
+    assertEquals("6", response.get("$.data.tasks.length()"));
+    for (int i = 0; i < 6; i++) {
+      final String flowNodeBpmnId = response.get("$.data.tasks[" + i + "].name");
+      final String variableValue = response.get("$.data.tasks[" + i + "].variables[0].value");
+      assertEquals("\"" + flowNodeBpmnId + "\"", variableValue);
+    }
+  }
+
+  private void createCreatedAndCompletedTasksWithVariables(
+      String bpmnProcessIdPattern, String flowNodeBpmnIdPattern) {
+    for (int i = 0; i < 6; i++) {
+      final String bpmnProcessId = bpmnProcessIdPattern + i;
+      final String flowNodeBpmnId = flowNodeBpmnIdPattern + i;
+      final BpmnModelInstance workflow =
+          Bpmn.createExecutableProcess(bpmnProcessId)
+              .startEvent()
+              .serviceTask(flowNodeBpmnId)
+              .zeebeJobType(tasklistProperties.getImporter().getJobType())
+              .endEvent()
+              .done();
+      tester
+          .deployWorkflow(workflow, workflow + ".bpmn")
+          .waitUntil()
+          .workflowIsDeployed()
+          .and()
+          .startWorkflowInstance(bpmnProcessId, "{\"flowNodeBpmnId\": \"" + flowNodeBpmnId + "\"}")
+          .waitUntil()
+          .taskIsCreated(flowNodeBpmnId);
+      if (i % 2 == 0) {
+        tester.claimAndCompleteHumanTask(flowNodeBpmnId);
+      }
+    }
   }
 
   @Test

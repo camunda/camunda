@@ -3,12 +3,12 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.es.schema.templates;
+package io.zeebe.tasklist.es.schema.indices;
 
 import org.springframework.stereotype.Component;
 
 @Component
-public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor {
+public class FlowNodeInstanceIndex extends AbstractIndexDescriptor {
 
   public static final String INDEX_NAME = "flownode-instance";
 
@@ -19,7 +19,7 @@ public class FlowNodeInstanceTemplate extends AbstractTemplateDescriptor {
   public static final String PARENT_FLOW_NODE_ID = "parentFlowNodeId";
 
   @Override
-  protected String getIndexNameFormat() {
+  protected String getMainIndexName() {
     return INDEX_NAME;
   }
 }

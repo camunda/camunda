@@ -7,6 +7,10 @@ package io.zeebe.tasklist.entities;
 
 import java.util.Objects;
 
+/**
+ * Represents runtime value of all variables, that exist in the system. Is used to calculate
+ * effective variables for tasks.
+ */
 public class VariableEntity extends TasklistZeebeEntity<VariableEntity> {
 
   private String name;
