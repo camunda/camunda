@@ -39,6 +39,13 @@ public final class SnapshotMetrics {
           .name("snapshot_size_bytes")
           .help("Estimated snapshot size on disk")
           .register();
+  private static final Gauge SNAPSHOT_CHUNK_COUNT =
+      Gauge.build()
+          .namespace(NAMESPACE)
+          .labelNames(PARTITION_LABEL_NAME)
+          .name("snapshot_chunks_count")
+          .help("Number of chunks in the last snapshot")
+          .register();
   private static final Histogram SNAPSHOT_DURATION =
       Histogram.build()
           .namespace(NAMESPACE)
@@ -67,6 +74,10 @@ public final class SnapshotMetrics {
 
   void observeSnapshotSize(final long sizeInBytes) {
     SNAPSHOT_SIZE.labels(partitionId).set(sizeInBytes);
+  }
+
+  void observeSnapshotChunkCount(final long count) {
+    SNAPSHOT_CHUNK_COUNT.labels(partitionId).set(count);
   }
 
   void observeSnapshotFileSize(final long sizeInBytes) {

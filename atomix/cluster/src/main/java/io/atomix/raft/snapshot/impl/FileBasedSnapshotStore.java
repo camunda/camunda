@@ -183,16 +183,18 @@ public final class FileBasedSnapshotStore implements PersistedSnapshotStore {
   private void observeSnapshotSize(final PersistedSnapshot persistedSnapshot) {
     try (final var contents = Files.newDirectoryStream(persistedSnapshot.getPath())) {
       var totalSize = 0L;
-
+      var totalCount = 0L;
       for (final var path : contents) {
         if (Files.isRegularFile(path)) {
           final var size = Files.size(path);
           snapshotMetrics.observeSnapshotFileSize(size);
           totalSize += size;
+          totalCount++;
         }
       }
 
       snapshotMetrics.observeSnapshotSize(totalSize);
+      snapshotMetrics.observeSnapshotChunkCount(totalCount);
     } catch (final IOException e) {
       LOGGER.warn("Failed to observe size for snapshot {}", persistedSnapshot, e);
     }
