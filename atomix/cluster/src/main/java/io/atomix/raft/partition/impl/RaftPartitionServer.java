@@ -26,6 +26,7 @@ import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.metrics.RaftStartupMetrics;
 import io.atomix.raft.partition.RaftCompactionConfig;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
@@ -94,7 +95,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
 
   @Override
   public CompletableFuture<RaftPartitionServer> start() {
+    final RaftStartupMetrics raftStartupMetrics = new RaftStartupMetrics(partition.name());
+    final long bootstrapStartTime;
     log.info("Starting server for partition {}", partition.id());
+    final long startTime = System.currentTimeMillis();
     final CompletableFuture<RaftServer> serverOpenFuture;
     if (partition.members().contains(localMemberId)) {
       if (server != null && server.isRunning()) {
@@ -103,19 +107,29 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
       synchronized (this) {
         try {
           initServer();
+
         } catch (final StorageException e) {
           return Futures.exceptionalFuture(e);
         }
       }
+      bootstrapStartTime = System.currentTimeMillis();
       serverOpenFuture = server.bootstrap(partition.members());
     } else {
+      bootstrapStartTime = System.currentTimeMillis();
       serverOpenFuture = CompletableFuture.completedFuture(null);
     }
     return serverOpenFuture
         .whenComplete(
             (r, e) -> {
               if (e == null) {
-                log.debug("Successfully started server for partition {}", partition.id());
+                final long endTime = System.currentTimeMillis();
+                final long startDuration = endTime - startTime;
+                raftStartupMetrics.observeBootstrapDuration(endTime - bootstrapStartTime);
+                raftStartupMetrics.observeStartupDuration(startDuration);
+                log.debug(
+                    "Successfully started server for partition {} in {}ms",
+                    partition.id(),
+                    startDuration);
               } else {
                 log.warn("Failed to start server for partition {}", partition.id(), e);
               }

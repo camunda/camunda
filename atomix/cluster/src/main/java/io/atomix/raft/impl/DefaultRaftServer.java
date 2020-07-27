@@ -245,6 +245,7 @@ public class DefaultRaftServer implements RaftServer {
           .whenComplete(
               (result, error) -> {
                 if (error == null) {
+                  log.debug("Server join completed. Waiting for the server to be READY");
                   context.awaitState(
                       RaftContext.State.READY,
                       state -> {
