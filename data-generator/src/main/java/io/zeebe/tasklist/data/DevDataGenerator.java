@@ -66,12 +66,16 @@ public class DevDataGenerator implements DataGenerator {
     if (shouldCreateData()) {
       executor.submit(
           () -> {
-            try {
-              createDemoUsers();
-              Thread.sleep(10_000);
-              createZeebeData();
-            } catch (Exception ex) {
-              LOGGER.error("Demo data was not generated: " + ex.getMessage(), ex);
+            boolean created = false;
+            while (!created && !shutdown) {
+              try {
+                createDemoUsers();
+                Thread.sleep(10_000);
+                createZeebeData();
+                created = true;
+              } catch (Exception ex) {
+                LOGGER.error("Demo data was not generated, will retry", ex);
+              }
             }
           });
     }
