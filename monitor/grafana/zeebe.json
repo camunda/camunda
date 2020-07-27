@@ -12,6 +12,12 @@
   "__requires": [
     {
       "type": "panel",
+      "id": "bargauge",
+      "name": "Bar Gauge",
+      "version": ""
+    },
+    {
+      "type": "panel",
       "id": "gauge",
       "name": "Gauge",
       "version": ""
@@ -71,7 +77,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1595865377824,
+  "iteration": 1596122668848,
   "links": [],
   "panels": [
     {
@@ -2445,8 +2451,7 @@
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "$DS_PROMETHEUS",
-          "description": "On-going snapshot replications from the receiver point-of-view.",
+          "datasource": "${DS_PROMETHEUS}",
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -2456,7 +2461,7 @@
             "y": 19
           },
           "hiddenSeries": false,
-          "id": 108,
+          "id": 182,
           "legend": {
             "avg": false,
             "current": false,
@@ -2482,8 +2487,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "zeebe_snapshot_replication_count{namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
-              "legendFormat": "{{pod}} p{{partition}}",
+              "expr": "zeebe_snapshot_chunks_count{namespace=~\"$namespace\", pod=~\"$pod\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} {{partition}}",
               "refId": "A"
             }
           ],
@@ -2491,7 +2497,7 @@
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Snapshot Replications",
+          "title": "Number of files in a snapshot",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -2596,6 +2602,94 @@
           "yaxes": [
             {
               "format": "ms",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
+          "description": "On-going snapshot replications from the receiver point-of-view.",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 27
+          },
+          "hiddenSeries": false,
+          "id": 108,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "zeebe_snapshot_replication_count{namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
+              "legendFormat": "{{pod}} p{{partition}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Snapshot Replications",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
               "label": null,
               "logBase": 1,
               "max": null,
@@ -4707,7 +4801,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 80
+            "y": 9
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4771,7 +4865,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 80
+            "y": 9
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4830,7 +4924,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 86
+            "y": 15
           },
           "hiddenSeries": false,
           "id": 79,
@@ -4922,7 +5016,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 86
+            "y": 15
           },
           "hiddenSeries": false,
           "id": 114,
@@ -5015,7 +5109,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 93
+            "y": 22
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5079,7 +5173,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 93
+            "y": 22
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5144,7 +5238,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 100
+            "y": 29
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5204,7 +5298,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 100
+            "y": 29
           },
           "hiddenSeries": false,
           "id": 72,
@@ -5295,10 +5389,10 @@
           "fill": 0,
           "fillGradient": 0,
           "gridPos": {
-            "h": 7,
-            "w": 24,
+            "h": 8,
+            "w": 12,
             "x": 0,
-            "y": 108
+            "y": 37
           },
           "hiddenSeries": false,
           "id": 95,
@@ -5384,6 +5478,97 @@
           "yaxis": {
             "align": false,
             "alignLevel": 1
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 37
+          },
+          "hiddenSeries": false,
+          "id": 180,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "atomix_segment_count{namespace=~\"$namespace\", pod=~\"$pod\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} {{partition}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Number of log segements",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:922",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:923",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
           }
         }
       ],
@@ -7227,9 +7412,304 @@
       ],
       "title": "Elasticsearch Exporter",
       "type": "row"
+    },
+    {
+      "collapsed": true,
+      "datasource": "${DS_PROMETHEUS}",
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "id": 176,
+      "panels": [
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Time taken to start and bootstrap partition servers.",
+          "gridPos": {
+            "h": 6,
+            "w": 8,
+            "x": 0,
+            "y": 12
+          },
+          "id": 170,
+          "maxPerRow": 6,
+          "options": {
+            "displayMode": "basic",
+            "fieldOptions": {
+              "calcs": [
+                "last"
+              ],
+              "defaults": {
+                "mappings": [],
+                "min": 0,
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 60000
+                    },
+                    {
+                      "color": "red",
+                      "value": 120000
+                    }
+                  ]
+                },
+                "unit": "dtdurationms"
+              },
+              "overrides": [],
+              "values": false
+            },
+            "orientation": "horizontal",
+            "showUnfilled": true
+          },
+          "pluginVersion": "6.7.1",
+          "repeat": "pod",
+          "repeatDirection": "h",
+          "scopedVars": {
+            "pod": {
+              "selected": false,
+              "text": "dd-test-startup-metrics-zeebe-0",
+              "value": "dd-test-startup-metrics-zeebe-0"
+            }
+          },
+          "targets": [
+            {
+              "expr": "atomix_partition_server_startup_time{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "interval": "",
+              "legendFormat": " Start {{pod}} p{{partition}}",
+              "refId": "A"
+            },
+            {
+              "expr": "atomix_partition_server_bootstrap_time{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "interval": "",
+              "legendFormat": "Bootstrap  {{pod}} p{{partition}}",
+              "refId": "B"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Atomix Partition Server Startup time",
+          "type": "bargauge"
+        },
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Time taken to start and bootstrap partition servers.",
+          "gridPos": {
+            "h": 6,
+            "w": 8,
+            "x": 8,
+            "y": 12
+          },
+          "id": 183,
+          "maxPerRow": 6,
+          "options": {
+            "displayMode": "basic",
+            "fieldOptions": {
+              "calcs": [
+                "last"
+              ],
+              "defaults": {
+                "mappings": [],
+                "min": 0,
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 60000
+                    },
+                    {
+                      "color": "red",
+                      "value": 120000
+                    }
+                  ]
+                },
+                "unit": "dtdurationms"
+              },
+              "overrides": [],
+              "values": false
+            },
+            "orientation": "horizontal",
+            "showUnfilled": true
+          },
+          "pluginVersion": "6.7.1",
+          "repeat": null,
+          "repeatDirection": "h",
+          "repeatIteration": 1596122668847,
+          "repeatPanelId": 170,
+          "scopedVars": {
+            "pod": {
+              "selected": false,
+              "text": "dd-test-startup-metrics-zeebe-1",
+              "value": "dd-test-startup-metrics-zeebe-1"
+            }
+          },
+          "targets": [
+            {
+              "expr": "atomix_partition_server_startup_time{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "interval": "",
+              "legendFormat": " Start {{pod}} p{{partition}}",
+              "refId": "A"
+            },
+            {
+              "expr": "atomix_partition_server_bootstrap_time{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "interval": "",
+              "legendFormat": "Bootstrap  {{pod}} p{{partition}}",
+              "refId": "B"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Atomix Partition Server Startup time",
+          "type": "bargauge"
+        },
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Time taken to start and bootstrap partition servers.",
+          "gridPos": {
+            "h": 6,
+            "w": 8,
+            "x": 16,
+            "y": 12
+          },
+          "id": 184,
+          "maxPerRow": 6,
+          "options": {
+            "displayMode": "basic",
+            "fieldOptions": {
+              "calcs": [
+                "last"
+              ],
+              "defaults": {
+                "mappings": [],
+                "min": 0,
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "#EAB839",
+                      "value": 60000
+                    },
+                    {
+                      "color": "red",
+                      "value": 120000
+                    }
+                  ]
+                },
+                "unit": "dtdurationms"
+              },
+              "overrides": [],
+              "values": false
+            },
+            "orientation": "horizontal",
+            "showUnfilled": true
+          },
+          "pluginVersion": "6.7.1",
+          "repeat": null,
+          "repeatDirection": "h",
+          "repeatIteration": 1596122668847,
+          "repeatPanelId": 170,
+          "scopedVars": {
+            "pod": {
+              "selected": false,
+              "text": "dd-test-startup-metrics-zeebe-2",
+              "value": "dd-test-startup-metrics-zeebe-2"
+            }
+          },
+          "targets": [
+            {
+              "expr": "atomix_partition_server_startup_time{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "interval": "",
+              "legendFormat": " Start {{pod}} p{{partition}}",
+              "refId": "A"
+            },
+            {
+              "expr": "atomix_partition_server_bootstrap_time{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "interval": "",
+              "legendFormat": "Bootstrap  {{pod}} p{{partition}}",
+              "refId": "B"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Atomix Partition Server Startup time",
+          "type": "bargauge"
+        },
+        {
+          "datasource": "${DS_PROMETHEUS}",
+          "description": "Time taken to recover and reprocess events",
+          "gridPos": {
+            "h": 5,
+            "w": 24,
+            "x": 0,
+            "y": 18
+          },
+          "id": 174,
+          "options": {
+            "displayMode": "basic",
+            "fieldOptions": {
+              "calcs": [
+                "last"
+              ],
+              "defaults": {
+                "mappings": [],
+                "min": 0,
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 60000
+                    }
+                  ]
+                },
+                "unit": "dtdurationms"
+              },
+              "overrides": [],
+              "values": false
+            },
+            "orientation": "horizontal",
+            "showUnfilled": true
+          },
+          "pluginVersion": "6.7.1",
+          "targets": [
+            {
+              "expr": "zeebe_stream_processor_startup_recovery_time{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "interval": "",
+              "legendFormat": "{{pod}} p{{partition}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Streamprocessor Recovery Time",
+          "type": "bargauge"
+        }
+      ],
+      "title": "Start up",
+      "type": "row"
     }
   ],
-  "refresh": "5s",
+  "refresh": "10s",
   "schemaVersion": 22,
   "style": "dark",
   "tags": [],
@@ -7359,5 +7839,5 @@
   "variables": {
     "list": []
   },
-  "version": 17
+  "version": 9
 }
