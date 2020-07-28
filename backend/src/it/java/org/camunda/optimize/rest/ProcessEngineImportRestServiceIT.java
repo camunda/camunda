@@ -24,8 +24,8 @@ public class ProcessEngineImportRestServiceIT extends AbstractIT {
   public void importDataFromEngine() {
     //given
     BpmnModelInstance processModel = Bpmn.createExecutableProcess(PROCESS_ID)
-        .startEvent()
-        .endEvent()
+      .startEvent()
+      .endEvent()
       .done();
     engineIntegrationExtension.deployAndStartProcess(processModel);
 
@@ -34,14 +34,14 @@ public class ProcessEngineImportRestServiceIT extends AbstractIT {
 
     //when
     List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildGetProcessDefinitionsRequest()
-            .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
+      .getRequestExecutor()
+      .buildGetProcessDefinitionsRequest()
+      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
     //then
     assertThat(definitions).isNotNull().hasSize(1);
     assertThat(definitions.get(0).getId()).isNotNull();
     assertThat(definitions.get(0).getKey()).isEqualTo(PROCESS_ID);
-    assertThat(definitions.get(0).getVersion()).isNotEqualTo(0L);
+    assertThat(definitions.get(0).getVersion()).isNotEqualTo("0");
   }
 
 }

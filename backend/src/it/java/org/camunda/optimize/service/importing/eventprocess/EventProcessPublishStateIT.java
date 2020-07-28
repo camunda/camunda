@@ -523,7 +523,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // then the import source last imported timestamp reflects the latest imported event
     assertThat(publishState.getEventImportSources()
                  .get(0)
-                 .getLastImportedEventTimestamp()).isEqualTo(timeBaseLine.toString());
+                 .getLastImportedEventTimestamp()).isEqualTo(timeBaseLine);
   }
 
   @Test

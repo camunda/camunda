@@ -103,6 +103,7 @@ public class ImportIT extends AbstractImportIT {
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
+      .isNotEmpty()
       .allSatisfy(processInstanceDto -> {
         assertThat(processInstanceDto.getUserTasks()).hasSize(2);
         assertThat(processInstanceDto.getUserTasks())
@@ -119,7 +120,7 @@ public class ImportIT extends AbstractImportIT {
   protected void assertDocumentCountInES(final String elasticsearchIndex,
                                          final long count) {
     final Integer docCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(elasticsearchIndex);
-    assertThat(docCount).isEqualTo(count);
+    assertThat(docCount.longValue()).isEqualTo(count);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleTwoUserTaskProcessWithVariables(
