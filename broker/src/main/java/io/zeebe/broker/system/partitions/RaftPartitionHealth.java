@@ -21,6 +21,7 @@ public class RaftPartitionHealth implements HealthMonitorable, RaftFailureListen
   private FailureListener healthMonitor;
   private final ActorControl actor;
   private final RaftFailureListener raftFailureListener;
+  private final String name;
 
   RaftPartitionHealth(
       final RaftPartition atomixRaftPartition,
@@ -30,6 +31,7 @@ public class RaftPartitionHealth implements HealthMonitorable, RaftFailureListen
     this.actor = actor;
     this.raftFailureListener = listener;
     this.atomixRaftPartition.addFailureListener(this);
+    this.name = "Raft-" + atomixRaftPartition.id().id();
   }
 
   @Override
@@ -53,5 +55,9 @@ public class RaftPartitionHealth implements HealthMonitorable, RaftFailureListen
 
   public void close() {
     atomixRaftPartition.removeFailureListener(this);
+  }
+
+  public String getName() {
+    return name;
   }
 }
