@@ -54,7 +54,7 @@ export const DashboardLink = themed(styled(
   withStrippedProps(['toggleTheme', 'isActive'])(Link)
 )`
   display: inline-block;
-  padding: 2px 21px 2px 20px
+  padding: 2px 21px 2px 20px;
   border-right: 1px solid ${separator};
   border-left: 1px solid ${separator};
 `);

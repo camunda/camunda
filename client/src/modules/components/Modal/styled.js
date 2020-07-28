@@ -148,10 +148,7 @@ export const CrossButton = themed(styled.button`
   }
 `);
 
-export const CrossIcon = themed(styled(CloseLarge)`
-
-  }
-`);
+export const CrossIcon = themed(styled(CloseLarge)``);
 
 export const ModalBody = themed(styled(Panel.Body)`
   padding: 14px 29px 14px 19px;
@@ -168,11 +165,11 @@ export const ModalBody = themed(styled(Panel.Body)`
 `);
 
 export const ModalBodyText = themed(styled.div`
-  font-size: 13px
+  font-size: 13px;
   opacity: ${themeStyle({
     dark: '0.9',
     light: '1',
-  })}
+  })};
 `);
 
 export const ModalFooter = themed(styled(Panel.Footer)`

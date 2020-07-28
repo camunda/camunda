@@ -28,8 +28,8 @@ const overlayStyles = css`
 
 export const Collapsable = themed(styled.div`
   border-radius: ${({panelPosition}) => {
-    if (panelPosition === PANEL_POSITION.RIGHT) return '3px 0 0 0';
-    if (panelPosition === PANEL_POSITION.LEFT) return '0 3px 0 0';
+    if (panelPosition === PANEL_POSITION.RIGHT) return '3px 0 0 0;';
+    if (panelPosition === PANEL_POSITION.LEFT) return '0 3px 0 0;';
   }};
 
   position: relative;
@@ -58,7 +58,7 @@ const panelStyle = css`
   left: 0;
   height: 100%;
   width: 100%;
-  transition: ${({transitionTimeout, isCollapsed}) =>
+  transition: ${({transitionTimeout}) =>
     `visibility  ${transitionTimeout}ms ease-out, opacity ${transitionTimeout}ms ease-out`};
 `;
 

@@ -61,10 +61,11 @@ export const CustomCheckbox = themed(styled.div`
     width: 100%;
     height: 100%;
     border-radius: 3px;
-    border: solid 1px ${themeStyle({
-      dark: '#bebec0',
-      light: Colors.uiLight03,
-    })};
+    border: solid 1px
+      ${themeStyle({
+        dark: '#bebec0',
+        light: Colors.uiLight03,
+      })};
     background: ${themeStyle({
       dark: Colors.uiDark02,
       light: Colors.uiLight01,
@@ -79,16 +80,15 @@ export const CustomCheckbox = themed(styled.div`
 
   /* add boxshadow to checked boxes */
   &:before {
-    box-shadow: ${({checked}) => checked && '0 2px 2px 0'}
-      ${({checked}) =>
-        checked &&
-        themeStyle({
-          dark: 'rgba(0, 0, 0, 0.5)',
-          light: ({checkboxType}) =>
-            checkboxType === 'selection'
-              ? 'rgba(0, 0, 0, 0.5)'
-              : 'rgba(231, 233, 238, 0.35)',
-        })};
+    box-shadow: ${({checked}) =>
+      checked &&
+      themeStyle({
+        dark: '0 2px 2px 0 rgba(0, 0, 0, 0.5)',
+        light: ({checkboxType}) =>
+          checkboxType === 'selection'
+            ? '0 2px 2px 0 rgba(0, 0, 0, 0.5)'
+            : '0 2px 2px 0 rgba(231, 233, 238, 0.35)',
+      })};
   }
 
   /* simulate focus */
@@ -118,9 +118,7 @@ export const CustomCheckbox = themed(styled.div`
       light: ({checkboxType}) =>
         checkboxType === 'selection' ? '#ffffff' : Colors.uiLight06,
     })};
-    };
   }
-
 `);
 
 const indeterminateStyles = `

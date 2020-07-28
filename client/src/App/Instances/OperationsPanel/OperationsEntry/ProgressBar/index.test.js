@@ -15,7 +15,7 @@ describe('ProgressBar', () => {
     const node = mount(<ProgressBar totalCount={0} finishedCount={0} />);
 
     // then
-    expect(node.find('[data-test="progress-bar"]')).toHaveStyleRule(
+    expect(node.find('[data-test="progress-bar"]').first()).toHaveStyleRule(
       'width',
       '0%'
     );
@@ -26,7 +26,7 @@ describe('ProgressBar', () => {
     const node = mount(<ProgressBar totalCount={5} finishedCount={0} />);
 
     // then
-    expect(node.find('[data-test="progress-bar"]')).toHaveStyleRule(
+    expect(node.find('[data-test="progress-bar"]').first()).toHaveStyleRule(
       'width',
       '0%'
     );
@@ -37,7 +37,7 @@ describe('ProgressBar', () => {
     const node = mount(<ProgressBar totalCount={9} finishedCount={3} />);
 
     // then
-    expect(node.find('[data-test="progress-bar"]')).toHaveStyleRule(
+    expect(node.find('[data-test="progress-bar"]').first()).toHaveStyleRule(
       'width',
       '33%'
     );
@@ -48,7 +48,7 @@ describe('ProgressBar', () => {
     const node = mount(<ProgressBar totalCount={5} finishedCount={5} />);
 
     // then
-    expect(node.find('[data-test="progress-bar"]')).toHaveStyleRule(
+    expect(node.find('[data-test="progress-bar"]').first()).toHaveStyleRule(
       'width',
       '100%'
     );

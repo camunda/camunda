@@ -29,14 +29,14 @@ export const dropdownButtonStyles = css`
   font-weight: 600;
 
   background-color: ${Colors.selections};
-  color: ${Colors.uiLight04}
+  color: ${Colors.uiLight04};
 
   &:hover {
     background-color: ${Colors.primaryButton04};
   }
 
   &:active,
-  &[data-button-open=true] {
+  &[data-button-open='true'] {
     background-color: #1a70ff;
   }
 
@@ -44,5 +44,4 @@ export const dropdownButtonStyles = css`
   border-radius: 13px;
   border: none;
   padding: 4px 11px 5px 11px;
-  
 `;

@@ -75,7 +75,7 @@ export const TD = themed(styled.td`
   })};
   font-weight: ${(props) => (props.isBold ? 'bold' : 'normal')};
 
-  padding-top: 5px
+  padding-top: 5px;
   padding-bottom: 5px;
   padding-left: 17px;
   padding-right: 9px;

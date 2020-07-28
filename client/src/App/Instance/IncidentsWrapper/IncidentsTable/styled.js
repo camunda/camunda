@@ -49,7 +49,7 @@ export const Flex = styled.div`
 export const FirstTH = themed(styled(TH)`
   position: relative;
   height: 100%;
-  padding-left: 27px
+  padding-left: 27px;
   z-index: 0;
 
   &:before {

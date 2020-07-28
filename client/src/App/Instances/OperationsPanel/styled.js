@@ -11,15 +11,16 @@ export const OperationsList = themed(styled.ul`
   li:first-child {
     border-top: none;
   }
-  
+
   li:last-child {
-    border-bottom:  ${({isLoading}) =>
+    border-bottom: ${({isLoading}) =>
       isLoading
         ? themeStyle({
             dark: `1px solid ${Colors.uiDark04}`,
             light: `1px solid ${Colors.uiLight05}`,
           })
         : 'none'};
+  }
 `);
 
 export const EmptyMessage = themed(styled.div`
@@ -33,7 +34,7 @@ export const EmptyMessage = themed(styled.div`
   padding: 29px 44px 29px 32px;
   text-align: center;
   font-size: 13px;
-  font-family: 'IBMPlexSans';
+  font-family: IBMPlexSans;
   color: ${themeStyle({
     dark: 'rgba(255, 255, 255, 0.9)',
     light: Colors.uiLight06,

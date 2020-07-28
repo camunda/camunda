@@ -25,8 +25,8 @@ describe('CollapsablePanel', () => {
     );
 
     // then
-    const expandedPanel = node.find('[data-test="expanded-panel"]');
-    const collapsedPanel = node.find('[data-test="collapsed-panel"]');
+    const expandedPanel = node.find('[data-test="expanded-panel"]').first();
+    const collapsedPanel = node.find('[data-test="collapsed-panel"]').first();
     const content = expandedPanel.find('[data-test="cool-panel-content"]');
 
     expect(expandedPanel).toHaveStyleRule('visibility', 'visible');
@@ -49,8 +49,8 @@ describe('CollapsablePanel', () => {
     );
 
     // then
-    const expandedPanel = node.find('[data-test="expanded-panel"]');
-    const collapsedPanel = node.find('[data-test="collapsed-panel"]');
+    const expandedPanel = node.find('[data-test="expanded-panel"]').first();
+    const collapsedPanel = node.find('[data-test="collapsed-panel"]').first();
 
     expect(collapsedPanel).toHaveStyleRule('visibility', 'visible');
     expect(expandedPanel).toHaveStyleRule('visibility', 'hidden');
@@ -98,7 +98,7 @@ it('should have background color style rule when hasBackgroundColor is true', ()
   );
 
   // then
-  const expandedPanel = node.find('[data-test="expanded-panel"]');
+  const expandedPanel = node.find('[data-test="expanded-panel"]').first();
   expect(expandedPanel).toHaveStyleRule('background-color', '#313238');
 });
 
@@ -116,7 +116,7 @@ it('should have border-right rule when panel position is RIGHT', () => {
   );
 
   // then
-  const expandedPanel = node.find('[data-test="expanded-panel"]');
+  const expandedPanel = node.find('[data-test="expanded-panel"]').first();
   expect(expandedPanel).toHaveStyleRule('border-right', 'none');
 });
 it('should not have border-right rule when panel position is not RIGHT', () => {
@@ -133,6 +133,6 @@ it('should not have border-right rule when panel position is not RIGHT', () => {
   );
 
   // then
-  const expandedPanel = node.find('[data-test="expanded-panel"]');
+  const expandedPanel = node.find('[data-test="expanded-panel"]').first();
   expect(expandedPanel).not.toHaveStyleRule('border-right', 'none');
 });

@@ -116,8 +116,8 @@ describe('OperationsPanel', () => {
     node.find('[data-test="expand-button"]').first().simulate('click');
 
     // then
-    const expandedPanel = node.find('[data-test="expanded-panel"]');
-    const collapsedPanel = node.find('[data-test="collapsed-panel"]');
+    const expandedPanel = node.find('[data-test="expanded-panel"]').first();
+    const collapsedPanel = node.find('[data-test="collapsed-panel"]').first();
 
     expect(collapsedPanel).toHaveStyleRule('visibility', 'hidden');
     expect(expandedPanel).toHaveStyleRule('visibility', 'visible');
@@ -133,8 +133,8 @@ describe('OperationsPanel', () => {
     node.find('[data-test="collapse-button"]').first().simulate('click');
 
     // then
-    const expandedPanel = node.find('[data-test="expanded-panel"]');
-    const collapsedPanel = node.find('[data-test="collapsed-panel"]');
+    const expandedPanel = node.find('[data-test="expanded-panel"]').first();
+    const collapsedPanel = node.find('[data-test="collapsed-panel"]').first();
 
     expect(collapsedPanel).toHaveStyleRule('visibility', 'visible');
     expect(expandedPanel).toHaveStyleRule('visibility', 'hidden');

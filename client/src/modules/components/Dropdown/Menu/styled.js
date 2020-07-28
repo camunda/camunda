@@ -36,7 +36,7 @@ export const PointerBody = css`
     light: Colors.uiLight02,
   })};
   ${({placement}) =>
-    placement === DROPDOWN_PLACEMENT.TOP && 'transform: rotate(180deg)'};
+    placement === DROPDOWN_PLACEMENT.TOP && 'transform: rotate(180deg);'};
 `;
 
 export const PointerShadow = css`
@@ -48,7 +48,7 @@ export const PointerShadow = css`
   })};
 
   ${({placement}) =>
-    placement === DROPDOWN_PLACEMENT.TOP && 'transform: rotate(180deg)'};
+    placement === DROPDOWN_PLACEMENT.TOP && 'transform: rotate(180deg);'};
 `;
 
 const placementStyle = (placement, topStyle, bottomStyle) =>

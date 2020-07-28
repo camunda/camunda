@@ -62,7 +62,7 @@ export const OptionButton = themed(styled.button`
   line-height: 36px;
 
   /* Other */
-  ${({disabled}) => (!disabled ? interactionStyles : '')};
+  ${({disabled}) => (!disabled ? interactionStyles : '')}
 `);
 
 const interactionStyles = css`

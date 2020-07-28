@@ -17,7 +17,7 @@ const BorderColors = css`
 `;
 
 export const Pane = styled(SplitPane.Pane)`
-  ${({expandState}) => expandState === 'DEFAULT' && 'height: 50%'}
+  ${({expandState}) => expandState === 'DEFAULT' && 'height: 50%;'}
 `;
 
 export const PaneBody = themed(styled(SplitPane.Pane.Body)`
