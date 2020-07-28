@@ -97,7 +97,7 @@ export default class Popover extends React.Component {
       const margin = 10;
 
       if (buttonLeftPosition + overlayWidth > bodyWidth) {
-        style.right = 0;
+        style.right = '-16px';
       } else {
         style.left = 0;
       }
