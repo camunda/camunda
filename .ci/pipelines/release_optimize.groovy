@@ -48,7 +48,7 @@ String calculatePreviousVersion(releaseVersion) {
   }
 }
 
-static String mavenDindAgent(env) {
+static String mavenDindAgent() {
   return """---
 apiVersion: v1
 kind: Pod
@@ -76,11 +76,11 @@ spec:
       value: Europe/Berlin
     resources:
       limits:
-        cpu: 4
-        memory: 3Gi
+        cpu: 5
+        memory: 6Gi
       requests:
-        cpu: 4
-        memory: 3Gi
+        cpu: 5
+        memory: 6Gi
   - name: docker
     image: ${DIND_DOCKER_IMAGE()}
     args: ["--storage-driver=overlay2"]
@@ -271,7 +271,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yaml mavenDindAgent(env)
+      yaml mavenDindAgent()
     }
   }
 
