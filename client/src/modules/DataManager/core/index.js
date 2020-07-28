@@ -112,20 +112,6 @@ export class DataManager {
     );
   };
 
-  getInstancesByWorkflow = () => {
-    this.fetchAndPublish(
-      SUBSCRIPTION_TOPIC.LOAD_INSTANCES_BY_WORKFLOW,
-      fetchInstancesByWorkflow
-    );
-  };
-
-  getIncidentsByError = () => {
-    this.fetchAndPublish(
-      SUBSCRIPTION_TOPIC.LOAD_INCIDENTS_BY_ERROR,
-      fetchIncidentsByError
-    );
-  };
-
   getWorkflowInstances = (params) => {
     this.fetchAndPublish(LOAD_LIST_INSTANCES, fetchWorkflowInstances, params);
   };
