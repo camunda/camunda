@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
@@ -138,6 +139,20 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
 
     // then
     assertThat(definitionKeysWithoutEventProcesses).isEmpty();
+  }
+
+  @Test
+  public void getDefinitionKeys_camundaEventImportedOnlyNotAllowedInCollectionContext() {
+    // given
+    final String collectionId = collectionClient.createNewCollection();
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDefinitionKeysByType(DECISION.getId(), collectionId, null, true)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest
@@ -530,7 +545,12 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
     createDefinition(definitionType, definitionKey, "2", null, "the name");
     final String collectionId = collectionClient.createNewCollection();
     // all tenants are in scope
-    final List<String> scopeTenantIds = Lists.newArrayList(TENANT_NOT_DEFINED_ID, TENANT_ID_1, TENANT_ID_2, TENANT_ID_3);
+    final List<String> scopeTenantIds = Lists.newArrayList(
+      TENANT_NOT_DEFINED_ID,
+      TENANT_ID_1,
+      TENANT_ID_2,
+      TENANT_ID_3
+    );
     collectionClient.addScopeEntryToCollection(
       collectionId, new CollectionScopeEntryDto(definitionType, definitionKey, scopeTenantIds)
     );

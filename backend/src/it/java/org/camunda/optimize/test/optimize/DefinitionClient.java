@@ -42,6 +42,12 @@ public class DefinitionClient {
     return getAllDefinitionsAsUser(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
+  public List<DefinitionKeyDto> getCamundaEventImportedProcessDefinitionKeys() {
+    return getRequestExecutor()
+      .buildGetDefinitionKeysByType(DefinitionType.PROCESS.getId(), null, null, true)
+      .executeAndReturnList(DefinitionKeyDto.class, Response.Status.OK.getStatusCode());
+  }
+
   public List<DefinitionWithTenantsDto> getAllDefinitionsAsUser(String username, String password) {
     return getRequestExecutor()
       .buildGetDefinitions()

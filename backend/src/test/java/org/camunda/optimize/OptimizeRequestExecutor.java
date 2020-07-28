@@ -907,10 +907,18 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildGetDefinitionKeysByType(final String type,
                                                               final String filterByCollectionScope,
                                                               final Boolean excludeEventProcesses) {
+    return buildGetDefinitionKeysByType(type, filterByCollectionScope, excludeEventProcesses, null);
+  }
+
+  public OptimizeRequestExecutor buildGetDefinitionKeysByType(final String type,
+                                                              final String filterByCollectionScope,
+                                                              final Boolean excludeEventProcesses,
+                                                              final Boolean camundaEventImportedOnly) {
     this.path = "/definition/" + type + "/keys";
     this.method = GET;
     addSingleQueryParam("filterByCollectionScope", filterByCollectionScope);
     addSingleQueryParam("excludeEventProcesses", excludeEventProcesses);
+    addSingleQueryParam("camundaEventImportedOnly", camundaEventImportedOnly);
     return this;
   }
 

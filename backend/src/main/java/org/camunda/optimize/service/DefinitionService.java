@@ -22,7 +22,9 @@ import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsD
 import org.camunda.optimize.dto.optimize.query.definition.TenantIdWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.DefinitionReader;
+import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
@@ -53,6 +55,7 @@ public class DefinitionService {
   private final DefinitionReader definitionReader;
   private final DefinitionAuthorizationService definitionAuthorizationService;
   private final TenantService tenantService;
+  private final CamundaActivityEventReader camundaActivityEventReader;
 
   public Optional<DefinitionWithTenantsDto> getDefinitionWithAvailableTenants(final DefinitionType type,
                                                                               final String key,
@@ -149,6 +152,18 @@ public class DefinitionService {
     return result.stream()
       .sorted(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())))
       .collect(Collectors.toList());
+  }
+
+  public List<DefinitionWithTenantsDto> getFullyImportedCamundaEventImportedDefinitions(final String userId) {
+    final Set<String> camundaEventImportedKeys = camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
+    final List<DefinitionWithTenantsDto> allProcessDefs = getFullyImportedDefinitions(
+      DefinitionType.PROCESS,
+      true,
+      userId
+    );
+    return allProcessDefs.stream()
+      .filter(def -> camundaEventImportedKeys.contains(def.getKey().toLowerCase()))
+      .collect(toList());
   }
 
   public List<DefinitionWithTenantsDto> getFullyImportedDefinitions(@NonNull final String userId) {

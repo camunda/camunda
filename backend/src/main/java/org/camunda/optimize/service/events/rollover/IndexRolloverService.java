@@ -88,4 +88,5 @@ public class IndexRolloverService extends AbstractScheduledService {
       .map(alias -> alias.substring(configurationService.getEsIndexPrefix().length() + 1))
       .collect(Collectors.toSet());
   }
+
 }

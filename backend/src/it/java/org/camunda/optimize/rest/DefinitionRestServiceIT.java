@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.Lists;
+import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
@@ -19,6 +20,7 @@ import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsD
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -102,8 +104,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
   @ParameterizedTest
   @EnumSource(DefinitionType.class)
   public void getDefinitionByTypeAndKey_keyNotFound(final DefinitionType definitionType) {
-    //given
-
     // when
     final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -116,8 +116,6 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   @Test
   public void getDefinitionByTypeAndKey_invalidType() {
-    //given
-
     // when
     final Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -624,6 +622,56 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
     // then
     assertThat(definitionsWithoutEventProcesses).isEmpty();
+  }
+
+  @Test
+  public void getDecisionDefinitionKeys_camundaImportedEventProcessesOnlyNotAllowed() {
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDefinitionKeysByType(DECISION.getId(), null, null, true)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void getProcessDefinitionKeys_camundaImportedEventProcessesOnly() {
+    // given
+    toggleCamundaEventImportsConfiguration(true);
+
+    final ProcessInstanceEngineDto firstInstance = deployDefinitionAndStartInstance("aProcess");
+    importAllEngineEntitiesFromScratch();
+    embeddedOptimizeExtension.processEvents();
+
+    // then the key is returned when requesting keys for camunda event imported definitions
+    final List<DefinitionKeyDto> keysForCamundaEventImportedDefinitions =
+      definitionClient.getCamundaEventImportedProcessDefinitionKeys();
+    assertThat(keysForCamundaEventImportedDefinitions)
+      .hasSize(1)
+      .extracting(DefinitionKeyDto::getKey)
+      .containsExactly(firstInstance.getProcessDefinitionKey());
+
+    // when we disable imports of Camunda events
+    toggleCamundaEventImportsConfiguration(false);
+    // and deploy a second definition and start an instance
+    final ProcessInstanceEngineDto secondInstance = deployDefinitionAndStartInstance("anotherProcess");
+    importAllEngineEntitiesFromLastIndex();
+    embeddedOptimizeExtension.processEvents();
+
+    // then both keys are available when fetching all keys
+    final List<DefinitionKeyDto> allDefinitionKeys = definitionClient.getDefinitionKeysByType(PROCESS);
+    assertThat(allDefinitionKeys)
+      .hasSize(2)
+      .extracting(DefinitionKeyDto::getKey)
+      .containsExactlyInAnyOrder(firstInstance.getProcessDefinitionKey(), secondInstance.getProcessDefinitionKey());
+    // and only the key with the instance imported with the importEnabled configuration is available when requesting
+    // keys for Camunda event imported definitions only
+    final List<DefinitionKeyDto> camundaEventImportedOnlyKeys =
+      definitionClient.getCamundaEventImportedProcessDefinitionKeys();
+    assertThat(camundaEventImportedOnlyKeys)
+      .hasSize(1)
+      .containsExactlyElementsOf(keysForCamundaEventImportedDefinitions);
   }
 
   @Test
@@ -1470,6 +1518,20 @@ public class DefinitionRestServiceIT extends AbstractIT {
 
   protected void createTenant(final TenantDto tenant) {
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(TENANT_INDEX_NAME, tenant.getId(), tenant);
+  }
+
+  private ProcessInstanceEngineDto deployDefinitionAndStartInstance(final String processId) {
+    return engineIntegrationExtension.deployAndStartProcess(
+      Bpmn.createExecutableProcess(processId)
+        .name(processId)
+        .startEvent()
+        .endEvent()
+        .done());
+  }
+
+  private void toggleCamundaEventImportsConfiguration(final boolean enabled) {
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(enabled);
+    embeddedOptimizeExtension.reloadConfiguration();
   }
 
 }
