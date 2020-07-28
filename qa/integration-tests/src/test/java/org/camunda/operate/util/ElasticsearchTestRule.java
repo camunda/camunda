@@ -156,7 +156,7 @@ public class ElasticsearchTestRule extends TestWatcher {
       TestUtil.removeAllIndices(esClient,indexPrefix);
     }
     operateProperties.getElasticsearch().setIndexPrefix(OperateElasticsearchProperties.DEFAULT_INDEX_PREFIX);
-    assertMaxOpenScrollContexts(10);
+    assertMaxOpenScrollContexts(15);
   }
   
   public void assertMaxOpenScrollContexts(final int maxOpenScrollContexts) {
