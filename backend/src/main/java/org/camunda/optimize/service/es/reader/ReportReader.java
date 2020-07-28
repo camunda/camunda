@@ -27,6 +27,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -43,6 +44,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORTS;
@@ -55,6 +57,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @RequiredArgsConstructor
 @Component
@@ -183,6 +186,34 @@ public class ReportReader {
     );
   }
 
+  public List<ReportDefinitionDto> getAllReportsForProcessDefinitionKeyOmitXml(final String definitionKey) {
+    final List<ReportDefinitionDto> processReportsForKey = getAllProcessReportsForDefinitionKeyOmitXml(definitionKey);
+    final List<String> processReportIds = processReportsForKey.stream()
+      .map(ReportDefinitionDto::getId)
+      .collect(Collectors.toList());
+    final List<CombinedReportDefinitionDto> combinedReports = findCombinedReportsForSimpleReports(processReportIds);
+    processReportsForKey.addAll(combinedReports);
+    return processReportsForKey;
+  }
+
+  private List<ReportDefinitionDto> getAllProcessReportsForDefinitionKeyOmitXml(final String definitionKey) {
+    log.debug("Fetching all available process reports for process definition key {}", definitionKey);
+    final BoolQueryBuilder processReportQuery = boolQuery()
+      .must(termQuery(String.join(".", DATA, PROCESS_DEFINITION_KEY), definitionKey));
+    SearchResponse searchResponse = performGetReportRequestOmitXml(
+      processReportQuery,
+      new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME},
+      LIST_FETCH_LIMIT
+    );
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
+      searchResponse,
+      ReportDefinitionDto.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
+  }
+
   public List<ReportDefinitionDto> getAllPrivateReportsOmitXml() {
     log.debug("Fetching all available private reports");
     QueryBuilder qb = boolQuery().mustNot(existsQuery(COLLECTION_ID));
@@ -232,14 +263,18 @@ public class ReportReader {
     return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), ReportDefinitionDto.class, objectMapper);
   }
 
-  public List<CombinedReportDefinitionDto> findFirstCombinedReportsForSimpleReport(String simpleReportId) {
-    log.debug("Fetching first combined reports using simpleReport with id {}", simpleReportId);
+  public List<CombinedReportDefinitionDto> findCombinedReportsForSimpleReport(String simpleReportId) {
+    return findCombinedReportsForSimpleReports(Collections.singletonList(simpleReportId));
+  }
+
+  private List<CombinedReportDefinitionDto> findCombinedReportsForSimpleReports(List<String> simpleReportIds) {
+    log.debug("Fetching first combined reports using simpleReports with ids {}", simpleReportIds);
 
     final NestedQueryBuilder getCombinedReportsBySimpleReportIdQuery = nestedQuery(
       DATA,
       nestedQuery(
         String.join(".", DATA, REPORTS),
-        termQuery(String.join(".", DATA, REPORTS, REPORT_ITEM_ID), simpleReportId),
+        termsQuery(String.join(".", DATA, REPORTS, REPORT_ITEM_ID), simpleReportIds),
         ScoreMode.None
       ),
       ScoreMode.None
@@ -254,8 +289,8 @@ public class ReportReader {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format(
-        "Was not able to fetch combined reports that contain report with id [%s]",
-        simpleReportId
+        "Was not able to fetch combined reports that contain reports with ids [%s]",
+        simpleReportIds
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);

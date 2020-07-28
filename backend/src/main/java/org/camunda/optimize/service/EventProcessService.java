@@ -173,8 +173,8 @@ public class EventProcessService {
   }
 
   public ConflictResponseDto getDeleteConflictingItems(final String eventProcessId) {
-    List<ReportDefinitionDto> reportsForProcessDefinitionKey = reportService.getAllReportsForProcessDefinitionKey(
-      eventProcessId);
+    List<ReportDefinitionDto> reportsForProcessDefinitionKey =
+      reportService.getAllReportsForProcessDefinitionKeyOmitXml(eventProcessId);
     Set<ConflictedItemDto> conflictedItems = new HashSet<>();
     for (ReportDefinitionDto reportForEventProcess : reportsForProcessDefinitionKey) {
       if (reportForEventProcess instanceof CombinedReportDefinitionDto) {

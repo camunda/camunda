@@ -56,7 +56,6 @@ import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -216,29 +215,13 @@ public class ReportService implements CollectionReferencingService {
   }
 
   public void deleteAllReportsForProcessDefinitionKey(String processDefinitionKey) {
-    List<ReportDefinitionDto> reportsForDefinitionKey = getAllReportsForProcessDefinitionKey(processDefinitionKey);
+    List<ReportDefinitionDto> reportsForDefinitionKey =
+      getAllReportsForProcessDefinitionKeyOmitXml(processDefinitionKey);
     reportsForDefinitionKey.forEach(report -> removeReportAndAssociatedResources(report.getId(), report));
   }
 
-  public List<ReportDefinitionDto> getAllReportsForProcessDefinitionKey(String processDefinitionKey) {
-    List<ReportDefinitionDto> allReports = reportReader.getAllReportsOmitXml();
-    List<ReportDefinitionDto> reportsForDefinitionKey = allReports.stream()
-      .filter(report -> report instanceof SingleProcessReportDefinitionDto)
-      .filter(reportDefinitionDto -> Objects.equals(
-        ((SingleProcessReportDefinitionDto) reportDefinitionDto).getData().getProcessDefinitionKey(),
-        processDefinitionKey
-      ))
-      .collect(toList());
-    reportsForDefinitionKey.addAll(
-      allReports.stream()
-        .filter(report -> report instanceof CombinedReportDefinitionDto)
-        .filter(combinedReport -> !Collections.disjoint(
-          reportsForDefinitionKey.stream().map(ReportDefinitionDto::getId).collect(toList()),
-          ((CombinedReportDefinitionDto) combinedReport).getData().getReportIds()
-        ))
-        .collect(toList())
-    );
-    return reportsForDefinitionKey;
+  public List<ReportDefinitionDto> getAllReportsForProcessDefinitionKeyOmitXml(final String processDefinitionKey) {
+    return reportReader.getAllReportsForProcessDefinitionKeyOmitXml(processDefinitionKey);
   }
 
   public List<AuthorizedReportDefinitionDto> findAndFilterReports(String userId, String collectionId) {
@@ -277,8 +260,15 @@ public class ReportService implements CollectionReferencingService {
       final List<SingleProcessReportDefinitionDto> reportsOfCombinedReport = reportReader
         .getAllSingleProcessReportsForIdsOmitXml(data.getReportIds());
 
-      if (reportsOfCombinedReport.size() != data.getReports().size()) {
-        throw new OptimizeValidationException("At least one report id could not be found or is not a single process report");
+      final List<String> reportIds = data.getReportIds();
+      if (reportsOfCombinedReport.size() != reportIds.size()) {
+        final List<String> reportIdsFetched = reportsOfCombinedReport.stream()
+          .map(SingleProcessReportDefinitionDto::getId).collect(toList());
+        final List<String> invalidReportIds = reportIds.stream()
+          .filter(reportIdsFetched::contains)
+          .collect(toList());
+        throw new OptimizeValidationException(String.format(
+          "The following report IDs could not be found or are not single process reports: %s", invalidReportIds));
       }
 
       final SingleProcessReportDefinitionDto firstReport = reportsOfCombinedReport.get(0);
@@ -529,7 +519,7 @@ public class ReportService implements CollectionReferencingService {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
     if (!reportDefinition.getCombined()) {
       conflictedItems.addAll(
-        mapCombinedReportsToConflictingItems(reportReader.findFirstCombinedReportsForSimpleReport(reportDefinition.getId()))
+        mapCombinedReportsToConflictingItems(reportReader.findCombinedReportsForSimpleReport(reportDefinition.getId()))
       );
     }
     conflictedItems.addAll(reportRelationService.getConflictedItemsForDeleteReport(reportDefinition));
@@ -614,7 +604,7 @@ public class ReportService implements CollectionReferencingService {
 
     if (semanticsForCombinedReportChanged(currentReportVersion, reportUpdateDto)) {
       conflictedItems.addAll(
-        mapCombinedReportsToConflictingItems(reportReader.findFirstCombinedReportsForSimpleReport(reportId))
+        mapCombinedReportsToConflictingItems(reportReader.findCombinedReportsForSimpleReport(reportId))
       );
     }
 
