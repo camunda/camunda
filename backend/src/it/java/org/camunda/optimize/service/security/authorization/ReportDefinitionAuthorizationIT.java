@@ -6,9 +6,6 @@
 package org.camunda.optimize.service.security.authorization;
 
 import org.assertj.core.util.Lists;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -47,6 +44,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.optimize.CollectionClient.PRIVATE_COLLECTION_ID;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class ReportDefinitionAuthorizationIT extends AbstractIT {
 
@@ -565,16 +563,11 @@ public class ReportDefinitionAuthorizationIT extends AbstractIT {
   }
 
   private void deployAndStartSimpleProcessDefinition(String processKey) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processKey)
-      .startEvent()
-      .endEvent()
-      .done();
-    engineIntegrationExtension.deployAndStartProcess(modelInstance);
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(processKey));
   }
 
   private void deployAndStartSimpleDecisionDefinition(String decisionKey) {
-    final DmnModelInstance modelInstance = createSimpleDmnModel(decisionKey);
-    engineIntegrationExtension.deployAndStartDecisionDefinition(modelInstance);
+    engineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(decisionKey));
   }
 
   private ReportDefinitionDto createReportUpdate(int definitionResourceType) {

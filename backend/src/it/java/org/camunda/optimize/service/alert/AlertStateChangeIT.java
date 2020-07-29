@@ -37,6 +37,7 @@ import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBH
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_NAME;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_PATH;
 import static org.camunda.optimize.test.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.mockserver.model.HttpRequest.request;
 
 @ExtendWith(MockServerExtension.class)
@@ -333,7 +334,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     //given
     setEmailConfiguration();
 
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    ProcessInstanceEngineDto processInstance = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram());
     processInstance.setProcessDefinitionKey("definitionKeyThatDoesNotExistAndWillLeadToNoResults");
     String reportId = createAndStoreDurationNumberReportInNewCollection(processInstance);
     AlertCreationDto simpleAlert = createAlertWithReminder(reportId);

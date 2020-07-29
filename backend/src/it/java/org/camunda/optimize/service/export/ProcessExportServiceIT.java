@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.export;
 
 import lombok.SneakyThrows;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
@@ -33,11 +32,13 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT;
+import static org.camunda.optimize.util.BpmnModels.START_EVENT;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ProcessExportServiceIT extends AbstractIT {
-
-  private static final String START = "aStart";
-  private static final String END = "anEnd";
   private static final String FAKE = "FAKE";
 
   @RegisterExtension
@@ -122,17 +123,13 @@ public class ProcessExportServiceIT extends AbstractIT {
     OffsetDateTime shiftedStartDate = OffsetDateTime.parse("2018-02-26T14:20:00.000+01:00");
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), shiftedStartDate);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), shiftedStartDate);
-    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), START, 0L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), END, 0L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), START_EVENT, 0L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), END_EVENT, 0L);
     return processInstanceEngineDto;
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent(START)
-      .endEvent(END)
-      .done();
+    BpmnModelInstance processModel = getSimpleBpmnDiagram();
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 

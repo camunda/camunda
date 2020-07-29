@@ -9,8 +9,6 @@ import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -46,6 +44,7 @@ import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -85,16 +84,14 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CombinedReportHandlingIT extends AbstractIT {
 
-  private static final String START_EVENT = "startEvent";
-  private static final String END_EVENT = "endEvent";
-  private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
   private static final String TEST_REPORT_NAME = "My foo report";
-  private static final String USER_TASK_ID = "userTask";
-
   @RegisterExtension
   @Order(4)
   public EngineDatabaseExtension engineDatabaseExtension =
@@ -1392,7 +1389,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     OffsetDateTime now = OffsetDateTime.now();
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
-    engineDatabaseExtension.changeUserTaskStartDate(engineDto.getId(), USER_TASK_ID, now.minusDays(2L));
+    engineDatabaseExtension.changeUserTaskStartDate(engineDto.getId(), USER_TASK_1, now.minusDays(2L));
 
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
 
@@ -1672,13 +1669,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private ProcessInstanceEngineDto deploySimpleServiceTaskProcessDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
-      .startEvent(START_EVENT)
-      .serviceTask(SERVICE_TASK_ID)
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployAndStartProcess(modelInstance);
+    return engineIntegrationExtension.deployAndStartProcess(getSingleServiceTaskProcess());
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess() {
@@ -1686,12 +1677,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcessWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent("startEvent")
-      .userTask(USER_TASK_ID)
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(BpmnModels.getSingleUserTaskDiagram(), variables);
   }
 
   private void deleteReport(String reportId) {

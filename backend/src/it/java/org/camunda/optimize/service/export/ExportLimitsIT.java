@@ -6,8 +6,6 @@
 package org.camunda.optimize.service.export;
 
 import com.opencsv.CSVReader;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -29,12 +27,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsByteArray;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -173,16 +171,7 @@ public class ExportLimitsIT extends AbstractIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcess() {
-    return deployAndStartSimpleProcessWithVariables(new HashMap<>());
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(getSimpleBpmnDiagram(), new HashMap<>());
   }
 
 }

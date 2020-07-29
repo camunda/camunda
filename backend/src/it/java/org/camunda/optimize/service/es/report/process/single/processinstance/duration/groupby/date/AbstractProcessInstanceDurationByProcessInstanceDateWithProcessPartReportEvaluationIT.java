@@ -50,6 +50,12 @@ import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterU
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.core.IsNull.notNullValue;
 
 public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithProcessPartReportEvaluationIT
   extends AbstractProcessDefinitionIT {
@@ -836,16 +842,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
   }
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
-    // @formatter:off
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent(START_EVENT)
-      .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent(END_EVENT)
-      .done();
-    // @formatter:on
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleServiceTaskProcess());
   }
 
   private ProcessInstanceEngineDto deployAndStartLoopingProcess() {

@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -26,6 +24,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class FixedDateFilterIT extends AbstractFilterIT {
 
@@ -251,7 +252,8 @@ public class FixedDateFilterIT extends AbstractFilterIT {
   public void resultLimited_onTooBroadFixedStartDateFilter() {
     // given
     final OffsetDateTime startDate = OffsetDateTime.parse("2019-06-15T12:00:00+01:00");
-    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.deployAndStartProcess(
+      getSingleServiceTaskProcess());
     final String processDefinitionId = processInstanceDto1.getDefinitionId();
     final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
     final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
@@ -311,7 +313,8 @@ public class FixedDateFilterIT extends AbstractFilterIT {
   public void resultLimited_noUserDefinedFilter_defaultFilter_limitEndsAtLatestProcessInstanceStartDate() {
     // given
     final OffsetDateTime oldStartDate = OffsetDateTime.parse("2019-06-15T12:00:00+01:00").minusDays(10L);
-    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.deployAndStartProcess(
+      getSingleServiceTaskProcess());
     final String processDefinitionId = processInstanceDto1.getDefinitionId();
     final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
     final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
@@ -363,7 +366,8 @@ public class FixedDateFilterIT extends AbstractFilterIT {
   public void resultLimited_onTooBroadFixedEndDateFilter() {
     // given
     final OffsetDateTime startDate = OffsetDateTime.parse("2019-06-15T00:00:00+02:00");
-    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.deployAndStartProcess(
+      getSingleServiceTaskProcess());
     final String processDefinitionId = processInstanceDto1.getDefinitionId();
     final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
     final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
@@ -423,7 +427,8 @@ public class FixedDateFilterIT extends AbstractFilterIT {
   public void resultLimited_onTooBroadFixedEndAndStartDateFilter_startDateFilterIsLimited() {
     // given
     final OffsetDateTime startDate = OffsetDateTime.parse("2019-06-15T12:00:00+01:00");
-    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.deployAndStartProcess(
+      getSingleServiceTaskProcess());
     final String processDefinitionId = processInstanceDto1.getDefinitionId();
     final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
     final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
@@ -489,7 +494,8 @@ public class FixedDateFilterIT extends AbstractFilterIT {
   }
 
   private ProcessInstanceEngineDto startAndImportSimpleProcess() {
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.deployAndStartProcess(
+      getSingleServiceTaskProcess());
     importAllEngineEntitiesFromScratch();
     return processInstanceDto;
   }
@@ -504,21 +510,6 @@ public class FixedDateFilterIT extends AbstractFilterIT {
       processInstanceId,
       shiftedStartDate.plusSeconds(durationInSec)
     );
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
-    return deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String activityId) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask(activityId)
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
   }
 
 }

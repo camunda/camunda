@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.schema;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -13,6 +12,7 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -133,16 +133,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
   }
 
   private BpmnModelInstance createSimpleProcess() {
-    // @formatter:off
-    return Bpmn.createExecutableProcess("aProcess")
-      .camundaVersionTag("aVersionTag")
-      .name("aProcessName")
-      .startEvent()
-        .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    // @formatter:on
+    return BpmnModels.getSingleServiceTaskProcess("aProcess");
   }
 
   private void initializeSchema() {

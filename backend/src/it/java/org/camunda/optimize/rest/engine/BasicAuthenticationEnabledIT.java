@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.rest.engine;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
@@ -30,6 +28,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstants.RE
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -64,7 +63,7 @@ public class BasicAuthenticationEnabledIT extends AbstractIT {
   @Test
   public void importWithBasicAuthenticationWorks() {
     //given
-    deployAndStartSimpleServiceTask();
+    engineIntegrationExtension.deployAndStartProcess(getSingleServiceTaskProcess());
 
     //when
     importAllEngineEntitiesFromScratch();
@@ -134,13 +133,4 @@ public class BasicAuthenticationEnabledIT extends AbstractIT {
     engineIntegrationExtension.createAuthorization(authorizationDto);
   }
 
-  private void deployAndStartSimpleServiceTask() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess()
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    engineIntegrationExtension.deployAndStartProcess(processModel);
-  }
 }

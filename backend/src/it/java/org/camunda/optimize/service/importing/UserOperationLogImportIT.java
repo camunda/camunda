@@ -6,10 +6,10 @@
 package org.camunda.optimize.service.importing;
 
 import lombok.SneakyThrows;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -18,14 +18,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.COMPLETED_STATE;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class UserOperationLogImportIT extends AbstractImportIT {
-  private final BpmnModelInstance testModel = Bpmn.createExecutableProcess()
-    .name("aModel")
-    .startEvent()
-    .userTask()
-    .endEvent()
-    .done();
+  private final BpmnModelInstance testModel = BpmnModels.getSingleUserTaskDiagram();
 
   @SneakyThrows
   @Test

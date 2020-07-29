@@ -6,8 +6,6 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.date.distributed_by.none;
 
 import com.google.common.collect.ImmutableList;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
@@ -64,6 +62,8 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -976,22 +976,11 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT extends A
   }
 
   private ProcessDefinitionEngineDto deployOneUserTaskDefinition(String key, String tenantId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK_1)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram(key), tenantId);
   }
 
   protected ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK_1)
-      .userTask(USER_TASK_2)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
   }
 
   private Map<AggregationType, ReportMapResultDto> evaluateMapReportForAllAggTypes(final ProcessReportDataDto reportData) {

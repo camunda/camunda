@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.websocket;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.junit.jupiter.api.Test;
@@ -18,12 +17,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class StatusWebSocketIT extends AbstractIT {
-
-  private static final String PROCESS_ID = "aProcessId";
 
   @Test
   public void getImportStatus() throws Exception {
@@ -74,10 +72,7 @@ public class StatusWebSocketIT extends AbstractIT {
       assertThat(initialStatusCorrectlyReceived, is(true));
 
       //when
-      BpmnModelInstance processModel = Bpmn.createExecutableProcess(PROCESS_ID)
-        .startEvent()
-        .endEvent()
-        .done();
+      BpmnModelInstance processModel = getSimpleBpmnDiagram();
       engineIntegrationExtension.deployAndStartProcess(processModel);
 
       //then
@@ -108,10 +103,7 @@ public class StatusWebSocketIT extends AbstractIT {
   }
 
   private void deployProcessAndTriggerImport() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(PROCESS_ID)
-      .startEvent()
-      .endEvent()
-      .done();
+    BpmnModelInstance processModel = getSimpleBpmnDiagram();
     engineIntegrationExtension.deployAndStartProcess(processModel);
     importAllEngineEntitiesFromScratch();
   }

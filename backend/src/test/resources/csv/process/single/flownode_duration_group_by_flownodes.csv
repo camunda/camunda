@@ -1,4 +1,4 @@
 "flowNodes","flowNode_duration"
 "","average"
-"anEnd","0.0"
-"aStart","0.0"
+"endEvent","0.0"
+"startEvent","0.0"

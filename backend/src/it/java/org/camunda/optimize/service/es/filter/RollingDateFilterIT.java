@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
@@ -31,6 +29,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public class RollingDateFilterIT extends AbstractDateFilterIT {
 
@@ -119,7 +118,8 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
   public void resultLimited_onTooBroadRollingStartDateFilter() {
     // given
     final OffsetDateTime startDate = OffsetDateTime.now();
-    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.deployAndStartProcess(
+      getSingleServiceTaskProcess());
     final String processDefinitionId = processInstanceDto1.getDefinitionId();
     final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
     final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
@@ -180,7 +180,8 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
   public void resultLimited_onTooBroadRollingEndDateFilter() {
     // given
     final OffsetDateTime startDate = OffsetDateTime.now();
-    final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
+    final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.deployAndStartProcess(
+      getSingleServiceTaskProcess());
     final String processDefinitionId = processInstanceDto1.getDefinitionId();
     final String processDefinitionKey = processInstanceDto1.getProcessDefinitionKey();
     final String processDefinitionVersion = processInstanceDto1.getProcessDefinitionVersion();
@@ -277,14 +278,4 @@ public class RollingDateFilterIT extends AbstractDateFilterIT {
     );
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask("activity")
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
-  }
 }

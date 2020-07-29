@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -20,6 +21,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.util.BpmnModels.END_EVENT;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -38,7 +42,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id(END_EVENT_ACTIVITY_ID)
+      .id(END_EVENT)
       .inOperator()
       .add()
       .buildList();
@@ -61,7 +65,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id(END_EVENT_ACTIVITY_ID)
+      .id(END_EVENT)
       .notInOperator()
       .add()
       .buildList();
@@ -89,7 +93,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id(END_EVENT_ACTIVITY_ID)
+      .id(END_EVENT)
       .inOperator()
       .add()
       .buildList();
@@ -117,7 +121,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id(END_EVENT_ACTIVITY_ID)
+      .id(END_EVENT)
       .notInOperator()
       .add()
       .buildList();
@@ -145,10 +149,10 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
 
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder.filter()
       .executedFlowNodes()
-      .id(USER_TASK_ACTIVITY_ID_2)
+      .id(USER_TASK_2)
       .add()
       .executedFlowNodes()
-      .id(END_EVENT_ACTIVITY_ID)
+      .id(END_EVENT)
       .add()
       .buildList();
 
@@ -176,10 +180,10 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
 
     // when
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder.filter().executedFlowNodes()
-      .id(USER_TASK_ACTIVITY_ID_2)
+      .id(USER_TASK_2)
       .add()
       .executedFlowNodes()
-      .id(END_EVENT_ACTIVITY_ID)
+      .id(END_EVENT)
       .notInOperator()
       .add()
       .buildList();
@@ -192,11 +196,11 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     executedFlowNodes = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id(USER_TASK_ACTIVITY_ID_2)
+      .id(USER_TASK_2)
       .notInOperator()
       .add()
       .executedFlowNodes()
-      .id(END_EVENT_ACTIVITY_ID)
+      .id(END_EVENT)
       .notInOperator()
       .add()
       .buildList();
@@ -225,7 +229,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     // when
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder.filter()
       .executedFlowNodes()
-      .ids(USER_TASK_ACTIVITY_ID_2, END_EVENT_ACTIVITY_ID)
+      .ids(USER_TASK_2, END_EVENT)
       .inOperator()
       .add()
       .buildList();
@@ -309,7 +313,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
         .inOperator()
         .add()
         .executedFlowNodes()
-        .id(END_EVENT_ACTIVITY_ID)
+        .id(END_EVENT)
         .add()
       .buildList();
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
@@ -368,7 +372,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
       .userTask("UserTask-PathA")
       .exclusiveGateway("mergeExclusiveGateway")
       .userTask("FinalUserTask")
-      .endEvent(END_EVENT_ACTIVITY_ID)
+      .endEvent(END_EVENT)
       .moveToLastGateway()
       .moveToLastGateway()
       .condition("Take path B", "${!takePathA}")
@@ -395,7 +399,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id(END_EVENT_ACTIVITY_ID)
+      .id(END_EVENT)
       .add()
       .buildList();
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
@@ -444,16 +448,7 @@ public class ExecutedFlowNodeQueryFilterIT extends AbstractFilterIT {
   }
 
   private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition() {
-    return deploySimpleUserTaskProcessDefinition(USER_TASK_ACTIVITY_ID, END_EVENT_ACTIVITY_ID);
-  }
-
-  private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition(String userTaskActivityId, String endEventId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("ASimpleUserTaskProcess" + System
-      .currentTimeMillis())
-      .startEvent()
-      .userTask(userTaskActivityId)
-      .endEvent(endEventId)
-      .done();
+    BpmnModelInstance modelInstance = BpmnModels.getSingleUserTaskDiagram();
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 

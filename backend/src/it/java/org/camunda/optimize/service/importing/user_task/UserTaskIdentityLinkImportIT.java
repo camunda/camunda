@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,8 @@ import static org.camunda.optimize.service.util.configuration.EngineConstants.ID
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
+
 
 public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
 
@@ -37,7 +40,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     // given
     embeddedOptimizeExtension.getConfigurationService().setImportUserTaskWorkerDataEnabled(false);
     embeddedOptimizeExtension.reloadConfiguration();
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     String defaultCandidateGroup = "defaultCandidateGroupId";
     engineIntegrationExtension.createGroup(defaultCandidateGroup);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(defaultCandidateGroup);
@@ -66,7 +69,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void identityLinksLogsAreImported() throws Exception {
     // given
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     String defaultCandidateGroup = "defaultCandidateGroupId";
     engineIntegrationExtension.createGroup(defaultCandidateGroup);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(defaultCandidateGroup);
@@ -114,7 +117,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     // given
     engineIntegrationExtension.addUser("kermit", "foo");
     engineIntegrationExtension.grantAllAuthorizations("kermit");
-    ProcessInstanceEngineDto instanceDto = deployAndStartOneUserTaskProcess();
+    ProcessInstanceEngineDto instanceDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.claimAllRunningUserTasks();
     engineIntegrationExtension.unclaimAllRunningUserTasks();
     engineIntegrationExtension.claimAllRunningUserTasks("kermit", "foo", instanceDto.getId());
@@ -207,7 +210,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void severalAssigneeOperationsLeadToCorrectResult() throws Exception {
     // given
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.claimAllRunningUserTasks();
     engineIntegrationExtension.unclaimAllRunningUserTasks();
     engineIntegrationExtension.addUser("secondUser", "secondPassword");
@@ -238,7 +241,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void assigneeWithoutClaimIsNull() throws Exception {
     // given
-    ProcessInstanceEngineDto engineDto = deployAndStartOneUserTaskProcess();
+    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.completeUserTaskWithoutClaim(engineDto.getId());
 
     // when
@@ -261,7 +264,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void assigneeCanBeDeterminedForStillRunningUserTasks() throws Exception {
     // given
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.claimAllRunningUserTasks();
 
     // when
@@ -284,7 +287,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void severalCandidateGroupOperationsLeadToCorrectResult() throws Exception {
     // given
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.createGroup("firstGroup");
     engineIntegrationExtension.createGroup("secondGroup");
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks("firstGroup");
@@ -316,7 +319,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void deleteAssigneeAndDeleteCandidateGroupAsLastOperations() throws Exception {
     // given
-    ProcessInstanceEngineDto engineDto = deployAndStartOneUserTaskProcess();
+    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.createGroup("firstGroup");
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks("firstGroup");
     engineIntegrationExtension.deleteCandidateGroupForAllRunningUserTasks("firstGroup");
@@ -345,7 +348,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void importIsNotAffectedByPagination() throws Exception {
     // given
-    ProcessInstanceEngineDto engineDto = deployAndStartOneUserTaskProcess();
+    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.claimAllRunningUserTasks();
     importAllEngineEntitiesFromScratch();
 
@@ -373,7 +376,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void onlyUserAssigneeOperationLogsRelatedToProcessInstancesAreImported() throws IOException {
     // given
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.createIndependentUserTask();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
@@ -397,7 +400,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void duplicateUserTasksAreHandledOnUpsert() throws JsonProcessingException {
     // given
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     String defaultCandidateGroup = "defaultCandidateGroupId";
     engineIntegrationExtension.createGroup(defaultCandidateGroup);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(defaultCandidateGroup);

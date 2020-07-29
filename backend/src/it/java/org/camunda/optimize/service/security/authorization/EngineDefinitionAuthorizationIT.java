@@ -7,7 +7,6 @@ package org.camunda.optimize.service.security.authorization;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -41,6 +40,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstants.RE
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public static final String PROCESS_KEY = "aProcess";
@@ -1188,10 +1188,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   }
 
   private String deploySimpleProcessDefinition(final String processId, String tenantId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-      .startEvent()
-      .endEvent()
-      .done();
+    BpmnModelInstance modelInstance = getSimpleBpmnDiagram(processId);
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId).getId();
   }
 

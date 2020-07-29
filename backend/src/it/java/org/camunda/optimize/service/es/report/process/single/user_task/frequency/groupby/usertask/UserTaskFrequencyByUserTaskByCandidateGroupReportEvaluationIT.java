@@ -45,6 +45,8 @@ import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
@@ -660,22 +662,11 @@ public class UserTaskFrequencyByUserTaskByCandidateGroupReportEvaluationIT exten
   }
 
   private ProcessDefinitionEngineDto deployOneUserTasksDefinition(String key, String tenantId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK_1)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram(key), tenantId);
   }
 
   private ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK_1)
-      .userTask(USER_TASK_2)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram(PROCESS_DEFINITION_KEY));
   }
 
   private ProcessDefinitionEngineDto deployFourUserTasksDefinition() {

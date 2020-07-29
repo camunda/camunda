@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,7 +37,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> executingFlowNodes = ProcessFilterBuilder
       .filter()
       .executingFlowNodes()
-      .id(USER_TASK_ACTIVITY_ID)
+      .id(USER_TASK_1)
       .add()
       .buildList();
 
@@ -63,7 +65,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> executedFlowNodes = ProcessFilterBuilder
       .filter()
       .executingFlowNodes()
-      .id(USER_TASK_ACTIVITY_ID_2)
+      .id(USER_TASK_2)
       .add()
       .buildList();
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
@@ -91,7 +93,7 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
     // when
     List<ProcessFilterDto<?>> executingFlowNodes = ProcessFilterBuilder.filter()
       .executingFlowNodes()
-      .ids(USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_ID_2)
+      .ids(USER_TASK_1, USER_TASK_2)
       .add()
       .buildList();
 

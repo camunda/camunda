@@ -8,8 +8,6 @@ package org.camunda.optimize.service.importing.event;
 import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ActivityTypes;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
@@ -21,6 +19,7 @@ import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
@@ -40,6 +39,7 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESSING_IMPORT_REFERENCE_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -269,14 +269,7 @@ public class CamundaEventTraceStateImportIT extends AbstractEventTraceStateImpor
   }
 
   private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithName(String processName) {
-    // @formatter:off
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(processName)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK)
-      .endEvent(END_EVENT)
-      .done();
-    // @formatter:on
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram(processName, START_EVENT, END_EVENT, USER_TASK));
   }
 
   private Long findMostRecentEventTimestamp(final String definitionKey) {

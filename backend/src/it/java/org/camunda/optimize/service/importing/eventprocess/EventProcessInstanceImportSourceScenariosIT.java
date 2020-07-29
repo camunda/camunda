@@ -7,8 +7,6 @@ package org.camunda.optimize.service.importing.eventprocess;
 
 import lombok.SneakyThrows;
 import org.assertj.core.util.Maps;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
@@ -44,6 +42,7 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventProcessIT {
@@ -647,13 +646,14 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
   }
 
   protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess(String processName) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(processName)
-      .startEvent(BPMN_START_EVENT_ID)
-      .userTask(USER_TASK_ID_ONE)
-      .userTask(USER_TASK_ID_TWO)
-      .endEvent(BPMN_END_EVENT_ID)
-      .done();
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(
+      getDoubleUserTaskDiagram(
+        processName,
+        BPMN_START_EVENT_ID,
+        BPMN_END_EVENT_ID,
+        USER_TASK_ID_ONE,
+        USER_TASK_ID_TWO
+      ));
   }
 
 }

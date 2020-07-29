@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -17,6 +15,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -27,13 +26,13 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_IN
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.RAW_DATA;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public abstract class AbstractFilterIT extends AbstractIT {
 
   protected static final String TEST_DEFINITION = "TestDefinition";
-  protected final static String USER_TASK_ACTIVITY_ID = "User-Task";
-  protected final static String USER_TASK_ACTIVITY_ID_2 = "User-Task2";
-  protected final static String END_EVENT_ACTIVITY_ID = "endEvent";
 
   @RegisterExtension
   @Order(4)
@@ -61,42 +60,19 @@ public abstract class AbstractFilterIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deployUserTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .userTask()
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram());
   }
 
   protected ProcessDefinitionEngineDto deployServiceTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleServiceTaskProcess());
   }
 
   protected ProcessDefinitionEngineDto deploySimpleProcessDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent()
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram());
   }
 
   protected ProcessDefinitionEngineDto deployTwoUserTasksProcessDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent()
-      .userTask(USER_TASK_ACTIVITY_ID)
-      .userTask(USER_TASK_ACTIVITY_ID_2)
-      .endEvent(END_EVENT_ACTIVITY_ID)
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
   }
 
   protected RawDataProcessReportResultDto evaluateReportWithFilter(final ProcessDefinitionEngineDto processDefinition,

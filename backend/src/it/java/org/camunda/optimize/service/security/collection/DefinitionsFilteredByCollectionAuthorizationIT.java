@@ -6,13 +6,12 @@
 package org.camunda.optimize.service.security.collection;
 
 import com.google.common.collect.Lists;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
 import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
+import org.camunda.optimize.util.BpmnModels;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,6 +25,7 @@ import static org.camunda.optimize.service.TenantService.TENANT_NOT_DEFINED;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.hamcrest.CoreMatchers.is;
 
 public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractCollectionRoleIT {
@@ -167,15 +167,8 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
   }
 
   private ProcessDefinitionEngineDto deployAndImportSimpleProcess(final String definitionKey) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
     final ProcessDefinitionEngineDto processDefinitionEngineDto = engineIntegrationExtension
-      .deployProcessAndGetProcessDefinition(processModel);
+      .deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(definitionKey));
     importAllEngineEntitiesFromScratch();
 
     return processDefinitionEngineDto;

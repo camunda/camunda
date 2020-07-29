@@ -19,6 +19,7 @@ import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.VariableTestUtil;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,8 @@ import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRI
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
@@ -67,7 +70,7 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void variableImportWorks() throws JsonProcessingException {
     //given
-    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
@@ -92,7 +95,7 @@ public class VariableImportIT extends AbstractImportIT {
     assertThat(getStoredVariableUpdateInstances()).isEmpty();
 
     // when
-    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto = engineIntegrationExtension.deployAndStartProcessWithVariables(
       processModel,
@@ -127,7 +130,7 @@ public class VariableImportIT extends AbstractImportIT {
     //given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
 
-    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
@@ -170,11 +173,7 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void variableUpdateImport() throws JsonProcessingException {
     //given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
-      .userTask()
-      .endEvent()
-      .done();
+    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
@@ -193,7 +192,7 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void variablesCanHaveNullValue() throws JsonProcessingException {
     //given
-    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariablesWithNullValues();
     ProcessInstanceEngineDto instanceDto =
@@ -370,11 +369,7 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void deletingARuntimeVariableAlsoRemovesItFromOptimize() {
     //given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
-      .userTask()
-      .endEvent()
-      .done();
+    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "aStringValue");

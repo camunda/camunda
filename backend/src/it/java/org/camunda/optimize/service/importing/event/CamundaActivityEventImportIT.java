@@ -7,13 +7,12 @@ package org.camunda.optimize.service.importing.event;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.bpm.engine.ActivityTypes;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.importing.AbstractImportIT;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -34,6 +33,8 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class CamundaActivityEventImportIT extends AbstractImportIT {
 
@@ -418,24 +419,22 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithName(String processName) {
-    // @formatter:off
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(processName)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK)
-      .endEvent(END_EVENT)
-      .done();
-    // @formatter:on
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram(
+      processName,
+      START_EVENT,
+      END_EVENT,
+      USER_TASK
+    ));
   }
 
   protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess(String processName) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(processName)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK)
-      .userTask(USER_TASK_2)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(getDoubleUserTaskDiagram(
+      processName,
+      START_EVENT,
+      END_EVENT,
+      USER_TASK,
+      USER_TASK_2
+    ));
   }
 
   private void assertOrderCounters(final List<CamundaActivityEventDto> storedEvents) {

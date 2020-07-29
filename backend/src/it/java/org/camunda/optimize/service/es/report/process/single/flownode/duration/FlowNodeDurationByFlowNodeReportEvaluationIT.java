@@ -30,6 +30,7 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -52,6 +53,8 @@ import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -60,7 +63,6 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   private static final String END_EVENT = "endEvent";
   private static final String SERVICE_TASK_ID = "aSimpleServiceTask";
   private static final String SERVICE_TASK_ID_2 = "aSimpleServiceTask2";
-  private static final String USER_TASK = "userTask";
 
   private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListWithoutSum();
 
@@ -477,13 +479,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
     engineIntegrationExtension.createTenant(otherTenantId);
 
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(definitionKey)
-      .name("aProcessName")
-      .startEvent(START_EVENT)
-      .endEvent(END_EVENT)
-      .done();
-
-    engineIntegrationExtension.deployAndStartProcess(modelInstance, noneTenantId);
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(definitionKey), noneTenantId);
 
     importAllEngineEntitiesFromScratch();
 
@@ -510,11 +506,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     final String noneTenantId = TenantService.TENANT_NOT_DEFINED.getId();
     engineIntegrationExtension.createTenant(tenantId1);
 
-    final BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(definitionKey)
-      .name("aProcessName")
-      .startEvent(START_EVENT)
-      .endEvent(END_EVENT)
-      .done();
+    final BpmnModelInstance modelInstance = getSimpleBpmnDiagram(definitionKey);
 
     // To create specific tenant instances with a shared def, start instance on noneTenant and update tenantID after
     ProcessInstanceEngineDto instance1 = engineIntegrationExtension.deployAndStartProcess(modelInstance, noneTenantId);
@@ -623,7 +615,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     changeActivityDuration(processInstanceDto, START_EVENT, 100.);
     engineDatabaseExtension.changeActivityInstanceStartDate(
       processInstanceDto.getId(),
-      USER_TASK,
+      USER_TASK_1,
       now.minus(200L, ChronoUnit.MILLIS)
     );
 
@@ -644,7 +636,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(result.getData()).hasSize(3);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     assertThat(result.getEntryForKey(START_EVENT).get().getValue()).isNull();
-    assertThat(result.getEntryForKey(USER_TASK).get().getValue())
+    assertThat(result.getEntryForKey(USER_TASK_1).get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(200.));
   }
 
@@ -660,7 +652,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     changeActivityDuration(processInstanceDto, START_EVENT, 100.);
     engineDatabaseExtension.changeActivityInstanceStartDate(
       processInstanceDto.getId(),
-      USER_TASK,
+      USER_TASK_1,
       now.minus(200L, ChronoUnit.MILLIS)
     );
 
@@ -682,7 +674,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
     assertThat(result.getEntryForKey(START_EVENT).get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(100.));
-    assertThat(result.getEntryForKey(USER_TASK).get().getValue()).isNull();
+    assertThat(result.getEntryForKey(USER_TASK_1).get().getValue()).isNull();
   }
 
   @Test
@@ -697,7 +689,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     changeActivityDuration(processInstanceDto, START_EVENT, 100.);
     engineDatabaseExtension.changeActivityInstanceStartDate(
       processInstanceDto.getId(),
-      USER_TASK,
+      USER_TASK_1,
       now.minus(200L, ChronoUnit.MILLIS)
     );
 
@@ -719,7 +711,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
     assertThat(result.getEntryForKey(START_EVENT).get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(100.));
-    assertThat(result.getEntryForKey(USER_TASK).get().getValue())
+    assertThat(result.getEntryForKey(USER_TASK_1).get().getValue())
       .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(200.));
   }
 
@@ -796,12 +788,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   @Test
   public void resultContainsNonExecutedFlowNodes() {
     // given
-    BpmnModelInstance subProcess = Bpmn.createExecutableProcess()
-      .startEvent("startEvent")
-      .userTask("userTask")
-      .endEvent("endEvent")
-      .done();
-    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(subProcess);
+    ProcessInstanceEngineDto engineDto =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
 
     importAllEngineEntitiesFromScratch();
 
@@ -903,22 +891,14 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcessDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
-      .startEvent(START_EVENT)
-      .serviceTask(SERVICE_TASK_ID)
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(
+      "aProcess",
+      SERVICE_TASK_ID
+    ));
   }
 
   private ProcessDefinitionEngineDto deploySimpleUserTaskDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram());
   }
 
   private ProcessReportDataDto getAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {

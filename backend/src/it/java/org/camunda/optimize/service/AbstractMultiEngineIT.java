@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -30,6 +29,8 @@ import static org.camunda.optimize.service.util.configuration.EngineConstants.RE
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class AbstractMultiEngineIT extends AbstractIT {
   private static final String REST_ENDPOINT = "http://localhost:8080/engine-rest";
@@ -126,10 +127,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aStringVariable", "foo");
     secondaryEngineIntegrationExtension.deployAndStartProcessWithVariables(
-      Bpmn.createExecutableProcess(key2)
-        .startEvent()
-        .endEvent()
-        .done(),
+      getSimpleBpmnDiagram(key2),
       variables,
       tenantId
     );
@@ -139,10 +137,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aStringVariable", "foo");
     engineIntegrationExtension.deployAndStartProcessWithVariables(
-      Bpmn.createExecutableProcess(key1)
-        .startEvent()
-        .endEvent()
-        .done(),
+      getSimpleBpmnDiagram(key1),
       variables,
       tenantId
     );
@@ -152,20 +147,12 @@ public class AbstractMultiEngineIT extends AbstractIT {
     final List<ProcessInstanceEngineDto> instances = new ArrayList<>();
     instances.add(
       engineIntegrationExtension.deployAndStartProcess(
-        Bpmn.createExecutableProcess(PROCESS_KEY_1)
-          .startEvent()
-          .userTask()
-          .endEvent()
-          .done()
+        getSingleUserTaskDiagram(PROCESS_KEY_1)
       )
     );
     instances.add(
       secondaryEngineIntegrationExtension.deployAndStartProcess(
-        Bpmn.createExecutableProcess(PROCESS_KEY_2)
-          .startEvent()
-          .userTask()
-          .endEvent()
-          .done()
+        getSingleUserTaskDiagram(PROCESS_KEY_2)
       )
     );
     return instances;

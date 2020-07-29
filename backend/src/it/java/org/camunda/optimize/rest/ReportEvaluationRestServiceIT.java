@@ -38,6 +38,7 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -57,6 +58,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
@@ -91,7 +93,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateReportById_additionalFiltersAreApplied() {
     // given
-    BpmnModelInstance processModel = createBpmnModel();
+    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
     final String variableName = "var1";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModelWithVariables(
       processModel,
@@ -174,7 +176,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateReportByIdWithAdditionalFilters_filtersCombinedWithAlreadyExistingFiltersOnReport() {
     // given a report with a running instances filter
-    BpmnModelInstance processModel = createBpmnModel();
+    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(processModel);
     final String reportId = createOptimizeReportForProcessUsingFilters(
       processModel,
@@ -203,7 +205,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateReportById_emptyFiltersListDoesNotImpactExistingFilters() {
     // given a report with a running instances filter
-    BpmnModelInstance processModel = createBpmnModel();
+    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(processModel);
     final String reportId = createOptimizeReportForProcessUsingFilters(
       processModel,
@@ -232,7 +234,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateReportByIdWithAdditionalFilters_filtersExistOnReportThatAreSameAsAdditional() {
     // given
-    BpmnModelInstance processModel = createBpmnModel();
+    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModel(processModel);
     final String reportId = createOptimizeReportForProcessUsingFilters(
       processModel,
@@ -288,7 +290,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateReportById_variableFiltersWithNameThatDoesNotExistForReportAreIgnored() {
     // given
-    BpmnModelInstance processModel = createBpmnModel();
+    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
     final String variableName = "var1";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModelWithVariables(
       processModel,
@@ -357,7 +359,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
   @Test
   public void evaluateReportById_variableFiltersWithTypeThatDoesNotExistForReportAreIgnored() {
     // given deployed instance with long type variable
-    BpmnModelInstance processModel = createBpmnModel();
+    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
     final String variableName = "var1";
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartInstanceForModelWithVariables(
       processModel,
@@ -733,15 +735,6 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(xmlOutput, processModel);
     return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
-  }
-
-  private BpmnModelInstance createBpmnModel() {
-    return Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .userTask()
-      .endEvent()
-      .done();
   }
 
   private List<ProcessFilterDto<?>> runningInstancesOnlyFilter() {

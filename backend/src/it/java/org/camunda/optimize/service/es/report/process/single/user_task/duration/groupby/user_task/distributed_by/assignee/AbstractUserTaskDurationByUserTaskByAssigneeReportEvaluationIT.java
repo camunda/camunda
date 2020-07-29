@@ -54,6 +54,9 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.util.BpmnModels.DEFAULT_PROCESS_ID;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
@@ -61,7 +64,6 @@ import static org.hamcrest.core.IsNull.notNullValue;
 
 public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluationIT
   extends AbstractProcessDefinitionIT {
-  private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
   protected static final String SECOND_USER = "secondUser";
   private static final String SECOND_USERS_PASSWORD = "fooPassword";
   protected static final String USER_TASK_1 = "userTask1";
@@ -246,7 +248,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   @Test
   public void reportEvaluationResultLimitedByConfig() {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getDoubleUserTaskDiagram());
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
@@ -285,7 +289,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   @Test
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        getDoubleUserTaskDiagram());
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
@@ -329,7 +335,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   @Test
   public void testCustomOrderOnResultLabelIsApplied() {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        getDoubleUserTaskDiagram());
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
@@ -375,7 +383,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     // set current time to now for easier evaluation of duration of unassigned tasks
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getDoubleUserTaskDiagram());
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
@@ -426,7 +436,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasMoreNodes() {
     //given
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
-    final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto latestDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getDoubleUserTaskDiagram());
     assertThat(latestDefinition.getVersion(), is(2));
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
@@ -467,7 +478,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     //given
     final ProcessDefinitionEngineDto firstDefinition = deployOneUserTasksDefinition();
     deployOneUserTasksDefinition();
-    final ProcessDefinitionEngineDto latestDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto latestDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getDoubleUserTaskDiagram());
     assertThat(latestDefinition.getVersion(), is(3));
 
     final ProcessInstanceEngineDto processInstanceDto1 = engineIntegrationExtension.startProcessInstance(firstDefinition
@@ -510,7 +522,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   @Test
   public void allVersionsRespectLatestNodesOnlyWhereLatestHasFewerNodes() {
     //given
-    final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto firstDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getDoubleUserTaskDiagram());
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(2));
 
@@ -546,8 +559,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   @Test
   public void multipleVersionsRespectLatestNodesOnlyWhereLatestHasFewerNodes() {
     //given
-    final ProcessDefinitionEngineDto firstDefinition = deployTwoUserTasksDefinition();
-    deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto firstDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getDoubleUserTaskDiagram());
+    engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
     final ProcessDefinitionEngineDto latestDefinition = deployOneUserTasksDefinition();
     assertThat(latestDefinition.getVersion(), is(3));
 
@@ -768,7 +782,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     final String[] filterValues,
     final Map<String, List<Pair<String, Double>>> expectedResult) {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getDoubleUserTaskDiagram());
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
       .startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
@@ -858,7 +874,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
 
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getDoubleUserTaskDiagram());
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
@@ -904,7 +922,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
 
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getDoubleUserTaskDiagram());
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
     // finish first running task, second now runs but unclaimed
@@ -1043,7 +1063,11 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
       .forEach(tenantId -> engineIntegrationExtension.createTenant(tenantId));
     deployedTenants
       .forEach(tenant -> {
-        final ProcessDefinitionEngineDto processDefinitionEngineDto = deployOneUserTasksDefinition(processKey, tenant);
+        final ProcessDefinitionEngineDto processDefinitionEngineDto =
+          engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+            getSingleUserTaskDiagram(processKey),
+            tenant
+          );
         engineIntegrationExtension.startProcessInstance(processDefinitionEngineDto.getId());
       });
 
@@ -1051,31 +1075,15 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
   }
 
   private ProcessDefinitionEngineDto deployOneUserTasksDefinition() {
-    return deployOneUserTasksDefinition(PROCESS_DEFINITION_KEY, null);
-  }
-
-  private ProcessDefinitionEngineDto deployOneUserTasksDefinition(String key, String tenantId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK_1)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
-  }
-
-  private ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK_1)
-      .userTask(USER_TASK_2)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleUserTaskDiagram(DEFAULT_PROCESS_ID),
+      null
+    );
   }
 
   private ProcessDefinitionEngineDto deployFourUserTasksDefinition() {
     // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
       .startEvent()
       .parallelGateway()
         .userTask(USER_TASK_1)

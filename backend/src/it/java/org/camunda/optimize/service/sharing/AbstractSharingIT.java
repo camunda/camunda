@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.sharing;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -30,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -83,11 +83,7 @@ public abstract class AbstractSharingIT extends AbstractIT {
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(String definitionKey,
                                                                             Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
-      .name("aProcessName")
-      .startEvent()
-      .endEvent()
-      .done();
+    BpmnModelInstance processModel = getSimpleBpmnDiagram(definitionKey);
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 

@@ -26,6 +26,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -48,6 +49,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class AbstractProcessDefinitionIT extends AbstractIT {
 
@@ -55,7 +58,6 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected static final String BUSINESS_KEY = "aBusinessKey";
   protected static final String END_EVENT = "endEvent";
   protected static final String START_EVENT = "startEvent";
-  protected static final String USER_TASK = "userTask";
   protected static final String DEFAULT_VARIABLE_NAME = "foo";
   protected static final String DEFAULT_VARIABLE_VALUE = "bar";
   protected static final String USER_TASK_1 = "userTask1";
@@ -101,13 +103,8 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables,
                                                                             String tenantId) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(TEST_PROCESS)
-      .name("aProcessName")
-      .startEvent(START_EVENT)
-      .endEvent(END_EVENT)
-      .done();
     return engineIntegrationExtension.deployAndStartProcessWithVariables(
-      processModel,
+      getSimpleBpmnDiagram(),
       variables,
       BUSINESS_KEY,
       tenantId
@@ -115,12 +112,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
   }
 
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition() {
@@ -128,12 +120,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key, String tenantId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram(key), tenantId);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {

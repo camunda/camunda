@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Order;
@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -77,34 +79,14 @@ public abstract class AbstractImportIT extends AbstractIT {
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
-  }
-
-  protected BpmnModelInstance createSimpleProcessDefinition() {
-    // @formatter:off
-    return Bpmn.createExecutableProcess("aProcess")
-      .camundaVersionTag("aVersionTag")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    // @formatter:on
   }
 
   protected ProcessInstanceEngineDto deployAndStartUserTaskProcess() {
-    // @formatter:off
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
-      .userTask()
-      .endEvent()
-      .done();
-    // @formatter:on
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariable");
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(BpmnModels.getSingleUserTaskDiagram(), variables);
   }
 
 }

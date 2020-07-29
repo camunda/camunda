@@ -6,8 +6,6 @@
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.variable;
 
 import lombok.SneakyThrows;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -36,6 +34,7 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -71,6 +70,8 @@ import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateEx
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class ProcessInstanceDurationByVariableReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -180,7 +181,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
-    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
     variables.put("foo", "bar2");
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
@@ -215,7 +217,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
-    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
     variables.put("foo", "bar2");
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
@@ -358,7 +361,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
-    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
     variables.put("foo", "bar2");
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
@@ -398,7 +402,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
-    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
     variables.put("foo", "bar2");
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
@@ -431,7 +436,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void multipleBuckets_resultLimitedByConfig_numberVariable() throws SQLException {
     // given
-    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", 10.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
@@ -466,7 +472,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void multipleBuckets_resultLimitedByConfig_numberVariable_customBuckets() throws SQLException {
     // given
-    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", 10.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
@@ -503,7 +510,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void multipleBuckets_resultLimitedByConfig_dateVariable() throws SQLException {
     // given
-    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", OffsetDateTime.now());
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
@@ -538,7 +546,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void multipleBuckets_numberVariable_customBuckets() throws SQLException {
     // given
-    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", 100.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
@@ -582,7 +591,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void multipleBuckets_numberVariable_invalidBaseline_returnsEmptyResult() throws SQLException {
     // given
-    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", 10.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
@@ -614,7 +624,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void multipleBuckets_negativeNumberVariable_defaultBaselineWorks() throws SQLException {
     // given
-    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", -1);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
@@ -646,7 +657,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void multipleBuckets_doubleVariable_bucketKeysHaveTwoDecimalPlaces() throws SQLException {
     // given
-    ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", 1.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
@@ -678,14 +690,16 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void combinedNumberVariableReport_distinctRanges() {
     // given
-    ProcessDefinitionEngineDto processDefinitionDto1 = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto1 = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     Map<String, Object> variables = new HashMap<>();
     variables.put("doubleVar", 10.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto1.getId(), 1);
     variables.put("doubleVar", 20.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto1.getId(), 1);
 
-    ProcessDefinitionEngineDto processDefinitionDto2 = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto2 = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     variables.put("doubleVar", 50.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto2.getId(), 1);
     variables.put("doubleVar", 100.0);
@@ -748,14 +762,16 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void combinedNumberVariableReport_intersectingRanges() {
     // given
-    ProcessDefinitionEngineDto processDefinitionDto1 = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto1 = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     Map<String, Object> variables = new HashMap<>();
     variables.put("doubleVar", 10.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto1.getId(), 1);
     variables.put("doubleVar", 20.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto1.getId(), 1);
 
-    ProcessDefinitionEngineDto processDefinitionDto2 = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto2 = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     variables.put("doubleVar", 15.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto2.getId(), 1);
     variables.put("doubleVar", 25.0);
@@ -818,14 +834,16 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   @Test
   public void combinedNumberVariableReport_inclusiveRanges() {
     // given
-    ProcessDefinitionEngineDto processDefinitionDto1 = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto1 = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     Map<String, Object> variables = new HashMap<>();
     variables.put("doubleVar", 10.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto1.getId(), 1);
     variables.put("doubleVar", 30.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto1.getId(), 1);
 
-    ProcessDefinitionEngineDto processDefinitionDto2 = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinitionDto2 = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     variables.put("doubleVar", 15.0);
     startProcessInstanceShiftedBySeconds(variables, processDefinitionDto2.getId(), 1);
     variables.put("doubleVar", 20.0);
@@ -1256,7 +1274,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     OffsetDateTime testEndDate = OffsetDateTime.now();
     OffsetDateTime testStartDate = testEndDate.minusSeconds(2);
 
-    final ProcessDefinitionEngineDto definition = deploySimpleServiceTaskProcess();
+    final ProcessDefinitionEngineDto definition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
 
     startProcessWithVariablesAndDates(
       definition,
@@ -1334,7 +1353,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     OffsetDateTime testEndDate = OffsetDateTime.now();
     OffsetDateTime testStartDate = testEndDate.minusSeconds(2);
 
-    final ProcessDefinitionEngineDto definition = deploySimpleServiceTaskProcess();
+    final ProcessDefinitionEngineDto definition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
 
     startProcessWithVariablesAndDates(
       definition,
@@ -1536,7 +1556,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final ChronoUnit chronoUnit = mapToChronoUnit(unit);
     final int numberOfInstances = 3;
     final String dateVarName = "dateVar";
-    final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcess();
+    final ProcessDefinitionEngineDto def = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     OffsetDateTime variableValue = OffsetDateTime.parse("2020-06-15T00:00:00+02:00");
     Map<String, Object> variables = new HashMap<>();
 
@@ -1585,7 +1606,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     // given
     final int numberOfInstances = 3;
     final String dateVarName = "dateVar";
-    final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcess();
+    final ProcessDefinitionEngineDto def = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     final OffsetDateTime dateVariableValue = OffsetDateTime.now();
     Map<String, Object> variables = new HashMap<>();
 
@@ -1629,7 +1651,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   public void groupByDateVariableForAutomaticInterval_MissingInstancesReturnsEmptyResult() {
     // given
     final String dateVarName = "dateVar";
-    final ProcessDefinitionEngineDto def = deploySimpleServiceTaskProcess();
+    final ProcessDefinitionEngineDto def = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
@@ -1652,7 +1675,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(Map<String, Object> variables) {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     return IntStream.range(0, 1)
       .mapToObj(i -> {
         ProcessInstanceEngineDto processInstanceEngineDto =
@@ -1677,17 +1701,6 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto2.getId(), endDate);
   }
 
-  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
-  }
-
   private ProcessInstanceEngineDto startProcessWithVariablesAndDates(final ProcessDefinitionEngineDto definition,
                                                                      final Map<String, Object> variables,
                                                                      final OffsetDateTime startDate,
@@ -1708,12 +1721,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithVariables(final Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
-      .userTask()
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(BpmnModels.getSingleUserTaskDiagram(), variables);
   }
 
 }

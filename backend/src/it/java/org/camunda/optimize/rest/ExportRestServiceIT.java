@@ -8,8 +8,6 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -49,6 +47,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class ExportRestServiceIT extends AbstractIT {
 
@@ -477,11 +476,6 @@ public class ExportRestServiceIT extends AbstractIT {
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables,
                                                                             String tenantId) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables, tenantId);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(getSimpleBpmnDiagram(), variables, tenantId);
   }
 }

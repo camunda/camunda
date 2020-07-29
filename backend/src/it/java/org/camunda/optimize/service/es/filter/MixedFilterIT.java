@@ -5,14 +5,13 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
@@ -23,13 +22,16 @@ import java.util.Map;
 
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class MixedFilterIT extends AbstractFilterIT {
 
   @Test
   public void applyCombinationOfFiltersForFinishedInstance() throws Exception {
     // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      BpmnModels.getSingleUserTaskDiagram());
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "value");
 
@@ -61,7 +63,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id(USER_TASK_ACTIVITY_ID)
+      .id(USER_TASK_1)
       .add()
       .variable()
       .stringType()
@@ -89,7 +91,8 @@ public class MixedFilterIT extends AbstractFilterIT {
   @Test
   public void applyCombinationOfFiltersForInProgressInstance() throws Exception {
     // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      BpmnModels.getSingleUserTaskDiagram());
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "value");
 
@@ -115,7 +118,7 @@ public class MixedFilterIT extends AbstractFilterIT {
     List<ProcessFilterDto<?>> filterList = ProcessFilterBuilder
       .filter()
       .executingFlowNodes()
-      .id(USER_TASK_ACTIVITY_ID)
+      .id(USER_TASK_1)
       .add()
       .variable()
       .stringType()
@@ -147,15 +150,6 @@ public class MixedFilterIT extends AbstractFilterIT {
     ProcessReportDataDto processReportDataDto = createReportWithDefinition(processDefinition);
     processReportDataDto.setFilter(ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList());
     return processReportDataDto;
-  }
-
-  private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent()
-      .userTask(USER_TASK_ACTIVITY_ID)
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
 }

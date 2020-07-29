@@ -7,8 +7,6 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.fr
 
 import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -63,6 +61,7 @@ import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -1174,7 +1173,9 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
   }
 
   private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(int number, Map<String, Object> variables) {
-    ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(getSingleServiceTaskProcess());
+
     return IntStream.range(0, number)
       .mapToObj(i -> {
         ProcessInstanceEngineDto processInstanceEngineDto =
@@ -1184,17 +1185,6 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
         return processInstanceEngineDto;
       })
       .collect(Collectors.toList());
-  }
-
-  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey,

@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.security.collection;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -19,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -26,6 +25,7 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -37,11 +37,14 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     // given
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
-    ProcessDefinitionEngineDto authorizedProcessDefinition = deploySimpleServiceTaskProcess("authorized");
+    ProcessDefinitionEngineDto authorizedProcessDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      BpmnModels.getSingleServiceTaskProcess("authorized"));
     authorizationClient.grantSingleResourceAuthorizationsForUser(
       KERMIT_USER, authorizedProcessDefinition.getKey(), RESOURCE_TYPE_PROCESS_DEFINITION
     );
-    ProcessDefinitionEngineDto unauthorizedProcessDefinition = deploySimpleServiceTaskProcess("unauthorized");
+    ProcessDefinitionEngineDto unauthorizedProcessDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        BpmnModels.getSingleServiceTaskProcess("unauthorized"));
 
     importAllEngineEntitiesFromScratch();
 
@@ -81,14 +84,4 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
-  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(final String definitionKey) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
-  }
 }

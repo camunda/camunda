@@ -55,6 +55,9 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.util.BpmnModels.DEFAULT_PROCESS_ID;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.Is.is;
@@ -63,9 +66,6 @@ import static org.hamcrest.core.IsNull.notNullValue;
 public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEvaluationIT
   extends AbstractProcessDefinitionIT {
 
-  private static final String START_EVENT = "startEvent";
-  private static final String END_EVENT = "endEvent";
-  private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
   protected static final String USER_TASK_1 = "userTask1";
   protected static final String USER_TASK_2 = "userTask2";
   protected static final String USER_TASK_A = "userTaskA";
@@ -1220,7 +1220,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
   @Test
   public void optimizeExceptionOnViewEntityIsNull() {
     // given
-    final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
+    final ProcessReportDataDto dataDto = createReport(DEFAULT_PROCESS_ID, "1");
     dataDto.getView().setEntity(null);
 
     //when
@@ -1233,7 +1233,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
+    final ProcessReportDataDto dataDto = createReport(DEFAULT_PROCESS_ID, "1");
     dataDto.getView().setProperty(null);
 
     //when
@@ -1246,7 +1246,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    final ProcessReportDataDto dataDto = createReport(PROCESS_DEFINITION_KEY, "1");
+    final ProcessReportDataDto dataDto = createReport(DEFAULT_PROCESS_ID, "1");
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -1304,30 +1304,19 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
   }
 
   private ProcessDefinitionEngineDto deployOneUserTasksDefinition() {
-    return deployOneUserTasksDefinition(PROCESS_DEFINITION_KEY, null);
+    return deployOneUserTasksDefinition(DEFAULT_PROCESS_ID, null);
   }
 
   private ProcessDefinitionEngineDto deployOneUserTasksDefinition(String key, String tenantId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK_1)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram(key), tenantId);
   }
 
   private ProcessDefinitionEngineDto deployTwoUserTasksDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK_1)
-      .userTask(USER_TASK_2)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getDoubleUserTaskDiagram());
   }
 
   private ProcessDefinitionEngineDto deployFourUserTasksDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
       .startEvent()
       .parallelGateway()
       .userTask(USER_TASK_1)

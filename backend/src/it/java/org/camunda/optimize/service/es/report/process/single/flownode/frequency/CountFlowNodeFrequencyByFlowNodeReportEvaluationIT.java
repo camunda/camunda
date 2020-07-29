@@ -27,6 +27,7 @@ import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -41,6 +42,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -167,13 +170,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     engineIntegrationExtension.createTenant(otherTenantId);
 
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(definitionKey)
-      .name("aProcessName")
-      .startEvent(START_EVENT)
-      .endEvent(END_EVENT)
-      .done();
-
-    engineIntegrationExtension.deployAndStartProcess(modelInstance, noneTenantId);
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(definitionKey), noneTenantId);
 
     importAllEngineEntitiesFromScratch();
 
@@ -200,14 +197,9 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     final String noneTenantId = TenantService.TENANT_NOT_DEFINED.getId();
     engineIntegrationExtension.createTenant(tenantId1);
 
-    final BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(definitionKey)
-      .name("aProcessName")
-      .startEvent(START_EVENT)
-      .endEvent(END_EVENT)
-      .done();
-
     // To create specific tenant instances with a shared def, start instance on noneTenant and update tenantID after
-    ProcessInstanceEngineDto instance1 = engineIntegrationExtension.deployAndStartProcess(modelInstance, noneTenantId);
+    ProcessInstanceEngineDto instance1 = engineIntegrationExtension
+      .deployAndStartProcess(getSimpleBpmnDiagram(definitionKey), noneTenantId);
     engineDatabaseExtension.changeProcessInstanceTenantId(instance1.getId(), tenantId1);
 
     importAllEngineEntitiesFromScratch();
@@ -320,7 +312,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getEntryForKey("startEvent").get().getValue()).isNull();
-    assertThat(result.getEntryForKey("userTask").get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(BpmnModels.USER_TASK_1).get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -340,7 +332,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getEntryForKey("startEvent").get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey("userTask").get().getValue()).isNull();
+    assertThat(result.getEntryForKey(BpmnModels.USER_TASK_1).get().getValue()).isNull();
   }
 
   @Test
@@ -361,7 +353,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getEntryForKey("startEvent").get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey("userTask").get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(BpmnModels.USER_TASK_1).get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -535,12 +527,7 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
   @Test
   public void resultContainsNonExecutedFlowNodes() {
     // given
-    BpmnModelInstance subProcess = Bpmn.createExecutableProcess()
-      .startEvent("startEvent")
-      .userTask("userTask")
-      .endEvent("endEvent")
-      .done();
-    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(subProcess);
+    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
 
     importAllEngineEntitiesFromScratch();
 

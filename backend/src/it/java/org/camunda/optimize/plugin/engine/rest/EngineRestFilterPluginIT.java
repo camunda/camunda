@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.plugin.engine.rest;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
@@ -19,6 +17,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -73,15 +72,7 @@ public class EngineRestFilterPluginIT extends AbstractIT {
   }
 
   private void deployAndStartSimpleServiceTaskWithVariables(Map<String, Object> variables) {
-    // @formatter: off
-    final BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess").name("aProcessName")
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    // @formatter: on
-    engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+    engineIntegrationExtension.deployAndStartProcessWithVariables(getSingleServiceTaskProcess(), variables);
   }
 
   private void allEntriesInElasticsearchHaveAllData(String elasticsearchType) {

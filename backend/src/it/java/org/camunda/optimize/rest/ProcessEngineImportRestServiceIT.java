@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.junit.jupiter.api.Test;
@@ -15,6 +13,7 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class ProcessEngineImportRestServiceIT extends AbstractIT {
 
@@ -23,11 +22,7 @@ public class ProcessEngineImportRestServiceIT extends AbstractIT {
   @Test
   public void importDataFromEngine() {
     //given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(PROCESS_ID)
-      .startEvent()
-      .endEvent()
-      .done();
-    engineIntegrationExtension.deployAndStartProcess(processModel);
+    engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(PROCESS_ID));
 
     //when
     importAllEngineEntitiesFromScratch();
