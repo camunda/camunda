@@ -51,11 +51,6 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithProcessPartReportEvaluationIT
   extends AbstractProcessDefinitionIT {
@@ -819,9 +814,9 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateWithPr
     Map<String, OffsetDateTime> idToNewEndDate = new HashMap<>();
     for (int i = 0; i < procInsts.size(); i++) {
       String id = procInsts.get(i).getId();
-      OffsetDateTime newStartDate = now.minus(i, unit);
-      idToNewStartDate.put(id, newStartDate);
-      idToNewEndDate.put(id, newStartDate.plusSeconds(1L));
+      OffsetDateTime newDate = now.minus(i, unit);
+      idToNewStartDate.put(id, newDate);
+      idToNewEndDate.put(id, newDate);
       engineDatabaseExtension.changeActivityInstanceStartDate(id, now);
       engineDatabaseExtension.changeActivityInstanceEndDate(id, now.plusSeconds(1));
     }
