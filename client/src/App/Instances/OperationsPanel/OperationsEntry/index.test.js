@@ -5,18 +5,15 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {render, screen, fireEvent} from '@testing-library/react';
 
 import {OPERATIONS, mockProps} from './index.setup';
-
 import OperationsEntry from './index';
-import * as Styled from './styled.js';
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
     // when
-
-    const node = shallow(
+    render(
       <OperationsEntry
         {...mockProps}
         batchOperation={{
@@ -27,19 +24,15 @@ describe('OperationsEntry', () => {
     );
 
     // then
-    const endDateNode = node.find(Styled.EndDate);
-    expect(endDateNode).not.toExist();
-
-    const html = node.html();
-    expect(html).toContain(OPERATIONS.RETRY.id);
-    expect(html).toContain('Retry');
-    expect(node.find('[data-test="operation-icon"]').length).toBe(1);
+    expect(screen.getByText(OPERATIONS.RETRY.id)).toBeInTheDocument();
+    expect(screen.getByText('Retry')).toBeInTheDocument();
+    expect(screen.getByTestId('operation-icon-Retry')).toBeInTheDocument();
+    expect(screen.getAllByTestId(/operation-icon/)).toHaveLength(1);
   });
 
   it('should render cancel operation', () => {
     // when
-
-    const node = shallow(
+    render(
       <OperationsEntry
         {...mockProps}
         batchOperation={{
@@ -50,20 +43,16 @@ describe('OperationsEntry', () => {
     );
 
     // then
-    const endDateNode = node.find(Styled.EndDate);
-    expect(endDateNode).toExist();
-    expect(endDateNode.text()).toContain('12 Dec 2018 00:00:00');
-
-    const html = node.html();
-    expect(html).toContain(OPERATIONS.CANCEL.id);
-    expect(html).toContain('Cancel');
-    expect(node.find('[data-test="operation-icon"]').length).toBe(1);
+    expect(screen.getByText('12 Dec 2018 00:00:00')).toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS.CANCEL.id)).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    expect(screen.getByTestId('operation-icon-Cancel')).toBeInTheDocument();
+    expect(screen.getAllByTestId(/operation-icon/)).toHaveLength(1);
   });
 
   it('should render edit operation', () => {
     // when
-
-    const node = shallow(
+    render(
       <OperationsEntry
         {...mockProps}
         batchOperation={{
@@ -74,21 +63,16 @@ describe('OperationsEntry', () => {
     );
 
     // then
-
-    const endDateNode = node.find(Styled.EndDate);
-    expect(endDateNode).toExist();
-    expect(endDateNode.text()).toEqual('12 Dec 2018 00:00:00');
-
-    const html = node.html();
-    expect(html).toContain(OPERATIONS.EDIT.id);
-    expect(html).toContain('Edit');
-    expect(node.find('[data-test="operation-icon"]').length).toBe(1);
+    expect(screen.getByText('12 Dec 2018 00:00:00')).toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS.EDIT.id)).toBeInTheDocument();
+    expect(screen.getByText('Edit')).toBeInTheDocument();
+    expect(screen.getByTestId('operation-icon-Edit')).toBeInTheDocument();
+    expect(screen.getAllByTestId(/operation-icon/)).toHaveLength(1);
   });
 
   it('should render instances count with when there is one instance', () => {
     // when
-
-    const node = shallow(
+    render(
       <OperationsEntry
         {...mockProps}
         batchOperation={{
@@ -99,16 +83,12 @@ describe('OperationsEntry', () => {
     );
 
     // then
-
-    const instancesCountNode = node.find(Styled.InstancesCount);
-    expect(instancesCountNode).toExist();
-    expect(instancesCountNode.text()).toEqual('1 Instance');
+    expect(screen.getByText('1 Instance')).toBeInTheDocument();
   });
 
   it('should render instances count with when there is more than one instance', () => {
     // when
-
-    const node = shallow(
+    render(
       <OperationsEntry
         {...mockProps}
         batchOperation={{
@@ -119,16 +99,12 @@ describe('OperationsEntry', () => {
     );
 
     // then
-
-    const instancesCountNode = node.find(Styled.InstancesCount);
-    expect(instancesCountNode).toExist();
-    expect(instancesCountNode.text()).toEqual('3 Instances');
+    expect(screen.getByText('3 Instances')).toBeInTheDocument();
   });
 
   it('should be able to handle instance click', () => {
     // given
-
-    const node = shallow(
+    render(
       <OperationsEntry
         {...mockProps}
         batchOperation={{
@@ -139,9 +115,7 @@ describe('OperationsEntry', () => {
     );
 
     // when
-    const InstancesCountNode = node.find(Styled.InstancesCount);
-
-    InstancesCountNode.simulate('click');
+    fireEvent.click(screen.getByText('3 Instances'));
 
     // then
     expect(mockProps.onInstancesClick).toHaveBeenCalledWith(

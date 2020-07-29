@@ -8,6 +8,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {OPERATION_TYPES} from './constants';
 import OperationIcon from 'modules/components/OperationIcon';
+import {LinkButton} from 'modules/components/LinkButton';
 import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
@@ -44,7 +45,10 @@ const OperationsEntry = ({batchOperation, onInstancesClick}) => {
           <Styled.Id data-test="operation-id">{id}</Styled.Id>
         </div>
 
-        <OperationIcon operationType={type} data-test="operation-icon" />
+        <OperationIcon
+          operationType={type}
+          data-test={`operation-icon-${TYPE_LABELS[type]}`}
+        />
       </Styled.EntryStatus>
       {!endDate && (
         <ProgressBar
@@ -53,9 +57,10 @@ const OperationsEntry = ({batchOperation, onInstancesClick}) => {
         />
       )}
       <Styled.EntryDetails>
-        <Styled.InstancesCount
-          onClick={() => onInstancesClick(id)}
-        >{`${pluralSuffix(instancesCount, 'Instance')}`}</Styled.InstancesCount>
+        <LinkButton onClick={() => onInstancesClick(id)}>{`${pluralSuffix(
+          instancesCount,
+          'Instance'
+        )}`}</LinkButton>
         {endDate && <Styled.EndDate>{formatDate(endDate)}</Styled.EndDate>}
       </Styled.EntryDetails>
     </Styled.Entry>

@@ -7,6 +7,7 @@
 import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
 import CodeModal from 'modules/components/CodeModal';
+import {LinkButton} from 'modules/components/LinkButton';
 
 import {compactObject, pickFromObject} from 'modules/utils';
 
@@ -64,14 +65,15 @@ export default class PopoverOverlay extends React.Component {
     return breadcrumbs.map((item) => {
       return item.hasLink ? (
         <Fragment key={`${selectedFlowNodeId}-a${item.name}`}>
-          <Styled.Button
+          <LinkButton
+            size="small"
             data-test="select-flownode"
             onClick={() =>
               onFlowNodeSelection(selectedFlowNodeId, item.options)
             }
           >
             {item.name}
-          </Styled.Button>
+          </LinkButton>
           <span> › </span>
         </Fragment>
       ) : (
@@ -145,13 +147,14 @@ export default class PopoverOverlay extends React.Component {
         <Styled.Popover theme={theme} side={this.props.position.side}>
           {this.renderSummary()}
           {Boolean(metadata.data) && (
-            <Styled.Button
+            <LinkButton
+              size="small"
               onClick={this.handleModalOpen}
               title="Show more metadata"
               data-test="more-metadata"
             >
               More...
-            </Styled.Button>
+            </LinkButton>
           )}
           {this.renderModal()}
         </Styled.Popover>

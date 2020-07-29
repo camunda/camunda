@@ -67,14 +67,3 @@ export const EntryDetails = styled.div`
 export const EndDate = styled.div`
   font-size: 14px;
 `;
-
-export const InstancesCount = themed(styled.div`
-  font-size: 14px;
-  color: ${themeStyle({
-    dark: `${Colors.darkLinkDefault}`,
-    light: `${Colors.lightLinkDefault}`,
-  })};
-  text-decoration: underline;
-
-  cursor: pointer;
-`);
