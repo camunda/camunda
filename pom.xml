@@ -31,7 +31,7 @@
     <version.zeebe>0.24.1</version.zeebe>
 
     <version.elasticsearch>6.8.10</version.elasticsearch>
-    <version.spring.boot>2.3.1.RELEASE</version.spring.boot>
+    <version.spring.boot>2.3.2.RELEASE</version.spring.boot>
     <version.junit>4.13</version.junit>
     <version.swagger>3.0.0</version.swagger>
     <version.javax.json>1.1.4</version.javax.json>
