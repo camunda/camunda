@@ -14,18 +14,16 @@ export function isFlowNode(bpmnElement) {
 
 export function getFlowNodes(bpmnElements) {
   if (!bpmnElements) {
-    return {ids: [], flowNodes: []};
+    return [];
   }
 
   let flowNodes = [];
-  let ids = [];
 
   Object.values(bpmnElements).forEach((bpmnElement) => {
     if (isFlowNode(bpmnElement)) {
       flowNodes.push(bpmnElement);
-      ids.push(bpmnElement.id);
     }
   });
 
-  return {ids, flowNodes};
+  return flowNodes;
 }

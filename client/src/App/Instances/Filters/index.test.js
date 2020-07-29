@@ -26,20 +26,28 @@ import {
   workflows,
   mockProps,
   mockPropsWithEmptyLocationSearch,
-  mockPropsWithSelectableFlowNodes,
   mockPropsWithInitFilter,
   mockPropsWithDefaultFilter,
   COMPLETE_FILTER,
 } from './index.setup';
 
 import {DEBOUNCE_DELAY, ALL_VERSIONS_OPTION} from './constants';
+import {instancesDiagram} from 'modules/stores/instancesDiagram';
+import {getFlowNodeOptions} from './service';
 
 jest.mock('./constants');
 jest.mock('modules/utils/bpmn');
+jest.mock('modules/api/diagram', () => ({
+  fetchWorkflowXML: jest.fn().mockImplementation(() => ''),
+}));
 
 api.fetchGroupedWorkflows = mockResolvedAsyncFn(groupedWorkflowsMock);
 
 describe('Filters', () => {
+  beforeAll(async () => {
+    await instancesDiagram.fetchWorkflowXml(1);
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     jest.clearAllTimers();
@@ -810,7 +818,6 @@ describe('Filters', () => {
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Flow Node');
       expect(field.props().disabled).toBe(true);
-      expect(field.props().options.length).toBe(0);
       expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
     });
 
@@ -910,14 +917,14 @@ describe('Filters', () => {
       expect(field.props().value).toEqual('');
     });
 
-    it('should read the options from this.props.selectableFlowNodes', () => {
+    it('should render selectable flow nodes', () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
               groupedWorkflows={workflows}
-              {...mockPropsWithSelectableFlowNodes}
+              {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
@@ -936,38 +943,26 @@ describe('Filters', () => {
         .find(Styled.Select)
         .filterWhere((n) => n.props().name === 'activityId');
 
+      const selectableFlowNodes = getFlowNodeOptions(
+        instancesDiagram.selectableFlowNodes
+      );
+
       expect(field.props().options[0].value).toEqual(
-        mockPropsWithSelectableFlowNodes.selectableFlowNodes[0].id
+        selectableFlowNodes[0].value
       );
       expect(field.props().options[1].value).toEqual(
-        mockPropsWithSelectableFlowNodes.selectableFlowNodes[1].id
+        selectableFlowNodes[1].value
       );
-
-      // Use name for the label if it exists
-      expect(field.props().options[0].label).toEqual(
-        mockPropsWithSelectableFlowNodes.selectableFlowNodes[0].name
-      );
-
-      // Use id for label if flowNode is unnamed
-      expect(field.props().options[1].label).toEqual('TaskB');
     });
 
-    it('should sort selectable flowNode options alphabetically by name and id', () => {
-      const unsortedSelectableFlowNodes = [
-        {id: 'Event_C', $type: 'bpmn:StartEvent', name: 'Z Event'},
-        {id: 'Event_A', $type: 'bpmn:StartEvent', name: 'A Event'},
-        {id: 'Activity_D', $type: 'bpmn:EndEvent'},
-        {id: 'Activity_B', $type: 'bpmn:EndEvent'},
-      ];
-
+    it('should render the selectable flow nodes on the correct order', () => {
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
               groupedWorkflows={workflows}
-              {...mockPropsWithSelectableFlowNodes}
+              {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
-              selectableFlowNodes={unsortedSelectableFlowNodes}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
@@ -977,13 +972,15 @@ describe('Filters', () => {
         .find(Styled.Select)
         .filterWhere((n) => n.props().name === 'activityId');
 
-      expect(field.props().options[0].label).toEqual('A Event');
-      expect(field.props().options[1].label).toEqual('Activity_B');
-      expect(field.props().options[2].label).toEqual('Activity_D');
-      expect(field.props().options[3].label).toEqual('Z Event');
+      expect(field.props().options[0].label).toEqual('End Event');
+      expect(field.props().options[1].label).toEqual('Exclusive Gateway');
+      expect(field.props().options[2].label).toEqual('Message Catch Event');
+      expect(field.props().options[3].label).toEqual('Parallel Gateway');
+      expect(field.props().options[4].label).toEqual('task D');
+      expect(field.props().options[5].label).toEqual('Timer Catch Event');
     });
 
-    it('should be disabled after the workflow name is reseted', async () => {
+    it('should be disabled after the workflow name is reset', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
       const node = mount(
         <ThemeProvider>
@@ -1015,7 +1012,6 @@ describe('Filters', () => {
 
       // then
       expect(field.props().disabled).toEqual(true);
-      expect(field.props().options.length).toEqual(0);
     });
 
     it('should display a list of activity ids', async () => {
@@ -1025,7 +1021,7 @@ describe('Filters', () => {
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
               groupedWorkflows={workflows}
-              {...mockPropsWithSelectableFlowNodes}
+              {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
@@ -1036,20 +1032,20 @@ describe('Filters', () => {
         .filterWhere((n) => n.props().name === 'activityId');
 
       // then
-      expect(field.props().options.length).toEqual(2);
+      expect(field.props().options.length).toEqual(6);
     });
 
     it('should set the state on activityId selection', async () => {
       // given
 
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const activityId =
-        mockPropsWithSelectableFlowNodes.selectableFlowNodes[0].id;
+      const selectableFlowNodes = instancesDiagram.selectableFlowNodes;
+      const activityId = selectableFlowNodes[0].id;
 
       const node = shallow(
         <Filters.WrappedComponent
           groupedWorkflows={workflows}
-          {...mockPropsWithSelectableFlowNodes}
+          {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
@@ -1063,7 +1059,7 @@ describe('Filters', () => {
 
       instance.handleControlledInputChange({
         target: {
-          value: mockPropsWithSelectableFlowNodes.selectableFlowNodes[0].id,
+          value: selectableFlowNodes[0].id,
           name: 'activityId',
         },
       });

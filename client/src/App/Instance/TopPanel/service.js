@@ -13,11 +13,7 @@ export function mapify(arrayOfObjects, uniqueKey, modifier) {
   }, new Map());
 }
 
-export function getSelectedFlowNodeName(selection, nodeMetaDataMap) {
-  const selectedFlowNodeId = selection && selection.flowNodeId;
-
-  const nodeMetaData = nodeMetaDataMap.get(selectedFlowNodeId);
-
+export function getSelectedFlowNodeName(selectedFlowNodeId, nodeMetaData) {
   return !selectedFlowNodeId
     ? null
     : (nodeMetaData && nodeMetaData.name) || selectedFlowNodeId;

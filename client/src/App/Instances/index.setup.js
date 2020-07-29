@@ -14,7 +14,6 @@ import {
   createMockInstancesObject,
 } from 'modules/testUtils';
 
-import {parsedDiagram} from 'modules/utils/bpmn';
 import {formatGroupedWorkflows} from 'modules/utils/instance';
 
 // props mocks
@@ -46,7 +45,6 @@ export const mockProps = {
   onFilterChange: jest.fn(),
   onFilterReset: jest.fn(),
   onFlowNodeSelection: jest.fn(),
-  diagramModel: parsedDiagram,
   statistics: [],
   onInstancesClick: jest.fn(),
 };

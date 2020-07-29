@@ -13,6 +13,7 @@ import {
   isIdComplete,
   isBatchOperationIdComplete,
   isBatchOperationIdValid,
+  getFlowNodeOptions,
 } from './service';
 import {DEFAULT_FILTER_CONTROLLED_VALUES} from 'modules/constants';
 
@@ -379,6 +380,26 @@ describe('Filters/service', () => {
       ].forEach(([input]) => {
         expect(isBatchOperationIdValid(input)).toBe(false);
       });
+    });
+  });
+
+  describe('getFlowNodeOptions', () => {
+    it('should return empty', () => {
+      expect(getFlowNodeOptions([])).toEqual([]);
+    });
+
+    it('should map correctly', () => {
+      const unsortedSelectableFlowNodes = [
+        {id: 'Event_C', $type: 'bpmn:StartEvent', name: 'Z Event'},
+        {id: 'Event_A', $type: 'bpmn:StartEvent', name: 'A Event'},
+        {id: 'Activity_D', $type: 'bpmn:EndEvent'},
+        {id: 'Activity_B', $type: 'bpmn:EndEvent'},
+      ];
+      const result = getFlowNodeOptions(unsortedSelectableFlowNodes);
+      expect(result[0].label).toEqual('A Event');
+      expect(result[1].label).toEqual('Activity_B');
+      expect(result[2].label).toEqual('Activity_D');
+      expect(result[3].label).toEqual('Z Event');
     });
   });
 });

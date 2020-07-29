@@ -5,57 +5,7 @@
  */
 
 import {STATE} from 'modules/constants';
-
-import {getSelectableFlowNodes, createNodeMetaDataMap} from '../service';
-
-import {
-  createRawTreeNode,
-  createDefinitions,
-  createIncident,
-  createDiagramNode,
-} from 'modules/testUtils';
-
-const createDiagramNodes = () => {
-  return {
-    StartEvent1234: createDiagramNode({
-      $type: 'bpmn:StartEvent',
-      name: 'Start the Process',
-      $instanceOf: (type) => type === 'bpmn:FlowNode',
-    }),
-    Service5678: createDiagramNode({
-      $type: 'bpmn:ServiceTask',
-      name: 'Do something',
-      $instanceOf: (type) => type === 'bpmn:FlowNode',
-    }),
-    EndEvent1234: createDiagramNode({
-      $type: 'bpmn:EndEvent',
-      name: 'End the Process',
-      $instanceOf: (type) => type === 'bpmn:FlowNode',
-    }),
-  };
-};
-
-export const createRawTree = () => {
-  return {
-    children: [
-      createRawTreeNode({
-        activityId: 'StartEvent1234',
-        type: 'START_EVENT',
-        state: STATE.COMPLETED,
-      }),
-      createRawTreeNode({
-        activityId: 'Service5678',
-        type: 'SERVICE_TASK',
-        state: STATE.COMPLETED,
-      }),
-      createRawTreeNode({
-        activityId: 'EndEvent1234',
-        type: 'End_Event',
-        state: STATE.COMPLETED,
-      }),
-    ],
-  };
-};
+import {createIncident, createRawTreeNode} from 'modules/testUtils';
 
 const mockIncidents = () => {
   return {
@@ -82,12 +32,30 @@ const mockIncidents = () => {
   };
 };
 
+export const createRawTree = () => {
+  return {
+    children: [
+      createRawTreeNode({
+        activityId: 'StartEvent1234',
+        type: 'START_EVENT',
+        state: STATE.COMPLETED,
+      }),
+      createRawTreeNode({
+        activityId: 'Service5678',
+        type: 'SERVICE_TASK',
+        state: STATE.COMPLETED,
+      }),
+      createRawTreeNode({
+        activityId: 'EndEvent1234',
+        type: 'End_Event',
+        state: STATE.COMPLETED,
+      }),
+    ],
+  };
+};
+
 export const mockProps = {
   incidents: mockIncidents(),
-  diagramDefinitions: createDefinitions(),
-  nodeMetaDataMap: createNodeMetaDataMap(
-    getSelectableFlowNodes(createDiagramNodes())
-  ),
   selection: {
     treeRowIds: [],
     flowNodeId: null,
@@ -95,10 +63,6 @@ export const mockProps = {
   getCurrentMetadata: jest.fn(),
   onInstanceOperation: jest.fn(),
   onTreeRowSelection: jest.fn(),
-};
-
-export const instanceWithIncident = {
-  ...mockProps,
 };
 
 export const mockedExpandedPaneId = 'myExpandedPaneId';

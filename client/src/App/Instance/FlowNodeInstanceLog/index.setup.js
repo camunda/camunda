@@ -5,7 +5,6 @@
  */
 
 import {createRawTreeNode} from 'modules/testUtils';
-import {TYPE} from 'modules/constants';
 
 const treeNode = createRawTreeNode({
   id: 'activityInstanceOfTaskD',
@@ -13,20 +12,16 @@ const treeNode = createRawTreeNode({
   name: 'taskD',
 });
 export const mockProps = {
-  getNodeWithMetaData: jest.fn().mockImplementation(() => ({
-    id: 'nodeId',
-    typeDetails: {elementType: TYPE.WORKFLOW},
-    type: '',
-    name: 'nodeName',
-    children: [],
-  })),
   onTreeRowSelection: jest.fn(),
-  diagramDefinitions: {id: 'Definition1'},
 };
 
 export const mockSuccessResponseForActivityTree = {
   children: [treeNode],
 };
 export const mockFailedResponseForActivityTree = {
+  error: 'an error occured',
+};
+export const mockSuccessResponseForDiagram = '';
+export const mockFailedResponseForDiagram = {
   error: 'an error occured',
 };

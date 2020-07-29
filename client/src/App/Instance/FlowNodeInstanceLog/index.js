@@ -9,68 +9,34 @@ import PropTypes from 'prop-types';
 
 import Skeleton from './Skeleton';
 import EmptyPanel from 'modules/components/EmptyPanel';
-import {withData} from 'modules/DataManager';
-import {LOADING_STATE} from 'modules/constants';
 import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
 import {observer} from 'mobx-react';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import * as Styled from './styled';
+import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 
 const FlowNodeInstanceLog = observer(
   class FlowNodeInstanceLog extends React.Component {
     static propTypes = {
-      dataManager: PropTypes.object,
-      diagramDefinitions: PropTypes.object,
-      getNodeWithMetaData: PropTypes.func,
       onTreeRowSelection: PropTypes.func,
     };
 
-    constructor(props) {
-      super(props);
-
-      this.state = {
-        loadingStateDefinitions: LOADING_STATE.LOADING,
-      };
-      this.subscriptions = {
-        LOAD_STATE_DEFINITIONS: ({state}) => {
-          if (
-            state === LOADING_STATE.LOADED ||
-            state === LOADING_STATE.LOAD_FAILED
-          ) {
-            this.setState({loadingStateDefinitions: state});
-          }
-        },
-      };
-    }
-
-    componentDidMount() {
-      this.props.dataManager.subscribe(this.subscriptions);
-    }
-
-    componentWillUnmount() {
-      this.props.dataManager.unsubscribe(this.subscriptions);
-    }
-
     constructLabel() {
       let label, type;
-      const {loadingStateDefinitions} = this.state;
 
-      const {LOADING, LOAD_FAILED} = LOADING_STATE;
       const {
         isFailed: isStateInstanceTreeFailed,
         isInitialLoadComplete: isStateInstanceTreeLoaded,
       } = flowNodeInstance.state;
+      const {
+        isFailed: areStateDefinitionsFailed,
+        isInitialLoadComplete: areStateDefinitionsLoaded,
+      } = singleInstanceDiagram.state;
 
-      if (
-        isStateInstanceTreeFailed ||
-        loadingStateDefinitions === LOAD_FAILED
-      ) {
+      if (isStateInstanceTreeFailed || areStateDefinitionsFailed) {
         type = 'warning';
         label = 'Activity Instances could not be fetched';
-      } else if (
-        !isStateInstanceTreeLoaded ||
-        loadingStateDefinitions === LOADING
-      ) {
+      } else if (!isStateInstanceTreeLoaded || !areStateDefinitionsLoaded) {
         type = 'skeleton';
       }
       return {label, type};
@@ -82,20 +48,17 @@ const FlowNodeInstanceLog = observer(
         instanceExecutionHistory,
         isInstanceExecutionHistoryAvailable,
       } = flowNodeInstance;
-      const {
-        diagramDefinitions,
-        getNodeWithMetaData,
-        onTreeRowSelection,
-      } = this.props;
+      const {onTreeRowSelection} = this.props;
 
+      const {areDiagramDefinitionsAvailable} = singleInstanceDiagram;
       return (
         <Styled.Panel>
-          {diagramDefinitions && isInstanceExecutionHistoryAvailable ? (
+          {areDiagramDefinitionsAvailable &&
+          isInstanceExecutionHistoryAvailable ? (
             <Styled.FlowNodeInstanceLog>
               <Styled.NodeContainer>
                 <FlowNodeInstancesTree
                   node={instanceExecutionHistory}
-                  getNodeWithMetaData={getNodeWithMetaData}
                   treeDepth={1}
                   onTreeRowSelection={onTreeRowSelection}
                 />
@@ -117,7 +80,4 @@ const FlowNodeInstanceLog = observer(
   }
 );
 
-const WrappedFlowNodeInstanceLog = withData(FlowNodeInstanceLog);
-WrappedFlowNodeInstanceLog.WrappedComponent = FlowNodeInstanceLog;
-
-export default WrappedFlowNodeInstanceLog;
+export {FlowNodeInstanceLog};

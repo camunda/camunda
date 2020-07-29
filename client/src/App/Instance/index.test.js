@@ -23,34 +23,36 @@ import {
 } from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
 
-import TopPanel from './TopPanel';
+import {TopPanel} from './TopPanel';
 import BottomPanel from './BottomPanel';
 import {VariablePanel} from './BottomPanel/VariablePanel';
 import IncidentsWrapper from './IncidentsWrapper';
 import {currentInstance} from 'modules/stores/currentInstance';
+import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 
 import Instance from './index';
 import {variables as variablesStore} from 'modules/stores/variables';
-import {getSelectableFlowNodes, createNodeMetaDataMap} from './service';
 
 // mock modules
 jest.mock('modules/utils/bpmn');
 
-jest.mock('./TopPanel', () => {
-  return function TopPanel() {
-    return <div />;
-  };
-});
+jest.mock('modules/api/diagram', () => ({
+  fetchWorkflowXML: jest.fn().mockImplementation(() => ''),
+}));
 
 jest.mock('./TopPanel', () => {
-  return function TopPanel() {
-    return <div />;
+  return {
+    TopPanel: function TopPanel() {
+      return <div />;
+    },
   };
 });
 
 jest.mock('./FlowNodeInstanceLog', () => {
-  return function FlowNodeInstanceLog() {
-    return <div />;
+  return {
+    FlowNodeInstanceLog: function FlowNodeInstanceLog() {
+      return <div />;
+    },
   };
 });
 
@@ -122,15 +124,16 @@ const {
   noIncidents,
   incidents,
   instanceHistoryTree,
-  diagramNodes,
   events,
   processedSequenceFlows,
 } = testData.fetch.onPageLoad;
 
-const {mockDefinition} = testData.diagramData;
-
 describe('Instance', () => {
   const {SUBSCRIPTION_TOPIC} = dataManagerConstants;
+
+  afterEach(() => {
+    singleInstanceDiagram.reset();
+  });
 
   describe('subscriptions', () => {
     let root;
@@ -199,11 +202,6 @@ describe('Instance', () => {
 
         //then
         expect(dataManager.getEvents).toHaveBeenCalledWith(workflowInstance.id);
-        expect(dataManager.getWorkflowXML).toHaveBeenCalledWith(
-          workflowInstance.workflowId,
-          workflowInstance
-        );
-
         expect(dataManager.getSequenceFlows).toHaveBeenCalledWith(
           workflowInstance.id
         );
@@ -262,35 +260,11 @@ describe('Instance', () => {
         expect(node.instance().state.incidents).toEqual(incidents);
       });
     });
-    describe('load instance diagram', () => {
-      it('should set loaded diagram in state', async () => {
-        //given
-        const {dataManager} = node.instance().props;
-        // when
-
-        await currentInstance.fetchCurrentInstance('workflow_instance');
-        dataManager.publish({
-          subscription:
-            subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
-          response: {bpmnElements: diagramNodes, definitions: mockDefinition},
-          staticContent: {},
-        });
-
-        // then
-        expect(node.instance().state.nodeMetaDataMap).toEqual(
-          createNodeMetaDataMap(getSelectableFlowNodes(diagramNodes))
-        );
-        expect(node.instance().state.diagramDefinitions).toEqual(
-          mockDefinition
-        );
-      });
-      it('should set default selection in state', () => {
-        //
-      });
-    });
     describe('load sequence flows', () => {
-      it('should set loaded sequence flows in state', () => {
+      it('should set loaded sequence flows in state', async () => {
         //given
+        await currentInstance.fetchCurrentInstance('workflow_instance');
+
         const {dataManager} = node.instance().props;
         // when
         dataManager.publish({
@@ -375,13 +349,8 @@ describe('Instance', () => {
       const {dataManager} = node.instance().props;
       await currentInstance.fetchCurrentInstance('workflow_instance');
 
-      dataManager.publish({
-        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
-        response: {bpmnElements: diagramNodes, definitions: mockDefinition},
-        staticContent: workflowInstance,
-      });
-
       await variablesStore.fetchVariables(1);
+      await singleInstanceDiagram.fetchWorkflowXml(1);
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
@@ -410,12 +379,6 @@ describe('Instance', () => {
       await currentInstance.fetchCurrentInstance('completed_workflow_instance');
 
       dataManager.publish({
-        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
-        response: {bpmnElements: diagramNodes, definitions: mockDefinition},
-        staticContent: workflowInstanceCompleted,
-      });
-
-      dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
         response: {
           LOAD_INSTANCE: workflowInstanceCompleted,
@@ -442,11 +405,7 @@ describe('Instance', () => {
         response: workflowInstanceCanceled,
       });
 
-      dataManager.publish({
-        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
-        response: {bpmnElements: diagramNodes, definitions: mockDefinition},
-        staticContent: workflowInstanceCompleted,
-      });
+      await singleInstanceDiagram.fetchWorkflowXml(1);
 
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
@@ -470,12 +429,6 @@ describe('Instance', () => {
 
       await currentInstance.fetchCurrentInstance('workflow_instance');
       await variablesStore.fetchVariables(1);
-      dataManager.publish({
-        subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
-        response: {bpmnElements: diagramNodes, definitions: mockDefinition},
-        staticContent: workflowInstance,
-      });
-
       dataManager.publish({
         subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
         response: {

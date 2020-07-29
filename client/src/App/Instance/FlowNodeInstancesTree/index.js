@@ -14,6 +14,9 @@ import Foldable from './Foldable';
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {currentInstance} from 'modules/stores/currentInstance';
+import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
+import {getNodeWithMetaData} from './service';
 
 const FlowNodeInstancesTree = observer(
   class FlowNodeInstancesTree extends React.Component {
@@ -28,17 +31,16 @@ const FlowNodeInstancesTree = observer(
       }),
       treeDepth: PropTypes.number.isRequired,
       onTreeRowSelection: PropTypes.func.isRequired,
-      getNodeWithMetaData: PropTypes.func.isRequired,
     };
 
     renderNode = () => {
       const {node, treeDepth} = this.props;
-
       const {
         selection: {treeRowIds: selectedTreeRowIds},
       } = flowNodeInstance.state;
       const hasChildren = node.children.length > 0;
       const isSelected = selectedTreeRowIds.includes(node.id);
+      const metaData = singleInstanceDiagram.getMetaData(node.activityId);
 
       return (
         <Styled.Li treeDepth={treeDepth} data-test={`tree-node-${node.id}`}>
@@ -62,7 +64,11 @@ const FlowNodeInstancesTree = observer(
               isLastChild={node.isLastChild}
             >
               <Bar
-                node={this.props.getNodeWithMetaData(node)}
+                node={getNodeWithMetaData(
+                  node,
+                  metaData,
+                  currentInstance.state.instance
+                )}
                 isSelected={isSelected}
               />
             </Foldable.Summary>
@@ -89,7 +95,6 @@ const FlowNodeInstancesTree = observer(
               }}
               treeDepth={this.props.treeDepth + 1}
               onTreeRowSelection={this.props.onTreeRowSelection}
-              getNodeWithMetaData={this.props.getNodeWithMetaData}
             />
           );
         })}

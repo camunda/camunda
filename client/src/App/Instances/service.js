@@ -6,8 +6,6 @@
 
 import {isEmpty, isEqual} from 'lodash';
 
-import {parseDiagramXML} from 'modules/utils/bpmn';
-
 import {getWorkflowByVersion} from 'modules/utils/filter';
 import {tryDecodeURI} from 'modules/utils';
 
@@ -24,11 +22,6 @@ export function decodeFields(object) {
 
 export function getWorkflowName(workflow) {
   return workflow ? workflow.name || workflow.bpmnProcessId : 'Workflow';
-}
-
-export async function fetchDiagramModel(dataManager, workflowId) {
-  const xml = await dataManager.getWorkflowXML(workflowId);
-  return await parseDiagramXML(xml);
 }
 
 export function getWorkflowByVersionFromFilter({

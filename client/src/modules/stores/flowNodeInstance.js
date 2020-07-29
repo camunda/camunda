@@ -39,7 +39,7 @@ class FlowNodeInstance {
     }
 
     if (!this.state.isInitialLoadComplete) {
-      this.setIsInitialLoadComplete();
+      this.completeInitialLoad();
     }
   };
 
@@ -102,7 +102,7 @@ class FlowNodeInstance {
     clearInterval(this.intervalId);
   };
 
-  setIsInitialLoadComplete = () => {
+  completeInitialLoad = () => {
     this.state.isInitialLoadComplete = true;
   };
 
@@ -122,7 +122,7 @@ decorate(FlowNodeInstance, {
   handleSuccess: action,
   handleFailure: action,
   startLoading: action,
-  setIsInitialLoadComplete: action,
+  completeInitialLoad: action,
   reset: action,
   setCurrentSelection: action,
   areMultipleNodesSelected: computed,

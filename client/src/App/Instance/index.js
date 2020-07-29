@@ -23,14 +23,12 @@ import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
 import {withData} from 'modules/DataManager';
 
-import FlowNodeInstanceLog from './FlowNodeInstanceLog';
-import TopPanel from './TopPanel';
+import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
+import {TopPanel} from './TopPanel';
 import BottomPanel from './BottomPanel';
 import {VariablePanel} from './BottomPanel/VariablePanel';
 import {
   isRunningInstance,
-  createNodeMetaDataMap,
-  getSelectableFlowNodes,
   storeResponse,
   getProcessedSequenceFlows,
 } from './service';
@@ -38,6 +36,7 @@ import {statistics} from 'modules/stores/statistics';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
+import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 import {observer} from 'mobx-react';
 
 import * as Styled from './styled';
@@ -56,8 +55,6 @@ const Instance = observer(
       super(props);
 
       this.state = {
-        nodeMetaDataMap: null,
-        diagramDefinitions: null,
         processedSequenceFlows: [],
         events: [],
         incidents: {
@@ -81,13 +78,18 @@ const Instance = observer(
 
             const {dataManager} = this.props;
             // kick off all follow-up requests.
-            dataManager.getWorkflowXML(response.workflowId, response);
             dataManager.getEvents(response.id);
             dataManager.getSequenceFlows(response.id);
-
             if (response.state === 'INCIDENT') {
               dataManager.getIncidents(response);
             }
+
+            singleInstanceDiagram.fetchWorkflowXml(response.workflowId);
+
+            flowNodeInstance.setCurrentSelection({
+              flowNodeId: null,
+              treeRowIds: [response.id],
+            });
           }
         },
         LOAD_INCIDENTS: (responseData) =>
@@ -98,26 +100,6 @@ const Instance = observer(
           storeResponse(responseData, (response) => {
             this.setState({events: response});
           }),
-
-        LOAD_STATE_DEFINITIONS: ({response, state, staticContent}) => {
-          if (state === LOADING_STATE.LOADED) {
-            // Get all selectable BPMN elements
-            const nodeMetaDataMap = createNodeMetaDataMap(
-              getSelectableFlowNodes(response.bpmnElements)
-            );
-            const selection = {
-              flowNodeId: null,
-              treeRowIds: [staticContent.id],
-            };
-
-            this.setState({
-              nodeMetaDataMap: nodeMetaDataMap,
-              diagramDefinitions: response.definitions,
-            });
-
-            flowNodeInstance.setCurrentSelection(selection);
-          }
-        },
         LOAD_SEQUENCE_FLOWS: ({response, state}) => {
           if (state === LOADING_STATE.LOADED) {
             this.setState({
@@ -173,6 +155,7 @@ const Instance = observer(
       flowNodeInstance.reset();
       currentInstance.reset();
       flowNodeTimeStamp.reset();
+      singleInstanceDiagram.reset();
     }
 
     handlePoll = () => {
@@ -199,9 +182,11 @@ const Instance = observer(
       } = this.state;
 
       const {flowNodeIdToFlowNodeInstanceMap} = flowNodeInstance;
+      const {instance} = currentInstance.state;
       const states = {
         ...initallyLoadedStates,
         flowNodeIdToFlowNodeInstanceMap,
+        instance,
       };
       return Object.values(states).reduce((acc, stateValue) => {
         return acc && Boolean(stateValue);
@@ -299,48 +284,8 @@ const Instance = observer(
       };
     };
 
-    getNodeWithMetaData = (node) => {
-      const metaData = this.state.nodeMetaDataMap.get(node.activityId) || {
-        name: undefined,
-        type: {
-          elementType: undefined,
-          eventType: undefined,
-          multiInstanceType: undefined,
-        },
-      };
-
-      const typeDetails = {
-        ...metaData.type,
-      };
-
-      if (node.type === TYPE.WORKFLOW) {
-        typeDetails.elementType = TYPE.WORKFLOW;
-      }
-
-      if (node.type === TYPE.MULTI_INSTANCE_BODY) {
-        typeDetails.elementType = TYPE.MULTI_INSTANCE_BODY;
-      }
-
-      // Add Node Name
-      const nodeName =
-        node.id === currentInstance.state.instance.id
-          ? getWorkflowName(currentInstance.state.instance)
-          : (metaData && metaData.name) || node.activityId;
-
-      return {
-        ...node,
-        typeDetails,
-        name: nodeName,
-      };
-    };
-
     render() {
-      const {
-        diagramDefinitions,
-        incidents,
-        nodeMetaDataMap,
-        processedSequenceFlows,
-      } = this.state;
+      const {incidents, processedSequenceFlows} = this.state;
       const {instance} = currentInstance.state;
       return (
         <Styled.Instance>
@@ -353,8 +298,6 @@ const Instance = observer(
           >
             <TopPanel
               incidents={incidents}
-              nodeMetaDataMap={nodeMetaDataMap}
-              diagramDefinitions={diagramDefinitions}
               processedSequenceFlows={processedSequenceFlows}
               getCurrentMetadata={this.getCurrentMetadata}
               onInstanceOperation={this.handleInstanceOperation}
@@ -362,8 +305,6 @@ const Instance = observer(
             />
             <BottomPanel>
               <FlowNodeInstanceLog
-                diagramDefinitions={diagramDefinitions}
-                getNodeWithMetaData={this.getNodeWithMetaData}
                 onTreeRowSelection={this.handleTreeRowSelection}
               />
               <VariablePanel />

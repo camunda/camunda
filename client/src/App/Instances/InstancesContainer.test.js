@@ -33,7 +33,6 @@ import {
   groupedWorkflowsMock,
   createMockInstancesObject,
 } from 'modules/testUtils';
-import {parsedDiagram} from 'modules/utils/bpmn';
 
 import {
   mockFullFilterWithoutWorkflow,
@@ -43,6 +42,7 @@ import {
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
 import PropTypes from 'prop-types';
+import {instancesDiagram} from 'modules/stores/instancesDiagram';
 
 const InstancesContainerWrapped = InstancesContainer.WrappedComponent;
 
@@ -61,6 +61,10 @@ api.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn([]);
 apiDiagram.fetchWorkflowXML = mockResolvedAsyncFn('<xml />');
 jest.mock('bpmn-js', () => ({}));
 jest.mock('modules/utils/bpmn');
+
+jest.mock('modules/api/diagram', () => ({
+  fetchWorkflowXML: jest.fn().mockImplementation(() => ''),
+}));
 
 // local utility
 const pushMock = jest.fn();
@@ -92,11 +96,12 @@ ProviderWrapper.propTypes = {
 describe('InstancesContainer', () => {
   let dataManager;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
     jest.spyOn(localStorage, 'setItem');
 
     dataManager = createMockDataManager();
+    await instancesDiagram.fetchWorkflowXml(1);
   });
 
   describe('mounting', () => {
@@ -114,64 +119,6 @@ describe('InstancesContainer', () => {
 
       // then
       expect(api.fetchGroupedWorkflows).toHaveBeenCalled();
-    });
-
-    it('should fetch the workflow xml', async () => {
-      const node = mount(
-        <ProviderWrapper>
-          <InstancesContainerWrapped
-            {...getRouterProps(mockFullFilterWithWorkflow)}
-            {...{dataManager}}
-          />
-        </ProviderWrapper>
-      );
-
-      dataManager.getWorkflowXML = jest.fn(() => {
-        dataManager.subscriptions()['LOAD_STATE_DEFINITIONS']({
-          state: LOADING_STATE.LOADED,
-          response: parsedDiagram,
-        });
-      });
-
-      // when
-      await flushPromises();
-      node.update();
-
-      //then
-      expect(dataManager.getWorkflowXML).toHaveBeenCalledWith(
-        groupedWorkflowsMock[0].workflows[2].id
-      );
-
-      expect(node.find('Instances').prop('diagramModel')).toEqual(
-        parsedDiagram
-      );
-    });
-
-    // How to test the logic of the callback, which are subscribed to topics?
-    it('should fetch statistics', async () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <InstancesContainerWrapped
-            {...{dataManager}}
-            {...getRouterProps(mockFullFilterWithWorkflow)}
-          />
-        </ProviderWrapper>
-      );
-
-      // when
-      await flushPromises();
-      node.update();
-
-      const subscriptions = dataManager.subscriptions();
-      dataManager.publish({
-        subscription: subscriptions['LOAD_STATE_DEFINITIONS'],
-        state: LOADING_STATE.LOADED,
-        response: parsedDiagram,
-      });
-
-      // then
-      expect(dataManager.getWorkflowInstancesStatistics).toHaveBeenCalled();
     });
   });
 
@@ -437,7 +384,6 @@ describe('InstancesContainer', () => {
     expect(InstancesNode.prop('filter')).toEqual({
       ...DEFAULT_FILTER,
     });
-    expect(InstancesNode.props().diagramModel).toEqual({});
   });
 
   it('should pass data to Instances for full filter, without workflow data', async () => {
@@ -460,10 +406,9 @@ describe('InstancesContainer', () => {
     expect(InstancesNode.prop('filter')).toEqual(
       decodeFields(mockFullFilterWithoutWorkflow)
     );
-    expect(InstancesNode.prop('diagramModel')).toEqual({});
   });
 
-  it('should pass data to Instances for full filter, with workflow data', async () => {
+  it('should pass data to Instances for full filter', async () => {
     const node = mount(
       <ProviderWrapper>
         <InstancesContainerWrapped
@@ -472,13 +417,6 @@ describe('InstancesContainer', () => {
         />
       </ProviderWrapper>
     );
-
-    dataManager.getWorkflowXML = jest.fn(() => {
-      dataManager.subscriptions()['LOAD_STATE_DEFINITIONS']({
-        state: LOADING_STATE.LOADED,
-        response: parsedDiagram,
-      });
-    });
 
     // when
     await flushPromises();
@@ -489,7 +427,6 @@ describe('InstancesContainer', () => {
     expect(InstancesNode.prop('filter')).toEqual(
       decodeFields({...mockFullFilterWithWorkflow})
     );
-    expect(InstancesNode.prop('diagramModel')).toEqual(parsedDiagram);
   });
 
   it('should pass data to Instances for full filter, with all versions', async () => {
@@ -518,7 +455,6 @@ describe('InstancesContainer', () => {
         version: 'all',
       })
     );
-    expect(InstancesNode.prop('diagramModel')).toEqual({});
   });
 
   describe('reading url filter', () => {
@@ -649,7 +585,7 @@ describe('InstancesContainer', () => {
       });
 
       it('when the version in url is invalid', async () => {
-        const node = mount(
+        mount(
           <ProviderWrapper>
             <InstancesContainerWrapped
               {...{dataManager}}
@@ -660,17 +596,8 @@ describe('InstancesContainer', () => {
             />
           </ProviderWrapper>
         );
-        const subscriptions = dataManager.subscriptions();
-        // when
-        dataManager.publish({
-          subscription: subscriptions['LOAD_STATE_DEFINITIONS'],
-          state: LOADING_STATE.LOADED,
-          response: parsedDiagram,
-        });
 
-        await flushPromises();
-        node.update();
-
+        await instancesDiagram.fetchWorkflowXml(1);
         // expect invalid activityId to have been removed
         expect(pushMock).toHaveBeenCalled();
         const search = pushMock.mock.calls[0][0].search;
@@ -735,7 +662,6 @@ describe('InstancesContainer', () => {
         expect(InstancesNode.prop('filter')).toEqual(
           decodeFields(mockFullFilterWithoutWorkflow)
         );
-        expect(InstancesNode.prop('diagramModel')).toEqual({});
         expect(InstancesNode.prop('statistics')).toEqual([]);
         expect(InstancesNode.prop('firstElement')).toBe(DEFAULT_FIRST_ELEMENT);
         expect(InstancesNode.prop('sorting')).toEqual(DEFAULT_SORTING);
@@ -769,7 +695,6 @@ describe('InstancesContainer', () => {
         expect(InstancesNode.prop('filter')).toEqual(
           decodeFields(validFilterWithVersionAll)
         );
-        expect(InstancesNode.prop('diagramModel')).toEqual({});
         expect(InstancesNode.prop('statistics')).toEqual([]);
         expect(InstancesNode.prop('firstElement')).toBe(DEFAULT_FIRST_ELEMENT);
         expect(InstancesNode.prop('sorting')).toEqual(DEFAULT_SORTING);
@@ -818,13 +743,6 @@ describe('InstancesContainer', () => {
         await flushPromises();
         node.update();
 
-        dataManager.getWorkflowXML = jest.fn(() => {
-          dataManager.subscriptions()['LOAD_STATE_DEFINITIONS']({
-            state: LOADING_STATE.LOADED,
-            response: parsedDiagram,
-          });
-        });
-
         // when
         // change workflow by changing the version
         const newFilter = {...mockFullFilterWithWorkflow, version: '3'};
@@ -835,8 +753,6 @@ describe('InstancesContainer', () => {
         // then
         const InstancesNode = node.find('Instances');
         expect(InstancesNode.prop('filter')).toEqual(decodeFields(newFilter));
-        // update diagramModel
-        expect(InstancesNode.prop('diagramModel')).toEqual(parsedDiagram);
         // // reset statistics
         expect(InstancesNode.prop('statistics')).toEqual([]);
         expect(InstancesNode.prop('firstElement')).toBe(DEFAULT_FIRST_ELEMENT);

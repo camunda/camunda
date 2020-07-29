@@ -18,9 +18,19 @@ import * as FoldableStyles from './Foldable/styled';
 
 import {testData} from './index.setup';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
+import {currentInstance} from 'modules/stores/currentInstance';
 
-// Mock TimeStampLabel node;
+jest.mock('modules/utils/bpmn');
 
+jest.mock('modules/api/instances', () => ({
+  fetchWorkflowInstance: jest.fn().mockImplementation(() => {
+    return {id: 'instance_id', state: 'ACTIVE'};
+  }),
+}));
+jest.mock('modules/api/diagram', () => ({
+  fetchWorkflowXML: jest.fn().mockImplementation(() => ''),
+}));
 jest.mock(
   './Bar',
   () =>
@@ -39,7 +49,6 @@ const mountNode = (customProps) => {
         selectedTreeRowIds={[]}
         onTreeRowSelection={mockOnSelection}
         getFlowNodeDetails={jest.fn()}
-        getNodeWithMetaData={(node) => node.id}
         treeDepth={1}
         {...customProps}
       />
@@ -54,6 +63,14 @@ describe('FlowNodeInstancesTree', () => {
   let SubProcessNode;
   let ServiceNode;
 
+  beforeAll(async () => {
+    await singleInstanceDiagram.fetchWorkflowXml(1);
+    await currentInstance.fetchCurrentInstance(1);
+  });
+  afterAll(() => {
+    singleInstanceDiagram.reset();
+    currentInstance.reset();
+  });
   beforeEach(() => {
     node = mountNode();
     // specific nodes

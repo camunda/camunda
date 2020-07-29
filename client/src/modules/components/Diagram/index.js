@@ -359,27 +359,31 @@ class Diagram extends React.PureComponent {
       theme: this.props.theme,
     };
 
+    const {
+      metadata,
+      selectedFlowNodeId,
+      onFlowNodeSelection,
+      selectedFlowNodeName,
+    } = this.props;
     return (
-      <Styled.Diagram>
+      <Styled.Diagram data-test="diagram">
         <Styled.DiagramCanvas ref={this.myRef} />
         <DiagramControls
           handleZoomIn={this.handleZoomIn}
           handleZoomOut={this.handleZoomOut}
           handleZoomReset={this.handleZoomReset}
         />
-        {this.props.selectedFlowNodeId &&
-          this.props.metadata &&
+        {selectedFlowNodeId &&
+          metadata &&
           this.state.isViewerLoaded &&
           this.Viewer && (
             <PopoverOverlay
-              key={this.props.selectedFlowNodeId}
-              selectedFlowNodeId={this.props.selectedFlowNodeId}
-              selectedFlowNodeName={this.props.selectedFlowNodeName}
-              metadata={this.props.metadata}
-              onFlowNodeSelection={this.props.onFlowNodeSelection}
-              position={this.getPopoverPostion(
-                this.props.metadata.isMultiRowPeterCase
-              )}
+              key={selectedFlowNodeId}
+              selectedFlowNodeId={selectedFlowNodeId}
+              selectedFlowNodeName={selectedFlowNodeName}
+              metadata={metadata}
+              onFlowNodeSelection={onFlowNodeSelection}
+              position={this.getPopoverPostion(metadata.isMultiRowPeterCase)}
               {...overlayProps}
             />
           )}

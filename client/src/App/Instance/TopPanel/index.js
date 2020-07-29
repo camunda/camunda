@@ -14,62 +14,37 @@ import {
   getMultiInstanceChildren,
 } from './service';
 
-import {withData} from 'modules/DataManager';
 import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 
 import Diagram from 'modules/components/Diagram';
 import IncidentsWrapper from '../IncidentsWrapper';
-import {EXPAND_STATE, LOADING_STATE} from 'modules/constants';
+import {EXPAND_STATE} from 'modules/constants';
 
 import InstanceHeader from './InstanceHeader';
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 
 const TopPanel = observer(
   class TopPanel extends React.PureComponent {
     static propTypes = {
       incidents: PropTypes.object,
       children: PropTypes.node,
-      dataManager: PropTypes.object,
       onInstanceOperation: PropTypes.func,
-      nodeMetaDataMap: PropTypes.object,
       processedSequenceFlows: PropTypes.array,
       expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
-      diagramDefinitions: PropTypes.object,
       onTreeRowSelection: PropTypes.func,
       getCurrentMetadata: PropTypes.func,
     };
-
-    constructor(props) {
-      super(props);
-      this.state = {
-        isLoading: LOADING_STATE.LOADING,
-      };
-      this.subscriptions = {
-        LOAD_STATE_DEFINITIONS: ({state}) => {
-          if (state === LOADING_STATE.LOADED) {
-            this.setState({isLoading: state});
-          }
-        },
-      };
-    }
-
-    componentDidMount() {
-      this.props.dataManager.subscribe(this.subscriptions);
-    }
-
-    componentWillUnmount() {
-      this.props.dataManager.unsubscribe(this.subscriptions);
-    }
 
     addFlowNodeNames = (incidents) =>
       incidents.map((incident) => this.addFlowNodeName(incident));
 
     addFlowNodeName = (object) => {
       const modifiedObject = {...object};
-      const nodeMetaData = this.props.nodeMetaDataMap.get(
+      const nodeMetaData = singleInstanceDiagram.getMetaData(
         modifiedObject.flowNodeId
       );
 
@@ -106,20 +81,21 @@ const TopPanel = observer(
     };
 
     renderContent() {
-      const {
-        incidents,
-        onInstanceOperation,
-        diagramDefinitions,
-        nodeMetaDataMap,
-        ...props
-      } = this.props;
+      const {incidents, onInstanceOperation, ...props} = this.props;
 
       const {
         state: {selection},
         flowNodeIdToFlowNodeInstanceMap,
       } = flowNodeInstance;
-      const {instance} = currentInstance.state;
 
+      const {instance} = currentInstance.state;
+      const {
+        nodeMetaDataMap,
+        state: {diagramModel},
+      } = singleInstanceDiagram;
+
+      const selectedFlowNodeId = selection?.flowNodeId;
+      const metaData = singleInstanceDiagram.getMetaData(selectedFlowNodeId);
       return (
         <>
           {instance.state === 'INCIDENT' && nodeMetaDataMap && (
@@ -137,7 +113,7 @@ const TopPanel = observer(
               )}
             />
           )}
-          {diagramDefinitions && (
+          {diagramModel?.definitions && (
             <Diagram
               expandState={props.expandState}
               onFlowNodeSelection={this.handleFlowNodeSelection}
@@ -145,13 +121,13 @@ const TopPanel = observer(
               processedSequenceFlows={props.processedSequenceFlows}
               selectedFlowNodeId={selection.flowNodeId}
               selectedFlowNodeName={getSelectedFlowNodeName(
-                selection,
-                nodeMetaDataMap
+                selectedFlowNodeId,
+                metaData
               )}
               flowNodeStateOverlays={getFlowNodeStateOverlays(
                 flowNodeIdToFlowNodeInstanceMap
               )}
-              definitions={diagramDefinitions}
+              definitions={diagramModel.definitions}
               metadata={
                 !selection.flowNodeId ? null : this.props.getCurrentMetadata()
               }
@@ -165,13 +141,12 @@ const TopPanel = observer(
       const {
         onInstanceOperation,
         incidents,
-        diagramDefinitions,
-        nodeMetaDataMap,
         onTreeRowSelection,
         getCurrentMetadata,
         ...props
       } = this.props;
 
+      const {isLoading, isInitialLoadComplete} = singleInstanceDiagram.state;
       return (
         <Styled.Pane {...props}>
           <InstanceHeader
@@ -179,11 +154,8 @@ const TopPanel = observer(
             onInstanceOperation={onInstanceOperation}
           />
           <Styled.SplitPaneBody data-test="diagram-panel-body">
-            {this.state.isLoading === LOADING_STATE.LOADING && (
-              <SpinnerSkeleton data-test="spinner" />
-            )}
-            {this.state.isLoading === LOADING_STATE.LOADED &&
-              this.renderContent()}
+            {isLoading && <SpinnerSkeleton data-test="spinner" />}
+            {isInitialLoadComplete && this.renderContent()}
           </Styled.SplitPaneBody>
         </Styled.Pane>
       );
@@ -191,7 +163,4 @@ const TopPanel = observer(
   }
 );
 
-const WrappedPanel = withData(TopPanel);
-WrappedPanel.WrappedComponent = TopPanel;
-
-export default WrappedPanel;
+export {TopPanel};

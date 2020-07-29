@@ -11,43 +11,27 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
-
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
-import {DataManagerProvider} from 'modules/DataManager';
-
-import {SUBSCRIPTION_TOPIC, LOADING_STATE} from 'modules/constants';
-import {mockProps, mockedExpandedPaneId, createRawTree} from './index.setup';
-
 import {
-  mockedModules,
-  mockedImportDefinitions,
-} from '__mocks__/bpmn-js/lib/NavigatedViewer';
+  render,
+  waitForElementToBeRemoved,
+  screen,
+} from '@testing-library/react';
+import {MemoryRouter, Route} from 'react-router-dom';
 
-import IncidentsWrapper from '../IncidentsWrapper';
+import {mockProps, mockedExpandedPaneId} from './index.setup';
+import PropTypes from 'prop-types';
 
-import Diagram from 'modules/components/Diagram';
-import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 import SplitPane from 'modules/components/SplitPane';
-import {ThemeProvider} from 'modules/theme';
 
-import TopPanel from './index';
+import {TopPanel} from './index';
 import {currentInstance} from 'modules/stores/currentInstance';
-import {flushPromises} from 'modules/testUtils';
+import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
+import {fetchWorkflowInstance} from 'modules/api/instances';
 
 jest.mock('modules/utils/bpmn');
-
-jest.mock('../IncidentsWrapper', () => {
-  /* eslint react/prop-types: 0  */
-  return function IncidentsWrapper(props) {
-    return <div />;
-  };
-});
-
-jest.mock('modules/api/instances', () => ({
-  fetchWorkflowInstance: jest
-    .fn()
-    .mockImplementation(() => ({state: 'INCIDENT'})),
+jest.mock('modules/api/instances');
+jest.mock('modules/api/diagram', () => ({
+  fetchWorkflowXML: jest.fn().mockImplementation(() => ''),
 }));
 
 jest.mock('./InstanceHeader', () => {
@@ -57,121 +41,59 @@ jest.mock('./InstanceHeader', () => {
   };
 });
 
-createMockDataManager();
-const mountTopPanel = (props) => {
-  return mount(
-    <ThemeProvider>
-      <DataManagerProvider>
+const Wrapper = ({children}) => {
+  return (
+    <MemoryRouter initialEntries={['/instances/1']}>
+      <Route path="/instances/:id">
         <SplitPane expandedPaneId={mockedExpandedPaneId}>
-          <TopPanel {...props} />
+          {children}
           <SplitPane.Pane />
         </SplitPane>
-      </DataManagerProvider>
-    </ThemeProvider>
+      </Route>
+    </MemoryRouter>
   );
 };
 
-describe('DiagramPanel', () => {
+Wrapper.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
+};
+
+describe('TopPanel', () => {
   afterEach(() => {
-    jest.clearAllMocks();
+    singleInstanceDiagram.reset();
+    currentInstance.reset();
+    fetchWorkflowInstance.mockReset();
   });
 
-  it('should render spinner by default', () => {
-    // when
-    const node = mountTopPanel({...mockProps});
-
-    // then
-    expect(node.find(SpinnerSkeleton)).toHaveLength(1);
-    expect(node.find(Diagram)).not.toHaveLength(1);
-    expect(node.find(IncidentsWrapper)).not.toHaveLength(1);
-  });
-
-  it('should render diagram', async () => {
-    // given
-    await currentInstance.fetchCurrentInstance(1);
-    const node = mountTopPanel({...mockProps});
-    const {props, subscriptions} = node
-      .find(TopPanel.WrappedComponent)
-      .instance();
-
-    const {dataManager} = props;
-    // when
-    dataManager.publish({
-      subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
-      state: LOADING_STATE.LOADED,
+  it('should render spinner while loading', async () => {
+    fetchWorkflowInstance.mockResolvedValueOnce({
+      id: 'instance_id',
+      state: 'ACTIVE',
     });
 
-    await flushPromises();
-    node.update();
-    // then
-    expect(node.find(SpinnerSkeleton)).not.toHaveLength(1);
-    expect(node.find(Diagram)).toHaveLength(1);
-
-    expect(mockedImportDefinitions).toHaveBeenCalled();
-
-    // it should apply zoom to the diagram
-    expect(mockedModules.canvas.zoom).toHaveBeenCalled();
-    expect(mockedModules.canvas.resized).toHaveBeenCalled();
-  });
-
-  it('should render hidden diagram', () => {
-    // given
-    localStorage.setItem(
-      'panelStates',
-      JSON.stringify({[mockedExpandedPaneId]: 'COLLAPSED'})
-    );
-
-    const node = mountTopPanel({...mockProps});
-    const {props, subscriptions} = node
-      .find(TopPanel.WrappedComponent)
-      .instance();
-
-    const {dataManager} = props;
-
-    // when
-    dataManager.publish({
-      subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
-      state: LOADING_STATE.LOADED,
-    });
-
-    node.update();
-
-    // then
-    expect(node.find(SpinnerSkeleton)).not.toHaveLength(1);
-    expect(node.find(Diagram)).toHaveLength(1);
-
-    expect(mockedImportDefinitions).toHaveBeenCalled();
-
-    // it should not interact with NavigatedViewer, when the panel is collapsed
-    expect(mockedModules.canvas.zoom).not.toHaveBeenCalled();
-    expect(mockedModules.canvas.resized).not.toHaveBeenCalled();
-    expect(mockedModules.zoomScroll.stepZoom).not.toHaveBeenCalled();
-
-    localStorage.clear();
-  });
-
-  it('should render incidentsTable', async () => {
-    // given
+    render(<TopPanel {...mockProps} />, {wrapper: Wrapper});
 
     await currentInstance.fetchCurrentInstance(1);
+    singleInstanceDiagram.fetchWorkflowXml(1);
+    expect(screen.getByTestId('spinner')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+  });
 
-    const node = mountTopPanel({...mockProps});
-
-    const {props, subscriptions} = node
-      .find(TopPanel.WrappedComponent)
-      .instance();
-
-    const {dataManager} = props;
-
-    // when
-    dataManager.publish({
-      subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS],
-      state: LOADING_STATE.LOADED,
+  it('should render incident bar', async () => {
+    fetchWorkflowInstance.mockResolvedValueOnce({
+      id: 'instance_id',
+      state: 'INCIDENT',
     });
 
-    node.update();
+    render(<TopPanel {...mockProps} />, {wrapper: Wrapper});
 
-    // then
-    expect(node.find(IncidentsWrapper)).toHaveLength(1);
+    await currentInstance.fetchCurrentInstance(1);
+    await singleInstanceDiagram.fetchWorkflowXml(1);
+    expect(
+      screen.getByText('There is 1 Incident in Instance 1.')
+    ).toBeInTheDocument();
   });
 });

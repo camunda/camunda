@@ -20,12 +20,10 @@ import {
   fetchIncidentsByError,
 } from 'modules/api/incidents';
 
-import {fetchWorkflowXML} from 'modules/api/diagram';
 import {fetchEvents} from 'modules/api/events';
 
 import {fetchBatchOperations} from 'modules/api/batchOperations';
 
-import {parseDiagramXML} from 'modules/utils/bpmn';
 import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 
 import RequestCache from '../cache';
@@ -35,7 +33,6 @@ import Poll from '../poll';
 const {
   LOAD_LIST_INSTANCES,
   LOAD_STATE_STATISTICS,
-  LOAD_STATE_DEFINITIONS,
   LOAD_BATCH_OPERATIONS,
   CREATE_BATCH_OPERATION,
   LOAD_SEQUENCE_FLOWS,
@@ -121,25 +118,6 @@ export class DataManager {
       LOAD_STATE_STATISTICS,
       fetchWorkflowInstancesStatistics,
       params
-    );
-  };
-
-  getWorkflowXML = (params, staticContent) => {
-    const fetchDiagramModel = async (params) => {
-      const xml = await fetchWorkflowXML(params);
-      return await parseDiagramXML(xml);
-    };
-
-    const cachedParams = this.cache.update(
-      LOAD_STATE_DEFINITIONS,
-      fetchDiagramModel,
-      params
-    );
-
-    this.publisher.pubLoadingStates(
-      LOAD_STATE_DEFINITIONS,
-      () => fetchDiagramModel(cachedParams),
-      staticContent
     );
   };
 

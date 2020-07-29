@@ -43,15 +43,12 @@ describe('flowNodes', () => {
 
       const elements = [Task1, Root, SequenceFlow1];
 
-      expect(getFlowNodes(elements)).toEqual({
-        flowNodes: [Task1],
-        ids: [Task1.id],
-      });
+      expect(getFlowNodes(elements)).toEqual([Task1]);
     });
 
     it('sould get empty objects', () => {
-      expect(getFlowNodes([])).toEqual({ids: [], flowNodes: []});
-      expect(getFlowNodes()).toEqual({ids: [], flowNodes: []});
+      expect(getFlowNodes([])).toEqual([]);
+      expect(getFlowNodes()).toEqual([]);
     });
   });
 });

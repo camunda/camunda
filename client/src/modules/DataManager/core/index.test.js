@@ -123,17 +123,6 @@ describe('DataManager', () => {
         expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual(mockParams);
       });
     });
-    describe('fetch workflow XML', () => {
-      it('should publish loading stats to topic', () => {
-        // when
-        dataManager.getWorkflowXML(mockParams);
-
-        // then
-        expect(pubLoadingStatesSpy.mock.calls[0][0]).toBe(
-          SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS
-        );
-      });
-    });
     describe('fetch workflow instances by Ids', () => {
       it('should publish loading states to topic', () => {
         // when

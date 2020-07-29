@@ -9,18 +9,12 @@ import {EXPAND_STATE} from 'modules/constants';
 export const mockProps = {
   noWorkflowSelected: false,
   noVersionSelected: false,
-  selectableFlowNodes: [],
   flowNodesStatistics: [],
   definitions: {},
   selectedFlowNodeId: '',
   onFlowNodeSelection: jest.fn(),
-  workflowName: '',
+  workflowName: 'Workflow Name',
   expandState: EXPAND_STATE.EXPANDED,
-};
-
-export const mockPropsNoDefinitions = {
-  ...mockProps,
-  definitions: null,
 };
 
 export const mockPropsNoWorkflowSelected = {
@@ -32,9 +26,4 @@ export const mockPropsNoWorkflowSelected = {
 export const mockPropsNoVersionSelected = {
   ...mockProps,
   noVersionSelected: true,
-};
-
-export const mockPropsCollapsedPanel = {
-  ...mockProps,
-  expandState: EXPAND_STATE.COLLAPSED,
 };

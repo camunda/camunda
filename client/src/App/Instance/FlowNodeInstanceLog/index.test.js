@@ -5,82 +5,80 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
-
 import {
   render,
   screen,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
-import {DataManagerProvider} from 'modules/DataManager';
 
-import {SUBSCRIPTION_TOPIC, LOADING_STATE} from 'modules/constants';
-import FlowNodeInstanceLog from './index';
+import {FlowNodeInstanceLog} from './index';
 
 import {
   mockSuccessResponseForActivityTree,
   mockFailedResponseForActivityTree,
+  mockSuccessResponseForDiagram,
+  mockFailedResponseForDiagram,
   mockProps,
 } from './index.setup';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
+import {fetchWorkflowXML} from 'modules/api/diagram';
+import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 
-let dataManager = createMockDataManager();
+jest.mock('modules/utils/bpmn');
+jest.mock('modules/api/diagram', () => ({
+  fetchWorkflowXML: jest.fn().mockImplementation(() => ''),
+}));
 
+jest.mock('modules/api/diagram');
 jest.mock('modules/api/activityInstances');
 
 jest.mock('modules/api/instances', () => ({
   fetchWorkflowInstance: jest.fn().mockImplementation(() => {
-    return {id: '1', state: 'ACTIVE'};
+    return {id: '1', state: 'ACTIVE', workflowName: 'workflowName'};
   }),
 }));
 
-const Wrapper = ({children}) => {
-  return <DataManagerProvider>{children}</DataManagerProvider>;
-};
-Wrapper.propTypes = {
-  children: PropTypes.oneOfType([
-    PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node,
-  ]),
-};
 describe('FlowNodeInstanceLog', () => {
   beforeAll(async () => {
     await currentInstance.fetchCurrentInstance(1);
   });
   afterEach(() => {
     fetchActivityInstancesTree.mockReset();
-  });
-
-  beforeEach(() => {
+    fetchWorkflowXML.mockReset();
     flowNodeInstance.reset();
+    singleInstanceDiagram.reset();
   });
 
   it('should render skeleton when instance tree is not loaded', async () => {
     fetchActivityInstancesTree.mockResolvedValueOnce(
       mockSuccessResponseForActivityTree
     );
+    fetchWorkflowXML.mockResolvedValueOnce(mockSuccessResponseForDiagram);
 
-    render(
-      <FlowNodeInstanceLog.WrappedComponent
-        {...mockProps}
-        dataManager={dataManager}
-      />,
-      {
-        wrapper: Wrapper,
-      }
-    );
+    render(<FlowNodeInstanceLog {...mockProps} />);
 
-    dataManager.publish({
-      subscription: dataManager.subscriptions()[
-        SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS
-      ],
-      state: LOADING_STATE.LOADED,
-    });
-
+    await singleInstanceDiagram.fetchWorkflowXml(1);
     flowNodeInstance.fetchInstanceExecutionHistory(1);
+
+    expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(
+      screen.getByTestId('flownodeInstance-skeleton')
+    );
+  });
+
+  it('should render skeleton when instance diagram is not loaded', async () => {
+    fetchActivityInstancesTree.mockResolvedValueOnce(
+      mockSuccessResponseForActivityTree
+    );
+    fetchWorkflowXML.mockResolvedValueOnce(mockSuccessResponseForDiagram);
+
+    render(<FlowNodeInstanceLog {...mockProps} />);
+
+    await flowNodeInstance.fetchInstanceExecutionHistory(1);
+    singleInstanceDiagram.fetchWorkflowXml(1);
 
     expect(screen.getByTestId('flownodeInstance-skeleton')).toBeInTheDocument();
 
@@ -93,24 +91,26 @@ describe('FlowNodeInstanceLog', () => {
     fetchActivityInstancesTree.mockResolvedValueOnce(
       mockFailedResponseForActivityTree
     );
+    fetchWorkflowXML.mockResolvedValueOnce(mockSuccessResponseForDiagram);
 
-    render(
-      <FlowNodeInstanceLog.WrappedComponent
-        {...mockProps}
-        dataManager={dataManager}
-      />,
-      {
-        wrapper: Wrapper,
-      }
+    render(<FlowNodeInstanceLog {...mockProps} />);
+
+    await singleInstanceDiagram.fetchWorkflowXml(1);
+    await flowNodeInstance.fetchInstanceExecutionHistory(1);
+    expect(
+      screen.getByText('Activity Instances could not be fetched')
+    ).toBeInTheDocument();
+  });
+
+  it('should display error when instance diagram could not be fetched', async () => {
+    fetchActivityInstancesTree.mockResolvedValueOnce(
+      mockSuccessResponseForActivityTree
     );
+    fetchWorkflowXML.mockResolvedValueOnce(mockFailedResponseForDiagram);
 
-    dataManager.publish({
-      subscription: dataManager.subscriptions()[
-        SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS
-      ],
-      state: LOADING_STATE.LOADED,
-    });
+    render(<FlowNodeInstanceLog {...mockProps} />);
 
+    await singleInstanceDiagram.fetchWorkflowXml(1);
     await flowNodeInstance.fetchInstanceExecutionHistory(1);
     expect(
       screen.getByText('Activity Instances could not be fetched')
@@ -121,24 +121,12 @@ describe('FlowNodeInstanceLog', () => {
     fetchActivityInstancesTree.mockResolvedValueOnce(
       mockSuccessResponseForActivityTree
     );
+    fetchWorkflowXML.mockResolvedValueOnce(mockSuccessResponseForDiagram);
 
-    render(
-      <FlowNodeInstanceLog.WrappedComponent
-        {...mockProps}
-        dataManager={dataManager}
-      />,
-      {
-        wrapper: Wrapper,
-      }
-    );
+    render(<FlowNodeInstanceLog {...mockProps} />);
 
-    dataManager.publish({
-      subscription: dataManager.subscriptions()[
-        SUBSCRIPTION_TOPIC.LOAD_STATE_DEFINITIONS
-      ],
-      state: LOADING_STATE.LOADED,
-    });
+    await singleInstanceDiagram.fetchWorkflowXml(1);
     await flowNodeInstance.fetchInstanceExecutionHistory(1);
-    expect(screen.getAllByText('nodeName').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('workflowName').length).toBeGreaterThan(0);
   });
 });

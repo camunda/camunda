@@ -21,7 +21,6 @@ import {DataManagerProvider} from 'modules/DataManager';
 import Filters from './Filters';
 import ListPanel from './ListPanel';
 import OperationsPanel from './OperationsPanel';
-import DiagramPanel from './DiagramPanel';
 import {Instances} from './index';
 
 // component mocks
@@ -299,36 +298,5 @@ describe('Instances', () => {
 
     // then
     expect(mockProps.onInstancesClick).toBeCalledWith('key');
-  });
-
-  it('should select the correct node', () => {
-    const wrapper = mount(
-      <ProviderWrapper>
-        <Instances {...mockProps} />
-      </ProviderWrapper>
-    );
-
-    expect(wrapper.find(DiagramPanel).prop('selectedFlowNodeId')).toBe(
-      mockProps.filter.activityId
-    );
-  });
-
-  it('should ignore node the selection on non-existant nodes', () => {
-    const mockPropsWithWrongActivityId = {
-      ...mockProps,
-      filter: {
-        ...mockProps.filter,
-        activityId: 'foo',
-      },
-    };
-    const wrapper = mount(
-      <ProviderWrapper>
-        <Instances {...mockPropsWithWrongActivityId} />
-      </ProviderWrapper>
-    );
-
-    expect(
-      wrapper.find(DiagramPanel).prop('selectedFlowNodeId')
-    ).toBeUndefined();
   });
 });

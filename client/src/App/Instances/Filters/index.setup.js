@@ -26,7 +26,6 @@ export const workflows = {
 export const mockProps = {
   onFilterChange: jest.fn(),
   onFilterReset: jest.fn(),
-  selectableFlowNodes: [],
   location: {
     search: getFilterQueryString({}),
   },
@@ -35,21 +34,8 @@ export const mockProps = {
 export const mockPropsWithEmptyLocationSearch = {
   onFilterChange: jest.fn(),
   onFilterReset: jest.fn(),
-  selectableFlowNodes: [],
   location: {
     search: '',
-  },
-};
-
-export const mockPropsWithSelectableFlowNodes = {
-  onFilterChange: jest.fn(),
-  onFilterReset: jest.fn(),
-  selectableFlowNodes: [
-    {id: 'TaskA', $type: 'bpmn:StartEvent', name: 'task A'},
-    {id: 'TaskB', $type: 'bpmn:EndEvent'},
-  ],
-  location: {
-    search: getFilterQueryString({}),
   },
 };
 

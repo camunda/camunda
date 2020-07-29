@@ -22,7 +22,6 @@ import OperationsPanel from './OperationsPanel';
 
 import {getWorkflowNameFromFilter} from './service';
 
-import {getFlowNodes} from 'modules/utils/flowNodes';
 import * as Styled from './styled.js';
 
 class Instances extends Component {
@@ -58,10 +57,6 @@ class Instances extends Component {
     onFilterChange: PropTypes.func.isRequired,
     onFilterReset: PropTypes.func.isRequired,
     onFlowNodeSelection: PropTypes.func.isRequired,
-    diagramModel: PropTypes.shape({
-      bpmnElements: PropTypes.object,
-      definitions: PropTypes.object,
-    }).isRequired,
     statistics: PropTypes.array.isRequired,
     onInstancesClick: PropTypes.func.isRequired,
   };
@@ -70,7 +65,6 @@ class Instances extends Component {
     const {
       filter,
       groupedWorkflows,
-      diagramModel,
       workflowInstances,
       onFilterReset,
       onFilterChange,
@@ -86,11 +80,10 @@ class Instances extends Component {
       instancesLoaded,
     } = this.props;
 
-    const workflowName = getWorkflowNameFromFilter({filter, groupedWorkflows});
-    const {ids: selectableIds, flowNodes: selectableFlowNodes} = getFlowNodes(
-      diagramModel.bpmnElements
-    );
-
+    const workflowName = getWorkflowNameFromFilter({
+      filter,
+      groupedWorkflows,
+    });
     return (
       <InstancesPollProvider
         visibleIdsInListPanel={workflowInstances.map(({id}) => id)}
@@ -101,7 +94,6 @@ class Instances extends Component {
           <Styled.Content>
             <Styled.FilterSection>
               <Filters
-                selectableFlowNodes={selectableFlowNodes}
                 groupedWorkflows={groupedWorkflows}
                 filter={{
                   ...DEFAULT_FILTER_CONTROLLED_VALUES,
@@ -122,14 +114,8 @@ class Instances extends Component {
                 onFlowNodeSelection={onFlowNodeSelection}
                 noWorkflowSelected={!filter.workflow}
                 noVersionSelected={filter.version === 'all'}
-                definitions={diagramModel.definitions}
                 flowNodesStatistics={statistics}
-                selectedFlowNodeId={
-                  selectableIds.includes(filter.activityId)
-                    ? filter.activityId
-                    : undefined
-                }
-                selectableFlowNodes={selectableIds}
+                activityId={filter.activityId}
               />
               <ListPanel
                 instances={workflowInstances}
