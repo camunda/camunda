@@ -6,8 +6,8 @@
 
 import {get, post} from 'request';
 
-export async function loadDefinitions(type, collectionId, excludeEventProcesses = false) {
-  const params = {excludeEventProcesses};
+export async function loadDefinitions(type, collectionId, camundaEventImportedOnly = false) {
+  const params = {camundaEventImportedOnly};
   if (collectionId) {
     params.filterByCollectionScope = collectionId;
   }

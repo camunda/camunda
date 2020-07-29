@@ -171,7 +171,7 @@ export default withErrorHandling(
                   tenants={tenants}
                   disableDefinition={this.isEditing()}
                   expanded
-                  excludeEventProcesses
+                  camundaEventImportedOnly
                   onChange={({key, name, versions, tenantIds}) => {
                     this.loadVariables(key, versions, tenantIds);
                     this.setState({

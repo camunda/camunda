@@ -106,8 +106,8 @@ it('should load defintions in scope of collection', () => {
   expect(loadDefinitions).toHaveBeenCalledWith(props.type, '123', undefined);
 });
 
-it('should exclude event based processes', () => {
-  shallow(<DefinitionSelection {...props} excludeEventProcesses />);
+it('should only load definitions for which camunda events were imported', () => {
+  shallow(<DefinitionSelection {...props} camundaEventImportedOnly />);
 
   expect(loadDefinitions).toHaveBeenCalledWith(props.type, undefined, true);
 });
