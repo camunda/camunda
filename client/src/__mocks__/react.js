@@ -8,11 +8,22 @@ export * from 'react';
 export {default} from 'react';
 
 const outstandingEffects = [];
+const outstandingCleanups = [];
 
 export const useEffect = (fn) => outstandingEffects.push(fn);
 export const runLastEffect = () => {
   if (outstandingEffects.length) {
-    outstandingEffects.pop()();
+    const cleanup = outstandingEffects.pop()();
+
+    if (cleanup) {
+      outstandingCleanups.push(cleanup);
+    }
+  }
+};
+
+export const runLastCleanup = () => {
+  if (outstandingCleanups.length) {
+    outstandingCleanups.pop()();
   }
 };
 
@@ -22,6 +33,18 @@ export const runAllEffects = () => {
   const numberOfEffects = outstandingEffects.length;
 
   for (let i = 0; i < numberOfEffects; i++) {
-    outstandingEffects.shift()();
+    const cleanup = outstandingEffects.shift()();
+
+    if (cleanup) {
+      outstandingCleanups.push(cleanup);
+    }
+  }
+};
+
+export const runAllCleanups = () => {
+  const numberOfEffects = outstandingCleanups.length;
+
+  for (let i = 0; i < numberOfEffects; i++) {
+    outstandingCleanups.shift()();
   }
 };

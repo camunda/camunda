@@ -4,14 +4,27 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runAllEffects, runAllCleanups} from 'react';
 import {shallow} from 'enzyme';
-
-import ThemedDashboardView from './DashboardView';
+import {useFullScreenHandle} from 'react-full-screen';
 
 import {Dropdown} from 'components';
 
-const {WrappedComponent: DashboardView} = ThemedDashboardView;
+import {DashboardView} from './DashboardView';
+
+jest.mock('react-full-screen', () => {
+  const handle = {active: false, exit: jest.fn(), enter: jest.fn()};
+  return {
+    FullScreen: (props) => <div {...props} />,
+    useFullScreenHandle: () => handle,
+  };
+});
+
+beforeEach(() => {
+  useFullScreenHandle().active = false;
+  useFullScreenHandle().enter.mockClear();
+  useFullScreenHandle().exit.mockClear();
+});
 
 it('should display the key properties of a dashboard', () => {
   const node = shallow(
@@ -42,16 +55,16 @@ it('should enter fullscreen mode', () => {
 
   node.find('.fullscreen-button').simulate('click');
 
-  expect(node.state('fullScreenActive')).toBe(true);
+  expect(useFullScreenHandle().enter).toHaveBeenCalled();
 });
 
 it('should leave fullscreen mode', () => {
   const node = shallow(<DashboardView />);
-  node.setState({fullScreenActive: true});
+  useFullScreenHandle().active = true;
 
   node.find('.fullscreen-button').simulate('click');
 
-  expect(node.state('fullScreenActive')).toBe(false);
+  expect(useFullScreenHandle().exit).toHaveBeenCalled();
 });
 
 it('should activate auto refresh mode and set it to numeric value', () => {
@@ -59,40 +72,40 @@ it('should activate auto refresh mode and set it to numeric value', () => {
 
   node.find(Dropdown.Option).last().simulate('click');
 
-  expect(typeof node.state('autoRefreshInterval')).toBe('number');
+  expect(typeof node.find(Dropdown).prop('label').props.children[0].props.interval).toBe('number');
 });
 
 it('should deactivate autorefresh mode', () => {
   const node = shallow(<DashboardView />);
-  node.setState({autoRefreshInterval: 1000});
 
+  node.find(Dropdown.Option).last().simulate('click');
   node.find(Dropdown.Option).first().simulate('click');
 
-  expect(node.state('autoRefreshInterval')).toBe(null);
+  expect(node.find(Dropdown).prop('label').props.children[0].props.interval).toBe(null);
 });
 
 it('should add an autorefresh addon when autorefresh mode is active', () => {
   const node = shallow(<DashboardView />);
-  node.setState({autoRefreshInterval: 1000});
+  node.find(Dropdown.Option).last().simulate('click');
 
   expect(node.find('DashboardRenderer').prop('addons')).toMatchSnapshot();
 });
 
 it('should have a toggle theme button that is only visible in fullscreen mode', () => {
-  const node = shallow(<DashboardView />);
+  let node = shallow(<DashboardView />);
 
   expect(node.find('.theme-toggle')).not.toExist();
 
-  node.setState({fullScreenActive: true});
+  useFullScreenHandle().active = true;
+  node = shallow(<DashboardView />);
 
   expect(node.find('.theme-toggle')).toExist();
 });
 
 it('should toggle the theme when clicking the toggle theme button', () => {
   const spy = jest.fn();
-  const node = shallow(<DashboardView />);
-  node.setState({fullScreenActive: true});
-  node.setProps({toggleTheme: spy});
+  useFullScreenHandle().active = true;
+  const node = shallow(<DashboardView toggleTheme={spy} />);
 
   node.find('.theme-toggle').simulate('click');
 
@@ -101,23 +114,21 @@ it('should toggle the theme when clicking the toggle theme button', () => {
 
 it('should return to light mode when exiting fullscreen mode', () => {
   const spy = jest.fn();
-  const node = shallow(<DashboardView />);
-  node.setState({fullScreenActive: true});
-  node.setProps({toggleTheme: spy, theme: 'dark'});
+  useFullScreenHandle().active = true;
+  const node = shallow(<DashboardView toggleTheme={spy} theme="dark" />);
 
-  node.instance().changeFullScreen(false);
+  node.find('FullScreen').simulate('change');
 
   expect(spy).toHaveBeenCalled();
 });
 
 it('should return to light mode when the component is unmounted', async () => {
   const spy = jest.fn();
-  const node = shallow(<DashboardView />);
+  useFullScreenHandle().active = true;
+  shallow(<DashboardView toggleTheme={spy} theme="dark" />);
 
-  node.setState({fullScreenActive: true});
-  node.setProps({toggleTheme: spy, theme: 'dark'});
-
-  node.unmount();
+  await runAllEffects();
+  await runAllCleanups();
 
   expect(spy).toHaveBeenCalled();
 });

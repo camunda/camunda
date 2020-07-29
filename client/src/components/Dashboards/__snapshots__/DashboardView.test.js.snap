@@ -3,7 +3,7 @@
 exports[`should add an autorefresh addon when autorefresh mode is active 1`] = `
 Array [
   <AutoRefreshBehavior
-    interval={1000}
+    interval={3600000}
   />,
 ]
 `;
