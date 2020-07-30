@@ -5,139 +5,162 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
-import {act} from 'react-dom/test-utils';
-
-import Dropdown from 'modules/components/Dropdown';
-import {OPERATION_TYPE} from 'modules/constants';
+import {
+  render,
+  screen,
+  fireEvent,
+  within,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
 
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
-
-import {mockUseOperationApply, mockConfirmOperationModal} from './index.setup';
-
+import {InstanceSelectionProvider} from 'modules/contexts/InstanceSelectionContext';
+import {mockUseOperationApply, instanceSelectionContext} from './index.setup';
 import CreateOperationDropdown from './index';
+import PropTypes from 'prop-types';
 
-jest.mock('../ConfirmOperationModal', () => mockConfirmOperationModal);
 jest.mock('./useOperationApply', () => () => mockUseOperationApply);
+
+const Wrapper = ({children}) => {
+  return (
+    <InstanceSelectionProvider value={instanceSelectionContext}>
+      <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
+    </InstanceSelectionProvider>
+  );
+};
+Wrapper.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
+};
 
 describe('CreateOperationDropdown', () => {
   beforeEach(() => {
     jest.resetAllMocks();
   });
 
-  it('should render button', () => {
-    // given
-    const node = mount(
-      <CollapsablePanelProvider>
-        <CreateOperationDropdown label="MyLabel" selectedCount={2} />
-      </CollapsablePanelProvider>
-    );
+  it('should not initially display confirmation model', () => {
+    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
+      wrapper: Wrapper,
+    });
 
-    // when
-    const button = node.find('button');
-
-    // then
-    expect(button.text()).toContain('MyLabel');
+    expect(screen.queryByText('Apply Operation')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Retry'})
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Cancel'})
+    ).not.toBeInTheDocument();
   });
 
   it('should show dropdown menu on click', () => {
-    // given
-    const node = mount(
-      <CollapsablePanelProvider>
-        <CreateOperationDropdown label="MyLabel" selectedCount={2} />
-      </CollapsablePanelProvider>
-    );
-    const button = node.find('[data-test="dropdown-toggle"]').first();
+    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
+      wrapper: Wrapper,
+    });
 
-    // when
-    button.simulate('click');
+    fireEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
 
-    // then
-    const retryButton = node.find(Dropdown.Option).at(0).find('button');
-
-    const cancelButton = node.find(Dropdown.Option).at(1).find('button');
-
-    expect(retryButton.text()).toContain('Retry');
-    expect(cancelButton.text()).toContain('Cancel');
+    expect(screen.getByRole('button', {name: 'Retry'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
   });
 
   it('should show modal on retry click', () => {
-    // given
-    const node = mount(
-      <CollapsablePanelProvider>
-        <CreateOperationDropdown label="MyLabel" selectedCount={2} />
-      </CollapsablePanelProvider>
-    );
-    const button = node.find('[data-test="dropdown-toggle"]').first();
+    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
+      wrapper: Wrapper,
+    });
 
-    // when
-    button.simulate('click');
+    fireEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
 
-    const retryButton = node.find(Dropdown.Option).at(0).find('button');
+    fireEvent.click(screen.getByRole('button', {name: 'Retry'}));
 
-    retryButton.simulate('click');
-
-    node.update();
-
-    // then
-    const mockModal = node.find('[data-test="mock-confirm-operation-modal"]');
-
-    expect(mockModal).toExist();
-    expect(mockModal.text()).toBe('About to retry 2 Instances.');
+    expect(screen.getByText('Apply Operation')).toBeInTheDocument();
+    expect(screen.getByText('About to retry 2 Instances.')).toBeInTheDocument();
+    expect(screen.getByText('Click "Apply" to proceed.')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('modal')).getByRole('button', {name: 'Apply'})
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('modal')).getByRole('button', {name: 'Cancel'})
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('modal')).getByRole('button', {
+        name: 'Close Modal',
+      })
+    ).toBeInTheDocument();
   });
 
   it('should show modal on cancel click', () => {
-    // given
-    const node = mount(
-      <CollapsablePanelProvider>
-        <CreateOperationDropdown label="MyLabel" selectedCount={2} />
-      </CollapsablePanelProvider>
-    );
-
-    const button = node.find('[data-test="dropdown-toggle"]').first();
-
-    // when
-    button.simulate('click');
-
-    const cancelButton = node.find(Dropdown.Option).at(1).find('button');
-
-    cancelButton.simulate('click');
-
-    node.update();
-
-    // then
-    const mockModal = node.find('[data-test="mock-confirm-operation-modal"]');
-
-    expect(mockModal).toExist();
-    expect(mockModal.text()).toBe('About to cancel 2 Instances.');
-  });
-
-  it('should call applyBatchOperation', () => {
-    const node = mount(
-      <CollapsablePanelProvider>
-        <CreateOperationDropdown label="MyLabel" selectedCount={2} />
-      </CollapsablePanelProvider>
-    );
-
-    const button = node.find('[data-test="dropdown-toggle"]').first();
-
-    // when
-    button.simulate('click');
-
-    // then
-    const retryButton = node.find(Dropdown.Option).at(1).find('button');
-
-    retryButton.simulate('click');
-
-    const {onApplyClick} = node.find(mockConfirmOperationModal).props();
-
-    act(() => {
-      onApplyClick();
+    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
+      wrapper: Wrapper,
     });
 
-    expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledTimes(1);
-    expect(mockUseOperationApply.applyBatchOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE.CANCEL_WORKFLOW_INSTANCE
+    fireEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+
+    expect(screen.getByText('Apply Operation')).toBeInTheDocument();
+    expect(
+      screen.getByText('About to cancel 2 Instances.')
+    ).toBeInTheDocument();
+    expect(screen.getByText('Click "Apply" to proceed.')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('modal')).getByRole('button', {name: 'Apply'})
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('modal')).getByRole('button', {name: 'Cancel'})
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('modal')).getByRole('button', {
+        name: 'Close Modal',
+      })
+    ).toBeInTheDocument();
+  });
+
+  it('should close modal on apply batch operations', async () => {
+    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
+      wrapper: Wrapper,
+    });
+
+    fireEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    fireEvent.click(
+      within(screen.getByTestId('modal')).getByRole('button', {name: 'Apply'})
     );
+
+    await waitForElementToBeRemoved(screen.getByText('Apply Operation'));
+  });
+
+  it('should close modal on cancel batch operations', async () => {
+    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
+      wrapper: Wrapper,
+    });
+
+    fireEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    fireEvent.click(
+      within(screen.getByTestId('modal')).getByRole('button', {name: 'Cancel'})
+    );
+
+    await waitForElementToBeRemoved(screen.getByText('Apply Operation'));
+  });
+
+  it('should close modal on close button click', async () => {
+    render(<CreateOperationDropdown label="MyLabel" selectedCount={2} />, {
+      wrapper: Wrapper,
+    });
+
+    fireEvent.click(screen.getByRole('button', {name: /^MyLabel/}));
+
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    fireEvent.click(
+      within(screen.getByTestId('modal')).getByRole('button', {
+        name: 'Close Modal',
+      })
+    );
+
+    await waitForElementToBeRemoved(screen.getByText('Apply Operation'));
   });
 });

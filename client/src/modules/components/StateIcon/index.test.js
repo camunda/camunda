@@ -5,93 +5,88 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
-
+import {render, screen} from '@testing-library/react';
 import {STATE} from 'modules/constants';
-
 import ThemedStateIcon from './index';
-import * as Styled from './styled';
+import {Colors} from 'modules/theme';
 
 const {WrappedComponent: StateIcon} = ThemedStateIcon;
 
 describe('StateIcon', () => {
   it('should render Incident Icon', () => {
-    // given
-    const someProp = 'some prop';
-    const node = shallow(
-      <StateIcon state={STATE.INCIDENT} theme={'dark'} someProp={someProp} />
-    );
+    render(<StateIcon theme="dark" state={STATE.INCIDENT} />);
 
-    // then
-    const IncidentIconNode = node.find(Styled.IncidentIcon);
-    expect(IncidentIconNode).toHaveLength(1);
-    expect(IncidentIconNode.prop('theme')).toBe('dark');
-    expect(IncidentIconNode.prop('someProp')).toBe(someProp);
-    expect(node).toMatchSnapshot();
+    expect(screen.getByTestId(`${STATE.INCIDENT}-icon`)).toBeInTheDocument();
+    expect(screen.getByTestId(`${STATE.INCIDENT}-icon`)).toHaveStyleRule(
+      'color',
+      Colors.incidentsAndErrors
+    );
   });
 
   it('should render Active Icon', () => {
-    // given
-    const someProp = 'some prop';
-    const node = shallow(
-      <StateIcon state={STATE.ACTIVE} theme={'dark'} someProp={someProp} />
-    );
+    render(<StateIcon state={STATE.ACTIVE} theme="dark" />);
 
-    // then
-    const IncidentIconNode = node.find(Styled.ActiveIcon);
-    expect(IncidentIconNode).toHaveLength(1);
-    expect(IncidentIconNode.prop('theme')).toBe('dark');
-    expect(IncidentIconNode.prop('someProp')).toBe(someProp);
-    expect(node).toMatchSnapshot();
+    expect(screen.getByTestId(`${STATE.ACTIVE}-icon`)).toBeInTheDocument();
+    expect(screen.getByTestId(`${STATE.ACTIVE}-icon`)).toHaveStyleRule(
+      'color',
+      Colors.allIsWell
+    );
   });
 
   it('should render Completed Icon', () => {
-    // given
-    const someProp = 'some prop';
-    const node = shallow(
-      <StateIcon state={STATE.COMPLETED} theme={'dark'} someProp={someProp} />
-    );
+    render(<StateIcon state={STATE.COMPLETED} theme="dark" />);
 
-    // then
-    const IncidentIconNode = node.find(Styled.CompletedIcon);
-    expect(IncidentIconNode).toHaveLength(1);
-    expect(IncidentIconNode.prop('theme')).toBe('dark');
-    expect(IncidentIconNode.prop('someProp')).toBe(someProp);
-    expect(node).toMatchSnapshot();
+    expect(screen.getByTestId(`${STATE.COMPLETED}-icon`)).toBeInTheDocument();
+    expect(screen.getByTestId(`${STATE.COMPLETED}-icon`)).toHaveStyleRule(
+      'color',
+      '#ffffff'
+    );
+    expect(screen.getByTestId(`${STATE.COMPLETED}-icon`)).toHaveStyleRule(
+      'opacity',
+      '0.46'
+    );
   });
 
   it('should render Canceled Icon', () => {
-    // given
-    const someProp = 'some prop';
-    const node = shallow(
-      <StateIcon state={STATE.CANCELED} theme={'dark'} someProp={someProp} />
-    );
+    render(<StateIcon state={STATE.CANCELED} theme="dark" />);
 
-    // then
-    const IncidentIconNode = node.find(Styled.CanceledIcon);
-    expect(IncidentIconNode).toHaveLength(1);
-    expect(IncidentIconNode.prop('theme')).toBe('dark');
-    expect(IncidentIconNode.prop('someProp')).toBe(someProp);
-    expect(node).toMatchSnapshot();
+    expect(screen.getByTestId(`${STATE.CANCELED}-icon`)).toBeInTheDocument();
+    expect(screen.getByTestId(`${STATE.CANCELED}-icon`)).toHaveStyleRule(
+      'color',
+      '#ffffff'
+    );
+    expect(screen.getByTestId(`${STATE.CANCELED}-icon`)).toHaveStyleRule(
+      'opacity',
+      '0.81'
+    );
   });
 
   it('should render an Alias Icon if no suitable icon is available', () => {
-    // given
-    const someProp = 'some prop';
-    console.error = jest.fn();
-    const node = shallow(
-      <StateIcon
-        state={'SomeUnknownState'}
-        theme={'dark'}
-        someProp={someProp}
-      />
-    );
+    const originalConsoleError = global.console.error;
+    global.console.error = jest.fn();
+    render(<StateIcon state={'SomeUnknownState'} theme="dark" />);
+    expect(screen.getByTestId('SomeUnknownState-icon')).toBeInTheDocument();
 
-    // then
-    const AliasIconNode = node.find(Styled.AliasIcon);
-    expect(AliasIconNode).toHaveLength(1);
-    expect(AliasIconNode.prop('theme')).toBe('dark');
-    expect(AliasIconNode.prop('someProp')).toBe(someProp);
-    expect(node).toMatchSnapshot();
+    expect(screen.getByTestId('SomeUnknownState-icon')).toHaveStyleRule(
+      'background',
+      '#ffffff'
+    );
+    expect(screen.getByTestId('SomeUnknownState-icon')).toHaveStyleRule(
+      'opacity',
+      '0.46'
+    );
+    expect(screen.getByTestId('SomeUnknownState-icon')).toHaveStyleRule(
+      'height',
+      '15px'
+    );
+    expect(screen.getByTestId('SomeUnknownState-icon')).toHaveStyleRule(
+      'width',
+      '15px'
+    );
+    expect(screen.getByTestId('SomeUnknownState-icon')).toHaveStyleRule(
+      'border-radius',
+      '50%'
+    );
+    global.console.error = originalConsoleError;
   });
 });

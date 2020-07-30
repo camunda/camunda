@@ -4,64 +4,36 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {mount} from 'enzyme';
+import {render, screen, fireEvent} from '@testing-library/react';
 import React from 'react';
 import ConfirmOperationModal from './index';
 import {mockProps} from './index.setup';
 
 describe('ConfirmOperationModal', () => {
-  beforeEach(() => {
-    jest.resetAllMocks();
-  });
-
   it('should render', () => {
-    // when
-    const node = mount(<ConfirmOperationModal {...mockProps} />);
-
-    // then
-    expect(node.html()).toContain(mockProps.bodyText);
-    expect(node.html()).toContain('Click "Apply" to proceed.');
+    render(<ConfirmOperationModal {...mockProps} />);
+    expect(screen.getByText(mockProps.bodyText)).toBeInTheDocument();
+    expect(screen.getByText('Click "Apply" to proceed.')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Apply'})).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Cancel'})).toBeInTheDocument();
+    expect(screen.getByTestId('cross-button')).toBeInTheDocument();
   });
 
-  it('should call onApplyClick', () => {
-    // given
-    const node = mount(<ConfirmOperationModal {...mockProps} />);
-
-    // when
-    const button = node.find('button[title="Apply"]');
-    button.simulate('click');
-
-    // then
-    expect(mockProps.onApplyClick).toHaveBeenCalled();
-    expect(mockProps.onCancelClick).not.toHaveBeenCalled();
-    expect(mockProps.onModalClose).not.toHaveBeenCalled();
+  it('should call apply function on apply button click', () => {
+    render(<ConfirmOperationModal {...mockProps} />);
+    fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
+    expect(mockProps.onApplyClick).toHaveBeenCalledTimes(1);
   });
 
-  it('should call onCancelClick on cancel', () => {
-    // given
-    const node = mount(<ConfirmOperationModal {...mockProps} />);
-
-    // when
-    const button = node.find('button[title="Cancel"]');
-    button.simulate('click');
-
-    // then
-    expect(mockProps.onCancelClick).toHaveBeenCalled();
-    expect(mockProps.onModalClose).not.toHaveBeenCalled();
-    expect(mockProps.onApplyClick).not.toHaveBeenCalled();
+  it('should call cancel function on cancel button click', () => {
+    render(<ConfirmOperationModal {...mockProps} />);
+    fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
+    expect(mockProps.onCancelClick).toHaveBeenCalledTimes(1);
   });
 
-  it('should call onModalClose on cross click', () => {
-    // given
-    const node = mount(<ConfirmOperationModal {...mockProps} />);
-
-    // when
-    const button = node.find('[data-test="cross-button"]').first();
-    button.simulate('click');
-
-    // then
-    expect(mockProps.onModalClose).toHaveBeenCalled();
-    expect(mockProps.onCancelClick).not.toHaveBeenCalled();
-    expect(mockProps.onApplyClick).not.toHaveBeenCalled();
+  it('should call close modal function on close button click', () => {
+    render(<ConfirmOperationModal {...mockProps} />);
+    fireEvent.click(screen.getByTestId('cross-button'));
+    expect(mockProps.onModalClose).toHaveBeenCalledTimes(1);
   });
 });

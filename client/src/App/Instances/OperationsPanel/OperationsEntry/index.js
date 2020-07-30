@@ -6,9 +6,8 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {OPERATION_TYPES} from './constants';
-import OperationIcon from 'modules/components/OperationIcon';
 import {LinkButton} from 'modules/components/LinkButton';
+import {OPERATION_TYPE} from 'modules/constants';
 import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
@@ -19,7 +18,7 @@ const {
   UPDATE_VARIABLE,
   RESOLVE_INCIDENT,
   CANCEL_WORKFLOW_INSTANCE,
-} = OPERATION_TYPES;
+} = OPERATION_TYPE;
 
 const TYPE_LABELS = {
   [UPDATE_VARIABLE]: 'Edit',
@@ -36,7 +35,6 @@ const OperationsEntry = ({batchOperation, onInstancesClick}) => {
     operationsTotalCount,
     operationsFinishedCount,
   } = batchOperation;
-
   return (
     <Styled.Entry isRunning={isBatchOperationRunning(batchOperation)}>
       <Styled.EntryStatus>
@@ -44,11 +42,17 @@ const OperationsEntry = ({batchOperation, onInstancesClick}) => {
           <Styled.Type>{TYPE_LABELS[type]}</Styled.Type>
           <Styled.Id data-test="operation-id">{id}</Styled.Id>
         </div>
-
-        <OperationIcon
-          operationType={type}
-          data-test={`operation-icon-${TYPE_LABELS[type]}`}
-        />
+        <Styled.OperationIcon>
+          {RESOLVE_INCIDENT === type && (
+            <Styled.Retry data-test="operation-retry-icon" />
+          )}
+          {UPDATE_VARIABLE === type && (
+            <Styled.Edit data-test="operation-edit-icon" />
+          )}
+          {CANCEL_WORKFLOW_INSTANCE === type && (
+            <Styled.Cancel data-test="operation-cancel-icon" />
+          )}
+        </Styled.OperationIcon>
       </Styled.EntryStatus>
       {!endDate && (
         <ProgressBar
@@ -70,7 +74,7 @@ const OperationsEntry = ({batchOperation, onInstancesClick}) => {
 OperationsEntry.propTypes = {
   batchOperation: PropTypes.shape({
     id: PropTypes.string.isRequired,
-    type: PropTypes.oneOf(Object.values(OPERATION_TYPES)).isRequired,
+    type: PropTypes.oneOf(Object.values(OPERATION_TYPE)).isRequired,
     endDate: PropTypes.string,
     instancesCount: PropTypes.number.isRequired,
     operationsTotalCount: PropTypes.number.isRequired,

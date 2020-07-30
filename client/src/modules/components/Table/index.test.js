@@ -5,16 +5,13 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
-
+import {render, screen} from '@testing-library/react';
 import Table from './index';
-
 const {THead, TBody, TH, TR, TD} = Table;
 
 describe('Table', () => {
   it('should render table', () => {
-    // given
-    const node = shallow(
+    render(
       <Table>
         <THead>
           <TR>
@@ -35,6 +32,11 @@ describe('Table', () => {
       </Table>
     );
 
-    expect(node).toMatchSnapshot();
+    expect(screen.getByRole('columnheader', {name: 'header 1'}));
+    expect(screen.getByRole('columnheader', {name: 'header 2'}));
+    expect(screen.getByRole('cell', {name: 'cell 1 a'}));
+    expect(screen.getByRole('cell', {name: 'cell 2 a'}));
+    expect(screen.getByRole('cell', {name: 'cell 1 b'}));
+    expect(screen.getByRole('cell', {name: 'cell 2 b'}));
   });
 });

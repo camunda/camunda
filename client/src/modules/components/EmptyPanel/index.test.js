@@ -5,45 +5,58 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render, screen} from '@testing-library/react';
 import EmptyPanel, {WithRowCount} from './index';
-import * as Styled from './styled';
+import PropTypes from 'prop-types';
 
 const label = 'someLabel';
-const SkeletonMock = () => <div data-test="Skeleton"></div>;
+const SkeletonMock = ({rowsToDisplay}) => (
+  <div data-test="Skeleton">{rowsToDisplay}</div>
+);
+
+SkeletonMock.propTypes = {
+  rowsToDisplay: PropTypes.number,
+};
 
 describe('EmptyPanel', () => {
   it('should display a warning message', () => {
-    const node = mount(<EmptyPanel label={label} type="warning" />);
+    render(<EmptyPanel label={label} type="warning" />);
 
-    expect(node.text()).toContain(label);
-    expect(node.find(Styled.WarningIcon)).toExist();
+    expect(screen.getByText(label)).toBeInTheDocument();
+    expect(screen.getByTestId('warning-icon')).toBeInTheDocument();
   });
 
   it('should display a success message', () => {
-    const node = mount(<EmptyPanel label={label} type="info" />);
-    expect(node.text()).toContain(label);
+    render(<EmptyPanel label={label} type="info" />);
+    expect(screen.getByText(label)).toBeInTheDocument();
+    expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
   });
 
   it('should display a skeleton', () => {
-    const node = mount(
-      <EmptyPanel label={label} type="skeleton" Skeleton={SkeletonMock} />
+    const containerRef = {current: {clientHeight: 200}};
+
+    render(
+      <EmptyPanel
+        containerRef={containerRef}
+        rowHeight={12}
+        label={label}
+        type="skeleton"
+        Skeleton={SkeletonMock}
+      />
     );
 
-    expect(node.find(SkeletonMock)).toExist();
+    expect(screen.getByTestId('Skeleton')).toBeInTheDocument();
   });
 
-  describe('WithRowCount', () => {
-    it('should calculate number of shown skeleton rows', () => {
-      const containerRef = {current: {clientHeight: 200}};
+  it('should calculate number of shown skeleton rows', () => {
+    const containerRef = {current: {clientHeight: 200}};
 
-      const node = mount(
-        <WithRowCount rowHeight={12} containerRef={containerRef}>
-          <SkeletonMock />
-        </WithRowCount>
-      );
+    render(
+      <WithRowCount rowHeight={12} containerRef={containerRef}>
+        <SkeletonMock />
+      </WithRowCount>
+    );
 
-      expect(node.find(SkeletonMock).props().rowsToDisplay).toBe(16);
-    });
+    expect(screen.getByText('16')).toBeInTheDocument();
   });
 });

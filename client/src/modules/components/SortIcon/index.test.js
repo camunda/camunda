@@ -5,43 +5,24 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {render, screen} from '@testing-library/react';
 
 import SortIcon from './index';
 import {SORT_ORDER} from 'modules/constants';
-import * as Styled from './styled';
 
 describe('SortIcon', () => {
-  it('should render an Up icon if order is asc', () => {
-    // given
-    const node = shallow(<SortIcon sortOrder="asc" />);
-
-    // then
-    const UpNode = node.find(Styled.Up);
-    expect(UpNode).toHaveLength(1);
-    expect(UpNode.prop('sortOrder')).toBe(SORT_ORDER.ASC);
-    expect(node).toMatchSnapshot();
+  it('should render an Up icon', () => {
+    render(<SortIcon sortOrder={SORT_ORDER.ASC} />);
+    expect(screen.getByTestId(`${SORT_ORDER.ASC}-icon`)).toBeInTheDocument();
   });
 
-  it('should render a Down icon if order is desc', () => {
-    // given
-    const node = shallow(<SortIcon sortOrder="desc" />);
-
-    // then
-    const UpNode = node.find(Styled.Down);
-    expect(UpNode).toHaveLength(1);
-    expect(UpNode.prop('sortOrder')).toBe(SORT_ORDER.DESC);
-    expect(node).toMatchSnapshot();
+  it('should render a Down icon', () => {
+    render(<SortIcon sortOrder={SORT_ORDER.DESC} />);
+    expect(screen.getByTestId(`${SORT_ORDER.DESC}-icon`)).toBeInTheDocument();
   });
 
-  it('should render a Down icon if order is null', () => {
-    // given
-    const node = shallow(<SortIcon sortOrder={null} />);
-
-    // then
-    const UpNode = node.find(Styled.Down);
-    expect(UpNode).toHaveLength(1);
-    expect(UpNode.prop('sortOrder')).toBe(null);
-    expect(node).toMatchSnapshot();
+  it('should render a Down icon by default', () => {
+    render(<SortIcon />);
+    expect(screen.getByTestId('sort-icon')).toBeInTheDocument();
   });
 });

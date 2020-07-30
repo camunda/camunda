@@ -5,13 +5,12 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {render, screen, within} from '@testing-library/react';
 import InstancesBar from './index';
-import * as Styled from './styled';
 
 describe('InstancesBar', () => {
   it('should display the right data', () => {
-    const node = shallow(
+    render(
       <InstancesBar
         incidentsCount={10}
         label="someLabel"
@@ -21,13 +20,28 @@ describe('InstancesBar', () => {
       />
     );
 
-    expect(node.find(Styled.IncidentsCount).text()).toBe('10');
-    expect(node.find(Styled.Label).text()).toBe('someLabel');
-    expect(node.find(Styled.ActiveCount).text()).toBe('8');
-    expect(node.find(Styled.Bar)).toExist();
-    expect(node.find(Styled.IncidentsBar).props().style.width).toContain(
-      (10 * 100) / 18
+    expect(
+      within(screen.getByTestId('incident-instances-badge')).getByText('10')
+    ).toBeInTheDocument();
+    expect(screen.getByText('someLabel')).toBeInTheDocument();
+    expect(
+      within(screen.getByTestId('active-instances-badge')).getByText('8')
+    ).toBeInTheDocument();
+  });
+
+  it('should not display active instance count if has invalid active instances count', () => {
+    render(
+      <InstancesBar
+        incidentsCount={10}
+        label="someLabel"
+        activeCount={-1}
+        barHeight={5}
+        size="small"
+      />
     );
-    expect(node).toMatchSnapshot();
+
+    expect(
+      screen.queryByTestId('active-instances-badge')
+    ).not.toBeInTheDocument();
   });
 });

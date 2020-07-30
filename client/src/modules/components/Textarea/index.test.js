@@ -5,19 +5,23 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
 import Textarea from './index';
+import {render, screen} from '@testing-library/react';
 
 describe('Textarea', () => {
   it('should render default textarea', () => {
-    const node = mount(<Textarea />);
+    render(<Textarea placeholder="someLabel" />);
 
-    expect(node.find('textarea').exists()).toBe(true);
+    expect(
+      screen.getByRole('textbox', {name: 'someLabel'})
+    ).toBeInTheDocument();
   });
 
   it('should render autosize textarea', () => {
-    const node = mount(<Textarea hasAutoSize />);
+    render(<Textarea placeholder="someLabel" hasAutosize />);
 
-    expect(node.find('textarea').exists()).toBe(true);
+    expect(
+      screen.getByRole('textbox', {name: 'someLabel'})
+    ).toBeInTheDocument();
   });
 });

@@ -7,6 +7,10 @@
 import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
+import {ReactComponent as RetryOperation} from 'modules/components/Icon/retry.svg';
+import {ReactComponent as CancelOperation} from 'modules/components/Icon/stop.svg';
+import {ReactComponent as EditOperation} from 'modules/components/Icon/edit.svg';
+
 const runningEntryStyles = css`
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
@@ -67,3 +71,47 @@ export const EntryDetails = styled.div`
 export const EndDate = styled.div`
   font-size: 14px;
 `;
+
+export const InstancesCount = themed(styled.div`
+  font-size: 14px;
+  color: ${themeStyle({
+    dark: `${Colors.darkLinkDefault}`,
+    light: `${Colors.lightLinkDefault}`,
+  })};
+  text-decoration: underline;
+
+  cursor: pointer;
+`);
+
+export const OperationIcon = themed(styled.div`
+  cursor: default;
+  width: 16px;
+  height: 16px;
+  margin-top: 10px;
+`);
+
+const iconStyle = css`
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  opacity: ${themeStyle({
+    dark: 0.9,
+    light: 0.8,
+  })};
+  color: ${themeStyle({
+    dark: '#ffffff',
+    light: Colors.uiDark02,
+  })};
+`;
+
+export const Retry = themed(styled(RetryOperation)`
+  ${iconStyle};
+`);
+
+export const Cancel = themed(styled(CancelOperation)`
+  ${iconStyle};
+`);
+
+export const Edit = themed(styled(EditOperation)`
+  ${iconStyle};
+`);

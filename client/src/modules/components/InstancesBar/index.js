@@ -38,6 +38,7 @@ function InstancesBar(props) {
       <Styled.BarContainer height={barHeight}>
         <Styled.Bar hasActive={hasActive} />
         <Styled.IncidentsBar
+          data-test="incidents-bar"
           style={{
             width: `${incidentsBarRatio}%`,
           }}

@@ -5,64 +5,52 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
-
-import {HashRouter as Router} from 'react-router-dom';
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
-
+import {render, screen} from '@testing-library/react';
 import Pill from './index';
 import {PILL_TYPE} from 'modules/constants';
 
-import * as Styled from './styled';
-
-const mountNode = (node) => {
-  const mountedNode = mount(
-    <Router>
-      <ThemeProvider>{node}</ThemeProvider>
-    </Router>
-  );
-  return mountedNode.find(Pill);
-};
-
 describe('Pill', () => {
-  let node;
   const labelString = 'Some Label';
 
-  it('should render children', () => {
-    // given
-    node = mountNode(<Pill isActive={true}>{labelString}</Pill>);
-
-    expect(node.text()).toEqual(labelString);
+  it('should render label', () => {
+    render(<Pill isActive={true}>{labelString}</Pill>);
+    expect(screen.getByText(labelString)).toBeInTheDocument();
   });
 
   it('should render without icon if no type is passed', () => {
-    // given
-    node = mountNode(<Pill isActive={true}>{labelString}</Pill>);
-    expect(node.find(Styled.Clock)).not.toExist();
+    render(<Pill isActive={true}>{labelString}</Pill>);
+    expect(screen.queryByTestId('target-icon')).not.toBeInTheDocument();
   });
 
-  it('should render without icon if a unknown type is passed', () => {
-    // silence prop-type warning
-    console.error = jest.fn();
+  it('should render without icon if an unknown type is passed', () => {
+    const originalConsoleError = global.console.error;
+    global.console.error = jest.fn();
 
-    node = mountNode(
+    render(
       <Pill isActive={true} type={'someUnknownType'}>
         {labelString}
       </Pill>
     );
-    expect(node).toExist();
+    expect(screen.queryByTestId('target-icon')).not.toBeInTheDocument();
+    global.console.error = originalConsoleError;
   });
 
-  describe('icon type', () => {
-    it('should render clock icon', () => {
-      // given
-      node = mountNode(
-        <Pill isActive={true} type={PILL_TYPE.TIMESTAMP}>
-          {labelString}
-        </Pill>
-      );
+  it('should render with icon', () => {
+    render(
+      <Pill isActive={true} type={PILL_TYPE.TIMESTAMP}>
+        {labelString}
+      </Pill>
+    );
 
-      expect(node.find(Styled.Clock)).toExist();
-    });
+    expect(screen.getByTestId('target-icon')).toBeInTheDocument();
+  });
+
+  it('should render count for filter type pills', () => {
+    render(
+      <Pill isActive={true} type={PILL_TYPE.FILTER} count={10}>
+        {labelString}
+      </Pill>
+    );
+    expect(screen.getByText('10')).toBeInTheDocument();
   });
 });

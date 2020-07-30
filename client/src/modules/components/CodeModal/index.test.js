@@ -41,14 +41,16 @@ describe('CodeModal', () => {
   });
 
   it('should have a fallback, when incorrect mode property is passed', () => {
-    // silence prop-type warning
-    console.error = jest.fn();
+    const originalConsoleError = global.console.error;
+    global.console.error = jest.fn();
 
     const node = mountNode(testData.userOpensModalWithUnknownMode);
 
     expect(node.find(Modal.Header)).toExist();
     expect(node.find(Modal.Body)).toExist();
     expect(node.find(Modal.Footer)).toExist();
+
+    global.console.error = originalConsoleError;
   });
 
   describe('view', () => {

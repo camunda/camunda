@@ -5,69 +5,76 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
-
-import {HashRouter as Router} from 'react-router-dom';
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
-
-import Copyright from 'modules/components/Copyright';
-
+import {render, screen} from '@testing-library/react';
 import BottomPanel from './index';
-import {TimeStampPill} from './TimeStampPill';
+import {DataManagerProvider} from 'modules/DataManager';
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
+import PropTypes from 'prop-types';
+import {EXPAND_STATE} from 'modules/constants';
 
-import * as Styled from './styled';
-
-jest.mock('./TimeStampPill', () => {
-  return {
-    TimeStampPill: function TimeStampPill() {
-      return <div />;
-    },
-  };
-});
+const COPYRIGHT_REGEX = /^© Camunda Services GmbH \d{4}. All rights reserved./;
 
 describe('BottomPanel', () => {
-  let node;
-  let ChildNode;
-  beforeEach(() => {
-    // eslint-disable-next-line react/prop-types
-    ChildNode = ({expandState, ...props}) => (
-      <div {...props} data-test="ChildNode" />
+  const ChildNode = ({expandState, ...props}) => (
+    <>
+      {EXPAND_STATE.DEFAULT === expandState && (
+        <div {...props}>default content</div>
+      )}
+      {EXPAND_STATE.EXPANDED === expandState && (
+        <div {...props}>expanded content</div>
+      )}
+      {EXPAND_STATE.COLLAPSED === expandState && (
+        <div {...props}>collapsed content</div>
+      )}{' '}
+    </>
+  );
+
+  ChildNode.propTypes = {
+    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
+  };
+
+  it('should render default component', () => {
+    beforeAll(() => {
+      createMockDataManager();
+    });
+    render(
+      <DataManagerProvider>
+        <BottomPanel expandState={EXPAND_STATE.DEFAULT}>
+          <ChildNode />
+        </BottomPanel>
+      </DataManagerProvider>
     );
-    node = mount(
-      <Router>
-        <ThemeProvider>
-          <BottomPanel>
-            <ChildNode />
-          </BottomPanel>
-        </ThemeProvider>
-      </Router>
+    expect(screen.getByText('Instance History')).toBeInTheDocument();
+    expect(screen.getByText('Show End Time')).toBeInTheDocument();
+    expect(screen.getByText('default content')).toBeInTheDocument();
+    expect(screen.getByText(COPYRIGHT_REGEX)).toBeInTheDocument();
+  });
+
+  it('should render expanded component', () => {
+    beforeAll(() => {
+      createMockDataManager();
+    });
+    render(
+      <DataManagerProvider>
+        <BottomPanel expandState={EXPAND_STATE.EXPANDED}>
+          <ChildNode />
+        </BottomPanel>
+      </DataManagerProvider>
     );
+    expect(screen.getByText('expanded content')).toBeInTheDocument();
   });
 
-  it('should render a header', () => {
-    //Pane Header
-    const PaneHeaderNode = node.find(Styled.PaneHeader);
-    const Headline = node.find(Styled.Headline);
-
-    expect(PaneHeaderNode).toHaveLength(1);
-    expect(Headline).toHaveLength(1);
-    expect(Headline.text()).toEqual('Instance History');
-    expect(node.find(TimeStampPill)).toHaveLength(1);
-  });
-
-  it('should render children', () => {
-    const PaneBodyNode = node.find(Styled.PaneBody);
-    const child = PaneBodyNode.find(ChildNode);
-    expect(child).toExist();
-  });
-
-  it('should render a footer', () => {
-    // Pane Footer
-    const PaneFooterNode = node.find(Styled.PaneFooter);
-    expect(PaneFooterNode).toHaveLength(1);
-
-    // Copyright
-    const CopyrightNode = PaneFooterNode.find(Copyright);
-    expect(CopyrightNode).toHaveLength(1);
+  it('should render collapsed component', () => {
+    beforeAll(() => {
+      createMockDataManager();
+    });
+    render(
+      <DataManagerProvider>
+        <BottomPanel expandState={EXPAND_STATE.COLLAPSED}>
+          <ChildNode />
+        </BottomPanel>
+      </DataManagerProvider>
+    );
+    expect(screen.getByText('collapsed content')).toBeInTheDocument();
   });
 });

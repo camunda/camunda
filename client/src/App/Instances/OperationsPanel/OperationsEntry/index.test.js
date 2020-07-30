@@ -12,7 +12,6 @@ import OperationsEntry from './index';
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
-    // when
     render(
       <OperationsEntry
         {...mockProps}
@@ -23,15 +22,13 @@ describe('OperationsEntry', () => {
       />
     );
 
-    // then
+    expect(screen.getByTestId('progress-bar')).toBeInTheDocument();
     expect(screen.getByText(OPERATIONS.RETRY.id)).toBeInTheDocument();
     expect(screen.getByText('Retry')).toBeInTheDocument();
-    expect(screen.getByTestId('operation-icon-Retry')).toBeInTheDocument();
-    expect(screen.getAllByTestId(/operation-icon/)).toHaveLength(1);
+    expect(screen.getByTestId('operation-retry-icon')).toBeInTheDocument();
   });
 
   it('should render cancel operation', () => {
-    // when
     render(
       <OperationsEntry
         {...mockProps}
@@ -42,16 +39,14 @@ describe('OperationsEntry', () => {
       />
     );
 
-    // then
+    expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
     expect(screen.getByText('12 Dec 2018 00:00:00')).toBeInTheDocument();
     expect(screen.getByText(OPERATIONS.CANCEL.id)).toBeInTheDocument();
     expect(screen.getByText('Cancel')).toBeInTheDocument();
-    expect(screen.getByTestId('operation-icon-Cancel')).toBeInTheDocument();
-    expect(screen.getAllByTestId(/operation-icon/)).toHaveLength(1);
+    expect(screen.getByTestId('operation-cancel-icon')).toBeInTheDocument();
   });
 
   it('should render edit operation', () => {
-    // when
     render(
       <OperationsEntry
         {...mockProps}
@@ -62,16 +57,14 @@ describe('OperationsEntry', () => {
       />
     );
 
-    // then
+    expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
     expect(screen.getByText('12 Dec 2018 00:00:00')).toBeInTheDocument();
     expect(screen.getByText(OPERATIONS.EDIT.id)).toBeInTheDocument();
     expect(screen.getByText('Edit')).toBeInTheDocument();
-    expect(screen.getByTestId('operation-icon-Edit')).toBeInTheDocument();
-    expect(screen.getAllByTestId(/operation-icon/)).toHaveLength(1);
+    expect(screen.getByTestId('operation-edit-icon')).toBeInTheDocument();
   });
 
-  it('should render instances count with when there is one instance', () => {
-    // when
+  it('should render instances count when there is one instance', () => {
     render(
       <OperationsEntry
         {...mockProps}
@@ -82,12 +75,10 @@ describe('OperationsEntry', () => {
       />
     );
 
-    // then
     expect(screen.getByText('1 Instance')).toBeInTheDocument();
   });
 
-  it('should render instances count with when there is more than one instance', () => {
-    // when
+  it('should render instances count when there is more than one instance', () => {
     render(
       <OperationsEntry
         {...mockProps}
@@ -98,12 +89,10 @@ describe('OperationsEntry', () => {
       />
     );
 
-    // then
     expect(screen.getByText('3 Instances')).toBeInTheDocument();
   });
 
   it('should be able to handle instance click', () => {
-    // given
     render(
       <OperationsEntry
         {...mockProps}
@@ -114,10 +103,7 @@ describe('OperationsEntry', () => {
       />
     );
 
-    // when
     fireEvent.click(screen.getByText('3 Instances'));
-
-    // then
     expect(mockProps.onInstancesClick).toHaveBeenCalledWith(
       'df325d44-6a4c-4428-b017-24f923f1d052'
     );

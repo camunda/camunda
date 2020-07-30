@@ -25,7 +25,9 @@ export default function EmptyPanel({
         </WithRowCount>
       ) : (
         <Styled.LabelContainer>
-          {type === 'warning' && <Styled.WarningIcon />}
+          {type === 'warning' && (
+            <Styled.WarningIcon data-test="warning-icon" />
+          )}
           <Styled.Label type={type}>{label}</Styled.Label>
         </Styled.LabelContainer>
       )}
