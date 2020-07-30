@@ -9,6 +9,7 @@ import {TaskStates} from 'modules/constants/taskStates';
 import {currentUser} from '../constants/currentUser';
 
 const unclaimedTask: Task = {
+  __typename: 'Task',
   id: '0',
   name: 'My Task',
   workflowName: 'Nice Workflow',
@@ -21,22 +22,13 @@ const unclaimedTask: Task = {
 
 const claimedTask: Task = {
   ...unclaimedTask,
-  id: '0',
   assignee: currentUser,
 };
 
 const completedTask: Task = {
-  id: '0',
-  name: 'My Completed Task',
-  workflowName: 'Cool Workflow',
-  assignee: {
-    firstname: 'Jules',
-    lastname: 'Verne',
-    username: 'julesverne',
-  },
-  creationTime: new Date('2019').toISOString(),
+  ...claimedTask,
+
   completionTime: new Date('2020').toISOString(),
-  variables: [],
   taskState: TaskStates.Completed,
 };
 

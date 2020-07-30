@@ -14,22 +14,18 @@ type ClaimTaskVariables = {
   id: Task['id'];
 };
 
-const CLAIM_TASK =
-  process.env.NODE_ENV === 'test'
-    ? gql`
-        mutation ClaimTask($id: ID!) {
-          claimTask(id: $id) {
-            id
-          }
-        }
-      `
-    : gql`
-        mutation ClaimTask($id: ID!) {
-          claimTask(id: $id) @client {
-            id
-          }
-        }
-      `;
+const CLAIM_TASK = gql`
+  mutation ClaimTask($id: String!) {
+    claimTask(taskId: $id) {
+      id
+      assignee {
+        username
+        firstname
+        lastname
+      }
+    }
+  }
+`;
 
 const mockClaimTask = {
   request: {

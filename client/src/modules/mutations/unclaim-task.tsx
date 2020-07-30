@@ -15,22 +15,18 @@ type UnclaimTaskVariables = {
   id: Task['id'];
 };
 
-const UNCLAIM_TASK =
-  process.env.NODE_ENV === 'test'
-    ? gql`
-        mutation UnclaimTask($id: ID!) {
-          unclaimTask(id: $id) {
-            id
-          }
-        }
-      `
-    : gql`
-        mutation UnclaimTask($id: ID!) {
-          unclaimTask(id: $id) @client {
-            id
-          }
-        }
-      `;
+const UNCLAIM_TASK = gql`
+  mutation UnclaimTask($id: String!) {
+    unclaimTask(taskId: $id) {
+      id
+      assignee {
+        username
+        firstname
+        lastname
+      }
+    }
+  }
+`;
 
 const mockUnclaimTask = {
   request: {

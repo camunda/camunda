@@ -21,32 +21,7 @@ import {
 } from 'modules/queries/get-current-user';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {FilterValues} from 'modules/constants/filterValues';
-import {TaskStates} from 'modules/constants/taskStates';
-
-const getQueryVariables = (filter: string, {username}: {username?: string}) => {
-  switch (filter) {
-    case FilterValues.ClaimedByMe: {
-      return {
-        assigned: true,
-        assignee: username,
-      };
-    }
-    case FilterValues.Unclaimed: {
-      return {
-        assigned: false,
-      };
-    }
-    case FilterValues.Completed: {
-      return {
-        state: TaskStates.Completed,
-      };
-    }
-    case FilterValues.AllOpen:
-    default: {
-      return {};
-    }
-  }
-};
+import {getQueryVariables} from 'modules/utils/getQueryVariables';
 
 const Tasks: React.FC = () => {
   const location = useLocation();
@@ -61,7 +36,7 @@ const Tasks: React.FC = () => {
     variables: getQueryVariables(filter, {
       username: userData?.currentUser.username,
     }),
-    fetchPolicy: 'no-cache',
+    fetchPolicy: 'network-only',
   });
 
   if (loading || data === undefined) {

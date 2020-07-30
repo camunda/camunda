@@ -10,6 +10,7 @@ import {currentUser} from '../constants/currentUser';
 
 const tasks: ReadonlyArray<Task> = [
   {
+    __typename: 'Task',
     id: '0',
     name: 'name',
     workflowName: 'workflowName',
@@ -20,6 +21,7 @@ const tasks: ReadonlyArray<Task> = [
     taskState: TaskStates.Completed,
   },
   {
+    __typename: 'Task',
     id: '1',
     name: 'name',
     workflowName: 'workflowName',
@@ -37,6 +39,7 @@ const tasks: ReadonlyArray<Task> = [
     taskState: TaskStates.Created,
   },
   {
+    __typename: 'Task',
     id: '2',
     name: 'name',
     workflowName: 'workflowName',

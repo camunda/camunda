@@ -22,15 +22,36 @@ import {Table, RowTH, TD, TR} from 'modules/components/Table/styled';
 import {formatDate} from 'modules/utils/formatDate';
 import {TaskStates} from 'modules/constants/taskStates';
 import {Container, ClaimButton} from './styled';
-
+import {GET_TASKS} from 'modules/queries/get-tasks';
+import {FilterValues} from 'modules/constants/filterValues';
+import {getSearchParam} from 'modules/utils/getSearchParam';
+import {getQueryVariables} from 'modules/utils/getQueryVariables';
+import {useLocation} from 'react-router-dom';
+import {
+  GET_CURRENT_USER,
+  GetCurrentUser,
+} from 'modules/queries/get-current-user';
 const Details: React.FC = () => {
   const {id} = useParams();
-
+  const location = useLocation();
+  const filter =
+    getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
+  const isClaimedByMeFilter = filter === FilterValues.ClaimedByMe;
+  const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER, {
+    skip: !isClaimedByMeFilter,
+  });
   const [claimTask] = useMutation<GetTaskDetails, ClaimTaskVariables>(
     CLAIM_TASK,
     {
       variables: {id},
-      refetchQueries: [{query: GET_TASK_DETAILS, variables: {id}}],
+      refetchQueries: [
+        {
+          query: GET_TASKS,
+          variables: getQueryVariables(filter, {
+            username: userData?.currentUser.username,
+          }),
+        },
+      ],
     },
   );
 
@@ -38,7 +59,14 @@ const Details: React.FC = () => {
     UNCLAIM_TASK,
     {
       variables: {id},
-      refetchQueries: [{query: GET_TASK_DETAILS, variables: {id}}],
+      refetchQueries: [
+        {
+          query: GET_TASKS,
+          variables: getQueryVariables(filter, {
+            username: userData?.currentUser.username,
+          }),
+        },
+      ],
     },
   );
 

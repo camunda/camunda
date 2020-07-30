@@ -9,7 +9,6 @@
 import {Resolvers, gql} from 'apollo-boost';
 import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
-import {currentUser} from './constants/currentUser';
 
 interface ResolverMap {
   [field: string]: (parent: any, args: any, context: any) => any;
@@ -19,15 +18,10 @@ interface AppResolvers extends Resolvers {
   Task: ResolverMap;
 }
 
-type IsAssigned = {
-  [id: string]: boolean;
-};
-
 type TaskStates = {
   [id: string]: string;
 };
 
-const isAssigned: IsAssigned = {};
 const taskStates: TaskStates = {};
 
 const getTaskState = (task: Task) => {
@@ -38,22 +32,8 @@ const getTaskState = (task: Task) => {
   }
 };
 
-const getAssignee = (task: Task) => {
-  switch (isAssigned[task.id]) {
-    case true:
-      return currentUser;
-    case false:
-      return null;
-    default:
-      return task.assignee;
-  }
-};
-
 const resolvers: AppResolvers = {
   Task: {
-    assignee: (task) => {
-      return getAssignee(task) || null;
-    },
     taskState: (task) => {
       return getTaskState(task) || 'CREATED';
     },
@@ -72,14 +52,6 @@ const resolvers: AppResolvers = {
     },
   },
   Mutation: {
-    claimTask(_, {id}) {
-      isAssigned[id] = true;
-      return {__typename: 'Task', id};
-    },
-    unclaimTask(_, {id}) {
-      isAssigned[id] = false;
-      return {__typename: 'Task', id};
-    },
     completeTask(_, {id, variables}, context) {
       taskStates[id] = TaskStates.Completed;
       const result: {task: Task} = context.client.readQuery({
@@ -89,7 +61,11 @@ const resolvers: AppResolvers = {
               id
               name
               workflowName
-              assignee
+              assignee {
+                firstname
+                lastname
+                username
+              }
               creationTime
             }
           }

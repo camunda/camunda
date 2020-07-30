@@ -19,6 +19,7 @@ type Variable = Readonly<{
 type TaskState = 'CREATED' | 'COMPLETED';
 
 type Task = Readonly<{
+  __typename: string;
   id: string;
   name: string;
   workflowName: string;

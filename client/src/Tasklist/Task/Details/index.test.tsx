@@ -8,14 +8,15 @@ import {Details} from './';
 
 import * as React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 
+import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {Route, MemoryRouter} from 'react-router-dom';
 import {
   mockGetTaskUnclaimed,
   mockGetTaskCompleted,
   mockGetTaskClaimed,
 } from 'modules/queries/get-task-details';
+import {mockGetAllOpenTasks} from 'modules/queries/get-tasks';
 import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
@@ -46,9 +47,9 @@ describe('<Details />', () => {
       wrapper: getWrapper({id: '0', mocks: [mockGetTaskCompleted]}),
     });
 
-    expect(await screen.findByText('My Completed Task')).toBeInTheDocument();
-    expect(screen.getByText('Cool Workflow')).toBeInTheDocument();
-    expect(screen.getByTestId('assignee')).toHaveTextContent('Jules Verne');
+    expect(await screen.findByText('My Task')).toBeInTheDocument();
+    expect(screen.getByText('Nice Workflow')).toBeInTheDocument();
+    expect(screen.getByTestId('assignee')).toHaveTextContent('Demo User');
     expect(
       screen.queryByRole('button', {name: 'Unclaim'}),
     ).not.toBeInTheDocument();
@@ -79,15 +80,18 @@ describe('<Details />', () => {
     render(<Details />, {
       wrapper: getWrapper({
         id: '0',
-        mocks: [mockGetTaskUnclaimed, mockClaimTask, mockGetTaskClaimed],
+        mocks: [mockGetTaskUnclaimed, mockClaimTask, mockGetAllOpenTasks],
       }),
     });
-
-    fireEvent.click(await screen.findByRole('button', {name: 'Claim'}));
+    expect(
+      await screen.findByRole('button', {name: 'Claim'}),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', {name: 'Claim'}));
 
     expect(
       await screen.findByRole('button', {name: 'Unclaim'}),
     ).toBeInTheDocument();
+
     expect(
       screen.queryByRole('button', {name: 'Claim'}),
     ).not.toBeInTheDocument();
@@ -98,7 +102,7 @@ describe('<Details />', () => {
     render(<Details />, {
       wrapper: getWrapper({
         id: '0',
-        mocks: [mockGetTaskClaimed, mockUnclaimTask, mockGetTaskUnclaimed],
+        mocks: [mockGetTaskClaimed, mockUnclaimTask, mockGetAllOpenTasks],
       }),
     });
 

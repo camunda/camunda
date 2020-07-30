@@ -36,7 +36,11 @@ const GET_TASK_DETAILS =
             id
             name
             workflowName
-            assignee
+            assignee {
+              username
+              firstname
+              lastname
+            }
             creationTime
             completionTime
             taskState
@@ -49,7 +53,11 @@ const GET_TASK_DETAILS =
             id
             name
             workflowName
-            assignee @client
+            assignee {
+              username
+              firstname
+              lastname
+            }
             creationTime
             completionTime @client
             taskState @client

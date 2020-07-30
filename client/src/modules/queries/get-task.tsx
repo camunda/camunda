@@ -26,7 +26,11 @@ const GET_TASK =
         query GetTask($id: String!) {
           task(id: $id) {
             id
-            assignee
+            assignee {
+              username
+              firstname
+              lastname
+            }
             taskState
           }
         }
@@ -35,7 +39,11 @@ const GET_TASK =
         query GetTask($id: String!) {
           task(id: $id) {
             id
-            assignee @client
+            assignee {
+              username
+              firstname
+              lastname
+            }
             taskState @client
           }
         }

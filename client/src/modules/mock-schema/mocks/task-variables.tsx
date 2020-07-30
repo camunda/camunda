@@ -6,9 +6,10 @@
 
 import {Task} from 'modules/types';
 
-type TaskVariables = Pick<Task, 'id' | 'variables'>;
+type TaskVariables = Pick<Task, 'id' | 'variables' | '__typename'>;
 
 const taskWithVariables: TaskVariables = {
+  __typename: 'Task',
   id: '0',
   variables: [
     {name: 'myVar', value: '0001'},
@@ -17,6 +18,7 @@ const taskWithVariables: TaskVariables = {
 };
 
 const taskWithoutVariables: TaskVariables = {
+  __typename: 'Task',
   id: '0',
   variables: [],
 };
