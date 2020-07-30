@@ -9,15 +9,11 @@ package io.zeebe.broker.system.partitions;
 
 import static io.zeebe.engine.state.DefaultZeebeDbFactory.DEFAULT_DB_METRIC_EXPORTER_FACTORY;
 
-import io.atomix.raft.RaftCommitListener;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.log.RaftLogReader;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.zeebe.ZeebeEntry;
-import io.atomix.storage.journal.Indexed;
 import io.atomix.storage.journal.JournalReader.Mode;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
@@ -70,11 +66,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public final class ZeebePartition extends Actor
-    implements RaftCommitListener,
-        RaftRoleChangeListener,
-        HealthMonitorable,
-        FailureListener,
-        DiskSpaceUsageListener {
+    implements RaftRoleChangeListener, HealthMonitorable, FailureListener, DiskSpaceUsageListener {
 
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final int EXPORTER_PROCESSOR_ID = 1003;
@@ -604,21 +596,6 @@ public final class ZeebePartition extends Actor
   }
 
   @Override
-  public <T extends RaftLogEntry> void onCommit(final Indexed<T> indexed) {
-    if (indexed.type() == ZeebeEntry.class) {
-      actor.run(
-          () -> {
-            final long commitPosition = indexed.<ZeebeEntry>cast().entry().highestPosition();
-            if (logStream == null) {
-              deferredCommitPosition = commitPosition;
-              return;
-            }
-            logStream.setCommitPosition(commitPosition);
-          });
-    }
-  }
-
-  @Override
   public String getName() {
     return actorName;
   }
@@ -626,7 +603,6 @@ public final class ZeebePartition extends Actor
   @Override
   public void onActorStarting() {
     atomixLogStorage = AtomixLogStorage.ofPartition(zeebeIndexMapping, atomixRaftPartition);
-    atomixRaftPartition.getServer().addCommitListener(this);
     atomixRaftPartition.addRoleChangeListener(this);
     criticalComponentsHealthMonitor.addFailureListener(this);
     onRoleChange(atomixRaftPartition.getRole(), atomixRaftPartition.term());
@@ -650,7 +626,6 @@ public final class ZeebePartition extends Actor
         .onComplete(
             (ok, failure) -> {
               atomixRaftPartition.removeRoleChangeListener(this);
-              atomixRaftPartition.getServer().removeCommitListener(this);
 
               criticalComponentsHealthMonitor.removeComponent(raftPartitionHealth.getName());
               raftPartitionHealth.close();

@@ -260,8 +260,12 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     final var appenderOpenFuture = new CompletableActorFuture<LogStorageAppender>();
 
     appenderFuture = appenderOpenFuture;
-    long initialPosition = getLastPosition() + 1;
-    if (initialPosition <= 0) {
+    final var lastPosition = getLastPosition();
+    final long initialPosition;
+    if (lastPosition > 0) {
+      internalSetCommitPosition(lastPosition);
+      initialPosition = lastPosition + 1;
+    } else {
       initialPosition = 1;
     }
 
@@ -284,7 +288,8 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
                         partitionId,
                         logStorage,
                         subscription,
-                        maxFrameLength);
+                        maxFrameLength,
+                        this::setCommitPosition);
 
                 actorScheduler
                     .submitActor(appender)

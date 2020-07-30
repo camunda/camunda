@@ -31,6 +31,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.function.LongConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -51,13 +52,16 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
   private final LoggedEventImpl positionReader = new LoggedEventImpl();
   private FailureListener failureListener;
   private final ActorFuture<Void> closeFuture;
+  private final LongConsumer commitPositionListener;
 
   public LogStorageAppender(
       final String name,
       final int partitionId,
       final LogStorage logStorage,
       final Subscription writeBufferSubscription,
-      final int maxBlockSize) {
+      final int maxBlockSize,
+      final LongConsumer commitPositionListener) {
+    this.commitPositionListener = commitPositionListener;
     this.env = new Environment();
     this.name = name;
     this.logStorage = logStorage;
@@ -207,5 +211,9 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
 
   void releaseBackPressure(final long highestPosition) {
     actor.run(() -> appendEntryLimiter.onCommit(highestPosition));
+  }
+
+  void notifyCommitPosition(final long highestPosition) {
+    actor.run(() -> commitPositionListener.accept(highestPosition));
   }
 }
