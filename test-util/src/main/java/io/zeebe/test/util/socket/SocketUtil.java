@@ -45,7 +45,7 @@ public final class SocketUtil {
 
   private SocketUtil() {}
 
-  public static InetSocketAddress getNextAddress() {
+  public static synchronized InetSocketAddress getNextAddress() {
     return PORT_RANGE.next();
   }
 }
