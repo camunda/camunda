@@ -112,3 +112,32 @@ exports[`should create variable preview 1`] = `
   </span>
 </div>
 `;
+
+exports[`should include time information if fixed date filter contains time info 1`] = `
+<div
+  className="DateFilterPreview"
+>
+  <span
+    className="parameterName"
+  >
+    Start Date
+     
+  </span>
+  occurs
+  : 
+  between
+   
+  <span
+    className="previewItemValue"
+  >
+    2015-01-20 at 14:12
+  </span>
+   and
+   
+  <span
+    className="previewItemValue"
+  >
+    2019-05-11 at 19:24
+  </span>
+</div>
+`;

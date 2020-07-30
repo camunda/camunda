@@ -56,10 +56,15 @@ export default function DateFilterPreview({filter, filterType, variableName}) {
       </>
     );
   } else if (type === 'fixed') {
+    const containsTime =
+      format(startDate, 'HH:mm:ss') !== '00:00:00' || format(endDate, 'HH:mm:ss') !== '23:59:59';
+
+    const dateFormat = containsTime ? `yyyy-MM-dd '${t('common.timeAt')}' HH:mm` : 'yyy-MM-dd';
+
     previewText = (
       <>
-        {t('common.filter.list.operators.between')} {highlight(format(startDate, 'yyyy-MM-dd'))}
-        {' ' + t('common.and')} {highlight(format(endDate, 'yyyy-MM-dd'))}
+        {t('common.filter.list.operators.between')} {highlight(format(startDate, dateFormat))}
+        {' ' + t('common.and')} {highlight(format(endDate, dateFormat))}
       </>
     );
   }

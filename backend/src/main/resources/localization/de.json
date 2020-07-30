@@ -659,6 +659,7 @@
     "undefined": "nicht definiert",
     "null": "null",
     "nullOrUndefined": "Null oder nicht definiert",
+    "timeAt": "um",
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
