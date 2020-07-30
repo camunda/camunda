@@ -20,8 +20,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 import io.atomix.cluster.messaging.ManagedBroadcastService;
 import io.atomix.utils.net.Address;
-import java.io.IOException;
-import java.net.ServerSocket;
+import io.zeebe.test.util.socket.SocketUtil;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -55,9 +54,9 @@ public class NettyBroadcastServiceTest extends ConcurrentTestCase {
 
   @Before
   public void setUp() throws Exception {
-    localAddress1 = Address.from("127.0.0.1", findAvailablePort(5001));
-    localAddress2 = Address.from("127.0.0.1", findAvailablePort(5002));
-    groupAddress = Address.from("230.0.0.1", findAvailablePort(1234));
+    localAddress1 = Address.from("127.0.0.1", SocketUtil.getNextAddress().getPort());
+    localAddress2 = Address.from("127.0.0.1", SocketUtil.getNextAddress().getPort());
+    groupAddress = Address.from("230.0.0.1", SocketUtil.getNextAddress().getPort());
 
     netty1 =
         (ManagedBroadcastService)
@@ -94,18 +93,6 @@ public class NettyBroadcastServiceTest extends ConcurrentTestCase {
       } catch (final Exception e) {
         LOGGER.warn("Failed stopping netty2", e);
       }
-    }
-  }
-
-  private static int findAvailablePort(final int defaultPort) {
-    try {
-      final ServerSocket socket = new ServerSocket(0);
-      socket.setReuseAddress(true);
-      final int port = socket.getLocalPort();
-      socket.close();
-      return port;
-    } catch (final IOException ex) {
-      return defaultPort;
     }
   }
 }
