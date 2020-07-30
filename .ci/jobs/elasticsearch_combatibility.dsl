@@ -19,7 +19,7 @@ pipelineJob('elasticsearch_compatibility') {
     pipelineTriggers {
       triggers {
         cron {
-          spec('H 0 * * *')
+          spec('H 2 * * *')
         }
       }
     }

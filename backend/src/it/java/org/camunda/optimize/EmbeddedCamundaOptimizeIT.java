@@ -65,6 +65,7 @@ public class EmbeddedCamundaOptimizeIT extends AbstractIT {
         && !thread.getName().contains("ForkJoinPool.commonPool-worker")
         && !thread.getName().contains("WebSocketClient")
         && !thread.getName().contains("Keep-Alive-Timer")
+        && !thread.getName().contains("MockServer")
       )
       .collect(Collectors.toSet());
   }
