@@ -315,8 +315,7 @@ public class DefaultRaftServer implements RaftServer {
               protocol,
               storage,
               threadContextFactory,
-              closeOnStop,
-              stateMachineFactory);
+              closeOnStop);
       raft.setElectionTimeout(electionTimeout);
       raft.setHeartbeatInterval(heartbeatInterval);
       raft.setEntryValidator(entryValidator);

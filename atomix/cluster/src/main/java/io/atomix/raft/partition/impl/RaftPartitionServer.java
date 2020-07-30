@@ -175,7 +175,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         .withElectionTimeout(config.getElectionTimeout())
         .withStorage(createRaftStorage())
         .withThreadContextFactory(threadContextFactory)
-        .withStateMachineFactory(config.getStateMachineFactory())
         .withJournalIndexFactory(journalIndexFactory)
         .withEntryValidator(config.getEntryValidator())
         .build();
@@ -200,7 +199,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
   }
 
   public void setCompactableIndex(final long index) {
-    server.getContext().getServiceManager().setCompactableIndex(index);
+    server.getContext().getLogCompactor().setCompactableIndex(index);
   }
 
   public RaftLogReader openReader(final long index, final Mode mode) {
