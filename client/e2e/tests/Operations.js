@@ -5,24 +5,26 @@
  */
 
 import {Selector} from 'testcafe';
-import config from '../config';
-import {login} from '../utils';
+import {config} from '../config';
 
 import {setup} from './Operations.setup';
 import {instancesLink} from './Header.elements';
+import {demoUser} from './utils/Roles';
 
-fixture('Instances')
+fixture('Operations')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
+  })
+  .beforeEach(async (t) => {
+    await t.useRole(demoUser);
   });
 
 test('Operation creation', async (t) => {
   const {initialData} = t.fixtureCtx;
   const [instance] = initialData.instances;
 
-  await login(t);
-
+  await t.navigateTo('/');
   await t
     .click(instancesLink)
     .typeText(Selector('[name="ids"]'), instance.workflowInstanceKey);

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import config from '../../config';
+import {config} from '../../config';
 
 const ENDPOINTS = Object.freeze({
   createOperation(id) {

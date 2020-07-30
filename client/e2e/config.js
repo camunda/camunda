@@ -4,10 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export default {
+const config = {
   endpoint: `http://localhost:${process.env.PORT}`,
   agentUser: {
     username: 'demo',
     password: 'demo',
   },
 };
+
+export {config};

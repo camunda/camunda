@@ -4,22 +4,23 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import config from '../config';
-import {login} from '../utils';
+import {config} from '../config';
 import {setup} from './Dashboard.setup.js';
 import * as Elements from './InstancesSelection.elements.js';
+import {demoUser} from './utils/Roles';
+import {wait} from './utils/wait';
 
 fixture('Select Instances')
   .page(config.endpoint)
   .before(async (t) => {
     await setup();
+    await wait(20000);
+  })
+  .beforeEach(async (t) => {
+    await t.useRole(demoUser);
   });
 
-test.before(async (t) => {
-  await t.wait(20000);
-})('Selection of instances applied/removed on filter selection', async (t) => {
-  await login(t);
-
+test('Selection of instances applied/removed on filter selection', async (t) => {
   // open instances page, select the first instance on the instances table
   await t
     .navigateTo(`${config.endpoint}/#/instances`)

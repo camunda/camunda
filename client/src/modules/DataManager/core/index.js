@@ -15,11 +15,6 @@ import {
   applyOperation,
 } from 'modules/api/instances';
 
-import {
-  fetchInstancesByWorkflow,
-  fetchIncidentsByError,
-} from 'modules/api/incidents';
-
 import {fetchEvents} from 'modules/api/events';
 
 import {fetchBatchOperations} from 'modules/api/batchOperations';

@@ -4,9 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import config from '../config';
-import {login} from '../utils';
+import {config} from '../config';
 import {setup} from './Dashboard.setup.js';
+import {demoUser} from './utils/Roles';
+import {wait} from './utils/wait';
 
 import * as Header from './Header.elements.js';
 import * as Dashboard from './Dashboard.elements.js';
@@ -16,13 +17,14 @@ fixture('Dashboard')
   .page(config.endpoint)
   .before(async () => {
     await setup();
+    await wait(20000);
+  })
+  .beforeEach(async (t) => {
+    await t.useRole(demoUser);
+    await t.navigateTo('/');
   });
 
-test.before(async (t) => {
-  await t.wait(20000);
-})('Dashboard statistics', async (t) => {
-  await login(t);
-
+test('Dashboard statistics', async (t) => {
   await t
     .expect(Dashboard.totalInstancesLink.textContent)
     .eql('37 Running Instances in total')
@@ -33,8 +35,6 @@ test.before(async (t) => {
 });
 
 test('Navigation to Instances View', async (t) => {
-  await login(t);
-
   await t
     .click(Dashboard.activeInstancesLink)
     .expect(Instances.filtersRunningActiveCheckbox.checked)

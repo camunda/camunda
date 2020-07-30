@@ -4,12 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import * as Login from './tests/Login.elements.js';
+const wait = (ms) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+};
 
-export async function login(t, user = 'demo') {
-  await t
-    .maximizeWindow()
-    .typeText(Login.usernameInput, user)
-    .typeText(Login.passwordInput, user)
-    .click(Login.submitButton);
-}
+export {wait};

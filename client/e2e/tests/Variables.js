@@ -4,30 +4,31 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import config from '../config';
-import {login} from '../utils';
-import {setup, createIncident} from './Variables.setup.js';
+import {config} from '../config';
+import {setup} from './Variables.setup.js';
 import * as Variables from './Variables.elements.js';
 import {Selector} from 'testcafe';
+import {demoUser} from './utils/Roles';
+import {wait} from './utils/wait';
 
 fixture('Add/Edit Variables')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
+    await wait(20000);
+  })
+  .beforeEach(async (t) => {
+    const {
+      initialData: {instanceId},
+    } = t.fixtureCtx;
+
+    await t.useRole(demoUser);
+    await t.navigateTo(`${config.endpoint}/#/instances/${instanceId}`);
   });
 
-test.before(async (t) => {
-  await t.wait(20000);
-})('Validations for add/edit variable works correctly', async (t) => {
-  const {
-    initialData: {instanceId},
-  } = t.fixtureCtx;
-
-  await login(t);
-
+test('Validations for add/edit variable works correctly', async (t) => {
   // open single instance page, after clicking add new variable button see that save variable button is disabled and no spinner is displayed.
   await t
-    .navigateTo(`${config.endpoint}/#/instances/${instanceId}`)
     .click(Variables.addButton)
     .expect(Variables.saveVariable.hasAttribute('disabled'))
     .ok()
@@ -99,11 +100,8 @@ test('Edit variables', async (t) => {
     initialData: {instanceId},
   } = t.fixtureCtx;
 
-  await login(t);
-
   // open single instance page, after clicking the edit variable button see that save variable button is disabled.
   await t
-    .navigateTo(`${config.endpoint}/#/instances/${instanceId}`)
     .click(Variables.editButton)
     .expect(Variables.saveVariable.hasAttribute('disabled'))
     .ok();
@@ -143,15 +141,8 @@ test('Edit variables', async (t) => {
 });
 
 test('Add variables', async (t) => {
-  const {
-    initialData: {instanceId},
-  } = t.fixtureCtx;
-
-  await login(t);
-
   // open single instance page, click add new variable button and see that save variable button is disabled.
   await t
-    .navigateTo(`${config.endpoint}/#/instances/${instanceId}`)
     .click(Variables.addButton)
     .expect(Variables.saveVariable.hasAttribute('disabled'))
     .ok();

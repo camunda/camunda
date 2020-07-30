@@ -4,40 +4,61 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import config from '../config';
-import {login} from '../utils';
-
-import * as Login from './Login.elements.js';
-import * as Header from './Header.elements';
+import {config} from '../config';
+import {screen} from '@testing-library/testcafe';
+import {ClientFunction} from 'testcafe';
+const getPathname = ClientFunction(() => window.location.hash);
 
 fixture('Login').page(config.endpoint);
 
 test('Log in with invalid user account', async (t) => {
   await t
-    .expect(Login.passwordInput.getAttribute('type'))
-    .eql('password')
-    .typeText(Login.usernameInput, 'demo')
-    .typeText(Login.passwordInput, 'wrong-password')
-    .click(Login.submitButton)
-    .expect(Login.errorMessage.textContent)
-    .eql('Username and Password do not match');
+    .expect(screen.getByLabelText('Password').getAttribute('type'))
+    .eql('password');
+
+  await t
+    .typeText(screen.getByRole('textbox', 'Username'), 'demo')
+    .typeText(screen.getByLabelText('Password'), 'wrong-password')
+    .click(screen.getByRole('button', 'Log in'));
+  await t
+    .expect(screen.getByText('Username and Password do not match').exists)
+    .ok();
+  await t.expect(await getPathname()).eql('#/login');
 });
 
 test('Log in with valid user account', async (t) => {
   await t
-    .typeText(Login.usernameInput, 'demo')
-    .typeText(Login.passwordInput, 'demo')
-    .click(Login.submitButton)
-    .expect(Header.brandLink.textContent)
-    .eql('Camunda Operate');
+    .typeText(screen.getByRole('textbox', 'Username'), 'demo')
+    .typeText(screen.getByLabelText('Password'), 'demo')
+    .click(screen.getByRole('button', 'Log in'));
+
+  await t.expect(await getPathname()).eql('#/');
 });
 
 test('Log out', async (t) => {
-  await login(t);
+  await t
+    .typeText(screen.getByRole('textbox', 'Username'), 'demo')
+    .typeText(screen.getByLabelText('Password'), 'demo')
+    .click(screen.getByRole('button', 'Log in'));
 
   await t
-    .click(Header.userDropdown)
-    .click(Header.logoutItem)
-    .expect(Login.submitButton.exists)
-    .ok();
+    .click(screen.getByRole('button', {name: 'Demo user'}))
+    .click(screen.getByRole('button', {name: 'Logout'}));
+
+  await t.expect(await getPathname()).eql('#/login');
+});
+
+test('Redirect to initial page after login', async (t) => {
+  await t.expect(await getPathname()).eql('#/login');
+  await t.navigateTo(`${config.endpoint}/#/instances`);
+  await t.expect(await getPathname()).eql('#/login');
+
+  await t
+    .typeText(screen.getByRole('textbox', 'Username'), 'demo')
+    .typeText(screen.getByLabelText('Password'), 'demo')
+    .click(screen.getByRole('button', 'Log in'));
+
+  await t
+    .expect(await getPathname())
+    .eql('#/instances?filter={%22active%22:true,%22incidents%22:true}');
 });

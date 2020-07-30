@@ -12,5 +12,8 @@
     "node-fetch": "^2.6.0",
     "testcafe": "^1.8.8",
     "zeebe-node": "^0.23.2"
+  },
+  "dependencies": {
+    "@testing-library/testcafe": "^4.2.0"
   }
 }
