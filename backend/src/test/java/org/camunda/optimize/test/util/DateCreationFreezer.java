@@ -11,7 +11,10 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.TimeZone;
+
+import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
 /**
  * This class is a util builder that helps to freeze the date for testing, e.g
@@ -47,6 +50,7 @@ public class DateCreationFreezer {
 
     private OffsetDateTime dateToFreeze;
     private String timezone = ZoneId.systemDefault().getId();
+    private ChronoUnit unitToTruncateTo;
 
     public InnerDateFreezerBuilder setDateToFreezeToNow() {
       this.dateToFreeze = LocalDateUtil.getCurrentDateTime();
@@ -66,9 +70,17 @@ public class DateCreationFreezer {
       return this;
     }
 
+    public InnerDateFreezerBuilder truncateToUnit(final ChronoUnit unitToTruncateTo) {
+      this.unitToTruncateTo = unitToTruncateTo;
+      return this;
+    }
+
     public OffsetDateTime freezeDateAndReturn() {
       if (dateToFreeze == null) {
         dateToFreeze = OffsetDateTime.now(TimeZone.getTimeZone(timezone).toZoneId());
+      }
+      if (unitToTruncateTo != null) {
+        dateToFreeze = truncateToStartOfUnit(dateToFreeze, unitToTruncateTo).toOffsetDateTime();
       }
       LocalDateUtil.setCurrentTime(dateToFreeze);
       return LocalDateUtil.getCurrentDateTime();

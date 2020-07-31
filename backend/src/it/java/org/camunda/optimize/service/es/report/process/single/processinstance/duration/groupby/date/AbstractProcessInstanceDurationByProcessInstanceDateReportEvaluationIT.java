@@ -567,7 +567,7 @@ public abstract class AbstractProcessInstanceDurationByProcessInstanceDateReport
   public void groupedByStaticDateUnit(final GroupByDateUnit unit) {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(8);
-    OffsetDateTime now = dateFreezer().freezeDateAndReturn();
+    OffsetDateTime now = dateFreezer().truncateToUnit(ChronoUnit.SECONDS).freezeDateAndReturn();
     updateProcessInstancesDates(processInstanceDtos, now, mapToChronoUnit(unit));
     importAllEngineEntitiesFromScratch();
 
