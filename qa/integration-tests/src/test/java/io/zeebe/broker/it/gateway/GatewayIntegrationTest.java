@@ -47,7 +47,7 @@ public final class GatewayIntegrationTest {
         .setHost("0.0.0.0")
         .setPort(SocketUtil.getNextAddress().getPort())
         .setContactPoint(internalApi.toString())
-        .setRequestTimeout(Duration.ofSeconds(3));
+        .setRequestTimeout(Duration.ofSeconds(10));
     configuration.init();
 
     final ControlledActorClock clock = new ControlledActorClock();
