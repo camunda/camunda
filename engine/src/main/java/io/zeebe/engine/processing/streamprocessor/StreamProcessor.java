@@ -9,6 +9,7 @@ package io.zeebe.engine.processing.streamprocessor;
 
 import io.zeebe.db.DbContext;
 import io.zeebe.db.ZeebeDb;
+import io.zeebe.engine.metrics.StreamProcessorMetrics;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriterImpl;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.impl.Loggers;
@@ -100,6 +101,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   protected void onActorStarted() {
     try {
       LOG.debug("Recovering state of partition {} from snapshot", partitionId);
+      final long startTime = System.currentTimeMillis();
       snapshotPosition = recoverFromSnapshot();
 
       initProcessors();
@@ -124,6 +126,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
               onFailure(throwable);
             } else {
               onRecovered();
+              new StreamProcessorMetrics(partitionId)
+                  .recoveryTime(System.currentTimeMillis() - startTime);
             }
           });
     } catch (final RuntimeException e) {

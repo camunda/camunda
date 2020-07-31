@@ -261,9 +261,11 @@ public class SegmentedJournal<E> implements Journal<E> {
 
   /** Opens the segments. */
   private synchronized void open() {
+    final long startTime = System.currentTimeMillis();
     // Load existing log segments from disk.
     for (final JournalSegment<E> segment : loadSegments()) {
       segments.put(segment.descriptor().index(), segment);
+      journalMetrics.incSegmentCount();
     }
 
     // If a segment doesn't already exist, create an initial segment starting at index 1.
@@ -282,7 +284,9 @@ public class SegmentedJournal<E> implements Journal<E> {
       currentSegment.descriptor().update(System.currentTimeMillis());
 
       segments.put(1L, currentSegment);
+      journalMetrics.incSegmentCount();
     }
+    journalMetrics.observeJournalOpenDuration(System.currentTimeMillis() - startTime);
   }
 
   /**
@@ -320,6 +324,7 @@ public class SegmentedJournal<E> implements Journal<E> {
       currentSegment = createSegment(descriptor);
 
       segments.put(1L, currentSegment);
+      journalMetrics.incSegmentCount();
     }
   }
 
@@ -341,6 +346,7 @@ public class SegmentedJournal<E> implements Journal<E> {
     for (final JournalSegment<E> segment : segments.values()) {
       segment.close();
       segment.delete();
+      journalMetrics.decSegmentCount();
     }
     segments.clear();
 
@@ -353,6 +359,7 @@ public class SegmentedJournal<E> implements Journal<E> {
             .build();
     currentSegment = createSegment(descriptor);
     segments.put(index, currentSegment);
+    journalMetrics.incSegmentCount();
     return currentSegment;
   }
 
@@ -400,6 +407,7 @@ public class SegmentedJournal<E> implements Journal<E> {
     currentSegment = createSegment(descriptor);
 
     segments.put(descriptor.index(), currentSegment);
+    journalMetrics.incSegmentCount();
     return currentSegment;
   }
 
@@ -443,6 +451,7 @@ public class SegmentedJournal<E> implements Journal<E> {
    */
   synchronized void removeSegment(final JournalSegment segment) {
     segments.remove(segment.index());
+    journalMetrics.decSegmentCount();
     segment.close();
     segment.delete();
     resetCurrentSegment();
@@ -659,6 +668,7 @@ public class SegmentedJournal<E> implements Journal<E> {
           segment.compactIndex(index);
           segment.close();
           segment.delete();
+          journalMetrics.decSegmentCount();
         }
         compactSegments.clear();
         resetHead(segmentEntry.getValue().index());
