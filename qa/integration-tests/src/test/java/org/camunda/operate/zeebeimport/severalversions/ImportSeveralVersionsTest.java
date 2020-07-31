@@ -20,7 +20,6 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.Ignore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -29,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
 import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
@@ -82,6 +82,7 @@ public class ImportSeveralVersionsTest extends OperateIntegrationTest {
     //when
     startImportAndWaitTillItFinishes();
     //then
+    sleepFor(5000L);
     assertOperateData();
     //make sure that both importers were called
     verify(importerv1, atLeastOnce()).performImport(any(ImportBatch.class));
