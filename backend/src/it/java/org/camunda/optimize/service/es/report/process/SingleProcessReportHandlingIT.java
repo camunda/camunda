@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report;
+package org.camunda.optimize.service.es.report.process;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ReportConstants;
@@ -12,9 +12,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -26,8 +23,6 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -44,19 +39,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsNull.notNullValue;
 
-public class SingleReportHandlingIT extends AbstractIT {
+public class SingleProcessReportHandlingIT extends AbstractIT {
 
   private static final String FOO_PROCESS_DEFINITION_KEY = "fooProcessDefinitionKey";
   private static final String FOO_PROCESS_DEFINITION_VERSION = "1";
@@ -77,18 +66,15 @@ public class SingleReportHandlingIT extends AbstractIT {
       .get(getRequest, RequestOptions.DEFAULT);
 
     // then
-    assertThat(getResponse.isExists(), is(true));
+    assertThat(getResponse.isExists()).isTrue();
     SingleProcessReportDefinitionDto definitionDto = elasticSearchIntegrationTestExtension.getObjectMapper()
       .readValue(getResponse.getSourceAsString(), SingleProcessReportDefinitionDto.class);
-    assertThat(definitionDto.getData(), notNullValue());
+    assertThat(definitionDto.getData()).isNotNull();
     ProcessReportDataDto data = definitionDto.getData();
-    assertThat(data.getFilter(), notNullValue());
-    assertThat(data.getConfiguration(), notNullValue());
-    assertThat(data.getConfiguration(), equalTo(new SingleReportConfigurationDto()));
-    assertThat(
-      data.getConfiguration().getColor(),
-      is(ReportConstants.DEFAULT_CONFIGURATION_COLOR)
-    );
+    assertThat(data.getFilter()).isNotNull();
+    assertThat(data.getConfiguration()).isNotNull();
+    assertThat(data.getConfiguration()).isEqualTo(new SingleReportConfigurationDto());
+    assertThat(data.getConfiguration().getColor()).isEqualTo(ReportConstants.DEFAULT_CONFIGURATION_COLOR);
   }
 
   @Test
@@ -100,9 +86,9 @@ public class SingleReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
-    assertThat(reports, is(notNullValue()));
-    assertThat(reports.size(), is(1));
-    assertThat(reports.get(0).getId(), is(id));
+    assertThat(reports).isNotNull();
+    assertThat(reports.size()).isEqualTo(1);
+    assertThat(reports.get(0).getId()).isEqualTo(id);
   }
 
   @Test
@@ -118,13 +104,13 @@ public class SingleReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
-    assertThat(reports, is(notNullValue()));
-    assertThat(reports.size(), is(2));
+    assertThat(reports).isNotNull();
+    assertThat(reports.size()).isEqualTo(2);
     String reportId1 = reports.get(0).getId();
     String reportId2 = reports.get(1).getId();
-    assertThat(ids.contains(reportId1), is(true));
+    assertThat(ids.contains(reportId1)).isTrue();
     ids.remove(reportId1);
-    assertThat(ids.contains(reportId2), is(true));
+    assertThat(ids.contains(reportId2)).isTrue();
   }
 
   @Test
@@ -134,12 +120,12 @@ public class SingleReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
-    assertThat(reports, is(notNullValue()));
-    assertThat(reports.isEmpty(), is(true));
+    assertThat(reports).isNotNull();
+    assertThat(reports.isEmpty()).isTrue();
   }
 
   @Test
-  public void testUpdateProcessReport() {
+  public void updateProcessReport() {
     // given
     final String shouldNotBeUpdatedString = "shouldNotBeUpdated";
     String id = reportClient.createEmptySingleProcessReport();
@@ -169,23 +155,23 @@ public class SingleReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
-    assertThat(reports.size(), is(1));
+    assertThat(reports.size()).isEqualTo(1);
     SingleProcessReportDefinitionDto newReport = (SingleProcessReportDefinitionDto) reports.get(0);
-    assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
-    assertThat(newReport.getData().getDefinitionVersions(), contains("123"));
-    assertThat(newReport.getData().getConfiguration().getYLabel(), is("fooYLabel"));
-    assertThat(newReport.getData().getConfiguration().getProcessPart(), not(Optional.empty()));
-    assertThat(newReport.getData().getConfiguration().getProcessPart().get().getStart(), is("start123"));
-    assertThat(newReport.getData().getConfiguration().getProcessPart().get().getEnd(), is("end123"));
-    assertThat(newReport.getId(), is(id));
-    assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));
-    assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));
-    assertThat(newReport.getName(), is("MyReport"));
-    assertThat(newReport.getOwner(), is(DEFAULT_FULLNAME));
+    assertThat(newReport.getData().getProcessDefinitionKey()).isEqualTo("procdef");
+    assertThat(newReport.getData().getDefinitionVersions()).containsExactly("123");
+    assertThat(newReport.getData().getConfiguration().getYLabel()).isEqualTo("fooYLabel");
+    assertThat(newReport.getData().getConfiguration().getProcessPart()).isNotEmpty();
+    assertThat(newReport.getData().getConfiguration().getProcessPart().get().getStart()).isEqualTo("start123");
+    assertThat(newReport.getData().getConfiguration().getProcessPart().get().getEnd()).isEqualTo("end123");
+    assertThat(newReport.getId()).isEqualTo(id);
+    assertThat(newReport.getCreated()).isNotEqualTo(shouldBeIgnoredDate);
+    assertThat(newReport.getLastModified()).isNotEqualTo(shouldBeIgnoredDate);
+    assertThat(newReport.getName()).isEqualTo("MyReport");
+    assertThat(newReport.getOwner()).isEqualTo(DEFAULT_FULLNAME);
   }
 
   @Test
-  public void testUpdateProcessReportRemoveHeatMapTargetValue() {
+  public void updateProcessReportRemoveHeatMapTargetValue() {
     // given
     final String id = reportClient.createEmptySingleProcessReport();
     final ProcessReportDataDto reportData = new ProcessReportDataDto();
@@ -211,39 +197,9 @@ public class SingleReportHandlingIT extends AbstractIT {
     final List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
-    assertThat(reports.size(), is(1));
+    assertThat(reports.size()).isEqualTo(1);
     SingleProcessReportDefinitionDto newReport = (SingleProcessReportDefinitionDto) reports.get(0);
-    assertThat(newReport.getData().getConfiguration().getHeatmapTargetValue().getValues().size(), is(0));
-  }
-
-  @Test
-  public void testUpdateDecisionReportWithGroupByInputVariableName() {
-    // given
-    String id = reportClient.createEmptySingleDecisionReport();
-
-    final String variableName = "variableName";
-    DecisionReportDataDto expectedReportData = DecisionReportDataBuilder.create()
-      .setDecisionDefinitionKey("ID")
-      .setDecisionDefinitionVersion("1")
-      .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_INPUT_VARIABLE)
-      .setVariableId("id")
-      .setVariableName(variableName)
-      .build();
-
-    SingleDecisionReportDefinitionDto report = new SingleDecisionReportDefinitionDto();
-    report.setData(expectedReportData);
-
-    // when
-    reportClient.updateDecisionReport(id, report);
-    List<ReportDefinitionDto> reports = getAllPrivateReports();
-
-    // then
-    assertThat(reports.size(), is(1));
-    SingleDecisionReportDefinitionDto reportFromApi = (SingleDecisionReportDefinitionDto) reports.get(0);
-    final DecisionGroupByVariableValueDto value = (DecisionGroupByVariableValueDto)
-      reportFromApi.getData().getGroupBy().getValue();
-    assertThat(value.getName().isPresent(), is(true));
-    assertThat(value.getName().get(), is(variableName));
+    assertThat(newReport.getData().getConfiguration().getHeatmapTargetValue().getValues()).isEmpty();
   }
 
   @Test
@@ -257,7 +213,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     Response updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
     //then
-    assertThat(updateReportResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(updateReportResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     //when
     ProcessReportDataDto data = new ProcessReportDataDto();
@@ -266,7 +222,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
     //then
-    assertThat(updateReportResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(updateReportResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     //when
     data = new ProcessReportDataDto();
@@ -275,7 +231,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
     //then
-    assertThat(updateReportResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(updateReportResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
 
     //when
     data = new ProcessReportDataDto();
@@ -285,7 +241,7 @@ public class SingleReportHandlingIT extends AbstractIT {
     updateReportResponse = reportClient.updateSingleProcessReport(id, updatedReport);
 
     //then
-    assertThat(updateReportResponse.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(updateReportResponse.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
@@ -315,12 +271,12 @@ public class SingleReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
-    assertThat(reports.size(), is(1));
+    assertThat(reports.size()).isEqualTo(1);
     SingleProcessReportDefinitionDto newReport =
       (SingleProcessReportDefinitionDto) reports.get(0);
-    assertThat(newReport.getData(), is(notNullValue()));
+    assertThat(newReport.getData()).isNotNull();
     reportData = newReport.getData();
-    assertThat(reportData.getFilter().size(), is(3));
+    assertThat(reportData.getFilter().size()).isEqualTo(3);
   }
 
   private List<ProcessFilterDto<?>> createVariableFilter() {
@@ -350,14 +306,14 @@ public class SingleReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReports();
 
     // then
-    assertThat(reports.size(), is(1));
+    assertThat(reports.size()).isEqualTo(1);
     ReportDefinitionDto newDashboard = reports.get(0);
-    assertThat(newDashboard.getId(), is(id));
-    assertThat(newDashboard.getCreated(), is(notNullValue()));
-    assertThat(newDashboard.getLastModified(), is(notNullValue()));
-    assertThat(newDashboard.getLastModifier(), is(notNullValue()));
-    assertThat(newDashboard.getName(), is(notNullValue()));
-    assertThat(newDashboard.getOwner(), is(notNullValue()));
+    assertThat(newDashboard.getId()).isEqualTo(id);
+    assertThat(newDashboard.getCreated()).isNotNull();
+    assertThat(newDashboard.getLastModified()).isNotNull();
+    assertThat(newDashboard.getLastModifier()).isNotNull();
+    assertThat(newDashboard.getName()).isNotNull();
+    assertThat(newDashboard.getOwner()).isNotNull();
   }
 
   @Test
@@ -383,12 +339,12 @@ public class SingleReportHandlingIT extends AbstractIT {
 
     // then
     final SingleProcessReportDefinitionDto reportDefinition = result.getReportDefinition();
-    assertThat(reportDefinition.getId(), is(reportId));
-    assertThat(reportDefinition.getName(), is("name"));
-    assertThat(reportDefinition.getOwner(), is(DEFAULT_FULLNAME));
-    assertThat(reportDefinition.getCreated().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
-    assertThat(reportDefinition.getLastModifier(), is(DEFAULT_FULLNAME));
-    assertThat(reportDefinition.getLastModified().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
+    assertThat(reportDefinition.getId()).isEqualTo(reportId);
+    assertThat(reportDefinition.getName()).isEqualTo("name");
+    assertThat(reportDefinition.getOwner()).isEqualTo(DEFAULT_FULLNAME);
+    assertThat(reportDefinition.getCreated().truncatedTo(ChronoUnit.DAYS)).isEqualTo(now.truncatedTo(ChronoUnit.DAYS));
+    assertThat(reportDefinition.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
+    assertThat(reportDefinition.getLastModified().truncatedTo(ChronoUnit.DAYS)).isEqualTo(now.truncatedTo(ChronoUnit.DAYS));
   }
 
   @Test
@@ -409,7 +365,7 @@ public class SingleReportHandlingIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -434,20 +390,20 @@ public class SingleReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
-    assertThat(reports.size(), is(3));
-    assertThat(reports.get(0).getId(), is(id2));
-    assertThat(reports.get(1).getId(), is(id1));
-    assertThat(reports.get(2).getId(), is(id3));
+    assertThat(reports.size()).isEqualTo(3);
+    assertThat(reports.get(0).getId()).isEqualTo(id2);
+    assertThat(reports.get(1).getId()).isEqualTo(id1);
+    assertThat(reports.get(2).getId()).isEqualTo(id3);
 
     // when
     queryParam.put("sortOrder", "desc");
     reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
-    assertThat(reports.size(), is(3));
-    assertThat(reports.get(0).getId(), is(id3));
-    assertThat(reports.get(1).getId(), is(id1));
-    assertThat(reports.get(2).getId(), is(id2));
+    assertThat(reports.size()).isEqualTo(3);
+    assertThat(reports.get(0).getId()).isEqualTo(id3);
+    assertThat(reports.get(1).getId()).isEqualTo(id1);
+    assertThat(reports.get(2).getId()).isEqualTo(id2);
   }
 
   @Test
@@ -467,19 +423,19 @@ public class SingleReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
-    assertThat(reports.size(), is(3));
-    assertThat(reports.get(0).getId(), is(id1));
-    assertThat(reports.get(1).getId(), is(id3));
-    assertThat(reports.get(2).getId(), is(id2));
+    assertThat(reports.size()).isEqualTo(3);
+    assertThat(reports.get(0).getId()).isEqualTo(id1);
+    assertThat(reports.get(1).getId()).isEqualTo(id3);
+    assertThat(reports.get(2).getId()).isEqualTo(id2);
 
     //when
     queryParam.put("sortOrder", "desc");
     reports = getAllPrivateReportsWithQueryParam(queryParam);
     // then
-    assertThat(reports.size(), is(3));
-    assertThat(reports.get(0).getId(), is(id2));
-    assertThat(reports.get(1).getId(), is(id3));
-    assertThat(reports.get(2).getId(), is(id1));
+    assertThat(reports.size()).isEqualTo(3);
+    assertThat(reports.get(0).getId()).isEqualTo(id2);
+    assertThat(reports.get(1).getId()).isEqualTo(id3);
+    assertThat(reports.get(2).getId()).isEqualTo(id1);
   }
 
   @Test
@@ -500,10 +456,10 @@ public class SingleReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
-    assertThat(reports.size(), is(3));
-    assertThat(reports.get(2).getId(), is(id1));
-    assertThat(reports.get(1).getId(), is(id3));
-    assertThat(reports.get(0).getId(), is(id2));
+    assertThat(reports.size()).isEqualTo(3);
+    assertThat(reports.get(2).getId()).isEqualTo(id1);
+    assertThat(reports.get(1).getId()).isEqualTo(id3);
+    assertThat(reports.get(0).getId()).isEqualTo(id2);
   }
 
   @Test
@@ -524,9 +480,9 @@ public class SingleReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
-    assertThat(reports.size(), is(2));
-    assertThat(reports.get(0).getId(), is(id3));
-    assertThat(reports.get(1).getId(), is(id2));
+    assertThat(reports.size()).isEqualTo(2);
+    assertThat(reports.get(0).getId()).isEqualTo(id3);
+    assertThat(reports.get(1).getId()).isEqualTo(id2);
   }
 
   private SingleProcessReportDefinitionDto constructSingleProcessReportWithFakePD() {
@@ -556,9 +512,9 @@ public class SingleReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
-    assertThat(reports.size(), is(2));
-    assertThat(reports.get(0).getId(), is(id1));
-    assertThat(reports.get(1).getId(), is(id3));
+    assertThat(reports.size()).isEqualTo(2);
+    assertThat(reports.get(0).getId()).isEqualTo(id1);
+    assertThat(reports.get(1).getId()).isEqualTo(id3);
   }
 
   @Test
@@ -581,8 +537,8 @@ public class SingleReportHandlingIT extends AbstractIT {
     List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
 
     // then
-    assertThat(reports.size(), is(1));
-    assertThat(reports.get(0).getId(), is(id3));
+    assertThat(reports.size()).isEqualTo(1);
+    assertThat(reports.get(0).getId()).isEqualTo(id3);
   }
 
   private void shiftTimeByOneSecond() {
