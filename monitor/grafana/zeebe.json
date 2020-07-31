@@ -77,7 +77,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1596122668848,
+  "iteration": 1596196141101,
   "links": [],
   "panels": [
     {
@@ -2737,7 +2737,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 28
+            "y": 4
           },
           "hiddenSeries": false,
           "id": 33,
@@ -2768,8 +2768,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "process_resident_memory_bytes{namespace=~\"$namespace\",pod=~\"$pod\"}",
+              "expr": "container_memory_rss{namespace=~\"$namespace\",pod=~\".*zeebe.*\", container=~\"zeebe.*\"}",
               "format": "time_series",
+              "interval": "",
               "intervalFactor": 1,
               "legendFormat": "{{pod}} RSS",
               "refId": "A"
@@ -2777,6 +2778,7 @@
           ],
           "thresholds": [
             {
+              "$$hashKey": "object:351",
               "colorMode": "critical",
               "fill": true,
               "fillColor": "rgba(50, 116, 217, 0.2)",
@@ -2793,7 +2795,7 @@
           "title": "Process memory usage",
           "tooltip": {
             "shared": true,
-            "sort": 0,
+            "sort": 2,
             "value_type": "individual"
           },
           "type": "graph",
@@ -2806,6 +2808,7 @@
           },
           "yaxes": [
             {
+              "$$hashKey": "object:323",
               "format": "decbytes",
               "label": null,
               "logBase": 1,
@@ -2814,6 +2817,7 @@
               "show": true
             },
             {
+              "$$hashKey": "object:324",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2839,7 +2843,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 28
+            "y": 4
           },
           "hiddenSeries": false,
           "id": 98,
@@ -2951,7 +2955,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 36
+            "y": 12
           },
           "hiddenSeries": false,
           "id": 64,
@@ -3047,7 +3051,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 36
+            "y": 12
           },
           "hiddenSeries": false,
           "id": 35,
@@ -3137,7 +3141,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 44
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 37,
@@ -3235,7 +3239,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 44
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 40,
@@ -3325,7 +3329,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 52
+            "y": 28
           },
           "hiddenSeries": false,
           "id": 39,
@@ -3438,7 +3442,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 60
+            "y": 5
           },
           "hiddenSeries": false,
           "id": 122,
@@ -3526,7 +3530,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 60
+            "y": 5
           },
           "hiddenSeries": false,
           "id": 124,
@@ -3614,7 +3618,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 68
+            "y": 13
           },
           "hiddenSeries": false,
           "id": 126,
@@ -3702,7 +3706,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 68
+            "y": 13
           },
           "hiddenSeries": false,
           "id": 127,
