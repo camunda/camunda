@@ -281,7 +281,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
           .nextId(Namespaces.BEGIN_USER_CUSTOM_ID + 100)
           .register(RaftPartitionGroupConfig.class)
           .register(RaftStorageConfig.class)
-          .register(RaftCompactionConfig.class)
+          .register(Void.class) // RaftCompactionConfig
           .register(StorageLevel.class)
           .setCompatible(true)
           .build();

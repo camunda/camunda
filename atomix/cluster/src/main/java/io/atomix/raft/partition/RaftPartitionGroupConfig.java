@@ -37,30 +37,9 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
   private RaftStorageConfig storageConfig = new RaftStorageConfig();
-  private RaftCompactionConfig compactionConfig = new RaftCompactionConfig();
 
   @Optional("EntryValidator")
   private EntryValidator entryValidator = new NoopEntryValidator();
-
-  /**
-   * Returns the compaction configuration.
-   *
-   * @return the compaction configuration
-   */
-  public RaftCompactionConfig getCompactionConfig() {
-    return compactionConfig;
-  }
-
-  /**
-   * Sets the compaction configuration.
-   *
-   * @param compactionConfig the compaction configuration
-   * @return the Raft partition group configuration
-   */
-  public RaftPartitionGroupConfig setCompactionConfig(final RaftCompactionConfig compactionConfig) {
-    this.compactionConfig = compactionConfig;
-    return this;
-  }
 
   @Override
   protected int getDefaultPartitions() {

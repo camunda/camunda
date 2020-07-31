@@ -67,9 +67,7 @@ public final class RaftStorage {
   private final int maxSegmentSize;
   private final int maxEntrySize;
   private final int maxEntriesPerSegment;
-  private final boolean dynamicCompaction;
   private final long freeDiskSpace;
-  private final double freeMemoryBuffer;
   private final boolean flushOnCommit;
   private final boolean retainStaleSnapshots;
   private final StorageStatistics statistics;
@@ -84,9 +82,7 @@ public final class RaftStorage {
       final int maxSegmentSize,
       final int maxEntrySize,
       final int maxEntriesPerSegment,
-      final boolean dynamicCompaction,
       final long freeDiskSpace,
-      final double freeMemoryBuffer,
       final boolean flushOnCommit,
       final boolean retainStaleSnapshots,
       final StorageStatistics storageStatistics,
@@ -99,9 +95,7 @@ public final class RaftStorage {
     this.maxSegmentSize = maxSegmentSize;
     this.maxEntrySize = maxEntrySize;
     this.maxEntriesPerSegment = maxEntriesPerSegment;
-    this.dynamicCompaction = dynamicCompaction;
     this.freeDiskSpace = freeDiskSpace;
-    this.freeMemoryBuffer = freeMemoryBuffer;
     this.flushOnCommit = flushOnCommit;
     this.retainStaleSnapshots = retainStaleSnapshots;
     this.statistics = storageStatistics;
@@ -176,30 +170,12 @@ public final class RaftStorage {
   }
 
   /**
-   * Returns whether dynamic log compaction is enabled.
-   *
-   * @return whether dynamic log compaction is enabled
-   */
-  public boolean dynamicCompaction() {
-    return dynamicCompaction;
-  }
-
-  /**
    * Returns the amount of disk space that must be available before log compaction is forced.
    *
    * @return the amount of disk space that must be available before log compaction is forced
    */
   public long freeDiskSpace() {
     return freeDiskSpace;
-  }
-
-  /**
-   * Returns the percentage of memory space that must be available before log compaction is forced.
-   *
-   * @return the percentage of memory space that must be available before log compaction is forced
-   */
-  public double freeMemoryBuffer() {
-    return freeMemoryBuffer;
   }
 
   /**
@@ -412,9 +388,7 @@ public final class RaftStorage {
     private int maxSegmentSize = DEFAULT_MAX_SEGMENT_SIZE;
     private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
     private int maxEntriesPerSegment = DEFAULT_MAX_ENTRIES_PER_SEGMENT;
-    private boolean dynamicCompaction = DEFAULT_DYNAMIC_COMPACTION;
     private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
-    private double freeMemoryBuffer = DEFAULT_FREE_MEMORY_BUFFER;
     private boolean flushOnCommit = DEFAULT_FLUSH_ON_COMMIT;
     private boolean retainStaleSnapshots = DEFAULT_RETAIN_STALE_SNAPSHOTS;
     private StorageStatistics storageStatistics;
@@ -554,32 +528,6 @@ public final class RaftStorage {
     }
 
     /**
-     * Enables dynamic log compaction.
-     *
-     * <p>When dynamic compaction is enabled, logs will be compacted only during periods of low load
-     * on the cluster or when the cluster is running out of disk space.
-     *
-     * @return the Raft storage builder
-     */
-    public Builder withDynamicCompaction() {
-      return withDynamicCompaction(true);
-    }
-
-    /**
-     * Enables dynamic log compaction.
-     *
-     * <p>When dynamic compaction is enabled, logs will be compacted only during periods of low load
-     * on the cluster or when the cluster is running out of disk space.
-     *
-     * @param dynamicCompaction whether to enable dynamic compaction
-     * @return the Raft storage builder
-     */
-    public Builder withDynamicCompaction(final boolean dynamicCompaction) {
-      this.dynamicCompaction = dynamicCompaction;
-      return this;
-    }
-
-    /**
      * Sets the percentage of free disk space that must be preserved before log compaction is
      * forced.
      *
@@ -589,20 +537,6 @@ public final class RaftStorage {
     public Builder withFreeDiskSpace(final long freeDiskSpace) {
       checkArgument(freeDiskSpace > 0, "freeDiskSpace must be positive");
       this.freeDiskSpace = freeDiskSpace;
-      return this;
-    }
-
-    /**
-     * Sets the percentage of free memory space that must be preserved before log compaction is
-     * forced.
-     *
-     * @param freeMemoryBuffer the free disk percentage
-     * @return the Raft log builder
-     */
-    public Builder withFreeMemoryBuffer(final double freeMemoryBuffer) {
-      checkArgument(freeMemoryBuffer > 0, "freeMemoryBuffer must be positive");
-      checkArgument(freeMemoryBuffer < 1, "freeMemoryBuffer must be less than 1");
-      this.freeMemoryBuffer = freeMemoryBuffer;
       return this;
     }
 
@@ -710,9 +644,7 @@ public final class RaftStorage {
           maxSegmentSize,
           maxEntrySize,
           maxEntriesPerSegment,
-          dynamicCompaction,
           freeDiskSpace,
-          freeMemoryBuffer,
           flushOnCommit,
           retainStaleSnapshots,
           Optional.ofNullable(storageStatistics).orElse(new StorageStatistics(directory)),

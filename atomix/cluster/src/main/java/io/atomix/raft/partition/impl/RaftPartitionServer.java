@@ -27,7 +27,6 @@ import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.metrics.RaftStartupMetrics;
-import io.atomix.raft.partition.RaftCompactionConfig;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
@@ -306,7 +305,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
 
   private RaftStorage createRaftStorage() {
     final RaftStorageConfig storageConfig = config.getStorageConfig();
-    final RaftCompactionConfig compactionConfig = config.getCompactionConfig();
     return RaftStorage.builder()
         .withPrefix(partition.name())
         .withDirectory(partition.dataDirectory())
@@ -314,9 +312,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         .withMaxSegmentSize((int) storageConfig.getSegmentSize().bytes())
         .withMaxEntrySize((int) storageConfig.getMaxEntrySize().bytes())
         .withFlushOnCommit(storageConfig.isFlushOnCommit())
-        .withDynamicCompaction(compactionConfig.isDynamic())
         .withFreeDiskSpace(storageConfig.getFreeDiskSpace())
-        .withFreeMemoryBuffer(compactionConfig.getFreeMemoryBuffer())
         .withNamespace(RaftNamespaces.RAFT_STORAGE)
         .withSnapshotStore(persistedSnapshotStore)
         .withJournalIndexFactory(journalIndexFactory)
