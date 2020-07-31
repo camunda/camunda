@@ -5,9 +5,12 @@
  */
 package org.camunda.optimize.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BpmnModels {
 
   public static final String START_EVENT = "startEvent";
@@ -17,7 +20,6 @@ public class BpmnModels {
   public static final String SERVICE_TASK = "serviceTask";
 
   public static final String DEFAULT_PROCESS_ID = "aProcess";
-  public static final String DEFAULT_PROCESS_NAME = "aProcessName";
   public static final String VERSION_TAG = "aVersionTag";
 
 
@@ -32,7 +34,7 @@ public class BpmnModels {
   public static BpmnModelInstance getSimpleBpmnDiagram(String procDefKey, String startEventId, String endEventId) {
     return Bpmn.createExecutableProcess(procDefKey)
       .camundaVersionTag(VERSION_TAG)
-      .name(DEFAULT_PROCESS_NAME)
+      .name(procDefKey)
       .startEvent(startEventId)
       .endEvent(endEventId)
       .done();
@@ -65,7 +67,8 @@ public class BpmnModels {
   }
 
   public static BpmnModelInstance getDoubleUserTaskDiagram(String procDefKey, String startEventName,
-                                                           String endEventName, String userTask1Name, String userTask2Name) {
+                                                           String endEventName, String userTask1Name,
+                                                           String userTask2Name) {
     return Bpmn.createExecutableProcess(procDefKey)
       .camundaVersionTag(VERSION_TAG)
       .startEvent(startEventName)
@@ -87,7 +90,7 @@ public class BpmnModels {
   public static BpmnModelInstance getSingleServiceTaskProcess(String procDefKey, String serviceTaskId) {
     return Bpmn.createExecutableProcess(procDefKey)
       .camundaVersionTag(VERSION_TAG)
-      .name(DEFAULT_PROCESS_NAME)
+      .name(procDefKey)
       .startEvent(START_EVENT)
       .serviceTask(serviceTaskId)
       .camundaExpression("${true}")

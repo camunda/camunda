@@ -33,6 +33,7 @@ import org.camunda.optimize.service.importing.BackoffImportMediator;
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.optimize.EventProcessClient;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -66,10 +67,13 @@ import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -174,7 +178,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     final EventProcessMappingDto eventProcessMappingDto = buildSimpleEventProcessMappingDto(
       startEventMapping, intermediateEventMapping, endEventMapping
     );
-    eventProcessMappingDto.setXml(createThreeEventActivitiesProcessDefinitionXml());
+    eventProcessMappingDto.setXml(createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
     return eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
   }
 
@@ -183,7 +187,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     final EventProcessMappingDto eventProcessMappingDto = buildSimpleEventProcessMappingDto(
       ingestedStartEventName, ingestedEndEventName
     );
-    eventProcessMappingDto.setXml(createSimpleProcessDefinitionXml());
+    eventProcessMappingDto.setXml(createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
     return eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
   }
 
@@ -219,7 +223,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     Optional.ofNullable(endEventMapping)
       .ifPresent(mapping -> eventMappings.put(BPMN_END_EVENT_ID, mapping));
     return eventProcessClient.buildEventProcessMappingDtoWithMappingsAndExternalEventSource(
-      eventMappings, EVENT_PROCESS_NAME, createSimpleProcessDefinitionXml()
+      eventMappings, EVENT_PROCESS_NAME, createTwoEventAndOneTaskActivitiesProcessDefinitionXml()
     );
   }
 
@@ -444,7 +448,10 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       .userTask(USER_TASK_ID_ONE)
       .endEvent(BPMN_END_EVENT_ID)
       .done();
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
+    final ProcessInstanceEngineDto instance =
+      engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
+    grantAuthorizationsToDefaultUser(instance.getProcessDefinitionKey());
+    return instance;
   }
 
   protected ProcessInstanceEngineDto deployAndStartInstanceWithBusinessKey(final String businessKey) {
@@ -476,15 +483,13 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     final ProcessInstanceEngineDto processInstanceEngineDto,
     final Map<String, EventMappingDto> eventMappings,
     final String traceVariable) {
-    final List<EventSourceEntryDto> eventSourceEntryDtos =
-      Collections.singletonList(addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-        processInstanceEngineDto.getProcessDefinitionKey(),
-        processInstanceEngineDto.getProcessDefinitionKey(),
-        processInstanceEngineDto.getTenantId(),
+    final EventSourceEntryDto eventSourceEntry =
+      createCamundaEventSourceEntryForInstance(
+        processInstanceEngineDto,
         traceVariable,
-        Collections.singletonList("1")
-      ));
-    return createAndPublishEventMapping(eventMappings, eventSourceEntryDtos);
+        Collections.singletonList(processInstanceEngineDto.getProcessDefinitionVersion())
+      );
+    return createAndPublishEventMapping(eventMappings, Collections.singletonList(eventSourceEntry));
   }
 
   protected String createAndPublishEventMapping(final Map<String, EventMappingDto> eventMappings,
@@ -493,7 +498,7 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
       eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
         eventMappings,
         UUID.randomUUID().toString(),
-        createThreeEventActivitiesProcessDefinitionXml(),
+        createTwoEventAndOneTaskActivitiesProcessDefinitionXml(),
         eventSourceEntryDtos
       );
     String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
@@ -501,63 +506,32 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return eventProcessMappingId;
   }
 
-  protected List<EventSourceEntryDto> createExternalEventSourceAsList() {
-    return Collections.singletonList(EventProcessClient.createExternalEventSourceEntry());
+  protected EventSourceEntryDto createExternalEventSource() {
+    return EventProcessClient.createExternalEventSourceEntry();
   }
 
-  protected List<EventSourceEntryDto> createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
+  protected EventSourceEntryDto createCamundaEventSourceEntryForDeployedProcessTracedByBusinessKey(
     final ProcessInstanceEngineDto processInstanceEngineDto) {
-    return createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
-      processInstanceEngineDto,
-      null
-    );
+    return createCamundaEventSourceEntryForInstance(processInstanceEngineDto, null);
   }
 
-  protected List<EventSourceEntryDto> createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
+  protected EventSourceEntryDto createCamundaEventSourceEntryForInstance(final ProcessInstanceEngineDto processInstanceEngineDto,
+                                                                         final List<String> versions) {
+    return createCamundaEventSourceEntryForInstance(processInstanceEngineDto, null, versions);
+  }
+
+  private EventSourceEntryDto createCamundaEventSourceEntryForInstance(
     final ProcessInstanceEngineDto processInstanceEngineDto,
-    final List<String> versions) {
-    return Collections.singletonList(addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-      processInstanceEngineDto.getProcessDefinitionKey(),
-      processInstanceEngineDto.getProcessDefinitionKey(),
-      processInstanceEngineDto.getTenantId(),
-      null,
-      versions
-    ));
-  }
-
-  protected EventSourceEntryDto addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-    final String processDefinitionKey) {
-    return addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-      processDefinitionKey,
-      processDefinitionKey,
-      null,
-      null,
-      null
-    );
-  }
-
-  private EventSourceEntryDto addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-    final String processDefinitionKey,
-    final String processDefinitionName,
-    final String tenantId,
     final String traceVariable,
     final List<String> versions) {
-    final List<String> versionValues = Optional.ofNullable(versions).orElse(Collections.singletonList("1"));
-    versionValues.stream()
-      .forEach(version ->
-                 elasticSearchIntegrationTestExtension.addProcessDefinitionToElasticsearch(
-                   processDefinitionKey,
-                   processDefinitionName,
-                   version
-                 ));
     return EventSourceEntryDto.builder()
       .type(EventSourceType.CAMUNDA)
       .eventScope(Collections.singletonList(EventScopeType.ALL))
       .tracedByBusinessKey(traceVariable == null)
       .traceVariable(traceVariable)
       .versions(Optional.ofNullable(versions).orElse(Collections.singletonList("ALL")))
-      .processDefinitionKey(processDefinitionKey)
-      .tenants(Collections.singletonList(tenantId))
+      .processDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey())
+      .tenants(Collections.singletonList(processInstanceEngineDto.getTenantId()))
       .build();
   }
 
@@ -600,38 +574,18 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   }
 
   @SneakyThrows
-  protected String createThreeEventActivitiesProcessDefinitionXml() {
-    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
-      .camundaVersionTag("aVersionTag")
-      .name("aProcessName")
-      .startEvent(BPMN_START_EVENT_ID)
-      .userTask(USER_TASK_ID_ONE)
-      .endEvent(BPMN_END_EVENT_ID)
-      .done();
-    return convertBpmnModelToXmlString(bpmnModel);
-  }
-
-  @SneakyThrows
-  protected String createTwoEventAndOneTaskActivitiesProcessDefinitionXml() {
-    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
-      .camundaVersionTag("aVersionTag")
-      .name("aProcessName")
-      .startEvent(BPMN_START_EVENT_ID)
-      .userTask(USER_TASK_ID_ONE)
-      .endEvent(BPMN_END_EVENT_ID)
-      .done();
-    return convertBpmnModelToXmlString(bpmnModel);
-  }
-
-  @SneakyThrows
   protected static String createSimpleProcessDefinitionXml() {
-    final BpmnModelInstance bpmnModel = Bpmn.createExecutableProcess("aProcess")
-      .camundaVersionTag("aVersionTag")
-      .name("aProcessName")
-      .startEvent(BPMN_START_EVENT_ID)
-      .endEvent(BPMN_END_EVENT_ID)
-      .done();
-    return convertBpmnModelToXmlString(bpmnModel);
+    return convertBpmnModelToXmlString(getSimpleBpmnDiagram());
+  }
+
+  @SneakyThrows
+  protected static String createTwoEventAndOneTaskActivitiesProcessDefinitionXml() {
+    return convertBpmnModelToXmlString(getSingleUserTaskDiagram(
+      "aProcessName",
+      BPMN_START_EVENT_ID,
+      BPMN_END_EVENT_ID,
+      USER_TASK_ID_ONE
+    ));
   }
 
   @SneakyThrows
@@ -816,6 +770,34 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     return convertBpmnModelToXmlString(bpmnModel);
   }
 
+  protected static String convertBpmnModelToXmlString(final BpmnModelInstance bpmnModel) {
+    final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
+    Bpmn.writeModelToStream(xmlOutput, bpmnModel);
+    return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
+  }
+
+  protected EventSourceEntryDto createCamundaSourceEntryForImportedDefinition(final String processName) {
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndImportInstanceWithProcessName(processName);
+    return createCamundaEventSourceEntryForDeployedProcessTracedByBusinessKey(processInstanceEngineDto);
+  }
+
+  private ProcessInstanceEngineDto deployAndImportInstanceWithProcessName(final String processName) {
+    final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(
+      BpmnModels.getSimpleBpmnDiagram(processName)
+    );
+    grantAuthorizationsToDefaultUser(processName);
+    importAllEngineEntitiesFromScratch();
+    return processInstanceEngineDto;
+  }
+
+  protected void grantAuthorizationsToDefaultUser(final String processDefinitionKey) {
+    authorizationClient.grantSingleResourceAuthorizationsForUser(
+      DEFAULT_USERNAME,
+      processDefinitionKey,
+      RESOURCE_TYPE_PROCESS_DEFINITION
+    );
+  }
+
   protected static Stream<Arguments> exclusiveAndEventBasedGatewayXmlVariations() {
     return Stream.of(
       Arguments.of(EXCLUSIVE_GATEWAY_TYPE, EXCLUSIVE_GATEWAY_TYPE, createExclusiveGatewayProcessDefinitionXml()),
@@ -823,9 +805,4 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     );
   }
 
-  protected static String convertBpmnModelToXmlString(final BpmnModelInstance bpmnModel) {
-    final ByteArrayOutputStream xmlOutput = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(xmlOutput, bpmnModel);
-    return new String(xmlOutput.toByteArray(), StandardCharsets.UTF_8);
-  }
 }

@@ -46,8 +46,8 @@ public class EventProcessCleanupService implements CleanupService {
     }
   }
 
-  public void performCleanupForEventProcess(final OffsetDateTime startTime,
-                                            final EventProcessPublishStateDto eventProcess) {
+  private void performCleanupForEventProcess(final OffsetDateTime startTime,
+                                             final EventProcessPublishStateDto eventProcess) {
     final ProcessDefinitionCleanupConfiguration cleanupConfiguration = getCleanupConfiguration()
       .getProcessDefinitionCleanupConfigurationForKey(eventProcess.getProcessKey());
     final CleanupMode cleanupMode = cleanupConfiguration.getCleanupMode();

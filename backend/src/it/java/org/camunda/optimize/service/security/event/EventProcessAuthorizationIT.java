@@ -79,8 +79,9 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   public void getEventProcessMappingWithIdWithoutEventSourceAuthorization() {
     // given
     final String eventProcessName = "anEventProcessName";
-    final String definitionKey1 = "aKey1";
-    final String definitionKey2 = "aKey2";
+    final String definitionKey1 = deployAndStartProcess().getProcessDefinitionKey();
+    final String definitionKey2 = deployAndStartProcess().getProcessDefinitionKey();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
     final Map<String, EventMappingDto> processMappings = Collections.singletonMap(
       USER_TASK_ID_THREE,
@@ -138,8 +139,9 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   @Test
   public void getAllEventProcessMappingsWithPartialEventSourceAuthorization() {
     final String eventProcessName = "anEventProcessName";
-    final String definitionKey1 = "aKey1";
-    final String definitionKey2 = "aKey2";
+    final String definitionKey1 = deployAndStartProcess().getProcessDefinitionKey();
+    final String definitionKey2 = deployAndStartProcess().getProcessDefinitionKey();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
     final Map<String, EventMappingDto> processMappings = Collections.singletonMap(
       USER_TASK_ID_THREE,

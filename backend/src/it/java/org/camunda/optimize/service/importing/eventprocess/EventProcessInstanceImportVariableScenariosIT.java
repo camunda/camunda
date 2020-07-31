@@ -17,13 +17,11 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
@@ -36,6 +34,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     Map<VariableType, Map<String, Object>> variableTypeToVariableMap = createVariableTypeToVariableMap();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcessWithVariables(
       convertToVariables(variableTypeToVariableMap));
+    importEngineEntities();
     publishEventMappingUsingProcessInstanceCamundaEvents(
       processInstanceEngineDto,
       createMappingsForEventProcess(
@@ -70,6 +69,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     Map<VariableType, Map<String, Object>> variableTypeToVariableMap = createVariableTypeToVariableMap();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcessWithVariables(
       convertToVariables(variableTypeToVariableMap));
+    importEngineEntities();
     publishEventMappingUsingProcessInstanceCamundaEvents(
       processInstanceEngineDto,
       createMappingsForEventProcess(
@@ -109,6 +109,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
       variableTypeToVariableMap.get(VariableType.STRING).entrySet().stream().findFirst().get();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcessWithVariables(
       convertToVariables(variableTypeToVariableMap));
+    importEngineEntities();
     publishEventMappingUsingProcessInstanceCamundaEventsAndTraceVariable(
       processInstanceEngineDto,
       createMappingsForEventProcess(
@@ -144,6 +145,7 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     Map<VariableType, Map<String, Object>> variableTypeToVariableMap = createVariableTypeToVariableMap();
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcessWithVariables(
       convertToVariables(variableTypeToVariableMap));
+    importEngineEntities();
 
     ingestTestEvent(BPMN_END_EVENT_ID, processInstanceEngineDto.getBusinessKey());
 
@@ -161,12 +163,11 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
                .build())
       .build());
 
-    List<EventSourceEntryDto> firstEventSource = createCamundaEventSourceEntryAsListForDeployedProcessTracedByBusinessKey(
-      processInstanceEngineDto);
-    List<EventSourceEntryDto> secondEventSource = createExternalEventSourceAsList();
+    EventSourceEntryDto camundaEventSource =
+      createCamundaEventSourceEntryForDeployedProcessTracedByBusinessKey(processInstanceEngineDto);
+    EventSourceEntryDto externalEventSource = createExternalEventSource();
 
-    createAndPublishEventMapping(mappingsForEventProcess, Stream.of(firstEventSource, secondEventSource).flatMap(
-      Collection::stream).collect(Collectors.toList()));
+    createAndPublishEventMapping(mappingsForEventProcess, Arrays.asList(camundaEventSource, externalEventSource));
 
     engineIntegrationExtension.finishAllRunningUserTasks();
     importEngineEntities();

@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
@@ -34,12 +33,6 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
 
   private final String PROCESS_DEF_KEY_1 = "aProcessDefinitionKey_1";
   private final String PROCESS_DEF_KEY_2 = "aProcessDefinitionKey_2";
-  private static String processDefinitionXml;
-
-  @BeforeAll
-  public static void setup() {
-    processDefinitionXml = createSimpleProcessDefinitionXml();
-  }
 
   @Test
   public void createWithNoEventSource() {
@@ -60,12 +53,9 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @Test
   public void createWithCamundaEventSource() {
     // given
-    EventSourceEntryDto eventSourceEntryDto = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-      PROCESS_DEF_KEY_1
-    );
-    final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Collections.singletonList(
-      eventSourceEntryDto));
-    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
+    final EventSourceEntryDto eventSourceEntryDto = createCamundaSourceEntryForImportedDefinition(PROCESS_DEF_KEY_1);
+    final EventProcessMappingDto eventProcessMapping =
+      createWithEventSourceEntries(Collections.singletonList(eventSourceEntryDto));
 
     // when
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
@@ -85,12 +75,11 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     // given
     List<EventSourceEntryDto> eventSourceEntryDtos = new ArrayList<>();
     final EventSourceEntryDto externalEventSourceEntry = createExternalEventSourceEntry();
-    final EventSourceEntryDto camundaEventSourceEntry = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-      PROCESS_DEF_KEY_1);
+    final EventSourceEntryDto camundaEventSourceEntry =
+      createCamundaSourceEntryForImportedDefinition(PROCESS_DEF_KEY_1);
     eventSourceEntryDtos.add(externalEventSourceEntry);
     eventSourceEntryDtos.add(camundaEventSourceEntry);
     final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
-    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     // when
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
@@ -127,13 +116,11 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @Test
   public void createWithDuplicateCamundaEventSource_fails() {
     // given
-    final EventSourceEntryDto eventSourceEntry = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-      PROCESS_DEF_KEY_1);
+    final EventSourceEntryDto eventSourceEntry = createCamundaSourceEntryForImportedDefinition(PROCESS_DEF_KEY_1);
     final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Arrays.asList(
       eventSourceEntry,
       eventSourceEntry
     ));
-    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     // when
     ConflictResponseDto conflictResponseDto = eventProcessClient
@@ -210,10 +197,9 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     eventSourceEntryDtos.add(externalEventSourceEntry);
     final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
 
-    final EventSourceEntryDto camundaEventSourceEntry = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-      PROCESS_DEF_KEY_1);
+    final EventSourceEntryDto camundaEventSourceEntry =
+      createCamundaSourceEntryForImportedDefinition(PROCESS_DEF_KEY_1);
     eventProcessMapping.getEventSources().add(camundaEventSourceEntry);
-    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
 
@@ -234,12 +220,9 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @Test
   public void updateEventSource_multipleEventScopes() {
     // given
-    EventSourceEntryDto eventSourceEntryDto = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-      PROCESS_DEF_KEY_1
-    );
+    EventSourceEntryDto eventSourceEntryDto = createCamundaSourceEntryForImportedDefinition(PROCESS_DEF_KEY_1);
     final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(Collections.singletonList(
       eventSourceEntryDto));
-    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
 
     // then
@@ -270,7 +253,6 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     List<EventSourceEntryDto> eventSourceEntryDtos = new ArrayList<>();
     eventSourceEntryDtos.add(createExternalEventSourceEntry());
     final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
-    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     // when
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
@@ -286,12 +268,11 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
   @Test
   public void updateWithDuplicateCamundaEventSource_fails() {
     // given
-    final EventSourceEntryDto camundaEventSourceEntry = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-      PROCESS_DEF_KEY_1);
+    final EventSourceEntryDto camundaEventSourceEntry =
+      createCamundaSourceEntryForImportedDefinition(PROCESS_DEF_KEY_1);
     List<EventSourceEntryDto> eventSourceEntryDtos = new ArrayList<>();
     eventSourceEntryDtos.add(camundaEventSourceEntry);
     final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
-    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
 
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
 
@@ -362,16 +343,11 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     eventSourceEntryDtos.add(externalEventSourceEntry);
     final EventProcessMappingDto eventProcessMapping = createWithEventSourceEntries(eventSourceEntryDtos);
 
-    final EventSourceEntryDto camundaSourceEntry1 = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-      PROCESS_DEF_KEY_1);
-    final EventSourceEntryDto camundaSourceEntry2 = addProcessToElasticSearchAndCreateCamundaEventSourceEntry(
-      PROCESS_DEF_KEY_2);
+    final EventSourceEntryDto camundaSourceEntry1 = createCamundaSourceEntryForImportedDefinition(PROCESS_DEF_KEY_1);
+    final EventSourceEntryDto camundaSourceEntry2 = createCamundaSourceEntryForImportedDefinition(PROCESS_DEF_KEY_2);
     eventProcessMapping.getEventSources().add(camundaSourceEntry1);
     eventProcessMapping.getEventSources().add(camundaSourceEntry2);
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(eventProcessMapping);
-
-    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_1);
-    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY_2);
 
     // when
     eventProcessMapping.getEventSources().remove(camundaSourceEntry1);
@@ -399,7 +375,7 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
     return eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
       null,
       null,
-      processDefinitionXml,
+      createTwoEventAndOneTaskActivitiesProcessDefinitionXml(),
       eventSourceEntries
     );
   }
@@ -415,14 +391,6 @@ public class EventProcessRestServiceEventSourceIT extends AbstractEventProcessIT
       .processDefinitionName(sourceEntryDto.getProcessDefinitionKey())
       .eventScope(sourceEntryDto.getEventScope())
       .build();
-  }
-
-  private void grantAuthorizationsToDefaultUser(final String processDefinitionKey) {
-    authorizationClient.grantSingleResourceAuthorizationsForUser(
-      DEFAULT_USERNAME,
-      processDefinitionKey,
-      RESOURCE_TYPE_PROCESS_DEFINITION
-    );
   }
 
   private void performUpdateMappingRequest(final String eventProcessMappingId,

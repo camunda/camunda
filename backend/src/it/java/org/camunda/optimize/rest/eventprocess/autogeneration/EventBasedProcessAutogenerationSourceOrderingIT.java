@@ -22,6 +22,7 @@ import org.camunda.optimize.service.util.BpmnModelUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
@@ -44,50 +45,46 @@ public class EventBasedProcessAutogenerationSourceOrderingIT extends AbstractEve
   }
 
   @Test
-  public void createFromTwoCamundaSources_bothSourcesWithNoInstance() {
+  public void createFromTwoCamundaSources_oneSourceHasNoInstance() {
     BpmnModelInstance firstModelInstance = singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1);
     final EventSourceEntryDto firstCamundaSource = deployDefinitionAndCreateEventSource(
       firstModelInstance,
       EventScopeType.START_END
     );
-    final EventTypeDto firstStart = createCamundaEventTypeDto(PROCESS_ID_1, START_EVENT_ID_1, START_EVENT_ID_1);
-    final EventTypeDto firstEnd = createCamundaEventTypeDto(PROCESS_ID_1, END_EVENT_ID_1, END_EVENT_ID_1);
-
-    BpmnModelInstance secondModelInstance = singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_2, END_EVENT_ID_2);
-    final EventSourceEntryDto secondCamundaSource = deployDefinitionAndCreateEventSource(
-      secondModelInstance,
-      EventScopeType.START_END
-    );
-    final EventTypeDto secondStart = createCamundaEventTypeDto(PROCESS_ID_2, START_EVENT_ID_2, START_EVENT_ID_2);
-    final EventTypeDto secondEnd = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_2, END_EVENT_ID_2);
+    final EventSourceEntryDto secondCamundaSource =
+      createCamundaSourceEntryForImportedDefinition("processWithInstance");
 
     final List<EventSourceEntryDto> sources = Arrays.asList(firstCamundaSource, secondCamundaSource);
     final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
     // when
-    final EventProcessMappingResponseDto processMapping = autogenerateProcessAndGetMappingResponse(createRequestDto);
+    final Response response = eventProcessClient.createCreateEventProcessMappingRequest(createRequestDto).execute();
 
     // then
-    final Map<String, EventMappingDto> mappings = processMapping.getMappings();
-    final BpmnModelInstance generatedInstance = BpmnModelUtil.parseBpmnModel(processMapping.getXml());
-    assertProcessMappingConfiguration(processMapping, sources, EventProcessState.MAPPED);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
 
-    // then the mappings contain the correct events and are all in the model
-    assertCorrectMappingsAndContainsEvents(
-      mappings,
-      generatedInstance,
-      Arrays.asList(firstStart, firstEnd, secondStart, secondEnd)
+  @Test
+  public void createFromTwoCamundaSources_bothSourcesHaveNoInstance() {
+    BpmnModelInstance firstModelInstance = singleStartSingleEndModel(PROCESS_ID_1, START_EVENT_ID_1, END_EVENT_ID_1);
+    final EventSourceEntryDto firstCamundaSource = deployDefinitionAndCreateEventSource(
+      firstModelInstance,
+      EventScopeType.START_END
     );
-    assertThat(generatedInstance.getModelElementsByType(FlowNode.class)).hasSize(mappings.size());
+    BpmnModelInstance secondModelInstance = singleStartSingleEndModel(PROCESS_ID_2, START_EVENT_ID_1, END_EVENT_ID_1);
+    final EventSourceEntryDto secondCamundaSource = deployDefinitionAndCreateEventSource(
+      secondModelInstance,
+      EventScopeType.START_END
+    );
 
-    // then the model elements are sequenced by source in order that they were supplied
-    assertNodeConnection(idOf(firstStart), START_EVENT, idOf(firstEnd), INTERMEDIATE_EVENT, generatedInstance);
-    assertNodeConnection(idOf(firstEnd), INTERMEDIATE_EVENT, idOf(secondStart), INTERMEDIATE_EVENT, generatedInstance);
-    assertNodeConnection(idOf(secondStart), INTERMEDIATE_EVENT, idOf(secondEnd), END_EVENT, generatedInstance);
-    assertNodeConnection(idOf(secondEnd), END_EVENT, null, null, generatedInstance);
+    final List<EventSourceEntryDto> sources = Arrays.asList(firstCamundaSource, secondCamundaSource);
+    final EventProcessMappingCreateRequestDto createRequestDto = buildAutogenerateCreateRequestDto(sources);
 
-    // and the expected number of sequence flows exist
-    assertThat(generatedInstance.getModelElementsByType(SequenceFlow.class)).hasSize(3);
+    // when
+    final Response response = eventProcessClient.createCreateEventProcessMappingRequest(createRequestDto).execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test

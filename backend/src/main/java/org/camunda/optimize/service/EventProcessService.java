@@ -36,6 +36,7 @@ import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingRequestDto;
+import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.EventProcessMappingReader;
 import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.es.writer.CollectionWriter;
@@ -106,6 +107,8 @@ public class EventProcessService {
 
   private final EventProcessMappingReader eventProcessMappingReader;
   private final EventProcessMappingWriter eventProcessMappingWriter;
+
+  private final CamundaActivityEventReader camundaActivityEventReader;
 
   private final EventProcessPublishStateReader eventProcessPublishStateReader;
   private final EventProcessPublishStateWriter eventProcessPublishStateWriter;
@@ -359,6 +362,22 @@ public class EventProcessService {
     validateNoDuplicateCamundaEventSources(eventProcessMappingDto);
     validateNoDuplicateExternalEventSources(eventProcessMappingDto);
     validateNoEventProcessesAsEventSource(eventProcessMappingDto);
+    validateCamundaEventSourcesAreImported(eventProcessMappingDto);
+  }
+
+  private void validateCamundaEventSourcesAreImported(final EventProcessMappingDto eventProcessMappingDto) {
+    final Set<String> camundaEventIndexSuffixes =
+      camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
+    final List<String> unimportedEventCamundaSources = eventProcessMappingDto.getEventSources().stream()
+      .filter(entry -> EventSourceType.CAMUNDA.equals(entry.getType()))
+      .filter(entry -> !camundaEventIndexSuffixes.contains(entry.getProcessDefinitionKey().toLowerCase()))
+      .map(EventSourceEntryDto::getProcessDefinitionKey)
+      .collect(toList());
+    if (!unimportedEventCamundaSources.isEmpty()) {
+      throw new OptimizeValidationException(
+        "The following process definition IDs cannot be used in Camunda event sources as no events have been imported" +
+          " as event data: " + unimportedEventCamundaSources);
+    }
   }
 
   private void validateAutogenerationEventSourceScopes(final EventProcessMappingDto eventProcessMappingDto) {
