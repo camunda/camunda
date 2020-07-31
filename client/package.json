@@ -50,7 +50,7 @@
     "http-proxy-middleware": "^1.0.5",
     "husky": "^4.2.5",
     "jest-enzyme": "^7.1.2",
-    "jest-junit": "^11.0.1",
+    "jest-junit": "^11.1.0",
     "jest-styled-components": "^7.0.2",
     "lint-staged": "^10.2.11",
     "prettier": "^2.0.5",
