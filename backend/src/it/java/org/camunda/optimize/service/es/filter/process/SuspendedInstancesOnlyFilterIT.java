@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter;
+package org.camunda.optimize.service.es.filter.process;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -13,50 +13,47 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.INTERNALLY_TERMINATED_STATE;
-import static org.hamcrest.CoreMatchers.hasItem;
+import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class NonCanceledInstancesOnlyFilterIT extends AbstractFilterIT {
+public class SuspendedInstancesOnlyFilterIT extends AbstractFilterIT {
 
   @Test
-  public void nonCanceledInstancesFilter() throws SQLException {
+  public void suspendedInstancesOnlyFilter() throws Exception {
     //given
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     ProcessInstanceEngineDto firstProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     ProcessInstanceEngineDto secondProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
-    ProcessInstanceEngineDto thirdProcInst = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
+    engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
 
     engineDatabaseExtension.changeProcessInstanceState(
       firstProcInst.getId(),
-      INTERNALLY_TERMINATED_STATE
+      SUSPENDED_STATE
     );
-
     engineDatabaseExtension.changeProcessInstanceState(
-      thirdProcInst.getId(),
-      INTERNALLY_TERMINATED_STATE
+      secondProcInst.getId(),
+      SUSPENDED_STATE
     );
 
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReportWithDefinition(userTaskProcess);
-    reportData.setFilter(ProcessFilterBuilder.filter().nonCanceledInstancesOnly().add().buildList());
+    reportData.setFilter(ProcessFilterBuilder.filter().suspendedInstancesOnly().add().buildList());
     RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
-    //then
-    assertThat(result.getData().size(), is(1));
+    // then
+    assertThat(result.getData().size(), is(2));
     List<String> resultProcDefIds = result.getData()
       .stream()
       .map(RawDataProcessInstanceDto::getProcessInstanceId)
       .collect(Collectors.toList());
 
-    assertThat(resultProcDefIds, hasItem(secondProcInst.getId()));
+    assertThat(resultProcDefIds.contains(firstProcInst.getId()), is(true));
+    assertThat(resultProcDefIds.contains(secondProcInst.getId()), is(true));
   }
-
 }

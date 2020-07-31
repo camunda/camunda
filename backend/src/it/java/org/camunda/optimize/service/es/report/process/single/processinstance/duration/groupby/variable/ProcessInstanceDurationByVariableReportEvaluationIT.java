@@ -61,7 +61,7 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
@@ -177,7 +177,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void testCustomOrderOnResultKeyIsApplied() throws SQLException {
+  public void testCustomOrderOnResultKeyIsApplied() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
@@ -213,7 +213,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void testCustomOrderOnResultValueIsApplied() throws SQLException {
+  public void testCustomOrderOnResultValueIsApplied() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
@@ -357,7 +357,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleProcessInstances() throws SQLException {
+  public void multipleProcessInstances() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
@@ -398,7 +398,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_resultLimitedByConfig_stringVariable() throws SQLException {
+  public void multipleBuckets_resultLimitedByConfig_stringVariable() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
@@ -434,7 +434,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_resultLimitedByConfig_numberVariable() throws SQLException {
+  public void multipleBuckets_resultLimitedByConfig_numberVariable() {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
@@ -470,7 +470,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_resultLimitedByConfig_numberVariable_customBuckets() throws SQLException {
+  public void multipleBuckets_resultLimitedByConfig_numberVariable_customBuckets() {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
@@ -508,7 +508,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_resultLimitedByConfig_dateVariable() throws SQLException {
+  public void multipleBuckets_resultLimitedByConfig_dateVariable() {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
@@ -544,7 +544,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_numberVariable_customBuckets() throws SQLException {
+  public void multipleBuckets_numberVariable_customBuckets() {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
@@ -589,7 +589,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_numberVariable_invalidBaseline_returnsEmptyResult() throws SQLException {
+  public void multipleBuckets_numberVariable_invalidBaseline_returnsEmptyResult() {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
@@ -622,7 +622,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_negativeNumberVariable_defaultBaselineWorks() throws SQLException {
+  public void multipleBuckets_negativeNumberVariable_defaultBaselineWorks() {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
@@ -655,7 +655,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_doubleVariable_bucketKeysHaveTwoDecimalPlaces() throws SQLException {
+  public void multipleBuckets_doubleVariable_bucketKeysHaveTwoDecimalPlaces() {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
@@ -1267,7 +1267,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void missingVariablesAggregationWorksForUndefinedAndNullVariables() throws SQLException {
+  public void missingVariablesAggregationWorksForUndefinedAndNullVariables() {
     // given
 
     // 1 process instance with 'testVar'
@@ -1346,7 +1346,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void missingVariablesAggregationsForNullVariableOfTypeDouble_sortingByKeyDoesNotFail() throws SQLException {
+  public void missingVariablesAggregationsForNullVariableOfTypeDouble_sortingByKeyDoesNotFail() {
     // given a process instance with variable of non null value and one instance with variable of null value
     final String varName = "testVar";
     final Double varValue = 1.0;
@@ -1716,7 +1716,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
   private void startProcessWithDates(final ProcessDefinitionEngineDto definition,
                                      final OffsetDateTime startDate,
-                                     final OffsetDateTime endDate) throws SQLException {
+                                     final OffsetDateTime endDate) {
     startProcessWithVariablesAndDates(definition, new HashMap<>(), startDate, endDate);
   }
 

@@ -32,7 +32,7 @@ import java.util.List;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
@@ -187,8 +187,9 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
 
     final List<MapResultEntryDto> resultData = result.getData();
 
-    assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(3);
+    assertThat(resultData)
+      .isNotNull()
+      .hasSize(3);
 
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(truncateToStartOfUnit(
       now,
@@ -249,8 +250,9 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
 
     // then
     final List<MapResultEntryDto> resultData = resultDto.getData();
-    assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(1);
+    assertThat(resultData)
+      .isNotNull()
+      .hasSize(1);
     assertThat(resultData.get(0).getValue()).isEqualTo((double) runningProcInstStartDate.until(now, MILLIS));
   }
 
@@ -302,8 +304,9 @@ public class ProcessInstanceDurationByProcessInstanceStartDateReportEvaluationIT
 
     // then
     final List<MapResultEntryDto> resultData = resultDto.getData();
-    assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(1);
+    assertThat(resultData)
+      .isNotNull()
+      .hasSize(1);
     assertThat(resultData.get(0).getValue()).isEqualTo((double) runningProcInstStartDate.until(now, MILLIS));
   }
 

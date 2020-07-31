@@ -21,6 +21,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.time.OffsetDateTime;
@@ -53,7 +54,8 @@ public class DecisionFilterUtilHelper {
     return filter;
   }
 
-  public static InputVariableFilterDto createStringInputVariableFilter(String variableName, String operator,
+  public static InputVariableFilterDto createStringInputVariableFilter(String variableName,
+                                                                       FilterOperator operator,
                                                                        String... variableValues) {
     StringVariableFilterDataDto data = new StringVariableFilterDataDto(
       variableName, operator, Arrays.asList(variableValues)
@@ -64,7 +66,8 @@ public class DecisionFilterUtilHelper {
     return variableFilterDto;
   }
 
-  public static InputVariableFilterDto createNumericInputVariableFilter(String variableName, String operator,
+  public static InputVariableFilterDto createNumericInputVariableFilter(String variableName,
+                                                                        FilterOperator operator,
                                                                         String... variableValues) {
     DoubleVariableFilterDataDto data = new DoubleVariableFilterDataDto(
       variableName,
@@ -96,7 +99,7 @@ public class DecisionFilterUtilHelper {
 
   public static InputVariableFilterDto createNumericInputVariableFilter(String variableName,
                                                                         VariableType variableType,
-                                                                        String operator,
+                                                                        FilterOperator operator,
                                                                         List<String> variableValues) {
     OperatorMultipleValuesVariableFilterSubDataDto subData = new OperatorMultipleValuesVariableFilterSubDataDto(
       operator, variableValues
@@ -151,7 +154,8 @@ public class DecisionFilterUtilHelper {
     return variableFilterDto;
   }
 
-  public static OutputVariableFilterDto createStringOutputVariableFilter(String variableName, String operator,
+  public static OutputVariableFilterDto createStringOutputVariableFilter(String variableName,
+                                                                         FilterOperator operator,
                                                                          String variableValue) {
     StringVariableFilterDataDto data = new StringVariableFilterDataDto(
       variableName,
@@ -167,7 +171,7 @@ public class DecisionFilterUtilHelper {
 
   public static OutputVariableFilterDto createNumericOutputVariableFilter(String variableName,
                                                                           VariableType variableType,
-                                                                          String operator,
+                                                                          FilterOperator operator,
                                                                           List<String> variableValues) {
     OperatorMultipleValuesVariableFilterSubDataDto subData = new OperatorMultipleValuesVariableFilterSubDataDto(
       operator, variableValues

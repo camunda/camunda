@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter;
+package org.camunda.optimize.service.es.filter.process.variable;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.es.filter.process.AbstractFilterIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -28,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class BooleanVariableQueryFilterIT extends AbstractFilterIT {
 
-  public static final String BOOLEAN_VARIABLE_NAME = "var";
+  private static final String BOOLEAN_VARIABLE_NAME = "var";
 
   @Test
   public void booleanTrueVariableFilter() {
@@ -85,7 +86,7 @@ public class BooleanVariableQueryFilterIT extends AbstractFilterIT {
     assertThat(result.getData()).hasSize(2);
   }
 
-  public static Stream<Arguments> nullFilterScenarios() {
+  private static Stream<Arguments> nullFilterScenarios() {
     return Stream.of(
       Arguments.of(Collections.singletonList(null), 2),
       Arguments.of(Lists.newArrayList(null, true), 3),

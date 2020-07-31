@@ -15,6 +15,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -49,8 +50,8 @@ import static com.google.common.collect.Lists.newArrayList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
@@ -401,7 +402,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
   @ParameterizedTest
   @MethodSource("assigneeFilterScenarios")
-  public void filterByAssigneeOnlyCountsThoseAssignees(final String filterOperator,
+  public void filterByAssigneeOnlyCountsThoseAssignees(final FilterOperator filterOperator,
                                                        final String[] filterValues,
                                                        final List<Tuple> expectedResult) {
     // given
@@ -447,7 +448,7 @@ public class UserTaskFrequencyByAssigneeReportEvaluationIT extends AbstractProce
 
   @ParameterizedTest
   @MethodSource("candidateGroupFilterScenarios")
-  public void filterByCandidateGroupOnlyCountsAssigneesFromThoseUserTasks(final String filterOperator,
+  public void filterByCandidateGroupOnlyCountsAssigneesFromThoseUserTasks(final FilterOperator filterOperator,
                                                                           final String[] filterValues,
                                                                           final List<Tuple> expectedResult) {
     // given

@@ -8,9 +8,9 @@ package org.camunda.optimize.service.es.filter.decision;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -27,8 +27,8 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createStringInputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
 
@@ -108,7 +108,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     ).containsExactlyInAnyOrder(firstCategoryInputValueToFilterFor, secondCategoryInputValueToFilterFor);
   }
 
-  public static Stream<Arguments> nullFilterScenarios() {
+  private static Stream<Arguments> nullFilterScenarios() {
     return Stream.of(
       Arguments.of(IN, new String[]{null}, 2),
       Arguments.of(IN, new String[]{null, "validMatch"}, 3),
@@ -119,7 +119,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
 
   @ParameterizedTest
   @MethodSource("nullFilterScenarios")
-  public void resultFilterStringInputVariableSupportsNullValue(final String operator,
+  public void resultFilterStringInputVariableSupportsNullValue(final FilterOperator operator,
                                                                final String[] filterValues,
                                                                final Integer expectedInstanceCount) {
     // given
@@ -184,7 +184,7 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createStringInputVariableFilter(
-      inputVariableIdToFilterOn, FilterOperatorConstants.NOT_IN, categoryInputValueToExclude
+      inputVariableIdToFilterOn, NOT_IN, categoryInputValueToExclude
     )));
     RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 

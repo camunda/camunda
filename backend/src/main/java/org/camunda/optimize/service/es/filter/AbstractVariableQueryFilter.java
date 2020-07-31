@@ -9,7 +9,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.RELATIVE_OPERATORS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.RELATIVE_OPERATORS;
 
 public abstract class AbstractVariableQueryFilter {
   protected void validateMultipleValuesFilterDataDto(final OperatorMultipleValuesVariableFilterDataDto dto) {

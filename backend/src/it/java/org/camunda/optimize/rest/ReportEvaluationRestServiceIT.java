@@ -56,9 +56,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
@@ -675,6 +674,7 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
       .stringType()
       .name(variableName)
       .values(Collections.singletonList(variableValue))
+      .operator(IN)
       .add()
       .buildList();
   }

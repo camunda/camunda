@@ -3,16 +3,18 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter;
+package org.camunda.optimize.service.es.filter.process.variable;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.es.filter.process.AbstractFilterIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -31,13 +33,12 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.RELATIVE_OPERATORS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN_EQUALS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.hamcrest.CoreMatchers.is;
 
 public class NumericVariableQueryFilterIT extends AbstractFilterIT {
@@ -76,7 +77,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
     assertThat(result.getData()).hasSize(1);
   }
 
-  public static Stream<Arguments> nullFilterScenarios() {
+  private static Stream<Arguments> nullFilterScenarios() {
     return getNumericTypes().stream()
       .flatMap(type -> Stream.of(
         Arguments.of(type, IN, Collections.singletonList(null), 2),
@@ -89,7 +90,7 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
   @ParameterizedTest
   @MethodSource("nullFilterScenarios")
   public void numericFilterSupportsNullValue(final VariableType variableType,
-                                             final String operator,
+                                             final FilterOperator operator,
                                              final List<String> filterValues,
                                              final Integer expectedInstanceCount) {
     // given
@@ -444,9 +445,9 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
 
   @ParameterizedTest
   @MethodSource("getRelativeOperators")
-  public void resultFilterByNumericVariableValueNullFailsForRelativeOperators(final String operator) {
+  public void resultFilterByNumericVariableValueNullFailsForRelativeOperators(final FilterOperator operator) {
     // given
-    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    deploySimpleProcessDefinition();
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -491,11 +492,11 @@ public class NumericVariableQueryFilterIT extends AbstractFilterIT {
     return reportClient.evaluateReportAndReturnResponse(reportData);
   }
 
-  public static Set<VariableType> getNumericTypes() {
+  private static Set<VariableType> getNumericTypes() {
     return VariableType.getNumericTypes();
   }
 
-  public static Set<String> getRelativeOperators() {
-    return RELATIVE_OPERATORS;
+  private static Set<FilterOperator> getRelativeOperators() {
+    return FilterOperator.RELATIVE_OPERATORS;
   }
 }

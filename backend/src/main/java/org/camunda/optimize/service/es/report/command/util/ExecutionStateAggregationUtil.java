@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.command.util;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -17,10 +18,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN_EQUALS;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
@@ -106,7 +103,7 @@ public class ExecutionStateAggregationUtil {
     // @formatter:on
   }
 
-  private static String mapFilterOperator(String filterOperator) {
+  private static String mapFilterOperator(final FilterOperator filterOperator) {
     // maps Optimize filter operators to ES relational operators
     switch (filterOperator) {
       case LESS_THAN:

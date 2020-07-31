@@ -8,9 +8,9 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
@@ -28,7 +28,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -76,7 +75,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   }
 
   @Test
-  public void reportEvaluationMultiBucketsSpecificVersionGroupedByDay() throws SQLException {
+  public void reportEvaluationMultiBucketsSpecificVersionGroupedByDay() {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
@@ -107,8 +106,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   }
 
   @Test
-  public void reportEvaluationMultiBucketsSpecificVersionGroupedByDayResultIsSortedInDescendingOrder()
-    throws Exception {
+  public void reportEvaluationMultiBucketsSpecificVersionGroupedByDayResultIsSortedInDescendingOrder() {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
@@ -164,7 +162,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   }
 
   @Test
-  public void testCustomOrderOnResultKeyIsApplied() throws SQLException {
+  public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
@@ -224,7 +222,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   }
 
   @Test
-  public void testCustomOrderOnResultValueIsApplied() throws SQLException {
+  public void testCustomOrderOnResultValueIsApplied() {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
@@ -277,7 +275,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   }
 
   @Test
-  public void testEmptyBucketsAreReturnedForEvaluationDateFilterPeriod() throws SQLException {
+  public void testEmptyBucketsAreReturnedForEvaluationDateFilterPeriod() {
     // given
     final OffsetDateTime startDate = OffsetDateTime.now();
 
@@ -347,7 +345,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   }
 
   @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() throws SQLException {
+  public void multipleBuckets_noFilter_resultLimitedByConfig() {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
@@ -398,7 +396,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   @MethodSource("groupByDateUnits")
   public void reportEvaluationMultiBucketsSpecificVersionGroupedByDifferentUnitsEmptyBucketBetweenTwoOthers(
     final GroupByDateUnit groupByDateUnit
-  ) throws Exception {
+  ) {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     final ChronoUnit chronoUnit = ChronoUnit.valueOf(groupByDateUnit.name().toUpperCase() + "S");
@@ -449,7 +447,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   }
 
   @Test
-  public void automaticIntervalSelectionWorks() throws Exception {
+  public void automaticIntervalSelectionWorks() {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
 
@@ -593,7 +591,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(GroupByDateUnit.HOUR)
       .setFilter(createNumericInputVariableFilter(
-        INPUT_AMOUNT_ID, FilterOperatorConstants.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
+        INPUT_AMOUNT_ID, FilterOperator.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =

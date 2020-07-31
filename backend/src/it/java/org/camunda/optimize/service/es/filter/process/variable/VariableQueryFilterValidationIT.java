@@ -3,11 +3,13 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter;
+package org.camunda.optimize.service.es.filter.process.variable;
 
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
+import org.camunda.optimize.service.es.filter.process.AbstractFilterIT;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
@@ -16,7 +18,6 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
 
 public class VariableQueryFilterValidationIT extends AbstractFilterIT {
 
@@ -45,7 +46,7 @@ public class VariableQueryFilterValidationIT extends AbstractFilterIT {
       .filter()
       .variable()
       .longType()
-      .operator(IN)
+      .operator(FilterOperator.IN)
       .values(null)
       .name("foo")
       .add()

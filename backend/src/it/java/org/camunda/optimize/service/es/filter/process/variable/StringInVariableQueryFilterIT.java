@@ -3,14 +3,16 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter;
+package org.camunda.optimize.service.es.filter.process.variable;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.service.es.filter.process.AbstractFilterIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,12 +27,12 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 
-public class StringVariableQueryFilterIT extends AbstractFilterIT {
+public class StringInVariableQueryFilterIT extends AbstractFilterIT {
 
-  public static final String STRING_VARIABLE_NAME = "stringVar";
+  private static final String STRING_VARIABLE_NAME = "stringVar";
 
   @Test
   public void simpleStringVariableFilter() {
@@ -230,7 +232,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
     assertThat(result.getData()).hasSize(2);
   }
 
-  public static Stream<Arguments> nullFilterScenarios() {
+  private static Stream<Arguments> nullFilterScenarios() {
     return Stream.of(
       Arguments.of(IN, Collections.singletonList(null), 2),
       Arguments.of(IN, Lists.newArrayList(null, "validMatch"), 3),
@@ -241,7 +243,7 @@ public class StringVariableQueryFilterIT extends AbstractFilterIT {
 
   @ParameterizedTest
   @MethodSource("nullFilterScenarios")
-  public void stringFilterSupportsNullValue(final String operator,
+  public void stringFilterSupportsNullValue(final FilterOperator operator,
                                             final List<String> filterValues,
                                             final Integer expectedInstanceCount) {
     // given

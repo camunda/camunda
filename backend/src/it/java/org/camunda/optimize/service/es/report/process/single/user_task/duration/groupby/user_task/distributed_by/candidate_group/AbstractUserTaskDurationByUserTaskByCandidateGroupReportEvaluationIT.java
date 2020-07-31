@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Aggre
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -46,8 +47,8 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
@@ -1087,10 +1088,9 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
   @ParameterizedTest
   @MethodSource("assigneeFilterScenarios")
-  public void filterByAssigneeOnlyIncludesUserTaskWithThatAssignee(
-    final String filterOperator,
-    final String[] filterValues,
-    final Map<String, List<Pair<String, Double>>> expectedResult) {
+  public void filterByAssigneeOnlyIncludesUserTaskWithThatAssignee(final FilterOperator filterOperator,
+                                                                   final String[] filterValues,
+                                                                   final Map<String, List<Pair<String, Double>>> expectedResult) {
     // given
     engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
     engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
@@ -1177,10 +1177,11 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
 
   @ParameterizedTest
   @MethodSource("candidateGroupFilterScenarios")
-  public void filterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(
-    final String filterOperator,
-    final String[] filterValues,
-    final Map<String, List<Pair<String, Double>>> expectedResult) {
+  // @formatter:off
+  public void filterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(final FilterOperator filterOperator,
+                                                                               final String[] filterValues,
+                                                                               final Map<String, List<Pair<String, Double>>> expectedResult) {
+    // @formatter:on
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
     final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(

@@ -45,12 +45,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.schema.index.InstanceType.LOWERCASE_FIELD;
+import static org.camunda.optimize.service.es.schema.index.InstanceType.N_GRAM_FIELD;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueField;
 import static org.camunda.optimize.service.util.DefinitionQueryUtil.createDefinitionQuery;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.buildWildcardQuery;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getValueSearchField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -66,8 +69,6 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 public class ProcessVariableReader {
 
   private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
-  private static final String VARIABLE_VALUE_NGRAM = "nGramField";
-  private static final String VARIABLE_VALUE_LOWERCASE = "lowercaseField";
   private static final String NAME_AGGREGATION = "variableNameAggregation";
   private static final String TYPE_AGGREGATION = "variableTypeAggregation";
   private static final String VALUE_AGGREGATION = "values";
@@ -248,23 +249,15 @@ public class ProcessVariableReader {
           /*
             using the slow wildcard query for uncommonly large filter strings (> 10 chars)
           */
-        ? wildcardQuery(getValueSearchField(VARIABLE_VALUE_LOWERCASE), buildWildcardQuery(lowerCaseValue))
+        ? wildcardQuery(getValueSearchField(LOWERCASE_FIELD), buildWildcardQuery(lowerCaseValue))
           /*
             using Elasticsearch ngrams to filter for strings < 10 chars,
             because it's fast but increasing the number of chars makes the index bigger
           */
-        : termQuery(getValueSearchField(VARIABLE_VALUE_NGRAM), lowerCaseValue);
+        : termQuery(getValueSearchField(N_GRAM_FIELD), lowerCaseValue);
 
       filterQuery.must(filter);
     }
-  }
-
-  private String getValueSearchField(final String searchFieldName) {
-    return getVariableValueField(VARIABLES) + "." + searchFieldName;
-  }
-
-  private String buildWildcardQuery(final String valueFilter) {
-    return "*" + valueFilter + "*";
   }
 
 }

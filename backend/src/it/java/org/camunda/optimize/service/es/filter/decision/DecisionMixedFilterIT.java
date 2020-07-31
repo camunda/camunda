@@ -7,12 +7,12 @@ package org.camunda.optimize.service.es.filter.decision;
 
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.InputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.OutputVariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -74,12 +74,12 @@ public class DecisionMixedFilterIT extends AbstractDecisionDefinitionIT {
     );
     final InputVariableFilterDto doubleInputVariableFilter = createNumericInputVariableFilter(
       INPUT_AMOUNT_ID,
-      FilterOperatorConstants.IN,
+      FilterOperator.IN,
       String.valueOf(expectedAmountValue)
     );
 
     final InputVariableFilterDto stringInputVariableFilter = createStringInputVariableFilter(
-      INPUT_CATEGORY_ID, FilterOperatorConstants.IN, expectedCategory
+      INPUT_CATEGORY_ID, FilterOperator.IN, expectedCategory
     );
     final OutputVariableFilterDto booleanOutputVariableFilter = createBooleanOutputVariableFilter(
       OUTPUT_AUDIT_ID, Collections.singletonList(expectedAuditOutput)

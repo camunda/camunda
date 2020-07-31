@@ -49,6 +49,7 @@ import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.DELETE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
@@ -199,7 +200,7 @@ public class DashboardRestServiceIT extends AbstractIT {
     // given
     final List<DashboardFilterDto> dashboardFilters = Collections.singletonList(new DashboardFilterDto(
       DashboardFilterType.VARIABLE,
-      new StringVariableFilterDataDto("stringVar", "in", Collections.singletonList("thisValueIsNotInReport"))
+      new StringVariableFilterDataDto("stringVar", IN, Collections.singletonList("thisValueIsNotInReport"))
     ));
 
     final DashboardDefinitionDto dashboardDefinitionDto =
@@ -650,15 +651,15 @@ public class DashboardRestServiceIT extends AbstractIT {
       variableFilter(),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.VARIABLE,
-        new LongVariableFilterDataDto("longVar", "in", Arrays.asList("1", "2"))
+        new LongVariableFilterDataDto("longVar", IN, Arrays.asList("1", "2"))
       )),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.VARIABLE,
-        new ShortVariableFilterDataDto("shortVar", "in", Arrays.asList("1", "2"))
+        new ShortVariableFilterDataDto("shortVar", IN, Arrays.asList("1", "2"))
       )),
       Collections.singletonList(new DashboardFilterDto(
         DashboardFilterType.VARIABLE,
-        new IntegerVariableFilterDataDto("integerVar", "in", Arrays.asList("1", "2"))
+        new IntegerVariableFilterDataDto("integerVar", IN, Arrays.asList("1", "2"))
       )),
       Arrays.asList(
         new DashboardFilterDto(
@@ -667,15 +668,15 @@ public class DashboardRestServiceIT extends AbstractIT {
         ),
         new DashboardFilterDto(
           DashboardFilterType.VARIABLE,
-          new LongVariableFilterDataDto("longVar", "in", Arrays.asList("1", "2"))
+          new LongVariableFilterDataDto("longVar", IN, Arrays.asList("1", "2"))
         ),
         new DashboardFilterDto(
           DashboardFilterType.VARIABLE,
-          new DoubleVariableFilterDataDto("doubleVar", "in", Arrays.asList("1.0", "2.0"))
+          new DoubleVariableFilterDataDto("doubleVar", IN, Arrays.asList("1.0", "2.0"))
         ),
         new DashboardFilterDto(
           DashboardFilterType.VARIABLE,
-          new StringVariableFilterDataDto("stringVar", "in", Arrays.asList("StringA", "StringB"))
+          new StringVariableFilterDataDto("stringVar", IN, Arrays.asList("StringA", "StringB"))
         ),
         new DashboardFilterDto(DashboardFilterType.START_DATE, null),
         new DashboardFilterDto(DashboardFilterType.END_DATE, null),

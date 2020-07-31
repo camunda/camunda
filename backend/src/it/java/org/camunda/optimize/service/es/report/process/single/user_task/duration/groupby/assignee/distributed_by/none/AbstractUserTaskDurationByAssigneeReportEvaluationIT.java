@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -49,9 +50,8 @@ import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Objects.nonNull;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
@@ -824,9 +824,9 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   public static Stream<Arguments> assigneeFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 10.))),
+      Arguments.of(FilterOperator.IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 10.))),
       Arguments.of(
-        IN,
+        FilterOperator.IN,
         new String[]{DEFAULT_USERNAME, SECOND_USER},
         Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))
       ),
@@ -837,7 +837,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   @ParameterizedTest
   @MethodSource("assigneeFilterScenarios")
-  public void filterByAssigneeOnlyIncludesUserTaskWithThatAssignee(final String filterOperator,
+  public void filterByAssigneeOnlyIncludesUserTaskWithThatAssignee(final FilterOperator filterOperator,
                                                                    final String[] filterValues,
                                                                    final List<Tuple> expectedResult) {
     // given
@@ -872,9 +872,9 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   public static Stream<Arguments> candidateGroupFilterScenarios() {
     return Stream.of(
-      Arguments.of(IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 10.))),
+      Arguments.of(FilterOperator.IN, new String[]{SECOND_CANDIDATE_GROUP}, Lists.newArrayList(Tuple.tuple(SECOND_USER, 10.))),
       Arguments.of(
-        IN,
+        FilterOperator.IN,
         new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
         Lists.newArrayList(Tuple.tuple(DEFAULT_USERNAME, 10.), Tuple.tuple(SECOND_USER, 10.))
       ),
@@ -889,10 +889,9 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   @ParameterizedTest
   @MethodSource("candidateGroupFilterScenarios")
-  public void filterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(
-    final String filterOperator,
-    final String[] filterValues,
-    final List<Tuple> expectedResult) {
+  public void filterByCandidateGroupOnlyIncludesUserTaskWithThatCandidateGroup(final FilterOperator filterOperator,
+                                                                               final String[] filterValues,
+                                                                               final List<Tuple> expectedResult) {
     // given
     engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);

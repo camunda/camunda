@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.filter;
 
 import lombok.experimental.UtilityClass;
 import org.apache.commons.collections4.CollectionUtils;
-import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
@@ -22,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
@@ -118,7 +118,7 @@ public class UserTaskFilterQueryUtil {
       );
     }
 
-    if (FilterOperatorConstants.NOT_IN.equals(assigneeFilter.getOperator())) {
+    if (NOT_IN.equals(assigneeFilter.getOperator())) {
       return boolQuery().mustNot(innerBoolQueryBuilder);
     } else {
       return innerBoolQueryBuilder;

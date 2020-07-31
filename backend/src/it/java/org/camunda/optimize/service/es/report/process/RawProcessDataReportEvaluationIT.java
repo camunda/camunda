@@ -43,6 +43,8 @@ import java.util.stream.Collectors;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -260,7 +262,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     assertThat(rawDataProcessInstanceDto.getProcessDefinitionId(), is(processInstance.getDefinitionId()));
     rawDataProcessInstanceDto.getVariables().
       forEach((varName, varValue) -> {
-                assertThat(variables.keySet().contains(varName), is(true));
+                assertThat(variables.containsKey(varName), is(true));
                 assertThat(variables.get(varName), is(notNullValue()));
               }
       );
@@ -296,7 +298,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
   }
 
   @Test
-  public void resultShouldBeOrderAccordingToStartDate() throws Exception {
+  public void resultShouldBeOrderAccordingToStartDate() {
     // given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     ProcessInstanceEngineDto processInstanceDto2 =
@@ -480,7 +482,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       rawDataProcessInstanceDto1 -> {
         Map<String, Object> vars = rawDataProcessInstanceDto1.getVariables();
         assertThat(vars.keySet().size(), is(2));
-        assertThat(vars.values().contains(""), is(true));
+        assertThat(vars.containsValue(""), is(true));
         // ensure is ordered
         List<String> actual = new ArrayList<>(vars.keySet());
         List<String> expected = new ArrayList<>(vars.keySet());
@@ -527,7 +529,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
                            .duration()
                            .unit(DurationFilterUnit.DAYS)
                            .value((long) 1)
-                           .operator(">")
+                           .operator(GREATER_THAN)
                            .add()
                            .buildList());
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult1 =
@@ -550,7 +552,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
                            .duration()
                            .unit(DurationFilterUnit.DAYS)
                            .value((long) 1)
-                           .operator("<")
+                           .operator(LESS_THAN)
                            .add()
                            .buildList());
 

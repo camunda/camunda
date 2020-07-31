@@ -19,6 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.LongVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.ShortVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
@@ -32,7 +33,7 @@ public class VariableFilterBuilder {
   private ProcessFilterBuilder filterBuilder;
   private VariableType type;
   private List<String> values = new ArrayList<>();
-  private String operator;
+  private FilterOperator operator;
   private DateFilterDataDto<?> dateFilterDataDto;
   private String name;
 
@@ -122,7 +123,7 @@ public class VariableFilterBuilder {
     return this;
   }
 
-  public VariableFilterBuilder operator(String operator) {
+  public VariableFilterBuilder operator(FilterOperator operator) {
     this.operator = operator;
     return this;
   }

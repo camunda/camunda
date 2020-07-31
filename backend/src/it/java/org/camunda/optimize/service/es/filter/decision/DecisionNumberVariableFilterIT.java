@@ -8,9 +8,9 @@ package org.camunda.optimize.service.es.filter.decision;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -26,14 +26,15 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static java.lang.Double.parseDouble;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.RELATIVE_OPERATORS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN_EQUALS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.RELATIVE_OPERATORS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createNumericInputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 
@@ -52,7 +53,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     );
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
-      createInputs(Double.valueOf(categoryInputValueToFilterFor), "Misc")
+      createInputs(parseDouble(categoryInputValueToFilterFor), "Misc")
     );
 
     importAllEngineEntitiesFromScratch();
@@ -60,7 +61,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createNumericInputVariableFilter(
-      inputVariableIdToFilterOn, FilterOperatorConstants.IN, categoryInputValueToFilterFor
+      inputVariableIdToFilterOn, IN, categoryInputValueToFilterFor
     )));
     RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
@@ -86,12 +87,12 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     );
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
-      createInputs(Double.valueOf(firstCategoryInputValueToFilterFor), "Misc")
+      createInputs(parseDouble(firstCategoryInputValueToFilterFor), "Misc")
     );
 
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
-      createInputs(Double.valueOf(secondCategoryInputValueToFilterFor), "Misc")
+      createInputs(parseDouble(secondCategoryInputValueToFilterFor), "Misc")
     );
 
     importAllEngineEntitiesFromScratch();
@@ -99,7 +100,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createNumericInputVariableFilter(
-      inputVariableIdToFilterOn, FilterOperatorConstants.IN,
+      inputVariableIdToFilterOn, IN,
       firstCategoryInputValueToFilterFor, secondCategoryInputValueToFilterFor
     )));
     RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
@@ -114,7 +115,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     ).containsExactlyInAnyOrder(firstCategoryInputValueToFilterFor, secondCategoryInputValueToFilterFor);
   }
 
-  public static Stream<Arguments> nullFilterScenarios() {
+  private static Stream<Arguments> nullFilterScenarios() {
     return getNumericTypes().stream()
       .flatMap(type -> Stream.of(
         Arguments.of(type, IN, new String[]{null}, 2),
@@ -127,7 +128,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
   @ParameterizedTest
   @MethodSource("nullFilterScenarios")
   public void resultFilterNumberInputVariableSupportsNullValue(final DecisionTypeRef type,
-                                                               final String operator,
+                                                               final FilterOperator operator,
                                                                final String[] filterValues,
                                                                final Integer expectedInstanceCount) {
     // given
@@ -175,11 +176,11 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     final DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
-      createInputs(Double.valueOf(expectedCategoryInputValue), "Misc")
+      createInputs(parseDouble(expectedCategoryInputValue), "Misc")
     );
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
-      createInputs(Double.valueOf(categoryInputValueToExclude), "Misc")
+      createInputs(parseDouble(categoryInputValueToExclude), "Misc")
     );
 
     importAllEngineEntitiesFromScratch();
@@ -187,7 +188,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     // when
     DecisionReportDataDto reportData = createReportWithAllVersionSet(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createNumericInputVariableFilter(
-      inputVariableIdToFilterOn, FilterOperatorConstants.NOT_IN, categoryInputValueToExclude
+      inputVariableIdToFilterOn, NOT_IN, categoryInputValueToExclude
     )));
     RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
@@ -211,7 +212,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
     );
     startDecisionInstanceWithInputVars(
       decisionDefinitionDto.getId(),
-      createInputs(Double.valueOf(categoryInputValueToFilterFor), "Misc")
+      createInputs(parseDouble(categoryInputValueToFilterFor), "Misc")
     );
 
     importAllEngineEntitiesFromScratch();
@@ -263,7 +264,7 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
 
   @ParameterizedTest
   @MethodSource("getRelativeOperators")
-  public void resultFilterByNumericInputVariableValueNullFailsForRelativeOperators(final String operator) {
+  public void resultFilterByNumericInputVariableValueNullFailsForRelativeOperators(final FilterOperator operator) {
     // given
     final String inputClauseId = "TestyTest";
     final String camInputVariable = "putIn";
@@ -295,11 +296,11 @@ public class DecisionNumberVariableFilterIT extends AbstractDecisionDefinitionIT
       .build();
   }
 
-  public static Set<DecisionTypeRef> getNumericTypes() {
+  private static Set<DecisionTypeRef> getNumericTypes() {
     return DecisionTypeRef.getNumericTypes();
   }
 
-  public static Set<String> getRelativeOperators() {
+  private static Set<FilterOperator> getRelativeOperators() {
     return RELATIVE_OPERATORS;
   }
 

@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.filter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
@@ -16,6 +15,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -28,23 +29,24 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
+import static org.camunda.optimize.service.es.schema.index.InstanceType.LOWERCASE_FIELD;
+import static org.camunda.optimize.service.es.schema.index.InstanceType.N_GRAM_FIELD;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.buildWildcardQuery;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.createExcludeUndefinedOrNullQueryFilterBuilder;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableTypeField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueFieldForType;
+import static org.camunda.optimize.service.util.ProcessVariableHelper.getValueSearchField;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -73,7 +75,7 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
     switch (dto.getType()) {
       case STRING:
         StringVariableFilterDataDto stringVarDto = (StringVariableFilterDataDto) dto;
-        queryBuilder = createMultiValueQueryBuilder(stringVarDto);
+        queryBuilder = createStringQueryBuilder(stringVarDto);
         break;
       case INTEGER:
       case DOUBLE:
@@ -101,14 +103,86 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
     return queryBuilder;
   }
 
-  private QueryBuilder createMultiValueQueryBuilder(final OperatorMultipleValuesVariableFilterDataDto dto) {
-    validateMultipleValuesFilterDataDto(dto);
+  private QueryBuilder createStringQueryBuilder(final StringVariableFilterDataDto stringVarDto) {
+    validateMultipleValuesFilterDataDto(stringVarDto);
 
-    final BoolQueryBuilder variableFilterBuilder = createMultiValueVariableFilterQuery(
+    if (stringVarDto.hasContainsOperation()) {
+      return createContainsOneOfTheGivenStringsQueryBuilder(stringVarDto);
+    } else if (stringVarDto.hasEqualsOperation()) {
+      return createEqualsOneOrMoreValuesQueryBuilder(stringVarDto);
+    } else {
+      final String message = String.format(
+        "String variable operator [%s] is not supported!",
+        stringVarDto.getData().getOperator().getId()
+      );
+      log.debug(message);
+      throw new OptimizeRuntimeException(message);
+    }
+  }
+
+  private QueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(final StringVariableFilterDataDto dto) {
+    final BoolQueryBuilder containOneOfTheGivenStrings =
+      createContainsOneOfTheGivenStringsQueryBuilder(dto.getName(), dto.getData().getValues());
+
+    if (NOT_CONTAINS.equals(dto.getData().getOperator())) {
+      return boolQuery().mustNot(containOneOfTheGivenStrings);
+    } else {
+      return containOneOfTheGivenStrings;
+    }
+  }
+
+  private BoolQueryBuilder createContainsOneOfTheGivenStringsQueryBuilder(final String variableName,
+                                                                          final List<String> values) {
+    final BoolQueryBuilder variableFilterBuilder = boolQuery().minimumShouldMatch(1);
+
+    values.stream()
+      .filter(Objects::nonNull)
+      .forEach(
+        stringVal -> variableFilterBuilder.should(createContainsGivenStringQuery(variableName, stringVal))
+      );
+
+    final boolean hasNullValues = values.stream().anyMatch(Objects::isNull);
+    if (hasNullValues) {
+      variableFilterBuilder.should(createFilterForUndefinedOrNullQueryBuilder(variableName, VariableType.STRING));
+    }
+
+    return variableFilterBuilder;
+  }
+
+  private QueryBuilder createContainsGivenStringQuery(final String variableName,
+                                                      final String valueToContain) {
+
+    final BoolQueryBuilder containsVariableString = boolQuery()
+      .must(termQuery(getNestedVariableNameField(), variableName))
+      .must(termQuery(getNestedVariableTypeField(), VariableType.STRING.getId()));
+
+    final String lowerCaseValue = valueToContain.toLowerCase();
+    QueryBuilder filter = (lowerCaseValue.length() > IndexSettingsBuilder.MAX_GRAM)
+          /*
+            using the slow wildcard query for uncommonly large filter strings (> 10 chars)
+          */
+      ? wildcardQuery(getValueSearchField(LOWERCASE_FIELD), buildWildcardQuery(lowerCaseValue))
+          /*
+            using Elasticsearch ngrams to filter for strings < 10 chars,
+            because it's fast but increasing the number of chars makes the index bigger
+          */
+      : termQuery(getValueSearchField(N_GRAM_FIELD), lowerCaseValue);
+
+    containsVariableString.must(filter);
+
+    return nestedQuery(
+      VARIABLES,
+      containsVariableString,
+      ScoreMode.None
+    );
+  }
+
+  private QueryBuilder createEqualsOneOrMoreValuesQueryBuilder(final OperatorMultipleValuesVariableFilterDataDto dto) {
+    final BoolQueryBuilder variableFilterBuilder = createEqualsOneOrMoreValuesFilterQuery(
       dto.getName(), dto.getType(), dto.getData().getValues()
     );
 
-    if (FilterOperatorConstants.NOT_IN.equals(dto.getData().getOperator())) {
+    if (NOT_IN.equals(dto.getData().getOperator())) {
       return boolQuery().mustNot(variableFilterBuilder);
     } else {
       return variableFilterBuilder;
@@ -118,12 +192,12 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
   private QueryBuilder createBooleanQueryBuilder(final BooleanVariableFilterDataDto dto) {
     ValidationHelper.ensureCollectionNotEmpty("boolean filter value", dto.getData().getValues());
 
-    return createMultiValueVariableFilterQuery(dto.getName(), dto.getType(), dto.getData().getValues());
+    return createEqualsOneOrMoreValuesFilterQuery(dto.getName(), dto.getType(), dto.getData().getValues());
   }
 
-  private BoolQueryBuilder createMultiValueVariableFilterQuery(final String variableName,
-                                                               final VariableType variableType,
-                                                               final List<?> values) {
+  private BoolQueryBuilder createEqualsOneOrMoreValuesFilterQuery(final String variableName,
+                                                                  final VariableType variableType,
+                                                                  final List<?> values) {
     final BoolQueryBuilder variableFilterBuilder = boolQuery().minimumShouldMatch(1);
     final String nestedVariableNameFieldLabel = getNestedVariableNameField();
     final String nestedVariableValueFieldLabel = getVariableValueFieldForType(variableType);
@@ -145,7 +219,8 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
       );
     }
 
-    if (nonNullValues.size() < values.size()) {
+    final boolean hasNullValues = nonNullValues.size() < values.size();
+    if (hasNullValues) {
       variableFilterBuilder.should(createFilterForUndefinedOrNullQueryBuilder(variableName, variableType));
     }
     return variableFilterBuilder;
@@ -165,7 +240,7 @@ public class ProcessVariableQueryFilter extends AbstractVariableQueryFilter
     switch (data.getOperator()) {
       case IN:
       case NOT_IN:
-        resultQuery = createMultiValueQueryBuilder(dto);
+        resultQuery = createEqualsOneOrMoreValuesQueryBuilder(dto);
         break;
       case LESS_THAN:
         boolQueryBuilder.must(rangeQuery(nestedVariableValueFieldLabel).lt(value));

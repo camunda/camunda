@@ -27,11 +27,11 @@ import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -56,7 +56,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 
 @Slf4j
@@ -167,7 +167,7 @@ public class ReportsGenerator {
       case STRING:
         return DecisionFilterUtilHelper.createStringInputVariableFilter(
           filterData.getInputName(),
-          FilterOperatorConstants.IN,
+          FilterOperator.IN,
           filterData.getPossibleInputValue()
         );
       case BOOLEAN:
@@ -200,7 +200,7 @@ public class ReportsGenerator {
       case STRING:
         return DecisionFilterUtilHelper.createStringOutputVariableFilter(
           filterData.getInputName(),
-          FilterOperatorConstants.IN,
+          FilterOperator.IN,
           filterData.getPossibleOutputValue()
         );
       case BOOLEAN:

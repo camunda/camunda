@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter;
+package org.camunda.optimize.service.es.filter.process;
 
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -44,7 +46,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
       .duration()
       .unit(DurationFilterUnit.SECONDS)
       .value((long) 2)
-      .operator(">=")
+      .operator(GREATER_THAN_EQUALS)
       .add()
       .buildList();
     List<ProcessFilterDto<?>> lt = ProcessFilterBuilder
@@ -52,7 +54,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
       .duration()
       .unit(DurationFilterUnit.DAYS)
       .value((long) 1)
-      .operator("<")
+      .operator(LESS_THAN)
       .add()
       .buildList();
     gte.addAll(lt);
@@ -81,7 +83,7 @@ public class DurationFilterIT extends AbstractDurationFilterIT {
                            .duration()
                            .unit(null)
                            .value((long) 2)
-                           .operator(">=")
+                           .operator(GREATER_THAN_EQUALS)
                            .add()
                            .buildList());
 

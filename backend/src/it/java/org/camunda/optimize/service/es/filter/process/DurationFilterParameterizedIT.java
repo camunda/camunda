@@ -3,8 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter;
+package org.camunda.optimize.service.es.filter.process;
 
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -19,6 +20,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.stream.Stream;
 
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+
 public class DurationFilterParameterizedIT extends AbstractDurationFilterIT {
 
   @ParameterizedTest
@@ -26,7 +31,7 @@ public class DurationFilterParameterizedIT extends AbstractDurationFilterIT {
   public void testGetReportWithLtDurationCriteria (boolean deployWithTimeShift,
                                                    Long daysToShift,
                                                    Long durationInSec,
-                                                   String operator,
+                                                   FilterOperator operator,
                                                    int duration,
                                                    DurationFilterUnit unit) throws Exception {
     // given
@@ -63,15 +68,15 @@ public class DurationFilterParameterizedIT extends AbstractDurationFilterIT {
 
   private static Stream<Arguments> getArguments() {
     return Stream.of(
-      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.SECONDS),
-      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.MINUTES),
-      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.HOURS),
-      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.HALF_DAYS),
-      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.DAYS),
-      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.WEEKS),
-      Arguments.of(false, null, null, "<", 1, DurationFilterUnit.MONTHS),
-      Arguments.of(true, 0L, 2L, ">", 1, DurationFilterUnit.SECONDS),
-      Arguments.of(true, 0L, 2L, ">=", 2, DurationFilterUnit.SECONDS)
+      Arguments.of(false, null, null, LESS_THAN, 1, DurationFilterUnit.SECONDS),
+      Arguments.of(false, null, null, LESS_THAN, 1, DurationFilterUnit.MINUTES),
+      Arguments.of(false, null, null, LESS_THAN, 1, DurationFilterUnit.HOURS),
+      Arguments.of(false, null, null, LESS_THAN, 1, DurationFilterUnit.HALF_DAYS),
+      Arguments.of(false, null, null, LESS_THAN, 1, DurationFilterUnit.DAYS),
+      Arguments.of(false, null, null, LESS_THAN, 1, DurationFilterUnit.WEEKS),
+      Arguments.of(false, null, null, LESS_THAN, 1, DurationFilterUnit.MONTHS),
+      Arguments.of(true, 0L, 2L, GREATER_THAN, 1, DurationFilterUnit.SECONDS),
+      Arguments.of(true, 0L, 2L, GREATER_THAN_EQUALS, 2, DurationFilterUnit.SECONDS)
     );
   }
 

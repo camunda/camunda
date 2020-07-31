@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -47,9 +48,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_LABEL;
 import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
@@ -661,7 +662,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
   @ParameterizedTest
   @MethodSource("assigneeFilterScenarios")
-  public void filterByAssigneeOnlyIncludesUserTasksWithThatAssignee(final String filterOperator,
+  public void filterByAssigneeOnlyIncludesUserTasksWithThatAssignee(final FilterOperator filterOperator,
                                                                     final String[] filterValues,
                                                                     final Double expectedUserTask1Duration,
                                                                     final Double expectedUserTask2Duration) {
@@ -710,7 +711,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
 
   @ParameterizedTest
   @MethodSource("candidateGroupFilterScenarios")
-  public void filterByCandidateGroupOnlyIncludesUserTasksWithThatCandidateGroup(final String filterOperator,
+  public void filterByCandidateGroupOnlyIncludesUserTasksWithThatCandidateGroup(final FilterOperator filterOperator,
                                                                                 final String[] filterValues,
                                                                                 final Double expectedUserTask1Duration,
                                                                                 final Double expectedUserTask2Duration) {

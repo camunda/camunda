@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.filter;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
@@ -28,12 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN_EQUALS;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableStringValueField;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -104,7 +98,7 @@ public abstract class DecisionVariableQueryFilter extends AbstractVariableQueryF
       getVariableId(dto), dto.getType(), dto.getData().getValues()
     );
 
-    if (FilterOperatorConstants.NOT_IN.equals(dto.getData().getOperator())) {
+    if (NOT_IN.equals(dto.getData().getOperator())) {
       return boolQuery().mustNot(variableFilterBuilder);
     } else {
       return variableFilterBuilder;

@@ -24,7 +24,6 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -34,11 +33,11 @@ import java.util.Optional;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.time.temporal.ChronoUnit.MILLIS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MAX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MEDIAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE;
 import static org.hamcrest.CoreMatchers.is;
@@ -55,7 +54,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListWithoutSum();
 
   @Test
-  public void reportEvaluationForOneProcess() throws Exception {
+  public void reportEvaluationForOneProcess() {
 
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
@@ -90,7 +89,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   }
 
   @Test
-  public void reportEvaluationById() throws Exception {
+  public void reportEvaluationById() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -123,7 +122,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   }
 
   @Test
-  public void evaluateReportForMultipleEvents() throws Exception {
+  public void evaluateReportForMultipleEvents() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -156,7 +155,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   }
 
   @Test
-  public void evaluateReportForMultipleEventsWithAllAggregationTypes() throws Exception {
+  public void evaluateReportForMultipleEventsWithAllAggregationTypes() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -200,7 +199,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   }
 
   @Test
-  public void otherProcessDefinitionsDoNoAffectResult() throws Exception {
+  public void otherProcessDefinitionsDoNoAffectResult() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -251,7 +250,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   }
 
   @Test
-  public void filterInReportWorks() throws Exception {
+  public void filterInReportWorks() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
@@ -297,7 +296,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
 
   @Test
-  public void calculateDurationForRunningProcessInstances() throws SQLException {
+  public void calculateDurationForRunningProcessInstances() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -342,7 +341,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   }
 
   @Test
-  public void calculateDurationForCompletedProcessInstances() throws SQLException {
+  public void calculateDurationForCompletedProcessInstances() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -387,7 +386,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
 
 
   @Test
-  public void calculateDurationForRunningAndCompletedProcessInstances() throws SQLException {
+  public void calculateDurationForRunningAndCompletedProcessInstances() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);
@@ -429,7 +428,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT extends AbstractPro
   }
 
   @Test
-  public void durationFilterWorksForRunningProcessInstances() throws SQLException {
+  public void durationFilterWorksForRunningProcessInstances() {
     // given
     OffsetDateTime now = OffsetDateTime.now();
     LocalDateUtil.setCurrentTime(now);

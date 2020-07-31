@@ -5,11 +5,8 @@
  */
 package org.camunda.optimize.dto.optimize.query.report;
 
-import com.google.common.collect.ImmutableSet;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-
-import java.util.Set;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FilterOperatorConstants {
@@ -17,15 +14,12 @@ public class FilterOperatorConstants {
   public static final String IN = "in";
   public static final String NOT_IN = "not in";
 
+  public static final String CONTAINS = "contains";
+  public static final String NOT_CONTAINS = "not contains";
+
   public static final String LESS_THAN = "<";
   public static final String LESS_THAN_EQUALS = "<=";
   public static final String GREATER_THAN = ">";
   public static final String GREATER_THAN_EQUALS = ">=";
 
-  public static final Set<String> RELATIVE_OPERATORS = ImmutableSet.of(
-    LESS_THAN,
-    LESS_THAN_EQUALS,
-    GREATER_THAN,
-    GREATER_THAN_EQUALS
-  );
 }

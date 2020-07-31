@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter;
+package org.camunda.optimize.service.es.filter.process;
 
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
@@ -27,9 +27,9 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.Test;
 
 import java.time.OffsetDateTime;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -142,8 +142,7 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<String> reportIds = Arrays.asList(singleReport1, singleReport2)
-      .stream()
+    final List<String> reportIds = Stream.of(singleReport1, singleReport2)
       .map(reportClient::createSingleProcessReport)
       .collect(toList());
     final CombinedProcessReportResultDataDto<SingleReportResultDto> combinedResult =

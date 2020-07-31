@@ -3,10 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter;
+package org.camunda.optimize.service.es.filter.process;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -29,6 +28,9 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN_EQUALS;
 
 public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
 
@@ -52,7 +54,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .flowNode(
             USER_TASK_1,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L)
-              .operator(FilterOperatorConstants.GREATER_THAN).build()
+              .operator(GREATER_THAN).build()
           )
           .add()
           .buildList()
@@ -66,7 +68,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .flowNode(
             USER_TASK_1,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L)
-              .operator(FilterOperatorConstants.LESS_THAN_EQUALS).build()
+              .operator(LESS_THAN_EQUALS).build()
           )
           .add()
           .buildList()
@@ -97,14 +99,14 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .flowNode(
             USER_TASK_1,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(9L)
-              .operator(FilterOperatorConstants.GREATER_THAN).build()
+              .operator(GREATER_THAN).build()
           )
           .add()
           .flowNodeDuration()
           .flowNode(
             USER_TASK_1,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(11L)
-              .operator(FilterOperatorConstants.LESS_THAN).build()
+              .operator(LESS_THAN).build()
           )
           .add()
           .buildList()
@@ -135,12 +137,12 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .flowNode(
             USER_TASK_1,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L)
-              .operator(FilterOperatorConstants.GREATER_THAN).build()
+              .operator(GREATER_THAN).build()
           )
           .flowNode(
             USER_TASK_2,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L)
-              .operator(FilterOperatorConstants.GREATER_THAN).build()
+              .operator(GREATER_THAN).build()
           )
           .add()
           .buildList()
@@ -154,13 +156,13 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .flowNode(
             USER_TASK_1,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L)
-              .operator(FilterOperatorConstants.GREATER_THAN).build()
+              .operator(GREATER_THAN).build()
           )
           .flowNode(
             USER_TASK_2,
             // although this will not match any results, the previous one will
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L)
-              .operator(FilterOperatorConstants.LESS_THAN).build()
+              .operator(LESS_THAN).build()
           )
           .add()
           .buildList()
@@ -192,14 +194,14 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .flowNode(
             USER_TASK_1,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L)
-              .operator(FilterOperatorConstants.GREATER_THAN).build()
+              .operator(GREATER_THAN).build()
           )
           .add()
           .flowNodeDuration()
           .flowNode(
             USER_TASK_2,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L)
-              .operator(FilterOperatorConstants.GREATER_THAN).build()
+              .operator(GREATER_THAN).build()
           )
           .add()
           .buildList()
@@ -213,14 +215,14 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .flowNode(
             USER_TASK_1,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L)
-              .operator(FilterOperatorConstants.GREATER_THAN).build()
+              .operator(GREATER_THAN).build()
           )
           .add()
           .flowNodeDuration()
           .flowNode(
             USER_TASK_2,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L)
-              .operator(FilterOperatorConstants.LESS_THAN).build()
+              .operator(LESS_THAN).build()
           )
           .add()
           .buildList()
@@ -234,14 +236,14 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .flowNode(
             USER_TASK_1,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L)
-              .operator(FilterOperatorConstants.LESS_THAN).build()
+              .operator(LESS_THAN).build()
           )
           .add()
           .flowNodeDuration()
           .flowNode(
             USER_TASK_2,
             DurationFilterDataDto.builder().unit(DurationFilterUnit.SECONDS).value(0L)
-              .operator(FilterOperatorConstants.LESS_THAN).build()
+              .operator(LESS_THAN).build()
           )
           .add()
           .buildList()
@@ -282,7 +284,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .flowNode(
             USER_TASK_1,
             DurationFilterDataDto.builder().unit(unit).value(actualUserTaskDuration - 1L)
-              .operator(FilterOperatorConstants.GREATER_THAN).build()
+              .operator(GREATER_THAN).build()
           )
           .add()
           .buildList()
@@ -296,7 +298,7 @@ public class FlowNodeDurationFilterIT extends AbstractDurationFilterIT {
           .flowNode(
             USER_TASK_1,
             DurationFilterDataDto.builder().unit(unit).value((long) actualUserTaskDuration)
-              .operator(FilterOperatorConstants.LESS_THAN).build()
+              .operator(LESS_THAN).build()
           )
           .add()
           .buildList()

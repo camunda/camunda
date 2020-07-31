@@ -6,6 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
 import com.google.common.base.Function;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -15,12 +16,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 
 public class IdentityLinkFilterBuilder {
 
-  private String operator = IN;
+  private FilterOperator operator = IN;
   private List<String> values = new ArrayList<>();
   private Function<IdentityLinkFilterDataDto, ProcessFilterDto<IdentityLinkFilterDataDto>> filterCreator;
   private ProcessFilterBuilder filterBuilder;
@@ -50,7 +51,7 @@ public class IdentityLinkFilterBuilder {
     return this;
   }
 
-  public IdentityLinkFilterBuilder operator(String operator) {
+  public IdentityLinkFilterBuilder operator(FilterOperator operator) {
     this.operator = operator;
     return this;
   }
