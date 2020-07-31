@@ -21,7 +21,7 @@ import CollectionModal from './modals/CollectionModal';
 import ReportTemplateModal from './modals/ReportTemplateModal';
 import {loadEntities} from './service';
 
-import {formatLink, formatType, formatSubEntities, formatUserCount} from './formatters';
+import {formatLink, formatType, formatSubEntities} from './formatters';
 
 import './Home.scss';
 
@@ -34,19 +34,22 @@ export class Home extends React.Component {
     creatingCollection: false,
     creatingProcessReport: false,
     editingCollection: null,
+    sorting: null,
+    isLoading: true,
   };
 
   componentDidMount() {
     this.loadList();
   }
 
-  loadList = () => {
+  loadList = (sortBy, sortOrder) => {
+    this.setState({isLoading: true, sorting: {key: sortBy, order: sortOrder}});
     this.props.mightFail(
-      loadEntities(),
-      (entities) => this.setState({entities}),
+      loadEntities(sortBy, sortOrder),
+      (entities) => this.setState({entities, isLoading: false}),
       (error) => {
         showError(error);
-        this.setState({entities: []});
+        this.setState({entities: [], isLoading: false});
       }
     );
   };
@@ -79,6 +82,8 @@ export class Home extends React.Component {
       creatingProcessReport,
       editingCollection,
       redirect,
+      sorting,
+      isLoading,
     } = this.state;
 
     if (redirect) {
@@ -100,12 +105,15 @@ export class Home extends React.Component {
               />
             }
             empty={t('home.empty')}
-            isLoading={!entities}
+            isLoading={isLoading}
+            sorting={sorting}
+            onSortingChange={this.loadList}
             columns={[
-              t('common.name'),
+              {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
+              {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
               t('home.contents'),
-              t('common.entity.modified'),
-              t('home.members'),
+              {name: 'Modified by', key: 'lastModifier', defaultOrder: 'asc'},
+              {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
             ]}
             data={
               entities &&
@@ -115,6 +123,7 @@ export class Home extends React.Component {
                   entityType,
                   currentUserRole,
                   lastModified,
+                  lastModifier,
                   name,
                   data,
                   reportType,
@@ -128,8 +137,8 @@ export class Home extends React.Component {
                   name,
                   meta: [
                     formatSubEntities(data.subEntityCounts),
-                    format(parseISO(lastModified), 'yyyy-MM-dd HH:mm'),
-                    formatUserCount(data.roleCounts),
+                    lastModifier,
+                    format(parseISO(lastModified), 'PP'),
                   ],
                   actions: (entityType !== 'collection' || currentUserRole === 'manager') && [
                     {

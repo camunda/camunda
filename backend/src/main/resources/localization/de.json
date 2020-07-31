@@ -683,7 +683,9 @@
       "empty": "Keine Elemente gefunden"
     },
     "entity": {
+      "type": "Art",
       "modified": "Zuletzt bearbeitet",
+      "modifiedBy": "Bearbeitet von",
       "modifiedTitle": "Bearbeitet",
       "byModifier": "durch {modifier}",
       "createdBy": "Erstellt von",

@@ -48,20 +48,3 @@ export function formatSubEntities({dashboard, report}) {
 
   return string;
 }
-
-export function formatUserCount({user, group}) {
-  let string = '';
-  if (group) {
-    string += group + ' ';
-    string += t('common.user-group.' + (group > 1 ? 'label-plural' : 'label'));
-    if (user) {
-      string += ', ';
-    }
-  }
-  if (user) {
-    string += user + ' ';
-    string += t('common.user.' + (user > 1 ? 'label-plural' : 'label'));
-  }
-
-  return string;
-}

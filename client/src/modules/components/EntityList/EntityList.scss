@@ -67,6 +67,23 @@
       > .action:not(:empty) {
         margin-left: 20px;
       }
+
+      .sortMenu {
+        width: 32px;
+        height: 32px;
+        margin-left: 20px;
+        margin-top: 2px;
+
+        .activateButton .Icon {
+          font-size: 24px;
+        }
+        .downIcon {
+          display: none;
+        }
+        .menu {
+          margin-top: -6px;
+        }
+      }
     }
   }
 
@@ -84,6 +101,26 @@
       overflow: hidden;
       white-space: nowrap;
       padding-right: 10px;
+
+      &.sortable > span {
+        cursor: pointer;
+      }
+
+      &.sorted {
+        color: $grey-darken-23;
+      }
+
+      .Icon {
+        font-size: 24px;
+        position: absolute;
+        margin-left: 4px;
+        margin-top: -3px;
+        transition: 0.2s transform;
+
+        &.desc {
+          transform: rotate(180deg);
+        }
+      }
     }
 
     .name {
@@ -98,9 +135,17 @@
   ul {
     padding: 0;
     margin: 0 0 20px 0;
+    transition: 0.1s opacity;
+
+    &.isLoading {
+      opacity: 0.34;
+      pointer-events: none;
+    }
   }
 
   .LoadingIndicator {
-    margin-top: 74px;
+    margin-top: 50px;
+    margin-left: calc(50% - 70px);
+    position: absolute;
   }
 }

@@ -15,8 +15,7 @@ import CollectionWithErrorHandling from './Collection';
 import Copier from './Copier';
 import CollectionModal from './modals/CollectionModal';
 import ReportTemplateModal from './modals/ReportTemplateModal';
-
-jest.mock('./service', () => ({copyEntity: jest.fn()}));
+import {loadCollectionEntities} from './service';
 
 const Collection = CollectionWithErrorHandling.WrappedComponent;
 
@@ -88,12 +87,17 @@ jest.mock('./service', () => ({
       currentUserRole: 'editor', // or viewer
     },
   ]),
+  copyEntity: jest.fn(),
 }));
 
 const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   match: {params: {id: 'aCollectionId'}},
 };
+
+beforeEach(() => {
+  loadCollectionEntities.mockClear();
+});
 
 it('should pass Entity to Deleter', () => {
   const node = shallow(<Collection {...props} />);
@@ -174,4 +178,26 @@ it('should hide create new button if the user role is viewer', () => {
   const node = shallow(<Collection {...props} />);
 
   expect(node.find('EntityList').prop('action')).toBe(false);
+});
+
+it('should load collection entities with sort parameters', () => {
+  const node = shallow(<Collection {...props} />);
+
+  node.find('EntityList').simulate('sortingChange', 'lastModifier', 'desc');
+
+  expect(loadCollectionEntities).toHaveBeenCalledWith('aCollectionId', 'lastModifier', 'desc');
+});
+
+it('should set the loading state of the entity list', async () => {
+  const node = shallow(<Collection {...props} mightFail={async (data, cb) => cb(await data)} />);
+
+  expect(node.find('EntityList').prop('isLoading')).toBe(true);
+  await flushPromises();
+  expect(node.find('EntityList').prop('isLoading')).toBe(false);
+
+  node.find('EntityList').simulate('sortingChange', 'lastModifier', 'desc');
+
+  expect(node.find('EntityList').prop('isLoading')).toBe(true);
+  await flushPromises();
+  expect(node.find('EntityList').prop('isLoading')).toBe(false);
 });

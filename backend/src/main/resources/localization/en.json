@@ -683,7 +683,9 @@
       "empty": "No items found"
     },
     "entity": {
+      "type": "Type",
       "modified": "Last modified",
+      "modifiedBy": "Modified by",
       "modifiedTitle": "Modified",
       "byModifier": "by {modifier}",
       "createdBy": "Created by",

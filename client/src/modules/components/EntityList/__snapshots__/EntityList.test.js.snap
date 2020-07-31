@@ -30,7 +30,9 @@ exports[`should match snapshot 1`] = `
   <div
     className="content"
   >
-    <ul>
+    <ul
+      className=""
+    >
       <ListItem
         data={
           Object {
@@ -98,6 +100,35 @@ exports[`should match snapshot 1`] = `
 </div>
 `;
 
+exports[`should not show a header entry for column entries that are hidden 1`] = `
+<div
+  className="columnHeaders"
+>
+  <div
+    className="name"
+    key="0"
+    title="Name"
+  >
+    <span
+      onClick={[Function]}
+    >
+      Name
+    </span>
+  </div>
+  <div
+    className="meta"
+    key="1"
+    title="Another Column"
+  >
+    <span
+      onClick={[Function]}
+    >
+      Another Column
+    </span>
+  </div>
+</div>
+`;
+
 exports[`should show a column header if specified 1`] = `
 <div
   className="columnHeaders"
@@ -107,28 +138,44 @@ exports[`should show a column header if specified 1`] = `
     key="0"
     title="Name"
   >
-    Name
+    <span
+      onClick={[Function]}
+    >
+      Name
+    </span>
   </div>
   <div
     className="meta"
     key="1"
     title="Meta 1"
   >
-    Meta 1
+    <span
+      onClick={[Function]}
+    >
+      Meta 1
+    </span>
   </div>
   <div
     className="meta"
     key="2"
     title="Meta 2"
   >
-    Meta 2
+    <span
+      onClick={[Function]}
+    >
+      Meta 2
+    </span>
   </div>
   <div
     className="meta"
     key="3"
     title="Meta 3"
   >
-    Meta 3
+    <span
+      onClick={[Function]}
+    >
+      Meta 3
+    </span>
   </div>
 </div>
 `;

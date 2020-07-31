@@ -40,6 +40,8 @@ export default withErrorHandling(
       redirect: '',
       copying: null,
       entities: null,
+      sorting: null,
+      isLoading: true,
     };
 
     componentDidMount() {
@@ -65,13 +67,14 @@ export default withErrorHandling(
       this.loadEntities();
     };
 
-    loadEntities = () => {
+    loadEntities = (sortBy, sortOrder) => {
+      this.setState({isLoading: true, sorting: {key: sortBy, order: sortOrder}});
       this.props.mightFail(
-        loadCollectionEntities(this.props.match.params.id),
-        (entities) => this.setState({entities}),
+        loadCollectionEntities(this.props.match.params.id, sortBy, sortOrder),
+        (entities) => this.setState({entities, isLoading: false}),
         (error) => {
           showError(error);
-          this.setState({entities: null});
+          this.setState({entities: null, isLoading: false});
         }
       );
     };
@@ -92,6 +95,8 @@ export default withErrorHandling(
         redirect,
         copying,
         entities,
+        sorting,
+        isLoading,
       } = this.state;
 
       const homeTab = this.props.match.params.viewMode === undefined;
@@ -161,8 +166,16 @@ export default withErrorHandling(
                   )
                 }
                 empty={t('home.empty')}
-                isLoading={!entities}
-                columns={[t('common.name'), t('home.contents'), t('common.entity.modified')]}
+                isLoading={isLoading}
+                sorting={sorting}
+                onSortingChange={this.loadEntities}
+                columns={[
+                  {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
+                  {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
+                  t('home.contents'),
+                  {name: 'Modified by', key: 'lastModifier', defaultOrder: 'asc'},
+                  {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
+                ]}
                 data={
                   entities &&
                   entities.map((entity) => {
@@ -171,6 +184,7 @@ export default withErrorHandling(
                       entityType,
                       currentUserRole,
                       lastModified,
+                      lastModifier,
                       name,
                       data,
                       reportType,
@@ -207,7 +221,8 @@ export default withErrorHandling(
                       name,
                       meta: [
                         formatSubEntities(data.subEntityCounts),
-                        format(parseISO(lastModified), 'yyyy-MM-dd HH:mm'),
+                        lastModifier,
+                        format(parseISO(lastModified), 'PP'),
                       ],
                       actions,
                     };
