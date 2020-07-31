@@ -20,7 +20,7 @@ const Footer = styled.div`
   background-color: ${({theme}) => theme.colors.ui02};
   box-shadow: ${({theme}) => theme.shadows.variablesFooter};
   text-align: right;
-  padding: 14px;
+  padding: 14px 19px;
 `;
 
 export {Footer, Form};

@@ -74,6 +74,7 @@ const Details: React.FC = () => {
     GET_TASK_DETAILS,
     {
       variables: {id},
+      fetchPolicy: 'network-only',
     },
   );
 
@@ -130,7 +131,9 @@ const Details: React.FC = () => {
               ) : (
                 <>
                   --
-                  <ClaimButton onClick={() => claimTask()}>Claim</ClaimButton>
+                  {taskState === TaskStates.Created && (
+                    <ClaimButton onClick={() => claimTask()}>Claim</ClaimButton>
+                  )}
                 </>
               )}
             </TD>

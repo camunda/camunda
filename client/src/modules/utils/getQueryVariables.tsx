@@ -27,7 +27,9 @@ const getQueryVariables = (filter: string, {username}: {username?: string}) => {
     }
     case FilterValues.AllOpen:
     default: {
-      return {};
+      return {
+        state: TaskStates.Created,
+      };
     }
   }
 };

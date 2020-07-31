@@ -44,7 +44,7 @@ const GET_TASK =
               firstname
               lastname
             }
-            taskState @client
+            taskState
           }
         }
       `;

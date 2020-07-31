@@ -59,8 +59,8 @@ const GET_TASK_DETAILS =
               lastname
             }
             creationTime
-            completionTime @client
-            taskState @client
+            completionTime
+            taskState
           }
         }
       `;

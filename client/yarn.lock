@@ -6071,6 +6071,11 @@ fill-range@^7.0.1:
   dependencies:
     to-regex-range "^5.0.1"
 
+final-form-arrays@^3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/final-form-arrays/-/final-form-arrays-3.0.2.tgz#9f3bef778dec61432357744eb6f3abef7e7f3847"
+  integrity sha512-TfO8aZNz3RrsZCDx8GHMQcyztDNpGxSSi9w4wpSNKlmv2PfFWVVM8P7Yj5tj4n0OWax+x5YwTLhT5BnqSlCi+w==
+
 final-form@^4.20.1:
   version "4.20.1"
   resolved "https://registry.yarnpkg.com/final-form/-/final-form-4.20.1.tgz#525a7f7f27f55c28d8994b157b24d6104fc560e9"
@@ -10996,6 +11001,13 @@ react-error-overlay@^6.0.7:
   version "6.0.7"
   resolved "https://registry.yarnpkg.com/react-error-overlay/-/react-error-overlay-6.0.7.tgz#1dcfb459ab671d53f660a991513cb2f0a0553108"
   integrity sha512-TAv1KJFh3RhqxNvhzxj6LeT5NWklP6rDr2a0jaTfsZ5wSZWHOGeqQyejUp3xxLfPt2UpyJEcVQB/zyPcmonNFA==
+
+react-final-form-arrays@^3.1.2:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/react-final-form-arrays/-/react-final-form-arrays-3.1.2.tgz#391ceee29d866f2128c807b510c6a17ff4dc72cc"
+  integrity sha512-ds1FUS8s3AnfbvfmBTPnjijS7veKBr6DrWOGQzDI7grE4OosVWOREwd2ZUkz3HPB3wXQcNWsqyDuQDBSMGUr2g==
+  dependencies:
+    "@babel/runtime" "^7.4.5"
 
 react-final-form@^6.5.1:
   version "6.5.1"

@@ -7,7 +7,6 @@
 /* istanbul ignore file */
 
 import gql from 'graphql-tag';
-import {completedTask} from 'modules/mock-schema/mocks/task-details';
 import {Task, Variable} from 'modules/types';
 
 type Variables = ReadonlyArray<Variable>;
@@ -22,38 +21,11 @@ interface CompleteTaskVariables {
   variables: Variables;
 }
 
-const COMPLETE_TASK =
-  process.env.NODE_ENV === 'test'
-    ? gql`
-        mutation CompleteTask($id: ID!, $variables: [Variable]) {
-          completeTask(id: $id, variables: $variables) {
-            id
-            name
-            workflowName
-            assignee
-            creationTime
-            assignee
-            variables
-            completionTime
-            taskState
-          }
-        }
-      `
-    : gql`
-        mutation CompleteTask($id: ID!, $variables: [Variable]) {
-          completeTask(id: $id, variables: $variables) @client {
-            id
-            name
-            workflowName
-            assignee
-            creationTime
-            assignee
-            variables
-            completionTime
-            taskState
-          }
-        }
-      `;
+const COMPLETE_TASK = gql`
+  mutation CompleteTask($id: String!, $variables: [VariableInput!]!) {
+    completeTask(taskId: $id, variables: $variables)
+  }
+`;
 
 const mockCompleteTask = {
   request: {
@@ -62,22 +34,42 @@ const mockCompleteTask = {
   },
   result: {
     data: {
-      completeTask: completedTask,
+      completeTask: true,
     },
   },
 };
 
-const mockCompleteTaskWithVariable = {
+const mockCompleteTaskWithEditedVariable = {
   request: {
     query: COMPLETE_TASK,
     variables: {id: '0', variables: [{name: 'myVar', value: 'newValue'}]},
   },
   result: {
     data: {
-      completeTask: completedTask,
+      completeTask: true,
+    },
+  },
+};
+
+const mockCompleteTaskWithAddedVariable = {
+  request: {
+    query: COMPLETE_TASK,
+    variables: {
+      id: '0',
+      variables: [{name: 'newVariableName', value: 'newVariableValue'}],
+    },
+  },
+  result: {
+    data: {
+      completeTask: true,
     },
   },
 };
 
 export type {CompleteTask, CompleteTaskVariables};
-export {COMPLETE_TASK, mockCompleteTask, mockCompleteTaskWithVariable};
+export {
+  COMPLETE_TASK,
+  mockCompleteTask,
+  mockCompleteTaskWithEditedVariable,
+  mockCompleteTaskWithAddedVariable,
+};

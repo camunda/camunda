@@ -9,7 +9,7 @@ import {Task} from './index';
 import * as React from 'react';
 import {Route, Router} from 'react-router-dom';
 import {createMemoryHistory, History} from 'history';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
 import {MockedResponse} from '@apollo/react-testing';
 
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
@@ -29,22 +29,16 @@ import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 import {
   mockCompleteTask,
-  mockCompleteTaskWithVariable,
+  mockCompleteTaskWithAddedVariable,
+  mockCompleteTaskWithEditedVariable,
 } from 'modules/mutations/complete-task';
 
 type GetWrapperProps = {
-  id: string;
   mocks: MockedResponse[];
-  history?: History;
+  history: History;
 };
 
-const getWrapper = ({
-  id,
-  mocks,
-  history = createMemoryHistory(),
-}: GetWrapperProps) => {
-  history.push(`/${id}`);
-
+const getWrapper = ({mocks, history}: GetWrapperProps) => {
   const Wrapper: React.FC = ({children}) => (
     <Router history={history}>
       <Route path="/:id">
@@ -60,9 +54,13 @@ const getWrapper = ({
 
 describe('<Task />', () => {
   it('should render created task', async () => {
+    const history = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
+
     render(<Task />, {
       wrapper: getWrapper({
-        id: '0',
+        history,
         mocks: [
           mockGetTaskCreated,
           mockGetTaskClaimed,
@@ -80,9 +78,13 @@ describe('<Task />', () => {
   });
 
   it('should render completed task', async () => {
+    const history = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
+
     render(<Task />, {
       wrapper: getWrapper({
-        id: '0',
+        history,
         mocks: [
           mockGetTaskCompleted,
           mockGetTaskUnclaimed,
@@ -100,44 +102,47 @@ describe('<Task />', () => {
   });
 
   it('should complete task without variables', async () => {
-    const history = createMemoryHistory();
+    const history = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
 
     render(<Task />, {
       wrapper: getWrapper({
-        id: '0',
+        history,
         mocks: [
           mockGetTaskCreated,
           mockGetTaskClaimed,
           mockTaskWithoutVariables,
           mockGetCurrentUser,
           mockCompleteTask,
+          mockGetTaskClaimed,
         ],
-        history,
       }),
     });
 
     fireEvent.click(await screen.findByRole('button', {name: 'Complete Task'}));
 
-    expect(
-      await screen.findByRole('button', {name: 'Complete Task'}),
-    ).not.toBeInTheDocument();
-    expect(history.location.pathname).toBe('/');
+    await waitFor(() => {
+      expect(history.location.pathname).toBe('/');
+    });
   });
 
   it('should change variable and complete task', async () => {
-    const history = createMemoryHistory();
+    const history = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
 
     render(<Task />, {
       wrapper: getWrapper({
-        id: '0',
+        history,
         mocks: [
           mockGetTaskCreated,
           mockGetTaskClaimed,
           mockTaskWithVariables,
           mockGetCurrentUser,
-          mockCompleteTaskWithVariable,
+          mockCompleteTaskWithEditedVariable,
+          mockGetTaskClaimed,
         ],
-        history,
       }),
     });
 
@@ -147,9 +152,50 @@ describe('<Task />', () => {
 
     fireEvent.click(await screen.findByRole('button', {name: 'Complete Task'}));
 
-    expect(
-      await screen.findByRole('button', {name: 'Complete Task'}),
-    ).not.toBeInTheDocument();
-    expect(history.location.pathname).toBe('/');
+    await waitFor(() => {
+      expect(history.location.pathname).toBe('/');
+    });
+  });
+
+  it('should add new variable and complete task', async () => {
+    const history = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
+
+    render(<Task />, {
+      wrapper: getWrapper({
+        history,
+        mocks: [
+          mockGetTaskCreated,
+          mockGetTaskClaimed,
+          mockTaskWithVariables,
+          mockGetCurrentUser,
+          mockCompleteTaskWithAddedVariable,
+          mockGetTaskClaimed,
+        ],
+      }),
+    });
+
+    fireEvent.click(await screen.findByText('Add Variable'));
+
+    fireEvent.change(
+      screen.getByRole('textbox', {name: 'new-variables[0].name'}),
+      {
+        target: {value: 'newVariableName'},
+      },
+    );
+
+    fireEvent.change(
+      screen.getByRole('textbox', {name: 'new-variables[0].value'}),
+      {
+        target: {value: 'newVariableValue'},
+      },
+    );
+
+    fireEvent.click(await screen.findByRole('button', {name: 'Complete Task'}));
+
+    await waitFor(() => {
+      expect(history.location.pathname).toBe('/');
+    });
   });
 });

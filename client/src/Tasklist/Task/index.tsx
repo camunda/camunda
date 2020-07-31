@@ -8,6 +8,8 @@ import React from 'react';
 import {useParams} from 'react-router-dom';
 import {useQuery, useMutation} from '@apollo/react-hooks';
 import {Form} from 'react-final-form';
+import {get, intersection} from 'lodash';
+import arrayMutators from 'final-form-arrays';
 
 import {useHistory} from 'react-router-dom';
 
@@ -28,14 +30,12 @@ import {
   GET_CURRENT_USER,
 } from 'modules/queries/get-current-user';
 import {Pages} from 'modules/constants/pages';
+import {Variable} from 'modules/types';
+import {GET_TASK_DETAILS} from 'modules/queries/get-task-details';
 
 const Task: React.FC = () => {
   const {id} = useParams();
   const history = useHistory();
-
-  interface FormValues {
-    [name: string]: string;
-  }
 
   const {data, loading} = useQuery<GetTask, TaskQueryVariables>(GET_TASK, {
     variables: {id},
@@ -43,6 +43,10 @@ const Task: React.FC = () => {
   const {data: userData} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
   const [completeTask] = useMutation<GetTask, CompleteTaskVariables>(
     COMPLETE_TASK,
+    {
+      refetchQueries: [{query: GET_TASK_DETAILS, variables: {id}}],
+      awaitRefetchQueries: true,
+    },
   );
 
   if (data === undefined || loading) {
@@ -57,19 +61,29 @@ const Task: React.FC = () => {
   return (
     <>
       <Details />
-      <Form<FormValues>
+      <Form
+        mutators={{...arrayMutators}}
         onSubmit={async (values, form) => {
-          const {dirtyFields} = form.getState();
+          const {dirtyFields, initialValues = []} = form.getState();
+
+          const existingVariables: ReadonlyArray<Variable> = intersection(
+            Object.keys(initialValues),
+            Object.keys(dirtyFields),
+          ).map((name) => ({
+            name,
+            value: values[name],
+          }));
+
+          const newVariables: ReadonlyArray<Variable> =
+            get(values, 'new-variables') || [];
 
           await completeTask({
             variables: {
               id,
-              variables: Object.keys(dirtyFields).map((name) => ({
-                name,
-                value: values[name],
-              })),
+              variables: [...existingVariables, ...newVariables],
             },
           });
+
           history.push({
             pathname: Pages.Initial(),
             search: history.location.search,

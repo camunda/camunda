@@ -59,6 +59,9 @@ const GET_TASKS = gql`
 const mockGetAllOpenTasks = {
   request: {
     query: GET_TASKS,
+    variables: {
+      state: 'CREATED',
+    },
   },
   result: {
     data: {
@@ -70,6 +73,9 @@ const mockGetAllOpenTasks = {
 const mockGetEmptyTasks = {
   request: {
     query: GET_TASKS,
+    variables: {
+      state: 'CREATED',
+    },
   },
   result: {
     data: {
