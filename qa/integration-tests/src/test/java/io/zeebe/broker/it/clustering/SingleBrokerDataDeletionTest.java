@@ -26,6 +26,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
@@ -113,12 +114,42 @@ public class SingleBrokerDataDeletionTest {
                     .isLessThan(segmentsBeforeSnapshot));
   }
 
-  private void fillSegments(final Broker broker, final int segmentCount) {
+  @Test
+  public void shouldCompactWhenExporterHasBeenRemoved() {
+    // given
+    final Broker broker = clusteringRule.getBroker(0);
+    ControllableExporter.updatePosition(true);
+    fillSegments(broker, SEGMENT_COUNT);
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    // create first snapshot with exporter positions
+    final var firstSnapshot = clusteringRule.waitForSnapshotAtBroker(broker);
 
-    while (getSegmentsCount(broker) <= segmentCount) {
-      writeToLog();
-      writtenRecords.incrementAndGet();
-    }
+    // restart with no exporter
+    final var brokerCfg = clusteringRule.getBrokerCfg(0);
+    brokerCfg.setExporters(Map.of());
+    clusteringRule.stopBroker(0);
+    clusteringRule.startBroker(0);
+
+    final var filledSegmentCount = SEGMENT_COUNT * 2;
+    writeSegments(broker, filledSegmentCount);
+
+    // when triggering new snapshot creation
+    final var segmentsCount = getSegmentsCount(broker);
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+    final var secondSnapshot = clusteringRule.waitForNewSnapshotAtBroker(broker, firstSnapshot);
+
+    // then
+    assertThat(firstSnapshot).isNotEqualTo(secondSnapshot);
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(getSegmentsCount(broker))
+                    .describedAs("Expected less segments after a snapshot is taken")
+                    .isLessThan(segmentsCount));
+  }
+
+  private void fillSegments(final Broker broker, final int segmentCount) {
+    writeSegments(broker, segmentCount);
 
     await()
         .untilAsserted(
@@ -126,6 +157,13 @@ public class SingleBrokerDataDeletionTest {
                 assertThat(ControllableExporter.EXPORTED_RECORDS.get())
                     .describedAs("Expected all written records to be exported")
                     .isGreaterThanOrEqualTo(writtenRecords.get()));
+  }
+
+  private void writeSegments(final Broker broker, final int segmentCount) {
+    while (getSegmentsCount(broker) <= segmentCount) {
+      writeToLog();
+      writtenRecords.incrementAndGet();
+    }
   }
 
   private void writeToLog() {
