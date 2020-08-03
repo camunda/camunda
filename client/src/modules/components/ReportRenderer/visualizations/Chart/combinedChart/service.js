@@ -39,7 +39,7 @@ export function getCombinedChartProps(reports, data) {
       }
       let singleReportResult;
       if (data.visualization === 'number') {
-        singleReportResult = [{key: report.name, value: report.result.data}];
+        singleReportResult = [{key: report.id, value: report.result.data}];
       } else {
         singleReportResult = formatReportResult(data, report.result.data);
       }

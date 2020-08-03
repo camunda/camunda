@@ -61,7 +61,8 @@ export function extractCombinedData({report, theme, targetValue}) {
   }
 
   const unitedResults = uniteResults(resultArr, keys);
-  const labels = keys.map((key) => labelsMap[key] || key);
+  const labels =
+    data.visualization === 'number' ? reportsNames : keys.map((key) => labelsMap[key] || key);
 
   return {
     labels,

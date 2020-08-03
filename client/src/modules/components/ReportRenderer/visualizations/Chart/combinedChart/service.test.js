@@ -84,6 +84,7 @@ it('should return correct cominbed chart repot data properties for single report
 it('should convert results of a combined number report to a correctly formatted barchart data', () => {
   const NumberReportA = {
     name: 'report A',
+    id: 'NumberReportA',
     data: {
       visualization: 'number',
     },
@@ -92,7 +93,7 @@ it('should convert results of a combined number report to a correctly formatted 
 
   const result = {
     NumberReportA: NumberReportA,
-    NumberReportB: NumberReportA,
+    NumberReportB: {...NumberReportA, id: 'NumberReportB', name: 'report B'},
   };
 
   const chartProps = getCombinedChartProps(result, {
@@ -106,7 +107,7 @@ it('should convert results of a combined number report to a correctly formatted 
 
   expect(chartProps).toEqual({
     reportColors: ['red', 'blue'],
-    reportsNames: ['report A', 'report A'],
-    resultArr: [[{key: 'report A', value: 100}], [{key: 'report A', value: 100}]],
+    reportsNames: ['report A', 'report B'],
+    resultArr: [[{key: 'NumberReportA', value: 100}], [{key: 'NumberReportB', value: 100}]],
   });
 });
