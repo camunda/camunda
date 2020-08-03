@@ -27,7 +27,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.hamcrest.CoreMatchers.everyItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -199,7 +198,9 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(final String definitionKey) {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(definitionKey));
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      BpmnModels.getSingleServiceTaskProcess(definitionKey)
+    );
   }
 
   protected DecisionDefinitionEngineDto deploySimpleDecisionDefinition(final String definitionKey) {

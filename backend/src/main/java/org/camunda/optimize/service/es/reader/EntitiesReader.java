@@ -125,7 +125,7 @@ public class EntitiesReader {
       collections.stream().map(BaseCollectionDefinitionDto::getId).collect(Collectors.toList())
     );
 
-    if (collections.size() == 0) {
+    if (collections.isEmpty()) {
       return new HashMap<>();
     }
 

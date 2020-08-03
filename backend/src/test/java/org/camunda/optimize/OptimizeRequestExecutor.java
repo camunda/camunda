@@ -39,6 +39,8 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
+import org.camunda.optimize.dto.optimize.rest.sorting.Sorter;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
@@ -571,8 +573,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetAllEntitiesRequest() {
+    return buildGetAllEntitiesRequest(null);
+  }
+
+  public OptimizeRequestExecutor buildGetAllEntitiesRequest(EntitySorter sorter) {
     this.path = "entities/";
     this.method = GET;
+    Optional.ofNullable(sorter).ifPresent(sortParams -> addQueryParams(extractSortParams(sorter)));
     return this;
   }
 
@@ -1293,4 +1300,16 @@ public class OptimizeRequestExecutor {
       .post(Entity.json(entity));
     return AuthCookieService.createOptimizeAuthCookieValue(response.readEntity(String.class));
   }
+
+  private Map<String, Object> extractSortParams(EntitySorter sorter) {
+    Map<String, Object> params = new HashMap<>();
+    if (sorter.getSortBy() != null) {
+      params.put(Sorter.SORT_BY, sorter.getSortBy());
+    }
+    if (sorter.getSortOrder() != null) {
+      params.put(Sorter.SORT_ORDER, sorter.getSortOrder().toString());
+    }
+    return params;
+  }
+
 }
