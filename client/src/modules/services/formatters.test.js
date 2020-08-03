@@ -172,6 +172,12 @@ describe('getHighlightedText', () => {
     expect(results[1].props.children).toBe('test');
     expect(results[1].props.className).toBe('textBold');
   });
+
+  it('should work with special characters', () => {
+    const results = getHighlightedText('test)', ')');
+    expect(results[1].props.children).toBe(')');
+    expect(results[1].props.className).toBe('textBold');
+  });
 });
 
 const exampleDurationReport = {

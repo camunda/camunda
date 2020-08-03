@@ -154,7 +154,9 @@ export function getHighlightedText(text, highlight, matchFromStart) {
   if (!highlight) {
     return text;
   }
-  let regex = highlight;
+  // we need to escape special characters in the highlight text
+  // https://stackoverflow.com/a/3561711
+  let regex = highlight.replace(/[-\\^$*+?.()|[\]{}]/g, '\\$&');
   if (matchFromStart) {
     regex = '^' + regex;
   }
