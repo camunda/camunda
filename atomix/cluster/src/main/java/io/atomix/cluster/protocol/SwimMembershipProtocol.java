@@ -33,7 +33,9 @@ import io.atomix.cluster.impl.AddressSerializer;
 import io.atomix.utils.Version;
 import io.atomix.utils.event.AbstractListenerManager;
 import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.Namespace;
+import io.atomix.utils.serializer.FallbackNamespace;
+import io.atomix.utils.serializer.NamespaceImpl;
+import io.atomix.utils.serializer.NamespaceImpl.Builder;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
 import java.util.ArrayList;
@@ -74,17 +76,10 @@ public class SwimMembershipProtocol
   private static final String MEMBERSHIP_PROBE = "atomix-membership-probe";
   private static final String MEMBERSHIP_PROBE_REQUEST = "atomix-membership-probe-request";
   private static final Serializer SERIALIZER =
-      Serializer.using(
-          Namespace.builder()
-              .register(Namespaces.BASIC)
-              .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-              .register(MemberId.class)
-              .register(new AddressSerializer(), Address.class)
-              .register(ImmutableMember.class)
-              .register(State.class)
-              .register(ImmutablePair.class)
-              .build("ClusterMembershipService"));
+      Serializer.using(new FallbackNamespace(buildNamespace().name("ClusterMembershipService")));
+
   private final SwimMembershipProtocolConfig config;
+
   private NodeDiscoveryService discoveryService;
   private BootstrapService bootstrapService;
   private final AtomicBoolean started = new AtomicBoolean();
@@ -116,6 +111,17 @@ public class SwimMembershipProtocol
 
   SwimMembershipProtocol(final SwimMembershipProtocolConfig config) {
     this.config = config;
+  }
+
+  private static Builder buildNamespace() {
+    return new NamespaceImpl.Builder()
+        .register(Namespaces.BASIC)
+        .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
+        .register(MemberId.class)
+        .register(new AddressSerializer(), Address.class)
+        .register(ImmutableMember.class)
+        .register(State.class)
+        .register(ImmutablePair.class);
   }
 
   /**
@@ -890,16 +896,6 @@ public class SwimMembershipProtocol
     }
 
     @Override
-    public Version version() {
-      return version;
-    }
-
-    @Override
-    public long timestamp() {
-      return timestamp;
-    }
-
-    @Override
     public String toString() {
       return toStringHelper(Member.class)
           .add("id", id())
@@ -910,6 +906,16 @@ public class SwimMembershipProtocol
           .add("state", state())
           .add("incarnationNumber", incarnationNumber())
           .toString();
+    }
+
+    @Override
+    public Version version() {
+      return version;
+    }
+
+    @Override
+    public long timestamp() {
+      return timestamp;
     }
 
     /**

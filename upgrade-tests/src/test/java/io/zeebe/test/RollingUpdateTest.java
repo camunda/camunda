@@ -111,7 +111,7 @@ public class RollingUpdateTest {
     // then
     try (final var client = newZeebeClient(containers.get(1))) {
       Awaitility.await()
-          .atMost(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(10))
           .pollInterval(Duration.ofMillis(100))
           .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, index));
 
