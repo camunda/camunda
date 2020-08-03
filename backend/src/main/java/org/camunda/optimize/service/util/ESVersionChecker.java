@@ -40,6 +40,8 @@ public class ESVersionChecker {
     supportedVersions.add("7.4.0");
     supportedVersions.add("7.5.0");
     supportedVersions.add("7.6.0");
+    supportedVersions.add("7.7.0");
+    supportedVersions.add("7.8.0");
   }
 
   public static void checkESVersionSupport(RestHighLevelClient esClient) throws IOException {
