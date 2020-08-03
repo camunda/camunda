@@ -83,6 +83,7 @@ public class SwimMembershipProtocol
               .register(ImmutableMember.class)
               .register(State.class)
               .register(ImmutablePair.class)
+              .setCompatible(true)
               .build("ClusterMembershipService"));
   private final SwimMembershipProtocolConfig config;
   private NodeDiscoveryService discoveryService;

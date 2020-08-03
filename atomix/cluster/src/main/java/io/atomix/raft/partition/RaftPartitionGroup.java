@@ -284,6 +284,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
           .register(RaftStorageConfig.class)
           .register(RaftCompactionConfig.class)
           .register(StorageLevel.class)
+          .setCompatible(true)
           .build();
     }
 

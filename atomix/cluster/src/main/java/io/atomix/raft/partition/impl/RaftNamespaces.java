@@ -41,7 +41,9 @@ import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitializeEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.zeebe.ZeebeEntry;
+import io.atomix.utils.serializer.FallbackNamespace;
 import io.atomix.utils.serializer.Namespace;
+import io.atomix.utils.serializer.NamespaceImpl.Builder;
 import io.atomix.utils.serializer.Namespaces;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -119,6 +121,7 @@ public final class RaftNamespaces {
           .register(Instant.class)
           .register(Configuration.class)
           .register(ZeebeEntry.class)
+          .setCompatible(true)
           .build("RaftProtocol");
 
   /**
@@ -127,31 +130,40 @@ public final class RaftNamespaces {
    * <p>*Be aware* we use the Void type for replaced/removed types to keep the id's of used types,
    * otherwise we break compatibility.
    */
-  public static final Namespace RAFT_STORAGE =
-      Namespace.builder()
-          .register(Namespaces.BASIC)
-          .nextId(Namespaces.BEGIN_USER_CUSTOM_ID + 100)
-          .register(Void.class) // CloseSessionEntry
-          .register(Void.class) // CommandEntry
-          .register(ConfigurationEntry.class)
-          .register(InitializeEntry.class)
-          .register(Void.class) // KeepAliveEntry
-          .register(Void.class) // MetadataEntry
-          .register(Void.class) // OpenSessionEntry
-          .register(Void.class) // QueryEntry
-          .register(Void.class) // PrimitiveOperation
-          .register(Void.class) // DefaultOperationId
-          .register(Void.class) // OperationType
-          .register(Void.class) // ReadConsistency
-          .register(ArrayList.class)
-          .register(HashSet.class)
-          .register(DefaultRaftMember.class)
-          .register(MemberId.class)
-          .register(RaftMember.Type.class)
-          .register(Instant.class)
-          .register(Configuration.class)
-          .register(ZeebeEntry.class)
-          .build("RaftStorage");
+  public static final FallbackNamespace RAFT_STORAGE;
 
   private RaftNamespaces() {}
+
+  static {
+    final Namespace legacy = registerStorageClasses().build("RaftStorage");
+    final Namespace compatible =
+        registerStorageClasses().setCompatible(true).build("RaftStorage-compatible");
+    RAFT_STORAGE = new FallbackNamespace(legacy, compatible);
+  }
+
+  private static Builder registerStorageClasses() {
+    return Namespace.builder()
+        .register(Namespaces.BASIC)
+        .nextId(Namespaces.BEGIN_USER_CUSTOM_ID + 100)
+        .register(Void.class) // CloseSessionEntry
+        .register(Void.class) // CommandEntry
+        .register(ConfigurationEntry.class)
+        .register(InitializeEntry.class)
+        .register(Void.class) // KeepAliveEntry
+        .register(Void.class) // MetadataEntry
+        .register(Void.class) // OpenSessionEntry
+        .register(Void.class) // QueryEntry
+        .register(Void.class) // PrimitiveOperation
+        .register(Void.class) // DefaultOperationId
+        .register(Void.class) // OperationType
+        .register(Void.class) // ReadConsistency
+        .register(ArrayList.class)
+        .register(HashSet.class)
+        .register(DefaultRaftMember.class)
+        .register(MemberId.class)
+        .register(RaftMember.Type.class)
+        .register(Instant.class)
+        .register(Configuration.class)
+        .register(ZeebeEntry.class);
+  }
 }

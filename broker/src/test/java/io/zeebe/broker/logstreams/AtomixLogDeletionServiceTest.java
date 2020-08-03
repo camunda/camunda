@@ -147,7 +147,7 @@ public final class AtomixLogDeletionServiceTest {
     try {
       return builder
           // hardcode max segment size to allow a single entry only
-          .withMaxSegmentSize(JournalSegmentDescriptor.BYTES + 8 * Integer.BYTES)
+          .withMaxSegmentSize(JournalSegmentDescriptor.BYTES + 9 * Integer.BYTES)
           .withSnapshotStore(
               new FileBasedSnapshotStore(
                   new SnapshotMetrics("1"),

@@ -61,6 +61,7 @@ public class NettyBroadcastService implements ManagedBroadcastService {
               .register(Namespaces.BASIC)
               .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
               .register(Message.class)
+              .setCompatible(true)
               .build());
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final boolean enabled;

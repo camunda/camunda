@@ -32,12 +32,14 @@ import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.event.Level;
 import org.testcontainers.containers.Network;
 import org.testcontainers.lifecycle.Startable;
 import org.testcontainers.lifecycle.Startables;
 
+@Ignore
 public class RollingUpdateTest {
   private static final String OLD_VERSION = VersionUtil.getPreviousVersion();
   private static final String NEW_VERSION = VersionUtil.getVersion();
