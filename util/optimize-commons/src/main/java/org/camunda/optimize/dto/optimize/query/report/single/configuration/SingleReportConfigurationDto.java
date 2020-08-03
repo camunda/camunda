@@ -50,6 +50,7 @@ public class SingleReportConfigurationDto implements Combinable {
   private Boolean showInstanceCount = false;
   @Builder.Default
   private Boolean pointMarkers = true;
+  @Builder.Default
   private Integer precision = null;
   @Builder.Default
   private Boolean hideRelativeValue = false;
@@ -69,6 +70,7 @@ public class SingleReportConfigurationDto implements Combinable {
   private Boolean alwaysShowAbsolute = false;
   @Builder.Default
   private Boolean showGradientBars = true;
+  @Builder.Default
   private String xml = null;
   @Builder.Default
   private List<String> excludedColumns = new ArrayList<>();
@@ -87,7 +89,9 @@ public class SingleReportConfigurationDto implements Combinable {
   private GroupByDateUnit groupByDateVariableUnit = GroupByDateUnit.AUTOMATIC;
   @Builder.Default
   private CustomNumberBucketDto customNumberBucket = new CustomNumberBucketDto();
+  @Builder.Default
   private SortingDto sorting = null;
+  @Builder.Default
   private ProcessPartDto processPart = null;
 
   @JsonIgnore

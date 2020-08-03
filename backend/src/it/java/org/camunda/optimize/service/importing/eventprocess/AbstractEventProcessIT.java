@@ -34,13 +34,13 @@ import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
-import org.elasticsearch.action.admin.indices.get.GetIndexResponse;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -61,9 +61,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
@@ -264,13 +262,10 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
     final GetIndexResponse getIndexResponse = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .getHighLevelClient()
       .indices().get(
-        new GetIndexRequest().indices(
-          indexNameService.getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX) + "*"
-        ),
+        new GetIndexRequest(indexNameService.getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX) + "*"),
         RequestOptions.DEFAULT
       );
-    return StreamSupport.stream(getIndexResponse.aliases().spliterator(), false)
-      .collect(Collectors.toMap(cursor -> cursor.key, cursor -> cursor.value));
+    return getIndexResponse.getAliases();
   }
 
   @SneakyThrows
