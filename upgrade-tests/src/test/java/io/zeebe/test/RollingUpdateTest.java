@@ -8,7 +8,6 @@
 package io.zeebe.test;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assume.assumeThat;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
@@ -36,7 +35,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.IoUtil;
 import org.awaitility.Awaitility;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -106,8 +104,6 @@ public class RollingUpdateTest {
 
   @Test
   public void shouldBeAbleToRestartContainerWithNewVersion() {
-    assumeNewVersionIsRollingUpgradeCompatible();
-
     // given
     final var index = 0;
     Startables.deepStart(containers).join();
@@ -134,8 +130,6 @@ public class RollingUpdateTest {
 
   @Test
   public void shouldReplicateSnapshotAcrossVersions() {
-    assumeNewVersionIsRollingUpgradeCompatible();
-
     // given
     Startables.deepStart(containers).join();
 
@@ -195,8 +189,6 @@ public class RollingUpdateTest {
 
   @Test
   public void shouldPerformRollingUpgrade() {
-    assumeNewVersionIsRollingUpgradeCompatible();
-
     // given
     Startables.deepStart(containers).join();
 
@@ -272,13 +264,6 @@ public class RollingUpdateTest {
           .atMost(Duration.ofSeconds(5))
           .untilAsserted(() -> assertThat(activatedJobs).isEqualTo(expectedActivatedJobs));
     }
-  }
-
-  private void assumeNewVersionIsRollingUpgradeCompatible() {
-    assumeThat(
-        "new version is rolling upgrade compatible",
-        NEW_VERSION,
-        Matchers.not(Matchers.startsWith("0.25")));
   }
 
   private WorkflowInstanceEvent createWorkflowInstance(final ZeebeClient client) {
