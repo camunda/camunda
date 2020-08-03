@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
@@ -83,10 +83,10 @@ public class DecisionViewRawData extends DecisionViewPart {
 
   private void addSortingToQuery(final DecisionReportDataDto decisionReportData,
                                  final SearchSourceBuilder searchRequestBuilder) {
-    final Optional<SortingDto> customSorting = decisionReportData.getConfiguration().getSorting();
-    final String sortByField = customSorting.flatMap(SortingDto::getBy)
+    final Optional<ReportSortingDto> customSorting = decisionReportData.getConfiguration().getSorting();
+    final String sortByField = customSorting.flatMap(ReportSortingDto::getBy)
       .orElse(DecisionInstanceIndex.EVALUATION_DATE_TIME);
-    final SortOrder sortOrder = customSorting.flatMap(SortingDto::getOrder)
+    final SortOrder sortOrder = customSorting.flatMap(ReportSortingDto::getOrder)
       .map(order -> SortOrder.valueOf(order.name()))
       .orElse(SortOrder.DESC);
 

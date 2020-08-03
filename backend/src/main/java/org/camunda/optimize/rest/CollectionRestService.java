@@ -274,7 +274,7 @@ public class CollectionRestService {
                                             @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     List<AlertDefinitionDto> alerts = collectionEntityService.getStoredAlertsForCollection(userId, collectionId);
-    alerts.forEach(alert -> alertRestMapper.prepareRestResponse(alert));
+    alerts.forEach(alertRestMapper::prepareRestResponse);
     return alerts;
   }
 
@@ -285,7 +285,7 @@ public class CollectionRestService {
                                                         @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     List<AuthorizedReportDefinitionDto> reports = collectionEntityService.findAndFilterReports(userId, collectionId);
-    reports.forEach(report -> reportRestMapper.prepareRestResponse(report));
+    reports.forEach(reportRestMapper::prepareRestResponse);
     return reports;
   }
 
@@ -296,7 +296,7 @@ public class CollectionRestService {
                                      @PathParam("id") String collectionId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     List<EntityDto> entities = collectionEntityService.getAuthorizedCollectionEntities(userId, collectionId);
-    entities.forEach(entity -> entityRestMapper.prepareRestResponse(entity));
+    entities.forEach(entityRestMapper::prepareRestResponse);
     return entities;
   }
 }

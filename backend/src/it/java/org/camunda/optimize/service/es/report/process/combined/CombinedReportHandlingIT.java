@@ -62,7 +62,6 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -84,9 +83,8 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DUR
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
-import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class CombinedReportHandlingIT extends AbstractIT {
@@ -1677,7 +1675,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcessWithVariables(Map<String, Object> variables) {
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(BpmnModels.getSingleUserTaskDiagram(), variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
+      BpmnModels.getSingleUserTaskDiagram(),
+      variables
+    );
   }
 
   private void deleteReport(String reportId) {
@@ -1740,13 +1741,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private List<ReportDefinitionDto> getAllPrivateReports() {
-    return getAllPrivateReportsWithQueryParam(new HashMap<>());
-  }
-
-  private List<ReportDefinitionDto> getAllPrivateReportsWithQueryParam(Map<String, Object> queryParams) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
-      .addQueryParams(queryParams)
       .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }

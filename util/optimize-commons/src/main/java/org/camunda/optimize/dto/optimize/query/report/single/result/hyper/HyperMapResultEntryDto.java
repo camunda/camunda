@@ -13,7 +13,7 @@ import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 
 import java.util.List;
 import java.util.Optional;
@@ -48,7 +48,7 @@ public class HyperMapResultEntryDto {
     return label != null && !label.isEmpty() ? label : key;
   }
 
-  public void sortResultData(final SortingDto sorting, final boolean keyIsOfNumericType) {
+  public void sortResultData(final ReportSortingDto sorting, final boolean keyIsOfNumericType) {
     final ReportMapResultDto wrapperForSorting = new ReportMapResultDto();
     wrapperForSorting.setData(value);
     wrapperForSorting.sortResultData(sorting, keyIsOfNumericType);

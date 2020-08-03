@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -107,7 +107,7 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
     compositeCommandResult.setSorting(
       context.getReportConfiguration()
         .getSorting()
-        .orElseGet(() -> new SortingDto(SortingDto.SORT_BY_LABEL, SortOrder.ASC))
+        .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_LABEL, SortOrder.ASC))
     );
   }
 

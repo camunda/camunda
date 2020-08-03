@@ -10,7 +10,7 @@ import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
@@ -329,7 +329,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     compositeCommandResult.setGroups(groupedData);
     compositeCommandResult.setIsComplete(isResultComplete(filteredVariables, variableTerms));
     if (VariableType.DATE.equals(getVariableType(context))) {
-      compositeCommandResult.setSorting(new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.ASC));
+      compositeCommandResult.setSorting(new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC));
     }
     compositeCommandResult.setKeyIsOfNumericType(getSortByKeyIsOfNumericType(context));
   }

@@ -22,7 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.targe
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -90,7 +90,7 @@ public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default
   private CustomNumberBucketDto customNumberBucket = new CustomNumberBucketDto();
   @Builder.Default
-  private SortingDto sorting = null;
+  private ReportSortingDto sorting = null;
   @Builder.Default
   private ProcessPartDto processPart = null;
 
@@ -121,7 +121,7 @@ public class SingleReportConfigurationDto implements Combinable {
       viewDto.getEntity().equals(ProcessViewEntity.USER_TASK);
   }
 
-  public Optional<SortingDto> getSorting() {
+  public Optional<ReportSortingDto> getSorting() {
     return Optional.ofNullable(sorting);
   }
 

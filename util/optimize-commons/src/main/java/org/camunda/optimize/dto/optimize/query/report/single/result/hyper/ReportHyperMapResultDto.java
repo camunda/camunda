@@ -6,7 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.result.hyper;
 
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
@@ -33,7 +33,7 @@ public class ReportHyperMapResultDto implements ProcessReportResultDto, LimitedR
   }
 
   @Override
-  public void sortResultData(final SortingDto sortingDto, final boolean keyIsOfNumericType) {
+  public void sortResultData(final ReportSortingDto sortingDto, final boolean keyIsOfNumericType) {
     Optional.of(sortingDto).ifPresent(
       sorting -> data
         .forEach(groupByEntry -> groupByEntry.sortResultData(sorting, keyIsOfNumericType))

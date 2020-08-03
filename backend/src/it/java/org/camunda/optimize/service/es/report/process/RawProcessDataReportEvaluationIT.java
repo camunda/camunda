@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
@@ -363,7 +363,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
-    reportData.getConfiguration().setSorting(new SortingDto(ProcessInstanceIndex.PROCESS_INSTANCE_ID, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(ProcessInstanceIndex.PROCESS_INSTANCE_ID, SortOrder.DESC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
       reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
@@ -385,7 +385,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
-    reportData.getConfiguration().setSorting(new SortingDto("lalalala", SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto("lalalala", SortOrder.ASC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
       reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
@@ -421,7 +421,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
-    reportData.getConfiguration().setSorting(new SortingDto("variable:intVar", SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto("variable:intVar", SortOrder.ASC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
       reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
@@ -443,7 +443,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
-    reportData.getConfiguration().setSorting(new SortingDto("variable:lalalala", SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto("variable:lalalala", SortOrder.ASC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
       reportClient.evaluateRawReport(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();

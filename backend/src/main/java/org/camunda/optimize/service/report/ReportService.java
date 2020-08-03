@@ -35,7 +35,6 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
-import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
@@ -54,8 +53,8 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.NotFoundException;
-import javax.ws.rs.core.MultivaluedMap;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -202,11 +201,13 @@ public class ReportService implements CollectionReferencingService {
     return new AuthorizedReportDefinitionDto(report, currentUserRole);
   }
 
-  public List<AuthorizedReportDefinitionDto> findAndFilterPrivateReports(String userId,
-                                                                         MultivaluedMap<String, String> queryParameters) {
+  public List<AuthorizedReportDefinitionDto> findAndFilterPrivateReports(String userId) {
     List<ReportDefinitionDto> reports = reportReader.getAllPrivateReportsOmitXml();
-    List<AuthorizedReportDefinitionDto> authorizedReports = filterAuthorizedReports(userId, reports);
-    return QueryParamAdjustmentUtil.adjustReportResultsToQueryParameters(authorizedReports, queryParameters);
+    return filterAuthorizedReports(userId, reports)
+      .stream()
+      .sorted(Comparator.comparing(o -> ((AuthorizedReportDefinitionDto) o).getDefinitionDto().getLastModified())
+                .reversed())
+      .collect(toList());
   }
 
   public List<AuthorizedReportDefinitionDto> findAndFilterReports(String userId) {

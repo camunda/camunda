@@ -37,7 +37,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
 import java.time.ZoneId;
 import java.util.List;
@@ -136,11 +135,9 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public List<AuthorizedReportDefinitionDto> getAuthorizedPrivateReports(@Context UriInfo uriInfo,
                                                                          @Context ContainerRequestContext requestContext) {
-    MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
-
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     List<AuthorizedReportDefinitionDto> reportDefinitions =
-      reportService.findAndFilterPrivateReports(userId, queryParameters);
+      reportService.findAndFilterPrivateReports(userId);
     reportDefinitions
       .forEach(reportRestMapper::prepareRestResponse);
     return reportDefinitions;

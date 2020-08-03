@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.decision;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
@@ -247,7 +247,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
-    reportData.getConfiguration().setSorting(new SortingDto(DecisionInstanceIndex.DECISION_INSTANCE_ID, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(DecisionInstanceIndex.DECISION_INSTANCE_ID, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       reportClient.evaluateRawReport(reportData);
 
@@ -281,7 +281,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
 
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
-    reportData.getConfiguration().setSorting(new SortingDto(DecisionInstanceIndex.EVALUATION_DATE_TIME, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(DecisionInstanceIndex.EVALUATION_DATE_TIME, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       reportClient.evaluateRawReport(reportData);
 
@@ -317,7 +317,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData.getConfiguration().setSorting(
-      new SortingDto(DecisionViewRawData.INPUT_VARIABLE_PREFIX + INPUT_AMOUNT_ID, SortOrder.ASC)
+      new ReportSortingDto(DecisionViewRawData.INPUT_VARIABLE_PREFIX + INPUT_AMOUNT_ID, SortOrder.ASC)
     );
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       reportClient.evaluateRawReport(reportData);
@@ -365,7 +365,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // when
     DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
     reportData.getConfiguration().setSorting(
-      new SortingDto(DecisionViewRawData.OUTPUT_VARIABLE_PREFIX + OUTPUT_AUDIT_ID, SortOrder.ASC)
+      new ReportSortingDto(DecisionViewRawData.OUTPUT_VARIABLE_PREFIX + OUTPUT_AUDIT_ID, SortOrder.ASC)
     );
     final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
       reportClient.evaluateRawReport(reportData);

@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -65,10 +65,10 @@ public class ProcessViewRawData extends ProcessViewPart {
     super.adjustSearchRequest(searchRequest, baseQuery, context);
 
     final String sortByField = context.getReportConfiguration().getSorting()
-      .flatMap(SortingDto::getBy)
+      .flatMap(ReportSortingDto::getBy)
       .orElse(ProcessInstanceIndex.START_DATE);
     final SortOrder sortOrder = context.getReportConfiguration().getSorting()
-      .flatMap(SortingDto::getOrder)
+      .flatMap(ReportSortingDto::getOrder)
       .map(order -> SortOrder.valueOf(order.name()))
       .orElse(SortOrder.DESC);
 

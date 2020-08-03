@@ -39,7 +39,7 @@ public class EntitiesRestService {
   public List<EntityDto> getEntities(@Context ContainerRequestContext requestContext) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     List<EntityDto> entities = entitiesService.getAllEntities(userId);
-    entities.forEach(entity -> entityRestMapper.prepareRestResponse(entity));
+    entities.forEach(entityRestMapper::prepareRestResponse);
     return entities;
   }
 

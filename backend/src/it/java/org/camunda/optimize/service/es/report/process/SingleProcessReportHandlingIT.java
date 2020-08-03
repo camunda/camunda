@@ -38,7 +38,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -334,8 +333,7 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
 
     // when
     AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result =
-      reportClient.evaluateRawReportById(
-      reportId);
+      reportClient.evaluateRawReportById(reportId);
 
     // then
     final SingleProcessReportDefinitionDto reportDefinition = result.getReportDefinition();
@@ -344,7 +342,8 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     assertThat(reportDefinition.getOwner()).isEqualTo(DEFAULT_FULLNAME);
     assertThat(reportDefinition.getCreated().truncatedTo(ChronoUnit.DAYS)).isEqualTo(now.truncatedTo(ChronoUnit.DAYS));
     assertThat(reportDefinition.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
-    assertThat(reportDefinition.getLastModified().truncatedTo(ChronoUnit.DAYS)).isEqualTo(now.truncatedTo(ChronoUnit.DAYS));
+    assertThat(reportDefinition.getLastModified()
+                 .truncatedTo(ChronoUnit.DAYS)).isEqualTo(now.truncatedTo(ChronoUnit.DAYS));
   }
 
   @Test
@@ -368,123 +367,6 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
-  @Test
-  public void resultListIsSortedByName() {
-    // given
-    String id1 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    String id2 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    String id3 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-
-    SingleProcessReportDefinitionDto updatedReport = constructSingleProcessReportWithFakePD();
-    updatedReport.setName("B");
-    reportClient.updateSingleProcessReport(id1, updatedReport);
-    updatedReport.setName("A");
-    reportClient.updateSingleProcessReport(id2, updatedReport);
-
-    // when
-    Map<String, Object> queryParam = new HashMap<>();
-    queryParam.put("orderBy", "name");
-    List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
-
-    // then
-    assertThat(reports.size()).isEqualTo(3);
-    assertThat(reports.get(0).getId()).isEqualTo(id2);
-    assertThat(reports.get(1).getId()).isEqualTo(id1);
-    assertThat(reports.get(2).getId()).isEqualTo(id3);
-
-    // when
-    queryParam.put("sortOrder", "desc");
-    reports = getAllPrivateReportsWithQueryParam(queryParam);
-
-    // then
-    assertThat(reports.size()).isEqualTo(3);
-    assertThat(reports.get(0).getId()).isEqualTo(id3);
-    assertThat(reports.get(1).getId()).isEqualTo(id1);
-    assertThat(reports.get(2).getId()).isEqualTo(id2);
-  }
-
-  @Test
-  public void resultListIsSortedByLastModified() {
-    // given
-    String id1 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    String id2 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    String id3 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    reportClient.updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
-
-    // when
-    Map<String, Object> queryParam = new HashMap<>();
-    queryParam.put("orderBy", "lastModified");
-    List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
-
-    // then
-    assertThat(reports.size()).isEqualTo(3);
-    assertThat(reports.get(0).getId()).isEqualTo(id1);
-    assertThat(reports.get(1).getId()).isEqualTo(id3);
-    assertThat(reports.get(2).getId()).isEqualTo(id2);
-
-    //when
-    queryParam.put("sortOrder", "desc");
-    reports = getAllPrivateReportsWithQueryParam(queryParam);
-    // then
-    assertThat(reports.size()).isEqualTo(3);
-    assertThat(reports.get(0).getId()).isEqualTo(id2);
-    assertThat(reports.get(1).getId()).isEqualTo(id3);
-    assertThat(reports.get(2).getId()).isEqualTo(id1);
-  }
-
-  @Test
-  public void resultListIsReversed() {
-    // given
-    String id1 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    String id2 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    String id3 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    reportClient.updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
-
-    // when
-    Map<String, Object> queryParam = new HashMap<>();
-    queryParam.put("orderBy", "lastModified");
-    queryParam.put("sortOrder", "desc");
-    List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
-
-    // then
-    assertThat(reports.size()).isEqualTo(3);
-    assertThat(reports.get(2).getId()).isEqualTo(id1);
-    assertThat(reports.get(1).getId()).isEqualTo(id3);
-    assertThat(reports.get(0).getId()).isEqualTo(id2);
-  }
-
-  @Test
-  public void resultListIsCutByAnOffset() {
-    // given
-    String id1 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    String id2 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    String id3 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    reportClient.updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
-
-    // when
-    Map<String, Object> queryParam = new HashMap<>();
-    queryParam.put("resultOffset", 1);
-    queryParam.put("orderBy", "lastModified");
-    List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
-
-    // then
-    assertThat(reports.size()).isEqualTo(2);
-    assertThat(reports.get(0).getId()).isEqualTo(id3);
-    assertThat(reports.get(1).getId()).isEqualTo(id2);
-  }
-
   private SingleProcessReportDefinitionDto constructSingleProcessReportWithFakePD() {
     SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto data = new ProcessReportDataDto();
@@ -494,66 +376,11 @@ public class SingleProcessReportHandlingIT extends AbstractIT {
     return reportDefinitionDto;
   }
 
-  @Test
-  public void resultListIsCutByMaxResults() {
-    // given
-    String id1 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    String id3 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    reportClient.updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
-
-    // when
-    Map<String, Object> queryParam = new HashMap<>();
-    queryParam.put("numResults", 2);
-    queryParam.put("orderBy", "lastModified");
-    List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
-
-    // then
-    assertThat(reports.size()).isEqualTo(2);
-    assertThat(reports.get(0).getId()).isEqualTo(id1);
-    assertThat(reports.get(1).getId()).isEqualTo(id3);
-  }
-
-  @Test
-  public void combineAllResultListQueryParameterRestrictions() {
-    // given
-    String id1 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    String id3 = reportClient.createEmptySingleProcessReport();
-    shiftTimeByOneSecond();
-    reportClient.updateSingleProcessReport(id1, constructSingleProcessReportWithFakePD());
-
-    // when
-    Map<String, Object> queryParam = new HashMap<>();
-    queryParam.put("numResults", 1);
-    queryParam.put("orderBy", "lastModified");
-    queryParam.put("reverseOrder", true);
-    queryParam.put("resultOffset", 1);
-    List<ReportDefinitionDto> reports = getAllPrivateReportsWithQueryParam(queryParam);
-
-    // then
-    assertThat(reports.size()).isEqualTo(1);
-    assertThat(reports.get(0).getId()).isEqualTo(id3);
-  }
-
-  private void shiftTimeByOneSecond() {
-    LocalDateUtil.setCurrentTime(LocalDateUtil.getCurrentDateTime().plusSeconds(1L));
-  }
-
   private List<ReportDefinitionDto> getAllPrivateReports() {
-    return getAllPrivateReportsWithQueryParam(new HashMap<>());
-  }
-
-  private List<ReportDefinitionDto> getAllPrivateReportsWithQueryParam(Map<String, Object> queryParams) {
     return embeddedOptimizeExtension
       .getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
-      .addQueryParams(queryParams)
       .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
   }
+
 }

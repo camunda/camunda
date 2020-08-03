@@ -7,7 +7,7 @@ package org.camunda.optimize.dto.optimize.query.report;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
@@ -32,5 +32,5 @@ public interface SingleReportResultDto extends ReportResultDto {
 
   void setInstanceCountWithoutFilters(long instanceCount);
 
-  void sortResultData(SortingDto sorting, boolean keyIsOfNumericType);
+  void sortResultData(ReportSortingDto sorting, boolean keyIsOfNumericType);
 }

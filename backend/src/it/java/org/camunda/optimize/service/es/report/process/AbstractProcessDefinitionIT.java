@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -217,7 +217,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       definitionVersion,
       reportType,
       unit,
-      new SortingDto(SortingDto.SORT_BY_KEY, SortOrder.DESC)
+      new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.DESC)
     );
   }
 
@@ -225,7 +225,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
                                                   final String definitionVersion,
                                                   final ProcessReportDataType reportType,
                                                   final GroupByDateUnit unit,
-                                                  final SortingDto sorting) {
+                                                  final ReportSortingDto sorting) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersion(definitionVersion)
