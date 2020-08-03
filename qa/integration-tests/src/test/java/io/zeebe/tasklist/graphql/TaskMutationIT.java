@@ -6,9 +6,9 @@
 package io.zeebe.tasklist.graphql;
 
 import static io.zeebe.tasklist.util.ThreadUtil.sleepFor;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -35,10 +35,10 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
 
   public static final String ELEMENT_ID = "taskA";
   public static final String BPMN_PROCESS_ID = "testProcess";
-  public static final String COMPLETE_TASK_QUERY_PATTERN =
-      "mutation {completeTask(taskId: \"%s\", variables: [%s])}";
   public static final String TASK_RESULT_PATTERN =
-      "{id name assignee {username firstname lastname}}";
+      "{id name assignee {username firstname lastname} taskState completionTime}";
+  public static final String COMPLETE_TASK_MUTATION_PATTERN =
+      "mutation {completeTask(taskId: \"%s\", variables: [%s])" + TASK_RESULT_PATTERN + "}";
   public static final String CLAIM_TASK_MUTATION_PATTERN =
       "mutation {claimTask(taskId: \"%s\")" + TASK_RESULT_PATTERN + "}";
   public static final String UNCLAIM_TASK_MUTATION_PATTERN =
@@ -77,7 +77,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
 
     // when
     final String completeTaskRequest =
-        String.format(COMPLETE_TASK_QUERY_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
+        String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
     response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
 
     // then
@@ -89,13 +89,12 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     // having
     createCreatedAndCompletedTasks(1, 0);
 
-    GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+    GraphQLResponse response = tester.getAllTasks();
     final String taskId = response.get("$.data.tasks[0].id");
 
     // when
     final String completeTaskRequest =
-        String.format(COMPLETE_TASK_QUERY_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
+        String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
 
     response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
 
@@ -109,8 +108,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
       // having
       createCreatedAndCompletedTasks(1, 0);
 
-      GraphQLResponse response =
-          graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+      GraphQLResponse response = tester.getAllTasks();
       final String taskId = response.get("$.data.tasks[0].id");
 
       tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
@@ -118,7 +116,8 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
       // when
       setCurrentUser(new UserDTO().setUsername("joe"));
       final String completeTaskRequest =
-          String.format(COMPLETE_TASK_QUERY_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
+          String.format(
+              COMPLETE_TASK_MUTATION_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
 
       response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
 
@@ -134,25 +133,22 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     // having
     createCreatedAndCompletedTasks(1, 0);
 
-    GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+    GraphQLResponse response = tester.getAllTasks();
     final String taskId = response.get("$.data.tasks[0].id");
 
     // when
     tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
 
     final String completeTaskRequest =
-        String.format(COMPLETE_TASK_QUERY_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
+        String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
     response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
 
     // then
-    assertEquals("true", response.get("$.data.completeTask"));
-    // task is marked as completed
-    sleepFor(1000L);
-    response = graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
-    assertEquals(taskId, response.get("$.data.tasks[0].id"));
-    assertNotNull(response.get("$.data.tasks[0].completionTime"));
-    assertEquals(TaskState.COMPLETED.name(), response.get("$.data.tasks[0].taskState"));
+    assertTaskIsCompleted(response.get("$.data.completeTask", TaskDTO.class), taskId);
+
+    // query "Get tasks" immediately
+    response = tester.getAllTasks();
+    assertTaskIsCompleted(response.get("$.data.tasks[0]", TaskDTO.class), taskId);
   }
 
   @Test
@@ -162,34 +158,32 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     final String flowNodeBpmnIdB = "taskB";
     createTwoTasksInstance(flowNodeBpmnIdA, flowNodeBpmnIdB);
 
-    GraphQLResponse response =
-        graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+    GraphQLResponse response = tester.getAllTasks();
     final String taskAId = response.get("$.data.tasks[0].id");
 
     // complete task A
     tester.claimHumanTask(flowNodeBpmnIdA);
     String completeTaskRequest =
         String.format(
-            COMPLETE_TASK_QUERY_PATTERN,
+            COMPLETE_TASK_MUTATION_PATTERN,
             taskAId,
             "{name: \"var\", value: \"\\\"taskAValue\\\"\"}, {name: \"varTaskA\", value: \"123\"}");
     response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
-    assertEquals("true", response.get("$.data.completeTask"));
+    assertThat(response.get("$.data.completeTask.id")).isNotNull();
     tester.waitUntil().taskIsCompleted(flowNodeBpmnIdA).waitUntil().taskIsCreated(flowNodeBpmnIdB);
 
     // complete task B
     tester.claimHumanTask(flowNodeBpmnIdB);
-    response = graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
+    response = tester.getAllTasks();
     final String taskBId = response.get("$.data.tasks[0].id");
     completeTaskRequest =
         String.format(
-            COMPLETE_TASK_QUERY_PATTERN,
+            COMPLETE_TASK_MUTATION_PATTERN,
             taskBId,
             "{name: \"var\", value: \"\\\"taskBValue\\\"\"}, {name: \"varTaskB\", value: \"true\"}");
     response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
-    assertEquals("true", response.get("$.data.completeTask"));
+    assertThat(response.get("$.data.completeTask.id")).isNotNull();
     tester.waitUntil().taskIsCompleted(flowNodeBpmnIdB);
-    sleepFor(1000L);
 
     // when
     response = tester.getAllTasks();
@@ -242,17 +236,21 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     // when
     tester.claimTask(String.format(CLAIM_TASK_MUTATION_PATTERN, taskId));
 
-    final String completeTaskRequest = String.format(COMPLETE_TASK_QUERY_PATTERN, taskId, "");
+    final String completeTaskRequest = String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, "");
     response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
 
     // then
-    assertEquals("true", response.get("$.data.completeTask"));
-    // task is marked as completed
-    sleepFor(1000L);
-    response = graphQLTestTemplate.postForResource("graphql/taskIT/get-all-tasks.graphql");
-    assertEquals(taskId, response.get("$.data.tasks[0].id"));
-    assertNotNull(response.get("$.data.tasks[0].completionTime"));
-    assertEquals(TaskState.COMPLETED.name(), response.get("$.data.tasks[0].taskState"));
+    assertTaskIsCompleted(response.get("$.data.completeTask", TaskDTO.class), taskId);
+
+    // query "Get tasks" immediately
+    response = tester.getAllTasks();
+    assertTaskIsCompleted(response.get("$.data.tasks[0]", TaskDTO.class), taskId);
+  }
+
+  private void assertTaskIsCompleted(TaskDTO taskDTO, String taskId) {
+    assertThat(taskDTO.getId()).isEqualTo(taskId);
+    assertThat(taskDTO.getTaskState()).isEqualTo(TaskState.COMPLETED);
+    assertThat(taskDTO.getCompletionTime()).isNotNull();
   }
 
   @Test
@@ -263,7 +261,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
 
     // when
     final String completeTaskRequest =
-        String.format(COMPLETE_TASK_QUERY_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
+        String.format(COMPLETE_TASK_MUTATION_PATTERN, taskId, "{name: \"newVar\", value: \"123\"}");
     final GraphQLResponse response = graphQLTestTemplate.postMultipart(completeTaskRequest, "{}");
 
     // then
@@ -340,11 +338,20 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
             .then()
             .getByPath("$.data.claimTask");
 
-    final Map<String, Object> user = (Map<String, Object>) claimedTask.get("assignee");
     assertEquals(claimedTask.get("id"), unclaimedTask.getId());
-    assertEquals("demo", user.get("username"));
-    assertEquals("Demo", user.get("firstname"));
-    assertEquals("User", user.get("lastname"));
+    final Map<String, Object> userData = (Map<String, Object>) claimedTask.get("assignee");
+    assertTaskIsAssigned(userData, getDefaultCurrentUser());
+
+    // query "Get tasks" immediately
+    final GraphQLResponse allTasks = tester.getAllTasks();
+    final Map<String, Object> task = tester.getByPath("$.data.tasks[0].assignee");
+    assertTaskIsAssigned(task, getDefaultCurrentUser());
+  }
+
+  private void assertTaskIsAssigned(final Map<String, Object> assigneeData, final UserDTO user) {
+    assertEquals(user.getUsername(), assigneeData.get("username"));
+    assertEquals(user.getFirstname(), assigneeData.get("firstname"));
+    assertEquals(user.getLastname(), assigneeData.get("lastname"));
   }
 
   @Test
@@ -386,7 +393,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldUnclaimUserToTask() throws IOException {
+  public void shouldUnclaimTask() throws IOException {
     // having
     tester.having().createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 1, 0).getAllTasks();
 
@@ -404,6 +411,10 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
     // then
     assertEquals(taskId, task.get("id"));
     assertNull(task.get("assignee"));
+
+    // query "Get tasks" immediately
+    final GraphQLResponse allTasks = tester.getAllTasks();
+    assertThat(allTasks.get("$.data.tasks[0].assignee")).isNull();
   }
 
   private void createCreatedAndCompletedTasks(int created, int completed) {

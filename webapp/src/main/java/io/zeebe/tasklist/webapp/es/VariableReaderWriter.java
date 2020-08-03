@@ -40,6 +40,7 @@ import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -85,7 +86,7 @@ public class VariableReaderWriter {
       bulkRequest.add(createUpsertRequest(variableEntity));
     }
     try {
-      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest);
+      ElasticsearchUtil.processBulkRequest(esClient, bulkRequest, RefreshPolicy.WAIT_UNTIL);
     } catch (PersistenceException ex) {
       throw new TasklistRuntimeException(ex);
     }

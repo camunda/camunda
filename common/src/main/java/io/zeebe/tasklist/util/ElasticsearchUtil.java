@@ -32,7 +32,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.IndicesOptions;
-import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -162,20 +162,18 @@ public abstract class ElasticsearchUtil {
 
   public static void processBulkRequest(RestHighLevelClient esClient, BulkRequest bulkRequest)
       throws PersistenceException {
-    processBulkRequest(esClient, bulkRequest, false);
+    processBulkRequest(esClient, bulkRequest, RefreshPolicy.NONE);
   }
 
   /* EXECUTE QUERY */
 
   public static void processBulkRequest(
-      RestHighLevelClient esClient, BulkRequest bulkRequest, boolean refreshImmediately)
+      RestHighLevelClient esClient, BulkRequest bulkRequest, RefreshPolicy refreshPolicy)
       throws PersistenceException {
     if (bulkRequest.requests().size() > 0) {
       try {
         LOGGER.debug("************* FLUSH BULK START *************");
-        if (refreshImmediately) {
-          bulkRequest = bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
-        }
+        bulkRequest = bulkRequest.setRefreshPolicy(refreshPolicy);
         final BulkResponse bulkItemResponses = esClient.bulk(bulkRequest, RequestOptions.DEFAULT);
         final BulkItemResponse[] items = bulkItemResponses.getItems();
         for (BulkItemResponse responseItem : items) {

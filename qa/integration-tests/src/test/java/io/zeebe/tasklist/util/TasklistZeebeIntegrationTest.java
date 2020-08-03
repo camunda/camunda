@@ -84,8 +84,11 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
   }
 
   protected void setDefaultCurrentUser() {
-    setCurrentUser(
-        new UserDTO().setUsername(USERNAME_DEFAULT).setFirstname("Demo").setLastname("User"));
+    setCurrentUser(getDefaultCurrentUser());
+  }
+
+  protected UserDTO getDefaultCurrentUser() {
+    return new UserDTO().setUsername(USERNAME_DEFAULT).setFirstname("Demo").setLastname("User");
   }
 
   protected void setCurrentUser(UserDTO user) {

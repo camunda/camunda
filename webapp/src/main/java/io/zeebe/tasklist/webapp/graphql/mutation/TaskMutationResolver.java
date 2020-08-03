@@ -42,7 +42,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
 
   @Autowired private ObjectMapper objectMapper;
 
-  public boolean completeTask(String taskId, List<VariableDTO> variables) {
+  public TaskDTO completeTask(String taskId, List<VariableDTO> variables) {
     final Map<String, Object> variablesMap =
         variables.stream().collect(Collectors.toMap(VariableDTO::getName, this::extractTypedValue));
     // validate
@@ -65,9 +65,9 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     }
     completeJobCommand.send().join();
     // persist completion and variables
-    taskReaderWriter.persistTaskCompletion(taskRawResponse);
+    final TaskEntity completedTask = taskReaderWriter.persistTaskCompletion(taskRawResponse);
     variableReaderWriter.persistTaskVariables(taskId, variables);
-    return true;
+    return TaskDTO.createFrom(completedTask);
   }
 
   private Object extractTypedValue(VariableDTO var) {

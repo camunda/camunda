@@ -6,6 +6,8 @@
     completionTime
     assignee {
         username
+        firstname
+        lastname
     }
     variables {
         name

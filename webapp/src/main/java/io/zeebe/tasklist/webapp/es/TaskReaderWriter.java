@@ -8,6 +8,7 @@ package io.zeebe.tasklist.webapp.es;
 import static io.zeebe.tasklist.util.CollectionUtil.asMap;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.joinWithAnd;
+import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_UNTIL;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -151,12 +152,16 @@ public class TaskReaderWriter {
    *
    * @param taskBeforeRawResponse
    */
-  public void persistTaskCompletion(GetResponse taskBeforeRawResponse) {
+  public TaskEntity persistTaskCompletion(GetResponse taskBeforeRawResponse) {
+    final TaskEntity taskBefore =
+        fromSearchHit(taskBeforeRawResponse.getSourceAsString(), objectMapper, TaskEntity.class);
+    taskBefore.setState(TaskState.COMPLETED);
+    taskBefore.setCompletionTime(OffsetDateTime.now());
     try {
       // update task with optimistic locking
       final Map<String, Object> updateFields = new HashMap<>();
-      updateFields.put(TaskTemplate.STATE, TaskState.COMPLETED);
-      updateFields.put(TaskTemplate.COMPLETION_TIME, OffsetDateTime.now());
+      updateFields.put(TaskTemplate.STATE, taskBefore.getState());
+      updateFields.put(TaskTemplate.COMPLETION_TIME, taskBefore.getCompletionTime());
 
       // format date fields properly
       final Map<String, Object> jsonMap =
@@ -167,6 +172,7 @@ public class TaskReaderWriter {
                   ElasticsearchUtil.ES_INDEX_TYPE,
                   taskBeforeRawResponse.getId())
               .doc(jsonMap)
+              .setRefreshPolicy(WAIT_UNTIL)
               .setIfSeqNo(taskBeforeRawResponse.getSeqNo())
               .setIfPrimaryTerm(taskBeforeRawResponse.getPrimaryTerm());
       ElasticsearchUtil.executeUpdate(esClient, updateRequest);
@@ -174,6 +180,7 @@ public class TaskReaderWriter {
       // we're OK with not updating the task here, it will be marked as completed within import
       LOGGER.error(e.getMessage(), e);
     }
+    return taskBefore;
   }
 
   public void persistTaskAssignee(TaskDTO task, final String currentUser) {
@@ -186,7 +193,7 @@ public class TaskReaderWriter {
     updateTask(task.getId(), currentUser, taskValidator, asMap(TaskTemplate.ASSIGNEE, currentUser));
   }
 
-  public void updateTask(
+  private void updateTask(
       final String taskId,
       final String currentUser,
       final TaskValidator taskValidator,
@@ -205,6 +212,7 @@ public class TaskReaderWriter {
             new UpdateRequest(
                     taskTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, taskId)
                 .doc(jsonMap)
+                .setRefreshPolicy(WAIT_UNTIL)
                 .setIfSeqNo(taskRawResponse.getSeqNo())
                 .setIfPrimaryTerm(taskRawResponse.getPrimaryTerm());
         ElasticsearchUtil.executeUpdate(esClient, updateRequest);
