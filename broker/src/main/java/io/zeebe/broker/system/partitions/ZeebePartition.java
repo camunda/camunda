@@ -545,10 +545,6 @@ public final class ZeebePartition extends Actor
   private ActorFuture<Void> installExporter(final ZeebeDb zeebeDb) {
     final var exporterDescriptors = exporterRepository.getExporters().values();
 
-    if (exporterDescriptors.isEmpty()) {
-      return CompletableActorFuture.completed(null);
-    }
-
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
             .id(EXPORTER_PROCESSOR_ID)

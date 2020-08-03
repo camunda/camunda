@@ -227,7 +227,11 @@ public final class ExporterDirector extends Actor {
 
     clearExporterState();
 
-    actor.submit(this::readNextEvent);
+    if (state.hasExporters()) {
+      actor.submit(this::readNextEvent);
+    } else {
+      actor.close();
+    }
   }
 
   private void skipRecord(final LoggedEvent currentEvent) {
