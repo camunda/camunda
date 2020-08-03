@@ -24,7 +24,6 @@ import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsD
 import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
 import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.es.reader.DefinitionReader;
-import org.camunda.optimize.service.events.CamundaEventService;
 import org.camunda.optimize.service.security.DefinitionAuthorizationService;
 import org.springframework.stereotype.Component;
 
@@ -158,7 +157,6 @@ public class DefinitionService {
     final Set<String> camundaEventImportedKeys = camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
     final List<DefinitionWithTenantsDto> allProcessDefs = getFullyImportedDefinitions(
       DefinitionType.PROCESS,
-      true,
       userId
     );
     return allProcessDefs.stream()
@@ -167,23 +165,21 @@ public class DefinitionService {
   }
 
   public List<DefinitionWithTenantsDto> getFullyImportedDefinitions(@NonNull final String userId) {
-    return getFullyImportedDefinitions(null, false, userId);
+    return getFullyImportedDefinitions(null, null, null, userId);
   }
 
   public List<DefinitionWithTenantsDto> getFullyImportedDefinitions(final DefinitionType definitionType,
-                                                                    final boolean excludeEventProcesses,
                                                                     @NonNull final String userId) {
-    return getFullyImportedDefinitions(definitionType, excludeEventProcesses, null, null, userId);
+    return getFullyImportedDefinitions(definitionType, null, null, userId);
   }
 
   public List<DefinitionWithTenantsDto> getFullyImportedDefinitions(final DefinitionType definitionType,
-                                                                    final boolean excludeEventProcesses,
                                                                     final Set<String> keys,
                                                                     final List<String> tenantIds,
                                                                     @NonNull final String userId) {
     final Set<String> tenantsToFilterFor = resolveTenantsToFilterFor(tenantIds, userId);
     final List<DefinitionWithTenantIdsDto> fullyImportedDefinitions = definitionReader
-      .getFullyImportedDefinitions(definitionType, excludeEventProcesses, keys, tenantsToFilterFor);
+      .getFullyImportedDefinitions(definitionType, keys, tenantsToFilterFor);
     return filterAndMapDefinitionsWithTenantIdsByAuthorizations(userId, fullyImportedDefinitions)
       // sort by name case insensitive
       .sorted(Comparator.comparing(a -> a.getName() == null ? a.getKey().toLowerCase() : a.getName().toLowerCase()))

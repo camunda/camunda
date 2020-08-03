@@ -590,45 +590,10 @@ public class DefinitionRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void getDefinitionKeysByType_eventBasedProcesses() {
-    // given
-    final DefinitionOptimizeDto eventProcessDefinition1 = createEventBasedDefinition(
-      "eventProcess1", "Event process Definition1"
-    );
-    final DefinitionOptimizeDto eventProcessDefinition2 = createEventBasedDefinition(
-      "eventProcess2", "event process Definition2"
-    );
-    final DefinitionOptimizeDto eventProcessDefinition3 = createEventBasedDefinition(
-      "eventProcess3", "an event process Definition3"
-    );
-
-    // when I get process definition keys
-    final List<DefinitionKeyDto> definitions = definitionClient.getDefinitionKeysByType(PROCESS);
-
-    // then
-    assertThat(definitions)
-      .hasSize(3)
-      .containsExactly(
-        // names of definitions #3 start with an `a` and are expected first
-        new DefinitionKeyDto(eventProcessDefinition3.getKey(), eventProcessDefinition3.getName()),
-        // and last the process definitions as they start with `D/d`
-        new DefinitionKeyDto(eventProcessDefinition1.getKey(), eventProcessDefinition1.getName()),
-        new DefinitionKeyDto(eventProcessDefinition2.getKey(), eventProcessDefinition2.getName())
-      );
-
-    // when I get process definitions but exclude event processes
-    final List<DefinitionKeyDto> definitionsWithoutEventProcesses = definitionClient
-      .getDefinitionKeysByType(PROCESS, true);
-
-    // then
-    assertThat(definitionsWithoutEventProcesses).isEmpty();
-  }
-
-  @Test
   public void getDecisionDefinitionKeys_camundaImportedEventProcessesOnlyNotAllowed() {
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetDefinitionKeysByType(DECISION.getId(), null, null, true)
+      .buildGetDefinitionKeysByType(DECISION.getId(), null, true)
       .execute();
 
     // then

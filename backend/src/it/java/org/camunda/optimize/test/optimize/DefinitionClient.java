@@ -44,7 +44,7 @@ public class DefinitionClient {
 
   public List<DefinitionKeyDto> getCamundaEventImportedProcessDefinitionKeys() {
     return getRequestExecutor()
-      .buildGetDefinitionKeysByType(DefinitionType.PROCESS.getId(), null, null, true)
+      .buildGetDefinitionKeysByType(DefinitionType.PROCESS.getId(), null, true)
       .executeAndReturnList(DefinitionKeyDto.class, Response.Status.OK.getStatusCode());
   }
 
@@ -56,40 +56,28 @@ public class DefinitionClient {
   }
 
   public List<DefinitionKeyDto> getDefinitionKeysByType(final DefinitionType definitionType) {
-    return getDefinitionKeysByType(definitionType, (Boolean) null);
-  }
-
-  public List<DefinitionKeyDto> getDefinitionKeysByType(final DefinitionType definitionType,
-                                                        final Boolean excludeEventProcesses) {
-    return getDefinitionKeysByType(definitionType, null, excludeEventProcesses);
+    return getDefinitionKeysByType(definitionType, null);
   }
 
   public List<DefinitionKeyDto> getDefinitionKeysByType(final DefinitionType definitionType,
                                                         final String filterByCollectionScope) {
-    return getDefinitionKeysByType(definitionType, filterByCollectionScope, null);
-  }
-
-  public List<DefinitionKeyDto> getDefinitionKeysByType(final DefinitionType definitionType,
-                                                        final String filterByCollectionScope,
-                                                        final Boolean excludeEventProcesses) {
     return getDefinitionKeysByTypeAsUser(
-      definitionType, filterByCollectionScope, excludeEventProcesses, DEFAULT_USERNAME, DEFAULT_PASSWORD
+      definitionType, filterByCollectionScope, DEFAULT_USERNAME, DEFAULT_PASSWORD
     );
   }
 
   public List<DefinitionKeyDto> getDefinitionKeysByTypeAsUser(final DefinitionType definitionType,
                                                               final String username,
                                                               final String password) {
-    return getDefinitionKeysByTypeAsUser(definitionType, null, null, username, password);
+    return getDefinitionKeysByTypeAsUser(definitionType, null, username, password);
   }
 
   public List<DefinitionKeyDto> getDefinitionKeysByTypeAsUser(final DefinitionType definitionType,
                                                               final String filterByCollectionScope,
-                                                              final Boolean excludeEventProcesses,
                                                               final String username,
                                                               final String password) {
     return getRequestExecutor()
-      .buildGetDefinitionKeysByType(definitionType.getId(), filterByCollectionScope, excludeEventProcesses)
+      .buildGetDefinitionKeysByType(definitionType.getId(), filterByCollectionScope)
       .withUserAuthentication(username, password)
       .executeAndReturnList(DefinitionKeyDto.class, Response.Status.OK.getStatusCode());
   }

@@ -109,7 +109,6 @@ public class CollectionScopeService {
   }
 
   public List<DefinitionWithTenantsDto> getCollectionDefinitions(final DefinitionType definitionType,
-                                                                 final boolean excludeEventProcesses,
                                                                  final String userId,
                                                                  final String collectionId) {
     final Map<String, List<String>> keysAndTenants =
@@ -121,7 +120,6 @@ public class CollectionScopeService {
 
     return definitionService.getFullyImportedDefinitions(
       definitionType,
-      excludeEventProcesses,
       keysAndTenants.keySet(),
       keysAndTenants.values().stream().flatMap(List::stream).collect(Collectors.toList()),
       userId

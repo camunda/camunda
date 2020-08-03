@@ -759,7 +759,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
 
     // when
     final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByTypeAsUser(
-      definitionType, null, null, KERMIT_USER, KERMIT_USER
+      definitionType, null, KERMIT_USER, KERMIT_USER
     );
 
     // then
@@ -784,7 +784,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
 
     // when
     final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByTypeAsUser(
-      definitionType, null, null, KERMIT_USER, KERMIT_USER
+      definitionType, null, KERMIT_USER, KERMIT_USER
     );
 
     // then
@@ -817,7 +817,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
 
     // when I get the definition keys
     final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByTypeAsUser(
-      definitionType, null, null, KERMIT_USER, KERMIT_USER
+      definitionType, null, KERMIT_USER, KERMIT_USER
     );
 
     // then the key is still available as there is access to at least one tenant

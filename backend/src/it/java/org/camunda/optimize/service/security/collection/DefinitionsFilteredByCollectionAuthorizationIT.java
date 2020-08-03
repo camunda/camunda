@@ -47,7 +47,7 @@ public class DefinitionsFilteredByCollectionAuthorizationIT extends AbstractColl
 
     // when
     List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByTypeAsUser(
-      DefinitionType.PROCESS, collectionId, null, KERMIT_USER, KERMIT_USER
+      DefinitionType.PROCESS, collectionId, KERMIT_USER, KERMIT_USER
     );
 
     // then

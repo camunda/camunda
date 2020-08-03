@@ -157,17 +157,10 @@ public class DefinitionRestService {
   public List<DefinitionKeyDto> getDefinitionKeys(@Context final ContainerRequestContext requestContext,
                                                   @PathParam("type") final DefinitionType type,
                                                   @QueryParam("filterByCollectionScope") final String collectionId,
-                                                  @QueryParam("excludeEventProcesses") final boolean excludeEventProcesses,
                                                   @QueryParam("camundaEventImportedOnly") final boolean camundaEventImportedOnly) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
 
-    List<DefinitionWithTenantsDto> definitions = getDefinitions(
-      type,
-      collectionId,
-      excludeEventProcesses,
-      camundaEventImportedOnly,
-      userId
-    );
+    List<DefinitionWithTenantsDto> definitions = getDefinitions(type, collectionId, camundaEventImportedOnly, userId);
     return definitions.stream()
       .map(definition -> new DefinitionKeyDto(definition.getKey(), definition.getName()))
       .collect(Collectors.toList());
@@ -230,23 +223,15 @@ public class DefinitionRestService {
   }
 
   private List<DefinitionWithTenantsDto> getDefinitions(final DefinitionType type, final String collectionId,
-                                                        final boolean excludeEventProcesses,
                                                         final boolean camundaEventImportedOnly, final String userId) {
     if (collectionId != null) {
-      return getDefinitionKeysForCollection(
-        type,
-        excludeEventProcesses,
-        camundaEventImportedOnly,
-        userId,
-        collectionId
-      );
+      return getDefinitionKeysForCollection(type, camundaEventImportedOnly, userId, collectionId);
     } else {
-      return getDefinitionKeys(type, excludeEventProcesses, camundaEventImportedOnly, userId);
+      return getDefinitionKeys(type, camundaEventImportedOnly, userId);
     }
   }
 
   private List<DefinitionWithTenantsDto> getDefinitionKeys(final DefinitionType type,
-                                                           final boolean excludeEventProcesses,
                                                            final boolean camundaEventImportedOnly,
                                                            final String userId) {
     if (camundaEventImportedOnly) {
@@ -256,19 +241,18 @@ public class DefinitionRestService {
       }
       return definitionService.getFullyImportedCamundaEventImportedDefinitions(userId);
     } else {
-      return definitionService.getFullyImportedDefinitions(type, excludeEventProcesses, userId);
+      return definitionService.getFullyImportedDefinitions(type, userId);
     }
   }
 
   private List<DefinitionWithTenantsDto> getDefinitionKeysForCollection(final DefinitionType type,
-                                                                        final boolean excludeEventProcesses,
                                                                         final boolean camundaEventImportedOnly,
                                                                         final String userId,
                                                                         final String collectionId) {
     if (camundaEventImportedOnly) {
       throw new BadRequestException("Cannot apply \"camundaEventImportedOnly\" in the context of a collection");
     }
-    return collectionScopeService.getCollectionDefinitions(type, excludeEventProcesses, userId, collectionId);
+    return collectionScopeService.getCollectionDefinitions(type, userId, collectionId);
   }
 
   private void addNoStoreCacheHeader(final Response.ResponseBuilder processResponse) {

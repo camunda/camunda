@@ -134,7 +134,6 @@ public class DefinitionReader {
   }
 
   public List<DefinitionWithTenantIdsDto> getFullyImportedDefinitions(final DefinitionType type,
-                                                                      final boolean excludeEventProcesses,
                                                                       final Set<String> keys,
                                                                       final Set<String> tenantIds) {
     final BoolQueryBuilder filterQuery = boolQuery();
@@ -151,7 +150,7 @@ public class DefinitionReader {
 
     addTenantIdFilter(tenantIds, filterQuery);
 
-    return getDefinitionWithTenantIdsDtos(filterQuery, resolveIndexNameForType(type, excludeEventProcesses));
+    return getDefinitionWithTenantIdsDtos(filterQuery, resolveIndexNameForType(type));
   }
 
   public <T extends DefinitionOptimizeDto> List<T> getFullyImportedDefinitions(final DefinitionType type,
@@ -747,21 +746,13 @@ public class DefinitionReader {
   }
 
   private String[] resolveIndexNameForType(final DefinitionType type) {
-    return resolveIndexNameForType(type, false);
-  }
-
-  private String[] resolveIndexNameForType(final DefinitionType type, final boolean excludeEventProcesses) {
     if (type == null) {
       return ALL_DEFINITION_INDEXES;
     }
 
     switch (type) {
       case PROCESS:
-        if (excludeEventProcesses) {
-          return new String[]{PROCESS_DEFINITION_INDEX_NAME};
-        } else {
-          return new String[]{PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
-        }
+        return new String[]{PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME};
       case DECISION:
         return new String[]{DECISION_DEFINITION_INDEX_NAME};
       default:

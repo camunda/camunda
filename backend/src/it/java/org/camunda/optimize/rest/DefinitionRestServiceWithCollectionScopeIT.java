@@ -28,7 +28,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
-import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -115,40 +114,13 @@ public class DefinitionRestServiceWithCollectionScopeIT extends AbstractIT {
   }
 
   @Test
-  public void getDefinitionKeysByType_eventBasedProcesses() {
-    // given
-    final String definitionKey1 = "eventProcess1";
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(definitionKey1);
-    final String definitionKey2 = "eventProcess2";
-    elasticSearchIntegrationTestExtension.addEventProcessDefinitionDtoToElasticsearch(definitionKey2);
-    final String collectionId = collectionClient.createNewCollection();
-    final List<String> scopeTenantIds = Collections.singletonList(TENANT_NOT_DEFINED_ID);
-    collectionClient.addScopeEntryToCollection(
-      collectionId, new CollectionScopeEntryDto(PROCESS, definitionKey1, scopeTenantIds)
-    );
-
-    // when I get process definition keys with the collection scope
-    final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByType(PROCESS, collectionId);
-
-    // then event processes that is in the scope is there
-    assertThat(definitionKeys).extracting(DefinitionKeyDto::getKey).containsExactly(definitionKey1);
-
-    // when I get process definitions but exclude event processes
-    final List<DefinitionKeyDto> definitionKeysWithoutEventProcesses = definitionClient
-      .getDefinitionKeysByType(PROCESS, collectionId, true);
-
-    // then
-    assertThat(definitionKeysWithoutEventProcesses).isEmpty();
-  }
-
-  @Test
   public void getDefinitionKeys_camundaEventImportedOnlyNotAllowedInCollectionContext() {
     // given
     final String collectionId = collectionClient.createNewCollection();
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetDefinitionKeysByType(DECISION.getId(), collectionId, null, true)
+      .buildGetDefinitionKeysByType(DECISION.getId(), collectionId, true)
       .execute();
 
     // then
