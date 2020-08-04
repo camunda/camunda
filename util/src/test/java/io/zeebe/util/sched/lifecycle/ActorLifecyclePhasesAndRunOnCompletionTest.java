@@ -12,7 +12,6 @@ import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSE_REQUESTED;
 import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSING;
 import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTED;
 import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING;
-import static io.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL_LIFECYCLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;
 import static org.mockito.Mockito.mock;
@@ -25,7 +24,6 @@ import java.util.function.BiConsumer;
 import org.junit.Rule;
 import org.junit.Test;
 
-@SuppressWarnings("unchecked")
 public final class ActorLifecyclePhasesAndRunOnCompletionTest {
   @Rule
   public final ControlledActorSchedulerRule schedulerRule = new ControlledActorSchedulerRule();
@@ -78,7 +76,7 @@ public final class ActorLifecyclePhasesAndRunOnCompletionTest {
   }
 
   @Test
-  public void shouldNotWaitOnFutureInCloseRequested() {
+  public void shouldNotWaitOnFutureInCloseRequestedSubmittedInStarted() {
     // given
     final BiConsumer<Void, Throwable> callback = mock(BiConsumer.class);
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
@@ -99,31 +97,167 @@ public final class ActorLifecyclePhasesAndRunOnCompletionTest {
 
     // then
     assertThat(closeFuture).isDone();
-    assertThat(actor.phases)
-        .isEqualTo(newArrayList(STARTING, STARTED, CLOSE_REQUESTED, CLOSING, CLOSED));
+    assertThat(actor.phases).isEqualTo(newArrayList(LifecycleRecordingActor.FULL_LIFECYCLE));
+    verifyZeroInteractions(callback);
+  }
+
+  @Test
+  public void shouldNotWaitOnFutureInCloseRequestedSubmittedInCloseRequested() {
+    // given
+    final BiConsumer<Void, Throwable> callback = mock(BiConsumer.class);
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorCloseRequested() {
+            super.onActorCloseRequested();
+            runOnCompletion(future, callback);
+          }
+        };
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(closeFuture).isDone();
+    assertThat(actor.phases).isEqualTo(LifecycleRecordingActor.FULL_LIFECYCLE);
     verifyZeroInteractions(callback);
   }
 
   @Test
   public void shouldNotWaitOnFutureInClosed() {
     // given
+    final BiConsumer<Void, Throwable> callback = mock(BiConsumer.class);
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     final LifecycleRecordingActor actor =
         new LifecycleRecordingActor() {
           @Override
           public void onActorClosed() {
             super.onActorClosed();
-            runOnCompletion();
+            runOnCompletion(future, callback);
           }
         };
     schedulerRule.submitActor(actor);
-    final ActorFuture<Void> closeFuture = actor.closeAsync();
+    schedulerRule.workUntilDone();
 
     // when
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
     schedulerRule.workUntilDone();
 
     // then
     assertThat(closeFuture).isDone();
-    assertThat(actor.phases).isEqualTo(FULL_LIFECYCLE);
+    assertThat(actor.phases).isEqualTo(newArrayList(LifecycleRecordingActor.FULL_LIFECYCLE));
+    verifyZeroInteractions(callback);
+  }
+
+  @Test
+  public void shouldWaitOnFutureInClosing() {
+    // given
+    final BiConsumer<Void, Throwable> callback = mock(BiConsumer.class);
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorClosing() {
+            super.onActorClosing();
+            runOnCompletion(future, callback);
+          }
+        };
+
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+
+    // when
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(closeFuture).isNotDone();
+    assertThat(actor.phases).isEqualTo(newArrayList(STARTING, STARTED, CLOSE_REQUESTED, CLOSING));
+    verifyZeroInteractions(callback);
+  }
+
+  @Test
+  public void shouldContinueWhenFutureInClosingResolved() {
+    // given
+    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
+
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+          @Override
+          public void onActorClosing() {
+            super.onActorClosing();
+            runOnCompletion(future);
+          }
+        };
+
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
+    schedulerRule.workUntilDone();
+    assertThat(closeFuture).isNotDone();
+
+    // when
+    future.complete(null);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(closeFuture).isDone();
+    assertThat(actor.phases).isEqualTo(LifecycleRecordingActor.FULL_LIFECYCLE);
+  }
+
+  @Test
+  public void shouldNotExecuteFutureSubmittedInStartedAfterCloseRequested() {
+    // given
+    final CompletableActorFuture<Void> futureInStarted = new CompletableActorFuture<>();
+    final CompletableActorFuture<Void> futureInStartedCompleted = new CompletableActorFuture<>();
+    final CompletableActorFuture<Void> futureInClosing = new CompletableActorFuture<>();
+
+    final LifecycleRecordingActor actor =
+        new LifecycleRecordingActor() {
+
+          @Override
+          public void onActorStarted() {
+            actor.runOnCompletion(
+                futureInStarted,
+                (r1, t1) -> {
+                  futureInStartedCompleted.complete(null);
+                });
+          }
+
+          @Override
+          public void onActorClosing() {
+            super.onActorClosing();
+            runOnCompletion(futureInClosing);
+          }
+        };
+
+    schedulerRule.submitActor(actor);
+    schedulerRule.workUntilDone();
+
+    final ActorFuture<Void> closeFuture = actor.closeAsync();
+    schedulerRule.workUntilDone();
+    assertThat(closeFuture).isNotDone();
+
+    // when
+    futureInStarted.complete(null);
+    schedulerRule.workUntilDone();
+
+    assertThat(futureInStartedCompleted).isNotDone();
+    assertThat(closeFuture).isNotDone();
+
+    futureInClosing.complete(null);
+    schedulerRule.workUntilDone();
+
+    // then
+    assertThat(closeFuture).isDone();
+    assertThat(futureInStartedCompleted).isNotDone();
+    assertThat(actor.phases).isEqualTo(newArrayList(STARTING, CLOSE_REQUESTED, CLOSING, CLOSED));
   }
 
   @Test
