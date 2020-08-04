@@ -7,6 +7,7 @@ package io.zeebe.tasklist.modules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.tasklist.ArchiverModuleConfiguration;
 import io.zeebe.tasklist.ImportModuleConfiguration;
 import io.zeebe.tasklist.WebappModuleConfiguration;
 import io.zeebe.tasklist.property.TasklistProperties;
@@ -30,5 +31,10 @@ public class OnlyWebappIT extends ModuleIntegrationTest {
   @Test(expected = NoSuchBeanDefinitionException.class)
   public void testImportModuleIsNotPresent() {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
+  }
+
+  @Test(expected = NoSuchBeanDefinitionException.class)
+  public void testArchiverModuleIsNotPresent() {
+    assertThat(applicationContext.getBean(ArchiverModuleConfiguration.class)).isNotNull();
   }
 }

@@ -506,4 +506,8 @@ public class TasklistTester {
   public String getWorkflowInstanceId() {
     return workflowInstanceId;
   }
+
+  public String getTaskId() {
+    return taskId;
+  }
 }

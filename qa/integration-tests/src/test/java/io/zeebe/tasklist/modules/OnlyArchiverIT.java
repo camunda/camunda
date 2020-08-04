@@ -17,23 +17,23 @@ import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(
     properties = {
-      TasklistProperties.PREFIX + ".webappEnabled = false",
-      TasklistProperties.PREFIX + ".archiverEnabled = false"
+      TasklistProperties.PREFIX + ".importerEnabled = false",
+      TasklistProperties.PREFIX + ".webappEnabled = false"
     })
-public class OnlyImportIT extends ModuleIntegrationTest {
+public class OnlyArchiverIT extends ModuleIntegrationTest {
 
   @Test
-  public void testImportModuleIsPresent() {
+  public void testArchiverModuleIsPresent() {
+    assertThat(applicationContext.getBean(ArchiverModuleConfiguration.class)).isNotNull();
+  }
+
+  @Test(expected = NoSuchBeanDefinitionException.class)
+  public void testImportModuleIsNotPresent() {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
   }
 
   @Test(expected = NoSuchBeanDefinitionException.class)
   public void testWebappModuleIsNotPresent() {
-    applicationContext.getBean(WebappModuleConfiguration.class);
-  }
-
-  @Test(expected = NoSuchBeanDefinitionException.class)
-  public void testArchiverModuleIsNotPresent() {
-    applicationContext.getBean(ArchiverModuleConfiguration.class);
+    assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
   }
 }

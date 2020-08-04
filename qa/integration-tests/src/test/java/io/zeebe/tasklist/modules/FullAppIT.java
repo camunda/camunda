@@ -7,6 +7,7 @@ package io.zeebe.tasklist.modules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.tasklist.ArchiverModuleConfiguration;
 import io.zeebe.tasklist.ImportModuleConfiguration;
 import io.zeebe.tasklist.WebappModuleConfiguration;
 import org.junit.Test;
@@ -16,6 +17,7 @@ public class FullAppIT extends ModuleIntegrationTest {
   @Test
   public void testImportModuleIsPresent() {
     assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
+    assertThat(applicationContext.getBean(ArchiverModuleConfiguration.class)).isNotNull();
     assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
   }
 }

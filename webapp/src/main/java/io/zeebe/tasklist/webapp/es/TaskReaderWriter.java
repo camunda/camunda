@@ -12,6 +12,7 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_U
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -29,13 +30,13 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.jetbrains.annotations.NotNull;
@@ -60,13 +61,13 @@ public class TaskReaderWriter {
   }
 
   private TaskEntity getTask(final String id, List<String> fieldNames) {
-    // TODO #104 define list of fields and specify sourceFields to fetch
-    final GetResponse response = getTaskRawResponse(id);
-    if (!response.isExists()) {
-      throw new NotFoundException(String.format("Task with id %s was not found", id));
+    try {
+      // TODO #104 define list of fields and specify sourceFields to fetch
+      final SearchHit response = getTaskRawResponse(id);
+      return fromSearchHit(response.getSourceAsString(), objectMapper, TaskEntity.class);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
     }
-
-    return fromSearchHit(response.getSourceAsString(), objectMapper, TaskEntity.class);
   }
 
   /**
@@ -81,16 +82,21 @@ public class TaskReaderWriter {
   }
 
   @NotNull
-  public GetResponse getTaskRawResponse(final String id) {
-    final GetRequest getRequest = new GetRequest(taskTemplate.getAlias()).id(id);
+  public SearchHit getTaskRawResponse(final String id) throws IOException {
 
-    try {
-      return esClient.get(getRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      final String message =
-          String.format("Exception occurred, while obtaining task: %s", e.getMessage());
-      LOGGER.error(message, e);
-      throw new TasklistRuntimeException(message, e);
+    final QueryBuilder query = idsQuery().addIds(String.valueOf(id));
+
+    final SearchRequest request =
+        ElasticsearchUtil.createSearchRequest(taskTemplate)
+            .source(new SearchSourceBuilder().query(constantScoreQuery(query)));
+
+    final SearchResponse response = esClient.search(request, RequestOptions.DEFAULT);
+    if (response.getHits().totalHits == 1) {
+      return response.getHits().getHits()[0];
+    } else if (response.getHits().totalHits > 1) {
+      throw new NotFoundException(String.format("Unique task with id %s was not found", id));
+    } else {
+      throw new NotFoundException(String.format("Task with id %s was not found", id));
     }
   }
 
@@ -150,11 +156,11 @@ public class TaskReaderWriter {
   /**
    * Persist that task is completed even before the corresponding events are imported from Zeebe.
    *
-   * @param taskBeforeRawResponse
+   * @param taskBeforeSearchHit
    */
-  public TaskEntity persistTaskCompletion(GetResponse taskBeforeRawResponse) {
+  public TaskEntity persistTaskCompletion(SearchHit taskBeforeSearchHit) {
     final TaskEntity taskBefore =
-        fromSearchHit(taskBeforeRawResponse.getSourceAsString(), objectMapper, TaskEntity.class);
+        fromSearchHit(taskBeforeSearchHit.getSourceAsString(), objectMapper, TaskEntity.class);
     taskBefore.setState(TaskState.COMPLETED);
     taskBefore.setCompletionTime(OffsetDateTime.now());
     try {
@@ -170,11 +176,11 @@ public class TaskReaderWriter {
           new UpdateRequest(
                   taskTemplate.getMainIndexName(),
                   ElasticsearchUtil.ES_INDEX_TYPE,
-                  taskBeforeRawResponse.getId())
+                  taskBeforeSearchHit.getId())
               .doc(jsonMap)
               .setRefreshPolicy(WAIT_UNTIL)
-              .setIfSeqNo(taskBeforeRawResponse.getSeqNo())
-              .setIfPrimaryTerm(taskBeforeRawResponse.getPrimaryTerm());
+              .setIfSeqNo(taskBeforeSearchHit.getSeqNo())
+              .setIfPrimaryTerm(taskBeforeSearchHit.getPrimaryTerm());
       ElasticsearchUtil.executeUpdate(esClient, updateRequest);
     } catch (Exception e) {
       // we're OK with not updating the task here, it will be marked as completed within import
@@ -198,27 +204,25 @@ public class TaskReaderWriter {
       final String currentUser,
       final TaskValidator taskValidator,
       final Map<String, Object> updateFields) {
-    final GetResponse taskRawResponse = getTaskRawResponse(taskId);
-    if (taskRawResponse.isExists()) {
-      try {
-        final TaskEntity taskBefore =
-            fromSearchHit(taskRawResponse.getSourceAsString(), objectMapper, TaskEntity.class);
-        // update task with optimistic locking
-        // format date fields properly
-        taskValidator.validate(taskBefore, currentUser);
-        final Map<String, Object> jsonMap =
-            objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
-        final UpdateRequest updateRequest =
-            new UpdateRequest(
-                    taskTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, taskId)
-                .doc(jsonMap)
-                .setRefreshPolicy(WAIT_UNTIL)
-                .setIfSeqNo(taskRawResponse.getSeqNo())
-                .setIfPrimaryTerm(taskRawResponse.getPrimaryTerm());
-        ElasticsearchUtil.executeUpdate(esClient, updateRequest);
-      } catch (Exception e) {
-        throw new TasklistRuntimeException(e.getMessage(), e);
-      }
+    try {
+      final SearchHit searchHit = getTaskRawResponse(taskId);
+      final TaskEntity taskBefore =
+          fromSearchHit(searchHit.getSourceAsString(), objectMapper, TaskEntity.class);
+      // update task with optimistic locking
+      // format date fields properly
+      taskValidator.validate(taskBefore, currentUser);
+      final Map<String, Object> jsonMap =
+          objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);
+      final UpdateRequest updateRequest =
+          new UpdateRequest(
+                  taskTemplate.getMainIndexName(), ElasticsearchUtil.ES_INDEX_TYPE, taskId)
+              .doc(jsonMap)
+              .setRefreshPolicy(WAIT_UNTIL)
+              .setIfSeqNo(searchHit.getSeqNo())
+              .setIfPrimaryTerm(searchHit.getPrimaryTerm());
+      ElasticsearchUtil.executeUpdate(esClient, updateRequest);
+    } catch (Exception e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
     }
   }
 }

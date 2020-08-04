@@ -25,7 +25,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.search.SearchHit;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -46,12 +46,14 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     final Map<String, Object> variablesMap =
         variables.stream().collect(Collectors.toMap(VariableDTO::getName, this::extractTypedValue));
     // validate
-    final GetResponse taskRawResponse = taskReaderWriter.getTaskRawResponse(taskId);
-    if (!taskRawResponse.isExists()) {
-      throw new TasklistRuntimeException(String.format("Task with id %s was not found", taskId));
+    final SearchHit taskSearchHit;
+    try {
+      taskSearchHit = taskReaderWriter.getTaskRawResponse(taskId);
+    } catch (IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
     }
     final TaskEntity taskBefore =
-        fromSearchHit(taskRawResponse.getSourceAsString(), objectMapper, TaskEntity.class);
+        fromSearchHit(taskSearchHit.getSourceAsString(), objectMapper, TaskEntity.class);
     try {
       CAN_COMPLETE.validate(taskBefore, getCurrentUsername());
     } catch (TaskValidationException e) {
@@ -65,7 +67,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     }
     completeJobCommand.send().join();
     // persist completion and variables
-    final TaskEntity completedTask = taskReaderWriter.persistTaskCompletion(taskRawResponse);
+    final TaskEntity completedTask = taskReaderWriter.persistTaskCompletion(taskSearchHit);
     variableReaderWriter.persistTaskVariables(taskId, variables);
     return TaskDTO.createFrom(completedTask);
   }
