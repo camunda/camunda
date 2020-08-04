@@ -3,7 +3,7 @@
 cd ${GOPATH}/src/github.com/zeebe-io/zeebe/clients/go/internal/embedded
 
 echo ${DEVELOPMENT_VERSION} > data/VERSION
-go-bindata -pkg embedded -o embedded.go -prefix data/
+go-bindata -pkg embedded -o embedded.go -prefix data/ data/
 
 git commit -am "chore(project): prepare next development version (Go client)"
 

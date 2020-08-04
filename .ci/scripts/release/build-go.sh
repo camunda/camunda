@@ -16,5 +16,15 @@ cd ${ORG_DIR}/zeebe/clients/go/internal/embedded
 echo ${RELEASE_VERSION} > data/VERSION 
 go-bindata -pkg embedded -o embedded.go -prefix data data/ 
 
+# configure Jenkins GitHub user
+git config --global user.email "ci@camunda.com"
+git config --global user.name "camunda-jenkins"
+
+# trust github ssh key
+mkdir ~/.ssh/
+ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+git commit -am "chore(project): update go embedded version data"
+
 cd ${ORG_DIR}/zeebe/clients/go/cmd/zbctl
 ./build.sh
