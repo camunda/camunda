@@ -23,7 +23,6 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DimensionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
@@ -35,7 +34,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
-import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -318,19 +316,9 @@ public class Generator {
     final String eventProcessMappingId = eventProcessClient.createEventProcessMapping(createRequestDto);
     eventProcessClient.publishEventProcessMapping(eventProcessMappingId);
 
-    waitForEventProcessPublish(eventProcessMappingId);
+    eventProcessClient.waitForEventProcessPublish(eventProcessMappingId);
 
     return eventProcessMappingId;
-  }
-
-  @SneakyThrows
-  private void waitForEventProcessPublish(final String eventProcessMappingId) {
-    EventProcessMappingResponseDto eventProcessMapping;
-    do {
-      eventProcessMapping = eventProcessClient.getEventProcessMapping(eventProcessMappingId);
-      log.info("Event Process {} publish state: {}", eventProcessMapping.getId(), eventProcessMapping.getState());
-      Thread.sleep(1000L);
-    } while (!EventProcessState.PUBLISHED.equals(eventProcessMapping.getState()));
   }
 
   private static AlertCreationDto prepareAlertCreation(String id) {

@@ -7,21 +7,34 @@ package org.camunda.optimize.test.data.upgrade;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.OptimizeRequestExecutor;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.CollectionClient;
 import org.camunda.optimize.test.optimize.EntitiesClient;
 import org.camunda.optimize.test.optimize.EventProcessClient;
+import org.camunda.optimize.test.optimize.ReportClient;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
@@ -30,6 +43,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,10 +53,12 @@ public class PostMigrationTest {
   private static final String DEFAULT_USER = "demo";
 
   private static OptimizeRequestExecutor requestExecutor;
+  private static OptimizeElasticsearchClient elasticsearchClient;
   private static AlertClient alertClient;
   private static CollectionClient collectionClient;
   private static EntitiesClient entitiesClient;
   private static EventProcessClient eventProcessClient;
+  private static ReportClient reportClient;
 
   @BeforeAll
   public static void init() {
@@ -54,10 +70,17 @@ public class PostMigrationTest {
     requestExecutor = new OptimizeRequestExecutor(optimizeClient, ctx.getBean(ObjectMapper.class))
       .withUserAuthentication(DEFAULT_USER, DEFAULT_USER)
       .withCurrentUserAuthenticationAsNewDefaultToken();
+    final ConfigurationService configurationService = ctx.getBean(ConfigurationService.class);
+    elasticsearchClient = new OptimizeElasticsearchClient(
+      ElasticsearchHighLevelRestClientBuilder.build(configurationService),
+      new OptimizeIndexNameService(configurationService)
+    );
+
     alertClient = new AlertClient(() -> requestExecutor);
     collectionClient = new CollectionClient(() -> requestExecutor);
     entitiesClient = new EntitiesClient(() -> requestExecutor);
     eventProcessClient = new EventProcessClient(() -> requestExecutor);
+    reportClient = new ReportClient(() -> requestExecutor);
   }
 
   @Test
@@ -93,7 +116,6 @@ public class PostMigrationTest {
   @Test
   public void evaluateAllCollectionReports() {
     final List<EntityDto> collections = getCollections();
-
     for (EntityDto collection : collections) {
       final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collection.getId());
       for (EntityDto entity : collectionEntities.stream()
@@ -107,15 +129,81 @@ public class PostMigrationTest {
     }
   }
 
-  // FIXME to be activated with OPT-3968
-  @Disabled
   @Test
-  public void retrieveAllEventBasedProcessesAndEnsureTheyArePublished() {
+  public void retrieveAllEventBasedProcessesAndEnsureTheyArePublishedAndHaveInstanceData() {
     final List<EventProcessMappingDto> allEventProcessMappings = eventProcessClient.getAllEventProcessMappings();
+    assertEventProcessesArePublished(allEventProcessMappings);
+
+    final Map<String, Long> eventProcessInstanceCounts =
+      retrieveEventProcessInstanceCounts(allEventProcessMappings);
+    assertThat(eventProcessInstanceCounts.values())
+      .isNotEmpty()
+      .allSatisfy(instanceCount -> assertThat(instanceCount).isGreaterThan(0L));
+  }
+
+  @Test
+  public void republishAllEventBasedProcessesAndEnsureTheyArePublishedAndHaveInstanceData() {
+    final List<EventProcessMappingDto> eventProcessMappingsBeforeRepublish =
+      eventProcessClient.getAllEventProcessMappings();
+    assertThat(eventProcessMappingsBeforeRepublish).isNotEmpty();
+
+    final Map<String, Long> eventProcessInstanceCountsBeforeRepublish =
+      retrieveEventProcessInstanceCounts(eventProcessMappingsBeforeRepublish);
+
+    eventProcessMappingsBeforeRepublish.forEach(eventProcessMappingDto -> {
+      final String currentEventProcessMappingId = eventProcessMappingDto.getId();
+      // update it to allow another publish (but no actual changes required)
+      // we need to fetch the xml as it's not included in the list results
+      eventProcessMappingDto.setXml(eventProcessClient.getEventProcessMapping(eventProcessMappingDto.getId()).getXml());
+      eventProcessClient.updateEventProcessMapping(currentEventProcessMappingId, eventProcessMappingDto);
+      eventProcessClient.publishEventProcessMapping(currentEventProcessMappingId);
+      eventProcessClient.waitForEventProcessPublish(currentEventProcessMappingId);
+    });
+
+    final List<EventProcessMappingDto> republishedEventProcessMappings =
+      eventProcessClient.getAllEventProcessMappings();
+    assertThat(republishedEventProcessMappings).hasSameSizeAs(eventProcessMappingsBeforeRepublish);
+    assertEventProcessesArePublished(republishedEventProcessMappings);
+
+    refreshAllElasticsearchIndices();
+
+    final Map<String, Long> eventProcessInstanceCountsAfterRepublish =
+      retrieveEventProcessInstanceCounts(eventProcessMappingsBeforeRepublish);
+
+    assertThat(eventProcessInstanceCountsAfterRepublish).isEqualTo(eventProcessInstanceCountsBeforeRepublish);
+  }
+
+  private Map<String, Long> retrieveEventProcessInstanceCounts(final List<EventProcessMappingDto> eventProcessMappings) {
+    return eventProcessMappings.stream()
+      .map(EventProcessMappingDto::getId)
+      .map(this::evaluateRawDataReportForProcessKey)
+      .collect(Collectors.toMap(
+        report -> report.getReportDefinition().getData().getProcessDefinitionKey(),
+        report -> report.getResult().getInstanceCount()
+      ));
+  }
+
+  @SneakyThrows
+  private void refreshAllElasticsearchIndices() {
+    elasticsearchClient.getHighLevelClient().indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
+  }
+
+  private void assertEventProcessesArePublished(final List<EventProcessMappingDto> allEventProcessMappings) {
     assertThat(allEventProcessMappings)
       .isNotEmpty()
       .extracting(EventProcessMappingDto::getState)
       .allSatisfy(eventProcessState -> assertThat(eventProcessState).isEqualTo(EventProcessState.PUBLISHED));
+  }
+
+  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawDataReportForProcessKey(
+    final String eventProcessKey) {
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(eventProcessKey)
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+      .setReportDataType(ProcessReportDataType.RAW_DATA)
+      .build();
+    return reportClient.evaluateRawReport(reportData);
   }
 
   private List<EntityDto> getCollections() {
