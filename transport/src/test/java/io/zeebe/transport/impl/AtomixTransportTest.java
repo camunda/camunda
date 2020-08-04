@@ -250,8 +250,7 @@ public class AtomixTransportTest {
 
     // when
     final var requestFuture =
-        clientTransport.sendRequest(
-            () -> null, new Request("messageABC"), REQUEST_TIMEOUT_NO_SUCCESS);
+        clientTransport.sendRequest(() -> null, new Request("messageABC"), REQUEST_TIMEOUT);
 
     // then
     assertThatThrownBy(requestFuture::join)
