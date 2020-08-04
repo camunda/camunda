@@ -200,8 +200,20 @@ pipeline {
             }
 
             post {
+                always {
+                    jacoco(
+                          execPattern: '**/*.exec',
+                          classPattern: '**/target/classes',
+                          sourcePattern: '**/src/main/java,**/generated-sources/protobuf/java,**/generated-sources/assertj-assertions,**/generated-sources/sbe',
+                          exclusionPattern: '**/io/zeebe/gateway/protocol/**,'
+                                            + '**/*Encoder.class,**/*Decoder.class,**/MetaAttribute.class,'
+                                            + '**/io/zeebe/protocol/record/**/*Assert.class,**/io/zeebe/protocol/record/Assertions.class,', // classes from generated resources
+                          runAlways: true
+                    )
+                }
                 failure {
                     zip zipFile: 'test-reports.zip', archive: true, glob: "**/*/surefire-reports/**"
+                    zip zipFile: 'test-coverage-reports.zip', archive: true, glob: "**/target/site/jacoco/**"
                     archive "**/hs_err_*.log"
 
                     script {

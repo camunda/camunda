@@ -201,7 +201,7 @@ public class RollingUpdateTest {
         .newDeployCommand()
         .addWorkflowModel(PROCESS, "process.bpmn")
         .send()
-        .join(5, TimeUnit.SECONDS);
+        .join(10, TimeUnit.SECONDS);
   }
 
   private void assertTopologyContainsUpgradedBroker(
