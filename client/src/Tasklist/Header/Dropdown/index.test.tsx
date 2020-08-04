@@ -11,10 +11,7 @@ import {MockedResponse} from '@apollo/react-testing';
 import {Dropdown} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
-import {
-  mockGetCurrentUser,
-  mockSSOGetCurrentUser,
-} from 'modules/queries/get-current-user';
+import {mockGetCurrentUser} from 'modules/queries/get-current-user';
 
 const fetchMock = jest.spyOn(window, 'fetch');
 
@@ -98,19 +95,6 @@ describe.only('<Dropdown />', () => {
 
     fireEvent.click(await screen.findByText('Demo User'));
     fireEvent.click(screen.getByText('Logout'));
-
-    expect(screen.queryByText('Logout')).not.toBeInTheDocument();
-  });
-
-  it('should not allow a SSO user to logout', async () => {
-    render(<Dropdown />, {
-      wrapper: getWrapper([mockSSOGetCurrentUser]),
-    });
-
-    expect(await screen.findByText('Demo User')).toBeInTheDocument();
-    expect(screen.queryByTestId('dropdown-icon')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByText('Demo User'));
 
     expect(screen.queryByText('Logout')).not.toBeInTheDocument();
   });

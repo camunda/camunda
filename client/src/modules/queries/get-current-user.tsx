@@ -15,7 +15,6 @@ const GET_CURRENT_USER = gql`
       firstname
       lastname
       username
-      canLogout
     }
   }
 `;
@@ -26,24 +25,7 @@ const mockGetCurrentUser = {
   },
   result: {
     data: {
-      currentUser: {
-        ...currentUser,
-        canLogout: true,
-      },
-    },
-  },
-} as const;
-
-const mockSSOGetCurrentUser = {
-  request: {
-    query: GET_CURRENT_USER,
-  },
-  result: {
-    data: {
-      currentUser: {
-        ...currentUser,
-        canLogout: false,
-      },
+      currentUser,
     },
   },
 } as const;
@@ -53,4 +35,4 @@ interface GetCurrentUser {
 }
 
 export type {GetCurrentUser};
-export {GET_CURRENT_USER, mockGetCurrentUser, mockSSOGetCurrentUser};
+export {GET_CURRENT_USER, mockGetCurrentUser};
