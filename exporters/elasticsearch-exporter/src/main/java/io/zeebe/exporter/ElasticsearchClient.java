@@ -34,11 +34,9 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
-import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.apache.http.nio.entity.NStringEntity;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -55,7 +53,6 @@ public class ElasticsearchClient {
   public static final String INDEX_DELIMITER = "_";
   public static final String ALIAS_DELIMITER = "-";
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  private static final ContentType CONTENT_TYPE_NDJSON = ContentType.create("application/x-ndjson");
 
   protected final RestClient client;
   private final ElasticsearchExporterConfiguration configuration;
@@ -182,9 +179,7 @@ public class ElasticsearchClient {
   private BulkResponse exportBulk() throws IOException {
     try (final Histogram.Timer timer = metrics.measureFlushDuration()) {
       final var request = new Request("POST", "/_bulk");
-      final var body =
-          new NStringEntity(String.join("\n", bulkRequest) + "\n", CONTENT_TYPE_NDJSON);
-      request.setEntity(body);
+      request.setJsonEntity(String.join("\n", bulkRequest) + "\n");
 
       final var response = client.performRequest(request);
 
