@@ -16,5 +16,7 @@ cd ${ORG_DIR}/zeebe/clients/go/internal/embedded
 echo ${RELEASE_VERSION} > data/VERSION 
 go-bindata -pkg embedded -o embedded.go -prefix data data/ 
 
+git commit -am "chore(project): update go embedded version data"
+
 cd ${ORG_DIR}/zeebe/clients/go/cmd/zbctl
 ./build.sh
