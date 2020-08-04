@@ -31,11 +31,18 @@ import {
 } from 'modules/queries/get-current-user';
 import {Pages} from 'modules/constants/pages';
 import {Variable} from 'modules/types';
-import {GET_TASK_DETAILS} from 'modules/queries/get-task-details';
+import {GET_TASKS} from 'modules/queries/get-tasks';
+import {getSearchParam} from 'modules/utils/getSearchParam';
+import {getQueryVariables} from 'modules/utils/getQueryVariables';
+import {useLocation} from 'react-router-dom';
+import {FilterValues} from 'modules/constants/filterValues';
 
 const Task: React.FC = () => {
   const {id} = useParams();
   const history = useHistory();
+  const location = useLocation();
+  const filter =
+    getSearchParam('filter', location.search) ?? FilterValues.AllOpen;
 
   const {data, loading} = useQuery<GetTask, TaskQueryVariables>(GET_TASK, {
     variables: {id},
@@ -44,8 +51,14 @@ const Task: React.FC = () => {
   const [completeTask] = useMutation<GetTask, CompleteTaskVariables>(
     COMPLETE_TASK,
     {
-      refetchQueries: [{query: GET_TASK_DETAILS, variables: {id}}],
-      awaitRefetchQueries: true,
+      refetchQueries: [
+        {
+          query: GET_TASKS,
+          variables: getQueryVariables(filter, {
+            username: userData?.currentUser.username,
+          }),
+        },
+      ],
     },
   );
 

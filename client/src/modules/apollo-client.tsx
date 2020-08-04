@@ -8,13 +8,11 @@
 
 import ApolloClient from 'apollo-boost';
 
-import {resolvers} from 'modules/mock-schema/resolvers';
 import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
 import {login} from 'modules/stores/login';
 
 const client = new ApolloClient({
   uri: '/graphql',
-  resolvers,
   request(operation) {
     const token = getCsrfToken(document.cookie);
 

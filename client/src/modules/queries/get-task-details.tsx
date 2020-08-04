@@ -28,42 +28,23 @@ interface GetTaskDetails {
   };
 }
 
-const GET_TASK_DETAILS =
-  process.env.NODE_ENV === 'test'
-    ? gql`
-        query GetTask($id: String!) {
-          task(id: $id) {
-            id
-            name
-            workflowName
-            assignee {
-              username
-              firstname
-              lastname
-            }
-            creationTime
-            completionTime
-            taskState
-          }
-        }
-      `
-    : gql`
-        query GetTask($id: String!) {
-          task(id: $id) {
-            id
-            name
-            workflowName
-            assignee {
-              username
-              firstname
-              lastname
-            }
-            creationTime
-            completionTime
-            taskState
-          }
-        }
-      `;
+const GET_TASK_DETAILS = gql`
+  query GetTask($id: String!) {
+    task(id: $id) {
+      id
+      name
+      workflowName
+      assignee {
+        username
+        firstname
+        lastname
+      }
+      creationTime
+      completionTime
+      taskState
+    }
+  }
+`;
 
 const mockGetTaskUnclaimed = {
   request: {

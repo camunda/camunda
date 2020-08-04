@@ -32,6 +32,7 @@ import {
   mockCompleteTaskWithAddedVariable,
   mockCompleteTaskWithEditedVariable,
 } from 'modules/mutations/complete-task';
+import {mockGetAllOpenTasks} from 'modules/queries/get-tasks';
 
 type GetWrapperProps = {
   mocks: MockedResponse[];
@@ -115,7 +116,7 @@ describe('<Task />', () => {
           mockTaskWithoutVariables,
           mockGetCurrentUser,
           mockCompleteTask,
-          mockGetTaskClaimed,
+          mockGetAllOpenTasks,
         ],
       }),
     });
@@ -141,7 +142,7 @@ describe('<Task />', () => {
           mockTaskWithVariables,
           mockGetCurrentUser,
           mockCompleteTaskWithEditedVariable,
-          mockGetTaskClaimed,
+          mockGetAllOpenTasks,
         ],
       }),
     });
@@ -171,7 +172,7 @@ describe('<Task />', () => {
           mockTaskWithVariables,
           mockGetCurrentUser,
           mockCompleteTaskWithAddedVariable,
-          mockGetTaskClaimed,
+          mockGetAllOpenTasks,
         ],
       }),
     });

@@ -20,34 +20,19 @@ interface GetTask {
   };
 }
 
-const GET_TASK =
-  process.env.NODE_ENV === 'test'
-    ? gql`
-        query GetTask($id: String!) {
-          task(id: $id) {
-            id
-            assignee {
-              username
-              firstname
-              lastname
-            }
-            taskState
-          }
-        }
-      `
-    : gql`
-        query GetTask($id: String!) {
-          task(id: $id) {
-            id
-            assignee {
-              username
-              firstname
-              lastname
-            }
-            taskState
-          }
-        }
-      `;
+const GET_TASK = gql`
+  query GetTask($id: String!) {
+    task(id: $id) {
+      id
+      assignee {
+        username
+        firstname
+        lastname
+      }
+      taskState
+    }
+  }
+`;
 
 const mockGetTaskCreated = {
   request: {

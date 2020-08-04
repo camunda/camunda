@@ -74,7 +74,6 @@ const Details: React.FC = () => {
     GET_TASK_DETAILS,
     {
       variables: {id},
-      fetchPolicy: 'network-only',
     },
   );
 

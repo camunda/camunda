@@ -22,24 +22,17 @@ interface GetTaskVariables {
   };
 }
 
-const GET_TASK_VARIABLES =
-  process.env.NODE_ENV === 'test'
-    ? gql`
-        query GetTask($id: String!) {
-          task(id: $id) {
-            id
-            variables
-          }
-        }
-      `
-    : gql`
-        query GetTask($id: String!) {
-          task(id: $id) {
-            id
-            variables @client
-          }
-        }
-      `;
+const GET_TASK_VARIABLES = gql`
+  query GetTask($id: String!) {
+    task(id: $id) {
+      id
+      variables {
+        name
+        value
+      }
+    }
+  }
+`;
 
 const mockTaskWithVariables = {
   request: {

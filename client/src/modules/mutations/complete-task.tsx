@@ -8,6 +8,7 @@
 
 import gql from 'graphql-tag';
 import {Task, Variable} from 'modules/types';
+import {completedTask} from 'modules/mock-schema/mocks/task-details';
 
 type Variables = ReadonlyArray<Variable>;
 
@@ -23,7 +24,15 @@ interface CompleteTaskVariables {
 
 const COMPLETE_TASK = gql`
   mutation CompleteTask($id: String!, $variables: [VariableInput!]!) {
-    completeTask(taskId: $id, variables: $variables)
+    completeTask(taskId: $id, variables: $variables) {
+      id
+      taskState
+      variables {
+        name
+        value
+      }
+      completionTime
+    }
   }
 `;
 
@@ -34,7 +43,7 @@ const mockCompleteTask = {
   },
   result: {
     data: {
-      completeTask: true,
+      completeTask: completedTask,
     },
   },
 };
@@ -46,7 +55,7 @@ const mockCompleteTaskWithEditedVariable = {
   },
   result: {
     data: {
-      completeTask: true,
+      completeTask: completedTask,
     },
   },
 };
@@ -61,7 +70,7 @@ const mockCompleteTaskWithAddedVariable = {
   },
   result: {
     data: {
-      completeTask: true,
+      completeTask: completedTask,
     },
   },
 };
