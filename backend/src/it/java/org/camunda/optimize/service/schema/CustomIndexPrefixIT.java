@@ -13,9 +13,9 @@ import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtens
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.camunda.optimize.util.BpmnModels;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -91,13 +91,10 @@ public class CustomIndexPrefixIT extends AbstractIT {
         customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient()
           .getHighLevelClient();
 
-      assertThat(
-        highLevelClient.indices().exists(new GetIndexRequest().indices(expectedAliasName), RequestOptions.DEFAULT)
-      ).isTrue();
-
-      assertThat(
-        highLevelClient.indices().exists(new GetIndexRequest().indices(expectedIndexName), RequestOptions.DEFAULT)
-      ).isTrue();
+      assertThat(highLevelClient.indices().exists(new GetIndexRequest(expectedAliasName), RequestOptions.DEFAULT))
+        .isTrue();
+      assertThat(highLevelClient.indices().exists(new GetIndexRequest(expectedIndexName), RequestOptions.DEFAULT))
+        .isTrue();
     }
   }
 
