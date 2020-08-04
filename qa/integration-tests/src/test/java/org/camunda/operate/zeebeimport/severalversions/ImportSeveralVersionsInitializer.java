@@ -12,7 +12,6 @@ import java.util.Properties;
 import java.util.Random;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
 import org.camunda.operate.qa.util.ZeebeTestUtil;
-import org.camunda.operate.util.ThreadUtil;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -21,6 +20,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import static org.assertj.core.api.Assertions.fail;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 
 public class ImportSeveralVersionsInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
@@ -89,7 +89,7 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
     }
 
     for (String version : zeebeVersions) {
-      testContainerUtil.stopZeebe();
+      testContainerUtil.stopZeebe(tmpFolder);
       testContainerUtil.startZeebe(tmpFolder.getPath(), version);
       client = testContainerUtil.getClient();
       generateDataForCurrentVersion();
@@ -109,7 +109,7 @@ public class ImportSeveralVersionsInitializer implements ApplicationContextIniti
     int exported = 0;
     int attempts = 0;
     while (exported < wiCount && attempts < 10) {
-      ThreadUtil.sleepFor(1000);
+      sleepFor(1000);
       try {
         exported = ElasticsearchUtil.getFieldCardinality(testContainerUtil.getEsClient(), getZeebeAliasName("workflow-instance"), "value.workflowInstanceKey");
       } catch (IOException e) {

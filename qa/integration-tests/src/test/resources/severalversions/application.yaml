@@ -7,3 +7,4 @@ zeebe.broker:
   data:
     diskUsageReplicationWatermark: 0.99
     diskUsageCommandWatermark: 0.98
+    snapshotPeriod: 1m

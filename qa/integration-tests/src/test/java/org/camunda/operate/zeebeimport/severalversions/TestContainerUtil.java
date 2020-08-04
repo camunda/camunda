@@ -5,7 +5,19 @@
  */
 package org.camunda.operate.zeebeimport.severalversions;
 
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
+
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.containers.ZeebeBrokerContainer;
+import io.zeebe.containers.ZeebePort;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.ElasticsearchClient;
 import org.elasticsearch.client.RestClient;
@@ -16,9 +28,6 @@ import org.slf4j.event.Level;
 import org.testcontainers.containers.Network;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.MountableFile;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.containers.ZeebeBrokerContainer;
-import io.zeebe.containers.ZeebePort;
 
 public class TestContainerUtil {
 
@@ -95,17 +104,43 @@ public class TestContainerUtil {
   }
 
   public void stopAll() {
-    stopZeebe();
+    stopZeebe(null);
     stopEls();
     closeNetwork();
   }
 
-  public void stopZeebe() {
+  public void stopZeebe(File tmpFolder) {
     if (client != null) {
       client.close();
       client = null;
     }
     if (broker != null) {
+      try {
+        if (tmpFolder != null && tmpFolder.listFiles().length > 0) {
+          boolean found = false;
+          int attempts = 0;
+          while (!found && attempts < 10) {
+            //check for snapshot existence
+            final List<Path> files = Files.walk(Paths.get(tmpFolder.toURI()))
+                .filter(p -> p.getFileName().endsWith("snapshots"))
+                .collect(Collectors.toList());
+            if (files.size() == 1 && Files.isDirectory(files.get(0))) {
+              if (Files.walk(files.get(0)).count() > 0) {
+                found = true;
+              }
+            }
+            if (!found) {
+              sleepFor(10000L);
+            }
+            attempts++;
+          }
+          if (!found) {
+            throw new AssertionError("Zeebe snapshot was never taken");
+          }
+        }
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
       broker.shutdownGracefully(Duration.ofSeconds(3));
       broker = null;
     }

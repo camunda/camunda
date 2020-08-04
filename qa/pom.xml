@@ -12,11 +12,9 @@
     <license.header>${project.baseUri}/../../license/license-header</license.header>
 
     <!-- properties for ImportSeveralVersionsTest and import-old-zeebe-tests module -->
-    <version.zeebe.old>0.24.0</version.zeebe.old>
+    <version.zeebe.old>0.24.1</version.zeebe.old>
     <version.zeebe.docker.current>SNAPSHOT</version.zeebe.docker.current>
 
-    <zeebe-test-container.version>0.31.0</zeebe-test-container.version>
-    <elasticsearch-test-container.version>1.12.5</elasticsearch-test-container.version>
   </properties>
 
   <name>Camunda Operate QA</name>
