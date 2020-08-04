@@ -3,7 +3,7 @@
   "version": "0.25.0-SNAPSHOT",
   "private": true,
   "dependencies": {
-    "bpmn-js": "^7.2.1",
+    "bpmn-js": "^7.3.0",
     "date-fns": "^2.15.0",
     "eslint-plugin-testing-library": "^3.4.0",
     "lodash": "^4.17.19",
