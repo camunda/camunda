@@ -46,7 +46,7 @@
     <version.commons-logging>1.2</version.commons-logging>
     <version.commons-math>3.6.1</version.commons-math>
     <version.commons-codec>1.14</version.commons-codec>
-    <version.elasticsearch>6.8.10</version.elasticsearch>
+    <version.elasticsearch>6.8.11</version.elasticsearch>
     <version.error-prone>2.4.0</version.error-prone>
     <version.grpc>1.31.0</version.grpc>
     <version.gson>2.8.6</version.gson>
@@ -66,7 +66,7 @@
     <version.netty-tcnative>2.0.31.Final</version.netty-tcnative>
     <version.objenesis>3.1</version.objenesis>
     <version.prometheus>0.9.0</version.prometheus>
-    <version.protobuf>3.12.2</version.protobuf>
+    <version.protobuf>3.12.4</version.protobuf>
     <version.micrometer>1.5.2</version.micrometer>
     <version.rocksdbjni>6.10.2</version.rocksdbjni>
     <version.sbe>1.19.0</version.sbe>
