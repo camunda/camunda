@@ -7,6 +7,7 @@
  */
 package io.zeebe.util.sched;
 
+import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ThreadLocalRandom;
@@ -29,7 +30,7 @@ public abstract class ActorThreadGroup {
     this.groupName = groupName;
     this.numOfThreads = numOfThreads;
 
-    this.tasks = new MultiLevelWorkstealingGroup(numOfThreads, numOfQueuesPerThread);
+    tasks = new MultiLevelWorkstealingGroup(numOfThreads, numOfQueuesPerThread);
 
     threads = new ActorThread[numOfThreads];
 
@@ -84,19 +85,29 @@ public abstract class ActorThreadGroup {
     }
   }
 
-  @SuppressWarnings("unchecked")
   public CompletableFuture<Void> closeAsync() {
+    Loggers.ACTOR_LOGGER.debug("Closing actor thread ground '{}'", groupName);
+
     final CompletableFuture<Void>[] terminationFutures = new CompletableFuture[numOfThreads];
 
     for (int i = 0; i < numOfThreads; i++) {
+      final ActorThread thread = threads[i];
       try {
-        terminationFutures[i] = threads[i].close();
+        terminationFutures[i] = thread.close();
       } catch (final IllegalStateException e) {
-        e.printStackTrace();
+        Loggers.ACTOR_LOGGER.error(
+            "Closing actor thread ground '{}'. Failed to close thread {}",
+            groupName,
+            thread.getRunnerId(),
+            e);
         terminationFutures[i] = CompletableFuture.completedFuture(null);
       }
     }
 
-    return CompletableFuture.allOf(terminationFutures);
+    return CompletableFuture.allOf(terminationFutures)
+        .thenAccept(
+            ok ->
+                Loggers.ACTOR_LOGGER.debug(
+                    "Closing actor thread ground '{}': closed successfully", groupName));
   }
 }
