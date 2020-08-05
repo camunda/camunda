@@ -66,8 +66,8 @@ public final class IncidentState {
 
   public void createIncident(final long incidentKey, final IncidentRecord incident) {
     this.incidentKey.wrapLong(incidentKey);
-    this.incidentWrite.setRecord(incident);
-    incidentColumnFamily.put(this.incidentKey, this.incidentWrite);
+    incidentWrite.setRecord(incident);
+    incidentColumnFamily.put(this.incidentKey, incidentWrite);
 
     incidentKeyValue.set(incidentKey);
     if (isJobIncident(incident)) {

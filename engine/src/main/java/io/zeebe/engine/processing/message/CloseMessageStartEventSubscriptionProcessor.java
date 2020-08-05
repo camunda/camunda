@@ -11,6 +11,7 @@ import io.zeebe.engine.processing.streamprocessor.TypedRecord;
 import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.zeebe.engine.processing.streamprocessor.writers.TypedStreamWriter;
+import io.zeebe.engine.state.instance.EventScopeInstanceState;
 import io.zeebe.engine.state.message.MessageStartEventSubscriptionState;
 import io.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
@@ -19,10 +20,13 @@ public final class CloseMessageStartEventSubscriptionProcessor
     implements TypedRecordProcessor<MessageStartEventSubscriptionRecord> {
 
   private final MessageStartEventSubscriptionState subscriptionState;
+  private final EventScopeInstanceState eventScopeInstanceState;
 
   public CloseMessageStartEventSubscriptionProcessor(
-      final MessageStartEventSubscriptionState subscriptionState) {
+      final MessageStartEventSubscriptionState subscriptionState,
+      final EventScopeInstanceState eventScopeInstanceState) {
     this.subscriptionState = subscriptionState;
+    this.eventScopeInstanceState = eventScopeInstanceState;
   }
 
   @Override
@@ -34,6 +38,8 @@ public final class CloseMessageStartEventSubscriptionProcessor
     final long workflowKey = subscriptionRecord.getWorkflowKey();
 
     subscriptionState.removeSubscriptionsOfWorkflow(workflowKey);
+
+    eventScopeInstanceState.deleteInstance(workflowKey);
 
     streamWriter.appendFollowUpEvent(
         record.getKey(), MessageStartEventSubscriptionIntent.CLOSED, subscriptionRecord);

@@ -34,6 +34,7 @@ public class ZeebeState {
 
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
+  private final ZeebeDb<ZbColumnFamilies> zeebeDb;
   private final KeyState keyState;
   private final WorkflowState workflowState;
   private final DeploymentsState deploymentState;
@@ -55,6 +56,7 @@ public class ZeebeState {
   public ZeebeState(
       final int partitionId, final ZeebeDb<ZbColumnFamilies> zeebeDb, final DbContext dbContext) {
     this.partitionId = partitionId;
+    this.zeebeDb = zeebeDb;
     keyState = new KeyState(partitionId, zeebeDb, dbContext);
     workflowState = new WorkflowState(zeebeDb, dbContext, keyState);
     deploymentState = new DeploymentsState(zeebeDb, dbContext);
@@ -158,5 +160,10 @@ public class ZeebeState {
 
   public int getPartitionId() {
     return partitionId;
+  }
+
+  public boolean isEmpty(final ZbColumnFamilies column) {
+    final var newContext = zeebeDb.createContext();
+    return zeebeDb.isEmpty(column, newContext);
   }
 }
