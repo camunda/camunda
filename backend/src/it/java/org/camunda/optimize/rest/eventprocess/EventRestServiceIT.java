@@ -16,7 +16,6 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
@@ -24,6 +23,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -118,7 +118,7 @@ public class EventRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_noAuthentication() {
     // when
-    Response response = createPostEventCountsRequestExternalEventsOnly(new EventCountSearchRequestDto())
+    Response response = createPostEventCountsRequestExternalEventsOnly()
       .withoutAuthentication()
       .execute();
 
@@ -129,7 +129,7 @@ public class EventRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_noSources_noResults() {
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(null, null)
+    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(Collections.emptyList())
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then
@@ -523,10 +523,6 @@ public class EventRestServiceIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final EventCountSearchRequestDto eventSearchRequestDto = EventCountSearchRequestDto.builder()
-      // search with all lowercase should still find camunda events containing `Etch`
-      .searchTerm("etch")
-      .build();
     final EventCountRequestDto countRequestDto = EventCountRequestDto.builder()
       .eventSources(
         ImmutableList.of(
@@ -539,7 +535,8 @@ public class EventRestServiceIT extends AbstractIT {
         )
       )
       .build();
-    final List<EventCountDto> eventCountDtos = createPostEventCountsRequest(eventSearchRequestDto, countRequestDto)
+    // search with all lowercase should still find camunda events containing `Etch`
+    final List<EventCountDto> eventCountDtos = createPostEventCountsRequest("etch", countRequestDto)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then matching event counts are return using default group case-insensitive ordering
@@ -560,13 +557,8 @@ public class EventRestServiceIT extends AbstractIT {
   @ParameterizedTest(name = "exact or prefix match are returned with search term {0}")
   @ValueSource(strings = {"registered_ev", "registered_event", "regISTERED_event"})
   public void getEventCounts_usingSearchTermLongerThanNGramMax(String searchTerm) {
-    // given
-    EventCountSearchRequestDto eventCountRequestDto = EventCountSearchRequestDto.builder()
-      .searchTerm(searchTerm)
-      .build();
-
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountRequestDto)
+    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(searchTerm)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then matching event counts are return using default group case-insensitive ordering
@@ -579,13 +571,12 @@ public class EventRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_usingSortAndOrderParameters() {
     // given
-    EventCountSearchRequestDto eventCountRequestDto = EventCountSearchRequestDto.builder()
-      .orderBy("source")
-      .sortOrder(SortOrder.DESC)
-      .build();
+    EventCountSorter eventCountSorter = new EventCountSorter();
+    eventCountSorter.setSortBy("source");
+    eventCountSorter.setSortOrder(SortOrder.DESC);
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountRequestDto)
+    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then all matching event counts are return using sort and ordering provided
@@ -605,13 +596,12 @@ public class EventRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_usingSortAndOrderParametersMatchingDefault() {
     // given
-    EventCountSearchRequestDto eventCountRequestDto = EventCountSearchRequestDto.builder()
-      .orderBy("group")
-      .sortOrder(SortOrder.ASC)
-      .build();
+    EventCountSorter eventCountSorter = new EventCountSorter();
+    eventCountSorter.setSortBy("group");
+    eventCountSorter.setSortOrder(SortOrder.ASC);
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountRequestDto)
+    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter, null)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then all matching event counts are return using sort and ordering provided
@@ -631,12 +621,11 @@ public class EventRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_usingInvalidSortAndOrderParameters() {
     // given
-    EventCountSearchRequestDto eventCountRequestDto = EventCountSearchRequestDto.builder()
-      .orderBy("notAField")
-      .build();
+    EventCountSorter eventCountSorter = new EventCountSorter();
+    eventCountSorter.setSortBy("notAField");
 
     // when
-    Response response = createPostEventCountsRequestExternalEventsOnly(eventCountRequestDto).execute();
+    Response response = createPostEventCountsRequestExternalEventsOnly(eventCountSorter, null).execute();
 
     // then validation exception is thrown
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
@@ -645,14 +634,12 @@ public class EventRestServiceIT extends AbstractIT {
   @Test
   public void getEventCounts_usingSearchTermAndSortAndOrderParameters() {
     // given
-    EventCountSearchRequestDto eventCountRequestDto = EventCountSearchRequestDto.builder()
-      .searchTerm("etch")
-      .orderBy("eventName")
-      .sortOrder(SortOrder.DESC)
-      .build();
+    EventCountSorter eventCountSorter = new EventCountSorter();
+    eventCountSorter.setSortBy("eventName");
+    eventCountSorter.setSortOrder(SortOrder.DESC);
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountRequestDto)
+    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly(eventCountSorter, "etch")
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then matching events are returned with ordering parameters respected
@@ -865,14 +852,13 @@ public class EventRestServiceIT extends AbstractIT {
       .mappings(ImmutableMap.of(FIRST_TASK_ID, createEventMappingDto(previousMappedEvent, null)))
       .eventSources(createEventSourcesWithExternalEventsOnly())
       .build();
-    EventCountSearchRequestDto eventCountRequestDto = EventCountSearchRequestDto.builder()
-      .orderBy("source")
-      .sortOrder(SortOrder.DESC)
-      .build();
+    EventCountSorter eventCountSorter = new EventCountSorter();
+    eventCountSorter.setSortBy("source");
+    eventCountSorter.setSortOrder(SortOrder.DESC);
 
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsRequest(
-      eventCountRequestDto, eventCountSuggestionsRequestDto)
+      eventCountSorter, eventCountSuggestionsRequestDto)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then counts that are not suggestions respect custom ordering
@@ -899,11 +885,9 @@ public class EventRestServiceIT extends AbstractIT {
       .mappings(ImmutableMap.of(FIRST_TASK_ID, createEventMappingDto(previousMappedEvent, null)))
       .eventSources(createEventSourcesWithExternalEventsOnly())
       .build();
-    EventCountSearchRequestDto eventCountRequestDto = EventCountSearchRequestDto.builder().searchTerm("ayon").build();
 
     // when
-    List<EventCountDto> eventCountDtos = createPostEventCountsRequest(
-      eventCountRequestDto, eventCountSuggestionsRequestDto)
+    List<EventCountDto> eventCountDtos = createPostEventCountsRequest("ayon", eventCountSuggestionsRequestDto)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then only results matching search term are returned
@@ -929,11 +913,10 @@ public class EventRestServiceIT extends AbstractIT {
       .mappings(ImmutableMap.of(FIRST_TASK_ID, createEventMappingDto(previousMappedEvent, null)))
       .eventSources(createEventSourcesWithExternalEventsOnly())
       .build();
-    EventCountSearchRequestDto eventCountRequestDto = EventCountSearchRequestDto.builder().searchTerm("etch").build();
 
     // when
     List<EventCountDto> eventCountDtos = createPostEventCountsRequest(
-      eventCountRequestDto, eventCountSuggestionsRequestDto)
+      "etch", eventCountSuggestionsRequestDto)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then suggested and non-suggested counts are filtered out by search term
@@ -1185,18 +1168,27 @@ public class EventRestServiceIT extends AbstractIT {
 
   private OptimizeRequestExecutor createPostEventCountsRequest(
     final EventCountRequestDto eventCountRequestDto) {
-    return createPostEventCountsRequest(null, eventCountRequestDto);
+    return createPostEventCountsRequest(null, null, eventCountRequestDto);
   }
 
   private OptimizeRequestExecutor createPostEventCountsRequestExternalEventsOnly() {
-    return createPostEventCountsRequestExternalEventsOnly(null);
+    return createPostEventCountsRequestExternalEventsOnly(null, null);
+  }
+
+  private OptimizeRequestExecutor createPostEventCountsRequestExternalEventsOnly(String searchTerm) {
+    return createPostEventCountsRequestExternalEventsOnly(null, searchTerm);
+  }
+
+  private OptimizeRequestExecutor createPostEventCountsRequestExternalEventsOnly(EventCountSorter eventCountSorter) {
+    return createPostEventCountsRequestExternalEventsOnly(eventCountSorter, null);
   }
 
   private OptimizeRequestExecutor createPostEventCountsRequestExternalEventsOnly(
-    final EventCountSearchRequestDto eventCountSearchRequestDto) {
+    final EventCountSorter eventCountSorter, final String searchTerm) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildPostEventCountRequest(
-        eventCountSearchRequestDto,
+        eventCountSorter,
+        searchTerm,
         EventCountRequestDto.builder().eventSources(createEventSourcesWithExternalEventsOnly()).build()
       );
   }
@@ -1229,10 +1221,21 @@ public class EventRestServiceIT extends AbstractIT {
       .buildPostEventCountRequest(EventCountRequestDto.builder().eventSources(eventSources).build());
   }
 
-  private OptimizeRequestExecutor createPostEventCountsRequest(final EventCountSearchRequestDto eventCountRequestDto,
+  private OptimizeRequestExecutor createPostEventCountsRequest(final EventCountSorter eventCountSorter,
+                                                               final EventCountRequestDto eventCountSuggestionsRequestDto) {
+    return createPostEventCountsRequest(eventCountSorter, null, eventCountSuggestionsRequestDto);
+  }
+
+  private OptimizeRequestExecutor createPostEventCountsRequest(final String searchTerm,
+                                                               final EventCountRequestDto eventCountSuggestionsRequestDto) {
+    return createPostEventCountsRequest(null, searchTerm, eventCountSuggestionsRequestDto);
+  }
+
+  private OptimizeRequestExecutor createPostEventCountsRequest(final EventCountSorter eventCountSorter,
+                                                               final String searchTerm,
                                                                final EventCountRequestDto eventCountSuggestionsRequestDto) {
     return embeddedOptimizeExtension.getRequestExecutor()
-      .buildPostEventCountRequest(eventCountRequestDto, eventCountSuggestionsRequestDto);
+      .buildPostEventCountRequest(eventCountSorter, searchTerm, eventCountSuggestionsRequestDto);
   }
 
   private EventSourceEntryDto createCamundaEventSourceEntryDto(final String definitionKey,

@@ -5,16 +5,15 @@
  */
 package org.camunda.optimize.dto.optimize.rest.sorting;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 
 import javax.ws.rs.QueryParam;
 import java.util.List;
+import java.util.Optional;
 
-@Data
-@AllArgsConstructor
+@Setter
 @NoArgsConstructor
 public abstract class Sorter<T> {
 
@@ -25,6 +24,14 @@ public abstract class Sorter<T> {
   protected String sortBy;
   @QueryParam(SORT_ORDER)
   protected SortOrder sortOrder;
+
+  public Optional<String> getSortBy() {
+    return Optional.ofNullable(sortBy);
+  }
+
+  public Optional<SortOrder> getSortOrder() {
+    return Optional.ofNullable(sortOrder);
+  }
 
   public abstract List<T> applySort(List<T> toSort);
 

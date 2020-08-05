@@ -25,7 +25,6 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
@@ -277,9 +276,7 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
 
   protected List<EventTypeDto> getEventCountsAsEventTypeDtos(final List<EventSourceEntryDto> eventSourceEntryDtos) {
     return embeddedOptimizeExtension.getRequestExecutor()
-      .buildPostEventCountRequest(
-        new EventCountSearchRequestDto(),
-        EventCountRequestDto.builder().eventSources(eventSourceEntryDtos).build()
+      .buildPostEventCountRequest(EventCountRequestDto.builder().eventSources(eventSourceEntryDtos).build()
       ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode())
       .stream()
       .map(EventDtoBuilderUtil::fromEventCountDto)

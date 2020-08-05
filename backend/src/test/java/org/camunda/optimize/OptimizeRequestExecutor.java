@@ -22,7 +22,6 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
@@ -39,8 +38,6 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
-import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
-import org.camunda.optimize.dto.optimize.rest.sorting.Sorter;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
@@ -54,6 +51,9 @@ import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
+import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
+import org.camunda.optimize.dto.optimize.rest.sorting.Sorter;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.security.AuthCookieService;
 
@@ -1250,22 +1250,20 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildPostEventCountRequest(final EventCountRequestDto eventCountRequestDto) {
-    return buildPostEventCountRequest(null, eventCountRequestDto);
+    return buildPostEventCountRequest(null, null, eventCountRequestDto);
   }
 
-  public OptimizeRequestExecutor buildPostEventCountRequest(final EventCountSearchRequestDto eventCountSearchRequestDto,
+  public OptimizeRequestExecutor buildPostEventCountRequest(final EventCountSorter eventCountSorter,
+                                                            final String searchTerm,
                                                             final EventCountRequestDto eventCountRequestDto) {
     this.path = "event/count";
     this.method = POST;
-    Optional.ofNullable(eventCountSearchRequestDto)
-      .map(EventCountSearchRequestDto::getSearchTerm)
-      .ifPresent(term -> addSingleQueryParam("searchTerm", term));
-    Optional.ofNullable(eventCountSearchRequestDto)
-      .map(EventCountSearchRequestDto::getOrderBy)
-      .ifPresent(orderBy -> addSingleQueryParam("orderBy", orderBy));
-    Optional.ofNullable(eventCountSearchRequestDto)
-      .map(EventCountSearchRequestDto::getSortOrder)
-      .ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
+    Optional.ofNullable(searchTerm).ifPresent(term -> addSingleQueryParam("searchTerm", term));
+    Optional.ofNullable(eventCountSorter)
+      .ifPresent(sorter -> {
+        sorter.getSortBy().ifPresent(sortBy -> addSingleQueryParam("sortBy", sortBy));
+        sorter.getSortOrder().ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
+      });
     this.body = Optional.ofNullable(eventCountRequestDto).map(this::getBody).orElse(null);
     return this;
   }
@@ -1290,12 +1288,8 @@ public class OptimizeRequestExecutor {
 
   private Map<String, Object> extractSortParams(EntitySorter sorter) {
     Map<String, Object> params = new HashMap<>();
-    if (sorter.getSortBy() != null) {
-      params.put(Sorter.SORT_BY, sorter.getSortBy());
-    }
-    if (sorter.getSortOrder() != null) {
-      params.put(Sorter.SORT_ORDER, sorter.getSortOrder().toString());
-    }
+    sorter.getSortBy().ifPresent(sortBy -> params.put(Sorter.SORT_BY, sortBy));
+    sorter.getSortOrder().ifPresent(sortOrder -> params.put(Sorter.SORT_ORDER, sortOrder.toString()));
     return params;
   }
 
