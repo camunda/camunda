@@ -44,6 +44,7 @@ test('create and name a report', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.resizeWindow(1350, 750);
 
@@ -64,6 +65,7 @@ test('sharing', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.resizeWindow(1000, 650);
 
@@ -341,8 +343,7 @@ test('should only enable valid combinations for Flow Node Count', async (t) => {
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
   await u.selectView(t, 'Flow Node', 'Count');
-
-  await t.expect(e.groupbyDropdownButton.textContent).contains('Flow Nodes');
+  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.click(e.visualizationDropdown);
 
@@ -356,6 +357,7 @@ test('select which flow nodes to show from the configuration', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectGroupby(t, 'Flow Nodes');
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.nodeTableCell('Assign Approver Group').exists).ok();
@@ -385,6 +387,7 @@ test('select to show only running or completed nodes', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectGroupby(t, 'Flow Nodes');
   await u.selectVisualization(t, 'Table');
 
   await t.click(e.configurationButton);
@@ -442,6 +445,7 @@ test('different visualizations', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectGroupby(t, 'Flow Nodes');
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportTable.visible).ok();
@@ -546,6 +550,7 @@ test('heatmap target values', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.resizeWindow(1650, 850);
 
@@ -594,6 +599,7 @@ test('always show tooltips', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.resizeWindow(1650, 850);
 

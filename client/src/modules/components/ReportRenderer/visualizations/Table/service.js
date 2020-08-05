@@ -17,6 +17,7 @@ const {formatReportResult, getRelativeValue} = formatters;
 export function getFormattedLabels(
   reportsLabels,
   reportsNames,
+  reportsIds,
   displayRelativeValue,
   displayAbsoluteValue
 ) {
@@ -25,6 +26,7 @@ export function getFormattedLabels(
       ...prev,
       {
         label: reportsNames[i],
+        id: reportsIds[i],
         columns: [
           ...(displayAbsoluteValue ? reportLabels.slice(1) : []),
           ...(displayRelativeValue ? [t('report.table.relativeFrequency')] : []),
@@ -64,6 +66,7 @@ export function getCombinedTableProps(reportResult, reports) {
   const initialData = {
     labels: [],
     reportsNames: [],
+    reportsIds: [],
     combinedResult: [],
     instanceCount: [],
   };
@@ -80,6 +83,9 @@ export function getCombinedTableProps(reportResult, reports) {
     // 2d array of all names
     const reportsNames = [...prevReport.reportsNames, name];
 
+    // 2d array of all ids
+    const reportsIds = [...prevReport.reportsIds, id];
+
     // 2d array of all results
     const formattedResult = formatReportResult(data, result.data);
     const reportsResult = [...prevReport.combinedResult, formattedResult];
@@ -90,6 +96,7 @@ export function getCombinedTableProps(reportResult, reports) {
     return {
       labels,
       reportsNames,
+      reportsIds,
       combinedResult: reportsResult,
       instanceCount: reportsInstanceCount,
     };

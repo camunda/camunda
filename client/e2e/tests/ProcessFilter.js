@@ -324,6 +324,7 @@ test('the filter is visible in the control panel and contains correct informatio
   await t.resizeWindow(1300, 900);
 
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectGroupby(t, 'Flow Nodes');
   await u.selectVisualization(t, 'Heatmap');
 
   await t.takeScreenshot('process/filter/combined-filter.png', {fullPage: true}).maximizeWindow();

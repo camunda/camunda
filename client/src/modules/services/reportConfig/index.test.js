@@ -42,7 +42,7 @@ describe('process update', () => {
     let changes = config.process.update(
       'groupBy',
       {type: 'assignee'},
-      {report: {data: {configuration: {distributedBy: 'assignee'}}}}
+      {report: {data: {view: {entity: 'userTask'}, configuration: {distributedBy: 'assignee'}}}}
     );
 
     expect(changes.configuration.distributedBy).toEqual({$set: 'none'});
@@ -50,7 +50,7 @@ describe('process update', () => {
     changes = config.process.update(
       'groupBy',
       {type: 'startDate'},
-      {report: {data: {configuration: {distributedBy: 'assignee'}}}}
+      {report: {data: {view: {entity: 'userTask'}, configuration: {distributedBy: 'assignee'}}}}
     );
 
     expect(changes.configuration.distributedBy).not.toBeDefined();

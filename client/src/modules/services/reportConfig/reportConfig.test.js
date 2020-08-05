@@ -16,6 +16,8 @@ const {
   update,
 } = reportConfig(process);
 
+const report = {data: {configuration: {distributedBy: 'none'}}};
+
 it('should get a label for a simple visualization', () => {
   expect(getLabelFor('visualization', visualization, 'heat')).toBe('Heatmap');
 });
@@ -42,40 +44,40 @@ it('should get a label for group by variables for dmn', () => {
 });
 
 it('should always allow view selection', () => {
-  expect(isAllowed(null, {property: 'rawData', entity: null})).toBe(true);
+  expect(isAllowed(report, {property: 'rawData', entity: null})).toBe(true);
 });
 
 it('should allow only groupBy options that make sense for the selected view', () => {
   expect(
-    isAllowed(null, {property: 'rawData', entity: null}, {type: 'none', value: null})
+    isAllowed(report, {property: 'rawData', entity: null}, {type: 'none', value: null})
   ).toBeTruthy();
   expect(
-    isAllowed(null, {property: 'rawData', entity: null}, {type: 'flowNodes', value: null})
+    isAllowed(report, {property: 'rawData', entity: null}, {type: 'flowNodes', value: null})
   ).toBeFalsy();
   expect(
     isAllowed(
-      null,
+      report,
       {property: 'frequency', entity: 'processInstance'},
       {type: 'runningDate', value: {unit: 'automatic'}}
     )
   ).toBeTruthy();
   expect(
     isAllowed(
-      null,
+      report,
       {property: 'duration', entity: 'processInstance'},
       {type: 'runningDate', value: {unit: 'automatic'}}
     )
   ).toBeFalsy();
   expect(
     isAllowed(
-      null,
+      report,
       {property: {name: 'doubleVar', type: 'Double'}, entity: 'variable'},
       {type: 'flowNodes', value: null}
     )
   ).toBeFalsy();
   expect(
     isAllowed(
-      null,
+      report,
       {property: {name: 'doubleVar', type: 'Double'}, entity: 'variable'},
       {type: 'none', value: null}
     )
@@ -84,15 +86,15 @@ it('should allow only groupBy options that make sense for the selected view', ()
 
 it('should allow only visualization options that make sense for the selected view and group', () => {
   expect(
-    isAllowed(null, {property: 'rawData', entity: null}, {type: 'none', value: null}, 'table')
+    isAllowed(report, {property: 'rawData', entity: null}, {type: 'none', value: null}, 'table')
   ).toBeTruthy();
   expect(
-    isAllowed(null, {property: 'rawData', entity: null}, {type: 'none', value: null}, 'heat')
+    isAllowed(report, {property: 'rawData', entity: null}, {type: 'none', value: null}, 'heat')
   ).toBeFalsy();
 
   expect(
     isAllowed(
-      null,
+      report,
       {
         entity: 'processInstance',
         property: 'duration',
@@ -108,7 +110,7 @@ it('should allow only visualization options that make sense for the selected vie
   ).toBeTruthy();
   expect(
     isAllowed(
-      null,
+      report,
       {
         entity: 'processInstance',
         property: 'duration',

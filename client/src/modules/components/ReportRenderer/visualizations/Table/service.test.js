@@ -112,12 +112,13 @@ it('should return correct table label structure', () => {
         ['key', 'value'],
       ],
       ['Report A', 'Report B'],
+      ['ReportIdA', 'ReportIdB'],
       false,
       true
     )
   ).toEqual([
-    {label: 'Report A', columns: ['value']},
-    {label: 'Report B', columns: ['value']},
+    {label: 'Report A', id: 'ReportIdA', columns: ['value']},
+    {label: 'Report B', id: 'ReportIdB', columns: ['value']},
   ]);
 });
 
@@ -129,12 +130,13 @@ it('should hide absolute values when specified from labels', () => {
         ['key', 'value'],
       ],
       ['Report A', 'Report B'],
+      ['ReportIdA', 'ReportIdB'],
       false,
       false
     )
   ).toEqual([
-    {columns: [], label: 'Report A'},
-    {columns: [], label: 'Report B'},
+    {columns: [], label: 'Report A', id: 'ReportIdA'},
+    {columns: [], label: 'Report B', id: 'ReportIdB'},
   ]);
 });
 
@@ -194,5 +196,6 @@ it('should return correct combined table report data properties', () => {
     ],
     instanceCount: [100, 100],
     reportsNames: ['report A', 'report A'],
+    reportsIds: ['report A', 'report B'],
   });
 });

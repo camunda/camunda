@@ -139,6 +139,7 @@ export const combinations = {
   },
   fn: {
     fn: ['table', 'chart', 'heat'],
+    date: ['table', 'chart'],
   },
   userTask: {
     task: ['table', 'chart', 'heat'],

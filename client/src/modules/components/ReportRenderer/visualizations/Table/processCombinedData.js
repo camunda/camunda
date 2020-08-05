@@ -8,7 +8,7 @@ import {getFormattedLabels, getBodyRows, getCombinedTableProps} from './service'
 import {uniteResults} from '../service';
 
 export default function processCombinedData({formatter, report}) {
-  const {labels, reportsNames, combinedResult, instanceCount} = getCombinedTableProps(
+  const {labels, reportsNames, reportsIds, combinedResult, instanceCount} = getCombinedTableProps(
     report.result.data,
     report.data.reports
   );
@@ -26,6 +26,7 @@ export default function processCombinedData({formatter, report}) {
   const formattedLabels = getFormattedLabels(
     labels,
     reportsNames,
+    reportsIds,
     displayRelativeValue,
     displayAbsoluteValue
   );

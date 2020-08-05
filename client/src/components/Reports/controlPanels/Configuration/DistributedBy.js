@@ -15,7 +15,7 @@ export default function DistributedBy({
   },
   onChange,
 }) {
-  if (view && view.entity === 'userTask' && groupBy) {
+  if (canDistributeData(view, groupBy)) {
     return (
       <fieldset className="DistributedBy">
         <legend>{t('report.config.userTaskDistributedBy')}</legend>
@@ -33,7 +33,7 @@ export default function DistributedBy({
           }}
         >
           <Select.Option value="none">{t('common.nothing')}</Select.Option>
-          {getOptionsFor(groupBy.type)}
+          {getOptionsFor(view.entity, groupBy.type)}
         </Select>
       </fieldset>
     );
@@ -41,26 +41,50 @@ export default function DistributedBy({
   return null;
 }
 
-function getOptionsFor(type) {
+function canDistributeData(view, groupBy) {
+  if (!view || !groupBy) {
+    return false;
+  }
+  if (view.entity === 'userTask') {
+    return true;
+  }
+  if (view.entity === 'flowNode' && (groupBy.type === 'startDate' || groupBy.type === 'endDate')) {
+    return true;
+  }
+}
+
+function getOptionsFor(view, groupBy) {
   const options = [];
 
-  if (['userTasks', 'startDate', 'endDate'].includes(type)) {
-    options.push(
-      <Select.Option key="assignee" value="assignee">
-        {t('report.groupBy.userAssignee')}
-      </Select.Option>,
-      <Select.Option key="candidateGroup" value="candidateGroup">
-        {t('report.groupBy.userGroup')}
-      </Select.Option>
-    );
+  if (view === 'userTask') {
+    if (['userTasks', 'startDate', 'endDate'].includes(groupBy)) {
+      options.push(
+        <Select.Option key="assignee" value="assignee">
+          {t('report.groupBy.userAssignee')}
+        </Select.Option>,
+        <Select.Option key="candidateGroup" value="candidateGroup">
+          {t('report.groupBy.userGroup')}
+        </Select.Option>
+      );
+    }
+
+    if (groupBy !== 'userTasks') {
+      options.push(
+        <Select.Option key="userTask" value="userTask">
+          {t('report.view.userTask')}
+        </Select.Option>
+      );
+    }
   }
 
-  if (type !== 'userTasks') {
-    options.push(
-      <Select.Option key="userTask" value="userTask">
-        {t('report.view.userTask')}
-      </Select.Option>
-    );
+  if (view === 'flowNode') {
+    if (groupBy === 'startDate' || groupBy === 'endDate') {
+      options.push(
+        <Select.Option key="flowNode" value="flowNode">
+          {t('report.view.fn')}
+        </Select.Option>
+      );
+    }
   }
 
   return options;

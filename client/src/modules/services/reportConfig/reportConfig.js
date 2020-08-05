@@ -55,7 +55,6 @@ export default function reportConfig({view, groupBy, visualization, combinations
 
     if (
       ['pie', 'heat'].includes(targetVisualization) &&
-      viewGroup === 'userTask' &&
       report.data.configuration.distributedBy !== 'none'
     ) {
       return false;
