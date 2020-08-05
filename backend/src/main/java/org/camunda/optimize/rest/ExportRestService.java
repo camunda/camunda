@@ -8,10 +8,12 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
@@ -31,9 +33,11 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllDtoFieldKeys;
 
 @AllArgsConstructor
 @Path("/export")
@@ -62,6 +66,11 @@ public class ExportRestService {
       .orElse(Response.status(Response.Status.NOT_FOUND).build());
   }
 
+  /**
+   * This endpoint returns only the columns specified in the includedColumns list in the request.
+   * All other columns (dto fields, new and existing variables not in includedColumns) are to be excluded.
+   * It is used for example to return process instance Ids in the branch analysis export.
+   */
   @POST
   // octet stream on success, json on potential error
   @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
@@ -81,7 +90,13 @@ public class ExportRestService {
           .processDefinitionVersions(request.getProcessDefinitionVersions())
           .tenantIds(request.getTenantIds())
           .filter(request.getFilter())
-          .configuration(SingleReportConfigurationDto.builder().includedColumns(request.getIncludedColumns()).build())
+          .configuration(SingleReportConfigurationDto.builder()
+                           .tableColumns(TableColumnDto.builder()
+                                           .includeNewVariables(false)
+                                           .excludedColumns(getAllExcludedDtoFields(request))
+                                           .includedColumns(request.getIncludedColumns())
+                                           .build())
+                           .build())
           .view(new ProcessViewDto(ProcessViewProperty.RAW_DATA))
           .groupBy(new NoneGroupByDto())
           .visualization(ProcessVisualization.TABLE)
@@ -93,6 +108,12 @@ public class ExportRestService {
       fileName,
       exportService.getCsvBytesForEvaluatedReportResult(userId, reportDefinitionDto, timezone)
     );
+  }
+
+  private List<String> getAllExcludedDtoFields(final ProcessRawDataCsvExportRequestDto request) {
+    final List<String> dtoFields = extractAllDtoFieldKeys(RawDataProcessInstanceDto.class);
+    dtoFields.removeAll(request.getIncludedColumns());
+    return dtoFields;
   }
 
   private Response createOctetStreamResponse(final String fileName,

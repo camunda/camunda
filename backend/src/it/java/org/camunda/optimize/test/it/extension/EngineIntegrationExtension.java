@@ -853,7 +853,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
             body = EntityUtils.toString(response.getEntity());
           }
           throw new RuntimeException(
-            "Could not start the decision definition. " +
+            "Could not start the decision definition instance. " +
               "Request: [" + post.toString() + "]. " +
               "Response: [" + body + "]"
           );

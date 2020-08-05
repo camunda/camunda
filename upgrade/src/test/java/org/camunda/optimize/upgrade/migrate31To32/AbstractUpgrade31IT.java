@@ -6,6 +6,8 @@
 package org.camunda.optimize.upgrade.migrate31To32;
 
 import com.google.common.collect.Lists;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.migrate31To32.indices.AlertIndexV3Old;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +17,8 @@ import static org.camunda.optimize.upgrade.main.impl.UpgradeFrom31To32.FROM_VERS
 public abstract class AbstractUpgrade31IT extends AbstractUpgradeIT {
 
   private static final AlertIndexV3Old ALERT_INDEX = new AlertIndexV3Old();
+  private static final SingleProcessReportIndex SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndex();
+  private static final SingleDecisionReportIndex SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndex();
 
   @BeforeEach
   protected void setUp() throws Exception {
@@ -22,7 +26,9 @@ public abstract class AbstractUpgrade31IT extends AbstractUpgradeIT {
     initSchema(
       Lists.newArrayList(
         METADATA_INDEX,
-        ALERT_INDEX
+        ALERT_INDEX,
+        SINGLE_PROCESS_REPORT_INDEX,
+        SINGLE_DECISION_REPORT_INDEX
       )
     );
     setMetadataIndexVersion(FROM_VERSION);

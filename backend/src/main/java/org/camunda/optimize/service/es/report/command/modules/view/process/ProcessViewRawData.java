@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
@@ -37,9 +38,12 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllDtoFieldKeys;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
@@ -50,13 +54,11 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessViewRawData extends ProcessViewPart {
-
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
 
   private final RawProcessDataResultDtoMapper rawDataSingleReportResultDtoMapper = new RawProcessDataResultDtoMapper();
-  private static final String VARIABLE_PREFIX = "variable:";
 
   @Override
   public void adjustSearchRequest(final SearchRequest searchRequest,
@@ -133,11 +135,27 @@ public class ProcessViewRawData extends ProcessViewPart {
       context.getUnfilteredInstanceCount(),
       objectMapper
     );
+    addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawDataSingleReportResultDto);
     return new ViewResult().setProcessRawData(rawDataSingleReportResultDto);
   }
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
     dataForCommandKey.setView(new ProcessViewDto(ProcessViewProperty.RAW_DATA));
+  }
+
+  private void addNewVariablesAndDtoFieldsToTableColumnConfig(final ExecutionContext<ProcessReportDataDto> context,
+                                                              final RawDataProcessReportResultDto result) {
+    final List<String> variableNames = result.getData()
+      .stream()
+      .flatMap(rawDataProcessInstanceDto -> rawDataProcessInstanceDto.getVariables().keySet().stream())
+      .map(varKey -> VARIABLE_PREFIX + varKey)
+      .collect(toList());
+    context.getReportConfiguration()
+      .getTableColumns()
+      .addNewVariableColumns(variableNames);
+    context.getReportConfiguration()
+      .getTableColumns()
+      .addDtoColumns(extractAllDtoFieldKeys(RawDataProcessInstanceDto.class));
   }
 }

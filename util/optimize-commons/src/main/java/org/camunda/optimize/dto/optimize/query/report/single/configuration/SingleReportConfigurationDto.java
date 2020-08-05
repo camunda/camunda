@@ -73,9 +73,7 @@ public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default
   private String xml = null;
   @Builder.Default
-  private List<String> excludedColumns = new ArrayList<>();
-  @Builder.Default
-  private List<String> includedColumns = new ArrayList<>();
+  private TableColumnDto tableColumns = new TableColumnDto();
   @Builder.Default
   private ColumnOrderDto columnOrder = new ColumnOrderDto();
   @Builder.Default

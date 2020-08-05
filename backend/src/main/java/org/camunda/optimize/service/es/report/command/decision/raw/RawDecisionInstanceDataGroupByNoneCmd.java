@@ -6,6 +6,9 @@
 package org.camunda.optimize.service.es.report.command.decision.raw;
 
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
@@ -17,6 +20,13 @@ import org.camunda.optimize.service.es.report.command.modules.view.decision.Deci
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionRawDataReportResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllDtoFieldKeys;
 
 @Component
 public class RawDecisionInstanceDataGroupByNoneCmd
@@ -38,6 +48,7 @@ public class RawDecisionInstanceDataGroupByNoneCmd
   @Override
   public SingleDecisionRawDataReportResult evaluate(final CommandContext<SingleDecisionReportDefinitionDto> commandContext) {
     final RawDataDecisionReportResultDto evaluate = executionPlan.evaluate(commandContext);
+    addNewVariablesAndDtoFieldsToTableColumnConfig(commandContext, evaluate);
     return new SingleDecisionRawDataReportResult(evaluate, commandContext.getReportDefinition());
   }
 
@@ -45,4 +56,39 @@ public class RawDecisionInstanceDataGroupByNoneCmd
   public String createCommandKey() {
     return executionPlan.generateCommandKey();
   }
+
+  private void addNewVariablesAndDtoFieldsToTableColumnConfig(final CommandContext<SingleDecisionReportDefinitionDto> commandContext,
+                                                              final RawDataDecisionReportResultDto result) {
+    final List<String> variableNames = result.getData()
+      .stream()
+      .flatMap(rawDataDecisionInstanceDto -> rawDataDecisionInstanceDto.getInputVariables().values().stream())
+      .map(this::getPrefixedInputVariableId)
+      .collect(toList());
+    variableNames.addAll(
+      result.getData()
+        .stream()
+        .flatMap(rawDataDecisionInstanceDto -> rawDataDecisionInstanceDto.getOutputVariables().values().stream())
+        .map(this::getPrefixedOutputVariableId)
+        .collect(toList())
+    );
+    commandContext.getReportDefinition()
+      .getData()
+      .getConfiguration()
+      .getTableColumns()
+      .addNewVariableColumns(variableNames);
+    commandContext.getReportDefinition()
+      .getData()
+      .getConfiguration()
+      .getTableColumns()
+      .addDtoColumns(extractAllDtoFieldKeys(RawDataDecisionInstanceDto.class));
+  }
+
+  private String getPrefixedInputVariableId(final InputVariableEntry inputVariableEntry) {
+    return INPUT_PREFIX + inputVariableEntry.getId();
+  }
+
+  private String getPrefixedOutputVariableId(final OutputVariableEntry outputVariableEntry) {
+    return OUTPUT_PREFIX + outputVariableEntry.getId();
+  }
+
 }

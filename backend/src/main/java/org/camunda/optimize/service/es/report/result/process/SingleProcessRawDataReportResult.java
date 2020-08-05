@@ -36,8 +36,7 @@ public class SingleProcessRawDataReportResult
       rawData,
       limit,
       offset,
-      reportDefinition.getData().getConfiguration().getExcludedColumns(),
-      reportDefinition.getData().getConfiguration().getIncludedColumns()
+      reportDefinition.getData().getConfiguration().getTableColumns()
     );
   }
 

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.result.decision;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
@@ -29,13 +30,15 @@ public class SingleDecisionRawDataReportResult
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
     List<RawDataDecisionInstanceDto> rawData = reportResult.getData();
-    rawData.forEach(raw -> raw.setEvaluationDateTime(atSameTimezoneOffsetDateTime(raw.getEvaluationDateTime(), timezone)));
+    rawData.forEach(raw -> raw.setEvaluationDateTime(atSameTimezoneOffsetDateTime(
+      raw.getEvaluationDateTime(),
+      timezone
+    )));
     return CSVUtils.mapRawDecisionReportInstances(
       rawData,
       limit,
       offset,
-      reportDefinition.getData().getConfiguration().getExcludedColumns(),
-      reportDefinition.getData().getConfiguration().getIncludedColumns()
+      reportDefinition.getData().getConfiguration().getTableColumns()
     );
   }
 

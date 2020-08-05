@@ -33,6 +33,7 @@ public class DmnModels {
   public static final String INPUT_VARIABLE_SEASON = "season";
   public static final String INPUT_VARIABLE_NUMBER_OF_GUESTS = "guestCount";
   public static final String INPUT_VARIABLE_GUEST_WITH_CHILDREN = "guestsWithChildren";
+  public static final String OUTPUT_BEVERAGES = "OutputClause_99999";
 
   //rules
   public static final String INVOICE_RULE_1_ID = "invoiceRule1";
@@ -211,7 +212,7 @@ public class DmnModels {
           .decisionDefinitionName("Beverages")
           .decisionDefinitionKey("beverages")
           .addInput("Guests with children", "InputClause_0bo3uen","guestsWithChildren", DecisionTypeRef.BOOLEAN)
-          .addOutput("Beverages", "OuputClause_99999","beverages", DecisionTypeRef.STRING)
+          .addOutput("Beverages", OUTPUT_BEVERAGES,"beverages", DecisionTypeRef.STRING)
           .rule()
             .addStringInputEntry("true")
             .addStringOutputEntry("\"Aecht Schlenkerla Rauchbier\"")
