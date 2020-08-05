@@ -265,7 +265,7 @@ public final class ClusteringRule extends ExternalResource {
     return broker;
   }
 
-  private BrokerCfg getBrokerCfg(final int nodeId) {
+  public BrokerCfg getBrokerCfg(final int nodeId) {
     return brokerCfgs.computeIfAbsent(nodeId, this::createBrokerCfg);
   }
 
@@ -453,6 +453,10 @@ public final class ClusteringRule extends ExternalResource {
    */
   public void restartBroker(final int nodeId) {
     stopBrokerAndAwaitNewLeader(nodeId);
+    startBroker(nodeId);
+  }
+
+  public void startBroker(final int nodeId) {
     final Broker broker = getBroker(nodeId).start().join();
     final InetSocketAddress commandApi =
         broker.getConfig().getNetwork().getCommandApi().getAddress();
