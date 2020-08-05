@@ -166,4 +166,17 @@ public final class ExportersStateTest {
     // when/then
     assertThat(state.getLowestPosition()).isEqualTo(-1L);
   }
+
+  @Test
+  public void shouldClearState() {
+    // given
+    state.setPosition("e2", 1L);
+
+    // when
+    state.removePosition("e2");
+
+    // then
+    assertThat(state.hasExporters()).isFalse();
+    assertThat(state.getLowestPosition()).isEqualTo(-1L);
+  }
 }

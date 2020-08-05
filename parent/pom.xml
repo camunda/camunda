@@ -85,6 +85,7 @@
     <version.config>1.4.0</version.config>
     <version.kryo>4.0.2</version.kryo>
     <version.failsafe>2.4.0</version.failsafe>
+    <version.awaitility>4.0.3</version.awaitility>
 
 
     <!-- maven plugins -->
@@ -191,6 +192,12 @@
         <version>${version.msgpack}</version>
       </dependency>
 
+      <dependency>
+        <groupId>org.awaitility</groupId>
+        <artifactId>awaitility</artifactId>
+        <version>${version.awaitility}</version>
+        <scope>test</scope>
+      </dependency>
 
       <dependency>
         <groupId>junit</groupId>

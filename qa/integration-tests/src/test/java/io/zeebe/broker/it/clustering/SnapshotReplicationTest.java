@@ -84,7 +84,7 @@ public final class SnapshotReplicationTest {
             .orElseThrow();
 
     // when - snapshot
-    clusteringRule.stopBroker(firstFollowerId);
+    clusteringRule.stopBrokerAndAwaitNewLeader(firstFollowerId);
     triggerSnapshotCreation();
     clusteringRule.restartBroker(firstFollowerId);
     clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId));
@@ -117,7 +117,7 @@ public final class SnapshotReplicationTest {
             .orElseThrow();
 
     // when - snapshot
-    clusteringRule.stopBroker(firstFollowerId);
+    clusteringRule.stopBrokerAndAwaitNewLeader(firstFollowerId);
     triggerSnapshotCreation();
     final var snapshotAtSecondFollower =
         clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId));

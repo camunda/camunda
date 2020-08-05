@@ -53,7 +53,7 @@ public final class GossipClusteringTest {
     final InetSocketAddress[] otherBrokers = clusteringRule.getOtherBrokers(2);
 
     // when
-    clusteringRule.stopBroker(2);
+    clusteringRule.stopBrokerAndAwaitNewLeader(2);
 
     // then
     final List<InetSocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();
@@ -69,7 +69,7 @@ public final class GossipClusteringTest {
         clusteringRule.getOtherBrokers(leaderForPartition.getNodeId());
 
     // when
-    clusteringRule.stopBroker(leaderForPartition.getNodeId());
+    clusteringRule.stopBrokerAndAwaitNewLeader(leaderForPartition.getNodeId());
 
     // then
     final List<InetSocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();
