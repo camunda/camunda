@@ -48,6 +48,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -56,7 +57,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 
 public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
@@ -165,6 +168,50 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
     filteredResponse = evaluateSavedReport(
       reportId,
       new AdditionalProcessReportEvaluationFilterDto(runningInstancesOnlyFilter())
+    );
+
+    // then instance is not part of evaluated result
+    assertThat(filteredResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertExpectedEvaluationInstanceCount(filteredResponse, 0L);
+
+    // when contains matching filter applied
+    filteredResponse = evaluateSavedReport(
+      reportId,
+      new AdditionalProcessReportEvaluationFilterDto(createContainsFilterForValues(variableName, "val"))
+    );
+
+    // then instance is part of evaluated result
+    assertThat(filteredResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertExpectedEvaluationInstanceCount(filteredResponse, 1L);
+
+    // when contains is not matching filter applied
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
+    importAllEngineEntitiesFromScratch();
+    filteredResponse = evaluateSavedReport(
+      reportId,
+      new AdditionalProcessReportEvaluationFilterDto(createContainsFilterForValues(variableName, "notMatch"))
+    );
+
+    // then instance is part of evaluated result
+    assertThat(filteredResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertExpectedEvaluationInstanceCount(filteredResponse, 0L);
+
+    // when not contains does not match given value
+    filteredResponse = evaluateSavedReport(
+      reportId,
+      new AdditionalProcessReportEvaluationFilterDto(createNotContainsFilterForValues(variableName, "notMatch"))
+    );
+
+    // then instance is not part of evaluated result
+    assertThat(filteredResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertExpectedEvaluationInstanceCount(filteredResponse, 1L);
+
+    // when not contains does match given value
+    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
+    importAllEngineEntitiesFromScratch();
+    filteredResponse = evaluateSavedReport(
+      reportId,
+      new AdditionalProcessReportEvaluationFilterDto(createNotContainsFilterForValues(variableName, "val"))
     );
 
     // then instance is not part of evaluated result
@@ -743,6 +790,32 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
   private List<ProcessFilterDto<?>> completedInstancesOnlyFilter() {
     return ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList();
+  }
+
+  private List<ProcessFilterDto<?>> createContainsFilterForValues(final String variableName,
+                                                                  final String... valuesToFilterFor) {
+    return ProcessFilterBuilder
+      .filter()
+      .variable()
+      .name(variableName)
+      .stringType()
+      .values(Arrays.asList(valuesToFilterFor))
+      .operator(CONTAINS)
+      .add()
+      .buildList();
+  }
+
+  private List<ProcessFilterDto<?>> createNotContainsFilterForValues(final String variableName,
+                                                                     final String... valuesToFilterFor) {
+    return ProcessFilterBuilder
+      .filter()
+      .variable()
+      .name(variableName)
+      .stringType()
+      .values(Arrays.asList(valuesToFilterFor))
+      .operator(NOT_CONTAINS)
+      .add()
+      .buildList();
   }
 
 }

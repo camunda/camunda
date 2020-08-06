@@ -156,11 +156,11 @@ public class DecisionFilterUtilHelper {
 
   public static OutputVariableFilterDto createStringOutputVariableFilter(String variableName,
                                                                          FilterOperator operator,
-                                                                         String variableValue) {
+                                                                         String... variableValues) {
     StringVariableFilterDataDto data = new StringVariableFilterDataDto(
       variableName,
       operator,
-      Collections.singletonList(variableValue)
+      Arrays.asList(variableValues)
     );
 
     OutputVariableFilterDto variableFilterDto = new OutputVariableFilterDto();

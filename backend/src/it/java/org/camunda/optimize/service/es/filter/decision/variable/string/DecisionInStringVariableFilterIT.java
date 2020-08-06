@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.filter.decision;
+package org.camunda.optimize.service.es.filter.decision.variable.string;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -13,8 +13,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.it.extension.EngineVariableValue;
-import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
-import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,13 +24,12 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createStringInputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.INPUT_CATEGORY_ID;
 
-public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT {
+public class DecisionInStringVariableFilterIT extends AbstractDecisionDefinitionIT {
 
   @Test
   public void resultFilterByEqualStringInputVariableValue() {
@@ -196,12 +193,4 @@ public class DecisionStringVariableFilterIT extends AbstractDecisionDefinitionIT
       .isEqualTo(expectedCategoryInputValue);
   }
 
-  private DecisionReportDataDto createReportWithAllVersionSet(DecisionDefinitionEngineDto decisionDefinitionDto) {
-    return DecisionReportDataBuilder
-      .create()
-      .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
-      .setDecisionDefinitionVersion(ALL_VERSIONS)
-      .setReportDataType(DecisionReportDataType.RAW_DATA)
-      .build();
-  }
 }

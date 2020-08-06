@@ -49,7 +49,9 @@ import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.DELETE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.CONTAINS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_CONTAINS;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
@@ -677,6 +679,14 @@ public class DashboardRestServiceIT extends AbstractIT {
         new DashboardFilterDto(
           DashboardFilterType.VARIABLE,
           new StringVariableFilterDataDto("stringVar", IN, Arrays.asList("StringA", "StringB"))
+        ),
+        new DashboardFilterDto(
+          DashboardFilterType.VARIABLE,
+          new StringVariableFilterDataDto("stringVar", CONTAINS, Arrays.asList("StringA", "StringB"))
+        ),
+        new DashboardFilterDto(
+          DashboardFilterType.VARIABLE,
+          new StringVariableFilterDataDto("stringVar", NOT_CONTAINS, Arrays.asList("foo"))
         ),
         new DashboardFilterDto(DashboardFilterType.START_DATE, null),
         new DashboardFilterDto(DashboardFilterType.END_DATE, null),

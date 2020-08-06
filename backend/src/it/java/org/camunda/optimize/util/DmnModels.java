@@ -17,14 +17,22 @@ public class DmnModels {
   //invoice variables
   public static final String OUTPUT_CLASSIFICATION_ID = "classificationOutput";
   public static final String OUTPUT_AUDIT_ID = "auditOutput";
+  public static final String STRING_OUTPUT_ID = "stringOutput";
+  public static final String INTEGER_OUTPUT_ID = "integerOutput";
   public static final String INPUT_AMOUNT_ID = "amountInput";
   public static final String INPUT_CATEGORY_ID = "categoryInput";
+  public static final String STRING_INPUT_ID = "stringInput";
+  public static final String INTEGER_INPUT_ID = "integerInput";
   public static final String INPUT_INVOICE_DATE_ID = "invoiceDateInput";
   public static final String INPUT_VARIABLE_INVOICE_CATEGORY = "invoiceCategory";
   public static final String INPUT_VARIABLE_AMOUNT = "amount";
+  public static final String INPUT_VARIABLE_STRING_INPUT = "stringInput";
+  public static final String INPUT_VARIABLE_INTEGER_INPUT = "integerInput";
   public static final String INPUT_VARIABLE_INVOICE_DATE = "invoiceDate";
   public static final String OUTPUT_VARIABLE_AUDIT = "audit";
   public static final String OUTPUT_VARIABLE_CLASSIFICATION = "invoiceClassification";
+  public static final String OUTPUT_VARIABLE_STRING_OUTPUT = "stringOutput";
+  public static final String OUTPUT_VARIABLE_INTEGER_OUTPUT = "integerOutput";
 
   // dish variables
   public static final String INPUT_SEASON_ID = "seasonInput";
@@ -92,6 +100,27 @@ public class DmnModels {
             .addStringOutputEntry("\"budget\"")
             .addStringOutputEntry("false")
           .buildRule("row-49839158-2")
+        .buildDecision()
+      .build();
+  }
+
+  public static DmnModelInstance createInputEqualsOutput() {
+    return DmnModelGenerator
+      .create()
+        .decision()
+          .decisionDefinitionVersionTag("aVersionTag")
+          .decisionDefinitionKey("inputEqualsOutput")
+          .decisionDefinitionName("Input equals output")
+          .addInput("String Input", STRING_INPUT_ID, INPUT_VARIABLE_STRING_INPUT, DecisionTypeRef.STRING)
+          .addInput("Integer Input", INTEGER_INPUT_ID, INPUT_VARIABLE_INTEGER_INPUT, DecisionTypeRef.STRING)
+          .addOutput("String Output", STRING_OUTPUT_ID, OUTPUT_VARIABLE_STRING_OUTPUT,  DecisionTypeRef.STRING)
+          .addOutput("Integer Output", INTEGER_OUTPUT_ID, OUTPUT_VARIABLE_INTEGER_OUTPUT,  DecisionTypeRef.STRING)
+          .rule()
+            .addStringInputEntry("")
+            .addStringInputEntry("")
+            .addStringOutputEntry(INPUT_VARIABLE_STRING_INPUT)
+            .addStringOutputEntry(INPUT_VARIABLE_INTEGER_INPUT)
+          .buildRule()
         .buildDecision()
       .build();
   }
