@@ -1289,7 +1289,7 @@ public class OptimizeRequestExecutor {
   private Map<String, Object> extractSortParams(EntitySorter sorter) {
     Map<String, Object> params = new HashMap<>();
     sorter.getSortBy().ifPresent(sortBy -> params.put(Sorter.SORT_BY, sortBy));
-    sorter.getSortOrder().ifPresent(sortOrder -> params.put(Sorter.SORT_ORDER, sortOrder.toString()));
+    sorter.getSortOrder().ifPresent(sortOrder -> params.put(Sorter.SORT_ORDER, sortOrder.toString().toLowerCase()));
     return params;
   }
 

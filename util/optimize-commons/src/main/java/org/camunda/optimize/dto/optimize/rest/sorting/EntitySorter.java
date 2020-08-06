@@ -36,7 +36,7 @@ public class EntitySorter extends Sorter<EntityDto> {
   @Override
   public List<EntityDto> applySort(List<EntityDto> entities) {
     Comparator<EntityDto> entitySorter;
-    if (sortBy != null) {
+    if (getSortBy().isPresent()) {
       if (!sortComparators.containsKey(sortBy.toLowerCase())) {
         throw new BadRequestException(String.format("%s is not a sortable field", sortBy));
       }
@@ -46,7 +46,7 @@ public class EntitySorter extends Sorter<EntityDto> {
       }
       entitySorter = entityDtoComparator.thenComparing(DEFAULT_ENTITY_COMPARATOR);
     } else {
-      if (sortOrder != null) {
+      if (getSortOrder().isPresent()) {
         throw new BadRequestException("Sort order is not supported when no field selected to sort");
       }
       entitySorter = DEFAULT_ENTITY_COMPARATOR;
