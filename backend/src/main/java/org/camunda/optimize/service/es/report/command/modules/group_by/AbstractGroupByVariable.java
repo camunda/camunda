@@ -9,41 +9,33 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
+import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
+import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
-import org.elasticsearch.search.aggregations.metrics.ParsedStats;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
-import java.io.IOException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.time.Instant;
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -55,14 +47,12 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.util.DateAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseNested;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.stats;
 
 @RequiredArgsConstructor
 public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> extends GroupByPart<Data> {
@@ -74,11 +64,9 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   private static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "inst_count";
   private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
 
-  private static final String STATS = "stats";
-
   private final ConfigurationService configurationService;
   private final DateAggregationService dateAggregationService;
-  private final OptimizeElasticsearchClient esClient;
+  private final MinMaxStatsService minMaxStatsService;
 
   protected abstract String getVariableName(final ExecutionContext<Data> context);
 
@@ -166,7 +154,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     AggregationBuilder operationsAggregation = reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
       .subAggregation(distributedByPart.createAggregation(context));
 
-
     aggregationBuilder.subAggregation(operationsAggregation);
     return Optional.of(aggregationBuilder);
   }
@@ -174,7 +161,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   private Optional<AggregationBuilder> createNumberVariableAggregation(final QueryBuilder baseQuery,
                                                                        final ExecutionContext<Data> context) {
     final MinMaxStatDto minMaxStats = getMinMaxStats(baseQuery, context);
-    if (!minMaxStats.isMinValid()) {
+    if (minMaxStats.isEmpty()) {
       return Optional.empty();
     }
 
@@ -208,87 +195,43 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private Optional<AggregationBuilder> createDateVariableAggregation(final QueryBuilder baseQuery,
                                                                      final ExecutionContext<Data> context) {
-    GroupByDateUnit unit = getGroupByDateUnit(context);
-    if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
-      MinMaxStatDto minMaxStats = getMinMaxStats(baseQuery, context);
-      if (!minMaxStats.isMinValid()) {
-        return Optional.empty();
-      }
-      if (minMaxStats.isValidRange()) {
-        return Optional.of(createAutomaticIntervalAggregation(minMaxStats, context));
-      }
-      // if there is only one instance we always group by month
-      unit = GroupByDateUnit.MONTH;
-    }
+    final DateAggregationContext dateAggContext = DateAggregationContext.builder()
+      .groupByDateUnit(getGroupByDateUnit(context))
+      .dateField(getNestedVariableValueFieldLabel(VariableType.DATE))
+      .minMaxStats(getMinMaxStats(baseQuery, context))
+      .timezone(context.getTimezone())
+      .distributedBySubAggregation(distributedByPart.createAggregation(context))
+      .dateAggregationName(VARIABLES_AGGREGATION)
+      .build();
 
-    return Optional.of(
-      dateAggregationService.createDateHistogramAggregation(
-        unit,
-        getNestedVariableValueFieldLabel(VariableType.DATE),
-        VARIABLES_AGGREGATION,
-        context.getTimezone()
-      )
-    );
-  }
-
-  private AggregationBuilder createAutomaticIntervalAggregation(final MinMaxStatDto minMaxStats,
-                                                                final ExecutionContext<Data> context) {
-    OffsetDateTime minDateTime =
-      OffsetDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMin())), context.getTimezone());
-    OffsetDateTime maxDateTime =
-      OffsetDateTime.ofInstant(Instant.ofEpochMilli(Math.round(minMaxStats.getMax())), context.getTimezone());
-    AggregationBuilder automaticIntervalAggregation =
-      dateAggregationService.createIntervalAggregationFromGivenRange(
-        getNestedVariableValueFieldLabel(VariableType.DATE),
-        context.getTimezone(),
-        minDateTime,
-        maxDateTime
-      );
-
-    return automaticIntervalAggregation.subAggregation(distributedByPart.createAggregation(context));
+    return dateAggregationService.createProcessDateVariableAggregation(dateAggContext);
   }
 
   private MinMaxStatDto getMinMaxStats(final QueryBuilder baseQuery,
                                        final ExecutionContext<Data> context) {
-    AggregationBuilder statsAggregation = VariableType.DATE.equals(getVariableType(context))
-      ? stats(STATS).field(getNestedVariableValueFieldLabel(VariableType.DATE)).format(OPTIMIZE_DATE_FORMAT)
-      : stats(STATS).field(getNestedVariableValueFieldLabel(getVariableType(context)));
-
-    AggregationBuilder filterAggregation = filter(
-      FILTERED_VARIABLES_AGGREGATION,
-      boolQuery()
-        .must(
-          termQuery(getNestedVariableNameFieldLabel(), getVariableName(context))
-        )
-    ).subAggregation(statsAggregation);
-
-    AggregationBuilder aggregationBuilder =
-      nested(NESTED_AGGREGATION, getVariablePath())
-        .subAggregation(filterAggregation);
-
-    SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
-      .query(baseQuery)
-      .fetchSource(false)
-      .aggregation(aggregationBuilder)
-      .size(0);
-    SearchRequest searchRequest = new SearchRequest(getIndexName()).source(searchSourceBuilder);
-
-    SearchResponse response;
-    try {
-      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Could not automatically determine date interval", e);
-    }
-
-    final ParsedNested nestedAgg = response.getAggregations().get(NESTED_AGGREGATION);
-    final ParsedFilter filterAgg = nestedAgg.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    final ParsedStats stats = filterAgg.getAggregations().get(STATS);
-    return new MinMaxStatDto(
-      stats.getMin(),
-      stats.getMax(),
-      stats.getMinAsString(),
-      stats.getMaxAsString()
+    final BoolQueryBuilder filterQuery = boolQuery().must(
+      termQuery(getNestedVariableNameFieldLabel(), getVariableName(context))
     );
+
+    if (VariableType.DATE.equals(getVariableType(context))) {
+      return minMaxStatsService.getMinMaxDateRange(
+        context,
+        baseQuery,
+        getIndexName(),
+        getNestedVariableValueFieldLabel(VariableType.DATE),
+        getVariablePath(),
+        filterQuery
+      );
+    } else {
+      return minMaxStatsService.getMinMaxNumberRange(
+        context,
+        baseQuery,
+        getIndexName(),
+        getNestedVariableValueFieldLabel(getVariableType(context)),
+        getVariablePath(),
+        filterQuery
+      );
+    }
   }
 
   @Override

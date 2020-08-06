@@ -253,7 +253,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
 
   private void changeProcessInstanceDates(final ProcessInstanceEngineDto procInstMin,
                                           final ZonedDateTime startDate,
-                                          final ZonedDateTime endDate) throws SQLException {
+                                          final ZonedDateTime endDate) {
     engineDatabaseExtension.changeProcessInstanceStartDate(procInstMin.getId(), startDate.toOffsetDateTime());
     engineDatabaseExtension.changeProcessInstanceEndDate(procInstMin.getId(), endDate.toOffsetDateTime());
   }

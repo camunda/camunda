@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByOutputVariableDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
@@ -32,8 +32,8 @@ public class DecisionGroupByOutputVariable extends AbstractGroupByVariable<Decis
 
   public DecisionGroupByOutputVariable(final ConfigurationService configurationService,
                                        final DateAggregationService dateAggregationService,
-                                       final OptimizeElasticsearchClient esClient) {
-    super(configurationService, dateAggregationService, esClient);
+                                       final MinMaxStatsService minMaxStatsService) {
+    super(configurationService, dateAggregationService, minMaxStatsService);
   }
 
   private DecisionGroupByVariableValueDto getVariableGroupByDto(final ExecutionContext<DecisionReportDataDto> context) {

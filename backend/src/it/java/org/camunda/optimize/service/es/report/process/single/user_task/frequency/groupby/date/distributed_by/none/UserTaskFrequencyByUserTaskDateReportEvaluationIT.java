@@ -50,7 +50,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
@@ -736,11 +736,11 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT extends 
     assertResultIsInCorrectRanges(now.plusDays(1), now.plusDays(6), resultMap, 2);
   }
 
-  private void assertResultIsInCorrectRanges(ZonedDateTime startRange,
-                                             ZonedDateTime endRange,
-                                             Map<String,
-                                               AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap,
-                                             int resultSize) {
+  private void assertResultIsInCorrectRanges(
+    ZonedDateTime startRange,
+    ZonedDateTime endRange,
+    Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap,
+    int resultSize) {
     assertThat(resultMap).hasSize(resultSize);
     for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
       final List<MapResultEntryDto> resultData = result.getResult().getData();

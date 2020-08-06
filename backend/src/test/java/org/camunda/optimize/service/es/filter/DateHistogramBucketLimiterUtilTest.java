@@ -31,6 +31,7 @@ import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
 import static java.time.temporal.TemporalAdjusters.firstDayOfYear;
 import static java.time.temporal.TemporalAdjusters.previousOrSame;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToGroupByDateUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
 public class DateHistogramBucketLimiterUtilTest {
@@ -91,7 +92,7 @@ public class DateHistogramBucketLimiterUtilTest {
   @ParameterizedTest
   @MethodSource("getHistogramData")
   public void testLimitRollingDateFilterToMaxBucketsForUnit(ChronoUnit unit, long startAmountToSubtract,
-                                                             long endAmountToSubtract, Long limit) {
+                                                            long endAmountToSubtract, Long limit) {
     final RollingDateFilterDataDto dateFilterDataDto = createRollingDateFilter(unit, startAmountToSubtract);
 
     final RollingDateFilterDataDto limitRollingDateFilter = DateHistogramBucketLimiterUtil
@@ -105,7 +106,7 @@ public class DateHistogramBucketLimiterUtilTest {
   @ParameterizedTest
   @MethodSource("getHistogramData")
   public void testLimitRelativeDateFilterToMaxBucketsForUnit(ChronoUnit unit, long startAmountToSubtract,
-                                                            long endAmountToSubtract, Long limit) {
+                                                             long endAmountToSubtract, Long limit) {
     final RelativeDateFilterDataDto dateFilterDataDto = createRelativeDateFilter(unit, startAmountToSubtract);
 
     final RelativeDateFilterDataDto limitedRollingDateFilter = DateHistogramBucketLimiterUtil
@@ -122,8 +123,8 @@ public class DateHistogramBucketLimiterUtilTest {
                                                                                          long startAmountToSubtract,
                                                                                          long endAmountToSubtract,
                                                                                          Long limit) {
-    final GroupByDateUnit groupByUnit = GroupByDateUnit.valueOf(unit.name().substring(0, unit.name().length() - 1));
-    final OffsetDateTime defaultEndTime = OffsetDateTime.now().minusYears(1L);
+    final GroupByDateUnit groupByUnit = mapToGroupByDateUnit(unit);
+    final ZonedDateTime defaultEndTime = ZonedDateTime.now().minusYears(1L);
     final BoolQueryBuilder filterQuery =
       DateHistogramBucketLimiterUtil.createDateHistogramBucketLimitedOrDefaultLimitedFilter(
         ImmutableList.of(),
@@ -136,11 +137,16 @@ public class DateHistogramBucketLimiterUtilTest {
 
     filterQuery.filter().forEach(queryBuilder -> {
       final RangeQueryBuilder rangeQueryBuilder = (RangeQueryBuilder) queryBuilder;
-      final OffsetDateTime fromDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.from()));
-      final OffsetDateTime toDate = OffsetDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.to()));
+      final ZonedDateTime fromDate = ZonedDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.from()));
+      final ZonedDateTime toDate = ZonedDateTime.from(dateTimeFormatter.parse((String) rangeQueryBuilder.to()));
 
       assertThat(toDate).isEqualTo(defaultEndTime.truncatedTo(ChronoUnit.MILLIS));
-      assertThat(fromDate).isEqualTo(calculateExpectedStartDate(toDate, unit, limit));
+      assertThat(fromDate)
+        .isEqualTo(calculateExpectedStartDate(
+          toDate.toOffsetDateTime(),
+          unit,
+          limit
+        ).atZoneSameInstant(ZoneId.systemDefault()));
     });
   }
 
@@ -148,7 +154,7 @@ public class DateHistogramBucketLimiterUtilTest {
   @MethodSource("getHistogramData")
   public void testCreateHistogramBucketLimitingFilterFor_defaultFilters_sameUnitForFilterAndGroup(
     ChronoUnit unit, long startAmountToSubtract, long endAmountToSubtract, Long limit) {
-    final GroupByDateUnit groupByUnit = GroupByDateUnit.valueOf(unit.name().substring(0, unit.name().length() - 1));
+    final GroupByDateUnit groupByUnit = mapToGroupByDateUnit(unit);
     final BoolQueryBuilder filterQuery =
       DateHistogramBucketLimiterUtil.createDateHistogramBucketLimitingFilter(
         ImmutableList.of(),
@@ -203,7 +209,7 @@ public class DateHistogramBucketLimiterUtilTest {
     );
     final RollingDateFilterDataDto rollingDateFilterDataDto = createRollingDateFilter(unit, startAmountToSubtract);
 
-    final GroupByDateUnit groupByUnit = GroupByDateUnit.valueOf(unit.name().substring(0, unit.name().length() - 1));
+    final GroupByDateUnit groupByUnit = mapToGroupByDateUnit(unit);
     final BoolQueryBuilder filterQuery =
       DateHistogramBucketLimiterUtil.createDateHistogramBucketLimitingFilter(
         ImmutableList.of(fixedDateFilterDataDto, rollingDateFilterDataDto),
@@ -289,4 +295,5 @@ public class DateHistogramBucketLimiterUtilTest {
       Arguments.of(ChronoUnit.YEARS, 1L, 0L, 2L)
     );
   }
+
 }

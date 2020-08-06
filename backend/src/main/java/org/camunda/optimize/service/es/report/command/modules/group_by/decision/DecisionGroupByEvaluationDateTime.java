@@ -10,15 +10,16 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByEvaluationDateTimeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByEvaluationDateTimeValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
-import org.camunda.optimize.service.es.report.command.decision.util.DecisionInstanceQueryUtil;
+import org.camunda.optimize.service.es.report.MinMaxStatDto;
+import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
+import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -45,8 +46,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionReportDataDto> {
 
   private final DateAggregationService dateAggregationService;
+  private final MinMaxStatsService minMaxStatsService;
   private final DecisionQueryFilterEnhancer queryFilterEnhancer;
-  private final OptimizeElasticsearchClient esClient;
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
@@ -58,42 +59,33 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
   private List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                      final ExecutionContext<DecisionReportDataDto> context,
                                                      final GroupByDateUnit unit) {
-    if (GroupByDateUnit.AUTOMATIC.equals(unit)) {
-      return createAutomaticIntervalAggregation(searchSourceBuilder, context);
-    }
+    final MinMaxStatDto stats = minMaxStatsService.getMinMaxDateRange(
+      context,
+      searchSourceBuilder.query(),
+      DECISION_INSTANCE_INDEX_NAME,
+      EVALUATION_DATE_TIME
+    );
 
-    return Collections.singletonList(
-      dateAggregationService.createFilterLimitedDecisionDateHistogramWithSubAggregation(
-        unit,
-        EVALUATION_DATE_TIME,
-        context.getTimezone(),
-        context.getReportData().getFilter(),
-        DecisionInstanceQueryUtil.getLatestEvaluationDate(searchSourceBuilder.query(), esClient).orElse(null),
-        queryFilterEnhancer,
-        distributedByPart.createAggregation(context)
-      ));
-  }
+    final DateAggregationContext dateAggContext = DateAggregationContext.builder()
+      .groupByDateUnit(unit)
+      .dateField(EVALUATION_DATE_TIME)
+      .minMaxStats(stats)
+      .timezone(context.getTimezone())
+      .distributedBySubAggregation(distributedByPart.createAggregation(context))
+      .decisionFilters(context.getReportData().getFilter())
+      .decisionQueryFilterEnhancer(queryFilterEnhancer)
+      .build();
 
-  private List<AggregationBuilder> createAutomaticIntervalAggregation(final SearchSourceBuilder builder,
-                                                                      final ExecutionContext<DecisionReportDataDto> context) {
-    Optional<AggregationBuilder> automaticIntervalAggregation =
-      dateAggregationService.createAutomaticIntervalAggregation(
-        builder.query(),
-        DECISION_INSTANCE_INDEX_NAME,
-        EVALUATION_DATE_TIME,
-        context.getTimezone()
-      );
-
-    return automaticIntervalAggregation.map(agg -> agg.subAggregation(distributedByPart.createAggregation(context)))
+    return dateAggregationService.createDecisionEvaluationDateAggregation(dateAggContext)
       .map(Collections::singletonList)
-      .orElseGet(() -> createAggregation(builder, context, GroupByDateUnit.MONTH));
+      .orElse(Collections.emptyList());
   }
 
   @Override
   public void addQueryResult(final CompositeCommandResult result,
                              final SearchResponse response,
                              final ExecutionContext<DecisionReportDataDto> context) {
-    result.setGroups(processAggregations(response, response.getAggregations(), context));
+    result.setGroups(processAggregations(response, context));
     result.setIsComplete(isResultComplete(response));
     result.setSorting(
       context.getReportConfiguration()
@@ -108,8 +100,14 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
   }
 
   private List<GroupByResult> processAggregations(final SearchResponse response,
-                                                  final Aggregations aggregations,
                                                   final ExecutionContext<DecisionReportDataDto> context) {
+    final Aggregations aggregations = response.getAggregations();
+
+    if (aggregations == null) {
+      // aggregations are null when there are no instances in the report
+      return Collections.emptyList();
+    }
+
     final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
     Map<String, Aggregations> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {

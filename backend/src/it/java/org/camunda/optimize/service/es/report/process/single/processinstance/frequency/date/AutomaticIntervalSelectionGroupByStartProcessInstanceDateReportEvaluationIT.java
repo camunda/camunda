@@ -11,7 +11,6 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.util.Map;
@@ -31,13 +30,13 @@ public class AutomaticIntervalSelectionGroupByStartProcessInstanceDateReportEval
   }
 
   @Override
-  protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> updates) throws SQLException {
+  protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> updates) {
     engineDatabaseExtension.changeProcessInstanceStartDates(updates);
   }
 
   @Override
   protected void updateProcessInstanceDate(final ZonedDateTime min,
-                                           final ProcessInstanceEngineDto procInstMin) throws SQLException {
+                                           final ProcessInstanceEngineDto procInstMin) {
     engineDatabaseExtension.changeProcessInstanceStartDate(procInstMin.getId(), min.toOffsetDateTime());
   }
 }

@@ -26,12 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class FixedDateFilterIT extends AbstractFilterIT {
-
-  private static final String TEST_ACTIVITY = "testActivity";
 
   @Test
   public void testGetHeatMapWithGteStartDateCriteria() {

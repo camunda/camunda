@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
+import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -24,9 +24,14 @@ public class ProcessGroupByProcessInstanceEndDate extends ProcessGroupByProcessI
 
   protected ProcessGroupByProcessInstanceEndDate(final ConfigurationService configurationService,
                                                  final DateAggregationService dateAggregationService,
-                                                 final ProcessQueryFilterEnhancer processQueryFilterEnhancer,
-                                                 final OptimizeElasticsearchClient esClient) {
-    super(configurationService, dateAggregationService, esClient, processQueryFilterEnhancer);
+                                                 final MinMaxStatsService minMaxStatsService,
+                                                 final ProcessQueryFilterEnhancer processQueryFilterEnhancer) {
+    super(
+      configurationService,
+      dateAggregationService,
+      minMaxStatsService,
+      processQueryFilterEnhancer
+    );
   }
 
   @Override

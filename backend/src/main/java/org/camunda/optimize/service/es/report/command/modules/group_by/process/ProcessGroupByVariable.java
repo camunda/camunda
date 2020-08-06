@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
@@ -32,8 +32,8 @@ public class ProcessGroupByVariable extends AbstractGroupByVariable<ProcessRepor
 
   public ProcessGroupByVariable(final ConfigurationService configurationService,
                                 final DateAggregationService dateAggregationService,
-                                final OptimizeElasticsearchClient esClient) {
-    super(configurationService, dateAggregationService, esClient);
+                                final MinMaxStatsService minMaxStatsService) {
+    super(configurationService, dateAggregationService, minMaxStatsService);
   }
 
   private VariableGroupByValueDto getVariableGroupByDto(final ExecutionContext<ProcessReportDataDto> context) {

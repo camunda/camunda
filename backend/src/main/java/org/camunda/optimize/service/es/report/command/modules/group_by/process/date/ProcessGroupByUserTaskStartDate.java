@@ -8,13 +8,11 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import java.time.format.DateTimeFormatter;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
@@ -24,10 +22,9 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByUserTaskStartDate extends ProcessGroupByUserTaskDate {
 
-  public ProcessGroupByUserTaskStartDate(final DateTimeFormatter dateTimeFormatter,
-                                         final OptimizeElasticsearchClient esClient,
-                                         final DateAggregationService dateAggregationService) {
-    super(dateTimeFormatter, esClient, dateAggregationService);
+  public ProcessGroupByUserTaskStartDate(final DateAggregationService dateAggregationService,
+                                         final MinMaxStatsService minMaxStatsService) {
+    super(dateAggregationService, minMaxStatsService);
   }
 
   @Override

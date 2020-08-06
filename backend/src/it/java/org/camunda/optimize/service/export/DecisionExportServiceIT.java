@@ -49,8 +49,7 @@ public class DecisionExportServiceIT extends AbstractIT {
     String reportId = createAndStoreDefaultReportDefinition(currentReport);
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, lastEvaluationDateFilter);
     String decisionInstanceId =
-      engineDatabaseExtension.getDecisionInstanceIdsWithEvaluationDateEqualTo(
-        lastEvaluationDateFilter).get(0);
+      engineDatabaseExtension.getDecisionInstanceIdsWithEvaluationDateEqualTo(lastEvaluationDateFilter).get(0);
     importAllEngineEntitiesFromScratch();
 
     // when

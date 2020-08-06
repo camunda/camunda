@@ -26,13 +26,25 @@ public class FilterLimitedAggregationUtil {
   public static FilterAggregationBuilder wrapWithFilterLimitedParentAggregation(
     final BoolQueryBuilder limitFilterQuery,
     final AggregationBuilder subAggregationToLimit) {
+    return wrapWithFilterLimitedParentAggregation(FILTER_LIMITED_AGGREGATION, limitFilterQuery, subAggregationToLimit);
+  }
+
+  public static FilterAggregationBuilder wrapWithFilterLimitedParentAggregation(
+    final String filterParentAggregationName,
+    final BoolQueryBuilder limitFilterQuery,
+    final AggregationBuilder subAggregationToLimit) {
     return AggregationBuilders
-      .filter(FILTER_LIMITED_AGGREGATION, limitFilterQuery)
+      .filter(filterParentAggregationName, limitFilterQuery)
       .subAggregation(subAggregationToLimit);
   }
 
   public static Optional<Aggregations> unwrapFilterLimitedAggregations(final Aggregations aggregations) {
-    return Optional.ofNullable((ParsedFilter) aggregations.get(FILTER_LIMITED_AGGREGATION))
+    return unwrapFilterLimitedAggregations(FILTER_LIMITED_AGGREGATION, aggregations);
+  }
+
+  public static Optional<Aggregations> unwrapFilterLimitedAggregations(final String filterParentAggregationName,
+                                                                       final Aggregations aggregations) {
+    return Optional.ofNullable((ParsedFilter) aggregations.get(filterParentAggregationName))
       .map(ParsedSingleBucketAggregation::getAggregations);
   }
 

@@ -63,7 +63,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.mapToChronoUnit;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
@@ -1720,7 +1720,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithVariables(final Map<String, Object> variables) {
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(BpmnModels.getSingleUserTaskDiagram(), variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
+      BpmnModels.getSingleUserTaskDiagram(),
+      variables
+    );
   }
 
 }
