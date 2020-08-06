@@ -20,6 +20,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRest
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.rest.mapper.AlertRestMapper;
 import org.camunda.optimize.rest.mapper.CollectionRestMapper;
 import org.camunda.optimize.rest.mapper.EntityRestMapper;
@@ -37,6 +38,7 @@ import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
 
 import javax.validation.constraints.NotNull;
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -293,10 +295,11 @@ public class CollectionRestService {
   @Path("/{id}/entities")
   @Produces(MediaType.APPLICATION_JSON)
   public List<EntityDto> getEntities(@Context ContainerRequestContext requestContext,
-                                     @PathParam("id") String collectionId) {
+                                     @PathParam("id") String collectionId,
+                                     @BeanParam final EntitySorter entitySorter) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     List<EntityDto> entities = collectionEntityService.getAuthorizedCollectionEntities(userId, collectionId);
     entities.forEach(entityRestMapper::prepareRestResponse);
-    return entities;
+    return entitySorter.applySort(entities);
   }
 }

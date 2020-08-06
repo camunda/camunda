@@ -25,6 +25,7 @@ import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRest
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.collection.CollectionScopeEntryRestDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 
 import javax.ws.rs.core.Response;
@@ -166,13 +167,21 @@ public class CollectionClient {
   }
 
   public List<EntityDto> getEntitiesForCollection(final String collectionId) {
-    return getEntitiesForCollection(collectionId, DEFAULT_USERNAME, DEFAULT_USERNAME);
+    return getEntitiesForCollection(collectionId, null);
   }
 
-  public List<EntityDto> getEntitiesForCollection(final String collectionId, final String username,
-                                                  final String password) {
+  public List<EntityDto> getEntitiesForCollection(final String collectionId, final String user, final String pass) {
+    return getEntitiesForCollection(collectionId, null, user, pass);
+  }
+
+  public List<EntityDto> getEntitiesForCollection(final String collectionId, final EntitySorter entitySorter) {
+    return getEntitiesForCollection(collectionId, entitySorter, DEFAULT_USERNAME, DEFAULT_USERNAME);
+  }
+
+  public List<EntityDto> getEntitiesForCollection(final String collectionId, final EntitySorter entitySorter,
+                                                  final String username, final String password) {
     return getRequestExecutor()
-      .buildGetCollectionEntitiesRequest(collectionId)
+      .buildGetCollectionEntitiesRequest(collectionId, entitySorter)
       .withUserAuthentication(username, password)
       .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
   }
@@ -194,13 +203,6 @@ public class CollectionClient {
                                        final String definitionKey,
                                        final DefinitionType definitionType) {
     addScopeEntryToCollection(collectionId, createSimpleScopeEntry(definitionKey, definitionType));
-  }
-
-  public void createScopeForCollection(final String collectionId,
-                                       final String definitionKey,
-                                       final DefinitionType definitionType,
-                                       final List<String> tenantIds) {
-    addScopeEntryToCollection(collectionId, createSimpleScopeEntry(definitionKey, definitionType, tenantIds));
   }
 
   public List<CollectionScopeEntryRestDto> getCollectionScope(final String collectionId) {

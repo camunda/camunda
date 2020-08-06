@@ -8,48 +8,37 @@ package org.camunda.optimize.rest;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.entityType;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModified;
-import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModifier;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.name;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 
-public class EntitiesRestServiceIT extends AbstractIT {
+public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_WithoutAuthentication() {
@@ -416,10 +405,8 @@ public class EntitiesRestServiceIT extends AbstractIT {
     addSingleReportToOptimize("C Report", ReportType.DECISION);
     addDashboardToOptimize("B Dashboard");
     addDashboardToOptimize("A Dashboard");
-
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // given
     EntitySorter sorter = entitySorter(sortBy, sortOrder);
 
     // when
@@ -433,17 +420,15 @@ public class EntitiesRestServiceIT extends AbstractIT {
 
   @Test
   public void getEntities_unresolvableResultsAreSortedAccordingToDefaultComparator() {
-    //given
+    // given
     addCollection("An Entity");
     addCollection("An Entity");
     addSingleReportToOptimize("An Entity", ReportType.PROCESS);
     addSingleReportToOptimize("An Entity", ReportType.DECISION);
     addDashboardToOptimize("An Entity");
     addDashboardToOptimize("An Entity");
-
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // given
     EntitySorter sorter = entitySorter(name, SortOrder.ASC);
     final Comparator<EntityDto> expectedComparator = Comparator.comparing(EntityDto::getName)
       .thenComparing(EntityDto::getEntityType)
@@ -460,17 +445,15 @@ public class EntitiesRestServiceIT extends AbstractIT {
 
   @Test
   public void getEntities_resultsAreSortedInAscendingOrderIfNoOrderSupplied() {
-    //given
+    // given
     addCollection("A Entity");
     addCollection("B Entity");
     addSingleReportToOptimize("C Entity", ReportType.PROCESS);
     addSingleReportToOptimize("D Entity", ReportType.DECISION);
     addDashboardToOptimize("E Entity");
     addDashboardToOptimize("F Entity");
-
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    // given
     EntitySorter sorter = entitySorter(name, null);
     final Comparator<EntityDto> expectedComparator = Comparator.comparing(EntityDto::getName);
 
@@ -511,12 +494,6 @@ public class EntitiesRestServiceIT extends AbstractIT {
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  private String addCollection(final String collectionName) {
-    final String collectionId = collectionClient.createNewCollection();
-    collectionClient.updateCollection(collectionId, new PartialCollectionDefinitionDto(collectionName));
-    return collectionId;
-  }
-
   private void addRoleToCollection(final String collectionId,
                                    final String identityId,
                                    final IdentityType identityType) {
@@ -528,73 +505,6 @@ public class EntitiesRestServiceIT extends AbstractIT {
       RoleType.EDITOR
     );
     collectionClient.addRoleToCollection(collectionId, roleDto);
-  }
-
-  private String addSingleReportToOptimize(String name, ReportType reportType) {
-    return addSingleReportToOptimize(name, reportType, null, DEFAULT_USERNAME);
-  }
-
-  private String addSingleReportToOptimize(String name, ReportType reportType, String collectionId, String user) {
-    switch (reportType) {
-      case PROCESS:
-        SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-        singleProcessReportDefinitionDto.setName(name);
-        singleProcessReportDefinitionDto.setCollectionId(collectionId);
-        return reportClient.createSingleProcessReportAsUser(singleProcessReportDefinitionDto, user, user);
-      case DECISION:
-        SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
-        singleDecisionReportDefinitionDto.setName(name);
-        singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-        return reportClient.createNewDecisionReportAsUser(singleDecisionReportDefinitionDto, user, user);
-      default:
-        throw new IllegalStateException("ReportType not allowed!");
-    }
-  }
-
-  private String addDashboardToOptimize(String name) {
-    return addDashboardToOptimize(name, null, DEFAULT_USERNAME);
-  }
-
-  private String addDashboardToOptimize(String name, String collectionId, String user) {
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
-    dashboardDefinitionDto.setName(name);
-    dashboardDefinitionDto.setCollectionId(collectionId);
-    return dashboardClient.createDashboardAsUser(dashboardDefinitionDto, user, user);
-  }
-
-  private String addCombinedReport(String name) {
-    return addCombinedReport(name, null);
-  }
-
-  private String addCombinedReport(String name, String collectionId) {
-    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
-    combinedReportDefinitionDto.setName(name);
-    combinedReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
-  }
-
-  private EntitySorter entitySorter(final String sortBy, final SortOrder sortOrder) {
-    final EntitySorter sorter = new EntitySorter();
-    sorter.setSortBy(sortBy);
-    sorter.setSortOrder(sortOrder);
-    return sorter;
-  }
-
-  private static Stream<Arguments> sortParamsAndExpectedComparator() {
-    return Stream.of(
-      Arguments.of(name, SortOrder.ASC, Comparator.comparing(EntityDto::getName)),
-      Arguments.of(name, SortOrder.DESC, Comparator.comparing(EntityDto::getName).reversed()),
-      Arguments.of(entityType, SortOrder.ASC, Comparator.comparing(EntityDto::getEntityType)),
-      Arguments.of(entityType, SortOrder.DESC, Comparator.comparing(EntityDto::getEntityType).reversed()),
-      Arguments.of(lastModified, SortOrder.ASC, Comparator.comparing(EntityDto::getLastModified)),
-      Arguments.of(lastModified, SortOrder.DESC, Comparator.comparing(EntityDto::getLastModified).reversed()),
-      Arguments.of(lastModifier, SortOrder.ASC, Comparator.comparing(EntityDto::getLastModifier)),
-      Arguments.of(lastModifier, SortOrder.DESC, Comparator.comparing(EntityDto::getLastModifier).reversed())
-    );
   }
 
 }

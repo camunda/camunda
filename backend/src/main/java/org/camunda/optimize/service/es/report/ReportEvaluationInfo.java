@@ -49,7 +49,7 @@ public class ReportEvaluationInfo {
   public static ReportEvaluationInfoBuilder builder(final String reportId) {
     ReportEvaluationInfo reportEvaluationInfo = new ReportEvaluationInfo();
     reportEvaluationInfo.setReportId(reportId);
-    return  new ReportEvaluationInfoBuilder(reportEvaluationInfo);
+    return new ReportEvaluationInfoBuilder(reportEvaluationInfo);
   }
 
   @RequiredArgsConstructor

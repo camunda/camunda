@@ -555,8 +555,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(String id) {
+    return buildGetCollectionEntitiesRequest(id, null);
+  }
+
+  public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(String id, EntitySorter sorter) {
     this.path = "collection/" + id + "/entities";
     this.method = GET;
+    Optional.ofNullable(sorter).ifPresent(sortParams -> addQueryParams(extractSortParams(sorter)));
     return this;
   }
 
