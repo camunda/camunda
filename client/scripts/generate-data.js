@@ -16,7 +16,8 @@ const e2ePresetsFile = path.resolve(__dirname, '..', 'e2e_presets.json');
 const e2ePresets = JSON.parse(fs.readFileSync(e2ePresetsFile));
 const dataGenerationParameters = Object.keys(e2ePresets)
   .map((key) => `--${key} ${e2ePresets[key]}`)
-  .join('');
+  // join command arguments separated by whitespace
+  .join(' ');
 
 const generateDataProcess = spawn(
   'mvn',

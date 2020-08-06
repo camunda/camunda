@@ -41,6 +41,7 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build && node scripts/license-build.js",
+    "generate-data": "node scripts/generate-data",
     "test": "react-scripts test --verbose=false",
     "test:ci": "CI=true react-scripts test --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "screenshots": "testcafe chrome e2e/tests/*.js -s ../../camunda-docs-optimize/content/user-guide",
