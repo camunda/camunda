@@ -22,7 +22,7 @@ export default function DistributedBy({
         <Select
           value={configuration.distributedBy}
           onChange={(value) => {
-            if (value !== 'none' && (visualization === 'pie' || visualization === 'line')) {
+            if (value !== 'none' && visualization !== 'table') {
               onChange(
                 {visualization: {$set: 'bar'}, configuration: {distributedBy: {$set: value}}},
                 true

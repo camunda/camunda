@@ -11,7 +11,7 @@ import {Select} from 'components';
 import DistributedBy from './DistributedBy';
 
 const data = {
-  visualization: 'line',
+  visualization: 'heat',
   view: {entity: 'userTask'},
   configuration: {},
   groupBy: {type: 'userTasks'},
