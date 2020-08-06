@@ -8,8 +8,8 @@
 
 import {gql} from 'apollo-boost';
 import {tasks} from '../mock-schema/mocks/tasks';
-
 import {Task} from 'modules/types';
+import {TaskStates} from 'modules/constants/taskStates';
 
 interface GetTasks {
   tasks: ReadonlyArray<{
@@ -25,6 +25,7 @@ interface GetAllOpenVariables {}
 
 interface GetClaimedByMeVariables {
   assignee: string;
+  state: typeof TaskStates.Created;
 }
 
 interface GetUnclaimedVariables {
@@ -32,7 +33,7 @@ interface GetUnclaimedVariables {
 }
 
 interface GetCompletedVariables {
-  state: 'COMPLETED';
+  state: typeof TaskStates.Completed;
 }
 
 type GetTasksVariables =
@@ -60,7 +61,7 @@ const mockGetAllOpenTasks = {
   request: {
     query: GET_TASKS,
     variables: {
-      state: 'CREATED',
+      state: TaskStates.Created,
     },
   },
   result: {
@@ -74,7 +75,7 @@ const mockGetEmptyTasks = {
   request: {
     query: GET_TASKS,
     variables: {
-      state: 'CREATED',
+      state: TaskStates.Created,
     },
   },
   result: {
@@ -90,6 +91,7 @@ const mockGetClaimedByMe = {
     variables: {
       assigned: true,
       assignee: 'demo',
+      state: TaskStates.Created,
     },
   },
   result: {
@@ -117,7 +119,7 @@ const mockGetCompleted = {
   request: {
     query: GET_TASKS,
     variables: {
-      state: 'COMPLETED',
+      state: TaskStates.Completed,
     },
   },
   result: {

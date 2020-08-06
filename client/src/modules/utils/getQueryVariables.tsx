@@ -13,6 +13,7 @@ const getQueryVariables = (filter: string, {username}: {username?: string}) => {
       return {
         assigned: true,
         assignee: username,
+        state: TaskStates.Created,
       };
     }
     case FilterValues.Unclaimed: {
