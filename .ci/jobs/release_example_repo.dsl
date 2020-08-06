@@ -3,6 +3,11 @@ pipelineJob('camunda-optimize-example-repo-release') {
   displayName 'Release Camunda Optimize Example Repository'
   description 'Release Camunda Optimize Example Repository, add a tag and amend the version list in readme.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cpsScm {
       scriptPath('.ci/pipelines/release_example_repo.groovy')

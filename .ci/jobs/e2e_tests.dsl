@@ -3,6 +3,11 @@ pipelineJob('e2e_tests') {
   displayName 'E2E tests'
   description 'Run Optimize E2E tests with browserstack.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cps {
       script(readFileFromWorkspace('.ci/pipelines/e2e_tests.groovy'))

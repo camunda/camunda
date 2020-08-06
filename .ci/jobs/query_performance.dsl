@@ -3,6 +3,11 @@ pipelineJob('query-performance-tests') {
   displayName 'Query performance test on large static dataset'
   description 'Test Optimize Query Performance against a large static dataset. This ensures that even with a large dataset queries do not take too long.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cps {
       script(readFileFromWorkspace('.ci/pipelines/query_performance.groovy'))

@@ -3,6 +3,11 @@ pipelineJob('cleanup-data-performance') {
   displayName 'History Cleanup Performance test'
   description 'Test Optimize History Cleanup Performance against a large static dataset.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cps {
       script(readFileFromWorkspace('.ci/pipelines/cleanup_data_performance.groovy'))

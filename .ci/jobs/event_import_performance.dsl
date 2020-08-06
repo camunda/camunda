@@ -3,6 +3,11 @@ pipelineJob('event-import-performance') {
   displayName 'Optimize Event Based Process Import performance'
   description 'Test Optimize Event Based Process Import performance.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cps {
       script(readFileFromWorkspace('.ci/pipelines/event_import_performance.groovy'))

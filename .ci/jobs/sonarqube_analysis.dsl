@@ -3,6 +3,11 @@ pipelineJob('sonarqube_analysis') {
   displayName 'Sonarqube Analysis'
   description 'Run sonarqube analysis once nightly.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cps {
       script(readFileFromWorkspace('.ci/pipelines/sonarqube_analysis.groovy'))

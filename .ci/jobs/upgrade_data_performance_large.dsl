@@ -3,6 +3,11 @@ pipelineJob('upgrade-performance-large-static-dataset') {
   displayName 'Upgrade performance test on large static dataset'
   description 'Test Optimize upgrade performance against a large static dataset.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cps {
       script(readFileFromWorkspace('.ci/pipelines/upgrade_data_performance_large.groovy'))

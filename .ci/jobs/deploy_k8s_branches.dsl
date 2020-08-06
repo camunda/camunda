@@ -3,6 +3,11 @@ pipelineJob('deploy-optimize-branch-to-k8s') {
   displayName 'Deploy Optimize branch to K8s'
   description 'Deploys Optimize branch to Kubernetes.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cps {
       script(readFileFromWorkspace('.ci/pipelines/deploy_k8s_branches.groovy'))

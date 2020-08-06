@@ -3,6 +3,11 @@ pipelineJob('java_compatibility') {
   displayName 'Java compatibility test'
   description 'Run Optimize IT test suite with different Java versions.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cps {
       script(readFileFromWorkspace('.ci/pipelines/java_compatibility.groovy'))

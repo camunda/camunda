@@ -3,6 +3,11 @@ pipelineJob('camunda-optimize-release-test') {
   displayName 'Test Camunda Optimize Release Build'
   description 'Run Camunda Optimize release without committing the changes to github or uploading the artifacts.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cpsScm {
       scriptPath('.ci/pipelines/release_optimize.groovy')

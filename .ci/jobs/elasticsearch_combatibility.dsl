@@ -3,6 +3,11 @@ pipelineJob('elasticsearch_compatibility') {
   displayName 'Elasticsearch compatibility test'
   description 'Run Optimize IT test suite against different elasticsearch versions.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cps {
       script(readFileFromWorkspace('.ci/pipelines/elasticsearch_compatibility.groovy'))
