@@ -23,6 +23,7 @@ import io.zeebe.engine.processor.workflow.message.command.PartitionCommandSender
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
 import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.client.DeploymentClient;
 import io.zeebe.engine.util.client.IncidentClient;
 import io.zeebe.engine.util.client.JobActivationClient;
@@ -222,6 +223,10 @@ public final class EngineRule extends ExternalResource {
 
   public ControlledActorClock getClock() {
     return environmentRule.getClock();
+  }
+
+  public ZeebeState getZeebeState() {
+    return environmentRule.getZeebeState();
   }
 
   public DeploymentClient deployment() {
