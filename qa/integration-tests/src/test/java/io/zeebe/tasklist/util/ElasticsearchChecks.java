@@ -10,6 +10,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
 import io.zeebe.tasklist.entities.WorkflowEntity;
+import io.zeebe.tasklist.entities.WorkflowInstanceEntity;
+import io.zeebe.tasklist.entities.WorkflowInstanceState;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.webapp.es.cache.WorkflowReader;
@@ -33,6 +35,10 @@ import org.springframework.context.annotation.Configuration;
 public class ElasticsearchChecks {
 
   public static final String WORKFLOW_IS_DEPLOYED_CHECK = "workflowIsDeployedCheck";
+  public static final String WORKFLOW_INSTANCE_IS_COMPLETED_CHECK =
+      "workflowInstanceIsCompletedCheck";
+  public static final String WORKFLOW_INSTANCE_IS_CANCELED_CHECK =
+      "workflowInstanceIsCanceledCheck";
   public static final String TASK_IS_CREATED_CHECK = "taskIsCreatedCheck";
   public static final String TASK_IS_ASSIGNED_CHECK = "taskIsAssignedCheck";
   public static final String TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK =
@@ -176,6 +182,61 @@ public class ElasticsearchChecks {
               .map(TaskEntity::getState)
               .collect(Collectors.toList())
               .contains(TaskState.COMPLETED);
+        } catch (NotFoundException ex) {
+          return false;
+        }
+      }
+    };
+  }
+
+  /**
+   * Checks whether the workflow instance for given args[0] workflowInstanceId (String) is
+   * completed.
+   */
+  @Bean(name = WORKFLOW_INSTANCE_IS_COMPLETED_CHECK)
+  public TestCheck getWorkflowInstanceIsCompletedCheck() {
+    return new TestCheck() {
+      @Override
+      public String getName() {
+        return WORKFLOW_INSTANCE_IS_COMPLETED_CHECK;
+      }
+
+      @Override
+      public boolean test(final Object[] objects) {
+        assertThat(objects).hasSize(1);
+        assertThat(objects[0]).isInstanceOf(String.class);
+        final String worklfowInstanceId = (String) objects[0];
+        try {
+          final WorkflowInstanceEntity wfiEntity =
+              elasticsearchHelper.getWorkflowInstance(worklfowInstanceId);
+          return WorkflowInstanceState.COMPLETED.equals(wfiEntity.getState());
+        } catch (NotFoundException ex) {
+          return false;
+        }
+      }
+    };
+  }
+
+  /**
+   * Checks whether the workflow instance for given args[0] workflowInstanceId (String) is canceled.
+   */
+  @Bean(name = WORKFLOW_INSTANCE_IS_CANCELED_CHECK)
+  public TestCheck getWorkflowInstanceIsCanceledCheck() {
+    return new TestCheck() {
+      @Override
+      public String getName() {
+        return WORKFLOW_INSTANCE_IS_CANCELED_CHECK;
+      }
+
+      @Override
+      public boolean test(final Object[] objects) {
+        assertThat(objects).hasSize(1);
+        assertThat(objects[0]).isInstanceOf(String.class);
+        final String worklfowInstanceId = (String) objects[0];
+        try {
+          final WorkflowInstanceEntity wfiEntity =
+              elasticsearchHelper.getWorkflowInstance(worklfowInstanceId);
+          return WorkflowInstanceState.CANCELED.equals(wfiEntity.getState());
         } catch (NotFoundException ex) {
           return false;
         }

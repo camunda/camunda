@@ -80,7 +80,7 @@ public abstract class AbstractArchiverJob implements Runnable {
       final Histogram.Bucket bucket = buckets.get(0);
       final String finishDate = bucket.getKeyAsString();
       final SearchHits hits = ((TopHits) bucket.getAggregations().get(instancesAggName)).getHits();
-      final ArrayList<Object> ids =
+      final ArrayList<String> ids =
           Arrays.stream(hits.getHits())
               .collect(
                   ArrayList::new,
@@ -104,9 +104,13 @@ public abstract class AbstractArchiverJob implements Runnable {
   public static class ArchiveBatch {
 
     private String finishDate;
-    private List<Object> ids;
+    private List<String> ids;
 
-    public ArchiveBatch(String finishDate, List<Object> ids) {
+    public ArchiveBatch(final List<String> ids) {
+      this.ids = ids;
+    }
+
+    public ArchiveBatch(String finishDate, List<String> ids) {
       this.finishDate = finishDate;
       this.ids = ids;
     }
@@ -119,11 +123,11 @@ public abstract class AbstractArchiverJob implements Runnable {
       this.finishDate = finishDate;
     }
 
-    public List<Object> getIds() {
+    public List<String> getIds() {
       return ids;
     }
 
-    public void setIds(List<Object> ids) {
+    public void setIds(List<String> ids) {
       this.ids = ids;
     }
 

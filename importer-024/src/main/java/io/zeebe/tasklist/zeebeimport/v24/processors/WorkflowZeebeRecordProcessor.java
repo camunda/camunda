@@ -81,7 +81,6 @@ public class WorkflowZeebeRecordProcessor {
                   ConversionUtils.toStringOrNull(workflowEntity.getKey()))
               .source(objectMapper.writeValueAsString(workflowEntity), XContentType.JSON));
     } catch (JsonProcessingException e) {
-      LOGGER.error("Error preparing the query to insert workflow", e);
       throw new PersistenceException(
           String.format(
               "Error preparing the query to insert workflow [%s]", workflowEntity.getKey()),

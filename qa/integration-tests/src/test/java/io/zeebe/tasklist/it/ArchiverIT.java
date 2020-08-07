@@ -6,6 +6,8 @@
 package io.zeebe.tasklist.it;
 
 import static io.zeebe.tasklist.graphql.TaskIT.GET_TASK_QUERY_PATTERN;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_INSTANCE_IS_CANCELED_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_INSTANCE_IS_COMPLETED_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
@@ -17,11 +19,14 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.tasklist.archiver.Archiver;
 import io.zeebe.tasklist.archiver.TaskArchiverJob;
+import io.zeebe.tasklist.archiver.WorkflowInstanceArchiverJob;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.es.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.es.schema.templates.TaskVariableTemplate;
 import io.zeebe.tasklist.exceptions.ArchiverException;
 import io.zeebe.tasklist.util.CollectionUtil;
+import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
+import io.zeebe.tasklist.util.ElasticsearchHelper;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
 import io.zeebe.tasklist.webapp.graphql.mutation.TaskMutationResolver;
@@ -46,6 +51,7 @@ import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
@@ -63,7 +69,18 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private TaskMutationResolver taskMutationResolver;
 
+  @Autowired private ElasticsearchHelper elasticsearchHelper;
+
+  @Autowired
+  @Qualifier(WORKFLOW_INSTANCE_IS_COMPLETED_CHECK)
+  private TestCheck workflowInstanceIsCompletedCheck;
+
+  @Autowired
+  @Qualifier(WORKFLOW_INSTANCE_IS_CANCELED_CHECK)
+  private TestCheck workflowInstanceIsCanceledCheck;
+
   private TaskArchiverJob archiverJob;
+  private WorkflowInstanceArchiverJob workflowInstanceArchiverJob;
 
   private Random random = new Random();
 
@@ -76,6 +93,8 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
         DateTimeFormatter.ofPattern(tasklistProperties.getArchiver().getRolloverDateFormat())
             .withZone(ZoneId.systemDefault());
     archiverJob = beanFactory.getBean(TaskArchiverJob.class, partitionHolder.getPartitionIds());
+    workflowInstanceArchiverJob =
+        beanFactory.getBean(WorkflowInstanceArchiverJob.class, partitionHolder.getPartitionIds());
     try {
       FieldSetter.setField(
           taskMutationResolver,
@@ -183,6 +202,59 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     assertTasksInCorrectIndex(count2, ids2, null);
   }
 
+  @Test
+  public void shouldDeleteWorkflowInstanceRelatedData() throws ArchiverException, IOException {
+    brokerRule.getClock().pinCurrentTime();
+    final Instant currentTime = brokerRule.getClock().getCurrentTime();
+
+    // having
+    // deploy process
+    brokerRule.getClock().setCurrentTime(currentTime.minus(4, ChronoUnit.DAYS));
+    final String processId = "demoProcess";
+    final String flowNodeBpmnId = "task1";
+    deployProcessWithOneFlowNode(processId, flowNodeBpmnId);
+
+    // start and complete instances 2 hours ago
+    final int count1 = random.nextInt(6) + 3;
+    final Instant endDate1 = currentTime.minus(2, ChronoUnit.HOURS);
+    final List<String> ids1 =
+        startAndCompleteInstances(processId, flowNodeBpmnId, count1, endDate1);
+
+    // start and cancel instances 2 hours ago
+    final int count2 = random.nextInt(6) + 3;
+    final List<String> ids2 = startAndCancelInstances(processId, flowNodeBpmnId, count2, endDate1);
+
+    // start and finish instances 50 minutes ago
+    final int count3 = random.nextInt(6) + 3;
+    final Instant endDate2 = currentTime.minus(50, ChronoUnit.MINUTES);
+    final List<String> ids3 =
+        startAndCompleteInstances(processId, flowNodeBpmnId, count3, endDate2);
+
+    brokerRule.getClock().setCurrentTime(currentTime);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+
+    // when
+    assertThat(workflowInstanceArchiverJob.archiveNextBatch()).isEqualTo(count1 + count2);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+    // 2rd run should not move anything, as the rest of the tasks are completed less then 1 hour ago
+    assertThat(workflowInstanceArchiverJob.archiveNextBatch()).isEqualTo(0);
+
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+
+    // then
+    assertWorkflowInstancesAreDeleted(ids1);
+    assertWorkflowInstancesAreDeleted(ids2);
+    assertWorkflowInstancesExist(ids3);
+  }
+
+  private void assertWorkflowInstancesExist(final List<String> ids) {
+    assertThat(elasticsearchHelper.getWorkflowInstances(ids)).hasSize(ids.size());
+  }
+
+  private void assertWorkflowInstancesAreDeleted(final List<String> ids) {
+    assertThat(elasticsearchHelper.getWorkflowInstances(ids)).isEmpty();
+  }
+
   private void deployProcessWithOneFlowNode(String processId, String flowNodeBpmnId) {
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess(processId)
@@ -265,6 +337,45 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
               .waitUntil()
               .taskIsCompleted(flowNodeBpmnId)
               .getTaskId());
+    }
+    return ids;
+  }
+
+  private List<String> startAndCancelInstances(
+      String processId, String flowNodeBpmnId, int count, Instant currentTime) {
+    assertThat(count).isGreaterThan(0);
+    brokerRule.getClock().setCurrentTime(currentTime);
+    final List<String> ids = new ArrayList<>();
+    for (int i = 0; i < count; i++) {
+      ids.add(
+          tester
+              .startWorkflowInstance(processId, "{\"var\": 123}")
+              .waitUntil()
+              .taskIsCreated(flowNodeBpmnId)
+              .and()
+              .cancelWorkflowInstance()
+              .waitUntil()
+              .workflowInstanceIsCanceled()
+              .getWorkflowInstanceId());
+    }
+    return ids;
+  }
+
+  private List<String> startAndCompleteInstances(
+      String processId, String flowNodeBpmnId, int count, Instant currentTime) {
+    assertThat(count).isGreaterThan(0);
+    brokerRule.getClock().setCurrentTime(currentTime);
+    final List<String> ids = new ArrayList<>();
+    for (int i = 0; i < count; i++) {
+      ids.add(
+          tester
+              .startWorkflowInstance(processId, "{\"var\": 123}")
+              .waitUntil()
+              .taskIsCreated(flowNodeBpmnId)
+              .claimAndCompleteHumanTask(flowNodeBpmnId)
+              .waitUntil()
+              .workflowInstanceIsCompleted()
+              .getWorkflowInstanceId());
     }
     return ids;
   }

@@ -81,6 +81,10 @@ public class Archiver {
           final TaskArchiverJob batchOperationArchiverJob =
               beanFactory.getBean(TaskArchiverJob.class, partitionIdsSubset);
           archiverExecutor.execute(batchOperationArchiverJob);
+
+          final WorkflowInstanceArchiverJob workflowInstanceArchiverJob =
+              beanFactory.getBean(WorkflowInstanceArchiverJob.class, partitionIdsSubset);
+          archiverExecutor.execute(workflowInstanceArchiverJob);
         }
       }
     }
@@ -96,7 +100,7 @@ public class Archiver {
   }
 
   public void moveDocuments(
-      String sourceIndexName, String idFieldName, String finishDate, List<Object> ids)
+      String sourceIndexName, String idFieldName, String finishDate, List<String> ids)
       throws ArchiverException {
 
     final String destinationIndexName = getDestinationIndexName(sourceIndexName, finishDate);
@@ -120,8 +124,8 @@ public class Archiver {
     return String.format(INDEX_NAME_PATTERN, sourceIndexName, finishDate);
   }
 
-  private long deleteDocuments(
-      String sourceIndexName, String idFieldName, List<Object> workflowInstanceKeys)
+  public long deleteDocuments(
+      String sourceIndexName, String idFieldName, List<String> workflowInstanceKeys)
       throws ArchiverException {
     DeleteByQueryRequest request =
         new DeleteByQueryRequest(sourceIndexName)
@@ -154,7 +158,7 @@ public class Archiver {
       String sourceIndexName,
       String destinationIndexName,
       String idFieldName,
-      List<Object> workflowInstanceKeys)
+      List<String> workflowInstanceKeys)
       throws ArchiverException {
 
     ReindexRequest reindexRequest =

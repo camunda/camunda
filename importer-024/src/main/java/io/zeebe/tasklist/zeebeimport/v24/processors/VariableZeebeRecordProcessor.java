@@ -79,7 +79,6 @@ public class VariableZeebeRecordProcessor {
           .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
-      LOGGER.error("Error preparing the query to upsert variable instance for list view", e);
       throw new PersistenceException(
           String.format(
               "Error preparing the query to upsert variable instance [%s]  for list view",

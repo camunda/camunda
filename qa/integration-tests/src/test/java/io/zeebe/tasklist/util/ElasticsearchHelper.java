@@ -8,10 +8,14 @@ package io.zeebe.tasklist.util;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.mapSearchHits;
+import static io.zeebe.tasklist.util.ElasticsearchUtil.scroll;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.tasklist.entities.TaskEntity;
+import io.zeebe.tasklist.entities.WorkflowInstanceEntity;
+import io.zeebe.tasklist.es.schema.indices.WorkflowInstanceIndex;
 import io.zeebe.tasklist.es.schema.templates.TaskTemplate;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.webapp.rest.exception.NotFoundException;
@@ -37,6 +41,8 @@ public class ElasticsearchHelper {
 
   @Autowired private TaskTemplate taskTemplate;
 
+  @Autowired private WorkflowInstanceIndex workflowInstanceIndex;
+
   @Autowired private RestHighLevelClient esClient;
 
   @Autowired private ObjectMapper objectMapper;
@@ -48,13 +54,47 @@ public class ElasticsearchHelper {
       if (response.isExists()) {
         return fromSearchHit(response.getSourceAsString(), objectMapper, TaskEntity.class);
       } else {
+        throw new NotFoundException(String.format("Could not find  task for taskId [%s].", taskId));
+      }
+    } catch (IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining the task: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  public WorkflowInstanceEntity getWorkflowInstance(String workflowInstanceId) {
+    try {
+      final GetRequest getRequest =
+          new GetRequest(workflowInstanceIndex.getAlias()).id(workflowInstanceId);
+      final GetResponse response = esClient.get(getRequest, RequestOptions.DEFAULT);
+      if (response.isExists()) {
+        return fromSearchHit(
+            response.getSourceAsString(), objectMapper, WorkflowInstanceEntity.class);
+      } else {
         throw new NotFoundException(
-            String.format("Could not find  task fortaskId [] with flowNodeBpmnId [%s].", taskId));
+            String.format("Could not find task for workflowInstanceId [%s].", workflowInstanceId));
       }
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the workflow: %s", e.getMessage());
-      LOGGER.error(message, e);
+      throw new TasklistRuntimeException(message, e);
+    }
+  }
+
+  public List<WorkflowInstanceEntity> getWorkflowInstances(List<String> workflowInstanceIds) {
+    try {
+      final SearchRequest request =
+          new SearchRequest(workflowInstanceIndex.getAlias())
+              .source(
+                  new SearchSourceBuilder()
+                      .query(idsQuery().addIds(workflowInstanceIds.toArray(String[]::new))));
+      final SearchResponse searchResponse = esClient.search(request, RequestOptions.DEFAULT);
+      return scroll(request, WorkflowInstanceEntity.class, objectMapper, esClient);
+    } catch (IOException e) {
+      final String message =
+          String.format(
+              "Exception occurred, while obtaining list of workflows: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
     }
   }
@@ -77,13 +117,12 @@ public class ElasticsearchHelper {
       } else {
         throw new NotFoundException(
             String.format(
-                "Could not find  task for workflowInstanceId [] with flowNodeBpmnId [%s].",
+                "Could not find task for workflowInstanceId [%s] with flowNodeBpmnId [%s].",
                 workflowInstanceId, flowNodeBpmnId));
       }
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining the workflow: %s", e.getMessage());
-      LOGGER.error(message, e);
       throw new TasklistRuntimeException(message, e);
     }
   }

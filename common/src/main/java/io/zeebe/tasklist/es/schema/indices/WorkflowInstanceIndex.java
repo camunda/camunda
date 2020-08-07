@@ -8,16 +8,13 @@ package io.zeebe.tasklist.es.schema.indices;
 import org.springframework.stereotype.Component;
 
 @Component
-public class VariableIndex extends AbstractIndexDescriptor {
+public class WorkflowInstanceIndex extends AbstractIndexDescriptor {
 
-  public static final String INDEX_NAME = "variable";
+  public static final String INDEX_NAME = "workflow-instance";
 
   public static final String ID = "id";
   public static final String KEY = "key";
-  public static final String SCOPE_FLOW_NODE_ID = "scopeFlowNodeId";
-  public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
-  public static final String NAME = "name";
-  public static final String VALUE = "value";
+  public static final String END_DATE = "endDate";
 
   @Override
   protected String getMainIndexName() {

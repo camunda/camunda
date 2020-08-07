@@ -104,9 +104,6 @@ public class JobZeebeRecordProcessor {
           .retryOnConflict(UPDATE_RETRY_COUNT);
 
     } catch (IOException e) {
-      LOGGER.error(
-          String.format("Error preparing the query to upsert task instance [%s]", entity.getId()),
-          e);
       throw new PersistenceException(
           String.format("Error preparing the query to upsert task instance [%s]", entity.getId()),
           e);

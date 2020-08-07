@@ -212,7 +212,8 @@ public class VariableReaderWriter {
     if (m != null) {
       resultingVariableMap.putAll(m);
     }
-    final String parentFlowNodeId = flowNodeTree.getParent(flowNodeInstanceId);
+    final String parentFlowNodeId =
+        flowNodeTree != null ? flowNodeTree.getParent(flowNodeInstanceId) : null;
     if (parentFlowNodeId != null && !parentFlowNodeId.equals(ABSENT_PARENT_ID)) {
       accumulateVariables(resultingVariableMap, variableMaps, flowNodeTree, parentFlowNodeId);
     }

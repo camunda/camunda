@@ -391,7 +391,7 @@ public abstract class ElasticsearchUtil {
           result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_STRING));
         };
 
-    scrollWith(request, esClient, collectIds, null, collectIds);
+    scrollWith(request, esClient, collectIds, null, null);
     return result;
   }
 
@@ -404,7 +404,7 @@ public abstract class ElasticsearchUtil {
           result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));
         };
 
-    scrollWith(request, esClient, collectIds, null, collectIds);
+    scrollWith(request, esClient, collectIds, null, null);
     return result;
   }
 
@@ -419,7 +419,7 @@ public abstract class ElasticsearchUtil {
           result.addAll(map(hits.getHits(), searchHitFieldToString));
         };
 
-    scrollWith(request, esClient, collectFields, null, collectFields);
+    scrollWith(request, esClient, collectFields, null, null);
     return result;
   }
 
@@ -442,7 +442,7 @@ public abstract class ElasticsearchUtil {
         (hits) -> {
           result.addAll(map(hits.getHits(), SEARCH_HIT_ID_TO_LONG));
         };
-    scrollWith(request, esClient, collectIds, null, collectIds);
+    scrollWith(request, esClient, collectIds, null, null);
     return result;
   }
 
