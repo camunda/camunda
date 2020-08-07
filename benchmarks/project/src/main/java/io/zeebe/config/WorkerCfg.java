@@ -28,6 +28,8 @@ public class WorkerCfg {
   private Duration pollingDelay;
   private Duration completionDelay;
 
+  private String variablesToCompleteJobWith;
+
   public String getJobType() {
     return jobType;
   }
@@ -74,5 +76,13 @@ public class WorkerCfg {
 
   public void setCompletionDelay(Duration completionDelay) {
     this.completionDelay = completionDelay;
+  }
+
+  public String getVariablesToCompleteJobWith() {
+    return variablesToCompleteJobWith;
+  }
+
+  public void setVariablesToCompleteJobWith(String variablesToCompleteJobWith) {
+    this.variablesToCompleteJobWith = variablesToCompleteJobWith;
   }
 }

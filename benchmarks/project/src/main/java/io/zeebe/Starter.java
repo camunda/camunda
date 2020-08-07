@@ -48,7 +48,7 @@ public class Starter extends App {
     final StarterCfg starterCfg = appCfg.getStarter();
     final int rate = starterCfg.getRate();
     final String processId = starterCfg.getProcessId();
-    final BlockingQueue<Future> requestFutures = new ArrayBlockingQueue<>(5_000);
+    final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(5_000);
 
     final ZeebeClient client = createZeebeClient();
 
