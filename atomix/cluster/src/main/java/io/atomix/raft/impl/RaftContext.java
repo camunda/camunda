@@ -28,11 +28,10 @@ import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
-import io.atomix.raft.RaftStateMachine;
-import io.atomix.raft.RaftStateMachineFactory;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftClusterContext;
+import io.atomix.raft.impl.zeebe.LogCompactor;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftServerProtocol;
@@ -50,11 +49,9 @@ import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
-import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.storage.StorageException;
-import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.ComposableFuture;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
@@ -98,7 +95,7 @@ public class RaftContext implements AutoCloseable {
   private final RaftLogWriter logWriter;
   private final RaftLogReader logReader;
   private final PersistedSnapshotStore persistedSnapshotStore;
-  private final RaftStateMachine stateMachine;
+  private final LogCompactor logCompactor;
   private final ThreadContextFactory threadContextFactory;
   private final ThreadContext loadContext;
   private final ThreadContext stateContext;
@@ -112,8 +109,6 @@ public class RaftContext implements AutoCloseable {
   private MemberId lastVotedFor;
   private long commitIndex;
   private volatile long firstCommitIndex;
-  private volatile long lastApplied;
-  private volatile long lastAppliedTerm;
   private volatile boolean started;
   private EntryValidator entryValidator;
 
@@ -125,8 +120,7 @@ public class RaftContext implements AutoCloseable {
       final RaftServerProtocol protocol,
       final RaftStorage storage,
       final ThreadContextFactory threadContextFactory,
-      final boolean closeOnStop,
-      final RaftStateMachineFactory stateMachineFactory) {
+      final boolean closeOnStop) {
     this.name = checkNotNull(name, "name cannot be null");
     this.membershipService = checkNotNull(membershipService, "membershipService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
@@ -166,9 +160,7 @@ public class RaftContext implements AutoCloseable {
     // Open the snapshot store.
     this.persistedSnapshotStore = storage.getPersistedSnapshotStore();
 
-    // Create a new internal server state machine.
-    checkNotNull(stateMachineFactory, "stateMachineFactory must be not null");
-    this.stateMachine = stateMachineFactory.createStateMachine(this);
+    this.logCompactor = new LogCompactor(this);
 
     this.cluster = new RaftClusterContext(localMemberId, this);
 
@@ -336,10 +328,10 @@ public class RaftContext implements AutoCloseable {
   /**
    * Notifies all listeners of the latest entry.
    *
-   * @param latestEntry latest committed entry
+   * @param lastCommitIndex index of the most recently committed entry
    */
-  public <T extends RaftLogEntry> void notifyCommitListeners(final Indexed<T> latestEntry) {
-    commitListeners.forEach(listener -> listener.onCommit(latestEntry));
+  public void notifyCommitListeners(final long lastCommitIndex) {
+    commitListeners.forEach(listener -> listener.onCommit(lastCommitIndex));
   }
 
   /**
@@ -359,27 +351,14 @@ public class RaftContext implements AutoCloseable {
         cluster.commit();
       }
       setFirstCommitIndex(commitIndex);
+      // On start up, set the state to READY after the follower has caught up with the leader
+      // https://github.com/zeebe-io/zeebe/issues/4877
+      if (state == State.ACTIVE && commitIndex >= firstCommitIndex) {
+        state = State.READY;
+        stateChangeListeners.forEach(l -> l.accept(state));
+      }
     }
     return previousCommitIndex;
-  }
-
-  /**
-   * Sets the last applied index.
-   *
-   * @param lastApplied the last applied index and the last applied term
-   */
-  public void setLastApplied(final long lastApplied, final long lastAppliedTerm) {
-    this.lastApplied = Math.max(this.lastApplied, lastApplied);
-    this.lastAppliedTerm = Math.max(this.lastAppliedTerm, lastAppliedTerm);
-    if (state == State.ACTIVE && this.lastApplied >= firstCommitIndex) {
-      threadContext.execute(
-          () -> {
-            if (state == State.ACTIVE && this.lastApplied >= firstCommitIndex) {
-              state = State.READY;
-              stateChangeListeners.forEach(l -> l.accept(state));
-            }
-          });
-    }
   }
 
   /**
@@ -389,7 +368,7 @@ public class RaftContext implements AutoCloseable {
    */
   public CompletableFuture<Void> compact() {
     final ComposableFuture<Void> future = new ComposableFuture<>();
-    threadContext.execute(() -> stateMachine.compact().whenComplete(future));
+    threadContext.execute(() -> logCompactor.compact().whenComplete(future));
     return future;
   }
 
@@ -599,7 +578,7 @@ public class RaftContext implements AutoCloseable {
 
     // Close the state machine and thread context.
     stateContext.close();
-    stateMachine.close();
+    logCompactor.close();
 
     // Close the log.
     try {
@@ -749,24 +728,6 @@ public class RaftContext implements AutoCloseable {
   }
 
   /**
-   * Returns the last applied index.
-   *
-   * @return the last applied index
-   */
-  public long getLastApplied() {
-    return lastApplied;
-  }
-
-  /**
-   * Returns the term of the last applied entry.
-   *
-   * @return the last applied index
-   */
-  public long getLastAppliedTerm() {
-    return lastAppliedTerm;
-  }
-
-  /**
    * Returns the state last voted for candidate.
    *
    * @return The state last voted for candidate.
@@ -884,10 +845,10 @@ public class RaftContext implements AutoCloseable {
   /**
    * Returns the server state machine.
    *
-   * @return The server state machine.
+   * @return The log compactor.
    */
-  public RaftStateMachine getServiceManager() {
-    return stateMachine;
+  public LogCompactor getLogCompactor() {
+    return logCompactor;
   }
 
   /**

@@ -623,8 +623,8 @@ public class RaftTest extends ConcurrentTestCase {
         .addCommitListener(
             new RaftCommitListener() {
               @Override
-              public <T extends RaftLogEntry> void onCommit(final Indexed<T> entry) {
-                commitIndex.set(entry.index());
+              public <T extends RaftLogEntry> void onCommit(final long index) {
+                commitIndex.set(index);
               }
             });
     appendEntry(leader);

@@ -26,7 +26,6 @@ import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.impl.DefaultRaftServer;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.impl.zeebe.ZeebeRaftStateMachine;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
@@ -575,7 +574,6 @@ public interface RaftServer {
     protected ThreadModel threadModel = DEFAULT_THREAD_MODEL;
     protected int threadPoolSize = DEFAULT_THREAD_POOL_SIZE;
     protected ThreadContextFactory threadContextFactory;
-    protected RaftStateMachineFactory stateMachineFactory = ZeebeRaftStateMachine::new;
     protected Supplier<JournalIndex> journalIndexFactory;
     protected EntryValidator entryValidator = new NoopEntryValidator();
 
@@ -703,19 +701,6 @@ public interface RaftServer {
     public Builder withThreadContextFactory(final ThreadContextFactory threadContextFactory) {
       this.threadContextFactory =
           checkNotNull(threadContextFactory, "threadContextFactory cannot be null");
-      return this;
-    }
-
-    /**
-     * Sets the server's state machine factory.
-     *
-     * @param stateMachineFactory the server state machine factory
-     * @return the server builder
-     * @throws NullPointerException if the factory is null
-     */
-    public Builder withStateMachineFactory(final RaftStateMachineFactory stateMachineFactory) {
-      this.stateMachineFactory =
-          checkNotNull(stateMachineFactory, "stateMachineFactory cannot be null");
       return this;
     }
 

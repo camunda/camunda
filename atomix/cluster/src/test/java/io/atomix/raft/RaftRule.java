@@ -354,8 +354,8 @@ public final class RaftRule extends ExternalResource {
         .addCommitListener(
             new RaftCommitListener() {
               @Override
-              public <T extends RaftLogEntry> void onCommit(final Indexed<T> entry) {
-                final var currentIndex = entry.index();
+              public <T extends RaftLogEntry> void onCommit(final long index) {
+                final var currentIndex = index;
 
                 memberLog.put(raftServer.name(), currentIndex);
                 if (highestCommit < currentIndex) {
@@ -656,7 +656,7 @@ public final class RaftRule extends ExternalResource {
     public void onNewSnapshot(final PersistedSnapshot persistedSnapshot) {
       final var raftServer = servers.get(memberId.id());
       final var raftContext = raftServer.getContext();
-      final var serviceManager = raftContext.getServiceManager();
+      final var serviceManager = raftContext.getLogCompactor();
       serviceManager.setCompactableIndex(persistedSnapshot.getIndex());
 
       raftServer

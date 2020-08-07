@@ -19,8 +19,6 @@ package io.atomix.raft.partition;
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
 import io.atomix.primitive.partition.PartitionGroup;
 import io.atomix.primitive.partition.PartitionGroupConfig;
-import io.atomix.raft.RaftStateMachineFactory;
-import io.atomix.raft.impl.zeebe.ZeebeRaftStateMachine;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
 import java.time.Duration;
@@ -39,38 +37,9 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
   private RaftStorageConfig storageConfig = new RaftStorageConfig();
-  private RaftCompactionConfig compactionConfig = new RaftCompactionConfig();
 
   @Optional("EntryValidator")
   private EntryValidator entryValidator = new NoopEntryValidator();
-
-  // IMPORTANT: do not remove the Optional annotation, as the config is serialized through Kryo and
-  // definitely does NOT know how to serialize random interfaces; a serialized configuration is used
-  // by a node when bootstrapping itself if it receives a partition group from a remote node that it
-  // was not aware of. The annotation tells Kryo to ignore this field unless a specific serializer
-  // is configured for the given key
-  @Optional("RaftStateMachineFactory")
-  private RaftStateMachineFactory stateMachineFactory = ZeebeRaftStateMachine::new;
-
-  /**
-   * Returns the compaction configuration.
-   *
-   * @return the compaction configuration
-   */
-  public RaftCompactionConfig getCompactionConfig() {
-    return compactionConfig;
-  }
-
-  /**
-   * Sets the compaction configuration.
-   *
-   * @param compactionConfig the compaction configuration
-   * @return the Raft partition group configuration
-   */
-  public RaftPartitionGroupConfig setCompactionConfig(final RaftCompactionConfig compactionConfig) {
-    this.compactionConfig = compactionConfig;
-    return this;
-  }
 
   @Override
   protected int getDefaultPartitions() {
@@ -158,27 +127,6 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   }
 
   /**
-   * Returns the raft state machine factory.
-   *
-   * @return the raft state machine factory
-   */
-  public RaftStateMachineFactory getStateMachineFactory() {
-    return stateMachineFactory;
-  }
-
-  /**
-   * Sets the state machine factory.
-   *
-   * @param stateMachineFactory the new state machine factory
-   * @return the Raft partition group configuration
-   */
-  public RaftPartitionGroupConfig setStateMachineFactory(
-      final RaftStateMachineFactory stateMachineFactory) {
-    this.stateMachineFactory = stateMachineFactory;
-    return this;
-  }
-
-  /**
    * Returns the storage configuration.
    *
    * @return the storage configuration
@@ -199,6 +147,15 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   }
 
   /**
+   * Returns the entry validator to be called when an entry is appended.
+   *
+   * @return the entry validator
+   */
+  public EntryValidator getEntryValidator() {
+    return this.entryValidator;
+  }
+
+  /**
    * Sets the entry validator to be called when an entry is appended.
    *
    * @param entryValidator the entry validator
@@ -207,15 +164,6 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   public RaftPartitionGroupConfig setEntryValidator(final EntryValidator entryValidator) {
     this.entryValidator = entryValidator;
     return this;
-  }
-
-  /**
-   * Returns the entry validator to be called when an entry is appended.
-   *
-   * @return the entry validator
-   */
-  public EntryValidator getEntryValidator() {
-    return this.entryValidator;
   }
 
   @Override

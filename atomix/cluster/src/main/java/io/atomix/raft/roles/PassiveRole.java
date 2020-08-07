@@ -145,7 +145,7 @@ public class PassiveRole extends InactiveRole {
     // If the index has already been applied, we have enough state to populate the state machine up
     // to this index.
     // Skip the snapshot and response successfully.
-    if (raft.getLastApplied() > request.index()) {
+    if (raft.getCommitIndex() > request.index()) {
       return CompletableFuture.completedFuture(
           logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
     }
@@ -592,7 +592,7 @@ public class PassiveRole extends InactiveRole {
     final long previousCommitIndex = raft.setCommitIndex(commitIndex);
     if (previousCommitIndex < commitIndex) {
       log.trace("Committed entries up to index {}", commitIndex);
-      raft.getServiceManager().applyAll(commitIndex);
+      raft.notifyCommitListeners(commitIndex);
     }
 
     // Return a successful append response.
@@ -698,7 +698,7 @@ public class PassiveRole extends InactiveRole {
       return false;
     } catch (final StorageException.OutOfDiskSpace e) {
       log.trace("Append failed: {}", e);
-      raft.getServiceManager().compact();
+      raft.getLogCompactor().compact();
       failAppend(index - 1, future);
       return false;
     }

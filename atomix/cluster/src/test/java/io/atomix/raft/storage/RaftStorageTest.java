@@ -44,7 +44,6 @@ public class RaftStorageTest {
     assertEquals(new File(System.getProperty("user.dir")), storage.directory());
     assertEquals(1024 * 1024 * 32, storage.maxLogSegmentSize());
     assertEquals(1024 * 1024, storage.maxLogEntriesPerSegment());
-    assertTrue(storage.dynamicCompaction());
     assertEquals(1024L * 1024 * 1024, storage.freeDiskSpace());
     assertTrue(storage.isFlushOnCommit());
     assertFalse(storage.isRetainStaleSnapshots());
@@ -59,7 +58,6 @@ public class RaftStorageTest {
             .withDirectory(new File(PATH.toFile(), "foo"))
             .withMaxSegmentSize(1024 * 1024)
             .withMaxEntriesPerSegment(1024)
-            .withDynamicCompaction(false)
             .withFreeDiskSpace(100)
             .withFlushOnCommit(false)
             .withRetainStaleSnapshots()
@@ -68,7 +66,6 @@ public class RaftStorageTest {
     assertEquals(new File(PATH.toFile(), "foo"), storage.directory());
     assertEquals(1024 * 1024, storage.maxLogSegmentSize());
     assertEquals(1024, storage.maxLogEntriesPerSegment());
-    assertFalse(storage.dynamicCompaction());
     assertEquals(100, storage.freeDiskSpace());
     assertFalse(storage.isFlushOnCommit());
     assertTrue(storage.isRetainStaleSnapshots());
@@ -77,13 +74,8 @@ public class RaftStorageTest {
   @Test
   public void testCustomConfiguration2() throws Exception {
     final RaftStorage storage =
-        RaftStorage.builder()
-            .withDirectory(PATH.toString() + "/baz")
-            .withDynamicCompaction()
-            .withFlushOnCommit()
-            .build();
+        RaftStorage.builder().withDirectory(PATH.toString() + "/baz").withFlushOnCommit().build();
     assertEquals(new File(PATH.toFile(), "baz"), storage.directory());
-    assertTrue(storage.dynamicCompaction());
     assertTrue(storage.isFlushOnCommit());
   }
 

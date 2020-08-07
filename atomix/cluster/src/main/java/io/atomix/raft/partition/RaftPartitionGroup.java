@@ -32,7 +32,6 @@ import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.atomix.raft.RaftStateMachineFactory;
 import io.atomix.raft.snapshot.PersistedSnapshotStoreFactory;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.storage.StorageLevel;
@@ -282,7 +281,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
           .nextId(Namespaces.BEGIN_USER_CUSTOM_ID + 100)
           .register(RaftPartitionGroupConfig.class)
           .register(RaftStorageConfig.class)
-          .register(RaftCompactionConfig.class)
+          .register(Void.class) // RaftCompactionConfig
           .register(StorageLevel.class)
           .setCompatible(true)
           .build();
@@ -470,17 +469,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withFlushOnCommit(final boolean flushOnCommit) {
       config.getStorageConfig().setFlushOnCommit(flushOnCommit);
-      return this;
-    }
-
-    /**
-     * Sets the Raft state machine factory to use.
-     *
-     * @param stateMachineFactory the new state machine factory to use
-     * @return the Raft partition group builder
-     */
-    public Builder withStateMachineFactory(final RaftStateMachineFactory stateMachineFactory) {
-      config.setStateMachineFactory(stateMachineFactory);
       return this;
     }
 

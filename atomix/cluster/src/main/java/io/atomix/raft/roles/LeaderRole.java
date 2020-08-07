@@ -25,7 +25,6 @@ import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
-import io.atomix.raft.impl.OperationResult;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
@@ -93,33 +92,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     return super.start().thenRun(this::startTimers).thenApply(v -> this);
   }
 
-  private ZeebeEntry findLastZeebeEntry() {
-    long index = raft.getLogWriter().getLastIndex();
-    while (index > 0) {
-      raft.getLogReader().reset(index);
-      final Indexed<RaftLogEntry> lastEntry = raft.getLogReader().next();
-
-      if (lastEntry != null && lastEntry.type() == ZeebeEntry.class) {
-        return ((ZeebeEntry) lastEntry.entry());
-      }
-
-      --index;
-    }
-
-    return null;
-  }
-
-  @Override
-  protected PersistedSnapshotListener createSnapshotListener() {
-    return null;
-  }
-
   @Override
   public synchronized CompletableFuture<Void> stop() {
     return super.stop()
         .thenRun(appender::close)
         .thenRun(this::cancelTimers)
         .thenRun(this::stepDown);
+  }
+
+  @Override
+  protected PersistedSnapshotListener createSnapshotListener() {
+    return null;
   }
 
   @Override
@@ -332,6 +315,22 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     return future;
   }
 
+  private ZeebeEntry findLastZeebeEntry() {
+    long index = raft.getLogWriter().getLastIndex();
+    while (index > 0) {
+      raft.getLogReader().reset(index);
+      final Indexed<RaftLogEntry> lastEntry = raft.getLogReader().next();
+
+      if (lastEntry != null && lastEntry.type() == ZeebeEntry.class) {
+        return ((ZeebeEntry) lastEntry.entry());
+      }
+
+      --index;
+    }
+
+    return null;
+  }
+
   /** Cancels the timers. */
   private void cancelTimers() {
     if (appendTimer != null) {
@@ -375,7 +374,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               raft.checkThread();
               if (isRunning()) {
                 if (error == null) {
-                  raft.getServiceManager().apply(resultIndex);
                   future.complete(null);
                 } else {
                   log.info("Failed to commit the initial entry, stepping down");
@@ -458,9 +456,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .whenComplete(
                       (commitIndex, commitError) -> {
                         raft.checkThread();
-                        if (isRunning() && commitError == null) {
-                          raft.getServiceManager().<OperationResult>apply(entry.index());
-                        }
                         configuring = 0;
                       });
             });
@@ -726,7 +721,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               // entries properly on fail over
               if (commitError == null) {
                 appendListener.onCommit(indexed);
-                raft.getServiceManager().apply(indexed.index());
+                raft.notifyCommitListeners(indexed.index());
               } else {
                 appendListener.onCommitError(indexed, commitError);
                 // replicating the entry will be retried on the next append request
