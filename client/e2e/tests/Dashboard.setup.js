@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {deploy, createInstances} from '../setup-utils';
+import {deploy, createInstances, createSingleInstance} from '../setup-utils';
 
 export async function setup() {
   await deploy([
@@ -28,4 +28,8 @@ export async function setup() {
   await deploy(['./tests/resources/orderProcess_v_1.bpmn']);
 
   await createInstances('orderProcess', 1, 10);
+
+  await deploy(['./tests/resources/processWithAnIncident.bpmn']);
+
+  await createSingleInstance('processWithAnIncident', 1);
 }

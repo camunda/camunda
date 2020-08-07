@@ -27,7 +27,7 @@ BrandNavElement.propTypes = {
 };
 
 export const LinkElement = memo((props) => (
-  <Styled.ListItem>
+  <Styled.ListItem aria-label={props.label}>
     <Styled.DashboardLink
       to={props.to}
       isActive={props.isActive}
@@ -53,7 +53,7 @@ LinkElement.propTypes = {
 };
 
 export const NavElement = memo((props) => (
-  <Styled.ListItem className={props.className}>
+  <Styled.ListItem className={props.className} aria-label={props.label}>
     <Styled.ListLink
       isActive={props.isActive}
       title={props.title}

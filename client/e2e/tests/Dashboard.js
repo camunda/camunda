@@ -8,10 +8,7 @@ import {config} from '../config';
 import {setup} from './Dashboard.setup.js';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
-
-import * as Header from './Header.elements.js';
-import * as Dashboard from './Dashboard.elements.js';
-import * as Instances from './Instances.elements.js';
+import {screen, within} from '@testing-library/testcafe';
 
 fixture('Dashboard')
   .page(config.endpoint)
@@ -24,30 +21,200 @@ fixture('Dashboard')
     await t.navigateTo('/');
   });
 
-test('Dashboard statistics', async (t) => {
+test('Statistics', async (t) => {
+  const incidentInstancesCount = Number(
+    await screen.getAllByTestId('incident-instances-badge').nth(0).textContent
+  );
+  const activeInstancesCount = Number(
+    await screen.getAllByTestId('active-instances-badge').nth(0).textContent
+  );
+
   await t
-    .expect(Dashboard.totalInstancesLink.textContent)
-    .eql('37 Running Instances in total')
-    .expect(Dashboard.incidentInstancesBadge.textContent)
-    .eql('0')
-    .expect(Dashboard.activeInstancesBadge.textContent)
-    .eql('37');
+    .expect(screen.getByTestId('total-instances-link').textContent)
+    .eql(
+      `${
+        incidentInstancesCount + activeInstancesCount
+      } Running Instances in total`
+    )
+    .expect(incidentInstancesCount)
+    .eql(1)
+    .expect(activeInstancesCount)
+    .eql(37);
+
+  await t
+    .expect(
+      within(
+        screen.getByRole('listitem', {name: 'Running Instances'})
+      ).getByTestId('badge').textContent
+    )
+    .eql('38');
+
+  await t
+    .expect(
+      within(screen.getByRole('listitem', {name: 'Filters'})).getByTestId(
+        'badge'
+      ).textContent
+    )
+    .eql('38');
+
+  await t
+    .expect(
+      within(screen.getByRole('listitem', {name: 'Incidents'})).getByTestId(
+        'badge'
+      ).textContent
+    )
+    .eql('1');
 });
 
 test('Navigation to Instances View', async (t) => {
+  const activeInstancesCount = await screen
+    .getAllByTestId('active-instances-badge')
+    .nth(0).textContent;
+
+  const instancesWithIncidentCount = await screen
+    .getAllByTestId('incident-instances-badge')
+    .nth(0).textContent;
+
   await t
-    .click(Dashboard.activeInstancesLink)
-    .expect(Instances.filtersRunningActiveCheckbox.checked)
+    .click(screen.getByTestId('active-instances-link'))
+    .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)
     .ok()
-    .expect(Instances.filtersRunningIncidentsCheckbox.checked)
+    .expect(screen.getByRole('checkbox', {name: 'Incidents'}).checked)
     .notOk();
 
-  await t.click(Header.dashboardLink);
+  await t
+    .expect(
+      within(screen.getByRole('listitem', {name: 'Filters'})).getByTestId(
+        'badge'
+      ).textContent
+    )
+    .eql(activeInstancesCount);
+
+  await t.click(screen.getByRole('listitem', {name: 'Dashboard'}));
 
   await t
-    .click(Dashboard.incidentInstancesLink)
-    .expect(Instances.filtersRunningActiveCheckbox.checked)
+    .click(screen.getByTestId('incident-instances-link'))
+    .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)
     .notOk()
-    .expect(Instances.filtersRunningIncidentsCheckbox.checked)
+    .expect(screen.getByRole('checkbox', {name: 'Incidents'}).checked)
     .ok();
+
+  await t
+    .expect(
+      within(screen.getByRole('listitem', {name: 'Filters'})).getByTestId(
+        'badge'
+      ).textContent
+    )
+    .eql(instancesWithIncidentCount);
+});
+
+test('Select instances by workflow', async (t) => {
+  const withinInstanceByWorkflow = within(
+    screen.getByTestId('incident-byWorkflow-0')
+  );
+
+  const incidentCount = Number(
+    await withinInstanceByWorkflow.getByTestId('incident-instances-badge')
+      .textContent
+  );
+  const runningInstanceCount = Number(
+    await withinInstanceByWorkflow.getByTestId('active-instances-badge')
+      .textContent
+  );
+
+  const totalInstanceCount = incidentCount + runningInstanceCount;
+
+  await t.click(screen.getByTestId('incident-byWorkflow-0'));
+
+  await t
+    .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)
+    .ok()
+    .expect(screen.getByRole('checkbox', {name: 'Incidents'}).checked)
+    .ok();
+  await t
+    .expect(
+      within(screen.getByRole('listitem', {name: 'Filters'})).getByTestId(
+        'badge'
+      ).textContent
+    )
+    .eql(totalInstanceCount.toString());
+});
+
+test('Select instances by error message', async (t) => {
+  const withinInstanceByError = within(
+    screen.getByTestId('incident-byError-0')
+  );
+
+  const incidentCount = await withinInstanceByError.getByTestId(
+    'incident-instances-badge'
+  ).textContent;
+  const incidentMessage = await withinInstanceByError.getByTestId(
+    'incident-message'
+  ).textContent;
+
+  await t.click(screen.getByTestId('incident-byError-0'));
+
+  await t
+    .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)
+    .notOk()
+    .expect(screen.getByRole('checkbox', {name: 'Incidents'}).checked)
+    .ok();
+
+  await t
+    .expect(
+      within(screen.getByRole('listitem', {name: 'Filters'})).getByTestId(
+        'badge'
+      ).textContent
+    )
+    .eql(incidentCount);
+
+  await t
+    .expect(screen.getByRole('textbox', {name: 'Error Message'}).value)
+    .eql(incidentMessage);
+
+  await t.expect(screen.queryByTestId('diagram').exists).notOk();
+});
+
+test('Select instances by error message (expanded)', async (t) => {
+  const withinInstanceByError = within(
+    screen.getByTestId('incident-byError-0')
+  );
+
+  const incidentCount = await withinInstanceByError.getByTestId(
+    'incident-instances-badge'
+  ).textContent;
+  const incidentMessage = await withinInstanceByError.getByTestId(
+    'incident-message'
+  ).textContent;
+
+  await t.click(
+    within(screen.getByTestId('incident-byError-0')).getByRole('button', {
+      name: /Expand/,
+    })
+  );
+  await t.click(
+    within(screen.getByTestId('incident-byError-0'))
+      .getAllByRole('listitem')
+      .nth(0)
+  );
+
+  await t
+    .expect(screen.getByRole('checkbox', {name: 'Active'}).checked)
+    .notOk()
+    .expect(screen.getByRole('checkbox', {name: 'Incidents'}).checked)
+    .ok();
+
+  await t
+    .expect(
+      within(screen.getByRole('listitem', {name: 'Filters'})).getByTestId(
+        'badge'
+      ).textContent
+    )
+    .eql(incidentCount);
+
+  await t
+    .expect(screen.getByRole('textbox', {name: 'Error Message'}).value)
+    .eql(incidentMessage);
+
+  await t.expect(screen.getByTestId('diagram').exists).ok();
 });

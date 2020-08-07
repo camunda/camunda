@@ -4,8 +4,4 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Selector} from 'testcafe';
-
-export const filtersRunningCheckbox = Selector('[data-test="checkbox-input"]');
-export const filtersRunningActiveCheckbox = Selector('#active');
-export const filtersRunningIncidentsCheckbox = Selector('#incidents');
+window.TestingLibraryDom.configure({testIdAttribute: 'data-test'});

@@ -25,7 +25,7 @@ function InstancesBar(props) {
         >
           {incidentsCount}
         </Styled.IncidentsCount>
-        <Styled.Label>{label}</Styled.Label>
+        <Styled.Label data-test="incident-message">{label}</Styled.Label>
         {activeCount >= 0 && (
           <Styled.ActiveCount
             data-test="active-instances-badge"
