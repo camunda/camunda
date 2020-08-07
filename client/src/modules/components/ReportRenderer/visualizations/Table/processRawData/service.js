@@ -20,7 +20,13 @@ export function cockpitLink(endpoints, instance, type) {
   const {endpoint, engineName} = endpoints[instance.engineName] || {};
   if (endpoint) {
     return (
-      <a href={`${endpoint}/app/cockpit/${engineName}/#/${type}-instance/${content}`}>{content}</a>
+      <a
+        href={`${endpoint}/app/cockpit/${engineName}/#/${type}-instance/${content}`}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {content}
+      </a>
     );
   }
   return content;
