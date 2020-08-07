@@ -9,8 +9,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    allow:
-      - dependency-name: "*"
     ignore:
       - dependency-name: "org.camunda.bpm:camunda-engine"
       - dependency-name: "com.h2database:h2"
@@ -30,8 +28,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    allow:
-      - dependency-name: "*"
     reviewers:
       - "camunda/optimize"
     labels:
@@ -46,8 +42,6 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
-    allow:
-      - dependency-name: "*"
     reviewers:
       - "camunda/optimize"
     labels:
