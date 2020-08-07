@@ -23,16 +23,16 @@ import java.beans.PropertyDescriptor;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
@@ -78,7 +78,7 @@ public class CSVUtils {
     final List<String> allVariableKeys = extractAllPrefixedVariableKeys(rawData);
 
     // Ensure all dto fields are taken into account by tableColumns
-    tableColumns.addDtoColumns(extractAllDtoFieldKeys(RawDataProcessInstanceDto.class));
+    tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
 
     // Ensure all variables are taken into account by tableColumns
     tableColumns.addNewVariableColumns(allVariableKeys);
@@ -116,7 +116,7 @@ public class CSVUtils {
     final List<String> allOutputVariableKeys = extractAllPrefixedDecisionOutputKeys(rawData);
 
     // Ensure all dto fields are taken into account by tableColumns
-    tableColumns.addDtoColumns(extractAllDtoFieldKeys(RawDataDecisionInstanceDto.class));
+    tableColumns.addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
 
     // Ensure all variables are taken into account by tableColumns
     tableColumns.addNewVariableColumns(allInputVariableKeys);
@@ -184,14 +184,16 @@ public class CSVUtils {
     }
   }
 
-  public static List<String> extractAllDtoFieldKeys(Class<?> dtoClass) {
-    final List<String> fieldKeys = new ArrayList<>();
-    for (Field f : dtoClass.getDeclaredFields()) {
-      if (!f.isSynthetic() && !Map.class.isAssignableFrom(f.getType())) {
-        fieldKeys.add(f.getName());
-      }
-    }
-    return fieldKeys;
+  public static List<String> extractAllDecisionInstanceDtoFieldKeys() {
+    return Arrays.stream(RawDataDecisionInstanceDto.Fields.values())
+      .map(RawDataDecisionInstanceDto.Fields::name)
+      .collect(toList());
+  }
+
+  public static List<String> extractAllProcessInstanceDtoFieldKeys() {
+    return Arrays.stream(RawDataProcessInstanceDto.Fields.values())
+      .map(RawDataProcessInstanceDto.Fields::name)
+      .collect(toList());
   }
 
   private static String stripOffPrefix(final String currentKey, final String prefix) {

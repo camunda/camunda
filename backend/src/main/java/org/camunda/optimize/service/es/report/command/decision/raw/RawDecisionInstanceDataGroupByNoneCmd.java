@@ -26,7 +26,7 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
-import static org.camunda.optimize.service.export.CSVUtils.extractAllDtoFieldKeys;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllDecisionInstanceDtoFieldKeys;
 
 @Component
 public class RawDecisionInstanceDataGroupByNoneCmd
@@ -80,7 +80,7 @@ public class RawDecisionInstanceDataGroupByNoneCmd
       .getData()
       .getConfiguration()
       .getTableColumns()
-      .addDtoColumns(extractAllDtoFieldKeys(RawDataDecisionInstanceDto.class));
+      .addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
   }
 
   private String getPrefixedInputVariableId(final InputVariableEntry inputVariableEntry) {

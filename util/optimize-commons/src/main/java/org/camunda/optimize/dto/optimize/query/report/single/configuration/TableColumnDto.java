@@ -31,15 +31,12 @@ public class TableColumnDto {
   public static final String INPUT_PREFIX = "input:";
   public static final String OUTPUT_PREFIX = "output:";
 
+  @Builder.Default
   private boolean includeNewVariables = true;
+  @Builder.Default
   private List<String> excludedColumns = new ArrayList<>();
+  @Builder.Default
   private List<String> includedColumns = new ArrayList<>();
-
-  public TableColumnDto(final List<String> excludedColumns,
-                        final List<String> includedColumns) {
-    this.excludedColumns = excludedColumns;
-    this.includedColumns = includedColumns;
-  }
 
   public void addNewVariableColumns(final List<String> columns) {
     final List<String> newColumnsToAdd = columns

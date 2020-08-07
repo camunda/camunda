@@ -41,7 +41,10 @@ public class TableColumnConfigMigrationIT extends AbstractUpgrade31IT {
     final UpgradePlan upgradePlan = new UpgradeFrom31To32().buildUpgradePlan();
     final List<String> expectedExcluded = Lists.newArrayList("Excluded1", "Excluded2");
     final List<String> expectedIncluded = Lists.newArrayList("Included1", "Included2");
-    final TableColumnDto expectedTableColumnDto = new TableColumnDto(expectedExcluded, expectedIncluded);
+    final TableColumnDto expectedTableColumnDto = TableColumnDto.builder()
+      .excludedColumns(expectedExcluded)
+      .includedColumns(expectedIncluded)
+      .build();
 
     // when
     upgradePlan.execute();
@@ -58,7 +61,10 @@ public class TableColumnConfigMigrationIT extends AbstractUpgrade31IT {
     final UpgradePlan upgradePlan = new UpgradeFrom31To32().buildUpgradePlan();
     final List<String> expectedExcluded = Lists.emptyList();
     final List<String> expectedIncluded = Lists.newArrayList("Included1", "Included2");
-    final TableColumnDto expectedTableColumnDto = new TableColumnDto(expectedExcluded, expectedIncluded);
+    final TableColumnDto expectedTableColumnDto = TableColumnDto.builder()
+      .excludedColumns(expectedExcluded)
+      .includedColumns(expectedIncluded)
+      .build();
 
     // when
     upgradePlan.execute();
@@ -75,7 +81,10 @@ public class TableColumnConfigMigrationIT extends AbstractUpgrade31IT {
     final UpgradePlan upgradePlan = new UpgradeFrom31To32().buildUpgradePlan();
     final List<String> expectedExcluded = Lists.newArrayList("Excluded1", "Excluded2");
     final List<String> expectedIncluded = Lists.emptyList();
-    final TableColumnDto expectedTableColumnDto = new TableColumnDto(expectedExcluded, expectedIncluded);
+    final TableColumnDto expectedTableColumnDto = TableColumnDto.builder()
+      .excludedColumns(expectedExcluded)
+      .includedColumns(expectedIncluded)
+      .build();
 
     // when
     upgradePlan.execute();
@@ -92,7 +101,10 @@ public class TableColumnConfigMigrationIT extends AbstractUpgrade31IT {
     final UpgradePlan upgradePlan = new UpgradeFrom31To32().buildUpgradePlan();
     final List<String> expectedExcluded = Lists.emptyList();
     final List<String> expectedIncluded = Lists.newArrayList("Included1", "Included2");
-    final TableColumnDto expectedTableColumnDto = new TableColumnDto(expectedExcluded, expectedIncluded);
+    final TableColumnDto expectedTableColumnDto = TableColumnDto.builder()
+      .excludedColumns(expectedExcluded)
+      .includedColumns(expectedIncluded)
+      .build();
 
     // when
     upgradePlan.execute();
@@ -109,7 +121,10 @@ public class TableColumnConfigMigrationIT extends AbstractUpgrade31IT {
     final UpgradePlan upgradePlan = new UpgradeFrom31To32().buildUpgradePlan();
     final List<String> expectedExcluded = Lists.newArrayList("Excluded1", "Excluded2");
     final List<String> expectedIncluded = Lists.emptyList();
-    final TableColumnDto expectedTableColumnDto = new TableColumnDto(expectedExcluded, expectedIncluded);
+    final TableColumnDto expectedTableColumnDto = TableColumnDto.builder()
+      .excludedColumns(expectedExcluded)
+      .includedColumns(expectedIncluded)
+      .build();
 
     // when
     upgradePlan.execute();

@@ -27,7 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
-import static org.camunda.optimize.service.export.CSVUtils.extractAllDtoFieldKeys;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllDecisionInstanceDtoFieldKeys;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
 import static org.camunda.optimize.service.export.CSVUtils.mapCsvLinesToCsvBytes;
 import static org.camunda.optimize.service.export.RawDataHelper.NUMBER_OF_RAW_DECISION_REPORT_COLUMNS;
 import static org.camunda.optimize.service.export.RawDataHelper.NUMBER_OF_RAW_PROCESS_REPORT_COLUMNS;
@@ -42,7 +43,7 @@ public class CSVUtilsTest {
       .stream()
       .map(varName -> VARIABLE_PREFIX + varName)
       .collect(toList());
-    List<String> expectedDtoFieldColumns = extractAllDtoFieldKeys(RawDataProcessInstanceDto.class);
+    List<String> expectedDtoFieldColumns = extractAllProcessInstanceDtoFieldKeys();
 
     // when
     List<String[]> result = mapRawProcessReportInstances(toMap);
@@ -97,7 +98,7 @@ public class CSVUtilsTest {
     //then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(extractAllDtoFieldKeys(RawDataProcessInstanceDto.class).size() - excludedColumns.size())
+      .hasSize(extractAllProcessInstanceDtoFieldKeys().size() - excludedColumns.size())
       .doesNotContainAnyElementsOf(excludedColumns);
   }
 
@@ -108,7 +109,7 @@ public class CSVUtilsTest {
     final RawDataProcessReportResultDto rawDataProcessReportResultDto = new RawDataProcessReportResultDto();
     rawDataProcessReportResultDto.setData(toMap);
 
-    List<String> includedColumns = extractAllDtoFieldKeys(RawDataProcessInstanceDto.class);
+    List<String> includedColumns = extractAllProcessInstanceDtoFieldKeys();
     List<String> excludedColumns = Lists.newArrayList(
       RawDataProcessInstanceDto.class.getDeclaredFields()[1].getName()
     );
@@ -166,7 +167,7 @@ public class CSVUtilsTest {
 
     List<String> firstRowVariableColumnNames = Lists.newArrayList(toMap.get(0).getVariables().keySet());
     List<String> includedColumns = Lists.newArrayList(VARIABLE_PREFIX + firstRowVariableColumnNames.get(0));
-    includedColumns.addAll(extractAllDtoFieldKeys(RawDataProcessInstanceDto.class));
+    includedColumns.addAll(extractAllProcessInstanceDtoFieldKeys());
     final SingleProcessReportDefinitionDto reportDefinition = new SingleProcessReportDefinitionDto();
     reportDefinition.getData().getConfiguration().getTableColumns().getIncludedColumns().addAll(includedColumns);
     reportDefinition.getData().getConfiguration().getTableColumns().setIncludeNewVariables(false);
@@ -227,7 +228,7 @@ public class CSVUtilsTest {
       .stream()
       .map(varName -> OUTPUT_PREFIX + varName)
       .collect(toList());
-    List<String> expectedDtoFieldColumns = extractAllDtoFieldKeys(RawDataDecisionInstanceDto.class);
+    List<String> expectedDtoFieldColumns = extractAllDecisionInstanceDtoFieldKeys();
 
     //when
     List<String[]> result = mapRawDecisionReportInstances(toMap);
@@ -265,7 +266,7 @@ public class CSVUtilsTest {
     //then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(extractAllDtoFieldKeys(RawDataDecisionInstanceDto.class).size() - excludedColumns.size())
+      .hasSize(extractAllDecisionInstanceDtoFieldKeys().size() - excludedColumns.size())
       .doesNotContainAnyElementsOf(excludedColumns);
   }
 
@@ -346,7 +347,7 @@ public class CSVUtilsTest {
     //then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(extractAllDtoFieldKeys(RawDataDecisionInstanceDto.class).size() + includedColumns.size())
+      .hasSize(extractAllDecisionInstanceDtoFieldKeys().size() + includedColumns.size())
       .containsAll(includedColumns);
   }
 
@@ -427,7 +428,7 @@ public class CSVUtilsTest {
     //then
     assertThat(result).hasSize(4);
     assertThat(result.get(0))
-      .hasSize(extractAllDtoFieldKeys(RawDataDecisionInstanceDto.class).size() + includedColumns.size())
+      .hasSize(extractAllDecisionInstanceDtoFieldKeys().size() + includedColumns.size())
       .containsAnyElementsOf(includedColumns);
   }
 

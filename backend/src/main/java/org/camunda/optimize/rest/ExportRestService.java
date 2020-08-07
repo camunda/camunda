@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
@@ -37,7 +36,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
-import static org.camunda.optimize.service.export.CSVUtils.extractAllDtoFieldKeys;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
 
 @AllArgsConstructor
 @Path("/export")
@@ -111,7 +110,7 @@ public class ExportRestService {
   }
 
   private List<String> getAllExcludedDtoFields(final ProcessRawDataCsvExportRequestDto request) {
-    final List<String> dtoFields = extractAllDtoFieldKeys(RawDataProcessInstanceDto.class);
+    final List<String> dtoFields = extractAllProcessInstanceDtoFieldKeys();
     dtoFields.removeAll(request.getIncludedColumns());
     return dtoFields;
   }

@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
@@ -48,7 +47,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.OUTPUTS;
-import static org.camunda.optimize.service.export.CSVUtils.extractAllDtoFieldKeys;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllDecisionInstanceDtoFieldKeys;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableMultivalueFields;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
@@ -212,7 +211,7 @@ public class DecisionViewRawData extends DecisionViewPart {
       .addNewVariableColumns(variableNames);
     context.getReportConfiguration()
       .getTableColumns()
-      .addDtoColumns(extractAllDtoFieldKeys(RawDataDecisionInstanceDto.class));
+      .addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
   }
 
   private String getPrefixedInputVariableId(final InputVariableEntry inputVariableEntry) {
