@@ -149,7 +149,7 @@ spec:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
           value: io.zeebe.exporter.ElasticsearchExporter
         - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
-          value: 4
+          value: 10
       resources:
         limits:
           cpu: 4
