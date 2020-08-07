@@ -15,7 +15,7 @@
     "date-fns": "^2.15.0",
     "debounce": "^1.2.0",
     "deep-equal": "^2.0.3",
-    "dmn-js": "^9.0.1",
+    "dmn-js": "^9.2.1",
     "element-closest": "^3.0.2",
     "es6-shim": "^0.35.5",
     "focus-visible": "^5.1.0",
