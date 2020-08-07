@@ -31,6 +31,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.service.es.schema.index.AlertIndex;
 import org.camunda.optimize.service.es.schema.index.CollectionIndex;
 import org.camunda.optimize.service.es.schema.index.DashboardIndex;
@@ -46,6 +48,8 @@ import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.Duration;
@@ -58,8 +62,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.entityType;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModified;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModifier;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.name;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
@@ -136,8 +145,9 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
-  @Test
-  public void testQueryPerformance_getAllEntities() {
+  @ParameterizedTest
+  @MethodSource("entitySorters")
+  public void testQueryPerformance_getAllEntities(EntitySorter entitySorter) {
     // given
     final int totalNumberOfEntities = getNumberOfEntities();
     // We consider 5 entity types: process reports / decision reports / combined reports / dashboards/ collections
@@ -155,7 +165,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     // when
     final Instant start = Instant.now();
     final List<EntityDto> entityDtos = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetAllEntitiesRequest()
+      .buildGetAllEntitiesRequest(entitySorter)
       .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
     final Instant finish = Instant.now();
     long responseTimeMs = Duration.between(start, finish).toMillis();
@@ -166,8 +176,9 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
-  @Test
-  public void testQueryPerformance_getAllCollectionEntities() {
+  @ParameterizedTest
+  @MethodSource("entitySorters")
+  public void testQueryPerformance_getAllCollectionEntities(EntitySorter entitySorter) {
     // given
     final int totalNumberOfEntities = getNumberOfEntities();
     // We consider 4 entity types for a collection: process reports / decision reports / combined reports / dashboards
@@ -185,7 +196,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     // when
     final Instant start = Instant.now();
     final List<EntityDto> entityDtos = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetCollectionEntitiesRequest(collectionId)
+      .buildGetCollectionEntitiesRequest(collectionId, entitySorter)
       .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
     final Instant finish = Instant.now();
     long responseTimeMs = Duration.between(start, finish).toMillis();
@@ -235,6 +246,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
       .forEach(index -> {
         final SingleProcessReportDefinitionDto definition = new SingleProcessReportDefinitionDto(processReportData);
         definition.setCollectionId(collectionId);
+        definition.setName(IdGenerator.getNextId());
         definition.setOwner(DEFAULT_USER);
         definition.setLastModifier(DEFAULT_USER);
         definition.setLastModified(OffsetDateTime.now());
@@ -257,6 +269,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
       .build();
     final SingleDecisionReportDefinitionDto definition = new SingleDecisionReportDefinitionDto(decisionReportData);
     definition.setCollectionId(collectionId);
+    definition.setName(IdGenerator.getNextId());
     definition.setOwner(DEFAULT_USER);
     definition.setLastModifier(DEFAULT_USER);
     definition.setLastModified(OffsetDateTime.now());
@@ -279,6 +292,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     ));
     final CombinedReportDefinitionDto definition = new CombinedReportDefinitionDto(new CombinedReportDataDto());
     definition.setCollectionId(collectionId);
+    definition.setName(IdGenerator.getNextId());
     definition.setOwner(DEFAULT_USER);
     definition.setLastModifier(DEFAULT_USER);
     definition.setLastModified(OffsetDateTime.now());
@@ -300,6 +314,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
       ReportLocationDto.builder().id("secondReportId").build()
     ));
     definition.setCollectionId(collectionId);
+    definition.setName(IdGenerator.getNextId());
     definition.setOwner(DEFAULT_USER);
     definition.setLastModifier(DEFAULT_USER);
     definition.setLastModified(OffsetDateTime.now());
@@ -396,6 +411,7 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     definition.setLastModified(OffsetDateTime.now());
     definition.setData(collectionData);
     definition.setId(IdGenerator.getNextId());
+    definition.setName(IdGenerator.getNextId());
     return definition;
   }
 
@@ -413,6 +429,27 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
       TENANT_INDEX_NAME,
       ImmutableMap.of(tenantDto.getId(), tenantDto)
     );
+  }
+
+  private static Stream<EntitySorter> entitySorters() {
+    return Stream.of(
+      null,
+      entitySorter(name, SortOrder.ASC),
+      entitySorter(name, SortOrder.DESC),
+      entitySorter(entityType, SortOrder.ASC),
+      entitySorter(entityType, SortOrder.DESC),
+      entitySorter(lastModified, SortOrder.ASC),
+      entitySorter(lastModified, SortOrder.DESC),
+      entitySorter(lastModifier, SortOrder.ASC),
+      entitySorter(lastModifier, SortOrder.DESC)
+    );
+  }
+
+  private static EntitySorter entitySorter(final String sortBy, final SortOrder sortOrder) {
+    EntitySorter sorter = new EntitySorter();
+    sorter.setSortBy(sortBy);
+    sorter.setSortOrder(sortOrder);
+    return sorter;
   }
 
 }

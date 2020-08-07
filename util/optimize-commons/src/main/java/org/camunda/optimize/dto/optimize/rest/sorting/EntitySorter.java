@@ -14,6 +14,7 @@ import javax.ws.rs.BadRequestException;
 import java.util.Comparator;
 import java.util.List;
 
+import static java.util.Comparator.nullsFirst;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.entityType;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModified;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModifier;
@@ -27,7 +28,7 @@ public class EntitySorter extends Sorter<EntityDto> {
       .thenComparing(Comparator.comparing(EntityDto::getLastModified).reversed());
 
   private static final ImmutableMap<String, Comparator<EntityDto>> sortComparators = ImmutableMap.of(
-    name.toLowerCase(), Comparator.comparing(EntityDto::getName),
+    name.toLowerCase(), Comparator.comparing(EntityDto::getName, nullsFirst(String.CASE_INSENSITIVE_ORDER)),
     entityType.toLowerCase(), Comparator.comparing(EntityDto::getEntityType),
     lastModified.toLowerCase(), Comparator.comparing(EntityDto::getLastModified),
     lastModifier.toLowerCase(), Comparator.comparing(EntityDto::getLastModifier)

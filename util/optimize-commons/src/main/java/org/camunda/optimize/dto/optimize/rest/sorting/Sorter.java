@@ -7,6 +7,7 @@ package org.camunda.optimize.dto.optimize.rest.sorting;
 
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 
 import javax.ws.rs.QueryParam;
@@ -15,6 +16,7 @@ import java.util.Optional;
 
 @Setter
 @NoArgsConstructor
+@ToString
 public abstract class Sorter<T> {
 
   public static final String SORT_BY = "sortBy";

@@ -14,10 +14,14 @@ import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.Duration;
@@ -27,8 +31,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.eventName;
+import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.group;
+import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.source;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @Slf4j
@@ -43,8 +51,9 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
       );
   }
 
-  @Test
-  public void testQueryPerformance_getEventCounts() {
+  @ParameterizedTest
+  @MethodSource("eventCountSorterAndSearchTerm")
+  public void testQueryPerformance_getEventCounts(EventCountSorter eventCountSorter, String searchTerm) {
     // given
     final int numberOfDifferentEvents = getNumberOfEvents();
 
@@ -60,7 +69,7 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
     // when
     final Instant start = Instant.now();
     final List<EventCountDto> eventCounts = embeddedOptimizeExtension.getRequestExecutor()
-      .buildPostEventCountRequest(countRequest)
+      .buildPostEventCountRequest(eventCountSorter, searchTerm, countRequest)
       .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
     final Instant finish = Instant.now();
     long responseTimeMs = Duration.between(start, finish).toMillis();
@@ -88,6 +97,29 @@ public class OptimizeEventsQueryPerformanceTest extends AbstractQueryPerformance
       new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX).getIndexName(),
       sequencesById
     );
+  }
+
+  private static Stream<Arguments> eventCountSorterAndSearchTerm() {
+    return Stream.of(
+      Arguments.of(null, null),
+      Arguments.of(null, "a"),
+      Arguments.of(eventCountSorter(eventName, SortOrder.ASC), "a"),
+      Arguments.of(eventCountSorter(eventName, SortOrder.ASC), null),
+      Arguments.of(eventCountSorter(eventName, SortOrder.DESC), null),
+      Arguments.of(eventCountSorter(group, SortOrder.ASC), "a"),
+      Arguments.of(eventCountSorter(group, SortOrder.ASC), null),
+      Arguments.of(eventCountSorter(group, SortOrder.DESC), null),
+      Arguments.of(eventCountSorter(source, SortOrder.ASC), "a"),
+      Arguments.of(eventCountSorter(source, SortOrder.ASC), null),
+      Arguments.of(eventCountSorter(source, SortOrder.DESC), null)
+    );
+  }
+
+  private static EventCountSorter eventCountSorter(final String sortBy, final SortOrder sortOrder) {
+    EventCountSorter sorter = new EventCountSorter();
+    sorter.setSortBy(sortBy);
+    sorter.setSortOrder(sortOrder);
+    return sorter;
   }
 
 }
