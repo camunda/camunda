@@ -408,7 +408,6 @@ public class EngineContext {
     List<AuthorizationDto> totalAuthorizations = new ArrayList<>();
     List<AuthorizationDto> pageOfAuthorizations;
     do {
-      pageOfAuthorizations = new ArrayList<>();
       final Response response = getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
         .path(AUTHORIZATION_ENDPOINT)
@@ -423,15 +422,13 @@ public class EngineContext {
         totalAuthorizations.addAll(pageOfAuthorizations);
       // @formatter:on
       } else {
-        if (log.isDebugEnabled()) {
-          String message = String.format(
-            "Could not fetch authorizations from engine with alias [%s]! Error from engine: %s",
-            engineAlias,
-            response.readEntity(String.class)
-          );
-          log.debug(message);
-          throw new OptimizeRuntimeException(message);
-        }
+        String message = String.format(
+          "Could not fetch authorizations from engine with alias [%s]! Error from engine: %s",
+          engineAlias,
+          response.readEntity(String.class)
+        );
+        log.debug(message);
+        throw new OptimizeRuntimeException(message);
       }
       response.close();
     } while (pageOfAuthorizations.size() >= pageSize);

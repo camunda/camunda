@@ -22,10 +22,12 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
+import org.mockserver.model.HttpResponse;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -263,8 +266,9 @@ public class IdentityRestServiceIT extends AbstractIT {
   }
 
   @ParameterizedTest
-  @MethodSource("identities")
-  public void noRolesCleanupOnIdentitySyncFail(final IdentityWithMetadataDto expectedIdentity) {
+  @MethodSource("identitiesAndAuthorizationResponse")
+  public void noRolesCleanupOnIdentitySyncFailWithError(final IdentityWithMetadataDto expectedIdentity,
+                                                        final BiConsumer<HttpRequest, ClientAndServer> mockedAuthResp) {
     // given
     SyncedIdentityCacheService syncedIdentityCacheService = embeddedOptimizeExtension.getSyncedIdentityCacheService();
 
@@ -297,8 +301,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
-    engineMockServer.when(engineAuthorizationsRequest)
-      .error(HttpError.error().withResponseBytes(new byte[10]));
+    mockedAuthResp.accept(engineAuthorizationsRequest, engineMockServer);
 
     // when
     assertThrows(Exception.class, syncedIdentityCacheService::synchronizeIdentities);
@@ -483,5 +486,25 @@ public class IdentityRestServiceIT extends AbstractIT {
       new UserDto("testUser", DEFAULT_FIRSTNAME, DEFAULT_LASTNAME, "testUser" + DEFAULT_EMAIL_DOMAIN),
       new GroupDto(KERMIT_GROUP_NAME, KERMIT_GROUP_NAME, 0L)
     );
+  }
+
+  private static Stream<Arguments> identitiesAndAuthorizationResponse() {
+    return identities()
+      .flatMap(identity -> Stream.of(
+        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
+          mockServer.when(request).error(HttpError.error().withResponseBytes(new byte[10]))),
+        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
+          mockServer.when(request)
+            .respond(HttpResponse.response().withStatusCode(Response.Status.NOT_FOUND.getStatusCode()))),
+        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
+          mockServer.when(request)
+            .respond(HttpResponse.response().withStatusCode(Response.Status.FORBIDDEN.getStatusCode()))),
+        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
+          mockServer.when(request)
+            .respond(HttpResponse.response().withStatusCode(Response.Status.UNAUTHORIZED.getStatusCode()))),
+        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
+          mockServer.when(request)
+            .respond(HttpResponse.response().withStatusCode(Response.Status.BAD_REQUEST.getStatusCode())))
+      ));
   }
 }

@@ -169,8 +169,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
       );
       throw e;
     } catch (OptimizeRuntimeException e) {
-      log.error("Could not synchronize identity cache as there was a problem receiving authorizations from the engine" +
-                  ".");
+      log.error("Could not synchronize identity cache as there was a problem receiving authorizations from the engine");
       throw e;
     }
   }

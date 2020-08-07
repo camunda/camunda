@@ -149,7 +149,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   @Override
-  public void afterEach(final ExtensionContext context) throws Exception {
+  public void afterEach(final ExtensionContext context) {
     if (usingMockServer) {
       log.info("Resetting all MockServer expectations and logs");
       mockServerClient.reset();
