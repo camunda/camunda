@@ -168,7 +168,7 @@ public class PostMigrationTest {
     refreshAllElasticsearchIndices();
 
     final Map<String, Long> eventProcessInstanceCountsAfterRepublish =
-      retrieveEventProcessInstanceCounts(eventProcessMappingsBeforeRepublish);
+      retrieveEventProcessInstanceCounts(republishedEventProcessMappings);
 
     assertThat(eventProcessInstanceCountsAfterRepublish).isEqualTo(eventProcessInstanceCountsBeforeRepublish);
   }
