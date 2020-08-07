@@ -43,11 +43,7 @@ public class SSOUserReader implements UserReader {
   }
 
   private UserDTO createUserDTO(String name) {
-    return new UserDTO()
-        .setUsername(name)
-        .setFirstname(EMPTY)
-        .setLastname(name)
-        .setCanLogout(false);
+    return new UserDTO().setUsername(name).setFirstname(EMPTY).setLastname(name);
   }
 
   @Override

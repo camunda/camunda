@@ -17,7 +17,6 @@ public class UserDTO {
   private String username;
   private String firstname;
   private String lastname;
-  private boolean canLogout;
 
   public String getUsername() {
     return username;
@@ -46,22 +45,12 @@ public class UserDTO {
     return this;
   }
 
-  public boolean getCanLogout() {
-    return canLogout;
-  }
-
-  public UserDTO setCanLogout(boolean canLogout) {
-    this.canLogout = canLogout;
-    return this;
-  }
-
   // Used by web application context
   public static UserDTO createFrom(User userDetails) {
     return new UserDTO()
         .setUsername(userDetails.getUsername())
         .setFirstname(userDetails.getFirstname())
-        .setLastname(userDetails.getLastname())
-        .setCanLogout(userDetails.isCanLogout());
+        .setLastname(userDetails.getLastname());
   }
 
   public static List<UserDTO> createFrom(List<UserEntity> userEntities) {
@@ -77,7 +66,7 @@ public class UserDTO {
 
   @Override
   public int hashCode() {
-    return Objects.hash(canLogout, firstname, lastname, username);
+    return Objects.hash(firstname, lastname, username);
   }
 
   @Override
@@ -92,8 +81,7 @@ public class UserDTO {
       return false;
     }
     final UserDTO other = (UserDTO) obj;
-    return canLogout == other.canLogout
-        && Objects.equals(firstname, other.firstname)
+    return Objects.equals(firstname, other.firstname)
         && Objects.equals(lastname, other.lastname)
         && Objects.equals(username, other.username);
   }

@@ -35,7 +35,6 @@ type User {
     username: ID!
     firstname: String
     lastname: String
-    canLogout: Boolean
 }
 
 type Query {

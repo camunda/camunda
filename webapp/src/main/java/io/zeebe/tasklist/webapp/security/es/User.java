@@ -12,7 +12,6 @@ public class User extends org.springframework.security.core.userdetails.User {
 
   private String firstname;
   private String lastname;
-  private boolean canLogout = true;
 
   public User(
       String username, String password, Collection<? extends GrantedAuthority> authorities) {
@@ -34,15 +33,6 @@ public class User extends org.springframework.security.core.userdetails.User {
 
   public User setLastname(String lastname) {
     this.lastname = lastname;
-    return this;
-  }
-
-  public boolean isCanLogout() {
-    return canLogout;
-  }
-
-  public User setCanLogout(boolean canLogout) {
-    this.canLogout = canLogout;
     return this;
   }
 }
