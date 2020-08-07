@@ -125,7 +125,7 @@ public class RollingUpdateTest {
   }
 
   @Test
-  public void shouldReplicateSnapshotAcrossVersions() throws InterruptedException {
+  public void shouldReplicateSnapshotAcrossVersions() {
     // given
     Startables.deepStart(containers).join();
 
@@ -156,6 +156,7 @@ public class RollingUpdateTest {
           .pollInterval(Duration.ofMillis(100))
           .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, brokerId));
 
+      // need to create enough records to allow for the creation of a snapshot
       for (int i = 0; i < 100; i++) {
         Awaitility.await("process instance creation")
             .atMost(Duration.ofSeconds(5))
@@ -180,6 +181,7 @@ public class RollingUpdateTest {
           .untilAsserted(() -> assertTopologyContainsUpgradedBroker(client, brokerId));
     }
 
+    // then
     assertBrokerHasAtLeastOneSnapshot(1);
   }
 
