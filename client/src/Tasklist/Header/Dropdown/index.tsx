@@ -5,7 +5,7 @@
  */
 
 import React, {useState, useEffect, useRef} from 'react';
-import {useQuery} from '@apollo/react-hooks';
+import {useQuery} from '@apollo/client';
 
 import {ReactComponent as Icon} from 'modules/icons/down.svg';
 import {Option} from './Option';

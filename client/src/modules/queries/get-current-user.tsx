@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {gql} from 'apollo-boost';
+import {gql} from '@apollo/client';
 
 import {User} from 'modules/types';
 import {currentUser} from 'modules/mock-schema/constants/currentUser';

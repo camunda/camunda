@@ -27,9 +27,22 @@ const claimedTask: Task = {
 
 const completedTask: Task = {
   ...claimedTask,
-
   completionTime: new Date('2020').toISOString(),
   taskState: TaskStates.Completed,
+  variables: [
+    {
+      name: 'myVar',
+      value: '0001',
+    },
+    {
+      name: 'isCool',
+      value: 'yes',
+    },
+    {
+      name: 'newVariableName',
+      value: 'newVariableValue',
+    },
+  ],
 };
 
 export {unclaimedTask, completedTask, claimedTask};

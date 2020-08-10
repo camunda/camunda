@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {useParams} from 'react-router-dom';
-import {useQuery, useMutation} from '@apollo/react-hooks';
+import {useQuery, useMutation} from '@apollo/client';
 import {Form} from 'react-final-form';
 import {get, intersection} from 'lodash';
 import arrayMutators from 'final-form-arrays';

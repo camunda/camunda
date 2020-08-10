@@ -19,7 +19,7 @@ import {
   mockGetCompleted,
 } from 'modules/queries/get-tasks';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
-import {MockedResponse} from '@apollo/react-testing';
+import {MockedResponse} from '@apollo/client/testing';
 import {FilterValues} from 'modules/constants/filterValues';
 
 const getWrapper = (mock: MockedResponse[], initialEntries = ['/']) => {

@@ -10,7 +10,7 @@ import * as React from 'react';
 import {Route, Router} from 'react-router-dom';
 import {createMemoryHistory, History} from 'history';
 import {render, screen, fireEvent, waitFor} from '@testing-library/react';
-import {MockedResponse} from '@apollo/react-testing';
+import {MockedResponse} from '@apollo/client/testing';
 
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {

@@ -5,7 +5,7 @@
  */
 
 import React, {useEffect} from 'react';
-import {useQuery} from '@apollo/react-hooks';
+import {useQuery} from '@apollo/client';
 import {useParams} from 'react-router-dom';
 import {Field, useForm} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';

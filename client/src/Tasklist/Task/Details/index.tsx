@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {useQuery, useMutation} from '@apollo/react-hooks';
+import {useQuery, useMutation} from '@apollo/client';
 import {useParams} from 'react-router-dom';
 import * as React from 'react';
 

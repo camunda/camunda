@@ -5,7 +5,7 @@
  */
 
 import * as React from 'react';
-import {MockedResponse} from '@apollo/react-testing';
+import {MockedResponse} from '@apollo/client/testing';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {Route, MemoryRouter} from 'react-router-dom';
 import {Form} from 'react-final-form';

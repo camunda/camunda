@@ -6,7 +6,7 @@
 
 import * as React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-import {MockedResponse} from '@apollo/react-testing';
+import {MockedResponse} from '@apollo/client/testing';
 
 import {Dropdown} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';

@@ -20,7 +20,7 @@ import {mockGetAllOpenTasks} from 'modules/queries/get-tasks';
 import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
-import {MockedResponse} from '@apollo/react-testing';
+import {MockedResponse} from '@apollo/client/testing';
 
 type GetWrapperProps = {
   id: string;

@@ -3,8 +3,7 @@
   "version": "0.24.0-SNAPSHOT",
   "private": true,
   "dependencies": {
-    "@apollo/react-hooks": "^3.1.5",
-    "@apollo/react-testing": "^3.1.4",
+    "@apollo/client": "^3.1.2",
     "@testing-library/jest-dom": "^5.11.2",
     "@testing-library/react": "^10.4.8",
     "@testing-library/user-event": "^12.1.0",
@@ -14,7 +13,6 @@
     "@types/react-dom": "^16.9.0",
     "@types/react-router-dom": "^5.1.5",
     "@types/styled-components": "^5.1.2",
-    "apollo-boost": "^0.4.9",
     "date-fns": "^2.15.0",
     "eslint-config-prettier": "^6.11.0",
     "eslint-plugin-prettier": "^3.1.4",

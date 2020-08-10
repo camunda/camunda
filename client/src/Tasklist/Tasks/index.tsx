@@ -5,7 +5,7 @@
  */
 
 import * as React from 'react';
-import {useQuery} from '@apollo/react-hooks';
+import {useQuery} from '@apollo/client';
 import {useLocation} from 'react-router-dom';
 
 import {EmptyMessage, UL} from './styled';
