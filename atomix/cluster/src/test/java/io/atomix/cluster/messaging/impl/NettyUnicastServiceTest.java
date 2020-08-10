@@ -24,8 +24,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.utils.net.Address;
-import java.io.IOException;
-import java.net.ServerSocket;
+import io.zeebe.test.util.socket.SocketUtil;
 import net.jodah.concurrentunit.ConcurrentTestCase;
 import org.junit.After;
 import org.junit.Before;
@@ -68,8 +67,8 @@ public class NettyUnicastServiceTest extends ConcurrentTestCase {
 
   @Before
   public void setUp() throws Exception {
-    address1 = Address.from("127.0.0.1", findAvailablePort(5001));
-    address2 = Address.from("127.0.0.1", findAvailablePort(5002));
+    address1 = Address.from("127.0.0.1", SocketUtil.getNextAddress().getPort());
+    address2 = Address.from("127.0.0.1", SocketUtil.getNextAddress().getPort());
 
     service1 = new NettyUnicastService(address1, new MessagingConfig());
     service1.start().join();
@@ -94,18 +93,6 @@ public class NettyUnicastServiceTest extends ConcurrentTestCase {
       } catch (final Exception e) {
         LOGGER.warn("Failed stopping netty2", e);
       }
-    }
-  }
-
-  private static int findAvailablePort(final int defaultPort) {
-    try {
-      final ServerSocket socket = new ServerSocket(0);
-      socket.setReuseAddress(true);
-      final int port = socket.getLocalPort();
-      socket.close();
-      return port;
-    } catch (final IOException ex) {
-      return defaultPort;
     }
   }
 }

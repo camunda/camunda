@@ -30,9 +30,8 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.utils.net.Address;
-import java.io.IOException;
+import io.zeebe.test.util.socket.SocketUtil;
 import java.net.ConnectException;
-import java.net.ServerSocket;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.UUID;
@@ -73,38 +72,38 @@ public class NettyMessagingServiceTest {
 
   @Before
   public void setUp() throws Exception {
-    address1 = Address.from(findAvailablePort(5001));
+    address1 = Address.from(SocketUtil.getNextAddress().getPort());
     netty1 =
         (ManagedMessagingService)
             new NettyMessagingService("test", address1, new MessagingConfig()).start().join();
 
-    address2 = Address.from(findAvailablePort(5002));
+    address2 = Address.from(SocketUtil.getNextAddress().getPort());
     netty2 =
         (ManagedMessagingService)
             new NettyMessagingService("test", address2, new MessagingConfig()).start().join();
 
-    addressv11 = Address.from(findAvailablePort(5003));
+    addressv11 = Address.from(SocketUtil.getNextAddress().getPort());
     nettyv11 =
         (ManagedMessagingService)
             new NettyMessagingService("test", addressv11, new MessagingConfig(), ProtocolVersion.V1)
                 .start()
                 .join();
 
-    addressv12 = Address.from(findAvailablePort(5004));
+    addressv12 = Address.from(SocketUtil.getNextAddress().getPort());
     nettyv12 =
         (ManagedMessagingService)
             new NettyMessagingService("test", addressv12, new MessagingConfig(), ProtocolVersion.V1)
                 .start()
                 .join();
 
-    addressv21 = Address.from(findAvailablePort(5005));
+    addressv21 = Address.from(SocketUtil.getNextAddress().getPort());
     nettyv21 =
         (ManagedMessagingService)
             new NettyMessagingService("test", addressv21, new MessagingConfig(), ProtocolVersion.V2)
                 .start()
                 .join();
 
-    addressv22 = Address.from(findAvailablePort(5006));
+    addressv22 = Address.from(SocketUtil.getNextAddress().getPort());
     nettyv22 =
         (ManagedMessagingService)
             new NettyMessagingService("test", addressv22, new MessagingConfig(), ProtocolVersion.V2)
@@ -424,17 +423,5 @@ public class NettyMessagingServiceTest {
     nettyv22.registerHandler(subject, (address, bytes) -> CompletableFuture.completedFuture(bytes));
     response = nettyv12.sendAndReceive(addressv22, subject, payload).get(10, TimeUnit.SECONDS);
     assertArrayEquals(payload, response);
-  }
-
-  private static int findAvailablePort(final int defaultPort) {
-    try {
-      final ServerSocket socket = new ServerSocket(0);
-      socket.setReuseAddress(true);
-      final int port = socket.getLocalPort();
-      socket.close();
-      return port;
-    } catch (final IOException ex) {
-      return defaultPort;
-    }
   }
 }
