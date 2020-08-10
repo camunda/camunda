@@ -10,6 +10,9 @@ GITHUB_RELEASE=${PWD}/github-release
 
 ${GITHUB_RELEASE} release --user ${GITHUB_ORG} --repo ${GITHUB_REPO} --tag ${RELEASE_VERSION} --draft --name "Zeebe ${RELEASE_VERSION}" --description ""
 
+git tag clients/go/v${RELEASE_VERSION}
+git push origin clients/go/v${RELEASE_VERSION} 
+
 function upload {
   pushd ${1}
 
