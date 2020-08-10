@@ -18,6 +18,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstants.PROCESS_DEFINITION_XML_ENDPOINT_TEMPLATE;
+
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessDefinitionXmlFetcher extends RetryBackoffEngineEntityFetcher<ProcessDefinitionXmlEngineDto> {
@@ -52,7 +54,8 @@ public class ProcessDefinitionXmlFetcher extends RetryBackoffEngineEntityFetcher
   private List<ProcessDefinitionXmlEngineDto> performProcessDefinitionXmlRequest(String processDefinitionId) {
     ProcessDefinitionXmlEngineDto processDefinitionXmlEngineDto = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(configurationService.getProcessDefinitionXmlEndpoint(processDefinitionId))
+      .path(PROCESS_DEFINITION_XML_ENDPOINT_TEMPLATE)
+      .resolveTemplate("id", processDefinitionId)
       .request(MediaType.APPLICATION_JSON)
       .get(ProcessDefinitionXmlEngineDto.class);
     return Collections.singletonList(processDefinitionXmlEngineDto);

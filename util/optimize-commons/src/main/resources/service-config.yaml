@@ -127,23 +127,11 @@ engine-commons:
     #until a time out is triggered. A value of zero means to wait an
     # infinite amount of time.
     timeout: 0
-  procdef:
-    #The engine endpoint to the process definition.
-    resource: '/process-definition'
-    #The engine endpoint to the process definition xml.
-    xml: '/xml'
-  decision-definition:
-    resource: '/decision-definition'
-    xml: '/xml'
   read:
     # Maximum time a request to the engine should last,
     # before a timeout triggers. A value of zero means to wait an
     # infinite amount of time.
     timeout: 0
-  user:
-    validation:
-      #The engine endpoint for the user validation.
-      resource: '/identity/verify'
 
 import:
   data:

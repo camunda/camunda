@@ -18,6 +18,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstants.DECISION_DEFINITION_XML_ENDPOINT_TEMPLATE;
+
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class DecisionDefinitionXmlFetcher extends RetryBackoffEngineEntityFetcher<DecisionDefinitionXmlEngineDto> {
@@ -51,7 +53,8 @@ public class DecisionDefinitionXmlFetcher extends RetryBackoffEngineEntityFetche
   private List<DecisionDefinitionXmlEngineDto> performGetDecisionDefinitionXmlRequest(final String decisionDefinitionId) {
     final DecisionDefinitionXmlEngineDto decisionDefinitionXmlEngineDto = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(configurationService.getDecisionDefinitionXmlEndpoint(decisionDefinitionId))
+      .path(DECISION_DEFINITION_XML_ENDPOINT_TEMPLATE)
+      .resolveTemplate("id", decisionDefinitionId)
       .request(MediaType.APPLICATION_JSON)
       .get(DecisionDefinitionXmlEngineDto.class);
     return Collections.singletonList(decisionDefinitionXmlEngineDto);

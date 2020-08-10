@@ -19,6 +19,8 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstants.USER_VALIDATION_ENDPOINT;
+
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -26,7 +28,7 @@ public class EngineAuthenticationProvider {
 
   public static final String INVALID_CREDENTIALS_ERROR_MESSAGE =
     "The provided credentials are invalid. Please check your username and password.";
-  public static final String CONNECTION_WAS_REFUSED_ERROR =
+  private static final String CONNECTION_WAS_REFUSED_ERROR =
     "Connection to engine was refused! Please check if the engine is still running.";
 
   private final ConfigurationService configurationService;
@@ -36,7 +38,7 @@ public class EngineAuthenticationProvider {
     try {
       final Response response = engineContext.getEngineClient()
         .target(configurationService.getEngineRestApiEndpointOfCustomEngine(engineContext.getEngineAlias()))
-        .path(configurationService.getUserValidationEndpoint())
+        .path(USER_VALIDATION_ENDPOINT)
         .request(MediaType.APPLICATION_JSON)
         .post(Entity.json(credentialsDto));
 

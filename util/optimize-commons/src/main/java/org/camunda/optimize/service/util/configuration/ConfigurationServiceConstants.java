@@ -77,12 +77,6 @@ public class ConfigurationServiceConstants {
 
   public static final String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
   public static final String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";
-  public static final String PROCESS_DEFINITION_ENDPOINT = "$.engine-commons.procdef.resource";
-  public static final String PROCESS_DEFINITION_XML_ENDPOINT = "$.engine-commons.procdef.xml";
-  public static final String USER_VALIDATION_ENDPOINT = "$.engine-commons.user.validation.resource";
-
-  public static final String DECISION_DEFINITION_ENDPOINT = "$.engine-commons.decision-definition.resource";
-  public static final String DECISION_DEFINITION_XML_ENDPOINT = "$.engine-commons.decision-definition.xml";
 
   public static final String INITIAL_BACKOFF_INTERVAL = "$.import.handler.backoff.initial";
   public static final String MAXIMUM_BACK_OFF = "$.import.handler.backoff.max";
