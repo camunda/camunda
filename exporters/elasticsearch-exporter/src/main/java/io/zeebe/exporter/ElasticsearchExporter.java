@@ -22,6 +22,9 @@ public class ElasticsearchExporter implements Exporter {
 
   public static final String ZEEBE_RECORD_TEMPLATE_JSON = "/zeebe-record-template.json";
 
+  // by default, the bulk request may not be bigger than 100MB
+  private static final int RECOMMENDED_MAX_BULK_MEMORY_LIMIT = 100 * 1024 * 1024;
+
   private Logger log;
   private Controller controller;
 
@@ -91,6 +94,12 @@ public class ElasticsearchExporter implements Exporter {
           String.format(
               "Elasticsearch prefix must not contain underscore. Current value: %s",
               configuration.index.prefix));
+    }
+
+    if (configuration.bulk.memoryLimit > RECOMMENDED_MAX_BULK_MEMORY_LIMIT) {
+      log.warn(
+          "The bulk memory limit is set to more than {} bytes. It is recommended to set the limit between 5 to 15 MB.",
+          RECOMMENDED_MAX_BULK_MEMORY_LIMIT);
     }
   }
 

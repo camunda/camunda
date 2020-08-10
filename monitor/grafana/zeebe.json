@@ -77,7 +77,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1596196141101,
+  "iteration": 1597737695016,
   "links": [],
   "panels": [
     {
@@ -7187,10 +7187,10 @@
           "dataFormat": "tsbuckets",
           "datasource": "$DS_PROMETHEUS",
           "gridPos": {
-            "h": 9,
-            "w": 12,
+            "h": 10,
+            "w": 8,
             "x": 0,
-            "y": 39
+            "y": 51
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7200,7 +7200,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7251,10 +7250,10 @@
           "dataFormat": "tsbuckets",
           "datasource": "$DS_PROMETHEUS",
           "gridPos": {
-            "h": 9,
-            "w": 12,
-            "x": 12,
-            "y": 39
+            "h": 10,
+            "w": 8,
+            "x": 8,
+            "y": 51
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -7264,7 +7263,6 @@
             "show": false
           },
           "links": [],
-          "options": {},
           "reverseYBuckets": false,
           "targets": [
             {
@@ -7306,6 +7304,101 @@
           "dashLength": 10,
           "dashes": false,
           "datasource": "$DS_PROMETHEUS",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 10,
+            "w": 8,
+            "x": 16,
+            "y": 51
+          },
+          "hiddenSeries": false,
+          "id": 185,
+          "legend": {
+            "alignAsTable": false,
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "rightSide": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "zeebe_elasticsearch_exporter_bulk_memory_size{namespace=~\"$namespace\",pod=~\"$pod\",partition=~\"$partition\"}",
+              "format": "time_series",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{pod}} p{{partition}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Elasticsearch Exporter (Bulk Memory Size)",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:359",
+              "format": "bytes",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:360",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
           "editable": true,
           "error": false,
           "fill": 1,
@@ -7315,9 +7408,10 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 48
+            "y": 61
           },
           "height": "400",
+          "hiddenSeries": false,
           "id": 52,
           "legend": {
             "alignAsTable": true,
@@ -7843,5 +7937,5 @@
   "variables": {
     "list": []
   },
-  "version": 9
+  "version": 11
 }

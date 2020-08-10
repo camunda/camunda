@@ -462,6 +462,7 @@
         #   bulk:
         #     delay: 5
         #     size: 1000
+        #     memoryLimit: 10485760
         #
         #   authentication:
         #     username: elastic
