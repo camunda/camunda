@@ -38,24 +38,27 @@ it should be flushed (regardless of size) can be controlled by configuration.
 For example:
 
 ```yaml
-...  
+...
   exporters:
     elasticsearch:
       args:
         delay: 5
         size: 1000
+        memoryLimit: 10485760
 ```
 
 With the above example, the exporter would aggregate records and flush them to Elasticsearch
 either:
   1. when it has aggregated 1000 records
-  2. 5 seconds have elapsed since the last flush (regardless of how many records were aggregated)
+  2. when the batch memory size exceeds 10 MB
+  3. 5 seconds have elapsed since the last flush (regardless of how many records were aggregated)
 
 More specifically, each option configures the following:
 
 * `delay` (`integer`): a specific delay, in seconds, before we force flush the current batch. This ensures
 that even when we have low traffic of records we still export every once in a while.
-* `size` (`integer`): how big a batch should be before we export.
+* `size` (`integer`): how many records a batch should have before we export.
+* `memoryLimit` (`integer`): the size of the bulk, in bytes, before we export.
 
 ### Index
 
@@ -74,11 +77,11 @@ For example:
         index:
           prefix: zeebe-record
           createTemplate: true
-          
+
           command: false
           event: true
           rejection: false
-          
+
           deployment: false
           incident: true
           job: false
@@ -118,28 +121,29 @@ Here is a complete, default configuration example:
       #
       # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_..."
       #
-      
+
       className: io.zeebe.exporter.ElasticsearchExporter
-     
+
       args:
         url: http://localhost:9200
-     
+
         bulk:
           delay: 5
           size: 1000
-     
+          memoryLimit: 10485760
+
         authentication:
           username: elastic
           password: changeme
-     
+
         index:
           prefix: zeebe-record
           createTemplate: true
-     
+
           command: false
           event: true
           rejection: false
-     
+
           deployment: true
           error: true
           incident: true
@@ -152,7 +156,7 @@ Here is a complete, default configuration example:
           workflowInstance: true
           workflowInstanceCreation: false
           workflowInstanceSubscription: false
-     
+
           ignoreVariablesAbove: 32677
 
 ```
