@@ -1,47 +1,27 @@
 .DecisionTable {
-  .view-drd,
-  .powered-by-logo {
-    display: none;
-  }
+  .dmn-decision-table-container .tjs-container {
+    grid-template-columns: unset;
 
-  .hit.header {
-    vertical-align: bottom;
-  }
+    table {
+      width: 100%;
 
-  .CustomCell,
-  .hit.header,
-  tfoot td {
-    border: 1px solid lightgray;
-  }
+      thead {
+        .annotation {
+          width: 192px !important;
+        }
 
-  .dmn-decision-table-container table thead {
-    border-bottom: 0;
-
-    tr:last-child th,
-    .hit-policy,
-    .annotation {
-      border-bottom: 3px double #444;
+        tr:last-child th {
+          border-bottom: 0;
+        }
+      }
     }
   }
 }
 
-.dark {
-  .dmn-decision-table-container {
-    color: inherit;
-
-    .tjs-table tbody tr:nth-child(2n) {
-      background-color: #444;
-    }
-
-    .decision-table-properties {
-      color: inherit;
-      background-color: inherit;
-    }
-
-    .CustomCell,
-    .hit.header,
-    tfoot td {
-      border: inherit;
-    }
+.dark .DecisionTable {
+  .CustomCell,
+  .hit.header,
+  tfoot td {
+    border: inherit;
   }
 }

@@ -7,8 +7,8 @@ package org.camunda.optimize.service.es.report;
 
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.service.es.reader.ReportReader;
+import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -16,22 +16,16 @@ import java.util.Optional;
 @Component
 public class PlainReportEvaluationHandler extends ReportEvaluationHandler {
 
-
-  public PlainReportEvaluationHandler(ReportReader reportReader, SingleReportEvaluator singleReportEvaluator,
-                                      CombinedReportEvaluator combinedReportEvaluator) {
-    super(reportReader, singleReportEvaluator, combinedReportEvaluator);
-  }
-
-  public AuthorizedReportEvaluationResult evaluateSavedReport(String reportId) {
-    return this.evaluateSavedReport(null, reportId);
-  }
-
-  public AuthorizedReportEvaluationResult evaluateReport(ReportDefinitionDto reportDefinition) {
-    return this.evaluateReport(null, reportDefinition);
+  public PlainReportEvaluationHandler(ReportReader reportReader,
+                                      SingleReportEvaluator singleReportEvaluator,
+                                      CombinedReportEvaluator combinedReportEvaluator,
+                                      ProcessVariableService processVariableService) {
+    super(reportReader, singleReportEvaluator, combinedReportEvaluator, processVariableService);
   }
 
   @Override
-  protected Optional<RoleType> getAuthorizedRole(String userId, ReportDefinitionDto report) {
+  protected Optional<RoleType> getAuthorizedRole(final String userId,
+                                                 final ReportDefinitionDto report) {
     return Optional.of(RoleType.VIEWER);
   }
 }

@@ -11,6 +11,8 @@ import {Button} from 'components';
 
 import Popover from './Popover';
 
+jest.useFakeTimers();
+
 it('should include a button to toggle the popover', () => {
   const node = shallow(<Popover title="Foobar" />);
 
@@ -21,6 +23,12 @@ it('should render the provided title in the button', () => {
   const node = shallow(<Popover title="Foobar" />);
 
   expect(node).toIncludeText('Foobar');
+});
+
+it('should specify the open button as icon button if it has an icon, but no title', () => {
+  const node = shallow(<Popover icon="open" />);
+
+  expect(node.find('.Popover__button').prop('icon')).toBe(true);
 });
 
 it('should do not display child content initially', () => {
@@ -63,7 +71,10 @@ it('should close the popover when clicking the button again', () => {
   const node = shallow(<Popover title="a">Child content</Popover>);
 
   node.find(Button).simulate('click', {preventDefault: jest.fn()});
+  jest.runAllTimers();
+
   node.find(Button).simulate('click', {preventDefault: jest.fn()});
+  jest.runAllTimers();
 
   expect(node).not.toIncludeText('Child content');
 });
@@ -76,9 +87,21 @@ it('should not close the popover when clicking inside the popover', () => {
   );
 
   node.setState({open: true});
-  node.find('p').simulate('click');
+  node.find('.Popover__dialog').simulate('MouseDown');
+  node.instance().close({});
+  jest.runAllTimers();
 
   expect(node).toIncludeText('Child content');
+});
+
+it('should close popover when pressing escape', async () => {
+  const node = shallow(<Popover title="a">Child content</Popover>);
+
+  node.setState({open: true});
+  node.instance().popoverRootRef = {contains: () => true};
+  node.find('.Popover').simulate('keyDown', {key: 'Escape', stopPropagation: jest.fn()});
+
+  expect(node).not.toIncludeText('Child content');
 });
 
 it('should display tooltip on button', () => {
@@ -116,4 +139,26 @@ it('should limit the height and show scrollbar when there is not space', () => {
   node.update();
   expect(node.state().dialogStyles.height).toBe('80px');
   expect(node.find('.Popover__dialog')).toHaveClassName('scrollable');
+});
+
+it('should not crash on pages without a footer', () => {
+  const node = shallow(
+    <Popover title="a">
+      <p>Child content</p>
+    </Popover>
+  );
+
+  node.instance().buttonRef = {
+    getBoundingClientRect: () => ({left: 0, bottom: 0}),
+  };
+
+  node.instance().popoverDialogRef = {
+    clientWidth: 50,
+    clientHeight: 200,
+  };
+
+  node.instance().calculateDialogStyle();
+  node.setState({open: true});
+  node.update();
+  expect(node.find('.Popover__dialog')).toExist();
 });

@@ -9,8 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
 import lombok.SneakyThrows;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -24,6 +22,7 @@ import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,6 +41,7 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -49,10 +49,6 @@ import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.not;
 
 public class UserTaskMediatorPermutationsImportIT extends AbstractIT {
-
-  private static final String START_EVENT = "startEvent";
-  private static final String END_EVENT = "endEvent";
-  private static final String USER_TASK_1 = "userTask1";
 
   @RegisterExtension
   @Order(4)
@@ -75,7 +71,8 @@ public class UserTaskMediatorPermutationsImportIT extends AbstractIT {
   @MethodSource("getParameters")
   public void isFullyImported(List<String> mediatorOrder) throws IOException {
     // given
-    final ProcessInstanceEngineDto processInstanceDto = deployUserTaskProcess();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.deployAndStartProcess(
+      BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.finishAllRunningUserTasks();
     final long idleDuration = 500;
     changeUserTaskIdleDuration(processInstanceDto, idleDuration);
@@ -139,15 +136,6 @@ public class UserTaskMediatorPermutationsImportIT extends AbstractIT {
           throw new OptimizeIntegrationTestException(e);
         }
       });
-  }
-
-  private ProcessInstanceEngineDto deployUserTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK_1)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
   }
 
   private static Stream<? extends Object> getParameters() {

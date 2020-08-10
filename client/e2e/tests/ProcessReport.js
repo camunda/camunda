@@ -10,8 +10,32 @@ import * as u from '../utils';
 import {addAnnotation, clearAllAnnotations} from '../browserMagic';
 
 import * as e from './ProcessReport.elements.js';
+import * as Homepage from './Homepage.elements.js';
 
 fixture('Process Report').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
+
+test('create a report from a template', async (t) => {
+  await t.resizeWindow(1300, 750);
+  await t.click(Homepage.createNewMenu);
+  await t.click(Homepage.newReportOption);
+  await t.click(Homepage.submenuOption('Process Report'));
+
+  await t.typeText(e.templateModalNameField, 'Report from Template', {replace: true});
+
+  await t.click(e.templateModalProcessField);
+  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
+
+  await t.click(e.templateOption('Heatmap: Flownode count'));
+
+  await t.takeScreenshot('process/single-report/reportTemplate.png', {fullPage: true});
+  await t.maximizeWindow();
+
+  await t.click(e.modalConfirmbutton);
+
+  await t.expect(e.nameEditField.value).eql('Report from Template');
+  await t.expect(e.groupbyDropdownButton.textContent).contains('Flow Nodes');
+  await t.expect(e.reportDiagram.visible).ok();
+});
 
 test('create and name a report', async (t) => {
   await u.createNewReport(t);
@@ -297,6 +321,21 @@ test('select process instance count grouped by variable', async (t) => {
   await t.expect(e.reportTable.textContent).contains('Variable: amount');
 });
 
+test('variable report', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+
+  await u.selectView(t, 'Variable', 'amount');
+
+  await t.expect(e.reportNumber.visible).ok();
+
+  await t.click(e.configurationButton);
+  await t.click(e.limitPrecisionSwitch);
+  await t.typeText(e.limitPrecisionInput, '2', {replace: true});
+
+  await t.expect(e.reportNumber.visible).ok();
+});
+
 test('should only enable valid combinations for Flow Node Count', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
@@ -518,11 +557,7 @@ test('heatmap target values', async (t) => {
 
   await t.click(e.targetValueButton);
   await t.typeText(e.targetValueInput('Approve Invoice'), '1');
-  await t.click(e.targetValueUnitSelect('Approve Invoice'));
-  await t.click(e.dropdownOption('minutes'));
   await t.typeText(e.targetValueInput('Prepare Bank Transfer'), '5');
-  await t.click(e.targetValueUnitSelect('Prepare Bank Transfer'));
-  await t.click(e.dropdownOption('minutes'));
   await t.typeText(e.targetValueInput('Review Invoice'), '1');
 
   await t.takeElementScreenshot(e.modalContainer, 'process/single-report/targetvalue-2.png');
@@ -531,7 +566,7 @@ test('heatmap target values', async (t) => {
 
   await t.hover(e.flowNode('approveInvoice'));
 
-  await t.expect(e.tooltip.textContent).contains('Target\u00A0duration:\u00A01min');
+  await t.expect(e.tooltip.textContent).contains('Target\u00A0duration:\u00A01h');
 
   await addAnnotation(e.targetValueButton, 'Toggle Target Value Mode');
   await addAnnotation(e.tooltip, 'Target Value Tooltip', {x: -50, y: 0});
@@ -707,4 +742,18 @@ test('deleting', async (t) => {
   await t.click(e.modalConfirmbutton);
 
   await t.expect(e.report.exists).notOk();
+});
+
+test('show raw data and process model', async (t) => {
+  await u.createNewReport(t);
+  await u.save(t);
+
+  await t.click(e.detailsPopoverButton);
+  await t.click(e.modalButton('View Raw data'));
+  await t.expect(e.rawDataTable.visible).ok();
+  await t.click(e.closeModalButton);
+
+  await t.click(e.detailsPopoverButton);
+  await t.click(e.modalButton('View Process Model'));
+  await t.expect(e.modalDiagram.visible).ok();
 });

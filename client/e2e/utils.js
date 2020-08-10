@@ -44,7 +44,11 @@ export function getUser(t, userHandle) {
 export async function createNewReport(t) {
   await t.click('.CreateNewButton');
   await t.click(Selector('.Submenu').withText('New Report'));
-  await t.click(Selector('a').withText('Process Report'));
+  await t.click(Selector('.Submenu .DropdownOption').withText('Process Report'));
+
+  await t.click(Selector('.Modal .Typeahead'));
+  await t.click(Selector('.Modal .DropdownOption'));
+  await t.click(Selector('.Modal .primary.confirm.Button'));
 }
 
 export async function selectDefinition(t, name, version = 'Specific version') {
@@ -115,5 +119,6 @@ export async function addReportToDashboard(t, name) {
     .click('.AddButton')
     .click('.ReportModal .optionsButton')
     .click(Selector('.ReportModal .DropdownOption').withText(name))
-    .click(Selector('.ReportModal button').withText('Add Report'));
+    .click(Selector('.ReportModal button').withText('Add Report'))
+    .click('.DashboardRenderer');
 }

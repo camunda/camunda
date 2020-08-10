@@ -24,9 +24,9 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
@@ -59,7 +59,7 @@ public class AlertReader {
       throw new OptimizeRuntimeException("Was not able to retrieve stored alerts!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       AlertDefinitionDto.class,
       objectMapper,
@@ -68,7 +68,7 @@ public class AlertReader {
     );
   }
 
-  public AlertDefinitionDto getAlert(String alertId) {
+  public Optional<AlertDefinitionDto> getAlert(String alertId) {
     log.debug("Fetching alert with id [{}]", alertId);
     GetRequest getRequest = new GetRequest(ALERT_INDEX_NAME).id(alertId);
 
@@ -81,17 +81,17 @@ public class AlertReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (getResponse.isExists()) {
-      String responseAsString = getResponse.getSourceAsString();
-      try {
-        return objectMapper.readValue(responseAsString, AlertDefinitionDto.class);
-      } catch (IOException e) {
-        logError(alertId);
-        throw new OptimizeRuntimeException("Can't fetch alert");
-      }
-    } else {
+    if (!getResponse.isExists()) {
+      return Optional.empty();
+    }
+
+    String responseAsString = getResponse.getSourceAsString();
+
+    try {
+      return Optional.ofNullable(objectMapper.readValue(responseAsString, AlertDefinitionDto.class));
+    } catch (IOException e) {
       logError(alertId);
-      throw new NotFoundException("Alert does not exist!");
+      throw new OptimizeRuntimeException("Can't fetch alert");
     }
   }
 
@@ -113,7 +113,7 @@ public class AlertReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
   }
 
   public List<AlertDefinitionDto> findFirstAlertsForReports(List<String> reportIds) {
@@ -134,7 +134,7 @@ public class AlertReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
   }
 
   private void logError(String alertId) {

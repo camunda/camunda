@@ -64,31 +64,26 @@ export default class DurationHeatmapModal extends React.Component {
     return values;
   };
 
-  constructValues = () => {
+  constructValues = async () => {
     const {data} = this.props.report;
-    return new Promise((resolve) => {
-      const viewer = new Viewer();
-      viewer.importXML(data.configuration.xml, () => {
-        const predefinedValues = this.getConfig().values || {};
-        const values = {};
-        const nodeNames = {};
+    const viewer = new Viewer();
+    await viewer.importXML(data.configuration.xml);
+    const predefinedValues = this.getConfig().values || {};
+    const values = {};
+    const nodeNames = {};
 
-        const set = new Set();
-        viewer
-          .get('elementRegistry')
-          .filter((element) => element.businessObject.$instanceOf('bpmn:' + this.getNodeType()))
-          .map((element) => element.businessObject)
-          .forEach((element) => set.add(element));
-        set.forEach((element) => {
-          values[element.id] = this.copyObjectIfExistsAndStringifyValue(
-            predefinedValues[element.id]
-          );
-          nodeNames[element.id] = element.name || element.id;
-        });
-
-        resolve({values, nodeNames});
-      });
+    const set = new Set();
+    viewer
+      .get('elementRegistry')
+      .filter((element) => element.businessObject.$instanceOf('bpmn:' + this.getNodeType()))
+      .map((element) => element.businessObject)
+      .forEach((element) => set.add(element));
+    set.forEach((element) => {
+      values[element.id] = this.copyObjectIfExistsAndStringifyValue(predefinedValues[element.id]);
+      nodeNames[element.id] = element.name || element.id;
     });
+
+    return {values, nodeNames};
   };
 
   copyObjectIfExistsAndStringifyValue = (obj) => {
@@ -280,6 +275,15 @@ export default class DurationHeatmapModal extends React.Component {
               body={this.constructTableBody()}
               foot={[]}
               disablePagination
+              onScroll={() => {
+                // close unit selection dropdown when table is scrolled
+                const openDropdown = document.querySelector(
+                  '.DurationHeatmapModal .Select.is-open'
+                );
+                if (openDropdown) {
+                  openDropdown.click();
+                }
+              }}
             />
           )}
           {!this.validChanges() && !this.state.loading && <Message error>{errorMessage}</Message>}

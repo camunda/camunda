@@ -8,9 +8,8 @@ export function isPositiveNumber(value) {
   return isFloatNumber(value) && +value > 0;
 }
 
-// match float number: https://stackoverflow.com/a/10256077
 export function isFloatNumber(value) {
-  return /^[+-]?\d+\.?\d*$/.test(value);
+  return !isNaN(value - parseFloat(value));
 }
 
 export function isNonNegativeNumber(value) {

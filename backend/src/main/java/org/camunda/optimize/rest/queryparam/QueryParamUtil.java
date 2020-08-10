@@ -5,6 +5,10 @@
  */
 package org.camunda.optimize.rest.queryparam;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class QueryParamUtil {
 
   public static <T> T normalizeNullStringValue(T nullableIn) {

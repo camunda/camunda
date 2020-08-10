@@ -92,8 +92,10 @@ public class DecisionVariableReader {
         decisionDefinitionVersions,
         tenantIds
       );
-      return decisionDefinition.orElseThrow(() -> new OptimizeRuntimeException(
-        "Could not extract output variables. Requested decision definition not found!")).getOutputVariableNames();
+      return decisionDefinition.orElseThrow(
+        () -> new OptimizeRuntimeException(
+          "Could not extract output variables. Requested decision definition not found!"))
+        .getOutputVariableNames();
     }
   }
 
@@ -215,7 +217,7 @@ public class DecisionVariableReader {
           */
         ? wildcardQuery(getValueSearchField(variablePath, VARIABLE_VALUE_LOWERCASE), buildWildcardQuery(lowerCaseValue))
           /*
-            using Elasticsearch nGrams to filter for strings < 10 chars,
+            using Elasticsearch ngrams to filter for strings < 10 chars,
             because it's fast but increasing the number of chars makes the index bigger
           */
         : termQuery(getValueSearchField(variablePath, VARIABLE_VALUE_NGRAM), lowerCaseValue);

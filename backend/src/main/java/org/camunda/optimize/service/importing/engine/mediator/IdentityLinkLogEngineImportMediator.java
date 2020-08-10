@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricIdentityLinkLogDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.IdentityLinkLogInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.IdentityLinkLogImportIndexHandler;
@@ -31,19 +30,17 @@ public class IdentityLinkLogEngineImportMediator
                                              final IdentityLinkLogInstanceFetcher engineEntityFetcher,
                                              final IdentityLinkLogImportService importService,
                                              final ConfigurationService configurationService,
-                                             final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                              final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.engineEntityFetcher = engineEntityFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
   }
 
   @Override
-  protected List<HistoricIdentityLinkLogDto> getEntitiesLastTimestamp() {
-    return engineEntityFetcher.fetchIdentityLinkLogsForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+  protected OffsetDateTime getTimestamp(final HistoricIdentityLinkLogDto historicIdentityLinkLogDto) {
+    return historicIdentityLinkLogDto.getTime();
   }
 
   @Override
@@ -52,12 +49,12 @@ public class IdentityLinkLogEngineImportMediator
   }
 
   @Override
-  protected int getMaxPageSize() {
-    return configurationService.getEngineImportIdentityLinkLogsMaxPageSize();
+  protected List<HistoricIdentityLinkLogDto> getEntitiesLastTimestamp() {
+    return engineEntityFetcher.fetchIdentityLinkLogsForTimestamp(importIndexHandler.getTimestampOfLastEntity());
   }
 
   @Override
-  protected OffsetDateTime getTimestamp(final HistoricIdentityLinkLogDto historicIdentityLinkLogDto) {
-    return historicIdentityLinkLogDto.getTime();
+  protected int getMaxPageSize() {
+    return configurationService.getEngineImportIdentityLinkLogsMaxPageSize();
   }
 }

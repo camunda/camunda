@@ -6,8 +6,6 @@
 package org.camunda.optimize.service.importing.user_task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -22,12 +20,9 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
-public abstract class AbstractUserTaskImportIT extends AbstractIT {
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 
-  protected static final String START_EVENT = "startEvent";
-  protected static final String END_EVENT = "endEvent";
-  protected static final String USER_TASK_1 = "userTask1";
-  protected static final String USER_TASK_2 = "userTask2";
+public abstract class AbstractUserTaskImportIT extends AbstractIT {
 
   protected ObjectMapper objectMapper;
 
@@ -78,23 +73,8 @@ public abstract class AbstractUserTaskImportIT extends AbstractIT {
       });
   }
 
-  protected ProcessInstanceEngineDto deployAndStartOneUserTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK_1)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
-  }
-
   protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK_1)
-      .userTask(USER_TASK_2)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(getDoubleUserTaskDiagram());
   }
 
 }

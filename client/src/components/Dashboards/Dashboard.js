@@ -6,8 +6,8 @@
 
 import React from 'react';
 import {Redirect} from 'react-router-dom';
-import moment from 'moment';
 
+import {format} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {loadEntity, updateEntity, createEntity, getCollection} from 'services';
 import {isSharingEnabled} from 'config';
@@ -32,6 +32,7 @@ export class Dashboard extends React.Component {
       name: null,
       lastModified: null,
       lastModifier: null,
+      owner: null,
       currentUserRole: null,
       loaded: false,
       redirect: '',
@@ -63,7 +64,8 @@ export class Dashboard extends React.Component {
       loaded: true,
       name: t('dashboard.new'),
       lastModified: getFormattedNowDate(),
-      lastModifier: user.id,
+      lastModifier: user.name,
+      owner: user.name,
       currentUserRole: 'editor',
       reports: [],
       availableFilters: [],
@@ -80,6 +82,7 @@ export class Dashboard extends React.Component {
           lastModifier,
           currentUserRole,
           lastModified,
+          owner,
           reports,
           availableFilters,
         } = response;
@@ -87,6 +90,7 @@ export class Dashboard extends React.Component {
         this.setState({
           lastModifier,
           lastModified,
+          owner,
           currentUserRole,
           loaded: true,
           name,
@@ -135,7 +139,7 @@ export class Dashboard extends React.Component {
       redirect: this.isNew() ? `../${id}/` : './',
       isAuthorizedToShare: await isAuthorizedToShareDashboard(id),
       lastModified: getFormattedNowDate(),
-      lastModifier: user.id,
+      lastModifier: user.name,
     });
   };
 
@@ -172,6 +176,7 @@ export class Dashboard extends React.Component {
       lastModified,
       currentUserRole,
       lastModifier,
+      owner,
       sharingEnabled,
       isAuthorizedToShare,
       reports,
@@ -194,6 +199,7 @@ export class Dashboard extends React.Component {
       name,
       lastModified,
       lastModifier,
+      owner,
       id: this.getId(),
     };
 
@@ -227,5 +233,5 @@ export class Dashboard extends React.Component {
 export default withErrorHandling(withUser(Dashboard));
 
 function getFormattedNowDate() {
-  return moment().format('Y-MM-DDTHH:mm:ss.SSSZZ');
+  return format(new Date(), "y-MM-dd'T'HH:mm:ss.SSSXX");
 }

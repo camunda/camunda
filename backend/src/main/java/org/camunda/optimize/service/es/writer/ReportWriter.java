@@ -130,7 +130,7 @@ public class ReportWriter {
     final String id = IdGenerator.getNextId();
     final SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
     reportDefinitionDto.setId(id);
-    final OffsetDateTime now = OffsetDateTime.now();
+    final OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     reportDefinitionDto.setCreated(now);
     reportDefinitionDto.setLastModified(now);
     reportDefinitionDto.setOwner(userId);
@@ -286,6 +286,7 @@ public class ReportWriter {
       idsQuery().addIds(reportId),
       deletedItemName,
       deletedItemIdentifier,
+      true,
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SINGLE_DECISION_REPORT_INDEX_NAME
     );
@@ -363,6 +364,7 @@ public class ReportWriter {
       QueryBuilders.termQuery(COLLECTION_ID, collectionId),
       deletedItemName,
       deletedItemIdentifier,
+      true,
       COMBINED_REPORT_INDEX_NAME,
       SINGLE_PROCESS_REPORT_INDEX_NAME,
       SINGLE_DECISION_REPORT_INDEX_NAME

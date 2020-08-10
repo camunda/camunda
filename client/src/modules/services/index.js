@@ -8,7 +8,6 @@ import * as formattersImport from './formatters';
 
 export {
   getFlowNodeNames,
-  loadDefinitions,
   loadProcessDefinitionXml,
   loadDecisionDefinitionXml,
   checkDeleteConflict,

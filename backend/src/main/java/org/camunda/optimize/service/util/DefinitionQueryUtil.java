@@ -32,8 +32,7 @@ public class DefinitionQueryUtil {
                                                        List<String> definitionVersions,
                                                        List<String> tenantIds,
                                                        final DefinitionBasedType type,
-                                                       Function<String, String> getLatestVersionToKey
-  ) {
+                                                       Function<String, String> getLatestVersionToKey) {
     final BoolQueryBuilder query = boolQuery();
     query.must(createTenantIdQuery(type.getTenantIdFieldName(), tenantIds));
     query.must(termQuery(type.getDefinitionKeyFieldName(), definitionKey));

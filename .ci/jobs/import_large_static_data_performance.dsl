@@ -3,6 +3,11 @@ pipelineJob('import-performance-large-static-dataset') {
   displayName 'Import performance test on large static dataset'
   description 'Test Optimize Import performance against a large static dataset.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cps {
       script(readFileFromWorkspace('.ci/pipelines/import_large_static_data_performance.groovy'))

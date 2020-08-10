@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.security.collection;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.RoleType;
@@ -17,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.service.security.CaseInsensitiveAuthenticationMockUtil;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -199,14 +198,9 @@ public class EntitiesAccessAuthorizationIT extends AbstractCollectionRoleIT {
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(final String definitionKey) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      BpmnModels.getSingleServiceTaskProcess(definitionKey)
+    );
   }
 
   protected DecisionDefinitionEngineDto deploySimpleDecisionDefinition(final String definitionKey) {

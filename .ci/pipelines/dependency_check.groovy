@@ -1,8 +1,7 @@
 #!/usr/bin/env groovy
 
-boolean slaveDisconnected() {
-  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
-}
+// https://github.com/camunda/jenkins-global-shared-library
+@Library('camunda-ci') _
 
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
@@ -21,7 +20,7 @@ spec:
       effect: "NoSchedule"
   containers:
   - name: maven
-    image: maven:3.6.1-jdk-8-slim
+    image: maven:3.6.3-jdk-8-slim
     command: ["cat"]
     tty: true
     env:
@@ -154,7 +153,7 @@ pipeline {
         always {
             // Retrigger the build if the slave disconnected
             script {
-                if (slaveDisconnected()) {
+                if (agentDisconnected()) {
                     build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
                 }
             }

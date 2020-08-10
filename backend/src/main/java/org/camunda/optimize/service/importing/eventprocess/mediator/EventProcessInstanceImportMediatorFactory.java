@@ -5,19 +5,17 @@
  */
 package org.camunda.optimize.service.importing.eventprocess.mediator;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.BusinessKeyReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.reader.VariableUpdateInstanceReader;
-import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
-import org.camunda.optimize.service.es.writer.EventProcessInstanceWriter;
+import org.camunda.optimize.service.es.writer.EventProcessInstanceWriterFactory;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.eventprocess.handler.EventProcessInstanceImportSourceIndexHandler;
 import org.camunda.optimize.service.importing.eventprocess.service.CustomTracedEventProcessInstanceImportService;
@@ -37,29 +35,26 @@ public class EventProcessInstanceImportMediatorFactory {
   private final BeanFactory beanFactory;
 
   private final ConfigurationService configurationService;
-  private final ObjectMapper objectMapper;
   private final BackoffCalculator idleBackoffCalculator;
 
-  private final OptimizeElasticsearchClient elasticsearchClient;
+  private final EventProcessInstanceWriterFactory eventProcessInstanceWriterFactory;
   private final EventFetcherFactory eventFetcherFactory;
+
   private final ProcessDefinitionReader processDefinitionReader;
   private final VariableUpdateInstanceReader variableUpdateInstanceReader;
   private final BusinessKeyReader businessKeyReader;
 
-  public List<EventProcessInstanceImportMediator> createEventProcessInstanceMediators(
+  @SuppressWarnings("unchecked")
+  public <T extends EventProcessEventDto> List<EventProcessInstanceImportMediator<T>> createEventProcessInstanceMediators(
     final EventProcessPublishStateDto publishedStateDto) {
-    final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
-      beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
-
     return publishedStateDto.getEventImportSources().stream()
-      .map(importSource -> beanFactory.getBean(
+      .map(importSource -> (EventProcessInstanceImportMediator<T>) beanFactory.getBean(
         EventProcessInstanceImportMediator.class,
         publishedStateDto.getId(),
         new EventProcessInstanceImportSourceIndexHandler(configurationService, importSource),
         eventFetcherFactory.createEventFetcherForEventSource(importSource.getEventSource()),
         createImportService(publishedStateDto, importSource.getEventSource()),
         configurationService,
-        elasticsearchImportJobExecutor,
         idleBackoffCalculator
       ))
       .collect(Collectors.toList());
@@ -81,9 +76,8 @@ public class EventProcessInstanceImportMediatorFactory {
         businessKeyReader
       );
     } else {
-      throw new RuntimeException(String.format(
-        "Cannot create mediator for Event Source Type: %s",
-        eventSourceEntryDto.getType()
+      throw new OptimizeRuntimeException(String.format(
+        "Cannot create mediator for Event Source Type: %s", eventSourceEntryDto.getType()
       ));
     }
   }
@@ -96,9 +90,7 @@ public class EventProcessInstanceImportMediatorFactory {
     return new EventProcessInstanceImportService(
       eventProcessPublishStateDto,
       elasticsearchImportJobExecutor,
-      new EventProcessInstanceWriter(
-        new EventProcessInstanceIndex(eventProcessPublishStateDto.getId()), elasticsearchClient, objectMapper
-      )
+      eventProcessInstanceWriterFactory.createEventProcessInstanceWriter(eventProcessPublishStateDto)
     );
   }
 

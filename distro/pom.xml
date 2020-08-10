@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.0-alpha2</version>
+    <version>3.2.0-alpha2</version>
   </parent>
 
   <artifactId>camunda-optimize</artifactId>
@@ -13,8 +13,8 @@
 
   <properties>
     <exclude.from.environment>OptimizeLicense.txt</exclude.from.environment>
+    <sonar.skip>true</sonar.skip>
   </properties>
-
 
   <dependencies>
     <dependency>
@@ -74,7 +74,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.1.0</version>
+        <version>3.2.0</version>
         <executions>
           <!--Check if the version is alpha or snapshot, use latest if true, else leave docs.version = project.version-->
           <execution>

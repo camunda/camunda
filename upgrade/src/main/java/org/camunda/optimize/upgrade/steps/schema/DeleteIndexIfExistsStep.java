@@ -17,8 +17,12 @@ public class DeleteIndexIfExistsStep implements UpgradeStep {
   private final int indexVersion;
 
   public DeleteIndexIfExistsStep(final IndexMappingCreator index) {
+    this(index.getIndexName(), index.getVersion());
+  }
+
+  public DeleteIndexIfExistsStep(final IndexMappingCreator index, final Integer version) {
     this.aliasName = index.getIndexName();
-    this.indexVersion = index.getVersion();
+    this.indexVersion = version;
   }
 
   @Override

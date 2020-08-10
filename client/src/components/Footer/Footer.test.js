@@ -12,8 +12,6 @@ import {Server} from 'mock-socket';
 import Footer from './Footer';
 import {getOptimizeVersion} from 'config';
 
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
 jest.mock('config', () => {
   return {
     getOptimizeVersion: jest.fn(),
@@ -36,7 +34,7 @@ it('includes the version number retrieved from back-end', async () => {
 
   await flushPromises();
 
-  expect(node.find('.Footer__colophon')).toIncludeText(version);
+  expect(node.find('.colophon')).toIncludeText(version);
 });
 
 it('displays the loading indicator if is importing', () => {
@@ -87,29 +85,29 @@ it('displays the connection status', () => {
     loaded: true,
   });
 
-  expect(node.find('.Footer__connect-status')).toExist();
+  expect(node.find('.status')).toExist();
 });
 
 it('should not display connection status before receiving data', () => {
   const node = shallow(<Footer />);
 
-  expect(node.find('.Footer__connect-status-item')).not.toExist();
+  expect(node.find('.statusItem')).not.toExist();
 
   node.setState({loaded: true});
 
-  expect(node.find('.Footer__connect-status-item')).toExist();
+  expect(node.find('.statusItem')).toExist();
 });
 
 it('should display an error message when the websocket connection goes wrong', () => {
   const node = shallow(<Footer />);
   node.setState({loaded: true});
 
-  expect(node.find('.Footer__connect-status-item')).toExist();
+  expect(node.find('.statusItem')).toExist();
   expect(node.find('.error')).not.toExist();
 
   node.setState({error: true});
 
-  expect(node.find('.Footer__connect-status-item')).not.toExist();
+  expect(node.find('.statusItem')).not.toExist();
   expect(node.find('.error')).toExist();
 });
 

@@ -10,7 +10,7 @@ spec:
       effect: "NoSchedule"
   containers:
   - name: maven
-    image: maven:3.6.1-jdk-8-slim
+    image: maven:3.6.3-jdk-8-slim
     command: ["cat"]
     tty: true
     env:
@@ -18,10 +18,6 @@ spec:
         valueFrom:
           resourceFieldRef:
             resource: limits.cpu
-      - name: JAVA_TOOL_OPTIONS
-        value: |
-          -XX:InitialRAMPercentage=25.0
-          -XX:MaxRAMPercentage=50.0
       - name: TZ
         value: Europe/Berlin
     resources:
@@ -55,8 +51,8 @@ spec:
             resource: limits.cpu
     resources:
       limits:
-        cpu: 3
-        memory: 2Gi
+        cpu: 4
+        memory: 4Gi
       requests:
-        cpu: 3
-        memory: 1Gi
+        cpu: 4
+        memory: 4Gi

@@ -73,3 +73,8 @@ it('should check the versions based on the selected specific versions', () => {
 
   expect(node).toMatchSnapshot();
 });
+
+it('should not crash, but be disabled if no versions are provided', () => {
+  const node = shallow(<VersionPopover selected={[]} />);
+  expect(node.find('Popover').prop('disabled')).toBe(true);
+});

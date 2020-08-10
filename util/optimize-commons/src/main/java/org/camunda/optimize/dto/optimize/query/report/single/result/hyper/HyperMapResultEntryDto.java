@@ -5,19 +5,22 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.result.hyper;
 
+import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.Setter;
 import lombok.ToString;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 
 import java.util.List;
 import java.util.Optional;
 
 @EqualsAndHashCode
 @ToString
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class HyperMapResultEntryDto {
 
   // @formatter:off
@@ -25,9 +28,6 @@ public class HyperMapResultEntryDto {
   @Getter @Setter private List<MapResultEntryDto> value;
   @Setter private String label;
   // @formatter:on
-
-  protected HyperMapResultEntryDto() {
-  }
 
   public Optional<MapResultEntryDto> getDataEntryForKey(final String key) {
     return this.value.stream().filter(entry -> key.equals(entry.getKey())).findFirst();
@@ -48,7 +48,7 @@ public class HyperMapResultEntryDto {
     return label != null && !label.isEmpty() ? label : key;
   }
 
-  public void sortResultData(final SortingDto sorting, final boolean keyIsOfNumericType) {
+  public void sortResultData(final ReportSortingDto sorting, final boolean keyIsOfNumericType) {
     final ReportMapResultDto wrapperForSorting = new ReportMapResultDto();
     wrapperForSorting.setData(value);
     wrapperForSorting.sortResultData(sorting, keyIsOfNumericType);

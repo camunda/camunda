@@ -47,14 +47,13 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     DecisionDefinitionEngineDto decisionDefinitionDto =
       engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = variablesClient.getDecisionInputVariableNames(decisionDefinitionDto);
 
     // then
-    assertThat(variableResponse.size()).isEqualTo(2);
+    assertThat(variableResponse).hasSize(2);
     assertThat(variableResponse.get(0).getName()).isEqualTo("Customer Status");
     assertThat(variableResponse.get(0).getId()).isNotNull();
     assertThat(variableResponse.get(0).getType()).isEqualTo(VariableType.STRING);
@@ -70,15 +69,14 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     DecisionDefinitionEngineDto decisionDefinitionDto =
       engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<DecisionVariableNameDto> variableResponse = variablesClient.getDecisionOutputVariableNames(
       decisionDefinitionDto);
 
     // then
-    assertThat(variableResponse.size()).isEqualTo(2);
+    assertThat(variableResponse).hasSize(2);
     assertThat(variableResponse.get(0).getName()).isEqualTo("Check Result");
     assertThat(variableResponse.get(0).getId()).isNotNull();
     assertThat(variableResponse.get(0).getType()).isEqualTo(VariableType.STRING);
@@ -97,8 +95,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     startDecisionInstanceWithInputs(decisionDefinitionDto, "silver",300.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> customerStatusVariableValues = variablesClient.getDecisionInputVariableValues(
@@ -113,10 +110,10 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     );
 
     // then
-    assertThat(customerStatusVariableValues.size()).isEqualTo(3);
+    assertThat(customerStatusVariableValues).hasSize(3);
     assertThat(customerStatusVariableValues).contains("bronze", "silver", "gold");
 
-    assertThat(orderSumInputVariableValues.size()).isEqualTo(3);
+    assertThat(orderSumInputVariableValues).hasSize(3);
     assertThat(orderSumInputVariableValues).contains("200.0", "300.0", "500.0");
   }
 
@@ -130,8 +127,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     startDecisionInstanceWithInputs(decisionDefinitionDto, "silver",300.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> output1 = variablesClient.getDecisionOutputVariableValues(
@@ -146,10 +142,10 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     );
 
     // then
-    assertThat(output1.size()).isEqualTo(2);
+    assertThat(output1).hasSize(2);
     assertThat(output1).contains("notok", "ok");
 
-    assertThat(output2.size()).isEqualTo(3);
+    assertThat(output2).hasSize(3);
     assertThat(output2).contains(
       "work on your status first, as bronze you're not going to get anything",
       "you little fish will get what you want",
@@ -166,8 +162,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
@@ -180,7 +175,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
       .isNotNull()
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactly(Tuple.tuple("gold", 2L));
+      .containsExactly(Tuple.tuple("gold", 2.0));
   }
 
   @ParameterizedTest
@@ -192,8 +187,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
     startDecisionInstanceWithInputs(decisionDefinitionDto, "gold", 500.0);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
@@ -206,7 +200,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
       .isNotNull()
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactly(Tuple.tuple("ok", 2L));
+      .containsExactly(Tuple.tuple("ok", 2.0));
   }
 
   @ParameterizedTest
@@ -216,8 +210,7 @@ public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
     DecisionDefinitionEngineDto decisionDefinitionDto =
       engineIntegrationExtension.deployDecisionDefinition(pathToDiagram);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final List<DefinitionWithTenantsDto> definitions = embeddedOptimizeExtension

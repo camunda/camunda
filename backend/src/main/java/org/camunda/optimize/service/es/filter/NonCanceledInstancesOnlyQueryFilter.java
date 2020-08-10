@@ -10,6 +10,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE;
@@ -22,7 +23,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 public class NonCanceledInstancesOnlyQueryFilter implements QueryFilter<NonCanceledInstancesOnlyFilterDataDto> {
   @Override
   public void addFilters(BoolQueryBuilder query, List<NonCanceledInstancesOnlyFilterDataDto>
-    nonCanceledInstancesOnlyFilters) {
+    nonCanceledInstancesOnlyFilters, final ZoneId timezone) {
     if (nonCanceledInstancesOnlyFilters != null && !nonCanceledInstancesOnlyFilters.isEmpty()) {
       List<QueryBuilder> filters = query.filter();
 

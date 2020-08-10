@@ -1,10 +1,20 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should allow providing a custom icon and empty text 1`] = `
+<React.Fragment>
+  <Icon
+    className="indicator"
+    type="customIcon"
+  />
+  customText
+</React.Fragment>
+`;
+
 exports[`should show the filter state 1`] = `
 <React.Fragment>
   <Icon
     className="indicator active"
-    type="calender"
+    type="filter"
   />
   Today
 </React.Fragment>

@@ -8,16 +8,14 @@ package org.camunda.optimize.service.es.schema.index;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@Component
 public class TerminatedUserSessionIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   public static final String ID = "id";
   public static final String TERMINATION_TIMESTAMP = "terminationTimestamp";

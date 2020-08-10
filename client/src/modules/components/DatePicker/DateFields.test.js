@@ -5,19 +5,20 @@
  */
 
 import React from 'react';
-import moment from 'moment';
+import {parseISO} from 'date-fns';
 
+import {format} from 'dates';
 import DateFields from './DateFields';
 import {shallow} from 'enzyme';
 import DateRange from './DateRange';
+import PickerDateInput from './PickerDateInput';
 
-jest.mock('./DateInput');
-const format = 'YYYY-MM-DD';
+const dateFormat = 'yyyy-MM-dd';
 
 const props = {
-  startDate: moment('2017-08-29').format(format),
-  endDate: moment('2020-06-05').format(format),
-  format,
+  startDate: format(parseISO('2017-08-29'), dateFormat),
+  endDate: format(parseISO('2020-06-05'), dateFormat),
+  format: dateFormat,
 };
 
 it('should match snapshot', () => {
@@ -69,8 +70,8 @@ it('should update start and end date when selecting a date', () => {
   node.setState({popupOpen: true, currentlySelectedField: 'startDate'});
 
   node.instance().endDateField = {current: {focus: jest.fn()}};
-  node.instance().onDateRangeChange({range1: {startDate: new Date(), endDate: new Date()}});
-  const today = moment().format(format);
+  node.instance().onDateRangeChange({startDate: new Date(), endDate: new Date()});
+  const today = format(new Date(), dateFormat);
   expect(spy).toHaveBeenCalledWith('startDate', today);
   expect(spy).toHaveBeenCalledWith('endDate', today);
   expect(node.state('currentlySelectedField')).toBe('endDate');
@@ -79,7 +80,7 @@ it('should update start and end date when selecting a date', () => {
 it('should be possible to disable the date fields', () => {
   const node = shallow(<DateFields {...props} disabled />);
 
-  const dateInputs = node.find('DateInput');
+  const dateInputs = node.find(PickerDateInput);
   expect(dateInputs.at(0).props('disabled')).toBeTruthy();
   expect(dateInputs.at(1).props('disabled')).toBeTruthy();
 });

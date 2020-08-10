@@ -72,8 +72,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // then
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-    String id =
-        response.readEntity(String.class);
+    String id =response.readEntity(String.class);
     assertThat(id, is(notNullValue()));
   }
 

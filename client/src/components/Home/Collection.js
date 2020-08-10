@@ -5,10 +5,11 @@
  */
 
 import React from 'react';
-import moment from 'moment';
 import {Link, Redirect} from 'react-router-dom';
 import classnames from 'classnames';
+import {parseISO} from 'date-fns';
 
+import {format} from 'dates';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {Icon, Dropdown, EntityList, Deleter} from 'components';
@@ -23,6 +24,7 @@ import UserList from './UserList';
 import AlertList from './AlertList';
 import SourcesList from './SourcesList';
 import CollectionModal from './modals/CollectionModal';
+import ReportTemplateModal from './modals/ReportTemplateModal';
 
 import {formatLink, formatType, formatSubEntities} from './formatters';
 
@@ -33,10 +35,13 @@ export default withErrorHandling(
     state = {
       collection: null,
       editingCollection: false,
+      creatingProcessReport: false,
       deleting: false,
       redirect: '',
       copying: null,
       entities: null,
+      sorting: null,
+      isLoading: true,
     };
 
     componentDidMount() {
@@ -62,13 +67,14 @@ export default withErrorHandling(
       this.loadEntities();
     };
 
-    loadEntities = () => {
+    loadEntities = (sortBy, sortOrder) => {
+      this.setState({isLoading: true, sorting: {key: sortBy, order: sortOrder}});
       this.props.mightFail(
-        loadCollectionEntities(this.props.match.params.id),
-        (entities) => this.setState({entities}),
+        loadCollectionEntities(this.props.match.params.id, sortBy, sortOrder),
+        (entities) => this.setState({entities, isLoading: false}),
         (error) => {
           showError(error);
-          this.setState({entities: null});
+          this.setState({entities: null, isLoading: false});
         }
       );
     };
@@ -81,7 +87,17 @@ export default withErrorHandling(
     };
 
     render() {
-      const {collection, deleting, editingCollection, redirect, copying, entities} = this.state;
+      const {
+        collection,
+        deleting,
+        editingCollection,
+        creatingProcessReport,
+        redirect,
+        copying,
+        entities,
+        sorting,
+        isLoading,
+      } = this.state;
 
       const homeTab = this.props.match.params.viewMode === undefined;
       const userTab = this.props.match.params.viewMode === 'users';
@@ -143,12 +159,23 @@ export default withErrorHandling(
                 action={
                   collection &&
                   collection.currentUserRole !== 'viewer' && (
-                    <CreateNewButton collection={collection.id} />
+                    <CreateNewButton
+                      collection={collection.id}
+                      createProcessReport={() => this.setState({creatingProcessReport: true})}
+                    />
                   )
                 }
                 empty={t('home.empty')}
-                isLoading={!entities}
-                columns={[t('common.name'), t('home.contents'), t('common.entity.modified')]}
+                isLoading={isLoading}
+                sorting={sorting}
+                onSortingChange={this.loadEntities}
+                columns={[
+                  {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
+                  {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
+                  t('home.contents'),
+                  {name: 'Modified by', key: 'lastModifier', defaultOrder: 'asc'},
+                  {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
+                ]}
                 data={
                   entities &&
                   entities.map((entity) => {
@@ -157,6 +184,7 @@ export default withErrorHandling(
                       entityType,
                       currentUserRole,
                       lastModified,
+                      lastModifier,
                       name,
                       data,
                       reportType,
@@ -193,7 +221,8 @@ export default withErrorHandling(
                       name,
                       meta: [
                         formatSubEntities(data.subEntityCounts),
-                        moment(lastModified).format('YYYY-MM-DD HH:mm'),
+                        lastModifier,
+                        format(parseISO(lastModified), 'PP'),
                       ],
                       actions,
                     };
@@ -270,6 +299,9 @@ export default withErrorHandling(
             }}
             onCancel={() => this.setState({copying: null})}
           />
+          {creatingProcessReport && (
+            <ReportTemplateModal onClose={() => this.setState({creatingProcessReport: false})} />
+          )}
         </div>
       );
     }

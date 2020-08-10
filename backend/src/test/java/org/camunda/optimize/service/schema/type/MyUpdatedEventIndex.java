@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.schema.type;
 
-import com.google.gson.internal.$Gson$Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
@@ -31,7 +30,7 @@ public class MyUpdatedEventIndex implements IndexMappingCreator {
 
   @Override
   public int getVersion() {
-    return 2;
+    return 3;
   }
 
   @Override

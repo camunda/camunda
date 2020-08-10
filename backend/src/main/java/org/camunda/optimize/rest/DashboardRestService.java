@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedDashboardDefinitionDto;
+import org.camunda.optimize.rest.mapper.DashboardRestMapper;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.security.SessionService;
@@ -27,7 +28,6 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriInfo;
-
 import java.util.Optional;
 
 import static org.camunda.optimize.rest.queryparam.QueryParamUtil.normalizeNullStringValue;
@@ -40,6 +40,7 @@ public class DashboardRestService {
 
   private final DashboardService dashboardService;
   private final SessionService sessionService;
+  private final DashboardRestMapper dashboardRestMapper;
 
   /**
    * Creates a new dashboard.
@@ -52,9 +53,11 @@ public class DashboardRestService {
   public IdDto createNewDashboard(@Context final ContainerRequestContext requestContext,
                                   DashboardDefinitionDto dashboardDefinitionDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return dashboardService.createNewDashboardAndReturnId(userId,
-                                                          Optional.ofNullable(dashboardDefinitionDto)
-                                                            .orElseGet(DashboardDefinitionDto::new));
+    return dashboardService.createNewDashboardAndReturnId(
+      userId,
+      Optional.ofNullable(dashboardDefinitionDto)
+        .orElseGet(DashboardDefinitionDto::new)
+    );
   }
 
   @POST
@@ -85,7 +88,9 @@ public class DashboardRestService {
   public AuthorizedDashboardDefinitionDto getDashboard(@Context ContainerRequestContext requestContext,
                                                        @PathParam("id") String dashboardId) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return dashboardService.getDashboardDefinition(dashboardId, userId);
+    AuthorizedDashboardDefinitionDto dashboardDefinition = dashboardService.getDashboardDefinition(dashboardId, userId);
+    dashboardRestMapper.prepareRestResponse(dashboardDefinition);
+    return dashboardDefinition;
   }
 
   /**

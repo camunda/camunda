@@ -17,8 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class RawDataDecisionReportResultDtoMapperTest {
 
@@ -27,16 +26,22 @@ public class RawDataDecisionReportResultDtoMapperTest {
     // given
     final Integer rawDataLimit = 2;
     final Long actualInstanceCount = 3L;
+    final Long unfilteredInstanceCount = 4L;
     final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
     final List<DecisionInstanceDto> decisionInstanceDtos = generateInstanceList(rawDataLimit);
 
     // when
-    final RawDataDecisionReportResultDto result = mapper.mapFrom(decisionInstanceDtos, actualInstanceCount);
+    final RawDataDecisionReportResultDto result = mapper.mapFrom(
+      decisionInstanceDtos,
+      actualInstanceCount,
+      unfilteredInstanceCount
+    );
 
     // then
-    assertThat(result.getData().size(), is(rawDataLimit));
-    assertThat(result.getIsComplete(), is(false));
-    assertThat(result.getInstanceCount(), is(actualInstanceCount));
+    assertThat(result.getData()).hasSize(rawDataLimit);
+    assertThat(result.getIsComplete()).isFalse();
+    assertThat(result.getInstanceCount()).isEqualTo(actualInstanceCount);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(unfilteredInstanceCount);
   }
 
   @Test
@@ -44,16 +49,22 @@ public class RawDataDecisionReportResultDtoMapperTest {
     // given
     final Integer rawDataLimit = 3;
     final Long actualInstanceCount = 3L;
+    final Long unfilteredInstanceCount = 4L;
     final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
     final List<DecisionInstanceDto> decisionInstanceDtos = generateInstanceList(rawDataLimit);
 
     // when
-    final RawDataDecisionReportResultDto result = mapper.mapFrom(decisionInstanceDtos, actualInstanceCount);
+    final RawDataDecisionReportResultDto result = mapper.mapFrom(
+      decisionInstanceDtos,
+      actualInstanceCount,
+      unfilteredInstanceCount
+    );
 
     // then
-    assertThat(result.getData().size(), is(rawDataLimit));
-    assertThat(result.getIsComplete(), is(true));
-    assertThat(result.getInstanceCount(), is(actualInstanceCount));
+    assertThat(result.getData()).hasSize(rawDataLimit);
+    assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getInstanceCount()).isEqualTo(actualInstanceCount);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(unfilteredInstanceCount);
   }
 
   @Test
@@ -61,6 +72,7 @@ public class RawDataDecisionReportResultDtoMapperTest {
     // given
     final Integer rawDataLimit = 2;
     final Long actualInstanceCount = 3L;
+    final Long unfilteredInstanceCount = 4L;
     final RawDecisionDataResultDtoMapper mapper = new RawDecisionDataResultDtoMapper();
 
     final List<DecisionInstanceDto> decisionInstances = IntStream.rangeClosed(1, rawDataLimit)
@@ -83,15 +95,20 @@ public class RawDataDecisionReportResultDtoMapperTest {
       .collect(Collectors.toList());
 
     // when
-    final RawDataDecisionReportResultDto result = mapper.mapFrom(decisionInstances, actualInstanceCount);
+    final RawDataDecisionReportResultDto result = mapper.mapFrom(
+      decisionInstances,
+      actualInstanceCount,
+      unfilteredInstanceCount
+    );
 
     // then
-    assertThat(result.getData().size(), is(rawDataLimit));
-    assertThat(result.getInstanceCount(), is(actualInstanceCount));
+    assertThat(result.getData()).hasSize(rawDataLimit);
+    assertThat(result.getInstanceCount()).isEqualTo(actualInstanceCount);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(unfilteredInstanceCount);
     IntStream.range(0, rawDataLimit)
       .forEach(i -> {
-        assertThat(result.getData().get(i).getInputVariables().size(), is(rawDataLimit));
-        assertThat(result.getData().get(i).getOutputVariables().size(), is(rawDataLimit));
+        assertThat(result.getData().get(i).getInputVariables()).hasSize(rawDataLimit);
+        assertThat(result.getData().get(i).getOutputVariables()).hasSize(rawDataLimit);
       });
   }
 

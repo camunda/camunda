@@ -64,7 +64,7 @@ public abstract class PluginProvider<PluginType> implements ConfigurationReloada
       try (ScanResult scanResult = new ClassGraph()
         .enableClassInfo()
         .overrideClassLoaders(pluginClassLoader)
-        .whitelistPackages(Iterables.toArray(getBasePackages(), String.class))
+        .acceptPackages(Iterables.toArray(getBasePackages(), String.class))
         .ignoreParentClassLoaders()
         .scan()) {
         final ClassInfoList pluginClasses = scanResult.getClassesImplementing(getPluginClass().getName());

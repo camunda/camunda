@@ -5,14 +5,14 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>3.1.0-alpha2</version>
+    <version>3.2.0-alpha2</version>
   </parent>
 
   <artifactId>import-performance-tests</artifactId>
 
   <properties>
     <skip.tests>true</skip.tests>
-    <test.argLine>-Xmx2048m</test.argLine>
+    <argLine>-Xmx2048m</argLine>
     <db.url />
   </properties>
 
@@ -34,7 +34,7 @@
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>42.2.12</version>
+      <version>42.2.14</version>
       <scope>test</scope>
     </dependency>
 
@@ -92,7 +92,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <argLine>${test.argLine}</argLine>
               <includes>**/*StaticDataTest.java</includes>
             </configuration>
           </plugin>
@@ -111,7 +110,6 @@
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
               <redirectTestOutputToFile>false</redirectTestOutputToFile>
-              <argLine>${test.argLine}</argLine>
               <includes>**/*LiveLoadTest.java</includes>
             </configuration>
           </plugin>

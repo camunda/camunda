@@ -8,14 +8,16 @@ package org.camunda.optimize.service.es.report.command;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
+import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
-import org.elasticsearch.search.aggregations.metrics.Stats;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 
 import java.util.Optional;
 
-public abstract class ProcessCmd<R extends ProcessReportResultDto> implements Command<SingleProcessReportDefinitionDto> {
+public abstract class ProcessCmd<R extends ProcessReportResultDto>
+  implements Command<SingleProcessReportDefinitionDto> {
 
   protected final ProcessReportCmdExecutionPlan<R> executionPlan;
 
@@ -25,9 +27,18 @@ public abstract class ProcessCmd<R extends ProcessReportResultDto> implements Co
 
   protected abstract ProcessReportCmdExecutionPlan<R> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder);
 
-  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+  public Optional<MinMaxStatDto> retrieveStatsForCombinedAutomaticGroupByDate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     ExecutionContext<ProcessReportDataDto> executionContext = new ExecutionContext<>(commandContext);
     return executionPlan.calculateDateRangeForAutomaticGroupByDate(executionContext);
+  }
+
+  public Optional<MinMaxStatDto> retrieveStatsForCombinedGroupByNumberVariable(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+    ExecutionContext<ProcessReportDataDto> executionContext = new ExecutionContext<>(commandContext);
+    return executionPlan.calculateNumberRangeForGroupByNumberVariable(executionContext);
+  }
+
+  public BoolQueryBuilder getBaseQuery(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+    return executionPlan.setupBaseQuery(new ExecutionContext<>(commandContext));
   }
 
   @Override

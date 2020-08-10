@@ -8,14 +8,12 @@ package org.camunda.optimize.service.es.schema.index;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
 public class ProcessDefinitionIndex extends AbstractDefinitionIndex {
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   public static final String PROCESS_DEFINITION_ID = DEFINITION_ID;
   public static final String PROCESS_DEFINITION_KEY = DEFINITION_KEY;

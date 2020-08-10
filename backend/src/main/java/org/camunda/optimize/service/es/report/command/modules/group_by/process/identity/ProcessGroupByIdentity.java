@@ -6,10 +6,12 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.identity;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
+import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
@@ -31,51 +33,59 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
+import static org.camunda.optimize.service.es.filter.UserTaskFilterQueryUtil.createUserTaskIdentityAggregationFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_END_DATE;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 @RequiredArgsConstructor
 public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDataDto> {
 
-  protected static final String GROUP_BY_IDENTITY_TERMS_AGGREGATION = "identities";
-  protected static final String USER_TASKS_AGGREGATION = "userTasks";
-  protected static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
+  private static final String GROUP_BY_IDENTITY_TERMS_AGGREGATION = "identities";
+  private static final String USER_TASKS_AGGREGATION = "userTasks";
+  private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
   // temporary GROUP_BY_IDENTITY_MISSING_KEY to ensure no overlap between this label and userTask names
   private static final String GROUP_BY_IDENTITY_MISSING_KEY = "unassignedUserTasks___";
 
   protected final ConfigurationService configurationService;
   protected final LocalizationService localizationService;
+  protected final DefinitionService definitionService;
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final FlowNodeExecutionState flowNodeExecutionState = context.getReportConfiguration().getFlowNodeExecutionState();
     final NestedAggregationBuilder groupByIdentityAggregation = nested(USER_TASKS, USER_TASKS_AGGREGATION)
       .subAggregation(
         filter(
           FILTERED_USER_TASKS_AGGREGATION,
-          addExecutionStateFilter(
-            boolQuery(),
-            flowNodeExecutionState,
-            USER_TASKS + "." + USER_TASK_END_DATE
-          )
-        )
-          .subAggregation(
-            AggregationBuilders
-              .terms(GROUP_BY_IDENTITY_TERMS_AGGREGATION)
-              .size(configurationService.getEsAggregationBucketLimit())
-              .order(BucketOrder.key(true))
-              .field(USER_TASKS + "." + getIdentityField())
-              .missing(GROUP_BY_IDENTITY_MISSING_KEY)
-              .subAggregation(distributedByPart.createAggregation(context)))
-      );
+          createUserTaskIdentityAggregationFilter(context.getReportData(), getUserTaskIds(context.getReportData()))
+        ).subAggregation(
+          AggregationBuilders
+            .terms(GROUP_BY_IDENTITY_TERMS_AGGREGATION)
+            .size(configurationService.getEsAggregationBucketLimit())
+            .order(BucketOrder.key(true))
+            .field(USER_TASKS + "." + getIdentityField())
+            .missing(GROUP_BY_IDENTITY_MISSING_KEY)
+            .subAggregation(distributedByPart.createAggregation(context))
+        ));
 
     return Collections.singletonList(groupByIdentityAggregation);
+  }
+
+  private Set<String> getUserTaskIds(final ProcessReportDataDto reportData) {
+    return definitionService
+      .getLatestDefinition(
+        DefinitionType.PROCESS,
+        reportData.getDefinitionKey(),
+        reportData.getDefinitionVersions(),
+        reportData.getTenantIds()
+      )
+      .map(def -> ((ProcessDefinitionOptimizeDto) def).getUserTaskNames())
+      .map(Map::keySet)
+      .orElse(Collections.emptySet());
   }
 
   protected abstract String getIdentityField();
@@ -97,16 +107,20 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
     compositeCommandResult.setSorting(
       context.getReportConfiguration()
         .getSorting()
-        .orElseGet(() -> new SortingDto(SortingDto.SORT_BY_LABEL, SortOrder.ASC))
+        .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_LABEL, SortOrder.ASC))
     );
   }
 
   private List<CompositeCommandResult.GroupByResult> getGroupedDataFromAggregations(final SearchResponse response,
                                                                                     final Filter filteredUserTasks,
                                                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    List<CompositeCommandResult.GroupByResult> groupByResults = new ArrayList<>();
-    groupByResults.addAll(getByIdentityAggregationResults(response, filteredUserTasks, context));
-    return groupByResults;
+    return new ArrayList<>(
+      getByIdentityAggregationResults(
+        response,
+        filteredUserTasks,
+        context
+      )
+    );
   }
 
   private List<GroupByResult> getByIdentityAggregationResults(final SearchResponse response,
@@ -123,7 +137,7 @@ public abstract class ProcessGroupByIdentity extends GroupByPart<ProcessReportDa
         final boolean resultIsEmpty = singleResult.isEmpty()
           || singleResult.stream()
           .allMatch(
-            result -> result.getViewResult().getNumber() == null || result.getViewResult().getNumber().equals(0L)
+            result -> result.getViewResult().getNumber() == null || result.getViewResult().getNumber() == 0.0
           );
         if (!resultIsEmpty) {
           groupedData.add(GroupByResult.createGroupByResult(

@@ -152,7 +152,7 @@ it('should reset definition specific configurations on definition change', async
 
   await node.find(DefinitionSelection).prop('onChange')('newDefinition', '1', []);
 
-  expect(spy.mock.calls[0][0].configuration.excludedColumns).toBeDefined();
+  expect(spy.mock.calls[0][0].configuration.tableColumns).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.columnOrder).toBeDefined();
 });
 

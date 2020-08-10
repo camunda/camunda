@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.rest;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.analysis.DurationChartEntryDto;
@@ -32,18 +32,21 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
-@AllArgsConstructor
+import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
+
+@RequiredArgsConstructor
 @Secured
 @Component
 @Path("/analysis")
 public class AnalysisRestService {
 
-  private BranchAnalysisReader branchAnalysisReader;
-  private OutlierAnalysisService outlierAnalysisService;
-  private SessionService sessionService;
+  private final BranchAnalysisReader branchAnalysisReader;
+  private final OutlierAnalysisService outlierAnalysisService;
+  private final SessionService sessionService;
 
   /**
    * Get the branch analysis from the given query information.
@@ -56,8 +59,10 @@ public class AnalysisRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public BranchAnalysisDto getBranchAnalysis(@Context ContainerRequestContext requestContext,
                                              BranchAnalysisQueryDto branchAnalysisDto) {
+
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return branchAnalysisReader.branchAnalysis(userId, branchAnalysisDto);
+    final ZoneId timezone = extractTimezone(requestContext);
+    return branchAnalysisReader.branchAnalysis(userId, branchAnalysisDto, timezone);
   }
 
   @GET

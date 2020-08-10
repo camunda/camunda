@@ -1,0 +1,31 @@
+@import 'shared-styles/shared-styles.scss';
+
+.PickerDateInput {
+  position: relative;
+
+  .Input {
+    width: 130px;
+
+    &.highlight {
+      border-color: rgb(0, 145, 255);
+      background-color: rgba(0, 145, 255, 0.1);
+
+      &.isInvalid {
+        background-color: lighten($cam-red, 50);
+      }
+    }
+  }
+
+  .Icon {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    right: 5px;
+    color: $text-disabled;
+  }
+
+  .PickerDateInputWarning {
+    position: absolute;
+    top: 30px;
+  }
+}

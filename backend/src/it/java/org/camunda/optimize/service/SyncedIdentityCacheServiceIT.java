@@ -34,10 +34,6 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class SyncedIdentityCacheServiceIT extends AbstractIT {
 
@@ -54,14 +50,14 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
 
   @Test
   public void verifySyncEnabledByDefault() {
-    assertThat(getSyncedIdentityCacheService().isScheduledToRun(), is(true));
+    assertThat(getSyncedIdentityCacheService().isScheduledToRun()).isTrue();
   }
 
   @Test
   public void testSyncStoppedSuccessfully() {
     try {
       getSyncedIdentityCacheService().stopSchedulingUserSync();
-      assertThat(getSyncedIdentityCacheService().isScheduledToRun(), is(false));
+      assertThat(getSyncedIdentityCacheService().isScheduledToRun()).isFalse();
     } finally {
       getSyncedIdentityCacheService().startSchedulingUserSync();
     }
@@ -81,7 +77,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       getSyncedIdentityCacheService().synchronizeIdentities();
 
       //then
-      assertThat(getSyncedIdentityCacheService().getUserIdentityById(userIdJohn).isPresent(), is(true));
+      assertThat(getSyncedIdentityCacheService().getUserIdentityById(userIdJohn)).isPresent();
     } finally {
       getSyncedIdentityCacheService().startSchedulingUserSync();
     }
@@ -102,10 +98,11 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       getIdentitySyncConfiguration().setMaxEntryLimit(1L);
 
       // then
-      assertThatThrownBy(() -> getSyncedIdentityCacheService().synchronizeIdentities())
+      final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
+      assertThatThrownBy(syncedIdentityCacheService::synchronizeIdentities)
         .isInstanceOf(MaxEntryLimitHitException.class);
-      assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(true));
-      assertThat(getSyncedIdentityCacheService().getUserIdentityById(userIdJohn).isPresent(), is(false));
+      assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
+      assertThat(getSyncedIdentityCacheService().getUserIdentityById(userIdJohn)).isNotPresent();
     } finally {
       getSyncedIdentityCacheService().startSchedulingUserSync();
     }
@@ -119,11 +116,11 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     syncedIdentityCacheService.synchronizeIdentities();
 
     final Optional<UserDto> userIdentityById = getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
-    assertThat(userIdentityById.isPresent(), is(true));
-    assertThat(userIdentityById.get().getName(), is(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME));
-    assertThat(userIdentityById.get().getFirstName(), is(DEFAULT_FIRSTNAME));
-    assertThat(userIdentityById.get().getLastName(), is(DEFAULT_LASTNAME));
-    assertThat(userIdentityById.get().getEmail(), containsString(DEFAULT_EMAIL_DOMAIN));
+    assertThat(userIdentityById).isPresent();
+    assertThat(userIdentityById.get().getName()).isEqualTo(DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME);
+    assertThat(userIdentityById.get().getFirstName()).isEqualTo(DEFAULT_FIRSTNAME);
+    assertThat(userIdentityById.get().getLastName()).isEqualTo(DEFAULT_LASTNAME);
+    assertThat(userIdentityById.get().getEmail()).contains(DEFAULT_EMAIL_DOMAIN);
   }
 
   @Test
@@ -135,11 +132,11 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     syncedIdentityCacheService.synchronizeIdentities();
 
     final Optional<UserDto> userIdentityById = getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER);
-    assertThat(userIdentityById.isPresent(), is(true));
-    assertThat(userIdentityById.get().getName(), is(KERMIT_USER));
-    assertThat(userIdentityById.get().getFirstName(), is(nullValue()));
-    assertThat(userIdentityById.get().getLastName(), is(nullValue()));
-    assertThat(userIdentityById.get().getEmail(), is(nullValue()));
+    assertThat(userIdentityById).isPresent();
+    assertThat(userIdentityById.get().getName()).isEqualTo(KERMIT_USER);
+    assertThat(userIdentityById.get().getFirstName()).isNull();
+    assertThat(userIdentityById.get().getLastName()).isNull();
+    assertThat(userIdentityById.get().getEmail()).isNull();
   }
 
   @Test
@@ -149,7 +146,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(false));
+    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
@@ -162,9 +159,9 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     syncedIdentityCacheService.synchronizeIdentities();
 
     final Optional<GroupDto> groupIdentityById = getSyncedIdentityCacheService().getGroupIdentityById(GROUP_ID);
-    assertThat(groupIdentityById.isPresent(), is(true));
-    assertThat(groupIdentityById.get().getName(), is(KERMIT_GROUP_NAME));
-    assertThat(groupIdentityById.get().getMemberCount(), is(1L));
+    assertThat(groupIdentityById).isPresent();
+    assertThat(groupIdentityById.get().getName()).isEqualTo(KERMIT_GROUP_NAME);
+    assertThat(groupIdentityById.get().getMemberCount()).isEqualTo(1L);
   }
 
   @Test
@@ -175,7 +172,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getGroupIdentityById(GROUP_ID).isPresent(), is(false));
+    assertThat(getSyncedIdentityCacheService().getGroupIdentityById(GROUP_ID)).isNotPresent();
   }
 
   @Test
@@ -187,7 +184,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(true));
+    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
   }
 
   @Test
@@ -198,7 +195,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(false));
+    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
@@ -216,7 +213,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(true));
+    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
   }
 
   @Test
@@ -231,7 +228,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(false));
+    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
@@ -242,7 +239,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(true));
+    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isPresent();
   }
 
   @Test
@@ -256,7 +253,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(false));
+    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
@@ -268,7 +265,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getGroupIdentityById(GROUP_ID).isPresent(), is(true));
+    assertThat(getSyncedIdentityCacheService().getGroupIdentityById(GROUP_ID)).isPresent();
   }
 
   @Test
@@ -283,7 +280,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getGroupIdentityById(GROUP_ID).isPresent(), is(false));
+    assertThat(getSyncedIdentityCacheService().getGroupIdentityById(GROUP_ID)).isNotPresent();
   }
 
   @Test
@@ -298,7 +295,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
     final SyncedIdentityCacheService syncedIdentityCacheService = getSyncedIdentityCacheService();
     syncedIdentityCacheService.synchronizeIdentities();
 
-    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER).isPresent(), is(false));
+    assertThat(getSyncedIdentityCacheService().getUserIdentityById(KERMIT_USER)).isNotPresent();
   }
 
   @Test
@@ -361,8 +358,8 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       // then users/groups no longer existing in identityCache have been removed from the collection's permissions
       List<IdDto> roleIds1 = collectionClient.getCollectionRoleIdDtos(collectionId1);
       List<IdDto> roleIds2 = collectionClient.getCollectionRoleIdDtos(collectionId2);
-      assertThat(roleIds1.containsAll(roleIds2) && roleIds1.size() == roleIds2.size(), is(true));
-      assertThat(roleIds1).containsExactlyInAnyOrder(testGroupBIdDto,new IdDto(userDemoRole.getId()));
+      assertThat(roleIds1).containsExactlyInAnyOrderElementsOf(roleIds2);
+      assertThat(roleIds1).containsExactlyInAnyOrder(testGroupBIdDto, new IdDto(userDemoRole.getId()));
     } finally {
       syncedIdentityCacheService.startSchedulingUserSync();
     }
@@ -394,7 +391,7 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
 
       // then
       List<CollectionRoleRestDto> roles = collectionClient.getCollectionRoles(collectionId);
-      assertThat(roles.isEmpty(), is(true));
+      assertThat(roles).isEmpty();
     } finally {
       syncedIdentityCacheService.startSchedulingUserSync();
     }

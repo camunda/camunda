@@ -7,8 +7,6 @@ package org.camunda.optimize.service.es.report.process;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
@@ -21,6 +19,7 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultD
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -32,6 +31,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -39,8 +39,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
 
   private static final String START_EVENT = "startEvent";
   private static final String END_EVENT = "endEvent";
-  private static final String VARIABLE_NAME = "StringVar";
-  private static final String VARIABLE_VALUE = "StringVal";
+  private static final String VARIABLE_NAME = "IntegerVar";
   private static final String DEFINITION_KEY = "aProcess";
 
   @RegisterExtension
@@ -53,8 +52,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     // given
     ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(2);
     deployProcessAndStartInstances(1);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
       definition1.getKey(),
@@ -77,8 +75,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     deployProcessAndStartInstances(1);
     ProcessDefinitionEngineDto definition3 = deployProcessAndStartInstances(3);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
       definition1.getKey(),
@@ -101,8 +98,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     ProcessDefinitionEngineDto definition1 = deployProcessAndStartInstances(2);
     deployProcessAndStartInstances(1);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
       definition1.getKey(),
@@ -120,8 +116,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     // when
     deployProcessAndStartInstances(4);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
@@ -138,8 +133,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     // given
     ProcessDefinitionEngineDto definition = deployProcessAndStartInstances(1);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<ProcessReportDataDto> allPossibleReports = createAllPossibleProcessReports(
       definition.getKey(),
@@ -163,7 +157,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
         .setProcessDefinitionKey(definitionKey)
         .setProcessDefinitionVersions(definitionVersions)
         .setVariableName(VARIABLE_NAME)
-        .setVariableType(VariableType.STRING)
+        .setVariableType(VariableType.INTEGER)
         .setDateInterval(GroupByDateUnit.DAY)
         .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
         .setStartFlowNodeId(START_EVENT)
@@ -179,21 +173,13 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     IntStream.range(0, nInstancesToStart).forEach(
       i -> engineIntegrationExtension.startProcessInstance(
         definition.getId(),
-        ImmutableMap.of(VARIABLE_NAME, VARIABLE_VALUE)
+        ImmutableMap.of(VARIABLE_NAME, i)
       )
     );
     return definition;
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
-    // @formatter:off
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(DEFINITION_KEY)
-      .startEvent(START_EVENT)
-      .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent(END_EVENT)
-      .done();
-    // @formatter:on
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(DEFINITION_KEY));
   }
 }

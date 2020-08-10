@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperM
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.service.export.CSVUtils;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,7 +33,7 @@ public class SingleProcessHyperMapReportResult
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset) {
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
     return mapHyperMapReportResultsToCsvList(limit, offset, reportResult);
   }
 

@@ -41,7 +41,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.HashMap;
@@ -50,7 +49,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.atLeastOneResponseExistsForMultiGet;
+import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.atLeastOneResponseExistsForMultiGet;
 import static org.camunda.optimize.service.es.reader.ReportReader.REPORT_DATA_XML_PROPERTY;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.OWNER;
@@ -110,7 +109,7 @@ public class EntitiesReader {
       throw new OptimizeRuntimeException("Was not able to retrieve private entities!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       CollectionEntity.class,
       objectMapper,
@@ -126,7 +125,7 @@ public class EntitiesReader {
       collections.stream().map(BaseCollectionDefinitionDto::getId).collect(Collectors.toList())
     );
 
-    if (collections.size() == 0) {
+    if (collections.isEmpty()) {
       return new HashMap<>();
     }
 
@@ -168,12 +167,12 @@ public class EntitiesReader {
     return runEntitiesSearchRequest(searchSourceBuilder);
   }
 
-  public EntityNameDto getEntityNames(final EntityNameRequestDto requestDto) {
+  public Optional<EntityNameDto> getEntityNames(final EntityNameRequestDto requestDto) {
     log.debug(String.format("Performing get entity names search request %s", requestDto.toString()));
     MultiGetResponse multiGetItemResponse = runGetEntityNamesRequest(requestDto);
+
     if (!atLeastOneResponseExistsForMultiGet(multiGetItemResponse)) {
-      String reason = String.format("Could not get entity names search request %s", requestDto.toString());
-      throw new NotFoundException(reason);
+      return Optional.empty();
     }
 
     EntityNameDto result = new EntityNameDto();
@@ -193,7 +192,8 @@ public class EntitiesReader {
         }
       }
     }
-    return result;
+
+    return Optional.ofNullable(result);
   }
 
   private Map<EntityType, Long> extractEntityIndexCounts(final Filter collectionFilterAggregation) {
@@ -269,7 +269,7 @@ public class EntitiesReader {
       throw new OptimizeRuntimeException("Was not able to retrieve entities!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       CollectionEntity.class,
       objectMapper,

@@ -14,6 +14,7 @@ import org.elasticsearch.common.xcontent.XContentType;
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ANALYSIS_SETTING;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAPPING_NESTED_OBJECTS_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_REPLICAS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REFRESH_INTERVAL_SETTING;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
@@ -30,6 +31,17 @@ public class IndexSettingsBuilder {
     builder
       .startObject();
         addDynamicSettings(configurationService, builder)
+      .endObject();
+    // @formatter:on
+    return toSettings(builder);
+  }
+
+  public static Settings buildAnalysisSettings() throws IOException {
+    XContentBuilder builder = jsonBuilder();
+    // @formatter:off
+    builder
+      .startObject();
+        addAnalysis(builder)
       .endObject();
     // @formatter:on
     return toSettings(builder);
@@ -60,7 +72,8 @@ public class IndexSettingsBuilder {
     return builder
       .field(DYNAMIC_SETTING_MAX_NGRAM_DIFF, MAX_GRAM - 1)
       .field(REFRESH_INTERVAL_SETTING, configurationService.getEsRefreshInterval())
-      .field(NUMBER_OF_REPLICAS_SETTING, configurationService.getEsNumberOfReplicas());
+      .field(NUMBER_OF_REPLICAS_SETTING, configurationService.getEsNumberOfReplicas())
+      .field(MAPPING_NESTED_OBJECTS_LIMIT, configurationService.getEsNestedDocumentsLimit());
   }
 
   private static XContentBuilder addAnalysis(XContentBuilder builder) throws IOException {
@@ -90,7 +103,7 @@ public class IndexSettingsBuilder {
       .endObject()
       .startObject("tokenizer")
         .startObject("ngram_tokenizer")
-          .field("type", "nGram")
+          .field("type", "ngram")
           .field("min_gram", 1)
           .field("max_gram", MAX_GRAM)
         .endObject()

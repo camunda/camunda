@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.test.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 
@@ -12,10 +14,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class VariableTestUtil {
-
-  private VariableTestUtil() {
-  }
 
   public static Map<String, Object> createAllPrimitiveTypeVariables() {
     Map<String, Object> variables = new HashMap<>();

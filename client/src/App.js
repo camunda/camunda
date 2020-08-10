@@ -29,7 +29,7 @@ import {Notifications} from 'notifications';
 import {SaveGuard} from 'saveGuard';
 
 import {Provider as Theme} from 'theme';
-import {withErrorHandling, UserProvider} from 'HOC';
+import {withErrorHandling, UserProvider, DocsProvider} from 'HOC';
 
 class App extends React.Component {
   state = {
@@ -88,21 +88,23 @@ class App extends React.Component {
           <WithLicense>
             <div className="Root-container">
               <ErrorBoundary>
-                <UserProvider>
-                  <Switch>
-                    <PrivateRoute exact path="/" component={Home} />
-                    <PrivateRoute path="/analysis" component={Analysis} />
-                    <PrivateRoute exact path="/eventBasedProcess" component={Events} />
-                    <Route exact path="/share/:type/:id" component={Sharing} />
-                    <PrivateRoute
-                      path="/(report|dashboard|collection|eventBasedProcess)/*"
-                      render={this.renderEntity}
-                    />
-                    <Route path="/license" component={License} />
-                    <Route path="/logout" component={Logout} />
-                    <PrivateRoute path="*" component={ErrorPage} />
-                  </Switch>
-                </UserProvider>
+                <DocsProvider>
+                  <UserProvider>
+                    <Switch>
+                      <PrivateRoute exact path="/" component={Home} />
+                      <PrivateRoute path="/analysis" component={Analysis} />
+                      <PrivateRoute exact path="/eventBasedProcess" component={Events} />
+                      <Route exact path="/share/:type/:id" component={Sharing} />
+                      <PrivateRoute
+                        path="/(report|dashboard|collection|eventBasedProcess)/*"
+                        render={this.renderEntity}
+                      />
+                      <Route path="/license" component={License} />
+                      <Route path="/logout" component={Logout} />
+                      <PrivateRoute path="*" component={ErrorPage} />
+                    </Switch>
+                  </UserProvider>
+                </DocsProvider>
               </ErrorBoundary>
             </div>
           </WithLicense>

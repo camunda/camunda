@@ -11,15 +11,18 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomNumberBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -47,6 +50,7 @@ public class SingleReportConfigurationDto implements Combinable {
   private Boolean showInstanceCount = false;
   @Builder.Default
   private Boolean pointMarkers = true;
+  @Builder.Default
   private Integer precision = null;
   @Builder.Default
   private Boolean hideRelativeValue = false;
@@ -66,11 +70,10 @@ public class SingleReportConfigurationDto implements Combinable {
   private Boolean alwaysShowAbsolute = false;
   @Builder.Default
   private Boolean showGradientBars = true;
+  @Builder.Default
   private String xml = null;
   @Builder.Default
-  private List<String> excludedColumns = new ArrayList<>();
-  @Builder.Default
-  private List<String> includedColumns = new ArrayList<>();
+  private TableColumnDto tableColumns = new TableColumnDto();
   @Builder.Default
   private ColumnOrderDto columnOrder = new ColumnOrderDto();
   @Builder.Default
@@ -79,7 +82,14 @@ public class SingleReportConfigurationDto implements Combinable {
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
   @Builder.Default
   private DistributedBy distributedBy = DistributedBy.NONE;
-  private SortingDto sorting = null;
+  @Builder.Default
+  @NonNull
+  private GroupByDateUnit groupByDateVariableUnit = GroupByDateUnit.AUTOMATIC;
+  @Builder.Default
+  private CustomNumberBucketDto customNumberBucket = new CustomNumberBucketDto();
+  @Builder.Default
+  private ReportSortingDto sorting = null;
+  @Builder.Default
   private ProcessPartDto processPart = null;
 
   @JsonIgnore
@@ -88,9 +98,7 @@ public class SingleReportConfigurationDto implements Combinable {
     if (isUserTaskCommand(viewDto)) {
       configsToConsiderForCommand.add(this.distributedBy.getId());
     }
-    if (getProcessPart().isPresent()) {
-      configsToConsiderForCommand.add(getProcessPart().get().createCommandKey());
-    }
+    getProcessPart().ifPresent(processPartDto -> configsToConsiderForCommand.add(processPartDto.createCommandKey()));
     return String.join("-", configsToConsiderForCommand);
   }
 
@@ -111,11 +119,23 @@ public class SingleReportConfigurationDto implements Combinable {
       viewDto.getEntity().equals(ProcessViewEntity.USER_TASK);
   }
 
-  public Optional<SortingDto> getSorting() {
+  public Optional<ReportSortingDto> getSorting() {
     return Optional.ofNullable(sorting);
   }
 
   public Optional<ProcessPartDto> getProcessPart() {
     return Optional.ofNullable(processPart);
+  }
+
+  public Optional<Double> getBaselineForNumberVariableReport() {
+    return customNumberBucket.isActive()
+      ? Optional.ofNullable(customNumberBucket.getBaseline())
+      : Optional.empty();
+  }
+
+  public Optional<Double> getBucketSizeForNumberVariableReport() {
+    return customNumberBucket.isActive()
+      ? Optional.ofNullable(customNumberBucket.getBucketSize())
+      : Optional.empty();
   }
 }

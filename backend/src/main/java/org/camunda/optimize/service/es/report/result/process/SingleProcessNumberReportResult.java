@@ -12,6 +12,7 @@ import org.camunda.optimize.service.es.report.result.NumberResult;
 import org.camunda.optimize.service.export.CSVUtils;
 
 import javax.validation.constraints.NotNull;
+import java.time.ZoneId;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -25,7 +26,7 @@ public class SingleProcessNumberReportResult
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset) {
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
     if (reportDefinition.getData().isFrequencyReport()) {
       return frequencyNumberAsCsv();
     } else {
@@ -46,11 +47,8 @@ public class SingleProcessNumberReportResult
 
   private List<String[]> durationNumberAsCsv() {
     final List<String[]> csvStrings = new LinkedList<>();
-    Long result = reportResult.getData();
-    csvStrings.add(
-      new String[]{
-        result.toString()
-      });
+    Double result = reportResult.getData();
+    csvStrings.add(new String[]{String.valueOf(result)});
 
     final String normalizedCommandKey =
       reportDefinition.getData().getView().createCommandKey().replace("-", "_");
@@ -65,7 +63,7 @@ public class SingleProcessNumberReportResult
 
 
   @Override
-  public long getResultAsNumber() {
+  public Double getResultAsNumber() {
     return reportResult.getData();
   }
 }

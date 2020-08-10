@@ -16,10 +16,9 @@ import java.io.IOException;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_SHARDS_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@Component
 public class DecisionInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 4;
 
   public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";

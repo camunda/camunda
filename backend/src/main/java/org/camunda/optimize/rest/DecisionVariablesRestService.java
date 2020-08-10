@@ -25,7 +25,6 @@ import java.util.List;
 
 @AllArgsConstructor
 @Path("/decision-variables")
-@Secured
 @Component
 public class DecisionVariablesRestService {
 
@@ -36,23 +35,20 @@ public class DecisionVariablesRestService {
   @Path("/inputs/names")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<DecisionVariableNameDto> getInputVariableNames(@Context ContainerRequestContext requestContext,
-                                                             DecisionVariableNameRequestDto variableRequestDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return decisionVariableService.getInputVariableNames(userId, variableRequestDto);
+  public List<DecisionVariableNameDto> getInputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
+    return decisionVariableService.getInputVariableNames(variableRequestDto);
   }
 
   @POST
   @Path("/outputs/names")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
-  public List<DecisionVariableNameDto> getOutputVariableNames(@Context ContainerRequestContext requestContext,
-                                                              DecisionVariableNameRequestDto variableRequestDto) {
-    String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return decisionVariableService.getOutputVariableNames(userId, variableRequestDto);
+  public List<DecisionVariableNameDto> getOutputVariableNames(DecisionVariableNameRequestDto variableRequestDto) {
+    return decisionVariableService.getOutputVariableNames(variableRequestDto);
   }
 
   @POST
+  @Secured
   @Path("/inputs/values")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
@@ -63,6 +59,7 @@ public class DecisionVariablesRestService {
   }
 
   @POST
+  @Secured
   @Path("/outputs/values")
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)

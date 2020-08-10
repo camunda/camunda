@@ -1,13 +1,12 @@
 #!/usr/bin/env groovy
 
-boolean slaveDisconnected() {
-  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
-}
+// https://github.com/camunda/jenkins-global-shared-library
+@Library('camunda-ci') _
 
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
   return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}"
@@ -45,7 +44,7 @@ spec:
   volumes:
   - name: cambpm-config
     configMap:
-      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci/deployments/optimize
+      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci-v2/deployments/optimize
       name: ci-optimize-cambpm-config
   initContainers:
     - name: init-sysctl
@@ -202,12 +201,12 @@ void integrationTestStepsAWS() {
 
   container('maven') {
     sh("""    
-      curl -s "https://$OPTIMIZE_ELASTICSEARCH_HOST/_cat/indices?v"
+      curl -s "http://$OPTIMIZE_ELASTICSEARCH_HOST/_cat/indices?v"
       
       #cleanup before starting the integration tests to assure starting from scratch
-      curl -XDELETE "https://$OPTIMIZE_ELASTICSEARCH_HOST/_all"
+      curl -XDELETE "http://$OPTIMIZE_ELASTICSEARCH_HOST/_all"
       """)
-    runMaven("verify -Dskip.docker -Pit,engine-latest -pl backend,upgrade -am -T\$LIMITS_CPU -DhttpTestTimeout=30000")
+    runMaven("verify -Dskip.docker -Pit,engine-latest -pl backend,upgrade -am -T\$LIMITS_CPU -DhttpTestTimeout=60000")
   }
 }
 
@@ -371,6 +370,46 @@ pipeline {
             }
           }
         }
+        stage("Elasticsearch 7.7.0 Integration") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_es-7.7.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("7.7.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          steps {
+            retry(2) {
+              integrationTestSteps()
+            }
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage("Elasticsearch 7.8.0 Integration") {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build_es-7.8.0_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml mavenElasticsearchIntegrationTestAgent("7.8.0", "${env.CAMBPM_VERSION}")
+            }
+          }
+          steps {
+            retry(2) {
+              integrationTestSteps()
+            }
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
         stage("Elasticsearch AWS Integration") {
           agent {
             kubernetes {
@@ -382,7 +421,7 @@ pipeline {
           }
 
           environment {
-            OPTIMIZE_ELASTICSEARCH_HOST = "vpc-optimize-es-test1-mniyd6oio2w5hhzrkncykqg36e.eu-central-1.es.amazonaws.com"
+            OPTIMIZE_ELASTICSEARCH_HOST = "ci-elasticsearch.optimize"
             OPTIMIZE_ELASTICSEARCH_HTTP_PORT = 80
           }
 
@@ -406,7 +445,7 @@ pipeline {
     always {
       // Retrigger the build if the slave disconnected
       script {
-        if (slaveDisconnected()) {
+        if (agentDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }

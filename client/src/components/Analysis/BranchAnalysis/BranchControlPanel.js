@@ -7,14 +7,13 @@
 import update from 'immutability-helper';
 import React from 'react';
 import equal from 'deep-equal';
+
 import {ActionItem, DefinitionSelection} from 'components';
-
+import {Filter} from 'filter';
 import {getFlowNodeNames} from 'services';
-
-import {Filter} from '../../Reports';
+import {t} from 'translation';
 
 import './BranchControlPanel.scss';
-import {t} from 'translation';
 
 export default class BranchControlPanel extends React.Component {
   constructor(props) {

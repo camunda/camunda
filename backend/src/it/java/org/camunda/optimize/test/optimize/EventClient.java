@@ -8,28 +8,35 @@ package org.camunda.optimize.test.optimize;
 import com.google.common.collect.ImmutableMap;
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.service.util.IdGenerator;
-import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.Random;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
+
+import static java.util.stream.Collectors.toList;
 
 @AllArgsConstructor
 public class EventClient {
-
   private static final Random RANDOM = new Random();
 
-  private final EmbeddedOptimizeExtension embeddedOptimizeExtension;
+  private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
+  private final Supplier<String> accessTokenSupplier;
 
   public void ingestEventBatch(final List<CloudEventDto> eventDtos) {
-    embeddedOptimizeExtension.getRequestExecutor()
-      .buildIngestEventBatch(
-        eventDtos,
-        embeddedOptimizeExtension.getConfigurationService().getEventIngestionConfiguration().getAccessToken()
-      )
-      .execute();
+    requestExecutorSupplier.get().buildIngestEventBatch(eventDtos, accessTokenSupplier.get()).execute();
+  }
+
+  public List<CloudEventDto> ingestEventBatchWithTimestamp(final Instant timestamp, final int eventCount) {
+    final List<CloudEventDto> ingestedEvents = IntStream.range(0, eventCount)
+      .mapToObj(operand -> createCloudEventDto().toBuilder().time(timestamp).build())
+      .collect(toList());
+    ingestEventBatch(ingestedEvents);
+    return ingestedEvents;
   }
 
   public CloudEventDto createCloudEventDto() {

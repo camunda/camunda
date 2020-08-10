@@ -14,16 +14,17 @@ import {
   Popover,
   Icon,
   Deleter,
-  ModificationInfo,
+  EntityName,
+  InstanceCount,
+  ReportDetails,
 } from 'components';
 import {isSharingEnabled} from 'config';
+import {checkDeleteConflict} from 'services';
+import {t} from 'translation';
 
 import {shareReport, revokeReportSharing, getSharedReport} from './service';
 
-import {checkDeleteConflict} from 'services';
-
 import './ReportView.scss';
-import {t} from 'translation';
 
 export default class ReportView extends React.Component {
   state = {
@@ -47,7 +48,7 @@ export default class ReportView extends React.Component {
     const {report} = this.props;
     const {redirect, sharingEnabled, deleting} = this.state;
 
-    const {id, name, currentUserRole, lastModifier, lastModified} = report;
+    const {id, name, currentUserRole} = report;
 
     if (redirect) {
       return <Redirect to={redirect} />;
@@ -57,9 +58,7 @@ export default class ReportView extends React.Component {
       <div className="ReportView Report">
         <div className="Report__header">
           <div className="head">
-            <div className="name-container">
-              <h1 className="name">{name}</h1>
-            </div>
+            <EntityName details={<ReportDetails report={report} />}>{name}</EntityName>
             <div className="tools">
               {currentUserRole === 'editor' && (
                 <>
@@ -108,7 +107,7 @@ export default class ReportView extends React.Component {
               )}
             </div>
           </div>
-          <ModificationInfo user={lastModifier} date={lastModified} />
+          <InstanceCount report={report} />
         </div>
         <div className="Report__view">
           <div className="Report__content">

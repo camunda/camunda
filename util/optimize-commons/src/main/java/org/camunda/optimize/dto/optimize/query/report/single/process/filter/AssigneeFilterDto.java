@@ -7,12 +7,12 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.AssigneeCandidateGroupFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.IdentityLinkFilterDataDto;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class AssigneeFilterDto extends ProcessFilterDto<AssigneeCandidateGroupFilterDataDto> {
+public class AssigneeFilterDto extends ProcessFilterDto<IdentityLinkFilterDataDto> {
 
-  public AssigneeFilterDto(final AssigneeCandidateGroupFilterDataDto assigneeCandidateGroupFilterDataDto) {
+  public AssigneeFilterDto(final IdentityLinkFilterDataDto assigneeCandidateGroupFilterDataDto) {
     super(assigneeCandidateGroupFilterDataDto);
   }
 

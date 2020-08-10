@@ -15,7 +15,9 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
@@ -29,16 +31,28 @@ public class DefinitionWithTenantsDto extends SimpleDefinitionDto {
                                   final String name,
                                   @NonNull final DefinitionType type,
                                   final Boolean isEventProcess,
-                                  @NonNull final List<TenantDto> tenants) {
-    super(key, name, type, isEventProcess);
+                                  @NonNull final List<TenantDto> tenants,
+                                  @NonNull final String engine) {
+    super(key, name, type, isEventProcess, Collections.singleton(engine));
     this.tenants = tenants;
   }
 
   public DefinitionWithTenantsDto(@NonNull final String key,
                                   final String name,
                                   @NonNull final DefinitionType type,
-                                  @NonNull final List<TenantDto> tenants) {
-    super(key, name, type, false);
+                                  final Boolean isEventProcess,
+                                  @NonNull final List<TenantDto> tenants,
+                                  @NonNull final Set<String> engines) {
+    super(key, name, type, isEventProcess, engines);
+    this.tenants = tenants;
+  }
+
+  public DefinitionWithTenantsDto(@NonNull final String key,
+                                  final String name,
+                                  @NonNull final DefinitionType type,
+                                  @NonNull final List<TenantDto> tenants,
+                                  @NonNull final String engine) {
+    super(key, name, type, false, Collections.singleton(engine));
     this.tenants = tenants;
   }
 }

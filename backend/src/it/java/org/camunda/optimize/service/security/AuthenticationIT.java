@@ -19,8 +19,8 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.security.AuthCookieService.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
-import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.constants.RestConstants.AUTH_COOKIE_TOKEN_VALUE_PREFIX;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 
 public class AuthenticationIT extends AbstractIT {

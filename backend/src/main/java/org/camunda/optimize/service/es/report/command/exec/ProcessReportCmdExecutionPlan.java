@@ -7,18 +7,21 @@ package org.camunda.optimize.service.es.report.command.exec;
 
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.view.ViewPart;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.metrics.Stats;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -46,16 +49,25 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
   }
 
   @Override
-  protected BoolQueryBuilder setupBaseQuery(final ProcessReportDataDto reportData) {
-    BoolQueryBuilder boolQueryBuilder = createDefinitionQuery(
+  public BoolQueryBuilder setupBaseQuery(final ExecutionContext<ProcessReportDataDto> context) {
+    BoolQueryBuilder boolQueryBuilder = setupUnfilteredBaseQuery(context.getReportData());
+    queryFilterEnhancer.addFilterToQuery(
+      boolQueryBuilder,
+      getAllFilters(context.getReportData()),
+      context.getTimezone()
+    );
+    return boolQueryBuilder;
+  }
+
+  @Override
+  protected BoolQueryBuilder setupUnfilteredBaseQuery(final ProcessReportDataDto reportData) {
+    return createDefinitionQuery(
       reportData.getDefinitionKey(),
       reportData.getDefinitionVersions(),
       reportData.getTenantIds(),
       new ProcessInstanceIndex(),
       processDefinitionReader::getLatestVersionToKey
     );
-    queryFilterEnhancer.addFilterToQuery(boolQueryBuilder, reportData.getFilter());
-    return boolQueryBuilder;
   }
 
   @Override
@@ -68,7 +80,18 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
     return ProcessReportDataDto::new;
   }
 
-  public Optional<Stats> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context) {
-    return groupByPart.calculateDateRangeForAutomaticGroupByDate(context, setupBaseQuery(context.getReportData()));
+  public Optional<MinMaxStatDto> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context) {
+    return groupByPart.calculateDateRangeForAutomaticGroupByDate(context, setupBaseQuery(context));
+  }
+
+  public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<ProcessReportDataDto> context) {
+    return groupByPart.calculateNumberRangeForGroupByNumberVariable(context, setupBaseQuery(context));
+  }
+
+  private List<ProcessFilterDto<?>> getAllFilters(final ProcessReportDataDto reportData) {
+    List<ProcessFilterDto<?>> allFilters = new ArrayList<>();
+    allFilters.addAll(reportData.getFilter());
+    allFilters.addAll(reportData.getAdditionalFiltersForReportType());
+    return allFilters;
   }
 }

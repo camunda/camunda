@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
-import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 
@@ -127,11 +126,22 @@ public class EngineImportScheduler extends AbstractScheduledService {
     return CompletableFuture.allOf(importTaskFutures);
   }
 
+  public String getEngineAlias() {
+    return engineAlias;
+  }
+
+  public boolean isImporting() {
+    return isImporting || hasActiveImportJobs();
+  }
+
+  public List<EngineImportMediator> getImportMediators() {
+    return importMediators;
+  }
+
   private boolean hasActiveImportJobs() {
     return importMediators
       .stream()
-      .map(EngineImportMediator::getImportJobExecutor)
-      .anyMatch(ImportJobExecutor::isActive);
+      .anyMatch(EngineImportMediator::hasPendingImportJobs);
   }
 
   private void notifyThatImportIsInProgress() {
@@ -158,17 +168,5 @@ public class EngineImportScheduler extends AbstractScheduledService {
     } catch (InterruptedException e) {
       log.warn("Scheduler was interrupted while sleeping.", e);
     }
-  }
-
-  public String getEngineAlias() {
-    return engineAlias;
-  }
-
-  public boolean isImporting() {
-    return isImporting || hasActiveImportJobs();
-  }
-
-  public List<EngineImportMediator> getImportMediators() {
-    return importMediators;
   }
 }

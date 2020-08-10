@@ -4,20 +4,32 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState} from 'react';
-import moment from 'moment';
+import React, {useState, useEffect} from 'react';
 import classnames from 'classnames';
+import {parseISO, startOfDay, endOfDay} from 'date-fns';
 
+import {format} from 'dates';
 import {Dropdown, Icon, Popover, DatePicker, Button} from 'components';
 import {t} from 'translation';
 
 import './DateFilter.scss';
 
-export default function DateFilter({filter, setFilter, type}) {
+export default function DateFilter({
+  filter,
+  setFilter,
+  icon = 'filter',
+  children,
+  resetTrigger,
+  emptyText = t('common.select'),
+}) {
   const [showDatePicker, setShowDatePicker] = useState(filter?.type === 'fixed');
 
-  function setRollingFilter(unit, past) {
-    setFilter({type: 'rolling', start: {value: past ? 1 : 0, unit}, end: null});
+  useEffect(() => {
+    setShowDatePicker(false);
+  }, [resetTrigger]);
+
+  function setRelativeFilter(unit, past) {
+    setFilter({type: 'relative', start: {value: past ? 1 : 0, unit}, end: null});
   }
 
   function isFilter(unit, past) {
@@ -26,7 +38,7 @@ export default function DateFilter({filter, setFilter, type}) {
 
   function getFilterName(filter) {
     if (!filter) {
-      return t('common.off');
+      return emptyText;
     }
 
     if (isFilter('days')) {
@@ -44,6 +56,9 @@ export default function DateFilter({filter, setFilter, type}) {
     );
   }
 
+  const startDate = filter?.start ? parseISO(filter.start) : null;
+  const endDate = filter?.end ? parseISO(filter.end) : null;
+
   function getFixedDateFilterName(filter) {
     if (!filter) {
       return t('common.filter.dateModal.unit.fixed');
@@ -51,21 +66,21 @@ export default function DateFilter({filter, setFilter, type}) {
 
     return (
       <>
-        {moment(filter.start).format('YYYY-MM-DD')}
+        {format(startDate, 'yyyy-MM-dd')}
         <span className="to"> {t('common.filter.dateModal.to')} </span>
-        {moment(filter.end).format('YYYY-MM-DD')}
+        {format(endDate, 'yyyy-MM-dd')}
       </>
     );
   }
 
   return (
     <div className={classnames('DateFilter__Dashboard', {fixed: filter?.type === 'fixed'})}>
-      <div className="title">{t('dashboard.filter.types.' + type)}</div>
+      {children}
       {showDatePicker ? (
         <Popover
           title={
             <>
-              <Icon type="calender" className={classnames('indicator', {active: filter})} />{' '}
+              <Icon type={icon} className={classnames('indicator', {active: filter})} />{' '}
               {getFixedDateFilterName(filter)}
             </>
           }
@@ -73,13 +88,13 @@ export default function DateFilter({filter, setFilter, type}) {
         >
           <DatePicker
             forceOpen
-            initialDates={{startDate: filter?.start, endDate: filter?.end}}
+            initialDates={{startDate, endDate}}
             onDateChange={({startDate, endDate, valid}) => {
               if (valid) {
                 setFilter({
                   type: 'fixed',
-                  start: startDate?.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
-                  end: endDate?.endOf('day').format('YYYY-MM-DDTHH:mm:ss'),
+                  start: format(startOfDay(startDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+                  end: format(endOfDay(endDate), "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
                 });
               }
             }}
@@ -99,7 +114,7 @@ export default function DateFilter({filter, setFilter, type}) {
         <Dropdown
           label={
             <>
-              <Icon type="calender" className={classnames('indicator', {active: filter})} />
+              <Icon type={icon} className={classnames('indicator', {active: filter})} />
               {getFilterName(filter)}
             </>
           }
@@ -112,12 +127,12 @@ export default function DateFilter({filter, setFilter, type}) {
           >
             {t('common.filter.dateModal.unit.fixed')}
           </Dropdown.Option>
-          <Dropdown.Option checked={isFilter('days')} onClick={() => setRollingFilter('days')}>
+          <Dropdown.Option checked={isFilter('days')} onClick={() => setRelativeFilter('days')}>
             {t('common.filter.dateModal.unit.today')}
           </Dropdown.Option>
           <Dropdown.Option
             checked={isFilter('days', true)}
-            onClick={() => setRollingFilter('days', true)}
+            onClick={() => setRelativeFilter('days', true)}
           >
             {t('common.filter.dateModal.unit.yesterday')}
           </Dropdown.Option>
@@ -129,7 +144,7 @@ export default function DateFilter({filter, setFilter, type}) {
               <Dropdown.Option
                 key={unit}
                 checked={isFilter(unit, true)}
-                onClick={() => setRollingFilter(unit, true)}
+                onClick={() => setRelativeFilter(unit, true)}
               >
                 {t('dashboard.filter.date.units.' + unit)}
               </Dropdown.Option>
@@ -143,7 +158,7 @@ export default function DateFilter({filter, setFilter, type}) {
               <Dropdown.Option
                 key={unit}
                 checked={isFilter(unit)}
-                onClick={() => setRollingFilter(unit)}
+                onClick={() => setRelativeFilter(unit)}
               >
                 {t('dashboard.filter.date.units.' + unit)}
               </Dropdown.Option>

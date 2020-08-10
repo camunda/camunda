@@ -4,7 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import moment from 'moment';
+import {addMilliseconds} from 'date-fns';
+
+import {format} from 'dates';
+
 import './zoomIn.scss';
 
 export default ({updateReport, filters, type, valueRange: {min, max}}) => {
@@ -26,7 +29,7 @@ export default ({updateReport, filters, type, valueRange: {min, max}}) => {
     const {left, right} = this.chartArea;
 
     if (offsetX >= left && offsetX <= right) {
-      const position = ((offsetX - left) / (right - left)) * (max - min) + min;
+      const position = addMilliseconds(((offsetX - left) / (right - left)) * (max - min), min);
       currentPosition = position;
     } else {
       currentPosition = null;
@@ -72,12 +75,13 @@ export default ({updateReport, filters, type, valueRange: {min, max}}) => {
   function mouseup({target}) {
     if (currentlyDragging && triggered && target === canvas && currentPosition) {
       let start, end;
+
       if (startPosition < currentPosition) {
-        start = moment(startPosition);
-        end = moment(currentPosition);
+        start = startPosition;
+        end = currentPosition;
       } else {
-        start = moment(currentPosition);
-        end = moment(startPosition);
+        start = currentPosition;
+        end = startPosition;
       }
 
       updateReport(
@@ -89,8 +93,8 @@ export default ({updateReport, filters, type, valueRange: {min, max}}) => {
                 type,
                 data: {
                   type: 'fixed',
-                  start: start.format('YYYY-MM-DDTHH:mm:ss'),
-                  end: end.format('YYYY-MM-DDTHH:mm:ss'),
+                  start: format(start, "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
+                  end: format(end, "yyyy-MM-dd'T'HH:mm:ss.SSSXX"),
                 },
               },
             ],

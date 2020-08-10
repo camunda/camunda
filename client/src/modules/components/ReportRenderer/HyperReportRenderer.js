@@ -45,6 +45,7 @@ export default function HyperReportRenderer({report, ...rest}) {
   });
 
   convertedReport.result = {
+    ...report.result,
     type: null,
     data: newResultData,
   };

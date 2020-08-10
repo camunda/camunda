@@ -88,7 +88,7 @@ public class DataGenerationExecutor {
     List<DataGenerator<?>> dataGenerators = new ArrayList<>();
     try (ScanResult scanResult = new ClassGraph()
       .enableClassInfo()
-      .whitelistPackages(DataGenerator.class.getPackage().getName())
+      .acceptPackages(DataGenerator.class.getPackage().getName())
       .scan()) {
       scanResult.getSubclasses(DataGenerator.class.getName()).stream()
         .filter(g -> definitions.containsKey(g.getSimpleName()))

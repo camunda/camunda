@@ -14,9 +14,11 @@ import AggregationType from './AggregationType';
 import VisibleNodesFilter from './VisibleNodesFilter';
 import NodeStatus from './NodeStatus';
 import DistributedBy from './DistributedBy';
+import DateVariableUnit from './DateVariableUnit';
+import NumVariableBucket from './NumVariableBucket';
+import {t} from 'translation';
 
 import './Configuration.scss';
-import {t} from 'translation';
 
 function convertToChangeset(config) {
   return Object.keys(config).reduce(
@@ -69,7 +71,11 @@ export default class Configuration extends React.Component {
         alwaysShowRelative: false,
         showInstanceCount: false,
         showGradientBars: true,
-        excludedColumns: [],
+        tableColumns: {
+          includeNewVariables: true,
+          includedColumns: [],
+          excludedColumns: [],
+        },
         pointMarkers: true,
         xLabel: '',
         yLabel: '',
@@ -77,6 +83,12 @@ export default class Configuration extends React.Component {
         hiddenNodes: {
           active: false,
           keys: [],
+        },
+        groupByDateVariableUnit: 'automatic',
+        customNumberBucket: {
+          active: false,
+          bucketSize: '10',
+          baseline: '0',
         },
       }),
       true
@@ -115,6 +127,8 @@ export default class Configuration extends React.Component {
                 label={report.reportType === 'decision' ? 'evaluation' : 'instance'}
               />
             )}
+            <DateVariableUnit report={report} onChange={this.updateConfiguration} />
+            <NumVariableBucket report={report} onChange={this.updateConfiguration} />
             <AggregationType report={report} onChange={this.updateConfiguration} />
             <UserTaskDurationTime report={report} onChange={this.updateConfiguration} />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}

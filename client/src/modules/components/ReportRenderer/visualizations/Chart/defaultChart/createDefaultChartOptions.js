@@ -18,7 +18,6 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
   } = report;
 
   const isDark = theme === 'dark';
-  const instanceCountArr = [result.instanceCount || 0];
   const isDuration = isDurationReport(report);
   const maxValue = isDuration ? Math.max(...result.data.map(({value}) => value)) : 0;
   const isPersistedTooltips = isDuration
@@ -69,12 +68,10 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
           return formatTooltip(
             tooltipItem,
             data,
-            targetValue,
             configuration,
             formatter,
-            instanceCountArr,
-            isDuration,
-            visualization
+            result.instanceCount,
+            isDuration
           );
         },
         labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),

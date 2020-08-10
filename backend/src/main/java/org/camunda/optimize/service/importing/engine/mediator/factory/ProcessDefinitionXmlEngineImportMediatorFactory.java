@@ -43,7 +43,6 @@ public class ProcessDefinitionXmlEngineImportMediatorFactory extends AbstractImp
         processDefinitionXmlWriter
       ),
       configurationService,
-      elasticsearchImportJobExecutor,
       new BackoffCalculator(configurationService)
     );
   }

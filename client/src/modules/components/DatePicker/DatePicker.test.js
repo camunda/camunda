@@ -5,10 +5,10 @@
  */
 
 import React from 'react';
+import {mount} from 'enzyme';
+import {parseISO} from 'date-fns';
 
 import DatePicker from './DatePicker';
-import {mount} from 'enzyme';
-import moment from 'moment';
 
 console.error = jest.fn();
 
@@ -20,8 +20,8 @@ jest.mock('components', () => {
   };
 });
 
-const startDate = moment([2017, 8, 29]);
-const endDate = moment([2020, 6, 5]);
+const startDate = parseISO('2017-08-29');
+const endDate = parseISO('2020-06-05');
 
 it('should contain date fields', () => {
   const node = mount(<DatePicker initialDates={{startDate, endDate}} />);

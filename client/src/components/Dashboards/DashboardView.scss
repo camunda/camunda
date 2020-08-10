@@ -7,6 +7,7 @@
 .fullscreen {
   background-color: white;
   transition: background-color 0.3s;
+  height: inherit;
 }
 
 .fullscreen-enabled {
@@ -14,6 +15,18 @@
 }
 
 .DashboardView {
+  height: inherit;
+
+  > .content {
+    height: calc(100% - 75px);
+  }
+
+  .OptimizeReport:hover {
+    .Popover__button {
+      opacity: 1;
+    }
+  }
+
   .share-button .Popover__dialog {
     padding: 20px 40px;
   }

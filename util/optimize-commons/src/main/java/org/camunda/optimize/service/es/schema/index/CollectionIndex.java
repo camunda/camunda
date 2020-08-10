@@ -12,17 +12,15 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@Component
 public class CollectionIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 3;
+  public static final int VERSION = 4;
 
   public static final String ID = BaseCollectionDefinitionDto.Fields.id.name();
   public static final String DATA = BaseCollectionDefinitionDto.Fields.data.name();

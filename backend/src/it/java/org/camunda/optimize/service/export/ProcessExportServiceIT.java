@@ -6,18 +6,19 @@
 package org.camunda.optimize.service.export;
 
 import lombok.SneakyThrows;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -29,28 +30,29 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT;
+import static org.camunda.optimize.util.BpmnModels.START_EVENT;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ProcessExportServiceIT extends AbstractIT {
-
-  private static final String START = "aStart";
-  private static final String END = "anEnd";
   private static final String FAKE = "FAKE";
 
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @ParameterizedTest
   @MethodSource("getParameters")
-  public void reportCsvHasExpectedValue(ProcessReportDataDto currentReport, String expectedCSV) throws Exception {
+  public void reportCsvHasExpectedValue(ProcessReportDataDto currentReport, String expectedCSV) {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     currentReport.setProcessDefinitionKey(processInstance.getProcessDefinitionKey());
     currentReport.setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion());
@@ -60,12 +62,36 @@ public class ProcessExportServiceIT extends AbstractIT {
     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected = getExpectedContentAsString(processInstance, expectedCSV);
 
-    assertThat(actualContent, is(stringExpected));
+    assertThat(actualContent).isEqualTo(stringExpected);
+  }
+
+  @Test
+  public void numberReportCsvExportWorksEvenWithNoData() {
+    //given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
+      .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+      // We use a canceled instances filter to remove instance data
+      .setFilter(new CanceledInstancesOnlyFilterDto())
+      .build();
+
+    importAllEngineEntitiesFromScratch();
+    String reportId = createAndStoreDefaultReportDefinition(reportData);
+
+    // when
+    Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    assertThat(getResponseContentAsString(response)).isNotEmpty();
   }
 
   private String getExpectedContentAsString(ProcessInstanceEngineDto processInstance, String expectedCSV) {
@@ -97,17 +123,13 @@ public class ProcessExportServiceIT extends AbstractIT {
     OffsetDateTime shiftedStartDate = OffsetDateTime.parse("2018-02-26T14:20:00.000+01:00");
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceEngineDto.getId(), shiftedStartDate);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceEngineDto.getId(), shiftedStartDate);
-    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), START, 0L);
-    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), END, 0L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), START_EVENT, 0L);
+    engineDatabaseExtension.changeActivityDuration(processInstanceEngineDto.getId(), END_EVENT, 0L);
     return processInstanceEngineDto;
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent(START)
-      .endEvent(END)
-      .done();
+    BpmnModelInstance processModel = getSimpleBpmnDiagram();
     return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
@@ -127,61 +149,69 @@ public class ProcessExportServiceIT extends AbstractIT {
     return Stream.of(
       Arguments.of(
         TemplatedProcessReportDataBuilder
-                     .createReportData()
-                     .setProcessDefinitionKey(FAKE)
-                     .setProcessDefinitionVersion(FAKE)
-                     .setReportDataType(ProcessReportDataType.RAW_DATA)
-                     .build(),
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.RAW_DATA)
+          .build(),
         "/csv/process/single/raw_process_data_grouped_by_none.csv",
-        "Raw Data Grouped By None"),
+        "Raw Data Grouped By None"
+      ),
       Arguments.of(
         TemplatedProcessReportDataBuilder
-                     .createReportData()
-                     .setProcessDefinitionKey(FAKE)
-                     .setProcessDefinitionVersion(FAKE)
-                     .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
-                     .build(),
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+          .build(),
         "/csv/process/single/pi_frequency_group_by_none.csv",
-        "Process Instance Frequency Grouped By None"),
+        "Process Instance Frequency Grouped By None"
+      ),
       Arguments.of(
         TemplatedProcessReportDataBuilder
-                     .createReportData()
-                     .setProcessDefinitionKey(FAKE)
-                     .setProcessDefinitionVersion(FAKE)
-                     .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
-                     .build(),
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+          .build(),
         "/csv/process/single/pi_frequency_group_by_none.csv",
-        "Process Instance Frequency Grouped By None"),
+        "Process Instance Frequency Grouped By None"
+      ),
       Arguments.of(
         TemplatedProcessReportDataBuilder
-                     .createReportData()
-                     .setProcessDefinitionKey(FAKE)
-                     .setProcessDefinitionVersion(FAKE)
-                     .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
-                     .build(),
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.COUNT_FLOW_NODE_FREQ_GROUP_BY_FLOW_NODE)
+          .build(),
         "/csv/process/single/flownode_frequency_group_by_flownodes.csv",
-        "Flow Node Frequency Grouped By Flow Node"),
+        "Flow Node Frequency Grouped By Flow Node"
+      ),
       Arguments.of(
         TemplatedProcessReportDataBuilder
-                     .createReportData()
-                     .setProcessDefinitionKey(FAKE)
-                     .setProcessDefinitionVersion(FAKE)
-                     .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
-                     .build(),
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE)
+          .build(),
         "/csv/process/single/pi_duration_group_by_none.csv",
-        "Process Instance Duration Grouped By None"),
+        "Process Instance Duration Grouped By None"
+      ),
       Arguments.of(
         TemplatedProcessReportDataBuilder
-                     .createReportData()
-                     .setProcessDefinitionKey(FAKE)
-                     .setProcessDefinitionVersion(FAKE)
-                     .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
-                     .build(),
+          .createReportData()
+          .setProcessDefinitionKey(FAKE)
+          .setProcessDefinitionVersion(FAKE)
+          .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+          .build(),
         "/csv/process/single/flownode_duration_group_by_flownodes.csv",
-        "Flow Node Duration Grouped By Flow Node"),
-      Arguments.of(createRunningFlowNodeDurationGroupByFlowNodeTableReport(),
-                   "/csv/process/single/flownode_duration_group_by_flownodes_no_values.csv",
-                   "Flow Node Duration Grouped By Flow Node - Running and null duration")
+        "Flow Node Duration Grouped By Flow Node"
+      ),
+      Arguments.of(
+        createRunningFlowNodeDurationGroupByFlowNodeTableReport(),
+        "/csv/process/single/flownode_duration_group_by_flownodes_no_values.csv",
+        "Flow Node Duration Grouped By Flow Node - Running and null duration"
+      )
     );
   }
 

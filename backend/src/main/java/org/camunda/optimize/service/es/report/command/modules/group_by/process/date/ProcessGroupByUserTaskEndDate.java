@@ -8,14 +8,11 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.es.report.MinMaxStatsService;
+import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
-
-import java.time.format.DateTimeFormatter;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_END_DATE;
@@ -25,11 +22,9 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessGroupByUserTaskEndDate extends ProcessGroupByUserTaskDate {
 
-  public ProcessGroupByUserTaskEndDate(final DateTimeFormatter dateTimeFormatter,
-                                       final OptimizeElasticsearchClient esClient,
-                                       final IntervalAggregationService intervalAggregationService,
-                                       final ConfigurationService configurationService) {
-    super(dateTimeFormatter, esClient, intervalAggregationService, configurationService);
+  public ProcessGroupByUserTaskEndDate(final DateAggregationService dateAggregationService,
+                                       final MinMaxStatsService minMaxStatsService) {
+    super(dateAggregationService, minMaxStatsService);
   }
 
   @Override

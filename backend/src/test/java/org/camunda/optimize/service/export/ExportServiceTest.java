@@ -24,6 +24,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.ZoneId;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,13 +55,13 @@ public class ExportServiceTest {
     rawDataProcessReportResultDto.setData(RawDataHelper.getRawDataProcessInstanceDtos());
     SingleProcessRawDataReportResult rawDataReportResult =
       new SingleProcessRawDataReportResult(rawDataProcessReportResultDto, new SingleProcessReportDefinitionDto());
-    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(new AuthorizedReportEvaluationResult(
+    when(reportService.evaluateReport(any())).thenReturn(new AuthorizedReportEvaluationResult(
       rawDataReportResult,
       RoleType.VIEWER
     ));
 
     // when
-    byte[] csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "")
+    byte[] csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.systemDefault())
       .orElseThrow(() -> new OptimizeIntegrationTestException("Got no csv response"));
     String actualContent = new String(csvContent);
     String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator(
@@ -76,13 +78,13 @@ public class ExportServiceTest {
     rawDataDecisionReportResultDto.setData(RawDataHelper.getRawDataDecisionInstanceDtos());
     SingleDecisionRawDataReportResult rawDataReportResult =
       new SingleDecisionRawDataReportResult(rawDataDecisionReportResultDto, new SingleDecisionReportDefinitionDto());
-    when(reportService.evaluateSavedReport(any(), any(), any())).thenReturn(new AuthorizedReportEvaluationResult(
+    when(reportService.evaluateReport(any())).thenReturn(new AuthorizedReportEvaluationResult(
       rawDataReportResult,
       RoleType.VIEWER
     ));
 
     // when
-    byte[] csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "")
+    byte[] csvContent = exportService.getCsvBytesForEvaluatedReportResult("", "", ZoneId.systemDefault())
       .orElseThrow(() -> new OptimizeIntegrationTestException("Got no csv response"));
     String actualContent = new String(csvContent);
     String expectedContent = FileReaderUtil.readFileWithWindowsLineSeparator(

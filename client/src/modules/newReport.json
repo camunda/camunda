@@ -1,0 +1,198 @@
+{
+  "new": {
+    "id": "new",
+    "data": {
+      "configuration": {
+        "color": "#1991c8",
+        "aggregationType": "avg",
+        "flowNodeExecutionState": "all",
+        "userTaskDurationTime": "total",
+        "hiddenNodes": {
+          "active": false,
+          "keys": []
+        },
+        "showInstanceCount": false,
+        "pointMarkers": true,
+        "precision": null,
+        "hideRelativeValue": false,
+        "hideAbsoluteValue": false,
+        "alwaysShowRelative": false,
+        "alwaysShowAbsolute": false,
+        "showGradientBars": true,
+        "xml": null,
+        "tableColumns": {
+          "includeNewVariables": true,
+          "includedColumns": [],
+          "excludedColumns": []
+        },
+        "columnOrder": {
+          "inputVariables": [],
+          "instanceProps": [],
+          "outputVariables": [],
+          "variables": []
+        },
+        "targetValue": {
+          "countChart": {
+            "isBelow": false,
+            "value": "100"
+          },
+          "durationProgress": {
+            "baseline": {
+              "unit": "hours",
+              "value": "0"
+            },
+            "target": {
+              "unit": "hours",
+              "value": "2"
+            }
+          },
+          "active": false,
+          "countProgress": {
+            "baseline": "0",
+            "target": "100"
+          },
+          "durationChart": {
+            "unit": "hours",
+            "isBelow": false,
+            "value": "2"
+          }
+        },
+        "heatmapTargetValue": {
+          "active": false,
+          "values": {}
+        },
+        "distributedBy": "none",
+        "ylabel": "",
+        "xlabel": "",
+        "processPart": null,
+        "sorting": null
+      },
+      "processDefinitionKey": null,
+      "processDefinitionVersions": null,
+      "processDefinitionName": null,
+      "tenantIds": [null],
+      "filter": [],
+      "view": null,
+      "groupBy": null,
+      "visualization": null
+    },
+    "combined": false,
+    "reportType": "process",
+    "currentUserRole": "editor"
+  },
+  "new-combined": {
+    "result": {
+      "data": {},
+      "type": null
+    },
+    "id": "new-combined",
+    "data": {
+      "configuration": {
+        "pointMarkers": true,
+        "hideRelativeValue": false,
+        "hideAbsoluteValue": false,
+        "alwaysShowRelative": false,
+        "alwaysShowAbsolute": false,
+        "targetValue": {
+          "countChart": {
+            "isBelow": false,
+            "value": "100"
+          },
+          "active": false,
+          "durationChart": {
+            "unit": "hours",
+            "isBelow": false,
+            "value": "2"
+          }
+        },
+        "ylabel": "",
+        "xlabel": ""
+      },
+      "visualization": null,
+      "reports": []
+    },
+    "combined": true,
+    "reportType": "process",
+    "currentUserRole": "editor"
+  },
+  "new-decision": {
+    "id": "new-decision",
+    "data": {
+      "configuration": {
+        "color": "#1991c8",
+        "aggregationType": "avg",
+        "flowNodeExecutionState": "all",
+        "userTaskDurationTime": "total",
+        "hiddenNodes": {
+          "active": false,
+          "keys": []
+        },
+        "showInstanceCount": false,
+        "pointMarkers": true,
+        "precision": null,
+        "hideRelativeValue": false,
+        "hideAbsoluteValue": false,
+        "alwaysShowRelative": false,
+        "alwaysShowAbsolute": false,
+        "showGradientBars": true,
+        "xml": null,
+        "tableColumns": {
+          "includeNewVariables": true,
+          "includedColumns": [],
+          "excludedColumns": []
+        },
+        "columnOrder": {
+          "inputVariables": [],
+          "instanceProps": [],
+          "outputVariables": [],
+          "variables": []
+        },
+        "targetValue": {
+          "countChart": {
+            "isBelow": false,
+            "value": "100"
+          },
+          "durationProgress": {
+            "baseline": {
+              "unit": "hours",
+              "value": "0"
+            },
+            "target": {
+              "unit": "hours",
+              "value": "2"
+            }
+          },
+          "active": false,
+          "countProgress": {
+            "baseline": "0",
+            "target": "100"
+          },
+          "durationChart": {
+            "unit": "hours",
+            "isBelow": false,
+            "value": "2"
+          }
+        },
+        "heatmapTargetValue": {
+          "active": false,
+          "values": {}
+        },
+        "distributedBy": "none",
+        "ylabel": "",
+        "xlabel": "",
+        "sorting": null
+      },
+      "decisionDefinitionKey": null,
+      "decisionDefinitionVersions": null,
+      "decisionDefinitionName": null,
+      "tenantIds": [null],
+      "filter": [],
+      "view": null,
+      "groupBy": null,
+      "visualization": null
+    },
+    "combined": false,
+    "reportType": "decision",
+    "currentUserRole": "editor"
+  }
+}

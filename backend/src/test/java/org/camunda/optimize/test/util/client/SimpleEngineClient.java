@@ -33,19 +33,20 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.test.util.client.dto.MessageCorrelationDto;
-import org.camunda.optimize.test.util.client.dto.TaskDto;
-import org.camunda.optimize.test.util.client.dto.VariableValue;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
+import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.mapper.CustomDeserializer;
-import org.camunda.optimize.service.util.mapper.CustomSerializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
+import org.camunda.optimize.test.util.client.dto.MessageCorrelationDto;
+import org.camunda.optimize.test.util.client.dto.TaskDto;
+import org.camunda.optimize.test.util.client.dto.VariableValue;
 import org.elasticsearch.common.io.Streams;
 
 import javax.ws.rs.core.Response;
@@ -102,8 +103,8 @@ public class SimpleEngineClient {
     objectMapper.setDateFormat(df);
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
     objectMapper.registerModule(javaTimeModule);
-    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(DATE_TIME_FORMATTER));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(DATE_TIME_FORMATTER));
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(DATE_TIME_FORMATTER));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(DATE_TIME_FORMATTER));
   }
 
   @SneakyThrows
@@ -558,6 +559,24 @@ public class SimpleEngineClient {
     }
   }
 
+  public DecisionDefinitionXmlEngineDto getDecisionDefinitionXml(String decisionDefinitionId) {
+    HttpRequestBase get = new HttpGet(getDecisionDefinitionXmlUri(decisionDefinitionId));
+    CloseableHttpResponse response;
+    try {
+      response = client.execute(get);
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      DecisionDefinitionXmlEngineDto xml =
+        objectMapper.readValue(responseString, DecisionDefinitionXmlEngineDto.class);
+      response.close();
+      return xml;
+    } catch (IOException e) {
+      String errorMessage =
+        String.format("Could not fetch the decision definition xml for id [%s]!", decisionDefinitionId);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
+
 
   private List<DeploymentDto> deployProcess(BpmnModelInstance bpmnModelInstance, List<String> tenants) {
     String process = Bpmn.convertToString(bpmnModelInstance);
@@ -758,6 +777,10 @@ public class SimpleEngineClient {
 
   private String getProcessDefinitionXmlUri(String processDefinitionId) {
     return getProcessDefinitionUri() + "/" + processDefinitionId + "/xml";
+  }
+
+  private String getDecisionDefinitionXmlUri(String decisionDefinitionId) {
+    return getDecisionDefinitionUri() + "/" + decisionDefinitionId + "/xml";
   }
 
 }

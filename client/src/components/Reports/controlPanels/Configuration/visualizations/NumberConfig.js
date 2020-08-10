@@ -17,7 +17,8 @@ export default function NumberConfig({report, onChange}) {
   const targetValue = configuration.targetValue;
 
   const precisionSet = typeof configuration.precision === 'number';
-  const countOperation = report.data.view.property === 'frequency';
+  const countOperation =
+    report.data.view.property === 'frequency' || report.data.view.entity === 'variable';
   const goalSet = targetValue.active;
 
   return (

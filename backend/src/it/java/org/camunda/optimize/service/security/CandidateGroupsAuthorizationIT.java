@@ -38,8 +38,7 @@ public class CandidateGroupsAuthorizationIT extends AbstractIT {
       Collections.singletonList("newTenant")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -54,8 +53,7 @@ public class CandidateGroupsAuthorizationIT extends AbstractIT {
   public void getCandidateGroupsWithoutAuthentication() {
     startSimpleUserTaskProcessWithCandidateGroup();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     AssigneeRequestDto requestDto = new AssigneeRequestDto(
       "aProcess",

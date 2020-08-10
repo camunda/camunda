@@ -7,7 +7,17 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
 
-import {LoadingIndicator, Button, Icon, Deleter, BPMNDiagram, ModificationInfo} from 'components';
+import {
+  LoadingIndicator,
+  Button,
+  Icon,
+  Deleter,
+  BPMNDiagram,
+  MessageBox,
+  EntityName,
+  LastModifiedInfo,
+  DocsLink,
+} from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
@@ -26,9 +36,10 @@ export default withErrorHandling(
       deleting: null,
       publishing: null,
       isPublishing: false,
+      optimizeVersion: 'latest',
     };
 
-    componentDidMount() {
+    async componentDidMount() {
       this.load();
       this.setupPoll();
     }
@@ -80,7 +91,7 @@ export default withErrorHandling(
       const {
         deleting,
         publishing,
-        data: {id, name, xml, mappings, state, publishingProgress, lastModified, lastModifier},
+        data: {id, name, xml, mappings, state, publishingProgress},
       } = this.state;
 
       const isPublishing = state === 'publish_pending';
@@ -90,9 +101,9 @@ export default withErrorHandling(
         <div className="ProcessView">
           <div className="header">
             <div className="head">
-              <div className="name-container">
-                <h1 className="name">{name}</h1>
-              </div>
+              <EntityName details={<LastModifiedInfo entity={this.state.data} />}>
+                {name}
+              </EntityName>
               <div className="tools">
                 {isPublishing && (
                   <>
@@ -131,11 +142,20 @@ export default withErrorHandling(
                 </Button>
               </div>
             </div>
-            <ModificationInfo user={lastModifier} date={lastModified} />
+            {this.props.generated && (
+              <MessageBox type="warning">
+                {t('events.generationWarning')}{' '}
+                <DocsLink location="user-guide/event-based-processes#autogenerate">
+                  {t('common.seeDocs')}
+                </DocsLink>
+              </MessageBox>
+            )}
           </div>
-          <BPMNDiagram xml={xml}>
-            <ProcessRenderer mappings={mappings} />
-          </BPMNDiagram>
+          <div className="content">
+            <BPMNDiagram xml={xml}>
+              <ProcessRenderer mappings={mappings} />
+            </BPMNDiagram>
+          </div>
           <Deleter
             type="process"
             descriptionText={t('events.deleteWarning', {

@@ -4,11 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import moment from 'moment';
-
 import {drawHorizentalLine} from './service';
 import zoomIn from './zoomIn';
 import showAllTooltips from './showAllTooltips';
+import {parseISO} from 'date-fns';
 
 export default function createPlugins({updateReport, report: {combined, data, result}}) {
   const plugins = [
@@ -25,7 +24,6 @@ export default function createPlugins({updateReport, report: {combined, data, re
     ['line', 'bar'].includes(data.visualization)
   ) {
     const dataPoints = result.data.map(({key}) => key);
-    dataPoints.reverse();
 
     plugins.push(
       zoomIn({
@@ -33,8 +31,8 @@ export default function createPlugins({updateReport, report: {combined, data, re
         filters: data.filter,
         type: data.groupBy.type,
         valueRange: {
-          min: moment(dataPoints[0]),
-          max: moment(dataPoints[dataPoints.length - 1]),
+          min: parseISO(dataPoints[0]),
+          max: parseISO(dataPoints[dataPoints.length - 1]),
         },
       })
     );

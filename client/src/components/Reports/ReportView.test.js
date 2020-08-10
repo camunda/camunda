@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import ReportView from './ReportView';
 
-import {Deleter, ReportRenderer} from 'components';
+import {Deleter, ReportRenderer, InstanceCount} from 'components';
 import {checkDeleteConflict} from 'services';
 
 jest.mock('services', () => {
@@ -27,11 +27,9 @@ jest.mock('./service', () => {
   };
 });
 
-jest.mock('moment', () => () => {
-  return {
-    format: () => 'some date',
-  };
-});
+jest.mock('dates', () => ({
+  format: () => 'some date',
+}));
 
 const report = {
   id: '1',
@@ -46,7 +44,7 @@ const report = {
     configuration: {},
     visualization: 'table',
   },
-  result: {data: [1, 2, 3]},
+  result: {data: [1, 2, 3], instanceCount: 37},
 };
 
 it('should display the key properties of a report', () => {
@@ -57,8 +55,8 @@ it('should display the key properties of a report', () => {
     report,
   });
 
-  expect(node).toIncludeText(report.name);
-  expect(node.find('ModificationInfo')).toMatchSnapshot();
+  expect(node.find('EntityName').prop('children')).toBe(report.name);
+  expect(node.find(InstanceCount)).toExist();
 });
 
 it('should provide a link to edit mode in view mode', () => {

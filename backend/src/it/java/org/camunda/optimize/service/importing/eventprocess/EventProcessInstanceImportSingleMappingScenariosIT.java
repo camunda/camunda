@@ -56,7 +56,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
 
     // then
     assertProcessInstanceIsAsExpected(
-      startEventMapping, intermediateEventMapping, endEventMapping, firstEventId, secondEventId, thirdEventId
+      intermediateEventMapping, endEventMapping, firstEventId, secondEventId, thirdEventId
     );
   }
 
@@ -81,7 +81,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
 
     // then
     assertProcessInstanceIsAsExpected(
-      startEventMapping, intermediateEventMapping, endEventMapping, firstEventId, secondEventId, thirdEventId
+      intermediateEventMapping, endEventMapping, firstEventId, secondEventId, thirdEventId
     );
   }
 
@@ -107,7 +107,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
 
     // then
     assertProcessInstanceIsAsExpected(
-      startEventMapping, intermediateEventMapping, endEventMapping, firstEventId, secondEventId, thirdEventId
+      intermediateEventMapping, endEventMapping, firstEventId, secondEventId, thirdEventId
     );
   }
 
@@ -309,8 +309,7 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     eventProcessClient.publishEventProcessMapping(eventProcessId);
   }
 
-  private void assertProcessInstanceIsAsExpected(final EventMappingDto startEventMapping,
-                                                 final EventMappingDto intermediateEventMapping,
+  private void assertProcessInstanceIsAsExpected(final EventMappingDto intermediateEventMapping,
                                                  final EventMappingDto endEventMapping,
                                                  final String startEventId,
                                                  final String intermediateEventId,
@@ -348,7 +347,8 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
                   intermediateEventId,
                   USER_TASK_ID_ONE,
                   intermediateEventMapping.getStart() == null ? FIRST_EVENT_DATETIME : SECOND_EVENT_DATETIME,
-                  intermediateEventMapping.getEnd() == null && endEventMapping.getStart() != null ? THIRD_EVENT_DATETIME : SECOND_EVENT_DATETIME
+                  intermediateEventMapping.getEnd() == null && endEventMapping.getStart() != null ?
+                    THIRD_EVENT_DATETIME : SECOND_EVENT_DATETIME
                 ),
                 Tuple.tuple(
                   endEventId,

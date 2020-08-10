@@ -8,8 +8,6 @@ package org.camunda.optimize;
 import com.google.common.collect.ImmutableMap;
 import com.icegreen.greenmail.util.GreenMail;
 import com.icegreen.greenmail.util.ServerSetup;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
@@ -34,6 +32,7 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.JobKey;
@@ -66,6 +65,8 @@ import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBH
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_INVALID_PORT;
 import static org.camunda.optimize.test.optimize.UiConfigurationClient.TEST_WEBHOOK_URL_PATH;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public abstract class AbstractAlertIT extends AbstractIT {
 
@@ -115,24 +116,13 @@ public abstract class AbstractAlertIT extends AbstractIT {
 
   protected ProcessInstanceEngineDto deployWithTimeShift(long daysToShift, long durationInSec) throws SQLException {
     OffsetDateTime startDate = OffsetDateTime.now();
-    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    ProcessInstanceEngineDto processInstance = engineIntegrationExtension.deployAndStartProcessWithVariables(
+      getSimpleBpmnDiagram(),
+      new HashMap<>()
+    );
     adjustProcessInstanceDates(processInstance.getId(), startDate, daysToShift, durationInSec);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     return processInstance;
-  }
-
-  protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
-    return deployAndStartSimpleProcessWithVariables(new HashMap<>());
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleProcessWithVariables(Map<String, Object> variables) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   private void adjustProcessInstanceDates(String processInstanceId,
@@ -270,14 +260,12 @@ public abstract class AbstractAlertIT extends AbstractIT {
     switch (definitionType) {
       case PROCESS:
         ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess(definitionKey);
-        embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-        elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+        importAllEngineEntitiesFromScratch();
         return createNewProcessReportAsUser(user, password, collectionId, processDefinition);
 
       case DECISION:
         DecisionDefinitionEngineDto decisionDefinitionDto = deployAndStartSimpleDecisionDefinition(definitionKey);
-        embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-        elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+        importAllEngineEntitiesFromScratch();
         return createNewDecisionReportAsUser(user, password, collectionId, decisionDefinitionDto);
 
       default:
@@ -345,14 +333,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
-      .name("aProcessName")
-      .startEvent()
-      .serviceTask()
-      .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(definitionKey));
   }
 
   private SingleProcessReportDefinitionDto getDurationReportDefinitionDto(String collectionId,

@@ -5,13 +5,11 @@ exports[`display empty state with link to docs 1`] = `
   className="ExternalSource empty"
 >
   No Events available. To add events, see 
-  <a
-    href="https://docs.camunda.org/optimize/latest/technical-guide/setup/configuration/#ingestion-configuration"
-    rel="noopener noreferrer"
-    target="_blank"
+  <Component
+    location="technical-guide/setup/configuration/#ingestion-configuration"
   >
     Documentation
-  </a>
+  </Component>
   .
 </div>
 `;

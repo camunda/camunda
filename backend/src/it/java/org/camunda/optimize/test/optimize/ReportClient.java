@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -48,6 +49,7 @@ import java.util.List;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
@@ -59,6 +61,8 @@ public class ReportClient {
 
   private static final String RANDOM_VERSION = "someRandomVersion";
   private static final String RANDOM_STRING = "something";
+
+  private static final String TEST_REPORT_NAME = "My test report";
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
@@ -83,9 +87,9 @@ public class ReportClient {
     updateCombinedReport(combinedReportId, containedReportIds, DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
-  public void updateCombinedReport(final String combinedReportId, final List<String> containedReportIds,
-                                   String username,
-                                   String password) {
+  private void updateCombinedReport(final String combinedReportId, final List<String> containedReportIds,
+                                    String username,
+                                    String password) {
     final CombinedReportDefinitionDto combinedReportData = new CombinedReportDefinitionDto();
     combinedReportData.getData()
       .getReports()
@@ -171,13 +175,13 @@ public class ReportClient {
     return createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
-  public String createAndStoreProcessReport(String definitionKey) {
+  public void createAndStoreProcessReport(String definitionKey) {
     SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = createSingleProcessReportDefinitionDto(
       null,
       definitionKey,
       Collections.singletonList(null)
     );
-    return createSingleProcessReport(singleProcessReportDefinitionDto);
+    createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
 
@@ -256,6 +260,13 @@ public class ReportClient {
       .getId();
   }
 
+  public String createSingleProcessReport(ProcessReportDataDto data) {
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setName(TEST_REPORT_NAME);
+    singleProcessReportDefinitionDto.setData(data);
+    return createSingleProcessReport(singleProcessReportDefinitionDto);
+  }
+
   public String createEmptySingleProcessReport() {
     return createEmptySingleProcessReportInCollection(null);
   }
@@ -288,9 +299,9 @@ public class ReportClient {
     );
   }
 
-  public String createReportForCollectionAsUser(final String collectionId, final DefinitionType resourceType,
-                                                final String definitionKey, final List<String> tenants,
-                                                final String user, final String pw) {
+  private String createReportForCollectionAsUser(final String collectionId, final DefinitionType resourceType,
+                                                 final String definitionKey, final List<String> tenants,
+                                                 final String user, final String pw) {
     switch (resourceType) {
       case PROCESS:
         SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = createSingleProcessReportDefinitionDto(
@@ -313,8 +324,8 @@ public class ReportClient {
     }
   }
 
-  public Response createSingleProcessReportAsUserRawResponse(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto,
-                                                             final String user, final String pw) {
+  private Response createSingleProcessReportAsUserRawResponse(final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto,
+                                                              final String user, final String pw) {
     return getRequestExecutor()
       .withUserAuthentication(user, pw)
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
@@ -331,8 +342,8 @@ public class ReportClient {
       .getId();
   }
 
-  public Response createNewDecisionReportAsUserRawResponse(final SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto,
-                                                           final String user, final String pw) {
+  private Response createNewDecisionReportAsUserRawResponse(final SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto,
+                                                            final String user, final String pw) {
     return getRequestExecutor()
       .withUserAuthentication(user, pw)
       .buildCreateSingleDecisionReportRequest(singleDecisionReportDefinitionDto)
@@ -356,7 +367,7 @@ public class ReportClient {
       .getId();
   }
 
-  private String createAndStoreDecisionReport(String collectionId, String definitionKey, List<String> tenants) {
+  public String createAndStoreDecisionReport(String collectionId, String definitionKey, List<String> tenants) {
     SingleDecisionReportDefinitionDto decisionReportDefinition = createSingleDecisionReportDefinitionDto(
       collectionId,
       definitionKey,
@@ -370,8 +381,8 @@ public class ReportClient {
   }
 
 
-  public SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String reportId, String username,
-                                                                              String password) {
+  private SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String reportId, String username,
+                                                                               String password) {
     Response response = getSingleProcessReportRawResponse(reportId, username, password);
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     return response.readEntity(SingleProcessReportDefinitionDto.class);
@@ -455,15 +466,6 @@ public class ReportClient {
 
   public void updateSingleProcessReport(String reportId, SingleProcessReportDefinitionDto report, boolean force) {
     updateSingleProcessReport(reportId, report, force, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  public <T extends SingleReportResultDto> CombinedProcessReportResultDataDto<T> evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
-    return getRequestExecutor()
-      .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
-      // @formatter:off
-      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<T>>() {})
-      // @formatter:on
-      .getResult();
   }
 
   public ConflictResponseDto getReportDeleteConflicts(String id) {
@@ -562,10 +564,6 @@ public class ReportClient {
       // @formatter:on
   }
 
-  public RawDataProcessReportResultDto evaluateReportAndReturnResult(final ProcessReportDataDto reportData) {
-    return evaluateReportWithRawDataResult(reportData).getResult();
-  }
-
   public AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateReportWithRawDataResult(
     final ProcessReportDataDto reportData) {
     return getRequestExecutor()
@@ -617,21 +615,53 @@ public class ReportClient {
       // @formatter:on
   }
 
-  public AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> evaluateReport
-    (ProcessReportDataDto reportData) {
+  public <T extends SingleReportResultDto> CombinedProcessReportResultDataDto<T> evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
     return getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute(new TypeReference<AuthorizedEvaluationResultDto<ProcessReportResultDto,
-        SingleProcessReportDefinitionDto>>() {
-      });
+      .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<T>>() {})
+      // @formatter:on
+      .getResult();
   }
 
-  public AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> evaluateReport(DecisionReportDataDto reportData) {
+  public CombinedProcessReportResultDataDto<SingleReportResultDto> saveAndEvaluateCombinedReport(
+    final List<String> reportIds) {
+    final List<CombinedReportItemDto> reportItems = reportIds.stream()
+      .map(CombinedReportItemDto::new)
+      .collect(toList());
+
+    final CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
+    combinedReportData.setReports(reportItems);
+    final CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    combinedReport.setData(combinedReportData);
+
+    final IdDto response = getRequestExecutor()
+      .buildCreateCombinedReportRequest(combinedReport)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+
+    return evaluateCombinedReportById(response.getId()).getResult();
+  }
+
+  public AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> evaluateReport(
+    final ProcessReportDataDto reportData) {
     return getRequestExecutor()
       .buildEvaluateSingleUnsavedReportRequest(reportData)
-      .execute(new TypeReference<AuthorizedEvaluationResultDto<DecisionReportResultDto,
-        SingleDecisionReportDefinitionDto>>() {
-      });
+      // @formatter:off
+      .execute(
+        new TypeReference<AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto>>() {}
+      );
+      // @formatter:on
+  }
+
+  public AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto> evaluateReport(
+    final DecisionReportDataDto reportData) {
+    return getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportData)
+      // @formatter:off
+      .execute(
+        new TypeReference<AuthorizedEvaluationResultDto<DecisionReportResultDto, SingleDecisionReportDefinitionDto>>() {}
+      );
+      // @formatter:off
   }
 
   public ReportMapResultDto evaluateReportAndReturnMapResult(final ProcessReportDataDto reportData) {
@@ -641,5 +671,21 @@ public class ReportClient {
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>>() {})
       // @formatter:on
       .getResult();
+  }
+
+  public <RD extends ProcessReportResultDto, DD extends SingleReportDefinitionDto<?>> AuthorizedProcessReportEvaluationResultDto<RD> evaluateProcessReport(final DD reportDefinition) {
+    return getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportDefinition)
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RD>>() {});
+      // @formatter:on
+  }
+
+  public <RD extends DecisionReportResultDto, DD extends SingleReportDefinitionDto<?>> AuthorizedDecisionReportEvaluationResultDto<RD> evaluateDecisionReport(final DD reportDefinition) {
+    return getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequest(reportDefinition)
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RD>>() {});
+    // @formatter:on
   }
 }

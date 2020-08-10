@@ -44,7 +44,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
 
     assertThat(eventProcessDefinition)
       .get()
-      .isEqualTo(
+      .isEqualToComparingFieldByField(
         EventProcessDefinitionDto.eventProcessBuilder()
           .id(expectedProcessDefinitionId)
           .key(eventProcessMappingId)
@@ -54,10 +54,12 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
           .engine(null)
           .tenantId(null)
           .bpmn20Xml(simpleEventProcessMappingDto.getXml())
-          .userTaskNames(Collections.emptyMap())
+          .userTaskNames(ImmutableMap.of(USER_TASK_ID_ONE, USER_TASK_ID_ONE))
           .flowNodeNames(ImmutableMap.of(
             BPMN_START_EVENT_ID, BPMN_START_EVENT_ID,
-            BPMN_END_EVENT_ID, BPMN_END_EVENT_ID
+            BPMN_END_EVENT_ID, BPMN_END_EVENT_ID,
+            USER_TASK_ID_ONE, USER_TASK_ID_ONE
+
           ))
           .build()
       );
@@ -138,7 +140,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
 
     // when
     // process is republished with new XML
-    final String newXml = createThreeEventActivitiesProcessDefinitionXml();
+    final String newXml = createTwoEventAndOneTaskActivitiesProcessDefinitionXml();
     simpleEventProcessMappingDto.setXml(newXml);
     eventProcessClient.updateEventProcessMapping(eventProcessMappingId, simpleEventProcessMappingDto);
     publishEventBasedProcess(eventProcessMappingId);
@@ -172,7 +174,7 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
     );
     final String eventProcessMappingId2 = createAndPublishEventProcess(simpleEventProcessMappingDto2);
     // and republished with new xml
-    simpleEventProcessMappingDto2.setXml(createThreeEventActivitiesProcessDefinitionXml());
+    simpleEventProcessMappingDto2.setXml(createTwoEventAndOneTaskActivitiesProcessDefinitionXml());
     eventProcessClient.updateEventProcessMapping(eventProcessMappingId2, simpleEventProcessMappingDto2);
     publishEventBasedProcess(eventProcessMappingId2);
 

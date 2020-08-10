@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.junit.jupiter.api.Test;
 
+import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -64,8 +65,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
       "someVariableName",
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     ProcessVariableNameRequestDto variableNameRequestDto = new ProcessVariableNameRequestDto();
@@ -110,6 +110,31 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
       .containsExactly("var1", "var3", "var4");
   }
 
+  @Test
+  public void getVariableNames_worksDespiteBucketLimitExceeded() {
+    // given
+    final int bucketLimit = 2;
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
+
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var1", "value1");
+    variables.put("var2", "value2");
+    variables.put("var3", "value3");
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    variables.clear();
+    variables.put("var4", "value4");
+    startInstanceAndImportEngineEntities(processDefinition, variables);
+
+    // when
+    List<ProcessVariableNameResponseDto> variableResponse = variablesClient.getProcessVariableNames(processDefinition);
+
+    // then
+    assertThat(variableResponse)
+      .hasSize(4)
+      .extracting(ProcessVariableNameResponseDto::getName)
+      .containsExactly("var1", "var2", "var3", "var4");
+  }
 
   @Test
   public void getMoreThan10Variables() {
@@ -279,7 +304,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
 
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.resetImportStartIndexes();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -295,7 +320,7 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
   }
 
   @Test
-  public void getVariableNamesForReports_singleReportWithVariables() {
+  public void getVariableNamesForReport_singleReportWithVariables() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
@@ -318,6 +343,49 @@ public class ProcessVariableNameIT extends AbstractVariableIT {
         Tuple.tuple("var2", VariableType.LONG),
         Tuple.tuple("var3", VariableType.DOUBLE)
       );
+  }
+
+  @Test
+  public void getVariableNamesForReport_correctDespiteBucketLimitExceeded() {
+    // given
+    final int bucketLimit = 2;
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
+
+    ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("var1", "value1");
+    variables.put("var2", 5L);
+    variables.put("var3", 1.5);
+    startInstanceAndImportEngineEntities(processDefinition, variables);
+    final String reportId = createSingleReport(processDefinition);
+
+    // when
+    List<ProcessVariableNameResponseDto> variableResponse =
+      variablesClient.getProcessVariableNamesForReportIds(Collections.singletonList(reportId));
+
+    // then
+    assertThat(variableResponse)
+      .hasSize(3)
+      .extracting(ProcessVariableNameResponseDto::getName, ProcessVariableNameResponseDto::getType)
+      .containsExactly(
+        Tuple.tuple("var1", VariableType.STRING),
+        Tuple.tuple("var2", VariableType.LONG),
+        Tuple.tuple("var3", VariableType.DOUBLE)
+      );
+  }
+
+  @Test
+  public void getVariableNamesForReport_reportWithNoDefinitionKey() {
+    // given
+    final String reportId = reportClient.createEmptySingleProcessReport();
+
+    // when
+    List<ProcessVariableNameResponseDto> variableResponse = embeddedOptimizeExtension.getRequestExecutor()
+      .buildProcessVariableNamesForReportsRequest(Collections.singletonList(reportId))
+      .executeAndReturnList(ProcessVariableNameResponseDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(variableResponse).isEmpty();
   }
 
   @Test

@@ -17,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -143,10 +144,9 @@ public class ApplicationAuthorizationService extends AbstractCachingAuthorizatio
     return resolvedApplicationAuthorizations.isAuthorizedToAccessResource(OPTIMIZE_APPLICATION_RESOURCE_ID);
   }
 
-  private static boolean isGroupAuthorizedToAccessOptimizeOnEngine(
-    final String groupId,
-    final EngineContext engineContext) throws OptimizeRuntimeException {
-    final List<GroupDto> groups = engineContext.getGroupsById(Arrays.asList(groupId));
+  private static boolean isGroupAuthorizedToAccessOptimizeOnEngine(final String groupId,
+                                                                   final EngineContext engineContext) {
+    final List<GroupDto> groups = engineContext.getGroupsById(Collections.singletonList(groupId));
     final List<AuthorizationDto> allAuthorizations;
     allAuthorizations = engineContext.getAllApplicationAuthorizations();
     final ResolvedResourceTypeAuthorizations resolvedApplicationAuthorizations = resolveResourceAuthorizations(

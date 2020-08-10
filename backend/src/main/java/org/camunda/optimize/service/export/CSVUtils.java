@@ -5,11 +5,13 @@
  */
 package org.camunda.optimize.service.export;
 
-import com.google.common.collect.Sets;
 import com.opencsv.CSVWriter;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
@@ -21,25 +23,23 @@ import java.beans.PropertyDescriptor;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
 
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class CSVUtils {
-
-  static final String VARIABLE_PREFIX = "variable:";
-  static final String INPUT_PREFIX = "input:";
-  static final String OUTPUT_PREFIX = "output:";
 
   public static byte[] mapCsvLinesToCsvBytes(final List<String[]> csvStrings) {
     final ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream();
@@ -70,36 +70,30 @@ public class CSVUtils {
     return result;
   }
 
-
-
   public static List<String[]> mapRawProcessReportInstances(final List<RawDataProcessInstanceDto> rawData,
                                                             final Integer limit,
                                                             final Integer offset,
-                                                            final List<String> excludedColumns,
-                                                            final List<String> includedColumns) {
+                                                            final TableColumnDto tableColumns) {
     final List<String[]> result = new ArrayList<>();
+    final List<String> allVariableKeys = extractAllPrefixedVariableKeys(rawData);
 
-    // column names contain prefixes that must be stripped off to get the plain keys needed for exclusion
-    final Set<String> excludedKeys = stripOffPrefixes(excludedColumns, VARIABLE_PREFIX);
-    final Set<String> includedKeys = stripOffPrefixes(includedColumns, VARIABLE_PREFIX);
+    // Ensure all dto fields are taken into account by tableColumns
+    tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
 
-    final List<String> allDtoFields = extractAllDtoFieldKeys(RawDataProcessInstanceDto.class);
-    applyInclusionAndExclusions(allDtoFields, excludedKeys, includedKeys);
+    // Ensure all variables are taken into account by tableColumns
+    tableColumns.addNewVariableColumns(allVariableKeys);
+    final List<String> allIncludedKeysInOrder = tableColumns.getIncludedColumns();
 
-    final List<String> allVariableKeys = extractAllVariableKeys(rawData);
-    applyInclusionAndExclusions(allVariableKeys, excludedKeys, includedKeys);
-
-    final List<String> allIncludedKeys = union(allDtoFields, allVariableKeys);
-    final String[] headerLine = constructRawProcessHeaderLine(allDtoFields, allVariableKeys);
-    result.add(headerLine);
+    // header line
+    result.add(allIncludedKeysInOrder.toArray(new String[0]));
 
     int currentPosition = 0;
     for (RawDataProcessInstanceDto instanceDto : rawData) {
       boolean limitNotExceeded = isLimitNotExceeded(limit, result);
       if ((offset == null && limitNotExceeded) || (isOffsetPassed(offset, currentPosition) && limitNotExceeded)) {
-        final String[] dataLine = new String[allIncludedKeys.size()];
+        final String[] dataLine = new String[allIncludedKeysInOrder.size()];
         for (int i = 0; i < dataLine.length; i++) {
-          final String currentKey = allIncludedKeys.get(i);
+          final String currentKey = allIncludedKeysInOrder.get(i);
           final Optional<String> optionalValue = allVariableKeys.contains(currentKey)
             ? getVariableValue(instanceDto, currentKey)
             : getDtoFieldValue(instanceDto, RawDataProcessInstanceDto.class, currentKey);
@@ -116,44 +110,33 @@ public class CSVUtils {
   public static List<String[]> mapRawDecisionReportInstances(final List<RawDataDecisionInstanceDto> rawData,
                                                              final Integer limit,
                                                              final Integer offset,
-                                                             final List<String> excludedColumns,
-                                                             final List<String> includedColumns) {
+                                                             final TableColumnDto tableColumns) {
     final List<String[]> result = new ArrayList<>();
+    final List<String> allInputVariableKeys = extractAllPrefixedDecisionInputKeys(rawData);
+    final List<String> allOutputVariableKeys = extractAllPrefixedDecisionOutputKeys(rawData);
 
-    final Set<String> excludedKeys = Sets.newHashSet(excludedColumns);
-    final Set<String> includedKeys = Sets.newHashSet(includedColumns);
+    // Ensure all dto fields are taken into account by tableColumns
+    tableColumns.addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
 
-    final List<String> allDtoFields = extractAllDtoFieldKeys(RawDataDecisionInstanceDto.class);
-    applyInclusionAndExclusions(allDtoFields, excludedKeys, includedKeys);
-
-    final List<String> includedInputVariableKeys = extractAllDecisionInputKeys(rawData)
-      .stream().map(key -> INPUT_PREFIX + key).collect(Collectors.toList());
-    applyInclusionAndExclusions(includedInputVariableKeys, excludedKeys, includedKeys);
-
-    final List<String> includedOutputVariableKeys = extractAllDecisionOutputKeys(rawData)
-      .stream().map(key -> OUTPUT_PREFIX + key).collect(Collectors.toList());
-    applyInclusionAndExclusions(includedOutputVariableKeys, excludedKeys, includedKeys);
-
-    final List<String> allIncludedKeys = union(
-      allDtoFields,
-      includedInputVariableKeys,
-      includedOutputVariableKeys
-    );
+    // Ensure all variables are taken into account by tableColumns
+    tableColumns.addNewVariableColumns(allInputVariableKeys);
+    tableColumns.addNewVariableColumns(allOutputVariableKeys);
+    final List<String> allIncludedKeysInOrder = tableColumns.getIncludedColumns();
 
     // header line
-    result.add(allIncludedKeys.toArray(new String[0]));
+    result.add(allIncludedKeysInOrder.toArray(new String[allIncludedKeysInOrder.size()]));
 
     int currentPosition = 0;
     for (RawDataDecisionInstanceDto instanceDto : rawData) {
       boolean limitNotExceeded = isLimitNotExceeded(limit, result);
       if ((offset == null && limitNotExceeded) || (isOffsetPassed(offset, currentPosition) && limitNotExceeded)) {
-        final String[] dataLine = new String[allIncludedKeys.size()];
+        final String[] dataLine = new String[allIncludedKeysInOrder.size()];
         for (int i = 0; i < dataLine.length; i++) {
-          final String currentKey = allIncludedKeys.get(i);
+          final String currentKey = allIncludedKeysInOrder.get(i);
           final Optional<String> optionalValue;
-          if (includedInputVariableKeys.contains(currentKey)) {
+          if (allInputVariableKeys.contains(currentKey)) {
             optionalValue = getInputVariableValue(instanceDto, currentKey);
-          } else if (includedOutputVariableKeys.contains(currentKey)) {
+          } else if (allOutputVariableKeys.contains(currentKey)) {
             optionalValue = getOutputVariableValue(instanceDto, currentKey);
           } else {
             optionalValue = getDtoFieldValue(instanceDto, RawDataDecisionInstanceDto.class, currentKey);
@@ -186,17 +169,6 @@ public class CSVUtils {
     return result;
   }
 
-
-  private static void applyInclusionAndExclusions(final List<String> allDtoFields,
-                                                  final Set<String> excludedKeys,
-                                                  final Set<String> includedKeys) {
-    if (!includedKeys.isEmpty()) {
-      allDtoFields.removeIf(fieldName -> !includedKeys.contains(fieldName));
-    }
-    // on conflict, exclude wins over include
-    allDtoFields.removeAll(excludedKeys);
-  }
-
   public static String mapAggregationType(AggregationType aggregationType) {
     switch (aggregationType) {
       case MEDIAN:
@@ -212,64 +184,50 @@ public class CSVUtils {
     }
   }
 
+  public static List<String> extractAllDecisionInstanceDtoFieldKeys() {
+    return Arrays.stream(RawDataDecisionInstanceDto.Fields.values())
+      .map(RawDataDecisionInstanceDto.Fields::name)
+      .collect(toList());
+  }
+
+  public static List<String> extractAllProcessInstanceDtoFieldKeys() {
+    return Arrays.stream(RawDataProcessInstanceDto.Fields.values())
+      .map(RawDataProcessInstanceDto.Fields::name)
+      .collect(toList());
+  }
+
   private static String stripOffPrefix(final String currentKey, final String prefix) {
     return currentKey.replace(prefix, "");
   }
 
-  private static Set<String> stripOffPrefixes(List<String> columnNames, String... prefixes) {
-    final String prefixRegex = Arrays.stream(prefixes).map(Pattern::quote).collect(joining("|"));
-    return columnNames.stream()
-      .map(columnName -> columnName.replaceAll(prefixRegex, ""))
-      .collect(Collectors.toSet());
-  }
-
-  @SafeVarargs
-  private static List<String> union(List<String> baseList, List<String>... lists) {
-    final List<String> unionList = new ArrayList<>(baseList);
-    for (List<String> list : lists) {
-      unionList.addAll(list);
-    }
-    return unionList;
-  }
-
-  private static List<String> extractAllDtoFieldKeys(Class<?> dtoClass) {
-    final List<String> fieldKeys = new ArrayList<>();
-    for (Field f : dtoClass.getDeclaredFields()) {
-      if (!Map.class.getName().equals(f.getType().getName())) {
-        fieldKeys.add(f.getName());
-      }
-    }
-    return fieldKeys;
-  }
-
-  private static List<String> extractAllVariableKeys(List<RawDataProcessInstanceDto> rawData) {
+  private static List<String> extractAllPrefixedVariableKeys(List<RawDataProcessInstanceDto> rawData) {
     Set<String> variableKeys = new HashSet<>();
     for (RawDataProcessInstanceDto pi : rawData) {
       if (pi.getVariables() != null) {
         variableKeys.addAll(pi.getVariables().keySet());
       }
     }
-    return new ArrayList<>(variableKeys);
+    return variableKeys.stream().map(key -> VARIABLE_PREFIX + key).collect(Collectors.toList());
   }
 
-  private static List<String> extractAllDecisionInputKeys(List<RawDataDecisionInstanceDto> rawData) {
+  private static List<String> extractAllPrefixedDecisionInputKeys(List<RawDataDecisionInstanceDto> rawData) {
     Set<String> inputKeys = new HashSet<>();
     for (RawDataDecisionInstanceDto pi : rawData) {
       if (pi.getInputVariables() != null) {
         inputKeys.addAll(pi.getInputVariables().keySet());
       }
     }
-    return new ArrayList<>(inputKeys);
+    return inputKeys.stream().map(key -> INPUT_PREFIX + key).collect(Collectors.toList());
   }
 
-  private static List<String> extractAllDecisionOutputKeys(List<RawDataDecisionInstanceDto> rawData) {
+  private static List<String> extractAllPrefixedDecisionOutputKeys(List<RawDataDecisionInstanceDto> rawData) {
     Set<String> outputKeys = new HashSet<>();
-    for (RawDataDecisionInstanceDto pi : rawData) {
-      if (pi.getOutputVariables() != null) {
-        outputKeys.addAll(pi.getOutputVariables().keySet());
+    for (RawDataDecisionInstanceDto di : rawData) {
+      if (di.getOutputVariables() != null) {
+        outputKeys.addAll(di.getOutputVariables().keySet());
       }
     }
-    return new ArrayList<>(outputKeys);
+    return outputKeys.stream().map(key -> OUTPUT_PREFIX + key).collect(Collectors.toList());
   }
 
   private static <T> Optional<String> getDtoFieldValue(final T instanceDto,
@@ -299,7 +257,7 @@ public class CSVUtils {
 
   private static Optional<String> getVariableValue(final RawDataProcessInstanceDto instanceDto, String variableKey) {
     return Optional.ofNullable(instanceDto.getVariables())
-      .map(variables -> variables.get(variableKey))
+      .map(variables -> variables.get(stripOffPrefix(variableKey, VARIABLE_PREFIX)))
       .map(Object::toString);
   }
 
@@ -317,14 +275,6 @@ public class CSVUtils {
       .map(inputs -> inputs.get(stripOffPrefix(outputKey, INPUT_PREFIX)))
       .map(InputVariableEntry::getValue)
       .map(Object::toString);
-  }
-
-  private static String[] constructRawProcessHeaderLine(List<String> fieldKeys, List<String> variableKeys) {
-    List<String> headerLine = new ArrayList<>(fieldKeys);
-
-    variableKeys.stream().map(key -> VARIABLE_PREFIX + key).forEach(headerLine::add);
-
-    return headerLine.toArray(new String[variableKeys.size()]);
   }
 
   private static boolean isOffsetPassed(Integer offset, int currentPosition) {

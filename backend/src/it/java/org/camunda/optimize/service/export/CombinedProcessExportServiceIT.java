@@ -25,6 +25,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.isEmptyString;
@@ -36,18 +37,22 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @Test
   public void combinedMapReportHasExpectedValue() throws Exception {
     //given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
-    ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcessWith2FlowNodes();
+    ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
+      "aProcess",
+      START,
+      END
+    ));
     String singleReportId1 = createNewSingleMapReport(processInstance1);
     String singleReportId2 = createNewSingleMapReport(processInstance2);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -68,13 +73,16 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     //given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
     engineDatabaseExtension.changeActivityDuration(processInstance1.getId(), 0);
-    ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcessWith2FlowNodes();
+    ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
+      "aProcess",
+      START,
+      END
+    ));
     engineDatabaseExtension.changeActivityDuration(processInstance2.getId(), 0);
     String singleReportId1 = createNewSingleDurationMapReport(processInstance1);
     String singleReportId2 = createNewSingleDurationMapReport(processInstance2);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -95,12 +103,15 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
   public void theOrderOfTheReportsDoesMatter() throws Exception {
     //given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
-    ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcessWith2FlowNodes();
+    ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
+      "aProcess",
+      START,
+      END
+    ));
     String singleReportId1 = createNewSingleMapReport(processInstance1);
     String singleReportId2 = createNewSingleMapReport(processInstance2);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId2, singleReportId1);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -121,12 +132,15 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
   public void combinedNumberReportHasExpectedValue() throws Exception {
     //given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
-    ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcessWith2FlowNodes();
+    ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
+      "aProcess",
+      START,
+      END
+    ));
     String singleReportId1 = createNewSingleNumberReport(processInstance1);
     String singleReportId2 = createNewSingleNumberReport(processInstance2);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -151,14 +165,14 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance1.getId(), startDate);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstance1.getId(), endDate);
-    ProcessInstanceEngineDto processInstance2 = deployAndStartSimpleProcessWith2FlowNodes();
+    ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram());
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstance2.getId(), startDate);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstance2.getId(), endDate);
     String singleReportId1 = createNewSingleDurationNumberReport(processInstance1);
     String singleReportId2 = createNewSingleDurationNumberReport(processInstance2);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -180,8 +194,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
     //given
     String singleReportId1 = reportClient.createEmptySingleProcessReportInCollection(null);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -202,8 +215,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
   public void combinedReportWithoutReportsProducesEmptyResult() throws IOException {
     //given
     String combinedReportId = reportClient.createEmptyCombinedReport(null);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(combinedReportId, "my_file.csv");
@@ -276,17 +288,6 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
         .camundaExpression("${true}")
       .serviceTask("ServiceTask3")
         .camundaExpression("${true}")
-      .endEvent(END)
-      .done();
-    // @formatter:on
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleProcessWith2FlowNodes() {
-    // @formatter:off
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent(START)
       .endEvent(END)
       .done();
     // @formatter:on

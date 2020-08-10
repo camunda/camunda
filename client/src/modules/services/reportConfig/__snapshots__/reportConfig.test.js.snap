@@ -1,0 +1,26 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`update should adjust groupby and visualization when changing view 1`] = `
+Object {
+  "configuration": Object {
+    "xLabel": Object {
+      "$set": "",
+    },
+    "yLabel": Object {
+      "$set": "Process Instance Count",
+    },
+  },
+  "groupBy": Object {
+    "$set": null,
+  },
+  "view": Object {
+    "$set": Object {
+      "entity": "processInstance",
+      "property": "frequency",
+    },
+  },
+  "visualization": Object {
+    "$set": null,
+  },
+}
+`;

@@ -175,7 +175,7 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstan
       // 1 check for existing userTask
       "if (ctx._source.userTasks == null) ctx._source.userTasks = [];\n" +
       "def existingUserTasksById = ctx._source.userTasks.stream()" +
-        ".collect(Collectors.toMap(task -> task.id, task -> task));\n" +
+        ".collect(Collectors.toMap(task -> task.id, task -> task, (t1, t2) -> t1));\n" +
       "for (def currentUserTask : params.userTasks) {\n" +
         //
         "def existingTask = existingUserTasksById.get(currentUserTask.id);\n" +
@@ -198,9 +198,10 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstan
           "existingTask.candidateGroupOperations = candidateOperations;\n" +
         "} else {\n" +
           // 2.2 if it doesn't exist add it with id and assignee/candidate group operations set
-          "ctx._source.userTasks.add(currentUserTask);\n" +
+          "existingUserTasksById.put(currentUserTask.id, currentUserTask);\n" +
         "}\n" +
       "}\n" +
+      "ctx._source.userTasks = existingUserTasksById.values();\n" +
        createUpdateAssigneeScript() +
        createUpdateCandidateGroupScript() +
        createUpdateUserTaskMetricsScript();

@@ -19,11 +19,8 @@ const props = {
   xml: 'diagram-xml',
 };
 
-// since jest does not offer an out of the box way to flush promises:
-// https://github.com/facebook/jest/issues/2157
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
 jest.mock('bpmn-js/lib/NavigatedViewer', () => {
+  const attachSpy = jest.fn();
   return class NavigatedViewer {
     constructor() {
       this.canvas = {
@@ -36,9 +33,9 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
         stepZoom: jest.fn(),
       };
     }
-    attachTo = jest.fn();
+    attachTo = attachSpy;
     detach = jest.fn();
-    importXML = jest.fn((xml, cb) => cb());
+    importXML = jest.fn();
     _container = {
       querySelector: () => {
         return {
@@ -62,6 +59,7 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
 });
 
 jest.mock('bpmn-js/lib/Viewer', () => {
+  const attachSpy = jest.fn();
   return class Viewer {
     constructor() {
       this.canvas = {
@@ -70,9 +68,9 @@ jest.mock('bpmn-js/lib/Viewer', () => {
         viewbox: jest.fn().mockReturnValue({}),
       };
     }
-    attachTo = jest.fn();
+    attachTo = attachSpy;
     detach = jest.fn();
-    importXML = jest.fn((xml, cb) => cb());
+    importXML = jest.fn();
     _container = {
       querySelector: () => {
         return {
@@ -136,6 +134,20 @@ it('should import an updated xml', async () => {
   await flushPromises();
 
   expect(node.instance().viewer.importXML.mock.calls[0][0]).toBe('some other xml');
+});
+
+it('should handle rapid xml updates well', async () => {
+  const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
+
+  await flushPromises();
+  node.instance().viewer.attachTo.mockClear();
+
+  node.setProps({xml: 'first update xml'});
+  node.setProps({xml: 'second update xml'});
+
+  await flushPromises();
+
+  expect(node.instance().viewer.attachTo).toHaveBeenCalledTimes(1);
 });
 
 it('should resize the diagram to fit the container initially', async () => {
@@ -238,6 +250,16 @@ it('should not re-use modeler instances', async () => {
 
 it('should show a loading indicator while loading', () => {
   const node = mount(<BPMNDiagram xml={diagramXml} {...props} />);
+
+  expect(node.find('LoadingIndicator')).toExist();
+});
+
+it('should show a loading indicator if specified by props', async () => {
+  const node = mount(<BPMNDiagram xml={diagramXml} {...props} loading />);
+
+  await flushPromises();
+
+  node.setState({loaded: true});
 
   expect(node.find('LoadingIndicator')).toExist();
 });

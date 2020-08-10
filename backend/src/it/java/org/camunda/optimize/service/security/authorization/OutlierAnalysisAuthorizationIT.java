@@ -60,8 +60,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     startInstanceWithSampleVariables(processDefinition);
     startInstanceWithSampleVariables(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     final Response response = executeRequest(
@@ -86,8 +85,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     startInstanceWithSampleVariables(processDefinition);
     startInstanceWithSampleVariables(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     final Response response = executeRequest(
@@ -114,8 +112,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     startInstanceWithSampleVariables(processDefinition);
     startInstanceWithSampleVariables(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     final Response response = executeRequest(
@@ -140,8 +137,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     startInstanceWithSampleVariables(processDefinition);
     startInstanceWithSampleVariables(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     final Response response = executeRequest(
@@ -171,8 +167,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
 
     startInstanceWithSampleVariables(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     final Response response = executeRequest(
@@ -201,8 +196,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
 
     startInstanceWithSampleVariables(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     final Response response = executeRequest(
@@ -236,8 +230,7 @@ public class OutlierAnalysisAuthorizationIT extends AbstractIT {
     startInstanceWithSampleVariables(processDefinition1);
     startInstanceWithSampleVariables(processDefinition2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     final Response response = executeRequest(

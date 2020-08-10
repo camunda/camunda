@@ -8,7 +8,6 @@ package org.camunda.optimize.service.security.collection;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -59,7 +58,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     final String authorizedTenant = "authorizedTenant";
     final List<String> tenants = singletonList(authorizedTenant);
     engineIntegrationExtension.createTenant(authorizedTenant);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
@@ -91,7 +90,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     final String authorizedTenant2 = "authorizedTenant2";
     engineIntegrationExtension.createTenant(authorizedTenant2);
     final List<String> tenants = newArrayList(null, authorizedTenant1, authorizedTenant2);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
@@ -176,7 +175,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     final String unauthorizedTenant = "unauthorizedTenant";
     engineIntegrationExtension.createTenant(unauthorizedTenant);
     // import tenant so he's available in the tenant cache
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     final List<String> tenants = newArrayList(null, unauthorizedTenant);
 
     // the collection is created to make sure that there are no side effects
@@ -240,7 +239,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     );
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
     final ConflictResponseDto conflictResponse = response.readEntity(ConflictResponseDto.class);
     assertThat(conflictResponse.getErrorCode()).isEqualTo(getNonTenantScopeCompliantErrorCode());
   }
@@ -257,7 +256,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     final String unauthorizedTenant = "unauthorizedTenant";
     engineIntegrationExtension.createTenant(unauthorizedTenant);
     final List<String> tenants = newArrayList(authorizedTenant);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.createScopeWithTenants(collectionId, "KEY_1", tenants, definitionType);
@@ -268,7 +267,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     );
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
     final ConflictResponseDto conflictResponse = response.readEntity(ConflictResponseDto.class);
     assertThat(conflictResponse.getErrorCode()).isEqualTo(getNonTenantScopeCompliantErrorCode());
   }
@@ -281,7 +280,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
                                                    final String parameterizedTestInfo) {
     // given
     final List<String> tenants = singletonList(null);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
     DefinitionType otherType = definitionType == PROCESS ? DECISION : PROCESS;
@@ -293,7 +292,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
     );
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_CONFLICT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.CONFLICT.getStatusCode());
     final ConflictResponseDto conflictResponse = response.readEntity(ConflictResponseDto.class);
     assertThat(conflictResponse.getErrorCode()).isEqualTo(getNonDefinitionScopeCompliantErrorCode());
   }
@@ -458,7 +457,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
         singletonList(null)
       );
       final Response response = updateProcessReportRequest(processReportId, scenario);
-      assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+      assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
       return processReportId;
     };
   }
@@ -550,7 +549,7 @@ public class ReportCollectionScopeEnforcementIT extends AbstractIT {
         singletonList(null)
       );
       final Response response = updateDecisionReportRequest(decisionReportId, scenario);
-      assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+      assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
       return decisionReportId;
     };
   }

@@ -8,14 +8,12 @@ package org.camunda.optimize.service.es.schema.index;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
 public class DashboardShareIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   public static final String ID = "id";
   public static final String DASHBOARD_ID = "dashboardId";
@@ -46,6 +44,7 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+    // @formatter:off
     XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
         .field("type", "keyword")
@@ -59,11 +58,12 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
       .startObject(DASHBOARD_ID)
         .field("type", "keyword")
       .endObject();
-
+    // @formatter:on
     return newBuilder;
   }
 
   private XContentBuilder addNestedReportsField(XContentBuilder builder) throws IOException {
+    // @formatter:off
     XContentBuilder newBuilder = builder
       .startObject(REPORT_ID)
         .field("type", "keyword")
@@ -86,10 +86,12 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
       .startObject(CONFIGURATION)
         .field("enabled", false)
       .endObject();
+    // @formatter:on
     return newBuilder;
   }
 
   private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
+    // @formatter:off
     return builder
       .startObject(X_POSITION)
         .field("type", "keyword")
@@ -97,9 +99,11 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
       .startObject(Y_POSITION)
         .field("type", "keyword")
       .endObject();
+    // @formatter:on
   }
 
   private XContentBuilder addNestedDimensionField(XContentBuilder builder) throws IOException {
+    // @formatter:off
     return builder
       .startObject(WIDTH)
         .field("type", "keyword")
@@ -107,5 +111,6 @@ public class DashboardShareIndex extends DefaultIndexMappingCreator {
       .startObject(HEIGHT)
         .field("type", "keyword")
       .endObject();
+    // @formatter:on
   }
 }

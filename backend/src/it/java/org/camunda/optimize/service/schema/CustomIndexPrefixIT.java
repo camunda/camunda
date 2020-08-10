@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.schema;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -13,9 +12,10 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
-import org.elasticsearch.action.admin.indices.get.GetIndexRequest;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
@@ -91,13 +91,10 @@ public class CustomIndexPrefixIT extends AbstractIT {
         customPrefixElasticSearchIntegrationTestExtension.getOptimizeElasticClient()
           .getHighLevelClient();
 
-      assertThat(
-        highLevelClient.indices().exists(new GetIndexRequest().indices(expectedAliasName), RequestOptions.DEFAULT)
-      ).isTrue();
-
-      assertThat(
-        highLevelClient.indices().exists(new GetIndexRequest().indices(expectedIndexName), RequestOptions.DEFAULT)
-      ).isTrue();
+      assertThat(highLevelClient.indices().exists(new GetIndexRequest(expectedAliasName), RequestOptions.DEFAULT))
+        .isTrue();
+      assertThat(highLevelClient.indices().exists(new GetIndexRequest(expectedIndexName), RequestOptions.DEFAULT))
+        .isTrue();
     }
   }
 
@@ -106,8 +103,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
     // given
     deploySimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     embeddedOptimizeExtension.getConfigurationService().setEsIndexPrefix(
@@ -120,7 +116,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
 
     deploySimpleProcess();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     customPrefixElasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     assertThat(elasticSearchIntegrationTestExtension.getDocumentCountOf(PROCESS_INSTANCE_INDEX_NAME)).isEqualTo(1);
@@ -134,16 +130,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
   }
 
   private BpmnModelInstance createSimpleProcess() {
-    // @formatter:off
-    return Bpmn.createExecutableProcess("aProcess")
-      .camundaVersionTag("aVersionTag")
-      .name("aProcessName")
-      .startEvent()
-        .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    // @formatter:on
+    return BpmnModels.getSingleServiceTaskProcess("aProcess");
   }
 
   private void initializeSchema() {

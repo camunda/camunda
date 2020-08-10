@@ -6,16 +6,18 @@
 
 import React from 'react';
 import {Redirect} from 'react-router-dom';
-import moment from 'moment';
+import {parseISO} from 'date-fns';
 
 import {EntityList, Deleter, Dropdown} from 'components';
 import {withErrorHandling} from 'HOC';
 import {showError, addNotification} from 'notifications';
 import {t} from 'translation';
 import {checkDeleteConflict} from 'services';
+import {format} from 'dates';
 
 import PublishModal from './PublishModal';
 import UsersModal from './UsersModal';
+import GenerationModal from './GenerationModal';
 import {loadProcesses, createProcess, removeProcess, cancelPublish} from './service';
 
 import './Events.scss';
@@ -28,6 +30,7 @@ export default withErrorHandling(
       publishing: null,
       redirect: null,
       editingAccess: null,
+      openGenerationModal: false,
     };
 
     fileInput = React.createRef();
@@ -95,7 +98,7 @@ export default withErrorHandling(
             .getElementsByTagName('bpmn:process')[0];
           const name = process.getAttribute('name') || process.getAttribute('id');
 
-          this.props.mightFail(createProcess(name, xml, {}), this.loadList, showError);
+          this.props.mightFail(createProcess({name, xml, mappings: {}}), this.loadList, showError);
         } catch (e) {
           showError(t('events.parseError'));
         }
@@ -103,8 +106,20 @@ export default withErrorHandling(
       reader.readAsText(this.fileInput.current.files[0]);
     };
 
+    toggleGenerationModal = () =>
+      this.setState(({openGenerationModal}) => ({
+        openGenerationModal: !openGenerationModal,
+      }));
+
     render() {
-      const {processes, deleting, redirect, publishing, editingAccess} = this.state;
+      const {
+        processes,
+        deleting,
+        redirect,
+        publishing,
+        editingAccess,
+        openGenerationModal,
+      } = this.state;
 
       if (redirect) {
         return <Redirect to={redirect} />;
@@ -118,6 +133,9 @@ export default withErrorHandling(
             isLoading={!processes}
             action={
               <Dropdown main primary label={t('events.new')}>
+                <Dropdown.Option onClick={this.toggleGenerationModal}>
+                  {t('events.autogenerate')}
+                </Dropdown.Option>
                 <Dropdown.Option link="new/edit">{t('events.modelProcess')}</Dropdown.Option>
                 <Dropdown.Option onClick={this.triggerUpload}>{t('events.upload')}</Dropdown.Option>
               </Dropdown>
@@ -172,7 +190,7 @@ export default withErrorHandling(
                   name,
                   link,
                   meta: [
-                    moment(lastModified).format('YYYY-MM-DD HH:mm'),
+                    format(parseISO(lastModified), 'yyyy-MM-dd HH:mm'),
                     t(`events.state.${state}`, {publishingProgress}),
                   ],
                   actions,
@@ -205,6 +223,7 @@ export default withErrorHandling(
               onClose={() => this.setState({editingAccess: null})}
             />
           )}
+          {openGenerationModal && <GenerationModal onClose={this.toggleGenerationModal} />}
           <input
             className="hidden"
             onChange={this.createUploadedProcess}

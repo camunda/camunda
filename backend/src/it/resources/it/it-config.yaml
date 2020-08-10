@@ -4,7 +4,7 @@ container:
     http: ${optimizeHttpPort:8090}
     https: ${optimizeHttpsPort:8091}
 engines:
-  '1':
+  'camunda-bpm':
     name: ${prefixedDefaultEngineName:integrationTest}
     rest: 'http://localhost:8080/engine-rest'
     importEnabled: true
@@ -34,3 +34,7 @@ es:
 
 eventBasedProcess:
   authorizedUserIds: ['demo']
+
+plugin:
+  # as default just use an existing directory
+  directory: '.'

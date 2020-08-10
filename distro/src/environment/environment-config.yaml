@@ -53,7 +53,7 @@ engines:
     importEnabled: true
     # Determines whether this instance of Optimize should convert historical data to event data
     # usable for event based processes.
-    eventImportEnabled: ${OPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED:false}
+    eventImportEnabled: false
     authentication:
       # Toggles basic authentication on or off. When enabling basic
       # authentication, please be aware that you also need to adjust the values
@@ -198,28 +198,35 @@ sharing:
   enabled: true
 
 historyCleanup:
-  # switch for the cleanup, defaults to false
-  enabled: false
   # cron expression for when the cleanup should run
   cronTrigger: '0 1 * * *'
-  # time to live (ttl) for process instance data, from when reached the process instance will get cleaned up
+  # default time to live (ttl) for data, when reached the corresponding process/decision/event instances will get cleaned up
   # Format is ISO_8601 duration  https://en.wikipedia.org/wiki/ISO_8601#Durations
   ttl: 'P2Y'
-  # type of process data cleanup to perform, possible values:
-  # 'all' - delete everything related to the process instance
-  # 'variables' - only delete associated variables of a process instance
-  processDataCleanupMode: 'all'
-  # process definition specific configuration parameters that will overwrite the general parameters (ttl, processDataCleanupMode)
-  # for the specific processDefinition key
-  perProcessDefinitionConfig:
-  # 'myProcessDefinitionKey':
-  #   ttl: 'P2M'
-  #    mode: 'variables'
-  # decision definition specific configuration parameters that will overwrite the general parameters (ttl)
-  # for the specific decisionDefinition key
-  perDecisionDefinitionConfig:
-  # 'myDecisionDefinitionKey':
-  #   ttl: 'P2M'
+  processDataCleanup:
+    # switch for the Camunda process data cleanup, defaults to false
+    enabled: false
+    # type of process data cleanup to perform, possible values:
+    # 'all' - delete everything related to the process instance
+    # 'variables' - only delete associated variables of a process instance
+    cleanupMode: 'all'
+    # process definition specific configuration parameters that will overwrite the general parameters (ttl, processDataCleanupMode)
+    # for the specific processDefinition key
+    perProcessDefinitionConfig:
+    # 'myProcessDefinitionKey':
+    #   ttl: 'P2M'
+    #   cleanupMode: 'variables'
+  decisionDataCleanup:
+    # switch for the Camunda decision data cleanup, defaults to false
+    enabled: false
+    # decision definition specific configuration parameters that will overwrite the general parameters (ttl)
+    # for the specific decisionDefinition key
+    perDecisionDefinitionConfig:
+    # 'myDecisionDefinitionKey':
+    #   ttl: 'P2M'
+  ingestedEventCleanup:
+    # switch for the ingested event data cleanup, defaults to false
+    enabled: false
 
 locales:
   # all locales available
@@ -244,10 +251,10 @@ ui:
     backgroundColor: '#FFFFFF'
 
 eventBasedProcess:
-  authorizedUserIds: ${OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS:[]}
+  authorizedUserIds: []
   eventImport:
     # Determines whether this Optimize instance performs event based process instance import.
-    enabled: ${OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED:false}
+    enabled: false
   eventIngestion:
     # Secret token to be provided on the Ingestion REST API when ingesting data.
     # If set `null` a random token will be generated with each startup of Optimize and logged.

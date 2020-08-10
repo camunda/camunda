@@ -1,13 +1,6 @@
 @import '~bpmn-js/dist/assets/diagram-js.css';
 @import '~bpmn-js/dist/assets/bpmn-font/css/bpmn.css';
 
-:not(.ProcessEdit) > .BPMNDiagram {
-  .djs-element.hover .djs-outline,
-  .djs-element.selected .djs-outline {
-    stroke: none;
-  }
-}
-
 .ProcessEdit {
   height: 100%;
   display: flex;
@@ -16,5 +9,10 @@
   .BPMNDiagram {
     // to make sure that the bpmn modelling pallet is always visible
     min-height: 370px;
+
+    .djs-element.hover .djs-outline,
+    .djs-element.selected .djs-outline {
+      stroke-width: 1;
+    }
   }
 }

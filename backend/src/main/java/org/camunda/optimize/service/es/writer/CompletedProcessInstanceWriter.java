@@ -10,16 +10,12 @@ import com.google.common.collect.ImmutableSet;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.springframework.stereotype.Component;
 
-import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
@@ -36,9 +32,6 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.TENANT_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
-import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
 @Slf4j
@@ -80,35 +73,11 @@ public class CompletedProcessInstanceWriter extends AbstractProcessInstanceWrite
     return createImportRequestForProcessInstance(processInstanceDto, PRIMITIVE_UPDATABLE_FIELDS);
   }
 
-  public void deleteProcessInstancesByProcessDefinitionKeyAndEndDateOlderThan(final String processDefinitionKey,
-                                                                              final OffsetDateTime endDate) {
-    String deletedItemName = "process instances";
-    String deletedItemIdentifier = String.format(
-      "processDefinitionKey %s endDate past %s",
-      processDefinitionKey,
-      endDate
-    );
-
-    final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
-      getClass().getName(), esClient, DeleteByQueryAction.NAME
-    );
-    try {
-      progressReporter.start();
-
-      final BoolQueryBuilder filterQuery = boolQuery()
-        .filter(termQuery(ProcessInstanceIndex.PROCESS_DEFINITION_KEY, processDefinitionKey))
-        .filter(rangeQuery(ProcessInstanceIndex.END_DATE).lt(dateTimeFormatter.format(endDate)));
-
-      ElasticsearchWriterUtil.tryDeleteByQueryRequest(
-        esClient,
-        filterQuery,
-        deletedItemName,
-        deletedItemIdentifier,
-        PROCESS_INSTANCE_INDEX_NAME
-      );
-    } finally {
-      progressReporter.stop();
-    }
+  public void deleteByIds(final List<String> processInstanceIds) {
+    final BulkRequest bulkRequest = new BulkRequest();
+    log.debug("Deleting [{}] process instance documents with bulk request.", processInstanceIds.size());
+    processInstanceIds.forEach(id -> bulkRequest.add(new DeleteRequest(PROCESS_INSTANCE_INDEX_NAME, id)));
+    ElasticsearchWriterUtil.doBulkRequest(esClient, bulkRequest, PROCESS_INSTANCE_INDEX_NAME);
   }
 
   @Override

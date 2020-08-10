@@ -9,8 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.ProcessGroupByValueDto;
 
@@ -44,8 +43,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_VARIABL
   @JsonSubTypes.Type(value = CandidateGroupGroupByDto.class, name = GROUP_BY_CANDIDATE_GROUP)
 }
 )
-@Getter
-@Setter
+@Data
 public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto> implements Combinable {
 
   @JsonProperty

@@ -1,5 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`should render a loading indicator while loading the data 1`] = `
+<div
+  className="VariablesTable"
+>
+  <Table
+    body={Array []}
+    disablePagination={true}
+    foot={Array []}
+    head={Array []}
+    noData={<LoadingIndicator />}
+  />
+</div>
+`;
+
 exports[`should render a table with correct data 1`] = `
 <div
   className="VariablesTable"

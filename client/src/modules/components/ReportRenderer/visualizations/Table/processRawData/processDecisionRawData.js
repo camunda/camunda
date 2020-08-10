@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {sortColumns, cockpitLink, getNoDataMessage} from './service';
+import {sortColumns, cockpitLink, getNoDataMessage, isVisibleColumn} from './service';
 import {t} from 'translation';
 
 export default function processDecisionRawData(
@@ -12,7 +12,7 @@ export default function processDecisionRawData(
     report: {
       data: {
         configuration: {
-          excludedColumns = [],
+          tableColumns,
           columnOrder = {instanceProps: [], variables: [], inputVariables: [], outputVariables: []},
         },
       },
@@ -23,14 +23,16 @@ export default function processDecisionRawData(
 ) {
   const instanceProps = Object.keys(result[0]).filter(
     (entry) =>
-      entry !== 'inputVariables' && entry !== 'outputVariables' && !excludedColumns.includes(entry)
+      entry !== 'inputVariables' &&
+      entry !== 'outputVariables' &&
+      isVisibleColumn(entry, tableColumns)
   );
 
-  const inputVariables = Object.keys(result[0].inputVariables).filter(
-    (entry) => !excludedColumns.includes('input:' + entry)
+  const inputVariables = Object.keys(result[0].inputVariables).filter((entry) =>
+    isVisibleColumn('input:' + entry, tableColumns)
   );
-  const outputVariables = Object.keys(result[0].outputVariables).filter(
-    (entry) => !excludedColumns.includes('output:' + entry)
+  const outputVariables = Object.keys(result[0].outputVariables).filter((entry) =>
+    isVisibleColumn('output:' + entry, tableColumns)
   );
 
   if (instanceProps.length + inputVariables.length + outputVariables.length === 0) {

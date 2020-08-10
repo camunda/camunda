@@ -27,6 +27,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -35,7 +36,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -44,6 +44,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.COLLECTION_ID;
 import static org.camunda.optimize.service.es.schema.index.report.AbstractReportIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex.REPORTS;
@@ -56,6 +57,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @RequiredArgsConstructor
 @Component
@@ -81,7 +83,7 @@ public class ReportReader {
    * @throws OptimizeRuntimeException if report with specified ID does not
    *                                  exist or deserialization was not successful.
    */
-  public ReportDefinitionDto getReport(String reportId) {
+  public Optional<ReportDefinitionDto> getReport(String reportId) {
     log.debug("Fetching report with id [{}]", reportId);
     MultiGetResponse multiGetItemResponses = performMultiGetReportRequest(reportId);
 
@@ -95,16 +97,10 @@ public class ReportReader {
       }
     }
 
-    if (!result.isPresent()) {
-      String reason = "Was not able to retrieve report with id [" + reportId + "]"
-        + "from Elasticsearch. Report does not exist.";
-      log.error(reason);
-      throw new NotFoundException(reason);
-    }
-    return result.get();
+    return result;
   }
 
-  public SingleProcessReportDefinitionDto getSingleProcessReportOmitXml(String reportId) {
+  public Optional<SingleProcessReportDefinitionDto> getSingleProcessReportOmitXml(String reportId) {
     log.debug("Fetching single process report with id [{}]", reportId);
     GetRequest getRequest = getGetRequestOmitXml(SINGLE_PROCESS_REPORT_INDEX_NAME, reportId);
     GetResponse getResponse;
@@ -116,21 +112,20 @@ public class ReportReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (getResponse.isExists()) {
-      String responseAsString = getResponse.getSourceAsString();
-      try {
-        return objectMapper.readValue(responseAsString, SingleProcessReportDefinitionDto.class);
-      } catch (IOException e) {
-        log.error("Was not able to retrieve single process report with id [{}] from Elasticsearch.", reportId);
-        throw new OptimizeRuntimeException("Can't fetch alert");
-      }
-    } else {
+    if (!getResponse.isExists()) {
+      return Optional.empty();
+    }
+
+    String responseAsString = getResponse.getSourceAsString();
+    try {
+      return Optional.ofNullable(objectMapper.readValue(responseAsString, SingleProcessReportDefinitionDto.class));
+    } catch (IOException e) {
       log.error("Was not able to retrieve single process report with id [{}] from Elasticsearch.", reportId);
-      throw new NotFoundException("Single process report does not exist!");
+      throw new OptimizeRuntimeException("Can't fetch report");
     }
   }
 
-  public SingleDecisionReportDefinitionDto getSingleDecisionReportOmitXml(String reportId) {
+  public Optional<SingleDecisionReportDefinitionDto> getSingleDecisionReportOmitXml(String reportId) {
     log.debug("Fetching single decision report with id [{}]", reportId);
     GetRequest getRequest = getGetRequestOmitXml(SINGLE_DECISION_REPORT_INDEX_NAME, reportId);
 
@@ -143,17 +138,16 @@ public class ReportReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (getResponse.isExists()) {
-      String responseAsString = getResponse.getSourceAsString();
-      try {
-        return objectMapper.readValue(responseAsString, SingleDecisionReportDefinitionDto.class);
-      } catch (IOException e) {
-        log.error("Was not able to retrieve single decision report with id [{}] from Elasticsearch.", reportId);
-        throw new OptimizeRuntimeException("Can't fetch alert");
-      }
-    } else {
+    if (!getResponse.isExists()) {
+      return Optional.empty();
+    }
+
+    String responseAsString = getResponse.getSourceAsString();
+    try {
+      return Optional.ofNullable(objectMapper.readValue(responseAsString, SingleDecisionReportDefinitionDto.class));
+    } catch (IOException e) {
       log.error("Was not able to retrieve single decision report with id [{}] from Elasticsearch.", reportId);
-      throw new NotFoundException("single decision report does not exist!");
+      throw new OptimizeRuntimeException("Can't fetch report");
     }
   }
 
@@ -166,7 +160,7 @@ public class ReportReader {
       ALL_REPORT_INDICES,
       LIST_FETCH_LIMIT
     );
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       searchResponse,
       ReportDefinitionDto.class,
       objectMapper,
@@ -183,7 +177,35 @@ public class ReportReader {
       ALL_REPORT_INDICES,
       LIST_FETCH_LIMIT
     );
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
+      searchResponse,
+      ReportDefinitionDto.class,
+      objectMapper,
+      esClient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
+  }
+
+  public List<ReportDefinitionDto> getAllReportsForProcessDefinitionKeyOmitXml(final String definitionKey) {
+    final List<ReportDefinitionDto> processReportsForKey = getAllProcessReportsForDefinitionKeyOmitXml(definitionKey);
+    final List<String> processReportIds = processReportsForKey.stream()
+      .map(ReportDefinitionDto::getId)
+      .collect(Collectors.toList());
+    final List<CombinedReportDefinitionDto> combinedReports = findCombinedReportsForSimpleReports(processReportIds);
+    processReportsForKey.addAll(combinedReports);
+    return processReportsForKey;
+  }
+
+  private List<ReportDefinitionDto> getAllProcessReportsForDefinitionKeyOmitXml(final String definitionKey) {
+    log.debug("Fetching all available process reports for process definition key {}", definitionKey);
+    final BoolQueryBuilder processReportQuery = boolQuery()
+      .must(termQuery(String.join(".", DATA, PROCESS_DEFINITION_KEY), definitionKey));
+    SearchResponse searchResponse = performGetReportRequestOmitXml(
+      processReportQuery,
+      new String[]{SINGLE_PROCESS_REPORT_INDEX_NAME},
+      LIST_FETCH_LIMIT
+    );
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       searchResponse,
       ReportDefinitionDto.class,
       objectMapper,
@@ -200,7 +222,7 @@ public class ReportReader {
       ALL_REPORT_INDICES,
       LIST_FETCH_LIMIT
     );
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       searchResponse,
       ReportDefinitionDto.class,
       objectMapper,
@@ -238,17 +260,21 @@ public class ReportReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), ReportDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), ReportDefinitionDto.class, objectMapper);
   }
 
-  public List<CombinedReportDefinitionDto> findFirstCombinedReportsForSimpleReport(String simpleReportId) {
-    log.debug("Fetching first combined reports using simpleReport with id {}", simpleReportId);
+  public List<CombinedReportDefinitionDto> findCombinedReportsForSimpleReport(String simpleReportId) {
+    return findCombinedReportsForSimpleReports(Collections.singletonList(simpleReportId));
+  }
+
+  private List<CombinedReportDefinitionDto> findCombinedReportsForSimpleReports(List<String> simpleReportIds) {
+    log.debug("Fetching first combined reports using simpleReports with ids {}", simpleReportIds);
 
     final NestedQueryBuilder getCombinedReportsBySimpleReportIdQuery = nestedQuery(
       DATA,
       nestedQuery(
         String.join(".", DATA, REPORTS),
-        termQuery(String.join(".", DATA, REPORTS, REPORT_ITEM_ID), simpleReportId),
+        termsQuery(String.join(".", DATA, REPORTS, REPORT_ITEM_ID), simpleReportIds),
         ScoreMode.None
       ),
       ScoreMode.None
@@ -263,13 +289,13 @@ public class ReportReader {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String reason = String.format(
-        "Was not able to fetch combined reports that contain report with id [%s]",
-        simpleReportId
+        "Was not able to fetch combined reports that contain reports with ids [%s]",
+        simpleReportIds
       );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), CombinedReportDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), CombinedReportDefinitionDto.class, objectMapper);
   }
 
   private <T extends ReportDefinitionDto> List<T> getReportDefinitionDtos(final List<String> reportIds,
@@ -285,25 +311,11 @@ public class ReportReader {
       indices,
       reportIdsAsArray.length
     );
-    final List<T> reportDefinitionDtos =
-      mapResponseToReportList(searchResponse, reportType).stream()
-        // make sure that the order of the reports corresponds to the one from the single report ids list
-        .sorted(Comparator.comparingInt(a -> reportIds.indexOf(a.getId())))
-        .collect(Collectors.toList());
 
-    if (reportIds.size() != reportDefinitionDtos.size()) {
-      List<String> fetchedReportIds = reportDefinitionDtos.stream()
-        .map(T::getId)
-        .collect(Collectors.toList());
-      String errorMessage =
-        String.format("Error trying to fetch reports for given ids. Given ids [%s] and fetched [%s]. " +
-                        "There is a mismatch here. Maybe one report does not exist?",
-                      reportIds, fetchedReportIds
-        );
-      log.error(errorMessage);
-      throw new NotFoundException(errorMessage);
-    }
-    return reportDefinitionDtos;
+    return mapResponseToReportList(searchResponse, reportType).stream()
+      // make sure that the order of the reports corresponds to the one from the single report ids list
+      .sorted(Comparator.comparingInt(a -> reportIds.indexOf(a.getId())))
+      .collect(Collectors.toList());
   }
 
   private <T extends ReportDefinitionDto> List<T> mapResponseToReportList(SearchResponse searchResponse, Class<T> c) {

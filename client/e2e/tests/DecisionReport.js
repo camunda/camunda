@@ -182,6 +182,27 @@ test('filters', async (t) => {
     .maximizeWindow();
 });
 
+test('show raw data and decision table', async (t) => {
+  await t.click(Homepage.createNewMenu);
+  await t.click(Homepage.option('New Report'));
+  await t.click(Homepage.submenuOption('Decision Report'));
+
+  await u.selectDefinition(t, 'Invoice Classification');
+  await u.selectView(t, 'Evaluation Count');
+  await u.selectGroupby(t, 'None');
+
+  await u.save(t);
+
+  await t.click(ProcessReport.detailsPopoverButton);
+  await t.click(ProcessReport.modalButton('View Raw data'));
+  await t.expect(ProcessReport.rawDataTable.visible).ok();
+  await t.click(ProcessReport.closeModalButton);
+
+  await t.click(ProcessReport.detailsPopoverButton);
+  await t.click(ProcessReport.modalButton('View Decision Table'));
+  await t.expect(Report.modalDecisionTable.visible).ok();
+});
+
 async function checkVisualizations(t) {
   await t.expect(Report.option('Number').hasAttribute('disabled')).ok();
   await t.expect(Report.option('Table').hasAttribute('disabled')).notOk();

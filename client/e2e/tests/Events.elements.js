@@ -8,7 +8,7 @@ import {Selector} from 'testcafe';
 
 export const navItem = Selector('header a').withText('Event Based Processes');
 export const createDropdown = Selector('.Events .Dropdown');
-export const dropdownOption = (text) => Selector('a').withText(text);
+export const dropdownOption = (text) => Selector('.DropdownOption').withText(text);
 export const fileInput = Selector('input').withAttribute('type', 'file');
 export const entity = (title) => Selector('.name .entity').withText(title);
 export const nameEditField = Selector('.EntityNameForm .name-input');
@@ -39,5 +39,7 @@ export const eventsTable = Selector('.EventTable');
 export const publishButton = Selector('.publish-button');
 export const permissionButton = Selector('.permission button');
 export const usersTypeahead = Selector('.UserTypeahead');
-export const addButton = Selector('.Modal__content button').withText('Add');
+export const buttonWithText = (text) => Selector('.Modal__content-container button').withText(text);
 export const zoomButton = Selector('.zoomIn');
+export const diagram = Selector('.ProcessView .BPMNDiagram');
+export const businessKey = Selector('.label').withText('Business Key').prevSibling();

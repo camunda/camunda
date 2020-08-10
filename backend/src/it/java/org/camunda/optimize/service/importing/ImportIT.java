@@ -71,7 +71,7 @@ public class ImportIT extends AbstractImportIT {
     engineIntegrationExtension.createGroup(testCandidateGroup);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(testCandidateGroup);
     engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.suspendProcessInstance(processInstance.getId());
+    engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstance.getId());
 
     // when fetching endpoint temporarily fails
     final HttpRequest importFetcherEndpointMatcher = request()
@@ -84,14 +84,14 @@ public class ImportIT extends AbstractImportIT {
 
     // make sure fetching endpoint is called during import
     embeddedOptimizeExtension.startContinuousImportScheduling();
-    Thread.sleep(5000);
+    Thread.sleep(1000);
     esMockServer.verify(importFetcherEndpointMatcher);
 
     // endpoint no longer fails
     esMockServer.reset();
 
     // wait for import to finish
-    Thread.sleep(5000);
+    embeddedOptimizeExtension.ensureImportSchedulerIsIdle(5000L);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then everything has been imported
@@ -103,6 +103,7 @@ public class ImportIT extends AbstractImportIT {
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
     assertThat(storedProcessInstances)
+      .isNotEmpty()
       .allSatisfy(processInstanceDto -> {
         assertThat(processInstanceDto.getUserTasks()).hasSize(2);
         assertThat(processInstanceDto.getUserTasks())
@@ -111,7 +112,7 @@ public class ImportIT extends AbstractImportIT {
         assertThat(processInstanceDto.getUserTasks())
           .flatExtracting(UserTaskInstanceDto::getCandidateGroupOperations)
           .allMatch(groupOperation -> groupOperation.getGroupId().equals(testCandidateGroup));
-        assertThat(processInstanceDto.getVariables().size()).isEqualTo(variables.size());
+        assertThat(processInstanceDto.getVariables()).hasSize(variables.size());
         assertThat(processInstanceDto.getState()).isEqualTo(SUSPENDED_STATE);
       });
   }
@@ -119,7 +120,7 @@ public class ImportIT extends AbstractImportIT {
   protected void assertDocumentCountInES(final String elasticsearchIndex,
                                          final long count) {
     final Integer docCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(elasticsearchIndex);
-    assertThat(docCount).isEqualTo(count);
+    assertThat(docCount.longValue()).isEqualTo(count);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleTwoUserTaskProcessWithVariables(

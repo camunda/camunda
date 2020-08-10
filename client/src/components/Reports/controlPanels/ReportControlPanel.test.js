@@ -15,8 +15,6 @@ import {DefinitionSelection} from 'components';
 
 const ReportControlPanel = ReportControlPanelWithErrorHandling.WrappedComponent;
 
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
 
@@ -167,6 +165,33 @@ it('should only display process part button if view is process instance duration
   expect(node.find('ProcessPart')).not.toExist();
 });
 
+it('should set aggregation to avergage if aggregation is median after setting a process part', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel
+      {...props}
+      updateReport={spy}
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          view: {entity: 'processInstance', property: 'duration'},
+          configuration: {
+            ...report.data.configuration,
+            aggregationType: 'median',
+          },
+        },
+      }}
+    />
+  );
+
+  node.find('ProcessPart').prop('update')({});
+  expect(spy).toHaveBeenCalledWith(
+    {configuration: {aggregationType: {$set: 'avg'}, processPart: {$set: {}}}},
+    true
+  );
+});
+
 it('should only display target value button if view is flownode duration', () => {
   const node = shallow(
     <ReportControlPanel
@@ -248,13 +273,39 @@ it('should reset the groupby and visualization when changing process definition 
   expect(spy.mock.calls[0][0].visualization).toEqual({$set: null});
 });
 
+it('should reset the view, groupby and visualization when changing process definition and view is variable', async () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <ReportControlPanel
+      {...props}
+      report={{
+        ...report,
+        data: {
+          ...report.data,
+          view: {
+            entity: 'variable',
+            property: {name: 'doubleVar', type: 'Double'},
+          },
+        },
+      }}
+      updateReport={spy}
+    />
+  );
+
+  await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, []);
+
+  expect(spy.mock.calls[0][0].view).toEqual({$set: null});
+  expect(spy.mock.calls[0][0].groupBy).toEqual({$set: null});
+  expect(spy.mock.calls[0][0].visualization).toEqual({$set: null});
+});
+
 it('should reset definition specific configurations on definition change', async () => {
   const spy = jest.fn();
   const node = shallow(<ReportControlPanel {...props} updateReport={spy} />);
 
   await node.find(DefinitionSelection).prop('onChange')('newDefinition', 1, []);
 
-  expect(spy.mock.calls[0][0].configuration.excludedColumns).toBeDefined();
+  expect(spy.mock.calls[0][0].configuration.tableColumns).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.columnOrder).toBeDefined();
   expect(spy.mock.calls[0][0].configuration.heatmapTargetValue).toBeDefined();
 });

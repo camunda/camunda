@@ -22,12 +22,17 @@ public class CombinedProcessReportResultDto<RESULT extends SingleReportResultDto
   @Setter
   protected Map<String, ReportEvaluationResult<RESULT, SingleProcessReportDefinitionDto>> data;
 
+  @Getter
+  @Setter
+  private long instanceCount;
+
   protected CombinedProcessReportResultDto() {
   }
 
   public CombinedProcessReportResultDto(final Map<String, ReportEvaluationResult<RESULT,
-    SingleProcessReportDefinitionDto>> data) {
+    SingleProcessReportDefinitionDto>> data, final long instanceCount) {
     this.data = data;
+    this.instanceCount = instanceCount;
   }
 
   @Override

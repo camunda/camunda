@@ -7,7 +7,7 @@ package org.camunda.optimize.dto.optimize.query.report.single.result;
 
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
@@ -25,6 +25,7 @@ public class ReportMapResultDto implements LimitedResultDto, DecisionReportResul
   private List<MapResultEntryDto> data = new ArrayList<>();
   private Boolean isComplete = true;
   private long instanceCount;
+  private long instanceCountWithoutFilters;
 
   public Optional<MapResultEntryDto> getEntryForKey(final String key) {
     return data.stream().filter(entry -> key.equals(entry.getKey())).findFirst();
@@ -36,23 +37,23 @@ public class ReportMapResultDto implements LimitedResultDto, DecisionReportResul
   }
 
   public void sortResultData(
-    final SortingDto sorting,
+    final ReportSortingDto sorting,
     final boolean keyIsOfNumericType) {
 
-    final String sortBy = sorting.getBy().orElse(SortingDto.SORT_BY_KEY);
+    final String sortBy = sorting.getBy().orElse(ReportSortingDto.SORT_BY_KEY);
     final SortOrder sortOrder = sorting.getOrder().orElse(SortOrder.DESC);
 
     final Function<MapResultEntryDto, Comparable> valueToSortByExtractor;
     switch (sortBy) {
       default:
-      case SortingDto.SORT_BY_KEY:
+      case ReportSortingDto.SORT_BY_KEY:
         valueToSortByExtractor = keyIsOfNumericType?
           entry -> Double.valueOf(entry.getKey()) : entry -> entry.getKey().toLowerCase();
         break;
-      case SortingDto.SORT_BY_VALUE:
+      case ReportSortingDto.SORT_BY_VALUE:
         valueToSortByExtractor = MapResultEntryDto::getValue;
         break;
-      case SortingDto.SORT_BY_LABEL:
+      case ReportSortingDto.SORT_BY_LABEL:
         valueToSortByExtractor = entry -> entry.getLabel().toLowerCase();
         break;
     }

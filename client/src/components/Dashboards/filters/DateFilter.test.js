@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import {Dropdown, DatePicker} from 'components';
@@ -18,7 +18,7 @@ const props = {
 };
 
 const todayFilter = {
-  type: 'rolling',
+  type: 'relative',
   start: {value: 0, unit: 'days'},
   end: null,
 };
@@ -45,6 +45,18 @@ it('should show a datepicker when switching to fixed state', () => {
   expect(node.find(DatePicker)).toExist();
 });
 
+it('should show the dropdown again after an external reset', () => {
+  const node = shallow(<DateFilter {...props} />);
+
+  node.find(Dropdown.Option).at(0).simulate('click');
+  node.setProps({resetTrigger: true});
+
+  runLastEffect();
+
+  expect(node.find(DatePicker)).not.toExist();
+  expect(node.find(Dropdown)).toExist();
+});
+
 it('should show the filter state', () => {
   const node = shallow(<DateFilter {...props} filter={todayFilter} />);
 
@@ -64,4 +76,20 @@ it('should disable the reset button if no filter is set', () => {
   const node = shallow(<DateFilter {...props} />);
 
   expect(node.find(Dropdown.Option).last()).toHaveProp('disabled', true);
+});
+
+it('should allow providing a custom icon and empty text', () => {
+  const node = shallow(<DateFilter {...props} icon="customIcon" emptyText="customText" />);
+
+  expect(node.find(Dropdown).prop('label')).toMatchSnapshot();
+});
+
+it('should render children', () => {
+  const node = shallow(
+    <DateFilter {...props}>
+      <div className="childContent" />
+    </DateFilter>
+  );
+
+  expect(node.find('.childContent')).toExist();
 });

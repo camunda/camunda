@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.user_task;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
@@ -22,6 +23,9 @@ import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
@@ -35,8 +39,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -71,8 +74,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     deployAndStartTwoUserTasksProcess();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -97,14 +99,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   }
 
   @Test
-  public void runningAndCompletedUserTasksAreImported() throws IOException {
+  public void runningAndCompletedUserTasksAreImported() {
     // given
     deployAndStartTwoUserTasksProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -131,8 +132,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   @Test
   public void runningAndCompletedUserTasksAreImported_despiteEsUpdateFailures() {
     // given
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()).isEmpty();
@@ -153,8 +153,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
       .error(HttpError.error().withDropConnection(true));
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // then expected user tasks are stored on next successful update
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -182,13 +181,12 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   @Test
   public void onlyUserTasksRelatedToProcessInstancesAreImported() throws IOException {
     // given
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     final UUID independentUserTaskId = engineIntegrationExtension.createIndependentUserTask();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -212,8 +210,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.createIndependentUserTask();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()).isEmpty();
@@ -226,13 +223,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
-    final ProcessInstanceEngineDto processInstanceDto2 = deployAndStartOneUserTaskProcess();
+    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.deployAndStartProcess(
+      BpmnModels.getSingleUserTaskDiagram());
     // only first task finished
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -267,8 +264,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     assertThat(elasticSearchIntegrationTestExtension.getAllProcessInstances()).isEmpty();
@@ -281,8 +277,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -302,16 +297,16 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   }
 
   @Test
-  public void idleTimeMetricIsCalculatedOnClaimOperationImport() throws IOException {
+  public void idleTimeMetricIsCalculatedOnClaimOperationImport() {
     // given
-    final ProcessInstanceEngineDto processInstanceDto = deployAndStartOneUserTaskProcess();
+    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.deployAndStartProcess(
+      BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.finishAllRunningUserTasks();
     final long idleDuration = 500;
     changeUserTaskIdleDuration(processInstanceDto, idleDuration);
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -325,14 +320,13 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   }
 
   @Test
-  public void defaultWorkTimeOnNoClaimOperation() throws IOException {
+  public void defaultWorkTimeOnNoClaimOperation() {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
     engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceDto.getId());
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -346,7 +340,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
   }
 
   @Test
-  public void workTimeMetricIsCalculatedOnClaimOperationImport() throws IOException {
+  public void workTimeMetricIsCalculatedOnClaimOperationImport() {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartTwoUserTasksProcess();
     engineIntegrationExtension.finishAllRunningUserTasks();
@@ -355,8 +349,7 @@ public class UserTaskImportIT extends AbstractUserTaskImportIT {
     changeUserTaskWorkDuration(processInstanceDto, workDuration);
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =

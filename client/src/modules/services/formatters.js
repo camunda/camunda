@@ -5,7 +5,9 @@
  */
 
 import React from 'react';
-import moment from 'moment';
+import {parseISO} from 'date-fns';
+
+import {format} from 'dates';
 import {t} from 'translation';
 
 const timeUnits = {
@@ -19,35 +21,43 @@ const timeUnits = {
   years: {value: 12 * 30 * 24 * 60 * 60 * 1000, abbreviation: 'y', label: 'year'},
 };
 
+const scaleUnits = [
+  {exponent: 18, label: 'quintillion'},
+  {exponent: 15, label: 'quadrillion'},
+  {exponent: 12, label: 'trillion'},
+  {exponent: 9, label: 'billion'},
+  {exponent: 6, label: 'million'},
+  {exponent: 3, label: 'thousand'},
+];
+
+function getNumberOfDigits(x) {
+  // https://stackoverflow.com/a/28203456
+  return Math.max(Math.floor(Math.log10(Math.abs(x))), 0) + 1;
+}
+
 export function frequency(number, precision) {
   if (!number && number !== 0) {
     return '--';
   }
 
-  const intl = new Intl.NumberFormat(undefined, {maximumFractionDigits: precision});
+  const intl = new Intl.NumberFormat();
 
   if (precision) {
-    const digitsFactor = 10 ** ('' + number).length;
+    const digitsFactor = 10 ** getNumberOfDigits(number);
     const precisionFactor = 10 ** precision;
     const roundedToPrecision =
       (Math.round((number / digitsFactor) * precisionFactor) / precisionFactor) * digitsFactor;
 
-    if (roundedToPrecision >= 10 ** 6) {
-      const millions = roundedToPrecision / 10 ** 6;
-      return (
-        intl.format(millions) +
-        ' ' +
-        t(`common.unit.million.label${millions !== 1 ? '-plural' : ''}`)
-      );
-    }
-
-    if (roundedToPrecision >= 10 ** 3) {
-      const thousand = roundedToPrecision / 10 ** 3;
-      return (
-        intl.format(thousand) +
-        ' ' +
-        t(`common.unit.thousand.label${thousand !== 1 ? '-plural' : ''}`)
-      );
+    for (let i = 0; i < scaleUnits.length; i++) {
+      const {exponent, label} = scaleUnits[i];
+      if (Math.abs(roundedToPrecision) >= 10 ** exponent) {
+        const shortened = roundedToPrecision / 10 ** exponent;
+        return (
+          intl.format(shortened) +
+          ' ' +
+          t(`common.unit.${label}.label${shortened !== 1 ? '-plural' : ''}`)
+        );
+      }
     }
     return intl.format(roundedToPrecision);
   }
@@ -109,6 +119,9 @@ export function getRelativeValue(data, total) {
   if (!data && data !== 0) {
     return '--';
   }
+  if (data === 0) {
+    return '0%';
+  }
   return Math.round((data / total) * 1000) / 10 + '%';
 }
 
@@ -141,7 +154,9 @@ export function getHighlightedText(text, highlight, matchFromStart) {
   if (!highlight) {
     return text;
   }
-  let regex = highlight;
+  // we need to escape special characters in the highlight text
+  // https://stackoverflow.com/a/3561711
+  let regex = highlight.replace(/[-\\^$*+?.()|[\]{}]/g, '\\$&');
   if (matchFromStart) {
     regex = '^' + regex;
   }
@@ -174,7 +189,7 @@ export function formatReportResult(data, result) {
   if (groupBy.value && groupBy.type.includes('Date')) {
     unit = determineUnit(groupBy.value.unit, result);
   } else if (groupBy.value && groupBy.type === 'variable' && groupBy.value.type === 'Date') {
-    unit = 'second';
+    unit = determineUnit(data.configuration.groupByDateVariableUnit, result);
   }
 
   if (!unit || !result) {
@@ -191,7 +206,7 @@ export function formatReportResult(data, result) {
 
   const formattedResult = result.map((entry) => ({
     ...entry,
-    label: moment(entry.label).format(dateFormat),
+    label: format(parseISO(entry.label), dateFormat),
   }));
 
   return formattedResult;
@@ -247,9 +262,9 @@ function determineUnit(unit, resultData) {
 
 function determineUnitForAutomaticIntervalSelection(resultData) {
   if (resultData.length > 1) {
-    const firstEntry = moment(resultData[0].key);
-    const secondEntry = moment(resultData[1].key);
-    const intervalInMs = Math.abs(firstEntry.diff(secondEntry));
+    const firstEntry = parseISO(resultData[0].key);
+    const secondEntry = parseISO(resultData[1].key);
+    const intervalInMs = Math.abs(firstEntry - secondEntry);
 
     const intervals = [
       {value: 1000 * 60 * 60 * 24 * 30 * 12, unit: 'year'},
@@ -269,21 +284,21 @@ function getDateFormat(unit) {
   let dateFormat;
   switch (unit) {
     case 'hour':
-      dateFormat = 'YYYY-MM-DD HH:00:00';
+      dateFormat = 'yyyy-MM-dd HH:00:00';
       break;
     case 'day':
     case 'week':
-      dateFormat = 'YYYY-MM-DD';
+      dateFormat = 'yyyy-MM-dd';
       break;
     case 'month':
-      dateFormat = 'MMM YYYY';
+      dateFormat = 'MMM yyyy';
       break;
     case 'year':
-      dateFormat = 'YYYY';
+      dateFormat = 'yyyy';
       break;
     case 'second':
     default:
-      dateFormat = 'YYYY-MM-DD HH:mm:ss';
+      dateFormat = 'yyyy-MM-dd HH:mm:ss';
   }
   return dateFormat;
 }

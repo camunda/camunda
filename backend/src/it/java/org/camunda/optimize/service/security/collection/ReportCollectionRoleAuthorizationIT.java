@@ -43,6 +43,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstants.RE
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_USER;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
@@ -256,7 +257,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
     final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
-    assertThat(reportCopy.getDefinitionDto().getOwner(), is(KERMIT_USER));
+    assertThat(reportCopy.getDefinitionDto().getOwner(), is(DEFAULT_FULLNAME));
   }
 
   @ParameterizedTest
@@ -299,7 +300,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
     final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
-    assertThat(reportCopy.getDefinitionDto().getOwner(), is(KERMIT_USER));
+    assertThat(reportCopy.getDefinitionDto().getOwner(), is(DEFAULT_FULLNAME));
   }
 
   @ParameterizedTest
@@ -341,7 +342,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
     final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
-    assertThat(reportCopy.getDefinitionDto().getOwner(), is(KERMIT_USER));
+    assertThat(reportCopy.getDefinitionDto().getOwner(), is(DEFAULT_FULLNAME));
   }
 
   @ParameterizedTest
@@ -399,7 +400,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
     final String copyId = response.readEntity(IdDto.class).getId();
     final AuthorizedReportDefinitionDto reportCopy = getReportByIdAsKermit(copyId);
-    assertThat(reportCopy.getDefinitionDto().getOwner(), is(KERMIT_USER));
+    assertThat(reportCopy.getDefinitionDto().getOwner(), is(DEFAULT_FULLNAME));
   }
 
   @ParameterizedTest

@@ -5,31 +5,31 @@
  */
 package org.camunda.optimize.service.es.filter;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.time.ZoneId;
 import java.util.List;
 
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+@Slf4j
 @Component
 public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNodeFilterDataDto> {
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
-
   @Override
-  public void addFilters(BoolQueryBuilder query, List<ExecutedFlowNodeFilterDataDto> flowNodeFilter) {
+  public void addFilters(BoolQueryBuilder query, List<ExecutedFlowNodeFilterDataDto> flowNodeFilter,
+                         final ZoneId timezone) {
     List<QueryBuilder> filters = query.filter();
     for (ExecutedFlowNodeFilterDataDto executedFlowNode : flowNodeFilter) {
       filters.add(createFilterQueryBuilder(executedFlowNode));
@@ -59,7 +59,7 @@ public class ExecutedFlowNodeQueryFilter implements QueryFilter<ExecutedFlowNode
         );
       }
     } else {
-      logger.error("Could not filter for flow nodes. " +
+      log.error("Could not filter for flow nodes. " +
         "Operator [{}] is not allowed! Use either [in] or [not in]", flowNodeFilter.getOperator());
     }
     return boolQueryBuilder;

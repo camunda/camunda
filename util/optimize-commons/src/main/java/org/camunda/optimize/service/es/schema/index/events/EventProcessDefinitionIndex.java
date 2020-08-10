@@ -7,12 +7,10 @@ package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
-import org.springframework.stereotype.Component;
 
-@Component
 public class EventProcessDefinitionIndex extends ProcessDefinitionIndex {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   @Override
   public String getIndexName() {

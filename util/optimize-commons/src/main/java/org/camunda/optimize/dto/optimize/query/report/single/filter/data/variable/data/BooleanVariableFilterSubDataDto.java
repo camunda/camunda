@@ -9,12 +9,14 @@ import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Data
 public class BooleanVariableFilterSubDataDto {
-  protected Boolean value;
+  protected List<Boolean> values;
 
-  public BooleanVariableFilterSubDataDto(final Boolean value) {
-    this.value = value;
+  public BooleanVariableFilterSubDataDto(final List<Boolean> values) {
+    this.values = values;
   }
 }

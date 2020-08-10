@@ -1,13 +1,13 @@
 #!/usr/bin/env groovy
 
+// https://github.com/camunda/jenkins-global-shared-library
+@Library('camunda-ci') _
+
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
-boolean slaveDisconnected() {
-  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
-}
 
 // general properties for CI execution
 static String NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
-static String MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
+static String MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 static String DIND_DOCKER_IMAGE() { return "docker:18.06-dind" }
 
 static String PUBLIC_DOCKER_REGISTRY(boolean pushChanges) {
@@ -48,7 +48,7 @@ String calculatePreviousVersion(releaseVersion) {
   }
 }
 
-static String mavenDindAgent(env) {
+static String mavenDindAgent() {
   return """---
 apiVersion: v1
 kind: Pod
@@ -76,11 +76,11 @@ spec:
       value: Europe/Berlin
     resources:
       limits:
-        cpu: 4
-        memory: 3Gi
+        cpu: 5
+        memory: 6Gi
       requests:
-        cpu: 4
-        memory: 3Gi
+        cpu: 5
+        memory: 6Gi
   - name: docker
     image: ${DIND_DOCKER_IMAGE()}
     args: ["--storage-driver=overlay2"]
@@ -271,7 +271,7 @@ pipeline {
       cloud 'optimize-ci'
       label "optimize-ci-build_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
-      yaml mavenDindAgent(env)
+      yaml mavenDindAgent()
     }
   }
 
@@ -430,7 +430,7 @@ pipeline {
             parameters: [
                 string(name: 'RELEASE_VERSION', value: "${params.RELEASE_VERSION}"),
                 string(name: 'DEVELOPMENT_VERSION', value: "${params.DEVELOPMENT_VERSION}"),
-                string(name: 'BRANCH', value: "${params.BRANCH}"),
+                string(name: 'BRANCH', value: "master"),
             ],
         wait: false
       }
@@ -444,7 +444,7 @@ pipeline {
     always {
       // Retrigger the build if the slave disconnected
       script {
-        if (slaveDisconnected()) {
+        if (agentDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }

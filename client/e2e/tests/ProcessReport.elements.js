@@ -7,6 +7,10 @@
 import {Selector} from 'testcafe';
 
 export const nameEditField = Selector('.EntityNameForm .name-input');
+export const templateModalNameField = Selector('.Modal .FormGroup .Input');
+export const templateModalProcessField = Selector('.Modal .Typeahead');
+export const templateOption = (text) =>
+  Selector('.Modal .templateContainer .Button').withText(text);
 export const reportName = Selector('.ReportView .name');
 export const reportRenderer = Selector('.ReportRenderer');
 export const report = Selector('.ListItem.report');
@@ -14,7 +18,7 @@ export const editButton = Selector('.edit-button');
 export const shareButton = Selector('.share-button > .Button');
 export const shareSwitch = Selector('.ShareEntity .Switch');
 export const shareUrl = Selector('.ShareEntity .shareLink input');
-export const shareHeader = Selector('.Sharing__title');
+export const shareHeader = Selector('.Sharing .header');
 export const deleteButton = Selector('.delete-button');
 export const modalConfirmbutton = Selector('.Modal .confirm.Button');
 export const groupbyDropdown = Selector('.label').withText('Group By').nextSibling();
@@ -25,7 +29,7 @@ export const configurationOption = (text) =>
   Selector('.Configuration .DropdownOption').withExactText(text);
 export const reportTable = reportRenderer.find('.Table');
 export const reportChart = reportRenderer.find('canvas');
-export const reportDiagram = reportRenderer.find('svg');
+export const reportDiagram = reportRenderer.find('.djs-container > svg');
 export const reportNumber = reportRenderer.find('.Number');
 export const instanceCount = reportRenderer.find('.additionalInfo');
 export const reportProgressBar = reportRenderer.find('.ProgressBar');
@@ -47,8 +51,6 @@ export const badge = (id) =>
   Selector(`.BPMNDiagram .djs-overlay-container [data-container-id="${id}"] .djs-overlay`);
 export const targetValueButton = Selector('.toggleButton');
 export const targetValueInput = (name) => Selector('.Modal tbody tr').withText(name).find('.Input');
-export const targetValueUnitSelect = (name) =>
-  Selector('.Modal tbody tr').withText(name).find('.Dropdown:last-child');
 export const nodeFilterOperator = (name) =>
   Selector('.Modal tbody tr').withText(name).find('.Dropdown:first-child');
 export const primaryModalButton = Selector('.Modal .Modal__actions .primary');
@@ -99,3 +101,8 @@ export const modalContainer = Selector('.Modal__content-container');
 export const aggregationTypeSelect = Selector('.AggregationType .Select');
 export const aggregationOption = (text) =>
   Selector('.AggregationType .DropdownOption').withText(text);
+export const detailsPopoverButton = Selector('.EntityName .Popover .Button');
+export const modalButton = (text) => Selector('.EntityName .modalsButtons .Button').withText(text);
+export const rawDataTable = Selector('.RawDataModal .Table');
+export const modalDiagram = Selector('.DiagramModal .BPMNDiagram');
+export const closeModalButton = Selector('.Modal .Button').withText('Close');

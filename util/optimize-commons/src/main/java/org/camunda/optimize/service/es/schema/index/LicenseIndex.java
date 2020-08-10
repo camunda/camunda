@@ -14,7 +14,7 @@ import java.io.IOException;
 
 @Component
 public class LicenseIndex extends DefaultIndexMappingCreator {
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   public static final String LICENSE = "license";
 
@@ -30,11 +30,13 @@ public class LicenseIndex extends DefaultIndexMappingCreator {
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+    // @formatter:off
     return xContentBuilder
       .startObject(LICENSE)
         .field("type", "text")
         .field("index", false)
       .endObject();
+    // @formatter:on
   }
 
 }

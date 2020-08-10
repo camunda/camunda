@@ -1,8 +1,7 @@
 #!/usr/bin/env groovy
 
-boolean slaveDisconnected() {
-  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
-}
+// https://github.com/camunda/jenkins-global-shared-library
+@Library('camunda-ci') _
 
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
@@ -57,7 +56,7 @@ spec:
       - name: PGPASSWORD
         value: camunda123
       - name: PGHOST
-        value: opt-ci-perf.db
+        value: stage-postgres.optimize
       - name: PGDATABASE
         value: optimize-ci-performance
     volumeMounts:
@@ -162,7 +161,7 @@ pipeline {
             sh("""
               sed -i -e "s/@CAMBPM_VERSION@/$CAMBPM_VERSION/g" -e "s/@ES_VERSION@/$ES_VERSION/g" ${WORKSPACE}/optimize/.ci/branch-deployment/deployment.yml
               ./cmd/k8s/deploy-template-to-branch \
-              ${WORKSPACE}/infra-core/camunda-ci/deployments/optimize-branch \
+              ${WORKSPACE}/infra-core/camunda-ci-v2/deployments/optimize-branch \
               ${WORKSPACE}/optimize/.ci/branch-deployment \
               ${params.BRANCH} \
               optimize
@@ -205,7 +204,7 @@ pipeline {
     always {
       // Retrigger the build if the slave disconnected
       script {
-        if (slaveDisconnected()) {
+        if (agentDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }

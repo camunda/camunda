@@ -8,23 +8,19 @@ import React from 'react';
 import equal from 'deep-equal';
 
 import {DefinitionSelection} from 'components';
+import {Filter} from 'filter';
 import {withErrorHandling} from 'HOC';
-
-import ReportSelect from './ReportSelect';
-
-import {Filter} from './filter';
 import {getFlowNodeNames, reportConfig, loadProcessDefinitionXml, loadVariables} from 'services';
-
-import {TargetValueComparison} from './targetValue';
-import {ProcessPart} from './ProcessPart';
-
-import {isDurationHeatmap, isProcessInstanceDuration} from './service';
-
-import {Configuration} from './Configuration';
-
-import './ReportControlPanel.scss';
 import {t} from 'translation';
 import {showError} from 'notifications';
+
+import ReportSelect from './ReportSelect';
+import {TargetValueComparison} from './targetValue';
+import {ProcessPart} from './ProcessPart';
+import {Configuration} from './Configuration';
+import {isDurationHeatmap, isProcessInstanceDuration} from './service';
+
+import './ReportControlPanel.scss';
 
 const {process: processConfig} = reportConfig;
 
@@ -85,15 +81,22 @@ export default withErrorHandling(
       }
     }
 
-    changeDefinition = async ({key, versions, tenantIds}) => {
-      const {groupBy, filter} = this.props.report.data;
+    changeDefinition = async ({key, versions, tenantIds, name}) => {
+      const {view, groupBy, filter} = this.props.report.data;
 
       const change = {
         processDefinitionKey: {$set: key},
+        processDefinitionName: {$set: name},
         processDefinitionVersions: {$set: versions},
         tenantIds: {$set: tenantIds},
         configuration: {
-          excludedColumns: {$set: []},
+          tableColumns: {
+            $set: {
+              includeNewVariables: true,
+              includedColumns: [],
+              excludedColumns: [],
+            },
+          },
           columnOrder: {
             $set: {
               inputVariables: [],
@@ -129,7 +132,13 @@ export default withErrorHandling(
         },
       };
 
-      if (groupBy && groupBy.type === 'variable') {
+      if (view?.entity === 'variable') {
+        change.view = {$set: null};
+        change.groupBy = {$set: null};
+        change.visualization = {$set: null};
+      }
+
+      if (groupBy?.type === 'variable') {
         change.groupBy = {$set: null};
         change.visualization = {$set: null};
       }
@@ -220,9 +229,13 @@ export default withErrorHandling(
                   flowNodeNames={this.state.flowNodeNames}
                   xml={data.configuration.xml}
                   processPart={data.configuration.processPart}
-                  update={(newPart) =>
-                    this.props.updateReport({configuration: {processPart: {$set: newPart}}}, true)
-                  }
+                  update={(newPart) => {
+                    const change = {configuration: {processPart: {$set: newPart}}};
+                    if (data.configuration.aggregationType === 'median') {
+                      change.configuration.aggregationType = {$set: 'avg'};
+                    }
+                    this.props.updateReport(change, true);
+                  }}
                 />
               </li>
             )}

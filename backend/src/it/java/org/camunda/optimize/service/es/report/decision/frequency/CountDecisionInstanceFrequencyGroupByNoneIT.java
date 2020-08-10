@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -39,8 +39,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -53,7 +52,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     // then
     assertThat(result.getInstanceCount(), is(3L));
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData(), is(3L));
+    assertThat(result.getData(), is(3.));
   }
 
   @Test
@@ -67,8 +66,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -81,7 +79,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     // then
     assertThat(result.getInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData(), is(5L));
+    assertThat(result.getData(), is(5.));
   }
 
   @Test
@@ -98,8 +96,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     // other decision definition
     deployAndStartSimpleDecisionDefinition("key2");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -112,7 +109,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     // then
     assertThat(result.getInstanceCount(), is(5L));
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData(), is(5L));
+    assertThat(result.getData(), is(5.));
   }
 
   @Test
@@ -125,8 +122,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -138,7 +134,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is((long) selectedTenants.size()));
+    assertThat(result.getData(), is((double) selectedTenants.size()));
   }
 
   @Test
@@ -159,8 +155,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       createInputs(inputVariableValueToFilterFor + 100.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -168,7 +163,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
       .setDecisionDefinitionVersion(String.valueOf(decisionDefinitionDto.getVersion()))
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
       .setFilter(createNumericInputVariableFilter(
-        INPUT_AMOUNT_ID, FilterOperatorConstants.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
+        INPUT_AMOUNT_ID, FilterOperator.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
     final NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
@@ -176,7 +171,7 @@ public class CountDecisionInstanceFrequencyGroupByNoneIT extends AbstractDecisio
     // then
     assertThat(result.getInstanceCount(), is(2L));
     assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData(), is(2L));
+    assertThat(result.getData(), is(2.));
   }
 
   @Test

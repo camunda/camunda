@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.importing;
 
+import lombok.SneakyThrows;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -38,14 +40,12 @@ public class ImportIndexIT extends AbstractImportIT {
     // sleep in order to avoid the timestamp import backoff window that modifies the latestTimestamp stored
     Thread.sleep(currentTimeBackOff);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     List<Long> firstRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // then
     embeddedOptimizeExtension.resetImportStartIndexes();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     List<Long> secondsRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // then
@@ -55,25 +55,30 @@ public class ImportIndexIT extends AbstractImportIT {
   }
 
   @Test
+  @SneakyThrows
   public void latestImportIndexAfterRestartOfOptimize() {
     // given
     deployAndStartUserTaskProcess();
     // we need finished ones
     engineIntegrationExtension.finishAllRunningUserTasks();
-    // as well as running
-    deployAndStartUserTaskProcess();
+    // as well as running & suspended ones
+    final ProcessInstanceEngineDto processInstanceToSuspend = deployAndStartUserTaskProcess();
+    engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstanceToSuspend.getId());
     deployAndStartSimpleServiceTask();
     engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.createTenant("id", "name");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when
-    List<Long> indexes = embeddedOptimizeExtension.getImportIndexes();
+    embeddedOptimizeExtension.stopOptimize();
+    embeddedOptimizeExtension.startOptimize();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
+    List<Long> indexes = embeddedOptimizeExtension.getImportIndexes();
     for (Long index : indexes) {
       assertThat(index, greaterThan(0L));
     }
@@ -85,14 +90,13 @@ public class ImportIndexIT extends AbstractImportIT {
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     List<Long> firstRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     List<Long> secondsRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // then
@@ -105,16 +109,14 @@ public class ImportIndexIT extends AbstractImportIT {
   public void afterRestartOfOptimizeAlsoNewDataIsImported() {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     List<Long> firstRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // and
     deployAndStartSimpleServiceTask();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     List<Long> secondsRoundIndexes = embeddedOptimizeExtension.getImportIndexes();
 
     // then
@@ -127,7 +129,7 @@ public class ImportIndexIT extends AbstractImportIT {
   public void itIsPossibleToResetTheImportIndex() {
     // given
     deployAndStartSimpleServiceTask();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     // when
     embeddedOptimizeExtension.resetImportStartIndexes();

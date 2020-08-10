@@ -21,9 +21,9 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.DmnModelUtility.extractInputVariables;
-import static org.camunda.optimize.service.util.DmnModelUtility.extractOutputVariables;
-import static org.camunda.optimize.service.util.DmnModelUtility.parseDmnModel;
+import static org.camunda.optimize.service.util.DmnModelUtil.extractInputVariables;
+import static org.camunda.optimize.service.util.DmnModelUtil.extractOutputVariables;
+import static org.camunda.optimize.service.util.DmnModelUtil.parseDmnModel;
 
 @AllArgsConstructor
 @Slf4j
@@ -34,7 +34,8 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
   private final DecisionDefinitionResolverService decisionDefinitionResolverService;
 
   @Override
-  public void executeImport(final List<DecisionDefinitionXmlEngineDto> engineDtoList, final Runnable importCompleteCallback) {
+  public void executeImport(final List<DecisionDefinitionXmlEngineDto> engineDtoList,
+                            final Runnable importCompleteCallback) {
     log.trace("Importing entities from engine...");
     final boolean newDataIsAvailable = !engineDtoList.isEmpty();
     if (newDataIsAvailable) {
@@ -44,6 +45,11 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
       );
       elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
     }
+  }
+
+  @Override
+  public ElasticsearchImportJobExecutor getElasticsearchImportJobExecutor() {
+    return elasticsearchImportJobExecutor;
   }
 
   private List<DecisionDefinitionOptimizeDto> mapEngineEntitiesToOptimizeEntities(

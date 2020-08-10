@@ -12,7 +12,7 @@ export async function evaluateEntity(id, type) {
   try {
     response = await get(`api/share/${type}/${id}/evaluate`);
   } catch (e) {
-    return null;
+    return (await e.json()).reportDefinition;
   }
 
   return await response.json();

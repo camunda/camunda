@@ -25,10 +25,11 @@ public class RunningActivityInstanceWriter extends AbstractActivityInstanceWrite
     // probably completed activity instances.
     // @formatter:off
     return
-      "for (def oldEvent : ctx._source.events) {" +
-        "params.events.removeIf(item -> item.id.equals(oldEvent.id));" +
-      "}" +
-      "ctx._source.events.addAll(params.events)";
+      "def existingEventsById = ctx._source.events.stream().collect(Collectors.toMap(e -> e.id, e -> e, (e1, e2) -> e1));" +
+      "def eventsToAddById = params.events.stream()" +
+        ".filter(e -> !existingEventsById.containsKey(e.id))" +
+        ".collect(Collectors.toMap(e -> e.id, e -> e, (e1, e2) -> e1));" +
+      "ctx._source.events.addAll(eventsToAddById.values());";
     // @formatter:on
   }
 

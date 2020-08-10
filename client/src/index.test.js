@@ -107,3 +107,12 @@ it('should declare all used dependencies', () => {
 
   expect([...undeclaredDependencies]).toHaveLength(0);
 });
+
+it('should not allow api requests to start with slash', () => {
+  const serviceFiles = javascriptFiles.filter((file) => {
+    const fileContent = fs.readFileSync(file, 'utf8');
+    return fileContent.match(/(post|get|del|put)\(['`]\/api/g);
+  });
+
+  expect(serviceFiles).toHaveLength(0);
+});

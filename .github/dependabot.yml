@@ -1,0 +1,48 @@
+version: 2
+
+updates:
+  - package-ecosystem: "maven"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "master"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    ignore:
+      - dependency-name: "org.camunda.bpm:camunda-engine"
+      - dependency-name: "com.h2database:h2"
+      - dependency-name: "org.jboss.resteasy:resteasy-jaxrs"
+      - dependency-name: "org.elasticsearch.client:elasticsearch-rest-high-level-client"
+    reviewers:
+      - "camunda/optimize"
+    labels:
+      - "dependencies"
+
+
+  - package-ecosystem: "npm"
+    directory: "/client"
+    schedule:
+      interval: "daily"
+    target-branch: "master"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    reviewers:
+      - "camunda/optimize"
+    labels:
+      - "dependencies"
+
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    target-branch: "master"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    reviewers:
+      - "camunda/optimize"
+    labels:
+      - "dependencies"

@@ -1,26 +1,25 @@
 .Process {
   height: 100%;
 
+  > .ProcessView > .header {
+    margin-bottom: 40px;
+  }
+  > .ProcessEdit > .header {
+    margin-bottom: 20px;
+  }
+
   > .ProcessView,
   > .ProcessEdit {
+    .content {
+      display: flex;
+      flex-grow: 1;
+    }
+
     > .header {
-      padding: 36px 20px 0;
-      margin-bottom: 1em;
+      padding: 30px 40px 0 40px;
 
       .head {
         display: flex;
-
-        .name-container {
-          flex-grow: 1;
-          padding-right: 48px;
-          width: 100%;
-
-          .name {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            width: 100%;
-          }
-        }
       }
 
       .tools {
@@ -28,7 +27,6 @@
         align-items: baseline;
         display: flex;
         flex-shrink: 0;
-        margin-top: 8px;
 
         .tool-button {
           margin-right: 6px;

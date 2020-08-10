@@ -58,8 +58,7 @@ public class ProcessHyperMapExportServiceIT extends AbstractIT {
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     final ProcessReportDataDto reportData = createFrequencyReport(processDefinition);
     String reportId = createNewSingleMapReport(reportData);
 
@@ -86,8 +85,7 @@ public class ProcessHyperMapExportServiceIT extends AbstractIT {
     finishUserTask1AWithDefaultAndTaskB2WithSecondUser(processInstanceDto);
     changeDuration(processInstanceDto, 10L);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     final ProcessReportDataDto reportData = createDurationReport(processDefinition);
     String reportId = createNewSingleMapReport(reportData);
 
@@ -110,8 +108,7 @@ public class ProcessHyperMapExportServiceIT extends AbstractIT {
   public void reportWithEmptyResultProducesEmptyCsv() throws Exception {
     //given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     final ProcessReportDataDto reportData = createFrequencyReport(processDefinition);
     String reportId = createNewSingleMapReport(reportData);
 

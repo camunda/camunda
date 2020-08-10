@@ -6,11 +6,12 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by.process;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
@@ -57,7 +58,7 @@ public class ProcessGroupByFlowNode extends GroupByPart<ProcessReportDataDto> {
   private static final String MI_BODY = "multiInstanceBody";
 
   private final ConfigurationService configurationService;
-  private final ProcessDefinitionReader processDefinitionReader;
+  private final DefinitionService definitionService;
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
@@ -122,11 +123,14 @@ public class ProcessGroupByFlowNode extends GroupByPart<ProcessReportDataDto> {
   }
 
   private Map<String, String> getFlowNodeNames(final ProcessReportDataDto reportData) {
-    return processDefinitionReader
-      .getLatestProcessDefinition(
-        reportData.getDefinitionKey(), reportData.getDefinitionVersions(), reportData.getTenantIds()
+    return definitionService
+      .getLatestDefinition(
+        DefinitionType.PROCESS,
+        reportData.getDefinitionKey(),
+        reportData.getDefinitionVersions(),
+        reportData.getTenantIds()
       )
-      .map(ProcessDefinitionOptimizeDto::getFlowNodeNames)
+      .map(def -> ((ProcessDefinitionOptimizeDto) def).getFlowNodeNames())
       .orElse(Collections.emptyMap());
   }
 

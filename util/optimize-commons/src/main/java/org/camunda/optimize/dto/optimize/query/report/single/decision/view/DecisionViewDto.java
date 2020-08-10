@@ -6,15 +6,15 @@
 package org.camunda.optimize.dto.optimize.query.report.single.decision.view;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 
 import java.util.Objects;
 
+@Data
 public class DecisionViewDto implements Combinable {
 
-  @Getter @Setter protected DecisionViewProperty property;
+  protected DecisionViewProperty property;
 
   public DecisionViewDto() {
     super();

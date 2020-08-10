@@ -7,113 +7,60 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {LoadingIndicator} from 'components';
+import {LoadingIndicator, Typeahead} from 'components';
+import {getCollection} from 'services';
 
-import DefinitionSelection from './DefinitionSelection';
+import {DefinitionSelection} from './DefinitionSelection';
 import VersionPopover from './VersionPopover';
-import TenantPopover from './TenantPopover';
 
-import {loadDefinitions, getCollection} from 'services';
+import {loadDefinitions, loadVersions, loadTenants} from './service';
 
-jest.mock('react-router-dom', () => {
-  const rest = jest.requireActual('react-router-dom');
-  return {
-    ...rest,
-    withRouter: (a) => a,
-  };
-});
+jest.mock('./service', () => ({
+  loadDefinitions: jest.fn().mockReturnValue([
+    {
+      key: 'foo',
+      name: 'Foo',
+    },
+    {
+      key: 'bar',
+      name: 'Bar',
+    },
+  ]),
+  loadVersions: jest.fn().mockReturnValue([
+    {
+      version: '3',
+      versionTag: 'Tag',
+    },
+    {
+      version: '2',
+      versionTag: 'Another Tag',
+    },
+    {
+      version: '1',
+      versionTag: 'Tag',
+    },
+  ]),
+  loadTenants: jest.fn().mockReturnValue([
+    {
+      id: 'a',
+      name: 'Tenant A',
+    },
+    {
+      id: 'b',
+      name: 'Tenant B',
+    },
+    {
+      id: 'c',
+      name: 'Tenant C',
+    },
+  ]),
+}));
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
 
   return {
     ...rest,
-    loadDefinitions: jest.fn().mockReturnValue([
-      {
-        key: 'foo',
-        name: 'Foo',
-        versions: [
-          {
-            version: '3',
-            versionTag: 'Tag',
-            tenants: [
-              {
-                id: null,
-                name: 'Not defined',
-              },
-            ],
-          },
-          {
-            version: '2',
-            versionTag: 'Another Tag',
-            tenants: [
-              {
-                id: 'a',
-                name: 'Tenant A',
-              },
-              {
-                id: 'b',
-                name: 'Tenant B',
-              },
-            ],
-          },
-          {
-            version: '1',
-            versionTag: 'Tag',
-            tenants: [
-              {
-                id: 'a',
-                name: 'Tenant A',
-              },
-              {
-                id: 'c',
-                name: 'Tenant C',
-              },
-            ],
-          },
-        ],
-        allTenants: [
-          {
-            id: null,
-            name: 'Not defined',
-          },
-          {
-            id: 'a',
-            name: 'Tenant A',
-          },
-          {
-            id: 'b',
-            name: 'Tenant B',
-          },
-          {
-            id: 'c',
-            name: 'Tenant C',
-          },
-        ],
-      },
-      {
-        key: 'bar',
-        name: 'Bar',
-        versions: [
-          {
-            version: '1',
-            versionTag: null,
-            tenants: [
-              {
-                id: null,
-                name: 'Not defined',
-              },
-            ],
-          },
-        ],
-        allTenants: [
-          {
-            id: null,
-            name: 'Not defined',
-          },
-        ],
-      },
-    ]),
     getCollection: jest.fn(),
   };
 });
@@ -125,7 +72,16 @@ const props = {
   tenants: [],
   location: {pathname: '/report/1'},
   onChange: spy,
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
+
+beforeEach(() => {
+  spy.mockClear();
+  getCollection.mockReset();
+  loadDefinitions.mockClear();
+  loadVersions.mockClear();
+  loadTenants.mockClear();
+});
 
 it('should render without crashing', () => {
   shallow(<DefinitionSelection {...props} />);
@@ -150,47 +106,61 @@ it('should load defintions in scope of collection', () => {
   expect(loadDefinitions).toHaveBeenCalledWith(props.type, '123', undefined);
 });
 
-it('should exclude event based processes', () => {
-  loadDefinitions.mockClear();
-  shallow(<DefinitionSelection {...props} excludeEventProcesses />);
+it('should only load definitions for which camunda events were imported', () => {
+  shallow(<DefinitionSelection {...props} camundaEventImportedOnly />);
 
-  expect(loadDefinitions).toHaveBeenCalledWith(props.type, '123', true);
+  expect(loadDefinitions).toHaveBeenCalledWith(props.type, undefined, true);
+});
+
+it('should load versions and tenants when key is selected', async () => {
+  const node = await shallow(<DefinitionSelection {...props} />);
+  await flushPromises();
+
+  await node.find(Typeahead).simulate('change', 'foo');
+  await flushPromises();
+
+  expect(loadVersions).toHaveBeenCalledWith(props.type, undefined, 'foo');
+  expect(loadTenants).toHaveBeenCalledWith(props.type, undefined, 'foo', ['3']);
 });
 
 it('should update to most recent version when key is selected', async () => {
-  spy.mockClear();
   const node = await shallow(<DefinitionSelection {...props} />);
+  await flushPromises();
 
-  await node.instance().changeDefinition('foo');
+  await node.find(Typeahead).simulate('change', 'foo');
+  await flushPromises();
 
   expect(spy.mock.calls[0][0].versions).toEqual(['3']);
 });
 
 it('should store specifically selected versions', async () => {
   const node = await shallow(<DefinitionSelection {...props} definitionKey="foo" />);
+  await flushPromises();
 
-  node.instance().changeVersions(['3', '1']);
+  await node.find(VersionPopover).simulate('change', ['3', '1']);
   expect(node.find(VersionPopover).prop('selectedSpecificVersions')).toEqual(['3', '1']);
 
-  node.instance().changeVersions(['latest']);
+  await node.find(VersionPopover).simulate('change', ['latest']);
   expect(node.find(VersionPopover).prop('selectedSpecificVersions')).toEqual(['3', '1']);
 
-  node.instance().changeVersions(['2']);
+  await node.find(VersionPopover).simulate('change', ['2']);
   expect(node.find(VersionPopover).prop('selectedSpecificVersions')).toEqual(['2']);
 });
 
 it('should update definition if versions is changed', async () => {
-  spy.mockClear();
   const node = await shallow(<DefinitionSelection definitionKey="foo" {...props} />);
+  await flushPromises();
 
-  await node.instance().changeVersions(['1']);
+  await node.find(VersionPopover).simulate('change', ['1']);
+  await flushPromises();
 
   expect(spy.mock.calls[0][0].versions).toEqual(['1']);
 });
 
-it('should disable typeahead if no reports are avaialbe', async () => {
+it('should disable typeahead if no reports are available', async () => {
   loadDefinitions.mockReturnValueOnce([]);
   const node = await shallow(<DefinitionSelection {...props} />);
+  await flushPromises();
 
   expect(node.find('Typeahead')).toExist();
   expect(node.find('Typeahead')).toBeDisabled();
@@ -202,6 +172,7 @@ it('should set key and version, if process definition is already available', asy
     versions: ['1'],
   };
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
+  await flushPromises();
 
   expect(node.find('.name')).toHaveProp('initialValue', 'bar');
   expect(node.find(VersionPopover).prop('selected')).toEqual(['1']);
@@ -213,23 +184,14 @@ it('should not call on change if key didnt change', async () => {
     versions: ['1'],
   };
   const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
+  await flushPromises();
 
   spy.mockClear();
-  await node.instance().changeDefinition('bar');
+
+  await node.find(Typeahead).simulate('change', 'bar');
+  await flushPromises();
+
   expect(spy).not.toHaveBeenCalled();
-});
-
-it('should call onChange function on change of the definition', async () => {
-  spy.mockClear();
-  const definitionConfig = {
-    definitionKey: 'foo',
-    versions: ['2'],
-  };
-  const node = await shallow(<DefinitionSelection {...definitionConfig} {...props} />);
-
-  await node.instance().changeVersions(['1']);
-
-  expect(spy).toHaveBeenCalled();
 });
 
 it('should render diagram if enabled and definition is selected', async () => {
@@ -241,12 +203,14 @@ it('should render diagram if enabled and definition is selected', async () => {
   const node = await shallow(
     <DefinitionSelection renderDiagram {...definitionConfig} {...props} />
   );
+  await flushPromises();
 
   expect(node.find('.diagram')).toExist();
 });
 
 it('should disable version selection, if no key is selected', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
+  await flushPromises();
 
   const versionSelect = node.find(VersionPopover);
   expect(versionSelect.prop('disabled')).toBeTruthy();
@@ -256,6 +220,7 @@ it('should show a note if more than one version is selected', async () => {
   const node = await shallow(
     <DefinitionSelection {...props} definitionKey="foo" versions={['all']} />
   );
+  await flushPromises();
 
   expect(node.find('Message')).toMatchSnapshot();
   node.setProps({versions: ['1', '2']});
@@ -266,7 +231,9 @@ it('should show a note if more than one version is selected', async () => {
 
 it('should show an info message to add sources', async () => {
   loadDefinitions.mockReturnValueOnce([]);
+  getCollection.mockReturnValue('123');
   const node = await shallow(<DefinitionSelection {...props} />);
+  await flushPromises();
 
   expect(node.find('.info')).toMatchSnapshot();
 });
@@ -275,6 +242,7 @@ it('should show an info message if specified by props', async () => {
   const node = await shallow(
     <DefinitionSelection {...props} definitionKey="foo" infoMessage="test message" />
   );
+  await flushPromises();
 
   expect(node.find('Message').props().children).toBe('test message');
 });
@@ -284,203 +252,101 @@ it('should pass an id for every entry to the typeahead', async () => {
     {
       key: 'foo',
       name: 'Foo Definition',
-      versions: [],
     },
     {
       key: 'bar',
       name: 'Bar Definition',
-      versions: [],
     },
   ]);
 
   const node = await shallow(<DefinitionSelection {...props} />);
+  await flushPromises();
 
   expect(node.find('Typeahead')).toMatchSnapshot();
 });
 
 it('should construct a popover title', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
+  await flushPromises();
 
   expect(node.find('Popover')).toHaveProp('title', 'Select Process');
 
-  await node.setProps({
-    definitionKey: 'bar',
-    versions: ['1'],
-    xml: 'whatever',
-    tenants: [null],
-  });
+  loadTenants.mockReturnValueOnce([
+    {
+      id: null,
+      name: 'Not defined',
+    },
+  ]);
+  const nodeWithData = await shallow(
+    <DefinitionSelection
+      {...props}
+      definitionKey="bar"
+      versions={['1']}
+      xml="whatever"
+      tenants={[null]}
+    />
+  );
+  await flushPromises();
 
-  expect(node.find('Popover')).toHaveProp('title', 'Bar : 1');
+  expect(nodeWithData.find('Popover')).toHaveProp('title', 'Bar : 1');
 });
 
 it('should construct a popover title even without xml', async () => {
-  const node = await shallow(<DefinitionSelection {...props} />);
-
-  await node.setProps({
-    definitionKey: 'foo',
-    versions: ['1'],
-    xml: null,
-    tenants: [],
-  });
+  const node = await shallow(
+    <DefinitionSelection {...props} definitionKey="foo" versions={['1']} xml={null} tenants={[]} />
+  );
+  await flushPromises();
 
   expect(node.find('Popover')).toHaveProp('title', 'Foo : 1 : -');
 });
 
 it('should hide the tenant selection by default', async () => {
   const node = await shallow(<DefinitionSelection {...props} />);
+  await flushPromises();
 
   expect(node.find('.container')).not.toHaveClassName('withTenants');
 });
 
-it('should merge tenenats from all selected versions and duplicates are filtered out', async () => {
-  const node = await shallow(
-    <DefinitionSelection {...props} definitionKey="foo" versions={['1', '2']} />
-  );
-
-  expect(node.find(TenantPopover)).toHaveProp('tenants', [
-    {id: 'a', name: 'Tenant A'},
-    {id: 'b', name: 'Tenant B'},
-    {id: 'c', name: 'Tenant C'},
-  ]);
-});
-
-it('should show all tenants if version is set to all', async () => {
-  const node = await shallow(
-    <DefinitionSelection {...props} definitionKey="foo" versions={['all']} />
-  );
-
-  expect(node.find(TenantPopover)).toHaveProp('tenants', [
-    {id: null, name: 'Not defined'},
-    {id: 'a', name: 'Tenant A'},
-    {id: 'b', name: 'Tenant B'},
-    {id: 'c', name: 'Tenant C'},
-  ]);
-});
-
-it('should show tenants from latest version if version is set to latest', async () => {
-  const node = await shallow(
-    <DefinitionSelection {...props} definitionKey="foo" versions={['latest']} />
-  );
-
-  expect(node.find(TenantPopover)).toHaveProp('tenants', [{id: null, name: 'Not defined'}]);
-});
-
 it('should preserve previously deselected tenants if version changes', async () => {
   const node = await shallow(
-    <DefinitionSelection {...props} definitionKey="foo" versions={['1']} tenants={['c']} />
+    <DefinitionSelection {...props} definitionKey="foo" versions={['1']} tenants={['a']} />
   );
+  await flushPromises();
 
   spy.mockClear();
-  await node.instance().changeVersions(['2']);
-  expect(spy).toHaveBeenCalledWith({key: 'foo', name: 'Foo', tenantIds: ['b'], versions: ['2']});
+  await node.find(VersionPopover).simulate('change', ['2']);
+  await flushPromises();
+
+  expect(spy).toHaveBeenCalledWith({key: 'foo', name: 'Foo', tenantIds: ['a'], versions: ['2']});
 });
 
 describe('tenants', () => {
-  beforeAll(() => {
-    loadDefinitions.mockReturnValue([
-      {
-        key: 'foo',
-        name: 'Foo',
-        versions: [
-          {
-            version: '3',
-            versionTag: 'Tag',
-            tenants: [
-              {
-                id: null,
-                name: 'Not defined',
-              },
-              {
-                id: 'a',
-                name: 'Tenant A',
-              },
-              {
-                id: 'b',
-                name: 'Tenant B',
-              },
-            ],
-          },
-          {
-            version: '2',
-            versionTag: null,
-            tenants: [
-              {
-                id: 'a',
-                name: 'Tenant A',
-              },
-              {
-                id: 'b',
-                name: 'Tenant B',
-              },
-            ],
-          },
-          {
-            version: '1',
-            versionTag: 'Tag',
-            tenants: [
-              {
-                id: 'c',
-                name: 'Tenant C',
-              },
-            ],
-          },
-        ],
-        allTenants: [
-          {
-            id: null,
-            name: 'Not defined',
-          },
-          {
-            id: 'a',
-            name: 'Tenant A',
-          },
-          {
-            id: 'b',
-            name: 'Tenant B',
-          },
-          {
-            id: 'c',
-            name: 'Tenant C',
-          },
-        ],
-      },
-      {
-        key: 'bar',
-        name: 'Bar Definition',
-        versions: [],
-      },
-    ]);
-  });
-
   it('should construct a popover title for tenants', async () => {
-    const node = await shallow(<DefinitionSelection {...props} />);
+    let node = await shallow(<DefinitionSelection {...props} />);
+    await flushPromises();
 
     expect(node.find('Popover')).toHaveProp('title', 'Select Process');
 
-    await node.setProps({
-      definitionKey: 'foo',
-      versions: ['3'],
-      xml: 'whatever',
-      tenants: [],
-    });
+    node = await shallow(
+      <DefinitionSelection {...props} definitionKey="foo" versions={['3']} tenants={[]} />
+    );
+    await flushPromises();
 
     expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : -');
 
     await node.setProps({
       tenants: ['a'],
     });
-
     expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : Tenant A');
 
     await node.setProps({
       tenants: ['a', 'b'],
     });
-
     expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : Multiple');
-    await node.setProps({
-      tenants: [null, 'a', 'b'],
-    });
 
+    await node.setProps({
+      tenants: ['a', 'b', 'c'],
+    });
     expect(node.find('Popover')).toHaveProp('title', 'Foo : 3 : All');
   });
 
@@ -488,6 +354,7 @@ describe('tenants', () => {
     const node = await shallow(
       <DefinitionSelection {...props} definitionKey="foo" versions={['3']} />
     );
+    await flushPromises();
 
     expect(node.find('.container')).toHaveClassName('withTenants');
   });
@@ -496,13 +363,15 @@ describe('tenants', () => {
     const node = await shallow(
       <DefinitionSelection {...props} definitionKey="bar" versions={['1']} />
     );
+    await flushPromises();
 
-    spy.mockClear();
-    node.instance().changeDefinition('foo');
+    await node.find(Typeahead).simulate('change', 'foo');
+    await flushPromises();
+
     expect(spy).toHaveBeenCalledWith({
       key: 'foo',
       name: 'Foo',
-      tenantIds: [null, 'a', 'b'],
+      tenantIds: ['a', 'b', 'c'],
       versions: ['3'],
     });
   });
@@ -510,6 +379,7 @@ describe('tenants', () => {
 
 it('should display expanded definition selection without a popover if specified', async () => {
   const node = await shallow(<DefinitionSelection {...props} expanded />);
+  await flushPromises();
 
   expect(node.find('.DefinitionSelection').type()).toBe('div');
 });

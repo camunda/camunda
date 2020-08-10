@@ -7,13 +7,12 @@ package org.camunda.optimize.service.importing.event;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.bpm.engine.ActivityTypes;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.importing.AbstractImportIT;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.GetIndexRequest;
@@ -30,10 +29,12 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_END_TYPE;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_START_TYPE;
-import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceEndEventSuffix;
-import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaProcessInstanceStartEventSuffix;
-import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskEndEventSuffix;
-import static org.camunda.optimize.service.events.CamundaEventService.applyCamundaTaskStartEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceEndEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
+import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class CamundaActivityEventImportIT extends AbstractImportIT {
 
@@ -54,8 +55,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     // when
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     List<CamundaActivityEventDto> storedEvents =
@@ -112,8 +112,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName("runningActivities");
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     List<CamundaActivityEventDto> storedEvents =
@@ -158,8 +157,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     secondInstance.setProcessDefinitionVersion(firstInstance.getProcessDefinitionVersion());
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     List<CamundaActivityEventDto> storedEvents =
@@ -218,8 +216,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     List<CamundaActivityEventDto> storedEvents =
@@ -284,8 +281,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     // given the index has been created, the process start, the start Event, and start of user task has been saved
     // already
     ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcessWithName("noEventsDef");
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     List<CamundaActivityEventDto> initialStoredEvents =
       getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
     assertThat(initialStoredEvents)
@@ -302,8 +298,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     // when engine events happen and import triggered
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // then no additional events are stored
     List<CamundaActivityEventDto> storedEvents =
@@ -321,8 +316,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     // when
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
@@ -345,16 +339,14 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
     ProcessInstanceEngineDto firstProcessInstanceEngineDto =
       deployAndStartUserTaskProcessWithName("aProcessFirstBatch");
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     ProcessInstanceEngineDto secondProcessInstanceEngineDto =
       deployAndStartUserTaskProcessWithName("aProcessSecondBatch");
 
     // when
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // then
     OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
@@ -384,8 +376,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
 
     // when
     engineIntegrationExtension.finishAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     OptimizeElasticsearchClient esClient = elasticSearchIntegrationTestExtension.getOptimizeElasticClient();
@@ -428,24 +419,22 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartUserTaskProcessWithName(String processName) {
-    // @formatter:off
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(processName)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK)
-      .endEvent(END_EVENT)
-      .done();
-    // @formatter:on
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram(
+      processName,
+      START_EVENT,
+      END_EVENT,
+      USER_TASK
+    ));
   }
 
   protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess(String processName) {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess(processName)
-      .startEvent(START_EVENT)
-      .userTask(USER_TASK)
-      .userTask(USER_TASK_2)
-      .endEvent(END_EVENT)
-      .done();
-    return engineIntegrationExtension.deployAndStartProcess(processModel);
+    return engineIntegrationExtension.deployAndStartProcess(getDoubleUserTaskDiagram(
+      processName,
+      START_EVENT,
+      END_EVENT,
+      USER_TASK,
+      USER_TASK_2
+    ));
   }
 
   private void assertOrderCounters(final List<CamundaActivityEventDto> storedEvents) {

@@ -11,7 +11,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
-import org.assertj.core.util.Lists;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
@@ -21,18 +20,16 @@ import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
-import org.camunda.optimize.service.es.schema.index.index.ImportIndexIndex;
-import org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex;
-import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
-import org.camunda.optimize.upgrade.version30.SingleDecisionReportIndexV2;
-import org.camunda.optimize.upgrade.version30.SingleProcessReportIndexV2;
 import org.elasticsearch.action.admin.indices.alias.Alias;
+import org.elasticsearch.action.admin.indices.alias.IndicesAliasesRequest;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Request;
@@ -40,6 +37,7 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createDefaultConfiguration;
@@ -56,18 +55,8 @@ import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig
 public abstract class AbstractUpgradeIT {
 
   protected static final MetadataIndex METADATA_INDEX = new MetadataIndex();
-  protected static final SingleProcessReportIndexV2 SINGLE_PROCESS_REPORT_INDEX = new SingleProcessReportIndexV2();
-  protected static final SingleDecisionReportIndexV2 SINGLE_DECISION_REPORT_INDEX = new SingleDecisionReportIndexV2();
-  protected static final CombinedReportIndex COMBINED_REPORT_INDEX = new CombinedReportIndex();
-  protected static final TimestampBasedImportIndex TIMESTAMP_BASED_IMPORT_INDEX = new TimestampBasedImportIndex();
-  protected static final ImportIndexIndex IMPORT_INDEX_INDEX = new ImportIndexIndex();
 
-  protected static final List<IndexMappingCreator> ALL_INDEXES =
-    Lists.newArrayList(
-      METADATA_INDEX
-    );
-
-  private ObjectMapper objectMapper;
+  protected ObjectMapper objectMapper;
   protected OptimizeElasticsearchClient prefixAwareClient;
   protected OptimizeIndexNameService indexNameService;
   protected UpgradeExecutionDependencies upgradeDependencies;
@@ -115,6 +104,7 @@ public abstract class AbstractUpgradeIT {
     CreateIndexRequest request = new CreateIndexRequest(indexName);
     request.alias(new Alias(aliasName));
     request.settings(indexSettings);
+    request.mapping(indexMapping.getSource());
     indexMapping.setDynamic("false");
     prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
   }
@@ -130,8 +120,20 @@ public abstract class AbstractUpgradeIT {
     prefixAwareClient.getHighLevelClient().indices().refresh(new RefreshRequest(), RequestOptions.DEFAULT);
   }
 
-  protected String getVersionedIndexName(final String indexName, final int version) {
-    return indexNameService.getOptimizeIndexNameForAliasAndVersion(
+  @SneakyThrows
+  protected void addAlias(final IndexMappingCreator index, final String alias, final boolean writeIndex) {
+    final IndicesAliasesRequest indicesAliasesRequest = new IndicesAliasesRequest();
+    final IndicesAliasesRequest.AliasActions aliasAction = new IndicesAliasesRequest.AliasActions(
+      IndicesAliasesRequest.AliasActions.Type.ADD)
+      .index(indexNameService.getVersionedOptimizeIndexNameForIndexMapping(index))
+      .writeIndex(writeIndex)
+      .alias(alias);
+    indicesAliasesRequest.addAliasAction(aliasAction);
+    prefixAwareClient.getHighLevelClient().indices().updateAliases(indicesAliasesRequest, RequestOptions.DEFAULT);
+  }
+
+  private String getVersionedIndexName(final String indexName, final int version) {
+    return OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion(
       indexNameService.getOptimizeIndexAliasForIndex(indexName),
       String.valueOf(version)
     );
@@ -162,13 +164,10 @@ public abstract class AbstractUpgradeIT {
   }
 
   @SneakyThrows
-  protected <T> List<T> getAllDocumentsOfIndex(final String indexName, final Class<T> valueType) {
-    final SearchResponse searchResponse = prefixAwareClient.search(
-      new SearchRequest(indexName).source(new SearchSourceBuilder().size(10000)),
-      RequestOptions.DEFAULT
-    );
+  protected <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> valueType) {
+    final SearchHit[] searchHits = getAllDocumentsOfIndex(indexName);
     return Arrays
-      .stream(searchResponse.getHits().getHits())
+      .stream(searchHits)
       .map(doc -> {
         try {
           return objectMapper.readValue(
@@ -179,6 +178,26 @@ public abstract class AbstractUpgradeIT {
         }
       })
       .collect(toList());
+  }
+
+  protected SearchHit[] getAllDocumentsOfIndex(final String... indexNames) throws IOException {
+    final SearchResponse searchResponse = prefixAwareClient.search(
+      new SearchRequest(indexNames).source(new SearchSourceBuilder().size(10000)),
+      RequestOptions.DEFAULT
+    );
+    return searchResponse.getHits().getHits();
+  }
+
+  @SneakyThrows
+  protected <T> Optional<T> getDocumentByIdAs(final String indexName, final String id, final Class<T> valueType) {
+    final GetResponse getResponse = prefixAwareClient.get(
+      new GetRequest(indexName, id), RequestOptions.DEFAULT
+    );
+    if (getResponse.isExists()) {
+      return Optional.ofNullable(objectMapper.readValue(getResponse.getSourceAsString(), valueType));
+    } else {
+      return Optional.empty();
+    }
   }
 
 }

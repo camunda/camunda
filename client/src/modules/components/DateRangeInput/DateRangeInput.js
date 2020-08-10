@@ -1,3 +1,9 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+
 import React from 'react';
 
 import {Input, Select, Message, Form, DatePicker} from 'components';
@@ -6,20 +12,11 @@ import {numberParser} from 'services';
 
 import './DateRangeInput.scss';
 
-export default function DateRangeInput({
-  type,
-  unit,
-  startDate,
-  endDate,
-  customNum,
-  disabled,
-  onChange,
-}) {
+export default function DateRangeInput({type, unit, startDate, endDate, customNum, onChange}) {
   return (
     <Form.Group className="DateRangeInput">
       <Form.InputGroup className="selectGroup">
         <Select
-          disabled={disabled}
           onChange={(type) => onChange({type, unit: type === 'custom' ? 'days' : ''})}
           value={type}
         >
@@ -37,7 +34,7 @@ export default function DateRangeInput({
         <div className="unitSelection">
           {type !== 'fixed' && type !== 'custom' && (
             <Select
-              disabled={(type !== 'this' && type !== 'last') || disabled}
+              disabled={type !== 'this' && type !== 'last'}
               onChange={(unit) => onChange({unit})}
               value={unit}
             >
@@ -54,7 +51,6 @@ export default function DateRangeInput({
                 startDate,
                 endDate,
               }}
-              disabled={disabled}
             />
           )}
           {type === 'custom' && (
@@ -65,9 +61,8 @@ export default function DateRangeInput({
                 value={customNum ?? ''}
                 onChange={({target: {value}}) => onChange({customNum: value})}
                 maxLength="8"
-                disabled={disabled}
               />
-              <Select onChange={(unit) => onChange({unit})} value={unit} disabled={disabled}>
+              <Select onChange={(unit) => onChange({unit})} value={unit}>
                 <Select.Option value="minutes">
                   {t('common.unit.minute.label-plural')}
                 </Select.Option>

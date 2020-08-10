@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.IdentityDto;
@@ -17,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
 import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
@@ -39,6 +41,7 @@ import java.util.function.Supplier;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 
 @AllArgsConstructor
+@Slf4j
 public class EventProcessClient {
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
@@ -119,6 +122,21 @@ public class EventProcessClient {
 
   public void publishEventProcessMapping(final String eventProcessMappingId) {
     createPublishEventProcessMappingRequest(eventProcessMappingId).execute(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  @SneakyThrows
+  public void waitForEventProcessPublish(final String eventProcessMappingId) {
+    EventProcessMappingResponseDto eventProcessMapping;
+    do {
+      eventProcessMapping = getEventProcessMapping(eventProcessMappingId);
+      log.info(
+        "Event Process {} publish state: {} and progress: {}",
+        eventProcessMapping.getId(),
+        eventProcessMapping.getState(),
+        eventProcessMapping.getPublishingProgress()
+      );
+      Thread.sleep(1000L);
+    } while (!EventProcessState.PUBLISHED.equals(eventProcessMapping.getState()));
   }
 
   public OptimizeRequestExecutor createCancelPublishEventProcessMappingRequest(final String eventProcessMappingId) {

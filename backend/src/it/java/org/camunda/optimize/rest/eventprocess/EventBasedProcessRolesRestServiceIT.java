@@ -117,7 +117,7 @@ public class EventBasedProcessRolesRestServiceIT extends AbstractEventProcessIT 
       });
 
     // then
-    assertThat(roles.size()).isEqualTo(1);
+    assertThat(roles).hasSize(1);
     assertThat(roles.get(0).getIdentity().getId()).isEqualTo(userIdentity1.getId());
   }
 

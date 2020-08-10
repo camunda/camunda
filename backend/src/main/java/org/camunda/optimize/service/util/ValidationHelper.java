@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.util;
 
 import lombok.experimental.UtilityClass;
+import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
@@ -32,6 +33,7 @@ import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.evaluation.ReportEvaluationException;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -43,7 +45,7 @@ public class ValidationHelper {
     ensureNotEmpty("end activity id", dto.getEnd());
     ensureNotEmpty("query dto", dto);
     ValidationHelper.ensureNotEmpty("ProcessDefinitionKey", dto.getProcessDefinitionKey());
-    ValidationHelper.ensureListNotEmpty("ProcessDefinitionVersion", dto.getProcessDefinitionVersions());
+    ValidationHelper.ensureCollectionNotEmpty("ProcessDefinitionVersion", dto.getProcessDefinitionVersions());
     validateProcessFilters(dto.getFilter());
   }
 
@@ -53,31 +55,24 @@ public class ValidationHelper {
     }
   }
 
-  public static void ensureNotBothEmpty(String fieldName1, String fieldName2, Object target1, Object target2) {
-    if ((target1 == null || target1.toString().isEmpty())
-      && (target2 == null || target2.toString().isEmpty())) {
-      throw new OptimizeValidationException("The fields " + fieldName1 + " and " + fieldName2 + " are not allowed to " +
-                                              "both be empty. At least one of them must be set.");
-    }
-  }
-
-  public static void ensureListNotEmpty(String fieldName, List target) {
+  public static void ensureCollectionNotEmpty(String fieldName, Collection<?> target) {
     if (target == null || target.isEmpty()) {
       throw new OptimizeValidationException(fieldName + " is not allowed to be empty or null");
     }
   }
 
-  public static void validateCombinedReportDefinition(AuthorizedReportDefinitionDto reportDefinition) {
-    final CombinedReportDefinitionDto combinedReportDefinitionDto =
-      (CombinedReportDefinitionDto) reportDefinition.getDefinitionDto();
+  public static void validateCombinedReportDefinition(final CombinedReportDefinitionDto combinedReportDefinitionDto,
+                                                      final RoleType currentUserRole) {
+    AuthorizedReportDefinitionDto authorizedReportDefinitionDto =
+      new AuthorizedReportDefinitionDto(combinedReportDefinitionDto, currentUserRole);
     if (combinedReportDefinitionDto.getData() == null) {
       OptimizeValidationException ex =
         new OptimizeValidationException("Report data for a combined report is not allowed to be null!");
-      throw new ReportEvaluationException(reportDefinition, ex);
+      throw new ReportEvaluationException(authorizedReportDefinitionDto, ex);
     } else if (combinedReportDefinitionDto.getData().getReportIds() == null) {
       OptimizeValidationException ex =
         new OptimizeValidationException("Reports list for a combined report is not allowed to be null!");
-      throw new ReportEvaluationException(reportDefinition, ex);
+      throw new ReportEvaluationException(authorizedReportDefinitionDto, ex);
     }
   }
 

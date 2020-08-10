@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing.eventprocess;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
 import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediator;
 import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediatorFactory;
@@ -26,25 +27,22 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
   private final EventProcessInstanceIndexManager eventBasedProcessIndexManager;
   private final EventProcessInstanceImportMediatorFactory mediatorFactory;
 
-  private final Map<String, List<EventProcessInstanceImportMediator>> importMediators = new ConcurrentHashMap<>();
+  private final Map<String, List<EventProcessInstanceImportMediator<EventProcessEventDto>>> importMediators =
+    new ConcurrentHashMap<>();
 
-  public List<EventProcessInstanceImportMediator> getMediatorsByEventProcessPublishId(final String id) {
-    return importMediators.get(id);
-  }
-
-  public Collection<EventProcessInstanceImportMediator> getActiveMediators() {
+  public Collection<EventProcessInstanceImportMediator<EventProcessEventDto>> getActiveMediators() {
     return importMediators.values().stream().flatMap(Collection::stream).collect(Collectors.toList());
   }
 
   public synchronized void refreshMediators() {
     final Map<String, EventProcessPublishStateDto> availableInstanceIndices = eventBasedProcessIndexManager
-      .getPublishedInstanceIndicesMap();
+      .getPublishedInstanceStatesMap();
 
     final List<String> removedPublishedIds = importMediators.keySet().stream()
       .filter(publishedStateId -> !availableInstanceIndices.containsKey(publishedStateId))
       .collect(Collectors.toList());
     removedPublishedIds.forEach(publishedStateId -> {
-      final List<EventProcessInstanceImportMediator> eventProcessInstanceImportMediators =
+      final List<EventProcessInstanceImportMediator<EventProcessEventDto>> eventProcessInstanceImportMediators =
         importMediators.get(publishedStateId);
       eventProcessInstanceImportMediators.forEach(EventProcessInstanceImportMediator::shutdown);
       importMediators.remove(publishedStateId);

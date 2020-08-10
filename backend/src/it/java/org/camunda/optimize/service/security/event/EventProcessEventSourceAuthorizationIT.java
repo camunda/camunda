@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.security.event;
 
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
@@ -18,7 +17,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntry;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createSimpleCamundaEventSourceEntryWithTenant;
 
 public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcessIT {
@@ -35,25 +33,18 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
   @Test
   public void updateEventSourcesWithAuthorization() {
     // given
+    final EventSourceEntryDto camundaSource = createCamundaSourceEntryForImportedDefinition(PROCESS_DEF_KEY);
     final EventProcessMappingDto eventProcessMapping = createEventProcessMapping();
-    final String eventProcessMappingId = eventProcessMapping.getId();
-    elasticSearchIntegrationTestExtension.addProcessDefinitionToElasticsearch(
-      PROCESS_DEF_KEY,
-      null,
-      "1"
-    );
-    final EventSourceEntryDto eventSourceEntry = createSimpleCamundaEventSourceEntry(PROCESS_DEF_KEY);
-    eventProcessMapping.getEventSources().add(eventSourceEntry);
-    grantAuthorizationsToDefaultUser(PROCESS_DEF_KEY);
+    eventProcessMapping.getEventSources().add(camundaSource);
 
     // when
     final Response response = eventProcessClient
-      .createUpdateEventProcessMappingRequest(eventProcessMappingId, eventProcessMapping)
+      .createUpdateEventProcessMappingRequest(eventProcessMapping.getId(), eventProcessMapping)
       .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_NO_CONTENT);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Test
@@ -74,7 +65,7 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private EventProcessMappingDto createEventProcessMapping() {
@@ -85,11 +76,4 @@ public class EventProcessEventSourceAuthorizationIT extends AbstractEventProcess
     return eventProcessMappingDto;
   }
 
-  private void grantAuthorizationsToDefaultUser(final String processDefinitionKey) {
-    authorizationClient.grantSingleResourceAuthorizationsForUser(
-      DEFAULT_USERNAME,
-      processDefinitionKey,
-      RESOURCE_TYPE_PROCESS_DEFINITION
-    );
-  }
 }

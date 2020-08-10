@@ -38,8 +38,7 @@ public class AssigneeAuthorizationIT extends AbstractIT {
       Collections.singletonList("newTenant")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -54,8 +53,7 @@ public class AssigneeAuthorizationIT extends AbstractIT {
   public void getAssigneesWithoutAuthentication() {
     startSimpleUserTaskProcessWithAssignee();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     AssigneeRequestDto requestDto = new AssigneeRequestDto(
       "aProcess",

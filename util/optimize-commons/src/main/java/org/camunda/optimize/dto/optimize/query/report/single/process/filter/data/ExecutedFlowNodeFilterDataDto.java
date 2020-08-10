@@ -7,12 +7,13 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.filter.dat
 
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 
 import java.util.List;
 
 @Data
 public class ExecutedFlowNodeFilterDataDto implements FilterDataDto {
 
-  protected String operator;
+  protected FilterOperator operator;
   protected List<String> values;
 }

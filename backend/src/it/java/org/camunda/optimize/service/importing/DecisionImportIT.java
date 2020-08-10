@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
@@ -36,11 +35,13 @@ import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.es.schema.index.index.TimestampBasedImportIndex.ES_TYPE_INDEX_REFERS_TO;
 import static org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionImportIndexHandler.DECISION_DEFINITION_IMPORT_INDEX_DOC_ID;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
@@ -56,12 +57,11 @@ public class DecisionImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.getConfigurationService().setImportDmnDataEnabled(false);
     embeddedOptimizeExtension.reloadConfiguration();
     engineIntegrationExtension.deployAndStartDecisionDefinition();
-    BpmnModelInstance exampleProcess = Bpmn.createExecutableProcess().name("foo").startEvent().endEvent().done();
+    BpmnModelInstance exampleProcess = getSimpleBpmnDiagram();
     engineIntegrationExtension.deployAndStartProcess(exampleProcess);
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
@@ -73,8 +73,7 @@ public class DecisionImportIT extends AbstractImportIT {
   @Test
   public void importOfDecisionDefinition_dataIsImportedOnNextSuccessfulAttemptAfterEsFailures() {
     // given
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
@@ -93,8 +92,7 @@ public class DecisionImportIT extends AbstractImportIT {
       .error(HttpError.error().withDropConnection(true));
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // then the definition will be stored when update next works
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 1L);
@@ -104,8 +102,7 @@ public class DecisionImportIT extends AbstractImportIT {
   @Test
   public void importOfDecisionDInstance_dataIsImportedOnNextSuccessfulAttemptAfterEsFailures() {
     // given
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
@@ -124,8 +121,7 @@ public class DecisionImportIT extends AbstractImportIT {
       .error(HttpError.error().withDropConnection(true));
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then the instance will be stored when update next works
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 1L);
@@ -139,8 +135,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployDecisionDefinition();
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     allEntriesInElasticsearchHaveAllDataWithCount(
@@ -159,16 +154,14 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployDecisionDefinition();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromLastIndex();
 
     // then
     assertThat(getDecisionDefinitionCount()).isEqualTo(2L);
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // then
     assertThat(getDecisionDefinitionCount()).isEqualTo(3L);
@@ -181,8 +174,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployDecisionDefinitionWithTenant(tenantId);
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -200,8 +192,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployDecisionDefinition();
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -220,8 +211,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployDecisionDefinitionWithTenant(expectedTenantId);
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -237,8 +227,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -259,8 +248,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -278,8 +266,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -301,8 +288,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -320,8 +306,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId());
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
@@ -335,7 +320,7 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -366,9 +351,8 @@ public class DecisionImportIT extends AbstractImportIT {
     engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromLastIndex();
 
     // then
     allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
@@ -388,8 +372,7 @@ public class DecisionImportIT extends AbstractImportIT {
 
     // when
     engineIntegrationExtension.deployAndStartDecisionDefinition();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
@@ -398,7 +381,7 @@ public class DecisionImportIT extends AbstractImportIT {
   }
 
   private SearchResponse getDecisionDefinitionIndexById() throws IOException {
-    final String decisionDefinitionIndexId = DECISION_DEFINITION_IMPORT_INDEX_DOC_ID + "-1";
+    final String decisionDefinitionIndexId = DECISION_DEFINITION_IMPORT_INDEX_DOC_ID + "-" + DEFAULT_ENGINE_ALIAS;
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(termsQuery("_id", decisionDefinitionIndexId))
       .size(100);
@@ -468,7 +451,7 @@ public class DecisionImportIT extends AbstractImportIT {
     assertThat(dto.getActivityId()).isNull();
     assertThat(dto.getCollectResultValue()).isNull();
     assertThat(dto.getRootDecisionInstanceId()).isNull();
-    assertThat(dto.getInputs().size()).isEqualTo(2);
+    assertThat(dto.getInputs()).hasSize(2);
     dto.getInputs().forEach(inputInstanceDto -> {
       assertThat(inputInstanceDto.getId()).isNotNull();
       assertThat(inputInstanceDto.getClauseId()).isNotNull();
@@ -476,7 +459,7 @@ public class DecisionImportIT extends AbstractImportIT {
       assertThat(inputInstanceDto.getType()).isNotNull();
       assertThat(inputInstanceDto.getValue()).isNotNull();
     });
-    assertThat(dto.getOutputs().size()).isEqualTo(2);
+    assertThat(dto.getOutputs()).hasSize(2);
     dto.getOutputs().forEach(outputInstanceDto -> {
       assertThat(outputInstanceDto.getId()).isNotNull();
       assertThat(outputInstanceDto.getClauseId()).isNotNull();

@@ -43,6 +43,7 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.optionsButton(e.processTypeahead));
   await t.typeText(e.typeaheadInput(e.processTypeahead), 'Invoice', {replace: true});
   await t.click(e.typeaheadOption(e.processTypeahead, 'Invoice Receipt'));
+  await t.wait(500);
   await t.click(e.optionsButton(e.variableTypeahead));
   await t.click(e.typeaheadOption(e.variableTypeahead, 'longVar'));
   await t.click(e.startAndEndEvents);
@@ -87,10 +88,33 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.optionsButton(e.usersTypeahead));
   await t.typeText(e.typeaheadInput(e.usersTypeahead), 'John', {replace: true});
   await t.click(e.typeaheadOption(e.usersTypeahead, 'John'));
-  await t.click(e.addButton);
+  await t.click(e.buttonWithText('Add'));
 
   await t.takeElementScreenshot(e.modalContainer.nth(1), 'event-based-processes/usersModal.png');
 
   await t.click(e.primaryModalButton.nth(1));
   await t.click(e.primaryModalButton);
+});
+
+test('auto generate a process', async (t) => {
+  await t.click(e.navItem);
+  await t.click(e.createDropdown);
+  await t.click(e.dropdownOption('Autogenerate'));
+  await t.click(e.buttonWithText('Add Event Source'));
+
+  await t.click(e.optionsButton(e.processTypeahead));
+  await t.typeText(e.typeaheadInput(e.processTypeahead), 'Invoice', {replace: true});
+  await t.click(e.typeaheadOption(e.processTypeahead, 'Invoice Receipt'));
+  await t.click(e.businessKey);
+  await t.click(e.primaryModalButton.nth(1));
+
+  await t.click(e.buttonWithText('Add Event Source'));
+  await t.click(e.externalEvents);
+  await t.click(e.primaryModalButton.nth(1));
+
+  await t.takeElementScreenshot(e.modalContainer, 'event-based-processes/auto-generation.png');
+
+  await t.click(e.buttonWithText('Generate'));
+
+  await t.expect(e.diagram.visible).ok();
 });

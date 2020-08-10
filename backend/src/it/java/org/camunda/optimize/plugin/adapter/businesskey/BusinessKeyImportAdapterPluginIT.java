@@ -5,12 +5,12 @@
  */
 package org.camunda.optimize.plugin.adapter.businesskey;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,6 +19,7 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class BusinessKeyImportAdapterPluginIT extends AbstractIT {
   private ConfigurationService configurationService;
@@ -37,8 +38,7 @@ public class BusinessKeyImportAdapterPluginIT extends AbstractIT {
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
   // when
   List<String> processInstanceBusinessKeys = getBusinessKeysForAllImportedProcessInstances();
@@ -58,13 +58,12 @@ public class BusinessKeyImportAdapterPluginIT extends AbstractIT {
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     ProcessInstanceEngineDto processInstance1 = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // when
     List<String> processInstanceBusinessKeys = getBusinessKeysForAllImportedProcessInstances();
@@ -82,8 +81,7 @@ public class BusinessKeyImportAdapterPluginIT extends AbstractIT {
     ProcessDefinitionEngineDto userTaskProcess = deployUserTaskProcess();
     engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
     engineIntegrationExtension.startProcessInstance(userTaskProcess.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<String> processInstanceBusinessKeys = getBusinessKeysForAllImportedProcessInstances();
@@ -99,19 +97,13 @@ public class BusinessKeyImportAdapterPluginIT extends AbstractIT {
   }
 
   private ProcessDefinitionEngineDto deployUserTaskProcess() {
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .name("aProcessName")
-      .startEvent()
-      .userTask()
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleUserTaskDiagram());
   }
 
   private List<String> getBusinessKeysForAllImportedProcessInstances(){
     return elasticSearchIntegrationTestExtension.getAllProcessInstances()
       .stream()
-      .map(instance -> instance.getBusinessKey())
+      .map(ProcessInstanceDto::getBusinessKey)
       .collect(toList());
   }
 }

@@ -168,10 +168,6 @@ public class ESIndexAdjuster {
     schemaManager.createOptimizeIndex(elasticsearchClient, indexMapping);
   }
 
-  public void createIndexFromTemplate(final IndexMappingCreator indexMappingCreator) {
-    createIndexFromTemplate(getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(indexMappingCreator));
-  }
-
   public void createIndexFromTemplate(final String indexNameWithSuffix) {
     CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexNameWithSuffix);
     try {
@@ -182,19 +178,19 @@ public class ESIndexAdjuster {
     }
   }
 
-  public void setAllAliasesToReadOnly(final String indexName) {
+  public void setAllAliasesToReadOnly(final String indexName, final Set<AliasMetaData> aliases) {
     logger.debug("Setting all aliases pointing to {} to readonly.", indexName);
 
-    Set<String> existingAliasNames = getAllAliasNames(indexName);
+    final String[] aliasNames = aliases.stream().map(AliasMetaData::alias).toArray(String[]::new);
     try {
       final IndicesAliasesRequest indicesAliasesRequest = new IndicesAliasesRequest();
       final AliasActions removeAllAliasesAction = new AliasActions(AliasActions.Type.REMOVE)
         .index(indexName)
-        .aliases(String.join(",", existingAliasNames));
+        .aliases(aliasNames);
       final AliasActions addReadOnlyAliasAction = new AliasActions(AliasActions.Type.ADD)
         .index(indexName)
         .writeIndex(false)
-        .aliases(String.join(",", existingAliasNames));
+        .aliases(aliasNames);
       indicesAliasesRequest.addAliasAction(removeAllAliasesAction);
       indicesAliasesRequest.addAliasAction(addReadOnlyAliasAction);
       getPlainRestClient().indices().updateAliases(indicesAliasesRequest, RequestOptions.DEFAULT);
@@ -202,12 +198,6 @@ public class ESIndexAdjuster {
       String errorMessage = String.format("Could not add alias to index [%s]!", indexName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
-  }
-
-  public void addAlias(final IndexMappingCreator mapping) {
-    final String indexAlias = getIndexNameService().getOptimizeIndexAliasForIndex(mapping.getIndexName());
-    final String indexName = getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(mapping);
-    addAlias(indexAlias, indexName, true);
   }
 
   public void addAlias(final String indexAlias, final String indexName, final boolean isWriteAlias) {
@@ -260,7 +250,7 @@ public class ESIndexAdjuster {
                                     final Map<String, Object> parameters) {
     String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexName);
     logger.debug(
-      "Updating data for indexAlias [{}] using script [{}] and query [{}].", aliasName, updateScript, query.toString()
+      "Updating data for indexAlias [{}] using script [{}] and query [{}].", aliasName, updateScript, query
     );
 
     try {
@@ -293,7 +283,7 @@ public class ESIndexAdjuster {
                                     final QueryBuilder query) {
     String aliasName = getIndexNameService().getOptimizeIndexAliasForIndex(indexName);
     logger.debug(
-      "Deleting data for indexAlias [{}] with query [{}].", aliasName, query.toString()
+      "Deleting data for indexAlias [{}] with query [{}].", aliasName, query
     );
 
     try {
@@ -315,10 +305,7 @@ public class ESIndexAdjuster {
     final String indexName = getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(indexMapping);
     try {
       final Settings indexSettings = buildDynamicSettings(configurationService);
-      final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
-      updateSettingsRequest.indices(indexName);
-      updateSettingsRequest.settings(indexSettings);
-      getPlainRestClient().indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
+      updateIndexSettings(indexName, indexSettings);
     } catch (IOException e) {
       String message = String.format("Could not update index settings for index [%s].", indexMapping.getIndexName());
       throw new UpgradeRuntimeException(message, e);
@@ -336,6 +323,28 @@ public class ESIndexAdjuster {
 
   public OptimizeIndexNameService getIndexNameService() {
     return elasticsearchClient.getIndexNameService();
+  }
+
+  public Set<AliasMetaData> getAllAliasesForIndex(final String indexName) {
+    GetAliasesRequest getAliasesRequest = new GetAliasesRequest().indices(indexName);
+    try {
+      return getPlainRestClient().indices()
+        .getAlias(getAliasesRequest, RequestOptions.DEFAULT)
+        .getAliases()
+        .getOrDefault(indexName, Sets.newHashSet())
+        .stream()
+        .collect(Collectors.toSet());
+    } catch (IOException e) {
+      String message = String.format("Could not retrieve existing aliases for {%s}.", indexName);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  private void updateIndexSettings(final String indexName, final Settings settings) throws IOException {
+    final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
+    updateSettingsRequest.indices(indexName);
+    updateSettingsRequest.settings(settings);
+    getPlainRestClient().indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
   }
 
   private RestHighLevelClient getPlainRestClient() {
@@ -356,14 +365,14 @@ public class ESIndexAdjuster {
           if (taskResponse.getError() != null) {
             logger.error(
               "A reindex batch that is part of the upgrade failed. Elasticsearch reported the following error: {}.",
-              taskResponse.getError().toString()
+              taskResponse.getError()
             );
             throw new UpgradeRuntimeException(taskResponse.getError().toString());
           }
 
           if (taskResponse.getResponseDetails() != null) {
             List<Object> failures = taskResponse.getResponseDetails().getFailures();
-            if (failures != null && failures.size() != 0) {
+            if (failures != null && !failures.isEmpty()) {
               String errorMessage = "A reindex batch that is part of the upgrade failed.";
               logger.error(failures.toString());
               logger.error(errorMessage);
@@ -411,22 +420,6 @@ public class ESIndexAdjuster {
     } catch (IOException e) {
       logger.error("Could not create settings!", e);
       throw new UpgradeRuntimeException("Could not create index settings");
-    }
-  }
-
-  private Set<String> getAllAliasNames(final String indexName) {
-    GetAliasesRequest getAliasesRequest = new GetAliasesRequest().indices(indexName);
-    try {
-      return getPlainRestClient().indices()
-        .getAlias(getAliasesRequest, RequestOptions.DEFAULT)
-        .getAliases()
-        .getOrDefault(indexName, Sets.newHashSet())
-        .stream()
-        .map(AliasMetaData::alias)
-        .collect(Collectors.toSet());
-    } catch (IOException e) {
-      String message = String.format("Could not retrieve existing aliases for {%s}.", indexName);
-      throw new OptimizeRuntimeException(message, e);
     }
   }
 }

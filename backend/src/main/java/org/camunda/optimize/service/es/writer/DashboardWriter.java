@@ -129,10 +129,7 @@ public class DashboardWriter {
   }
 
   public void removeReportFromDashboards(String reportId) {
-    String updateItemName = "report on dashboard";
-    log.info(
-      "Removing {} with ID [{}].", updateItemName, reportId
-    );
+    log.info("Removing report on dashboard with ID [{}].", reportId);
 
     Script removeReportIdFromCombinedReportsScript = new Script(
       ScriptType.INLINE,
@@ -166,6 +163,7 @@ public class DashboardWriter {
       QueryBuilders.termQuery(COLLECTION_ID, collectionId),
       deletedItemName,
       deletedItemIdentifier,
+      true,
       DASHBOARD_INDEX_NAME
     );
   }

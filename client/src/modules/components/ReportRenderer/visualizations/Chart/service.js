@@ -10,28 +10,19 @@ import {getTooltipText} from 'services';
 export function formatTooltip(
   {index, datasetIndex},
   {datasets},
-  targetValue,
   {alwaysShowAbsolute, alwaysShowRelative},
   formatter,
-  processInstanceCountData = [],
-  hideRelative,
-  type
+  totalInstanceCount,
+  hideRelative
 ) {
   if (datasets[datasetIndex].isTarget) {
     return;
   }
 
-  let processInstanceCount = processInstanceCountData[datasetIndex];
-  // in the case of the line with target value we have 2 datasets for each report
-  // we have to divide by 2 to get the right index
-  if (type === 'line' && targetValue) {
-    processInstanceCount = processInstanceCountData[~~(datasetIndex / 2)];
-  }
-
   return getTooltipText(
     datasets[datasetIndex].data[index],
     formatter,
-    processInstanceCount,
+    totalInstanceCount,
     alwaysShowAbsolute,
     alwaysShowRelative,
     hideRelative

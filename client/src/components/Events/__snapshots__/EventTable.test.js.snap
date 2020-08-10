@@ -65,7 +65,6 @@ exports[`should match snapshot 1`] = `
             />,
             <Select
               onChange={[Function]}
-              onOpen={[Function]}
               value="end"
             >
               <Option

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.alert;
 
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
@@ -25,9 +26,11 @@ import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.relations.ReportReferencingService;
 import org.camunda.optimize.service.report.ReportService;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.JobDetail;
@@ -46,12 +49,14 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.ws.rs.BadRequestException;
+import javax.ws.rs.NotFoundException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -61,10 +66,8 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.bpm.engine.EntityTypes.REPORT;
 import static org.camunda.optimize.service.es.schema.index.AlertIndex.CHECK_INTERVAL;
-import static org.camunda.optimize.service.es.schema.index.AlertIndex.EMAIL;
 import static org.camunda.optimize.service.es.schema.index.AlertIndex.INTERVAL_UNIT;
 import static org.camunda.optimize.service.es.schema.index.AlertIndex.THRESHOLD_OPERATOR;
-import static org.camunda.optimize.service.es.schema.index.AlertIndex.WEBHOOK;
 
 @RequiredArgsConstructor
 @Component
@@ -197,7 +200,7 @@ public class AlertService implements ReportReferencingService {
     final Set<String> webhooks = configurationService.getConfiguredWebhooks().keySet();
     final Map<String, List<String>> missingWebhookMap = alerts.stream()
       .filter(alert -> StringUtils.isNotEmpty(alert.getWebhook()) && !webhooks.contains(alert.getWebhook()))
-      .collect(groupingBy(alert -> alert.getWebhook(), mapping(alert -> alert.getId(), toList())));
+      .collect(groupingBy(AlertCreationDto::getWebhook, mapping(AlertDefinitionDto::getId, toList())));
     if (!missingWebhookMap.isEmpty()) {
       final String missingWebhookSummary = missingWebhookMap.entrySet()
         .stream()
@@ -225,12 +228,18 @@ public class AlertService implements ReportReferencingService {
     return alertReader.findFirstAlertsForReports(authorizedReportIds);
   }
 
-  public List<AlertDefinitionDto> findFirstAlertsForReport(String reportId) {
+  private List<AlertDefinitionDto> findFirstAlertsForReport(String reportId) {
     return alertReader.findFirstAlertsForReport(reportId);
   }
 
-  public AlertDefinitionDto getAlert(String alertId) {
-    return alertReader.getAlert(alertId);
+  private AlertDefinitionDto getAlert(String alertId) {
+    Optional<AlertDefinitionDto> alertOptional = alertReader.getAlert(alertId);
+
+    if (!alertOptional.isPresent()) {
+      throw new NotFoundException("Alert does not exist!");
+    }
+
+    return alertOptional.get();
   }
 
   public IdDto createAlert(AlertCreationDto toCreate, String userId) {
@@ -262,7 +271,12 @@ public class AlertService implements ReportReferencingService {
     ValidationHelper.ensureNotNull(CHECK_INTERVAL, toCreate.getCheckInterval());
     ValidationHelper.ensureNotEmpty(INTERVAL_UNIT, toCreate.getCheckInterval().getUnit());
 
-    ValidationHelper.ensureNotBothEmpty(EMAIL, WEBHOOK, toCreate.getEmail(), toCreate.getWebhook());
+    final boolean emailsDefined = CollectionUtils.isNotEmpty(toCreate.getEmails());
+    final boolean webhookDefined = StringUtils.isNotBlank(toCreate.getWebhook());
+    if (!emailsDefined && !webhookDefined) {
+      throw new OptimizeValidationException("The fields [emails] and [webhook] are not allowed to " +
+                                              "both be empty. At least one of them must be set.");
+    }
   }
 
   private AlertDefinitionDto createAlertForUser(AlertCreationDto toCreate, String userId) {
@@ -292,9 +306,11 @@ public class AlertService implements ReportReferencingService {
 
   private static AlertDefinitionDto newAlert(AlertCreationDto toCreate, String userId) {
     AlertDefinitionDto result = new AlertDefinitionDto();
-    result.setCreated(OffsetDateTime.now());
+    OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
     result.setOwner(userId);
-    AlertUtil.updateFromUser(userId, result);
+    result.setCreated(now);
+    result.setLastModified(now);
+    result.setLastModifier(userId);
 
     AlertUtil.mapBasicFields(toCreate, result);
     return result;
@@ -308,9 +324,10 @@ public class AlertService implements ReportReferencingService {
   private void updateAlertForUser(String alertId, AlertCreationDto toCreate, String userId) {
     verifyUserAuthorizedToEditAlertOrFail(toCreate, userId);
 
-    AlertDefinitionDto toUpdate = alertReader.getAlert(alertId);
+    AlertDefinitionDto toUpdate = getAlert(alertId);
     unscheduleJob(toUpdate);
-    AlertUtil.updateFromUser(userId, toUpdate);
+    toUpdate.setLastModified(LocalDateUtil.getCurrentDateTime());
+    toUpdate.setLastModifier(userId);
     AlertUtil.mapBasicFields(toCreate, toUpdate);
     alertWriter.updateAlert(toUpdate);
     scheduleAlert(toUpdate);
@@ -319,7 +336,7 @@ public class AlertService implements ReportReferencingService {
   public void deleteAlert(String alertId, String userId) {
     verifyUserAuthorizedToEditAlertOrFail(getAlert(alertId), userId);
 
-    AlertDefinitionDto toDelete = alertReader.getAlert(alertId);
+    AlertDefinitionDto toDelete = getAlert(alertId);
     alertWriter.deleteAlert(alertId);
     unscheduleJob(toDelete);
   }
@@ -356,7 +373,7 @@ public class AlertService implements ReportReferencingService {
     }
   }
 
-  public void deleteAlertsForReport(String reportId) {
+  private void deleteAlertsForReport(String reportId) {
     List<AlertDefinitionDto> alerts = alertReader.findFirstAlertsForReport(reportId);
 
     for (AlertDefinitionDto alert : alerts) {
@@ -369,7 +386,7 @@ public class AlertService implements ReportReferencingService {
   /**
    * Check if it's still evaluated as number.
    */
-  public void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
+  private void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
     if (reportDefinition instanceof SingleProcessReportDefinitionDto) {
       SingleProcessReportDefinitionDto singleReport = (SingleProcessReportDefinitionDto) reportDefinition;
       if (!validateIfReportIsSuitableForAlert(singleReport)) {
@@ -378,14 +395,14 @@ public class AlertService implements ReportReferencingService {
     }
   }
 
-  public boolean validateIfReportIsSuitableForAlert(SingleProcessReportDefinitionDto report) {
+  private boolean validateIfReportIsSuitableForAlert(SingleProcessReportDefinitionDto report) {
     final ProcessReportDataDto data = report.getData();
     return data != null && data.getGroupBy() != null
       && ProcessGroupByType.NONE.equals(data.getGroupBy().getType())
       && ProcessVisualization.NUMBER.equals(data.getVisualization());
   }
 
-  public boolean validateIfReportIsSuitableForAlert(SingleDecisionReportDefinitionDto report) {
+  private boolean validateIfReportIsSuitableForAlert(SingleDecisionReportDefinitionDto report) {
     final DecisionReportDataDto data = report.getData();
     return data != null && data.getGroupBy() != null
       && DecisionGroupByType.NONE.equals(data.getGroupBy().getType())
@@ -431,8 +448,8 @@ public class AlertService implements ReportReferencingService {
   }
 
   @Override
-  public void handleReportUpdated(final String id, final ReportDefinitionDto updateDefinition) {
-    deleteAlertsIfNeeded(id, updateDefinition);
+  public void handleReportUpdated(final String reportId, final ReportDefinitionDto updateDefinition) {
+    deleteAlertsIfNeeded(reportId, updateDefinition);
   }
 
   private Set<ConflictedItemDto> mapAlertsToConflictingItems(List<AlertDefinitionDto> alertsForReport) {

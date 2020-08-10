@@ -13,7 +13,9 @@ import {isDurationReport} from 'services';
 export default function AggregationType({report, onChange}) {
   const {data} = report;
 
-  if (isDurationReport(report)) {
+  const isVariableReport = data?.view?.entity === 'variable';
+
+  if (isDurationReport(report) || isVariableReport) {
     return (
       <fieldset className="AggregationType">
         <legend>{t('report.config.aggregation.legend')}</legend>
@@ -21,9 +23,14 @@ export default function AggregationType({report, onChange}) {
           value={data.configuration.aggregationType}
           onChange={(value) => onChange({aggregationType: {$set: value}}, true)}
         >
+          {isVariableReport && (
+            <Select.Option value="sum">{t('report.config.aggregation.sum')}</Select.Option>
+          )}
           <Select.Option value="min">{t('report.config.aggregation.minimum')}</Select.Option>
           <Select.Option value="avg">{t('report.config.aggregation.average')}</Select.Option>
-          <Select.Option value="median">{t('report.config.aggregation.median')}</Select.Option>
+          {!data.configuration.processPart && (
+            <Select.Option value="median">{t('report.config.aggregation.median')}</Select.Option>
+          )}
           <Select.Option value="max">{t('report.config.aggregation.maximum')}</Select.Option>
         </Select>
       </fieldset>

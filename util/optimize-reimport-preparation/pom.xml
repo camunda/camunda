@@ -5,14 +5,15 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>util</artifactId>
-    <version>3.1.0-alpha2</version>
+    <version>3.2.0-alpha2</version>
   </parent>
 
   <artifactId>optimize-reimport-preparation</artifactId>
-  <version>3.1.0-alpha2</version>
+  <version>3.2.0-alpha2</version>
 
   <properties>
     <skipTests>false</skipTests>
+    <sonar.coverage.jacoco.xmlReportPaths>${basedir}/../../${aggregate.report.dir}</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
   <dependencies>
@@ -36,7 +37,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.6</version>
+      <version>2.7</version>
       <scope>test</scope>
     </dependency>
 

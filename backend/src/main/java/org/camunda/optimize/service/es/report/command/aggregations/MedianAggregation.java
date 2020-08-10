@@ -6,26 +6,27 @@
 package org.camunda.optimize.service.es.report.command.aggregations;
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.ParsedTDigestPercentiles;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLongOrNull;
+import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.percentiles;
 
 
 public class MedianAggregation implements AggregationStrategy {
-  private static final String MEDIAN_DURATION_AGGREGATION = "medianAggregatedDuration";
+  private static final String MEDIAN_AGGREGATION = "medianAggregation";
 
   @Override
-  public Long getValue(final Aggregations aggregations) {
-    final ParsedTDigestPercentiles percentiles = aggregations.get(MEDIAN_DURATION_AGGREGATION);
-    return mapToLongOrNull(percentiles);
+  public Double getValue(final Aggregations aggregations) {
+    final ParsedTDigestPercentiles percentiles = aggregations.get(MEDIAN_AGGREGATION);
+    return ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull(percentiles);
   }
 
   @Override
-  public ValuesSourceAggregationBuilder getAggregationBuilder() {
-    return percentiles(MEDIAN_DURATION_AGGREGATION)
+  public ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder() {
+    return percentiles(MEDIAN_AGGREGATION)
       .percentiles(50);
   }
 

@@ -6,18 +6,19 @@ die () {
     exit 1
 }
 
-[[ "$#" -eq 4 ]] || die "4 arguments required [NAMESPACE] [EVENT_FOLDER] [EXTERNAL_EVENT_COUNT] [SECRET], $# provided"
+[[ "$#" -eq 3 ]] || die "3 arguments required [NAMESPACE] [EXTERNAL_EVENT_COUNT] [SECRET], $# provided"
 
 NAMESPACE=$1
-EVENT_FOLDER=$2
-EXTERNAL_EVENT_COUNT=$3
-SECRET=$4
+EXTERNAL_EVENT_COUNT=$2
+SECRET=$3
 
 BATCH_FILE="/tmp/currentBatch.json"
 BATCH_SIZE=10000
 
 EVENT_NAMES=( "InvoiceReceived" "InvoiceApprovalStarted" "InvoiceApprovalFinished" "InvoiceProcessed" )
 EVENT_TEMPLATE="{\"specversion\":\"1.0\",\"id\":\"%s\",\"group\":\"invoice\",\"source\":\"system\",\"type\":\"%s\",\"traceid\":\"%s\",\"time\":\"%(%Y-%m-%dT%H:%M:%S.000Z)T\"}"
+# default to UTC timestamps when formatting
+export TZ=UTC
 
 printf -v CURRENT_TIMESTAMP_SECONDS "%(%s)T"
 # subtract the number of events in seconds from current timestamp, each event will be 1 seconds apart from the previous
@@ -27,7 +28,7 @@ CURRENT_BATCH_SIZE=0
 CURRENT_INSTANCE_ID=1
 echo "[" > $BATCH_FILE
 for (( i=1; i<=$EXTERNAL_EVENT_COUNT; )); do
-  # one iteration through the events in the folder is ine process instance
+  # one iteration through the events in the folder is one process instance
   # create a traceId for this instance
   CURRENT_TRACE_ID="$CURRENT_INSTANCE_ID"
   CURRENT_INSTANCE_ID=$((CURRENT_INSTANCE_ID+1))

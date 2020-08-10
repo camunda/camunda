@@ -13,7 +13,6 @@ import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.StoreIndexesEngineImportService;
 import org.camunda.optimize.service.importing.event.handler.EventImportIndexHandlerRegistry;
-import org.camunda.optimize.service.util.ImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -50,13 +49,6 @@ public class PersistEventIndexHandlerStateMediator implements EngineImportMediat
   }
 
   @Override
-  public long getBackoffTimeInMs() {
-    long backoffTime = OffsetDateTime.now().until(dateUntilJobCreationIsBlocked, ChronoUnit.MILLIS);
-    backoffTime = Math.max(0, backoffTime);
-    return backoffTime;
-  }
-
-  @Override
   public CompletableFuture<Void> runImport() {
     final CompletableFuture<Void> importCompleted = new CompletableFuture<>();
     dateUntilJobCreationIsBlocked = calculateDateUntilJobCreationIsBlocked();
@@ -75,17 +67,10 @@ public class PersistEventIndexHandlerStateMediator implements EngineImportMediat
   }
 
   @Override
-  public boolean canImport() {
-    return OffsetDateTime.now().isAfter(dateUntilJobCreationIsBlocked);
-  }
-
-  @Override
-  public ImportJobExecutor getImportJobExecutor() {
-    return elasticsearchImportJobExecutor;
-  }
-
-  private OffsetDateTime calculateDateUntilJobCreationIsBlocked() {
-    return OffsetDateTime.now().plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
+  public long getBackoffTimeInMs() {
+    long backoffTime = OffsetDateTime.now().until(dateUntilJobCreationIsBlocked, ChronoUnit.MILLIS);
+    backoffTime = Math.max(0, backoffTime);
+    return backoffTime;
   }
 
   @Override
@@ -94,8 +79,22 @@ public class PersistEventIndexHandlerStateMediator implements EngineImportMediat
   }
 
   @Override
+  public boolean canImport() {
+    return OffsetDateTime.now().isAfter(dateUntilJobCreationIsBlocked);
+  }
+
+  @Override
+  public boolean hasPendingImportJobs() {
+    return importService.hasPendingImportJobs();
+  }
+
+  @Override
   public void shutdown() {
-    elasticsearchImportJobExecutor.stopExecutingImportJobs();
+    importService.shutdown();
+  }
+
+  private OffsetDateTime calculateDateUntilJobCreationIsBlocked() {
+    return OffsetDateTime.now().plusSeconds(configurationService.getImportIndexAutoStorageIntervalInSec());
   }
 
 }

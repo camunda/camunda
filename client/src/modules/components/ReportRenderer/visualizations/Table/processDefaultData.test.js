@@ -31,7 +31,11 @@ const report = {
     },
     view: {property: 'frequency'},
     configuration: {
-      excludedColumns: [],
+      tableColumns: {
+        includeNewVariables: true,
+        includedColumns: [],
+        excludedColumns: [],
+      },
       hideRelativeValue: true,
       hideAbsoluteValue: false,
     },

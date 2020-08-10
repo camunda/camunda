@@ -31,7 +31,7 @@
   border-radius: 8px;
   margin-top: 10px;
   padding: 10px 20px 15px 20px;
-  z-index: 9998;
+  z-index: var(--z-popup);
 
   &.scrollable {
     overflow-y: scroll;
@@ -42,7 +42,7 @@
 .Popover__dialog-arrow,
 .Popover__dialog-arrow-border {
   bottom: -11px;
-  z-index: 9999;
+  z-index: calc(var(--z-popup) + 1);
   left: 50%;
   border: solid transparent;
   height: 0;

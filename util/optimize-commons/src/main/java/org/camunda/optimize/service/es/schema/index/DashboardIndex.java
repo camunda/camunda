@@ -8,17 +8,15 @@ package org.camunda.optimize.service.es.schema.index;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@Component
 public class DashboardIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   public static final String ID = "id";
   public static final String NAME = "name";
@@ -56,6 +54,7 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+    // @formatter:off
      XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
         .field("type", "keyword")
@@ -97,10 +96,12 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
           .endObject()
         .endObject()
       .endObject();
-     return newBuilder;
+    // @formatter:on
+    return newBuilder;
   }
 
   private XContentBuilder addNestedReportsField(XContentBuilder builder) throws IOException {
+    // @formatter:off
     XContentBuilder newBuilder = builder
       .startObject(REPORT_ID)
         .field("type", "keyword")
@@ -120,10 +121,12 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
       .startObject(CONFIGURATION)
         .field("enabled", false)
       .endObject();
+    // @formatter:on
     return newBuilder;
   }
 
   private XContentBuilder addNestedPositionField(XContentBuilder builder) throws IOException {
+    // @formatter:off
     return builder
       .startObject(X_POSITION)
         .field("type", "keyword")
@@ -131,9 +134,11 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
       .startObject(Y_POSITION)
         .field("type", "keyword")
       .endObject();
+    // @formatter:on
   }
 
   private XContentBuilder addNestedDimensionField(XContentBuilder builder) throws IOException {
+    // @formatter:off
     return builder
       .startObject(WIDTH)
         .field("type", "keyword")
@@ -141,6 +146,7 @@ public class DashboardIndex extends DefaultIndexMappingCreator {
       .startObject(HEIGHT)
         .field("type", "keyword")
       .endObject();
+    // @formatter:on
   }
 
 }

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.event;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -46,7 +47,16 @@ public class EventSourceEntryDto {
   private List<String> versions = new ArrayList<>();
   @Builder.Default
   private List<String> tenants = new ArrayList<>();
-  private Boolean tracedByBusinessKey;
+  private boolean tracedByBusinessKey;
   private String traceVariable;
+
+  @JsonIgnore
+  public String getSourceIdentifier() {
+    if (EventSourceType.CAMUNDA.equals(type)) {
+      return processDefinitionKey;
+    } else {
+      return type.getId();
+    }
+  }
 
 }

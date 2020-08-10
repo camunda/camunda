@@ -9,7 +9,7 @@ import update from 'immutability-helper';
 import deepEqual from 'deep-equal';
 
 import {evaluateReport} from 'services';
-import {DashboardRenderer, EntityNameForm, ModificationInfo, Button, Icon} from 'components';
+import {DashboardRenderer, EntityNameForm, Button, Icon} from 'components';
 import {t} from 'translation';
 import {nowDirty, nowPristine} from 'saveGuard';
 
@@ -23,11 +23,12 @@ export default class DashboardEdit extends React.Component {
   constructor(props) {
     super(props);
 
+    const {name, initialAvailableFilters, initialReports} = props;
     this.state = {
-      reports: props.initialReports,
-      availableFilters: props.initialAvailableFilters,
-      name: props.name,
-      filtersShown: false,
+      reports: initialReports,
+      availableFilters: initialAvailableFilters,
+      name: name,
+      filtersShown: initialAvailableFilters?.length > 0,
     };
   }
 
@@ -195,10 +196,10 @@ export default class DashboardEdit extends React.Component {
               {t('dashboard.filter.label')}
             </Button>
           </EntityNameForm>
-          <ModificationInfo user={lastModifier} date={lastModified} />
         </div>
         {filtersShown && (
           <FiltersEdit
+            reports={reports?.map(({id}) => id).filter((id) => !!id)}
             availableFilters={availableFilters}
             setAvailableFilters={(availableFilters) => this.setState({availableFilters})}
           />

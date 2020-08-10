@@ -6,11 +6,9 @@
 package org.camunda.optimize.service.importing.engine.mediator;
 
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedProcessInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.CompletedProcessInstanceImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.service.CompletedProcessInstanceImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -32,14 +30,22 @@ public class CompletedProcessInstanceEngineImportMediator
                                                       final CompletedProcessInstanceFetcher engineEntityFetcher,
                                                       final CompletedProcessInstanceImportService importService,
                                                       final ConfigurationService configurationService,
-                                                      final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                                       final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.engineEntityFetcher = engineEntityFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
+  }
+
+  @Override
+  protected OffsetDateTime getTimestamp(final HistoricProcessInstanceDto historicProcessInstanceDto) {
+    return historicProcessInstanceDto.getEndTime();
+  }
+
+  @Override
+  protected List<HistoricProcessInstanceDto> getEntitiesNextPage() {
+    return engineEntityFetcher.fetchCompletedProcessInstances(importIndexHandler.getNextPage());
   }
 
   @Override
@@ -49,17 +55,7 @@ public class CompletedProcessInstanceEngineImportMediator
   }
 
   @Override
-  protected List<HistoricProcessInstanceDto> getEntitiesNextPage() {
-    return engineEntityFetcher.fetchCompletedProcessInstances(importIndexHandler.getNextPage());
-  }
-
-  @Override
   protected int getMaxPageSize() {
     return configurationService.getEngineImportProcessInstanceMaxPageSize();
-  }
-
-  @Override
-  protected OffsetDateTime getTimestamp(final HistoricProcessInstanceDto historicProcessInstanceDto) {
-    return historicProcessInstanceDto.getEndTime();
   }
 }

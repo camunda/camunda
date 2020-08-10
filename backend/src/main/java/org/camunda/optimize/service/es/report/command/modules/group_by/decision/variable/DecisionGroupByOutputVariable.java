@@ -9,10 +9,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionRe
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByOutputVariableDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable;
-import org.camunda.optimize.service.es.report.command.util.IntervalAggregationService;
+import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.camunda.optimize.service.util.DecisionVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -28,12 +28,12 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-  public class DecisionGroupByOutputVariable extends AbstractGroupByVariable<DecisionReportDataDto> {
+public class DecisionGroupByOutputVariable extends AbstractGroupByVariable<DecisionReportDataDto> {
 
   public DecisionGroupByOutputVariable(final ConfigurationService configurationService,
-                                       final IntervalAggregationService intervalAggregationService,
-                                       final OptimizeElasticsearchClient esClient) {
-    super(configurationService, intervalAggregationService, esClient);
+                                       final DateAggregationService dateAggregationService,
+                                       final MinMaxStatsService minMaxStatsService) {
+    super(configurationService, dateAggregationService, minMaxStatsService);
   }
 
   private DecisionGroupByVariableValueDto getVariableGroupByDto(final ExecutionContext<DecisionReportDataDto> context) {

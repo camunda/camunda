@@ -25,7 +25,7 @@ public class EventTraceStateIndex extends DefaultIndexMappingCreator {
   public static final String TIMESTAMP = TracedEventDto.Fields.timestamp;
   public static final String ORDER_COUNTER = TracedEventDto.Fields.orderCounter;
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
   private final String indexName;
 
   public EventTraceStateIndex(final String indexKey) {
@@ -50,7 +50,7 @@ public class EventTraceStateIndex extends DefaultIndexMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(EVENT_TRACE)
-        .field("type", "object")
+        .field("type", "nested")
         .startObject("properties")
           .startObject(EVENT_ID)
             .field("type", "keyword")

@@ -15,23 +15,23 @@ exports[`should match snapshot 1`] = `
       onChange={[Function]}
       onSave={[Function]}
     />
-    <ModificationInfo
-      date="2020-11-11T11:11:11.1111+0200"
-      user="john"
-    />
   </div>
-  <Themed(BPMNDiagramErrorHandler)
-    allowModeling={true}
-    xml="Process XML"
+  <div
+    className="content"
   >
-    <ProcessRenderer
-      mappings={Object {}}
-      name="Process Name"
-      onChange={[Function]}
-      onSelectNode={[Function]}
-      selectedEvent={null}
-    />
-  </Themed(BPMNDiagramErrorHandler)>
+    <Themed(BPMNDiagramErrorHandler)
+      allowModeling={true}
+      xml="Process XML"
+    >
+      <ProcessRenderer
+        mappings={Object {}}
+        name="Process Name"
+        onChange={[Function]}
+        onSelectNode={[Function]}
+        selectedEvent={null}
+      />
+    </Themed(BPMNDiagramErrorHandler)>
+  </div>
   <EventTableErrorHandler
     eventSources={Array []}
     mappings={Object {}}

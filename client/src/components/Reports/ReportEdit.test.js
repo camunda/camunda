@@ -11,7 +11,7 @@ import {ReportEdit} from './ReportEdit';
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import {incompatibleFilters, updateEntity, createEntity, evaluateReport} from 'services';
 import {nowDirty, nowPristine} from 'saveGuard';
-import {EntityNameForm} from 'components';
+import {EntityNameForm, InstanceCount} from 'components';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -41,7 +41,7 @@ const report = {
     groupBy: {type: 'none', value: null},
     visualization: 'table',
   },
-  result: {data: [1, 2, 3]},
+  result: {data: [1, 2, 3], instanceCount: 37},
 };
 
 const props = {
@@ -50,6 +50,12 @@ const props = {
   updateOverview: jest.fn(),
   location: {pathname: '/report/1'},
 };
+
+it('should show the instance count in the header if it is available', () => {
+  const node = shallow(<ReportEdit {...props} />);
+
+  expect(node.find(InstanceCount)).toExist();
+});
 
 it('should not contain a Control Panel in edit mode for a combined report', () => {
   const combinedReport = {
@@ -88,6 +94,15 @@ it('should update the report', async () => {
   await node.instance().updateReport({visualization: {$set: 'customTestVis'}});
 
   expect(node.state().report.data.visualization).toBe('customTestVis');
+});
+
+it('should evaluate the report on mount if the config is complete, but the result is missing', async () => {
+  evaluateReport.mockClear();
+  evaluateReport.mockReturnValue(report);
+
+  await shallow(<ReportEdit {...props} report={{...report, result: null}} />);
+
+  expect(evaluateReport).toHaveBeenCalled();
 });
 
 it('should evaluate the report after updating', async () => {
@@ -283,6 +298,33 @@ it('should notify the saveGuard of changes', () => {
   node.find(ReportControlPanel).prop('updateReport')({processDefinitionKey: {$set: null}});
 
   expect(nowPristine).toHaveBeenCalled();
+});
+
+it('should only resolve the save promise if a decision for conflicts has been made', async () => {
+  const mightFail = jest.fn().mockImplementation((promise, cb) => cb(promise));
+  nowDirty.mockClear();
+  const node = shallow(<ReportEdit {...props} mightFail={mightFail} />);
+
+  mightFail.mockImplementationOnce((promise, cb, err) =>
+    err({status: 409, json: () => ({conflictedItems: [{id: '1', name: 'alert', type: 'alert'}]})})
+  );
+
+  let promiseResolved = false;
+  node
+    .instance()
+    .save()
+    .then(() => (promiseResolved = true));
+
+  await flushPromises();
+
+  expect(promiseResolved).toBe(false);
+  expect(node.state().conflict).not.toBe(null);
+
+  node.find('ConflictModal').simulate('confirm');
+
+  await flushPromises();
+
+  expect(promiseResolved).toBe(true);
 });
 
 describe('showIncompleteResultWarning', () => {

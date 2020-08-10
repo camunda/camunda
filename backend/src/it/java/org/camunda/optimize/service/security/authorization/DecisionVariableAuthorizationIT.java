@@ -23,16 +23,16 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DecisionVariableAuthorizationIT extends AbstractIT {
 
-  private static final String PROCESS_DEFINITION_KEY = "aProcessDefinitionKey";
   private static final String VARIABLE_NAME = "input";
   private static final String VARIABLE_VALUE = "input";
 
@@ -46,15 +46,13 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_DECISION_DEFINITION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
 
     //then
-    responses.forEach(response -> assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()))
-    );
+    responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
   }
 
   @Test
@@ -65,67 +63,81 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_DECISION_DEFINITION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
-    List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition, Collections.singletonList(null));
+    List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
 
     //then
-    responses.forEach(response -> assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()))
-    );
+    responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
   }
 
   @Test
-  public void variableRequestWithoutAuthorization() {
+  public void variableNameRequestWithoutAuthorization() {
     // given
     final DecisionDefinitionEngineDto decisionDefinition = deploySimpleDecisionDefinition();
     evaluateSimpleDecision(decisionDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response inputVariableNameResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDecisionInputVariableNamesRequest(
-        createInputVariableNameRequest("", "", Collections.emptyList())
-      )
-      .execute();
+        createInputVariableNameRequest(
+          decisionDefinition.getKey(),
+          decisionDefinition.getVersionAsString(),
+          Collections.emptyList()
+        )
+      ).execute();
     Response outputVariableNameResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDecisionOutputVariableNamesRequest(
-        createInputVariableNameRequest("", "", Collections.emptyList())
-      )
-      .execute();
+        createInputVariableNameRequest(
+          decisionDefinition.getKey(),
+          decisionDefinition.getVersionAsString(),
+          Collections.emptyList()
+        )
+      ).execute();
+
+    // then
+    Arrays.asList(inputVariableNameResponse, outputVariableNameResponse)
+      .forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
+  }
+
+  @Test
+  public void variableValuesRequestWithoutAuthorization() {
+    // given
+    final DecisionDefinitionEngineDto decisionDefinition = deploySimpleDecisionDefinition();
+    evaluateSimpleDecision(decisionDefinition);
+    importAllEngineEntitiesFromScratch();
+
+    // when
     Response inputVariableValueResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDecisionInputVariableValuesRequest(
-        createVariableValueRequest("", "", Collections.emptyList())
-      )
-      .execute();
+        createVariableValueRequest(
+          decisionDefinition.getKey(),
+          decisionDefinition.getVersionAsString(),
+          Collections.emptyList()
+        )
+      ).execute();
     Response outputVariableValueResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withoutAuthentication()
       .buildDecisionOutputVariableValuesRequest(
-        createVariableValueRequest("", "", Collections.emptyList())
-      )
-      .execute();
+        createVariableValueRequest(
+          decisionDefinition.getKey(),
+          decisionDefinition.getVersionAsString(),
+          Collections.emptyList()
+        )
+      ).execute();
 
     // then
-    Arrays.asList(
-      inputVariableNameResponse,
-      inputVariableValueResponse,
-      outputVariableNameResponse,
-      outputVariableValueResponse
-    ).forEach(response ->
-                assertThat(
-                  response.getStatus(),
-                  is(Response.Status.UNAUTHORIZED.getStatusCode())
-                )
-    );
+    Arrays.asList(inputVariableValueResponse, outputVariableValueResponse)
+      .forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
   @Test
@@ -138,19 +150,17 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
     evaluateSimpleDecision(decisionDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
 
     //then
-    responses.forEach(response -> assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()))
-    );
+    responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
   }
 
   @Test
-  public void variableRequest_unauthorizedTenant() {
+  public void variableValuesRequest_unauthorizedTenant() {
     // given
     final String tenantId = "tenantId";
     final DecisionDefinitionEngineDto decisionDefinition = deploySimpleDecisionDefinition(tenantId);
@@ -158,19 +168,41 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_DECISION_DEFINITION);
     evaluateSimpleDecision(decisionDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
-    List<Response> responses = executeVariableRequestsAsKermit(decisionDefinition);
+    List<Response> responses = executeVariableValuesRequestsAsKermit(
+      decisionDefinition,
+      Collections.singletonList(tenantId)
+    );
 
     //then
-    responses.forEach(response -> assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()))
-    );
+    responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   @Test
-  public void variableRequest_partiallyUnauthorizedTenants() {
+  public void variableNamesRequest_unauthorizedTenantDoesNotFailRequest() {
+    // given
+    final String tenantId = "tenantId";
+    final DecisionDefinitionEngineDto decisionDefinition = deploySimpleDecisionDefinition(tenantId);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_DECISION_DEFINITION);
+    evaluateSimpleDecision(decisionDefinition);
+
+    importAllEngineEntitiesFromScratch();
+
+    //when
+    List<Response> responses = executeVariableValuesRequestsAsKermit(
+      decisionDefinition,
+      Collections.singletonList(null)
+    );
+
+    //then
+    responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
+  }
+
+  @Test
+  public void variableNamesRequest_partiallyUnauthorizedTenantsNotForbidden() {
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
@@ -182,29 +214,58 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
     evaluateSimpleDecision(decisionDefinition1);
     evaluateSimpleDecision(decisionDefinition2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
-    List<Response> responses = executeVariableRequestsAsKermit(
+    List<Response> responses = executeVariableNamesRequestsAsKermit(
       decisionDefinition1,
       Lists.newArrayList(tenantId1, tenantId2)
     );
 
     //then
-    responses.forEach(response -> assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()))
+    responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode()));
+  }
+
+  @Test
+  public void variableValuesRequest_partiallyUnauthorizedTenantsNotForbidden() {
+    // given
+    final String tenantId1 = "tenantId1";
+    final String tenantId2 = "tenantId2";
+    final DecisionDefinitionEngineDto decisionDefinition1 = deploySimpleDecisionDefinition(tenantId1);
+    final DecisionDefinitionEngineDto decisionDefinition2 = deploySimpleDecisionDefinition(tenantId2);
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_DECISION_DEFINITION);
+    authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId1, RESOURCE_TYPE_TENANT);
+    evaluateSimpleDecision(decisionDefinition1);
+    evaluateSimpleDecision(decisionDefinition2);
+
+    importAllEngineEntitiesFromScratch();
+
+    //when
+    List<Response> responses = executeVariableValuesRequestsAsKermit(
+      decisionDefinition1,
+      Lists.newArrayList(tenantId1, tenantId2)
     );
+
+    //then
+    responses.forEach(response -> assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
   private List<Response> executeVariableRequestsAsKermit(final DecisionDefinitionEngineDto decisionDefinition) {
-    return executeVariableRequestsAsKermit(
-      decisionDefinition,
-      decisionDefinition.getTenantId().map(Collections::singletonList).orElse(Collections.emptyList())
-    );
+    return Stream.concat(
+      executeVariableNamesRequestsAsKermit(
+        decisionDefinition,
+        decisionDefinition.getTenantId().map(Collections::singletonList).orElse(Collections.emptyList())
+      ).stream(),
+      executeVariableValuesRequestsAsKermit(
+        decisionDefinition,
+        decisionDefinition.getTenantId().map(Collections::singletonList).orElse(Collections.emptyList())
+      ).stream()
+    ).collect(Collectors.toList());
   }
 
-  private List<Response> executeVariableRequestsAsKermit(final DecisionDefinitionEngineDto decisionDefinition,
-                                                         List<String> tenantIds) {
+  private List<Response> executeVariableNamesRequestsAsKermit(final DecisionDefinitionEngineDto decisionDefinition,
+                                                              List<String> tenantIds) {
     Response inputVariableNameResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
@@ -219,7 +280,11 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
         decisionDefinition.getKey(), String.valueOf(decisionDefinition.getVersion()), tenantIds
       ))
       .execute();
+    return Arrays.asList(inputVariableNameResponse, outputVariableNameResponse);
+  }
 
+  private List<Response> executeVariableValuesRequestsAsKermit(final DecisionDefinitionEngineDto decisionDefinition,
+                                                               List<String> tenantIds) {
     Response inputVariableValueResponse = embeddedOptimizeExtension
       .getRequestExecutor()
       .withUserAuthentication(KERMIT_USER, KERMIT_USER)
@@ -235,7 +300,7 @@ public class DecisionVariableAuthorizationIT extends AbstractIT {
         decisionDefinition.getKey(), String.valueOf(decisionDefinition.getVersion()), tenantIds
       ))
       .execute();
-    return Lists.newArrayList(inputVariableNameResponse, inputVariableValueResponse);
+    return Arrays.asList(inputVariableValueResponse, outputVariableValueResponse);
   }
 
   private DecisionVariableNameRequestDto createInputVariableNameRequest(final String decisionDefinitionKey,

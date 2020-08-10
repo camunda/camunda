@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.eventprocess;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediator;
@@ -14,7 +15,6 @@ import org.camunda.optimize.service.importing.eventprocess.service.EventProcessD
 import org.camunda.optimize.service.importing.eventprocess.service.PublishStateUpdateService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EventBasedProcessConfiguration;
-import org.camunda.optimize.service.util.configuration.EventImportConfiguration;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
@@ -45,18 +45,6 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
     }
   }
 
-  @Override
-  protected void run() {
-    if (isScheduledToRun()) {
-      runImportRound();
-    }
-  }
-
-  @Override
-  protected Trigger createScheduleTrigger() {
-    return new PeriodicTrigger(0);
-  }
-
   public synchronized void startImportScheduling() {
     log.info("Scheduling ingested event import.");
     startScheduling();
@@ -79,8 +67,8 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
     publishStateUpdateService.updateEventProcessPublishStates();
     eventProcessDefinitionImportService.syncPublishedEventProcessDefinitions();
 
-    final Collection<EventProcessInstanceImportMediator> allInstanceMediators = instanceImportMediatorManager
-      .getActiveMediators();
+    final Collection<EventProcessInstanceImportMediator<EventProcessEventDto>> allInstanceMediators =
+      instanceImportMediatorManager.getActiveMediators();
     final List<EventProcessInstanceImportMediator> currentImportRound = allInstanceMediators
       .stream()
       .filter(mediator -> forceImport || mediator.canImport())
@@ -113,6 +101,17 @@ public class EventBasedProcessesInstanceImportScheduler extends AbstractSchedule
     return CompletableFuture.allOf(importTaskFutures);
   }
 
+  @Override
+  protected void run() {
+    if (isScheduledToRun()) {
+      runImportRound();
+    }
+  }
+
+  @Override
+  protected Trigger createScheduleTrigger() {
+    return new PeriodicTrigger(0);
+  }
 
   private void doBackoff(final Collection<? extends EngineImportMediator> mediators) {
     long timeToSleep = mediators

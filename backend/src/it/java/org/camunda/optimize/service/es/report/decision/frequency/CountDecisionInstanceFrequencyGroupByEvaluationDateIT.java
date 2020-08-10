@@ -8,17 +8,17 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.EvaluationDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -28,7 +28,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -36,8 +35,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
-import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createNumericInputVariableFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
@@ -60,8 +59,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -73,11 +71,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(result.getInstanceCount(), is(3L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().get(0).getValue(), is(3L));
+    assertThat(result.getData().get(0).getValue(), is(3.));
   }
 
   @Test
-  public void reportEvaluationMultiBucketsSpecificVersionGroupedByDay() throws SQLException {
+  public void reportEvaluationMultiBucketsSpecificVersionGroupedByDay() {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     final DecisionDefinitionEngineDto decisionDefinitionDto1 = deployAndStartSimpleDecisionDefinition("key");
@@ -90,8 +88,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -104,13 +101,12 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(2));
-    assertThat(resultData.get(0).getValue(), is(2L));
-    assertThat(resultData.get(1).getValue(), is(3L));
+    assertThat(resultData.get(0).getValue(), is(2.));
+    assertThat(resultData.get(1).getValue(), is(3.));
   }
 
   @Test
-  public void reportEvaluationMultiBucketsSpecificVersionGroupedByDayResultIsSortedInDescendingOrder()
-    throws Exception {
+  public void reportEvaluationMultiBucketsSpecificVersionGroupedByDayResultIsSortedInDescendingOrder() {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
@@ -137,8 +133,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -153,21 +148,21 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       resultData.get(0).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData.get(0).getValue(), is(2.));
     assertThat(
       resultData.get(1).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(1).getValue(), is(2L));
+    assertThat(resultData.get(1).getValue(), is(2.));
     assertThat(
       resultData.get(2).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(thirdBucketEvaluationDate, ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(2).getValue(), is(3L));
+    assertThat(resultData.get(2).getValue(), is(3.));
   }
 
   @Test
-  public void testCustomOrderOnResultKeyIsApplied() throws SQLException {
+  public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
@@ -194,8 +189,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -204,7 +198,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
       reportClient.evaluateMapReport(reportData);
 
@@ -228,7 +222,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   }
 
   @Test
-  public void testCustomOrderOnResultValueIsApplied() throws SQLException {
+  public void testCustomOrderOnResultValueIsApplied() {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
@@ -255,8 +249,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -265,7 +258,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(GroupByDateUnit.DAY)
       .build();
-    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
       reportClient.evaluateMapReport(reportData);
 
@@ -274,7 +267,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(result.getIsComplete(), is(true));
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(3));
-    final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
+    final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
       bucketValues,
       contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
@@ -282,7 +275,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   }
 
   @Test
-  public void testEmptyBucketsAreReturnedForEvaluationDateFilterPeriod() throws SQLException {
+  public void testEmptyBucketsAreReturnedForEvaluationDateFilterPeriod() {
     // given
     final OffsetDateTime startDate = OffsetDateTime.now();
 
@@ -296,12 +289,11 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
-    final RelativeDateFilterDataDto dateFilterDataDto = new RelativeDateFilterDataDto(
-      new RelativeDateFilterStartDto(4L, DateFilterUnit.DAYS)
+    final RollingDateFilterDataDto dateFilterDataDto = new RollingDateFilterDataDto(
+      new RollingDateFilterStartDto(4L, DateFilterUnit.DAYS)
     );
 
     final EvaluationDateFilterDto dateFilterDto = new EvaluationDateFilterDto(dateFilterDataDto);
@@ -325,35 +317,35 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       resultData.get(0).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate, ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(0).getValue(), is(1L));
+    assertThat(resultData.get(0).getValue(), is(1.));
 
     assertThat(
       resultData.get(1).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(1), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(1).getValue(), is(0L));
+    assertThat(resultData.get(1).getValue(), is(0.));
 
     assertThat(
       resultData.get(2).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(2), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(2).getValue(), is(2L));
+    assertThat(resultData.get(2).getValue(), is(2.));
 
     assertThat(
       resultData.get(3).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(3), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(3).getValue(), is(0L));
+    assertThat(resultData.get(3).getValue(), is(0.));
 
     assertThat(
       resultData.get(4).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(startDate.minusDays(4), ChronoUnit.DAYS))
     );
-    assertThat(resultData.get(4).getValue(), is(0L));
+    assertThat(resultData.get(4).getValue(), is(0.));
   }
 
   @Test
-  public void multipleBuckets_noFilter_resultLimitedByConfig() throws SQLException {
+  public void multipleBuckets_noFilter_resultLimitedByConfig() {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
@@ -379,8 +371,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
 
@@ -405,7 +396,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   @MethodSource("groupByDateUnits")
   public void reportEvaluationMultiBucketsSpecificVersionGroupedByDifferentUnitsEmptyBucketBetweenTwoOthers(
     final GroupByDateUnit groupByDateUnit
-  ) throws Exception {
+  ) {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
     final ChronoUnit chronoUnit = ChronoUnit.valueOf(groupByDateUnit.name().toUpperCase() + "S");
@@ -428,8 +419,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -443,21 +433,21 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       resultData.get(0).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(lastEvaluationDateFilter, chronoUnit))
     );
-    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData.get(0).getValue(), is(2.));
     assertThat(
       resultData.get(1).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(secondBucketEvaluationDate, chronoUnit))
     );
-    assertThat(resultData.get(1).getValue(), is(0L));
+    assertThat(resultData.get(1).getValue(), is(0.));
     assertThat(
       resultData.get(2).getKey(),
       is(embeddedOptimizeExtension.formatToHistogramBucketKey(thirdBucketEvaluationDate, chronoUnit))
     );
-    assertThat(resultData.get(2).getValue(), is(3L));
+    assertThat(resultData.get(2).getValue(), is(3.));
   }
 
   @Test
-  public void automaticIntervalSelectionWorks() throws Exception {
+  public void automaticIntervalSelectionWorks() {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
 
@@ -478,8 +468,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     final OffsetDateTime firstBucketEvaluationDate = beforeStart.minus(1, ChronoUnit.DAYS);
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(beforeStart, firstBucketEvaluationDate);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -489,9 +478,9 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    assertThat(resultData.get(0).getValue(), is(2L));
-    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Long::intValue).sum(), is(5));
-    assertThat(resultData.get(resultData.size() - 1).getValue(), is(3L));
+    assertThat(resultData.get(0).getValue(), is(2.));
+    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Double::intValue).sum(), is(5));
+    assertThat(resultData.get(resultData.size() - 1).getValue(), is(3.));
   }
 
   @Test
@@ -505,8 +494,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     DecisionDefinitionEngineDto decisionDefinitionDto2 = deployAndStartSimpleDecisionDefinition("key");
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -518,7 +506,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(5L));
+    assertThat(resultData.get(0).getValue(), is(5.));
   }
 
   @Test
@@ -535,8 +523,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     // other decision definition
     deployAndStartSimpleDecisionDefinition("key2");
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
@@ -548,7 +535,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(5L));
+    assertThat(resultData.get(0).getValue(), is(5.));
   }
 
   @Test
@@ -561,8 +548,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -596,8 +582,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       createInputs(inputVariableValueToFilterFor + 100.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -606,7 +591,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(GroupByDateUnit.HOUR)
       .setFilter(createNumericInputVariableFilter(
-        INPUT_AMOUNT_ID, FilterOperatorConstants.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
+        INPUT_AMOUNT_ID, FilterOperator.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
@@ -618,7 +603,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData.get(0).getValue(), is(2.));
   }
 
   @Test

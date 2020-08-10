@@ -13,7 +13,6 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.camunda.optimize.service.es.report.command.exec.DecisionReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.decision.DecisionDistributedByNone;
-import org.camunda.optimize.service.es.report.command.modules.group_by.decision.variable.DecisionGroupByInputVariable;
 import org.camunda.optimize.service.es.report.command.modules.group_by.decision.variable.DecisionGroupByOutputVariable;
 import org.camunda.optimize.service.es.report.command.modules.view.decision.DecisionViewCountInstanceFrequency;
 import org.camunda.optimize.service.es.report.result.decision.SingleDecisionMapReportResult;

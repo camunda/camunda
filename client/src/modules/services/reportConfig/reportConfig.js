@@ -78,7 +78,10 @@ export default function reportConfig({view, groupBy, visualization, combinations
 
   function getGroupFor(type, data) {
     // special case for variables:
-    if (data && data.type && data.type.toLowerCase().includes('variable')) {
+    if (
+      data?.type?.toLowerCase().includes('variable') ||
+      data?.entity?.toLowerCase().includes('variable')
+    ) {
       return 'variable';
     }
 
@@ -91,7 +94,13 @@ export default function reportConfig({view, groupBy, visualization, combinations
       return false;
     });
 
-    return entry && entry.group;
+    if (entry?.group) {
+      return entry.group;
+    }
+
+    const option = entry?.options?.find((entry) => equal(entry.data, data, {strict: true}));
+
+    return option?.group;
   }
 
   function getOnlyOptionFor(type, group) {
@@ -131,17 +140,39 @@ export default function reportConfig({view, groupBy, visualization, combinations
   }
 
   function updateView(newView, props) {
-    const {groupBy, visualization} = props.report.data;
+    const {groupBy: groupByData, visualization} = props.report.data;
     const changes = {view: {$set: newView}};
 
-    const newGroup = getNext(newView) || groupBy;
-    if (newGroup && !equal(newGroup, groupBy)) {
+    const newGroup = getNext(newView) || groupByData;
+    if (newGroup && !equal(newGroup, groupByData)) {
       changes.groupBy = {$set: newGroup};
+    }
+
+    if (newView.entity !== 'variable') {
+      const viewObj = findSelectedOption(view, 'data', newView);
+      changes.configuration = {
+        yLabel: {
+          $set: viewObj.key
+            .split('_')
+            .map((key) => t('report.view.' + key))
+            .join(' '),
+        },
+      };
+      if (newGroup) {
+        if (newGroup.type?.toLowerCase().includes('variable')) {
+          changes.configuration.xLabel = {$set: newGroup.value.name};
+        } else {
+          const groupObj = findSelectedOption(groupBy, 'data', newGroup);
+          changes.configuration.xLabel = {$set: t('report.groupBy.' + groupObj.key.split('_')[0])};
+        }
+      }
     }
 
     if (!isAllowed(props.report, newView, newGroup)) {
       changes.groupBy = {$set: null};
       changes.visualization = {$set: null};
+      changes.configuration = changes.configuration || {};
+      changes.configuration.xLabel = {$set: ''};
 
       return changes;
     }
@@ -161,7 +192,14 @@ export default function reportConfig({view, groupBy, visualization, combinations
   function updateGroupBy(newGroupBy, props) {
     const {view, visualization} = props.report.data;
 
-    const changes = {groupBy: {$set: newGroupBy}};
+    const changes = {groupBy: {$set: newGroupBy}, configuration: {}};
+
+    if (newGroupBy.type?.toLowerCase().includes('variable')) {
+      changes.configuration.xLabel = {$set: newGroupBy.value.name};
+    } else {
+      const groupObj = findSelectedOption(groupBy, 'data', newGroupBy);
+      changes.configuration.xLabel = {$set: t('report.groupBy.' + groupObj.key.split('_')[0])};
+    }
 
     const newVisualization = getNext(view, newGroupBy);
 
@@ -180,7 +218,24 @@ export default function reportConfig({view, groupBy, visualization, combinations
     return {visualization: {$set: newVisualization}};
   }
 
+  function findSelectedOption(options, compareProp, compareValue) {
+    for (let i = 0; i < options.length; i++) {
+      const option = options[i];
+      if (option.options) {
+        const found = findSelectedOption(option.options, compareProp, compareValue);
+        if (found) {
+          return found;
+        }
+      } else {
+        if (equal(option[compareProp], compareValue, {strict: true})) {
+          return option;
+        }
+      }
+    }
+  }
+
   return {
+    findSelectedOption,
     getLabelFor,
     isAllowed,
     update,

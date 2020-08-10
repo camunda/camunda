@@ -22,11 +22,11 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountSearchRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
@@ -44,11 +44,16 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameReque
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableReportValuesRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableValueRequestDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionTenantsRequest;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
+import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
+import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
+import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
+import org.camunda.optimize.dto.optimize.rest.sorting.Sorter;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.security.AuthCookieService;
 
@@ -76,7 +81,7 @@ import static org.camunda.optimize.rest.IdentityRestService.IDENTITY_SEARCH_SUB_
 import static org.camunda.optimize.rest.IngestionRestService.CONTENT_TYPE_CLOUD_EVENTS_V1_JSON_BATCH;
 import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PATH;
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
-import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 
 public class OptimizeRequestExecutor {
   private static final String ALERT = "alert";
@@ -437,6 +442,21 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public <T extends SingleReportDefinitionDto> OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(T definitionDto) {
+    this.path = "report/evaluate";
+    if (definitionDto instanceof SingleProcessReportDefinitionDto) {
+      this.body = getBody(definitionDto);
+    } else if (definitionDto instanceof SingleDecisionReportDefinitionDto) {
+      this.body = getBody(definitionDto);
+    } else if (definitionDto == null) {
+      this.body = getBody(null);
+    } else {
+      throw new OptimizeIntegrationTestException("Unknown report definition type!");
+    }
+    this.method = POST;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildEvaluateCombinedUnsavedReportRequest(CombinedReportDataDto combinedReportData) {
     this.path = "report/evaluate";
     this.method = POST;
@@ -535,8 +555,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(String id) {
+    return buildGetCollectionEntitiesRequest(id, null);
+  }
+
+  public OptimizeRequestExecutor buildGetCollectionEntitiesRequest(String id, EntitySorter sorter) {
     this.path = "collection/" + id + "/entities";
     this.method = GET;
+    Optional.ofNullable(sorter).ifPresent(sortParams -> addQueryParams(extractSortParams(sorter)));
     return this;
   }
 
@@ -553,8 +578,13 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildGetAllEntitiesRequest() {
+    return buildGetAllEntitiesRequest(null);
+  }
+
+  public OptimizeRequestExecutor buildGetAllEntitiesRequest(EntitySorter sorter) {
     this.path = "entities/";
     this.method = GET;
+    Optional.ofNullable(sorter).ifPresent(sortParams -> addQueryParams(extractSortParams(sorter)));
     return this;
   }
 
@@ -686,24 +716,6 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants() {
-    return buildGetProcessDefinitionVersionsWithTenants(null);
-  }
-
-  public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants(final String collectionId) {
-    return buildGetProcessDefinitionVersionsWithTenants(collectionId, null);
-  }
-
-  public OptimizeRequestExecutor buildGetProcessDefinitionVersionsWithTenants(final String collectionId,
-                                                                              final Boolean excludeEventProcesses) {
-    this.path = "definition/process/definitionVersionsWithTenants";
-    this.method = GET;
-    addSingleQueryParam("filterByCollectionScope", collectionId);
-    Optional.ofNullable(excludeEventProcesses)
-      .ifPresent(aBoolean -> addSingleQueryParam("excludeEventProcesses", aBoolean));
-    return this;
-  }
-
   public OptimizeRequestExecutor buildGetProcessDefinitionXmlRequest(String key, Object version) {
     return buildGetProcessDefinitionXmlRequest(key, version, null);
   }
@@ -725,9 +737,11 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildProcessVariableNamesForReportsRequest(List<String> reportIds) {
+    GetVariableNamesForReportsRequestDto requestDto = new GetVariableNamesForReportsRequestDto();
+    requestDto.setReportIds(reportIds);
     this.path = "variables/reports";
     this.method = POST;
-    this.body = getBody(reportIds);
+    this.body = getBody(requestDto);
     return this;
   }
 
@@ -846,9 +860,64 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+
+  public OptimizeRequestExecutor buildGetDefinitionVersionsByTypeAndKeyRequest(final String type,
+                                                                               final String key) {
+    return buildGetDefinitionVersionsByTypeAndKeyRequest(type, key, null);
+  }
+
+  public OptimizeRequestExecutor buildGetDefinitionVersionsByTypeAndKeyRequest(final String type,
+                                                                               final String key,
+                                                                               final String filterByCollectionScope) {
+    this.path = "/definition/" + type + "/" + key + "/versions";
+    this.method = GET;
+    addSingleQueryParam("filterByCollectionScope", filterByCollectionScope);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(final String type,
+                                                                                          final String key,
+                                                                                          final List<String> versions) {
+    return buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(type, key, versions, null);
+  }
+
+  public OptimizeRequestExecutor buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(final String type,
+                                                                                          final String key,
+                                                                                          final List<String> versions,
+                                                                                          final String filterByCollectionScope) {
+    this.path = "/definition/" + type + "/" + key + "/_resolveTenantsForVersions";
+    this.method = POST;
+    this.body = getBody(
+      DefinitionTenantsRequest.builder()
+        .versions(versions)
+        .filterByCollectionScope(filterByCollectionScope)
+        .build()
+    );
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetDefinitions() {
     this.path = "/definition";
     this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetDefinitionKeysByType(final String type) {
+    return buildGetDefinitionKeysByType(type, null, null);
+  }
+
+  public OptimizeRequestExecutor buildGetDefinitionKeysByType(final String type,
+                                                              final String filterByCollectionScope) {
+    return buildGetDefinitionKeysByType(type, filterByCollectionScope, null);
+  }
+
+  public OptimizeRequestExecutor buildGetDefinitionKeysByType(final String type,
+                                                              final String filterByCollectionScope,
+                                                              final Boolean camundaEventImportedOnly) {
+    this.path = "/definition/" + type + "/keys";
+    this.method = GET;
+    addSingleQueryParam("filterByCollectionScope", filterByCollectionScope);
+    addSingleQueryParam("camundaEventImportedOnly", camundaEventImportedOnly);
     return this;
   }
 
@@ -861,17 +930,6 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildGetDecisionDefinitionsRequest() {
     this.path = "definition/decision";
     this.method = GET;
-    return this;
-  }
-
-  public OptimizeRequestExecutor buildGetDecisionDefinitionVersionsWithTenants() {
-    return buildGetDecisionDefinitionVersionsWithTenants(null);
-  }
-
-  public OptimizeRequestExecutor buildGetDecisionDefinitionVersionsWithTenants(final String collectionId) {
-    this.path = "definition/decision/definitionVersionsWithTenants";
-    this.method = GET;
-    addSingleQueryParam("filterByCollectionScope", collectionId);
     return this;
   }
 
@@ -973,10 +1031,6 @@ public class OptimizeRequestExecutor {
     this.addSingleQueryParam("variableName", variableName);
     this.addSingleQueryParam("variableTerm", variableTerm);
     return this;
-  }
-
-  public OptimizeRequestExecutor buildCopyReportRequest(String id) {
-    return buildCopyReportRequest(id, null);
   }
 
   public OptimizeRequestExecutor buildCopyReportRequest(String id, String collectionId) {
@@ -1201,22 +1255,20 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildPostEventCountRequest(final EventCountRequestDto eventCountRequestDto) {
-    return buildPostEventCountRequest(null, eventCountRequestDto);
+    return buildPostEventCountRequest(null, null, eventCountRequestDto);
   }
 
-  public OptimizeRequestExecutor buildPostEventCountRequest(final EventCountSearchRequestDto eventCountSearchRequestDto,
+  public OptimizeRequestExecutor buildPostEventCountRequest(final EventCountSorter eventCountSorter,
+                                                            final String searchTerm,
                                                             final EventCountRequestDto eventCountRequestDto) {
     this.path = "event/count";
     this.method = POST;
-    Optional.ofNullable(eventCountSearchRequestDto)
-      .map(EventCountSearchRequestDto::getSearchTerm)
-      .ifPresent(term -> addSingleQueryParam("searchTerm", term));
-    Optional.ofNullable(eventCountSearchRequestDto)
-      .map(EventCountSearchRequestDto::getOrderBy)
-      .ifPresent(orderBy -> addSingleQueryParam("orderBy", orderBy));
-    Optional.ofNullable(eventCountSearchRequestDto)
-      .map(EventCountSearchRequestDto::getSortOrder)
-      .ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
+    Optional.ofNullable(searchTerm).ifPresent(term -> addSingleQueryParam("searchTerm", term));
+    Optional.ofNullable(eventCountSorter)
+      .ifPresent(sorter -> {
+        sorter.getSortBy().ifPresent(sortBy -> addSingleQueryParam("sortBy", sortBy));
+        sorter.getSortOrder().ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
+      });
     this.body = Optional.ofNullable(eventCountRequestDto).map(this::getBody).orElse(null);
     return this;
   }
@@ -1233,9 +1285,17 @@ public class OptimizeRequestExecutor {
 
   private String authenticateUserRequest(String username, String password) {
     final CredentialsDto entity = new CredentialsDto(username, password);
-    Response response = client.path("authentication")
+    final Response response = client.path("authentication")
       .request()
       .post(Entity.json(entity));
     return AuthCookieService.createOptimizeAuthCookieValue(response.readEntity(String.class));
   }
+
+  private Map<String, Object> extractSortParams(EntitySorter sorter) {
+    Map<String, Object> params = new HashMap<>();
+    sorter.getSortBy().ifPresent(sortBy -> params.put(Sorter.SORT_BY, sortBy));
+    sorter.getSortOrder().ifPresent(sortOrder -> params.put(Sorter.SORT_ORDER, sortOrder.toString().toLowerCase()));
+    return params;
+  }
+
 }

@@ -4,13 +4,21 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import processRawData from './processRawData';
-import {NoDataNotice} from 'components';
 import React from 'react';
+import {parseISO} from 'date-fns';
+
+import {format} from 'dates';
+import {NoDataNotice} from 'components';
+
+import processRawData from './processRawData';
 
 const data = {
   configuration: {
-    excludedColumns: [],
+    tableColumns: {
+      includeNewVariables: true,
+      includedColumns: [],
+      excludedColumns: [],
+    },
   },
 };
 
@@ -52,22 +60,27 @@ it('should transform data to table compatible format', () => {
 it('should not include columns that are hidden', () => {
   const data = {
     configuration: {
-      excludedColumns: ['processDefinitionId'],
+      tableColumns: {
+        includeNewVariables: false,
+        includedColumns: ['processInstanceId'],
+        excludedColumns: ['processDefinitionId', 'variable:var1', 'variable:var1'],
+      },
     },
   };
   expect(processRawData({report: {data, result}})).toEqual({
-    head: ['Process Instance Id', {label: 'Variables', columns: ['var1', 'var2']}],
-    body: [
-      ['foo', '12', ''],
-      ['xyz', '', 'true'],
-    ],
+    body: [['foo'], ['xyz']],
+    head: ['Process Instance Id'],
   });
 });
 
 it('should exclude variable columns using the variable prefix', () => {
   const data = {
     configuration: {
-      excludedColumns: ['variable:var1'],
+      tableColumns: {
+        includeNewVariables: true,
+        includedColumns: [],
+        excludedColumns: ['variable:var1'],
+      },
     },
   };
   expect(processRawData({report: {data, result}})).toEqual({
@@ -95,13 +108,17 @@ it('should make the processInstanceId a link', () => {
 });
 
 it('should format start and end dates', () => {
+  // using format here to dynamically return date with client timezone
+  const startDate = format(parseISO('2019-06-07'), 'yyyy-MM-dd');
+  const endDate = format(parseISO('2019-06-09'), 'yyyy-MM-dd');
+
   const cells = processRawData({
     report: {
       result: {
         data: [
           {
-            startDate: '2019-06-07T10:33:19.192+0700',
-            endDate: '2019-06-09T16:12:49.875+0500',
+            startDate,
+            endDate,
             variables: {},
           },
         ],
@@ -110,8 +127,9 @@ it('should format start and end dates', () => {
     },
   }).body[0];
 
-  expect(cells[0]).toBe('2019-06-07 10:33:19 UTC+07:00');
-  expect(cells[1]).toBe('2019-06-09 16:12:49 UTC+05:00');
+  const expectedDateFormat = "yyyy-MM-dd HH:mm:ss 'UTC'X";
+  expect(cells[0]).toBe(format(parseISO(startDate), expectedDateFormat));
+  expect(cells[1]).toBe(format(parseISO(endDate), expectedDateFormat));
 });
 
 it('should format duration', () => {
@@ -146,12 +164,16 @@ it('should not make the processInstanceId a link if no endpoint is specified', (
 it('should show no data message when all column are excluded', () => {
   const data = {
     configuration: {
-      excludedColumns: [
-        'processInstanceId',
-        'processDefinitionId',
-        'variable:var1',
-        'variable:var2',
-      ],
+      tableColumns: {
+        includeNewVariables: true,
+        includedColumns: [],
+        excludedColumns: [
+          'processInstanceId',
+          'processDefinitionId',
+          'variable:var1',
+          'variable:var2',
+        ],
+      },
     },
   };
   expect(processRawData({report: {data, result}})).toEqual({

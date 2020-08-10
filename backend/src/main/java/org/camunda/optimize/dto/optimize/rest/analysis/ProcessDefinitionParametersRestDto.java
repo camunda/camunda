@@ -30,10 +30,7 @@ public class ProcessDefinitionParametersRestDto extends ProcessDefinitionParamet
   @Override
   @QueryParam("tenantIds")
   public void setTenantIds(List<String> tenantIds) {
-    this.tenantIds = normalizeTenants(tenantIds);
+    this.tenantIds = normalizeNullTenants(tenantIds);
   }
 
-  private List<String> normalizeTenants(List<String> tenantIds) {
-    return tenantIds.stream().map(QueryParamUtil::normalizeNullStringValue).collect(Collectors.toList());
-  }
 }

@@ -31,10 +31,6 @@ public class TaskResponse {
   @JsonProperty("response")
   private TaskResponseDetails responseDetails;
 
-  public String getTaskId() {
-    return Optional.ofNullable(task).map(Task::getId).orElse(null);
-  }
-
   public boolean isCompleted() {
     return completed;
   }

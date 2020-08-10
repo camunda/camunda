@@ -13,6 +13,8 @@ import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.springframework.stereotype.Component;
@@ -49,6 +51,13 @@ public class BusinessKeyWriter {
           .request(request.get())
           .build())
       .collect(Collectors.toList());
+  }
+
+  public void deleteByProcessInstanceIds(final List<String> processInstanceIds) {
+    final BulkRequest bulkRequest = new BulkRequest();
+    log.debug("Deleting [{}] business key documents by id with bulk request.", processInstanceIds.size());
+    processInstanceIds.forEach(id -> bulkRequest.add(new DeleteRequest(BUSINESS_KEY_INDEX_NAME, id)));
+    ElasticsearchWriterUtil.doBulkRequest(esClient, bulkRequest, BUSINESS_KEY_INDEX_NAME);
   }
 
   private BusinessKeyDto extractBusinessKey(final ProcessInstanceDto processInstance) {

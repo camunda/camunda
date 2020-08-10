@@ -71,6 +71,7 @@ public class TerminatedUserSessionWriter {
       filterQuery,
       deletedItemName,
       deletedItemIdentifier,
+      true,
       TERMINATED_USER_SESSION_INDEX_NAME);
   }
 }

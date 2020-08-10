@@ -7,12 +7,12 @@
 import {get, post, put, del} from 'request';
 
 export async function loadProcesses() {
-  const response = await get('/api/eventBasedProcess');
+  const response = await get('api/eventBasedProcess');
   return await response.json();
 }
 
 export async function loadProcess(id) {
-  const response = await get('/api/eventBasedProcess/' + id);
+  const response = await get('api/eventBasedProcess/' + id);
   return await response.json();
 }
 
@@ -21,22 +21,22 @@ export async function removeProcess(id) {
 }
 
 export async function publish(id) {
-  return await post(`/api/eventBasedProcess/${id}/_publish`);
+  return await post(`api/eventBasedProcess/${id}/_publish`);
 }
 
 export async function cancelPublish(id) {
-  return await post(`/api/eventBasedProcess/${id}/_cancelPublish`);
+  return await post(`api/eventBasedProcess/${id}/_cancelPublish`);
 }
 
-export async function createProcess(name, xml, mappings, eventSources) {
-  const response = await post('/api/eventBasedProcess', {name, xml, mappings, eventSources});
+export async function createProcess(payload) {
+  const response = await post('api/eventBasedProcess', payload);
   const json = await response.json();
 
   return json.id;
 }
 
 export async function updateProcess(id, name, xml, mappings, eventSources) {
-  return await put('/api/eventBasedProcess/' + id, {name, xml, mappings, eventSources});
+  return await put('api/eventBasedProcess/' + id, {name, xml, mappings, eventSources});
 }
 
 export async function loadEvents(body, searchTerm) {
@@ -45,7 +45,7 @@ export async function loadEvents(body, searchTerm) {
     query.searchTerm = searchTerm;
   }
 
-  const response = await post('/api/event/count', body, {query});
+  const response = await post('api/event/count', body, {query});
   return await response.json();
 }
 

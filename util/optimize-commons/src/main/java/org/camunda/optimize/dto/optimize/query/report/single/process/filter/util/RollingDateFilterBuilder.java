@@ -20,15 +20,15 @@ public class RollingDateFilterBuilder {
     this.filterBuilder = filterBuilder;
   }
 
-  static RollingDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
-    RollingDateFilterBuilder builder = new RollingDateFilterBuilder(filterBuilder);
-    builder.type = "startDate";
-    return builder;
-  }
-
   static RollingDateFilterBuilder endDate(ProcessFilterBuilder filterBuilder) {
     RollingDateFilterBuilder builder = new RollingDateFilterBuilder(filterBuilder);
     builder.type = "endDate";
+    return builder;
+  }
+
+  static RollingDateFilterBuilder startDate(ProcessFilterBuilder filterBuilder) {
+    RollingDateFilterBuilder builder = new RollingDateFilterBuilder(filterBuilder);
+    builder.type = "startDate";
     return builder;
   }
 

@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.test.engine.AuthorizationClient;
@@ -199,6 +200,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     // given
     addSecondEngineToConfiguration();
 
+    final String definitionKey = getDefinitionKeyDefaultEngine(definitionResourceType);
     final String tenantId1 = "tenant1";
     setDefaultEngineDefaultTenant(new DefaultTenant(tenantId1));
     defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
@@ -210,10 +212,18 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    deployStartAndImportDefinitionForAllEngines(definitionResourceType);
+    switch (definitionResourceType) {
+      case RESOURCE_TYPE_PROCESS_DEFINITION:
+        deployAndStartProcessDefinitionForAllEngines(definitionKey, definitionKey, tenantId1, tenantId2);
+        break;
+      case RESOURCE_TYPE_DECISION_DEFINITION:
+        deployAndStartDecisionDefinitionForAllEngines(definitionKey, definitionKey, tenantId1, tenantId2);
+        break;
+      default:
+        throw new OptimizeIntegrationTestException("Unsupported resourceType: " + definitionResourceType);
+    }
+    importAllEngineEntitiesFromScratch();
 
     final SingleReportDataDto multiTenantReport = constructReportData(
       getDefinitionKeyDefaultEngine(definitionResourceType),
@@ -248,8 +258,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondaryEngineIntegrationExtension.addUser(KERMIT_USER, KERMIT_USER);
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -286,8 +295,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
@@ -326,8 +334,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
 
@@ -378,8 +385,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
 
@@ -418,8 +424,7 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     secondAuthorizationClient.grantSingleResourceAuthorizationForKermit(tenantId2, RESOURCE_TYPE_TENANT);
 
     embeddedOptimizeExtension.reloadConfiguration();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType, tenantId1, tenantId2);
 
@@ -438,33 +443,6 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
 
     // then
     assertThat(responseSecondEngineKey.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
-  }
-
-  @ParameterizedTest
-  @MethodSource("definitionType")
-  public void authorizationFailsWhenAllEnginesDown(int definitionResourceType) {
-    // given
-    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-    defaultAuthorizationClient.addGlobalAuthorizationForResource(definitionResourceType);
-    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
-
-    deployStartAndImportDefinitionForAllEngines(definitionResourceType);
-
-    final SingleReportDataDto report = constructReportData(
-      getDefinitionKeyDefaultEngine(definitionResourceType), definitionResourceType
-    );
-
-    // when
-    addNonExistingSecondEngineToConfiguration();
-    removeDefaultEngineConfiguration();
-
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildEvaluateSingleUnsavedReportRequest(report)
-      .execute();
-
-    // then
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
   }
 
   private String getDefinitionKeyDefaultEngine(final int definitionResourceType) {

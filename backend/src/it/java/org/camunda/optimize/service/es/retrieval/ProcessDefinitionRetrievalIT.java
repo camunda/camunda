@@ -10,6 +10,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -17,6 +18,7 @@ import java.util.List;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -33,8 +35,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
       deploySimpleServiceTaskProcessDefinition(PROCESS_DEFINITION_KEY + System.currentTimeMillis());
     }
     embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessDefinitionXmlMaxPageSize(11);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitions();
@@ -48,8 +49,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
@@ -70,20 +70,11 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
 
   @Test
   public void getProcessDefinitionsWithXml() {
-
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
-    // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-      .startEvent()
-      .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    // @formatter:on
+    BpmnModelInstance modelInstance = BpmnModels.getSingleServiceTaskProcess(processId);
     String processDefinitionId = engineIntegrationExtension.deployProcessAndGetId(modelInstance);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions =
@@ -106,7 +97,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     addProcessDefinitionWithoutXmlToElasticsearch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -130,8 +121,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     String processDefinitionId = deploySimpleServiceTaskProcessDefinition(processId);
     engineIntegrationExtension.startProcessInstance(processDefinitionId);
     engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessDefinitionOptimizeDto> definitions = definitionClient.getAllProcessDefinitions();
@@ -147,18 +137,11 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-      .startEvent()
-      .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    // @formatter:on
-    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      modelInstance);
+    BpmnModelInstance modelInstance = BpmnModels.getSingleServiceTaskProcess(processId);
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension
+      .deployProcessAndGetProcessDefinition(modelInstance);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String actualXml = definitionClient.getProcessDefinitionXml(
@@ -177,12 +160,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     // given
     String processId = PROCESS_DEFINITION_KEY + System.currentTimeMillis();
     // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-      .startEvent()
-      .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
+    BpmnModelInstance modelInstance = BpmnModels.getSingleServiceTaskProcess(processId);
     engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
     modelInstance = Bpmn.createExecutableProcess(processId)
       .startEvent()
@@ -195,8 +173,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       modelInstance);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String actualXml = definitionClient.getProcessDefinitionXml(processDefinition.getKey(), ALL_VERSIONS, null);
@@ -225,8 +202,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
     engineIntegrationExtension.deployProcessAndGetProcessDefinition(latestModelInstance);
 
     embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessDefinitionXmlMaxPageSize(12);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     String actualXml = definitionClient.getProcessDefinitionXml(definitionKey, ALL_VERSIONS, null);
@@ -236,16 +212,7 @@ public class ProcessDefinitionRetrievalIT extends AbstractIT {
   }
 
   private String deploySimpleServiceTaskProcessDefinition(String processId) {
-    // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-      .camundaVersionTag(VERSION_TAG)
-      .startEvent()
-      .serviceTask()
-        .camundaExpression("${true}")
-      .endEvent()
-      .done();
-    // @formatter:on
-    return engineIntegrationExtension.deployProcessAndGetId(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetId(BpmnModels.getSingleServiceTaskProcess(processId));
   }
 
   private void addProcessDefinitionWithoutXmlToElasticsearch() {

@@ -1,6 +1,7 @@
 @import 'shared-styles/shared-styles.scss';
 
 .DateFilter__Dashboard {
+  width: 190px;
   &.fixed {
     width: max-content;
   }
@@ -17,24 +18,16 @@
     padding: 0;
   }
 
-  .indicator {
-    vertical-align: middle;
-    color: $silver-darken-80;
-    &.active {
-      color: $blue-darken-55;
-    }
-  }
-
   .DateFields {
     padding: 10px 20px 0;
     margin: 0;
 
-    .DateInput {
+    .PickerDateInput {
       &::after {
         display: none;
       }
 
-      .DateInputWarning {
+      .PickerDateInputWarning {
         top: 35px;
         font-size: 10px;
       }

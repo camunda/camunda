@@ -42,10 +42,7 @@ Object {
           "fontStyle": "bold",
           "labelString": "Duration",
         },
-        "ticks": Object {
-          "callback": [Function],
-          "stepSize": 1,
-        },
+        "ticks": Object {},
       },
     ],
     "yAxes": Array [

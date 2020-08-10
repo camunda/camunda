@@ -14,7 +14,7 @@ import static java.util.Comparator.naturalOrder;
 
 @UtilityClass
 public class TenantListHandlingUtil {
-  public static Comparator TENANT_LIST_COMPARATOR = Comparator.nullsFirst(naturalOrder());
+  private static Comparator TENANT_LIST_COMPARATOR = Comparator.nullsFirst(naturalOrder());
 
   public List<String> sortAndReturnTenantIdList(List<String> tenantIdList) {
     if (tenantIdList != null) {

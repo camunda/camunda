@@ -11,7 +11,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Properties;
 
-
 public class PropertyUtil {
 
   private static Logger logger = LoggerFactory.getLogger(PropertyUtil.class);
@@ -30,7 +29,4 @@ public class PropertyUtil {
     return properties;
   }
 
-  public static Properties loadProperties() {
-    return PropertyUtil.loadProperties("service.properties");
-  }
 }

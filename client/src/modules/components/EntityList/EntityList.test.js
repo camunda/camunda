@@ -8,6 +8,8 @@ import React from 'react';
 import {shallow} from 'enzyme';
 import update from 'immutability-helper';
 
+import {Dropdown} from 'components';
+
 import EntityList from './EntityList';
 
 const props = {
@@ -84,4 +86,105 @@ it('should show a column header if specified', () => {
   const node = shallow(<EntityList {...props} columns={['Name', 'Meta 1', 'Meta 2', 'Meta 3']} />);
 
   expect(node.find('.columnHeaders')).toMatchSnapshot();
+});
+
+it('should hide search for embedded entitylist', () => {
+  const node = shallow(<EntityList {...props} embedded />);
+
+  expect(node.find('SearchField')).not.toExist();
+});
+
+it('should have a sorting menu if at least one column is sortable', () => {
+  const node = shallow(
+    <EntityList {...props} columns={[{name: 'Name', key: 'name', defaultOrder: 'asc'}, 'Meta 1']} />
+  );
+
+  expect(node.find('.sortMenu')).toExist();
+});
+
+it('should always call onsorting change with default order from the sorting menu', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <EntityList
+      {...props}
+      columns={[{name: 'Name', key: 'name', defaultOrder: 'asc'}, 'Meta 1']}
+      sorting={{key: 'name', order: 'asc'}}
+      onSortingChange={spy}
+    />
+  );
+
+  node.find('.sortMenu').find(Dropdown.Option).simulate('click');
+
+  expect(spy).toHaveBeenCalledWith('name', 'asc');
+});
+
+it('should not show a header entry for column entries that are hidden', () => {
+  const node = shallow(
+    <EntityList
+      {...props}
+      columns={['Name', {name: 'hidden column', hidden: true}, 'Another Column']}
+    />
+  );
+
+  expect(node.find('.columnHeaders')).toMatchSnapshot();
+});
+
+it('should indicate which columns are sortable', () => {
+  const node = shallow(
+    <EntityList
+      {...props}
+      columns={['Name', {name: 'sortable', key: 'sortKey', defaultOrder: 'asc'}, 'Another Column']}
+    />
+  );
+
+  expect(node.find('.columnHeaders div').at(1)).toHaveClassName('sortable');
+  expect(node.find('.columnHeaders div').at(0)).not.toHaveClassName('sortable');
+});
+
+it('should indicate which column is sorted', () => {
+  const node = shallow(
+    <EntityList
+      {...props}
+      columns={[
+        'Name',
+        {name: 'sortable', key: 'sortKey', defaultOrder: 'asc'},
+        {name: 'Another Column', key: 'sortKey2', defaultOrder: 'desc'},
+      ]}
+      sorting={{key: 'sortKey2', order: 'asc'}}
+    />
+  );
+
+  expect(node.find('.columnHeaders div').at(1)).not.toHaveClassName('sorted');
+  expect(node.find('.columnHeaders div').at(2)).toHaveClassName('sorted');
+});
+
+it('should call onSortingChange when clicking on the header column', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <EntityList
+      {...props}
+      columns={[{name: 'sortable', key: 'sortKey', defaultOrder: 'asc'}]}
+      onSortingChange={spy}
+    />
+  );
+
+  node.find('.columnHeaders span').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith('sortKey', 'asc');
+});
+
+it('should reverse the order when clicking on a header column that is already sorted', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <EntityList
+      {...props}
+      columns={[{name: 'sortable', key: 'sortKey', defaultOrder: 'asc'}]}
+      sorting={{key: 'sortKey', order: 'asc'}}
+      onSortingChange={spy}
+    />
+  );
+
+  node.find('.columnHeaders span').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith('sortKey', 'desc');
 });

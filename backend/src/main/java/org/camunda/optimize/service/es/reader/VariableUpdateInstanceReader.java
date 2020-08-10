@@ -69,7 +69,7 @@ public class VariableUpdateInstanceReader {
       throw new OptimizeRuntimeException("Was not able to retrieve variable instance updates!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       searchResponse,
       VariableUpdateInstanceDto.class,
       objectMapper,

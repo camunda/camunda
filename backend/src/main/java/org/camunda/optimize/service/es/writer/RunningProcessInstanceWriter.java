@@ -16,9 +16,10 @@ import org.elasticsearch.script.Script;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
+import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.BUSINESS_KEY;
@@ -30,6 +31,8 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.TENANT_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
 @Slf4j
@@ -58,7 +61,7 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
         .esClient(esClient)
         .request(createImportRequestForProcessInstance(instance, PRIMITIVE_UPDATABLE_FIELDS))
         .build())
-      .collect(Collectors.toList());
+      .collect(toList());
   }
 
   public void importProcessInstancesFromUserOperationLogs(List<ProcessInstanceDto> processInstanceDtos) {
@@ -69,40 +72,76 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
       importItemName
     );
 
+    List<ProcessInstanceDto> processInstanceDtoToUpdateList = processInstanceDtos.stream()
+      .filter(procInst -> procInst.getProcessInstanceId() != null)
+      .collect(toList());
+
     ElasticsearchWriterUtil.doBulkRequestWithList(
       esClient,
       importItemName,
-      processInstanceDtos,
+      processInstanceDtoToUpdateList,
       (request, dto) -> addImportProcessInstanceRequest(
         request,
         dto,
-        createUpdateStatusScript(dto),
+        createUpdateStateScript(dto.getState()),
         objectMapper
       )
     );
   }
 
-  private Script createUpdateStatusScript(final ProcessInstanceDto processInstanceDto) {
-    final ImmutableMap<String, Object> scriptParameters = createScriptParamsMap(processInstanceDto);
+  public void importProcessInstancesForProcessDefinitionIds(
+    final Map<String, String> definitionIdToNewStateMap) {
+    final String importItemName = "process instances";
+
+    for (Map.Entry<String, String> definitionStateEntry : definitionIdToNewStateMap.entrySet()) {
+      ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+        esClient,
+        importItemName,
+        ProcessInstanceDto.Fields.processDefinitionId,
+        createUpdateStateScript(definitionStateEntry.getValue()),
+        termsQuery(ProcessInstanceDto.Fields.processDefinitionId, definitionStateEntry.getKey()),
+        PROCESS_INSTANCE_INDEX_NAME
+      );
+    }
+  }
+
+  public void importProcessInstancesForProcessDefinitionKeys(
+    final Map<String, String> definitionKeyToNewStateMap) {
+    final String importItemName = "process instances";
+
+    for (Map.Entry<String, String> definitionStateEntry : definitionKeyToNewStateMap.entrySet()) {
+      ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+        esClient,
+        importItemName,
+        ProcessInstanceDto.Fields.processDefinitionKey,
+        createUpdateStateScript(definitionStateEntry.getValue()),
+        termsQuery(ProcessInstanceDto.Fields.processDefinitionKey, definitionStateEntry.getKey()),
+        PROCESS_INSTANCE_INDEX_NAME
+      );
+    }
+  }
+
+  private Script createUpdateStateScript(final String newState) {
+    final ImmutableMap<String, Object> scriptParameters = createUpdateStateScriptParamsMap(newState);
     return createDefaultScript(createInlineUpdateScript(), scriptParameters);
   }
 
   private String createInlineUpdateScript() {
     // @formatter:off
     return
-      "if ((ctx._source.state == params.activeState || ctx_.source.state == params.suspendedState)" +
-        "&& (params.newState.equals(params.activeState) || params.newState.equals(params.suspendedState)) {" +
-        "ctx_.source.state = params.newState;" +
+      "if ((ctx._source.state == params.activeState || ctx._source.state == params.suspendedState) " +
+        "&& (params.newState.equals(params.activeState) || params.newState.equals(params.suspendedState))) {" +
+        "ctx._source.state = params.newState;" +
         "}\n"
       ;
     // @formatter:on
   }
 
-  private ImmutableMap<String, Object> createScriptParamsMap(final ProcessInstanceDto processInstanceDto) {
+  private ImmutableMap<String, Object> createUpdateStateScriptParamsMap(final String newState) {
     return ImmutableMap.of(
       "activeState", ACTIVE_STATE,
       "suspendedState", SUSPENDED_STATE,
-      "newState", processInstanceDto.getState()
+      "newState", newState
     );
   }
 }

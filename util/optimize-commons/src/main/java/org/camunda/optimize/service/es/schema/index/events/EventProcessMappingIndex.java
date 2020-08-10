@@ -20,10 +20,9 @@ import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@Component
 public class EventProcessMappingIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   public static final String ID = IndexableEventProcessMappingDto.Fields.id;
   public static final String NAME = IndexableEventProcessMappingDto.Fields.name;

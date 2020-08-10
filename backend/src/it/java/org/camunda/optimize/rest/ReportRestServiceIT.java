@@ -6,6 +6,7 @@
 package org.camunda.optimize.rest;
 
 import lombok.SneakyThrows;
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.Dmn;
@@ -36,8 +37,8 @@ import org.mockserver.verify.VerificationTimes;
 
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -48,8 +49,12 @@ import static javax.ws.rs.HttpMethod.POST;
 import static javax.ws.rs.core.Response.Status.OK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportType.DECISION;
+import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_INDEX_NAME;
@@ -176,7 +181,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
-  public void getStoredPrivateReportsExcludesNonPrivateReports() {
+  public void getStoredPrivateReports_excludesNonPrivateReports() {
     //given
     String collectionId = collectionClient.createNewCollectionForAllDefinitionTypes();
     String privateDecisionReportId = reportClient.createEmptySingleDecisionReport();
@@ -193,6 +198,30 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
         .map(ReportDefinitionDto::getId)
         .collect(Collectors.toList()))
       .containsExactlyInAnyOrder(privateDecisionReportId, privateProcessReportId);
+  }
+
+  @Test
+  public void getStoredPrivateReports_adoptTimezoneFromHeader() {
+    //given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    reportClient.createEmptySingleProcessReport();
+
+    // when
+    List<AuthorizedReportDefinitionDto> reports = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetAllPrivateReportsRequest()
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .executeAndReturnList(AuthorizedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    Assertions.assertThat(reports)
+      .isNotNull()
+      .hasSize(1);
+    ReportDefinitionDto definitionDto = reports.get(0).getDefinitionDto();
+    Assertions.assertThat(definitionDto.getCreated()).isEqualTo(now);
+    Assertions.assertThat(definitionDto.getLastModified()).isEqualTo(now);
+    Assertions.assertThat(getOffsetDiffInHours(definitionDto.getCreated(), now)).isEqualTo(1.);
+    Assertions.assertThat(getOffsetDiffInHours(definitionDto.getLastModified(), now)).isEqualTo(1.);
   }
 
   @Test
@@ -245,7 +274,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   }
 
   @Test
-  public void getStoredReportsWithNoNameFromXml() throws IOException {
+  public void getStoredReportsWithNoNameFromXml() {
     //given
     final String idProcessReport = reportClient.createEmptySingleProcessReport();
     final SingleProcessReportDefinitionDto processReportDefinitionDto = getProcessReportDefinitionDtoWithXml(
@@ -307,10 +336,34 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     assertThat(report).isNotNull();
     assertThat(report.getReportType()).isEqualTo(reportType);
     assertThat(report.getId()).isEqualTo(id);
+    assertThat(report.getOwner()).isEqualTo(DEFAULT_FULLNAME);
+    assertThat(report.getLastModifier()).isEqualTo(DEFAULT_FULLNAME);
   }
 
   @Test
-  public void getReportForNonExistingIdThrowsNotFoundError() {
+  public void getReport_adoptTimezoneFromHeader() {
+    //given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    String reportId = reportClient.createEmptySingleProcessReport();
+
+    // when
+    ReportDefinitionDto report = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetAllPrivateReportsRequest()
+      .buildGetReportRequest(reportId)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    Assertions.assertThat(report).isNotNull();
+    Assertions.assertThat(report.getCreated()).isEqualTo(now);
+    Assertions.assertThat(report.getLastModified()).isEqualTo(now);
+    Assertions.assertThat(getOffsetDiffInHours(report.getCreated(), now)).isEqualTo(1.);
+    Assertions.assertThat(getOffsetDiffInHours(report.getLastModified(), now)).isEqualTo(1.);
+  }
+
+  @Test
+  public void getReport_forNonExistingIdThrowsNotFoundError() {
     // when
     String response = embeddedOptimizeExtension
       .getRequestExecutor()
@@ -318,12 +371,12 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       .execute(String.class, Response.Status.NOT_FOUND.getStatusCode());
 
     // then the status code is okay
-    assertThat(response.contains("Report does not exist.")).isTrue();
+    assertThat(response).containsSequence("Report does not exist.");
   }
 
   @ParameterizedTest
   @EnumSource(ReportType.class)
-  public void getReportByIdContainsXml(ReportType reportType) {
+  public void getReport_byIdContainsXml(ReportType reportType) {
     // given
     final String reportId = addReportToOptimizeWithDefinitionAndRandomXml(reportType);
 
@@ -342,7 +395,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       default:
         xmlString = "";
     }
-    assertThat(xmlString.contains(RANDOM_STRING)).isTrue();
+    assertThat(xmlString).containsSequence(RANDOM_STRING);
   }
 
   @Test
@@ -495,7 +548,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
     ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
-    assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
+    assertThat(report.getData()).hasToString(oldReport.getData().toString());
     assertThat(oldReport.getName() + " – Copy").isEqualTo(report.getName());
   }
 
@@ -509,7 +562,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
 
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
     ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
-    assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
+    assertThat(report.getData()).hasToString(oldReport.getData().toString());
     assertThat(oldReport.getName() + " – Copy").isEqualTo(report.getName());
   }
 
@@ -532,7 +585,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
     ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
-    assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
+    assertThat(report.getData()).hasToString(oldReport.getData().toString());
     assertThat(report.getName()).isEqualTo(testReportCopyName);
   }
 
@@ -549,7 +602,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
     ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
-    assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
+    assertThat(report.getData()).hasToString(oldReport.getData().toString());
     assertThat(oldReport.getName() + " – Copy").isEqualTo(report.getName());
     assertThat(oldReport.getCollectionId()).isNull();
     assertThat(report.getCollectionId()).isEqualTo(collectionId);
@@ -602,7 +655,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
     ReportDefinitionDto report = reportClient.getReportById(copyId.getId());
-    assertThat(report.getData().toString()).isEqualTo(oldReport.getData().toString());
+    assertThat(report.getData()).hasToString(oldReport.getData().toString());
     assertThat(oldReport.getName() + " – Copy").isEqualTo(report.getName());
     assertThat(oldReport.getCollectionId()).isEqualTo(collectionId);
     assertThat(report.getCollectionId()).isNull();
@@ -657,7 +710,7 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     // then
     ReportDefinitionDto oldReport = reportClient.getReportById(id);
     ReportDefinitionDto newReport = reportClient.getReportById(copyId.getId());
-    assertThat(newReport.getData().toString()).isEqualTo(oldReport.getData().toString());
+    assertThat(newReport.getData()).hasToString(oldReport.getData().toString());
     assertThat(oldReport.getName() + " – Copy").isEqualTo(newReport.getName());
     assertThat(oldReport.getCollectionId()).isEqualTo(collectionId);
     assertThat(newReport.getCollectionId()).isEqualTo(newCollectionId);

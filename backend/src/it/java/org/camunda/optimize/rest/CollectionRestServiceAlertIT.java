@@ -5,21 +5,25 @@
  */
 package org.camunda.optimize.rest;
 
+import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.ArrayList;
+import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
+import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class CollectionRestServiceAlertIT extends AbstractAlertIT {
 
@@ -43,12 +47,41 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     alertClient.createAlertForReport(reportId3);
 
     // when
-    List<String> allAlertIds = alertClient.getAlertsForCollectionAsDefaultUser(collectionId1).stream()
-      .map(AlertDefinitionDto::getId)
-      .collect(toList());
+    List<AlertDefinitionDto> allAlerts = alertClient.getAlertsForCollectionAsDefaultUser(collectionId1);
 
     // then
-    assertThat(allAlertIds, containsInAnyOrder(alertId1, alertId2, alertId3));
+    assertThat(allAlerts)
+      .extracting(AlertDefinitionDto::getId)
+      .containsExactlyInAnyOrder(alertId1, alertId2, alertId3);
+    assertThat(allAlerts)
+      .allMatch(alert -> alert.getOwner().equals(DEFAULT_FULLNAME))
+      .allMatch(alert -> alert.getLastModifier().equals(DEFAULT_FULLNAME));
+  }
+
+  @Test
+  public void getStoredAlerts_adoptTimezoneFromHeader() {
+    //given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+    final String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    final String reportId = createNumberReportForCollection(collectionId, DefinitionType.PROCESS);
+    alertClient.createAlertForReport(reportId);
+
+    // when
+    List<AlertDefinitionDto> allAlerts = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetAlertsForCollectionRequest(collectionId)
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    Assertions.assertThat(allAlerts)
+      .isNotNull()
+      .hasSize(1);
+    AlertDefinitionDto alertDefinitionDto = allAlerts.get(0);
+    assertThat(alertDefinitionDto.getCreated()).isEqualTo(now);
+    assertThat(alertDefinitionDto.getLastModified()).isEqualTo(now);
+    assertThat(getOffsetDiffInHours(alertDefinitionDto.getCreated(), now)).isEqualTo(1.);
+    assertThat(getOffsetDiffInHours(alertDefinitionDto.getLastModified(), now)).isEqualTo(1.);
   }
 
   @ParameterizedTest(name = "only alerts in given collection should be retrieved for definition type {0}")
@@ -65,22 +98,21 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     List<AlertDefinitionDto> allAlerts = alertClient.getAlertsForCollectionAsDefaultUser(collectionId2);
 
     // then
-    assertThat(allAlerts.size(), is(0));
+    assertThat(allAlerts).isEmpty();
   }
 
   @ParameterizedTest
   @MethodSource("definitionType")
   public void deleteCollectionAlsoDeletesContainingAlerts(final DefinitionType definitionType) {
     // given
-    List<String> expectedAlertIds = new ArrayList<>();
     final String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
 
     final String reportId1 = createNumberReportForCollection(collectionId, definitionType);
     final String reportId2 = createNumberReportForCollection(collectionId, definitionType);
 
-    expectedAlertIds.add(alertClient.createAlertForReport(reportId1));
-    expectedAlertIds.add(alertClient.createAlertForReport(reportId1));
-    expectedAlertIds.add(alertClient.createAlertForReport(reportId2));
+    alertClient.createAlertForReport(reportId1);
+    alertClient.createAlertForReport(reportId1);
+    alertClient.createAlertForReport(reportId2);
 
     // when
     collectionClient.deleteCollection(collectionId);
@@ -88,7 +120,7 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
     Integer alertCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(ALERT_INDEX_NAME);
 
     // then
-    assertThat(alertCount, is(0));
+    assertThat(alertCount).isZero();
   }
 
 }

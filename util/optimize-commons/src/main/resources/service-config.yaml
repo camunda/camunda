@@ -302,6 +302,10 @@ es:
       # for search. A positive value defines the duration in seconds.
       # A value of -1 means that a refresh needs to be done manually.
       refresh_interval: 2s
+      # Optimize uses nested documents to store list information such as activities or variables belonging to a
+      # process instance. So this setting defines the maximum number of activities/variables that a single
+      # process instance can contain. This limit helps to prevent out of memory errors and should be used with care.
+      nested_documents_limit: 10000
 
 plugin:
   # Defines the directory path in the local Optimize file system which should be checked for plugins
@@ -391,28 +395,38 @@ sharing:
   enabled: true
 
 historyCleanup:
-  # switch for the cleanup, defaults to false
-  enabled: false
   # cron expression for when the cleanup should run
   cronTrigger: '0 1 * * *'
-  # time to live (ttl) for process instance data, from when reached the process instance will get cleaned up
+  # default time to live (ttl) for data, when reached the corresponding process/decision/event instances will get cleaned up
   # Format is ISO_8601 duration  https://en.wikipedia.org/wiki/ISO_8601#Durations
   ttl: 'P2Y'
-  # type of process data cleanup to perform, possible values:
-  # 'all' - delete everything related to the process instance
-  # 'variables' - only delete associated variables of a process instance
-  processDataCleanupMode: 'all'
-  # process definition specific configuration parameters that will overwrite the general parameters (ttl, processDataCleanupMode)
-  # for the specific processDefinition key
-  perProcessDefinitionConfig:
-  # 'myProcessDefinitionKey':
-  #   ttl: 'P2M'
-  #    mode: 'variables'
-  # decision definition specific configuration parameters that will overwrite the general parameters (ttl)
-  # for the specific decisionDefinition key
-  perDecisionDefinitionConfig:
-  # 'myDecisionDefinitionKey':
-  #   ttl: 'P2M'
+  processDataCleanup:
+    # switch for the Camunda process data cleanup, defaults to false
+    enabled: false
+    # type of process data cleanup to perform, possible values:
+    # 'all' - delete everything related to the process instance
+    # 'variables' - only delete associated variables of a process instance
+    cleanupMode: 'all'
+    # Defines the batch size in which Camunda engine process instance data gets cleaned up.
+    # It may be reduced if requests fail due to request size constraints.
+    batchSize: 10000
+    # process definition specific configuration parameters that will overwrite the general parameters (ttl, processDataCleanupMode)
+    # for the specific processDefinition key
+    perProcessDefinitionConfig:
+    # 'myProcessDefinitionKey':
+    #   ttl: 'P2M'
+    #   cleanupMode: 'variables'
+  decisionDataCleanup:
+    # switch for the Camunda decision data cleanup, defaults to false
+    enabled: false
+    # decision definition specific configuration parameters that will overwrite the general parameters (ttl)
+    # for the specific decisionDefinition key
+    perDecisionDefinitionConfig:
+    # 'myDecisionDefinitionKey':
+    #   ttl: 'P2M'
+  ingestedEventCleanup:
+    # switch for the ingested event data cleanup, defaults to false
+    enabled: false
 
 locales:
   # all locales available

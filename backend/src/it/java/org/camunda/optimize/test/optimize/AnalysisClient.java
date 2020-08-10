@@ -115,7 +115,7 @@ public class AnalysisClient {
                                                            String key, List<String> versions,
                                                            List<String> tenantIds, String flowNodeId,
                                                            Long lowerOutlierBound) {
-    Response variableTermDtosActivityRawReponse = getVariableTermDtosActivityRawResponse(
+    Response variableTermDtosActivityRawResponse = getVariableTermDtosActivityRawResponse(
       sampleOutliersHigherOutlierBound,
       key,
       versions,
@@ -123,9 +123,9 @@ public class AnalysisClient {
       flowNodeId,
       lowerOutlierBound
     );
-    assertThat(variableTermDtosActivityRawReponse.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(variableTermDtosActivityRawResponse.getStatus(), is(Response.Status.OK.getStatusCode()));
 
-    String jsonString = variableTermDtosActivityRawReponse.readEntity(String.class);
+    String jsonString = variableTermDtosActivityRawResponse.readEntity(String.class);
     try {
       return new ObjectMapper().readValue(jsonString, new TypeReference<List<VariableTermDto>>() {
       });

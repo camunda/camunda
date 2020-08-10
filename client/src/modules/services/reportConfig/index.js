@@ -17,13 +17,15 @@ const processUpdate = config.process.update;
 config.process.update = (type, data, props) => {
   const changes = processUpdate(type, data, props);
 
-  changes.configuration = {sorting: {$set: null}};
+  changes.configuration = changes.configuration || {};
+  changes.configuration.sorting = {$set: null};
 
   if (type === 'groupBy') {
     const distributedBy = props.report.data.configuration?.distributedBy;
     if (
       (data.type === 'userTasks' && distributedBy === 'userTask') ||
-      (data.type !== 'userTasks' && ['assignee', 'candidateGroup'].includes(distributedBy))
+      (['assignee', 'candidateGroup'].includes(data.type) &&
+        ['assignee', 'candidateGroup'].includes(distributedBy))
     ) {
       changes.configuration.distributedBy = {$set: 'none'};
     }
@@ -31,6 +33,10 @@ config.process.update = (type, data, props) => {
 
   if (type === 'view') {
     changes.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
+
+    if (data.entity !== 'variable' && props.report.data.configuration?.aggregationType === 'sum') {
+      changes.configuration.aggregationType = {$set: 'avg'};
+    }
 
     if (data.property !== 'duration' || data.entity !== 'processInstance') {
       changes.configuration.processPart = {$set: null};

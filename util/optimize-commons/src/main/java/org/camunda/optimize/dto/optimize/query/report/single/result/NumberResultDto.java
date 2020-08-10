@@ -6,7 +6,7 @@
 package org.camunda.optimize.dto.optimize.query.report.single.result;
 
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.DecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 
@@ -14,7 +14,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.Proc
 public class NumberResultDto implements DecisionReportResultDto, ProcessReportResultDto {
 
   private long instanceCount;
-  private Long data;
+  private long instanceCountWithoutFilters;
+  private Double data;
 
   @Override
   public ResultType getType() {
@@ -22,7 +23,7 @@ public class NumberResultDto implements DecisionReportResultDto, ProcessReportRe
   }
 
   @Override
-  public void sortResultData(final SortingDto sorting, final boolean keyIsOfNumericType) {
+  public void sortResultData(final ReportSortingDto sorting, final boolean keyIsOfNumericType) {
     // nothing to sort here
   }
 }

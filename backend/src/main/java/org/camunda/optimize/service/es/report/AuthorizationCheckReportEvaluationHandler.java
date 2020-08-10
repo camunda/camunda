@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.security.ReportAuthorizationService;
+import org.camunda.optimize.service.variable.ProcessVariableService;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -21,13 +22,15 @@ public class AuthorizationCheckReportEvaluationHandler extends ReportEvaluationH
   public AuthorizationCheckReportEvaluationHandler(final ReportReader reportReader,
                                                    final SingleReportEvaluator singleReportEvaluator,
                                                    final CombinedReportEvaluator combinedReportEvaluator,
-                                                   final ReportAuthorizationService authorizationService) {
-    super(reportReader, singleReportEvaluator, combinedReportEvaluator);
+                                                   final ReportAuthorizationService authorizationService,
+                                                   final ProcessVariableService processVariableService) {
+    super(reportReader, singleReportEvaluator, combinedReportEvaluator, processVariableService);
     this.authorizationService = authorizationService;
   }
 
   @Override
-  protected Optional<RoleType> getAuthorizedRole(String userId, ReportDefinitionDto report) {
+  protected Optional<RoleType> getAuthorizedRole(final String userId,
+                                                 final ReportDefinitionDto report) {
     return authorizationService.getAuthorizedRole(userId, report);
   }
 }

@@ -17,19 +17,27 @@ public class DateModificationHelper {
   }
 
   public static ZonedDateTime truncateToStartOfUnit(final OffsetDateTime date, final ChronoUnit unit) {
+    return truncateToStartOfUnit(date, unit, ZoneId.systemDefault());
+  }
+
+  public static ZonedDateTime truncateToStartOfUnit(final OffsetDateTime date,
+                                                    final ChronoUnit unit,
+                                                    final ZoneId timezone) {
     ZonedDateTime truncatedDate;
     if (unit.equals(ChronoUnit.MINUTES)) {
-      truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault()).truncatedTo(unit);
+      truncatedDate = date.atZoneSameInstant(timezone).truncatedTo(unit);
     } else if (unit.equals(ChronoUnit.HOURS)) {
-      truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault()).truncatedTo(unit);
+      truncatedDate = date.atZoneSameInstant(timezone).truncatedTo(unit);
     } else if (unit.equals(ChronoUnit.DAYS)) {
-      truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault()).truncatedTo(unit);
+      truncatedDate = date.atZoneSameInstant(timezone).truncatedTo(unit);
     } else if (unit.equals(ChronoUnit.WEEKS)) {
-      truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault()).with(DayOfWeek.MONDAY).truncatedTo(ChronoUnit.DAYS);
+      truncatedDate = date.atZoneSameInstant(timezone)
+        .with(DayOfWeek.MONDAY)
+        .truncatedTo(ChronoUnit.DAYS);
     } else if (unit.equals(ChronoUnit.MONTHS)) {
-      truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault()).withDayOfMonth(1).truncatedTo(ChronoUnit.DAYS);
+      truncatedDate = date.atZoneSameInstant(timezone).withDayOfMonth(1).truncatedTo(ChronoUnit.DAYS);
     } else {
-      truncatedDate = date.atZoneSimilarLocal(ZoneId.systemDefault()).withDayOfYear(1).truncatedTo(ChronoUnit.DAYS);
+      truncatedDate = date.atZoneSameInstant(timezone).withDayOfYear(1).truncatedTo(ChronoUnit.DAYS);
     }
     return truncatedDate;
   }

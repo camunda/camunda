@@ -21,12 +21,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperM
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -41,7 +40,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE
 public class CompositeCommandResult {
 
 
-  private SortingDto sorting = new SortingDto(null, null);
+  private ReportSortingDto sorting = new ReportSortingDto(null, null);
   private boolean keyIsOfNumericType = false;
 
   private List<GroupByResult> groups = new ArrayList<>();
@@ -67,7 +66,7 @@ public class CompositeCommandResult {
       return new GroupByResult(
         key,
         null,
-        DistributedByResult.createEmptyDistributedByResultsForAllPossibleKeys(context, key)
+        DistributedByResult.createEmptyDistributedByResultsForAllPossibleKeys(context)
       );
     }
 
@@ -115,14 +114,8 @@ public class CompositeCommandResult {
     }
 
     public static List<DistributedByResult> createEmptyDistributedByResultsForAllPossibleKeys(
-      final ExecutionContext<ProcessReportDataDto> context,
-      final String groupByKey) {
-      Set<String> allDistributedByKeys = context.getAllDistributedByKeys();
-      if (allDistributedByKeys.isEmpty()) {
-        // should only be the case for DistributedByNone
-        return Collections.singletonList(DistributedByResult.createResultWithEmptyValue(groupByKey));
-      }
-
+      final ExecutionContext<ProcessReportDataDto> context) {
+      final Set<String> allDistributedByKeys = context.getAllDistributedByKeys();
       List<DistributedByResult> emptyDistributedByResult = new ArrayList<>();
       for (String key : allDistributedByKeys) {
         emptyDistributedByResult.add(createResultWithEmptyValue(key, null));
@@ -134,12 +127,12 @@ public class CompositeCommandResult {
       return label != null && !label.isEmpty() ? label : key;
     }
 
-    public Long getValueAsLong() {
+    public Double getValueAsDouble() {
       return this.getViewResult().getNumber();
     }
 
     public MapResultEntryDto getValueAsMapResultEntry() {
-      return new MapResultEntryDto(this.key, getValueAsLong(), this.label);
+      return new MapResultEntryDto(this.key, getValueAsDouble(), this.label);
     }
   }
 
@@ -148,7 +141,7 @@ public class CompositeCommandResult {
   @Data
   public static class ViewResult {
 
-    private Long number;
+    private Double number;
     private RawDataProcessReportResultDto processRawData;
     private RawDataDecisionReportResultDto decisionRawData;
   }
@@ -174,7 +167,7 @@ public class CompositeCommandResult {
     for (GroupByResult group : groups) {
       final List<DistributedByResult> distributions = group.getDistributions();
       if (distributions.size() == 1) {
-        final Long value = distributions.get(0).getValueAsLong();
+        final Double value = distributions.get(0).getValueAsDouble();
         mapData.add(new MapResultEntryDto(group.getKey(), value, group.getLabel()));
       } else {
         throw new OptimizeRuntimeException(createErrorMessage(ReportMapResultDto.class, DistributedBy.class));
@@ -191,7 +184,7 @@ public class CompositeCommandResult {
     if (groups.size() == 1) {
       final List<DistributedByResult> distributions = groups.get(0).distributions;
       if (distributions.size() == 1) {
-        final Long value = distributions.get(0).getViewResult().getNumber();
+        final Double value = distributions.get(0).getViewResult().getNumber();
         numberResultDto.setData(value);
         return numberResultDto;
       } else {
@@ -237,16 +230,16 @@ public class CompositeCommandResult {
   }
 
   private Comparator<MapResultEntryDto> getSortingComparator(
-    final SortingDto sorting,
+    final ReportSortingDto sorting,
     final boolean keyIsOfNumericType) {
 
-    final String sortBy = sorting.getBy().orElse(SortingDto.SORT_BY_KEY);
+    final String sortBy = sorting.getBy().orElse(ReportSortingDto.SORT_BY_KEY);
     final SortOrder sortOrder = sorting.getOrder().orElse(SortOrder.ASC);
 
     final Function<MapResultEntryDto, Comparable> valueToSortByExtractor;
     switch (sortBy) {
       default:
-      case SortingDto.SORT_BY_KEY:
+      case ReportSortingDto.SORT_BY_KEY:
         if (keyIsOfNumericType) {
           valueToSortByExtractor =
             entry -> entry.getKey().equals(MISSING_VARIABLE_KEY) ? null : Double.valueOf(entry.getKey());
@@ -254,10 +247,10 @@ public class CompositeCommandResult {
           valueToSortByExtractor = entry -> entry.getKey().toLowerCase();
         }
         break;
-      case SortingDto.SORT_BY_VALUE:
+      case ReportSortingDto.SORT_BY_VALUE:
         valueToSortByExtractor = MapResultEntryDto::getValue;
         break;
-      case SortingDto.SORT_BY_LABEL:
+      case ReportSortingDto.SORT_BY_LABEL:
         valueToSortByExtractor = entry -> entry.getLabel().toLowerCase();
         break;
     }

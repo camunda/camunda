@@ -85,7 +85,7 @@ public class TimestampBasedImportIndexReader {
       log.error("Was not able to get timestamp based import indices!", e);
       throw new OptimizeRuntimeException("Was not able to get timestamp based import indices!", e);
     }
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), TimestampBasedImportIndexDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), TimestampBasedImportIndexDto.class, objectMapper);
   }
 
 }

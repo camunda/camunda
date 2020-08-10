@@ -7,9 +7,11 @@ package org.camunda.optimize.test.util;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import org.apache.commons.math3.util.Precision;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.AVERAGE;
@@ -19,18 +21,28 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 
 public class DurationAggregationUtil {
 
-  public static Long calculateExpectedValueGivenDurationsDefaultAggr(final Long... setDuration) {
-    return calculateExpectedValueGivenDurations(setDuration).get(AVERAGE);
+  public static Double calculateExpectedValueGivenDurationsDefaultAggr(final Double setDuration) {
+    return Optional.ofNullable(setDuration)
+      .map(DurationAggregationUtil::calculateExpectedValueGivenDurations)
+      .map(stats -> stats.get(AVERAGE))
+      .orElse(null);
   }
 
-  public static Map<AggregationType, Long> calculateExpectedValueGivenDurations(final Long... setDuration) {
-    final DescriptiveStatistics statistics = new DescriptiveStatistics();
-    Stream.of(setDuration).map(Long::doubleValue).forEach(statistics::addValue);
+  public static Double calculateExpectedValueGivenDurationsDefaultAggr(final Double... setDuration) {
+    final Double aggregatedDuration = calculateExpectedValueGivenDurations(setDuration).get(AVERAGE);
+    // for duration we should omit the decimal numbers since it's not relevant for the user
+    return Precision.round(aggregatedDuration, 0);
+  }
 
-    return ImmutableMap.of(MIN, Math.round(statistics.getMin()),
-                           MAX, Math.round(statistics.getMax()),
-                           AVERAGE, Math.round(statistics.getMean()),
-                           MEDIAN, Math.round(statistics.getPercentile(50.0D))
+  public static Map<AggregationType, Double> calculateExpectedValueGivenDurations(final Double... setDuration) {
+    final DescriptiveStatistics statistics = new DescriptiveStatistics();
+    Stream.of(setDuration).forEach(statistics::addValue);
+
+    // for duration we should omit the decimal numbers since it's not relevant for the user
+    return ImmutableMap.of(MIN, Precision.round(statistics.getMin(), 0),
+                           MAX, Precision.round(statistics.getMax(), 0),
+                           AVERAGE, Precision.round(statistics.getMean(), 0),
+                           MEDIAN, Precision.round(statistics.getPercentile(50.0D), 0)
     );
   }
 }

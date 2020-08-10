@@ -4,8 +4,9 @@
 
   <groupId>org.camunda.optimize</groupId>
   <artifactId>parent</artifactId>
-  <version>3.1.0-alpha2</version>
+  <version>3.2.0-alpha2</version>
   <packaging>pom</packaging>
+  <name>Camunda Optimize</name>
 
   <modules>
     <!-- client should be built before distro -->
@@ -16,21 +17,22 @@
     <module>qa</module>
     <module>distro</module>
     <module>upgrade</module>
+    <module>test-coverage</module>
   </modules>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>3.0.0</project.previousVersion>
+    <project.previousVersion>3.1.0</project.previousVersion>
 
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.source>1.8</maven.compiler.source>
-    <camunda.engine.version>7.13.0-alpha4</camunda.engine.version>
-    <camunda.model.version>7.13.0-alpha2</camunda.model.version>
+    <camunda.engine.version>7.13.0</camunda.engine.version>
+    <camunda.model.version>7.13.0</camunda.model.version>
 
-    <surefire-plugin.version>3.0.0-M4</surefire-plugin.version>
+    <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
 
-    <jackson.version>2.10.3</jackson.version>
+    <jackson.version>2.11.2</jackson.version>
     <jsonpath.version>2.4.0</jsonpath.version>
     <elasticsearch.version>7.0.0</elasticsearch.version>
     <!--The least supported elasticsearch version we should test against-->
@@ -40,13 +42,13 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.13.3</elasticsearch.log4j.version>
     <guava.version>29.0-jre</guava.version>
-    <spring.version>5.2.6.RELEASE</spring.version>
-    <mockito.version>3.3.3</mockito.version>
+    <spring.version>5.2.8.RELEASE</spring.version>
+    <mockito.version>3.4.6</mockito.version>
     <httpclient.version>4.5.12</httpclient.version>
     <hamcrest.version>1.3</hamcrest.version>
     <junit.jupiter.version>5.6.2</junit.jupiter.version>
     <junit.platform.version>1.6.2</junit.platform.version>
-    <mockserver.version>5.10</mockserver.version>
+    <mockserver.version>5.11.1</mockserver.version>
     <quartz.version>2.3.2</quartz.version>
     <assertj.version>3.16.1</assertj.version>
 
@@ -61,6 +63,11 @@
     <skip.unit.tests>${skipTests}</skip.unit.tests>
     <skip.docker>false</skip.docker>
     <docker.compose.file>docker-compose.yml</docker.compose.file>
+
+    <sonar.organization>camunda</sonar.organization>
+    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    <aggregate.report.dir>test-coverage/target/site/jacoco-aggregate/jacoco.xml</aggregate.report.dir>
+    <sonar.junit.reportPaths>${project.build.directory}/surefire-reports/,${project.build.directory}/failsafe-reports/,${project.build.directory}/failsafe-reports/1/,${project.build.directory}/failsafe-reports/2/,${project.build.directory}/failsafe-reports/3/,${project.build.directory}/failsafe-reports/4/</sonar.junit.reportPaths>
   </properties>
 
   <dependencyManagement>
@@ -97,7 +104,7 @@
     <profile>
       <id>engine-7.13</id>
       <properties>
-        <camunda.engine.version>7.13.0-alpha4</camunda.engine.version>
+        <camunda.engine.version>7.13.0</camunda.engine.version>
         <engine.profile.id>engine-7.13</engine.profile.id>
       </properties>
     </profile>
@@ -105,7 +112,7 @@
     <profile>
       <id>engine-7.12</id>
       <properties>
-        <camunda.engine.version>7.12.5</camunda.engine.version>
+        <camunda.engine.version>7.12.6</camunda.engine.version>
         <engine.profile.id>engine-7.12</engine.profile.id>
       </properties>
     </profile>
@@ -113,7 +120,7 @@
     <profile>
       <id>engine-7.11</id>
       <properties>
-        <camunda.engine.version>7.11.12</camunda.engine.version>
+        <camunda.engine.version>7.11.13</camunda.engine.version>
         <engine.profile.id>engine-7.11</engine.profile.id>
       </properties>
     </profile>
@@ -171,6 +178,25 @@
       </properties>
     </profile>
 
+    <profile>
+      <id>coverage</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>prepare-agent</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
   <dependencies>
@@ -260,7 +286,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -274,6 +300,7 @@
           <configuration>
             <skipTests>${skip.unit.tests}</skipTests>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <useModulePath>false</useModulePath>
           </configuration>
           <dependencies>
             <dependency>
@@ -289,12 +316,13 @@
           <version>${surefire-plugin.version}</version>
           <configuration>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            <useModulePath>false</useModulePath>
           </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
-          <version>3.2.3</version>
+          <version>3.3.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -304,7 +332,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.2.3</version>
+          <version>3.2.4</version>
           <configuration>
             <createDependencyReducedPom>false</createDependencyReducedPom>
           </configuration>
@@ -317,7 +345,7 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>exec-maven-plugin</artifactId>
-          <version>1.6.0</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -327,7 +355,7 @@
         <plugin>
           <groupId>org.codehaus.cargo</groupId>
           <artifactId>cargo-maven2-plugin</artifactId>
-          <version>1.7.12</version>
+          <version>1.7.16</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
@@ -354,6 +382,17 @@
           <groupId>com.mycila</groupId>
           <artifactId>license-maven-plugin</artifactId>
           <version>3.0</version>
+        </plugin>
+        <!-- sonar relevant stuff -->
+        <plugin>
+          <groupId>org.sonarsource.scanner.maven</groupId>
+          <artifactId>sonar-maven-plugin</artifactId>
+          <version>3.7.0.1746</version>
+        </plugin>
+        <plugin>
+          <groupId>org.jacoco</groupId>
+          <artifactId>jacoco-maven-plugin</artifactId>
+          <version>0.8.5</version>
         </plugin>
       </plugins>
     </pluginManagement>
@@ -440,7 +479,7 @@
     <url>https://github.com/camunda/camunda-optimize</url>
     <connection>scm:git:git@github.com:camunda/camunda-optimize.git</connection>
     <developerConnection>scm:git:git@github.com:camunda/camunda-optimize.git</developerConnection>
-    <tag>3.1.0-alpha2</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <issueManagement>

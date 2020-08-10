@@ -18,7 +18,6 @@ import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
@@ -27,10 +26,9 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DA
 
 @NoArgsConstructor
 @AllArgsConstructor
-@Component
 public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements DefinitionBasedType, InstanceType {
 
-  public static final int VERSION = 4;
+  public static final int VERSION = 5;
 
   public static final String START_DATE = ProcessInstanceDto.Fields.startDate;
   public static final String END_DATE = ProcessInstanceDto.Fields.endDate;
@@ -46,6 +44,9 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String EVENT_ID = FlowNodeInstanceDto.Fields.id;
   public static final String ACTIVITY_ID = FlowNodeInstanceDto.Fields.activityId;
   public static final String ACTIVITY_TYPE = FlowNodeInstanceDto.Fields.activityType;
+  // this one is needed for the process part feature. There we can't go up in the nested structured
+  // and need to duplicate this data.
+  public static final String PROCESS_INSTANCE_ID_FOR_ACTIVITY = FlowNodeInstanceDto.Fields.processInstanceId;
   public static final String ACTIVITY_DURATION = FlowNodeInstanceDto.Fields.durationInMs;
   public static final String ACTIVITY_START_DATE = FlowNodeInstanceDto.Fields.startDate;
   public static final String ACTIVITY_END_DATE = FlowNodeInstanceDto.Fields.endDate;
@@ -182,13 +183,16 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
     // @formatter:on
   }
 
-  private XContentBuilder addNestedEventField(XContentBuilder builder) throws IOException {
+  protected XContentBuilder addNestedEventField(XContentBuilder builder) throws IOException {
     // @formatter:off
     return builder
       .startObject(EVENT_ID)
         .field("type", "keyword")
       .endObject()
       .startObject(ACTIVITY_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(PROCESS_INSTANCE_ID_FOR_ACTIVITY)
         .field("type", "keyword")
       .endObject()
       .startObject(ACTIVITY_TYPE)

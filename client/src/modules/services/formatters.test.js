@@ -15,6 +15,7 @@ import {
   formatReportResult,
   createDurationFormattingOptions,
   formatFileName,
+  getRelativeValue,
 } from './formatters';
 const nbsp = '\u00A0';
 
@@ -42,6 +43,16 @@ describe('frequencyFormatter', () => {
     expect(frequencyFormatter(12345678, 2)).toBe(new Intl.NumberFormat().format(12) + ' million');
     expect(frequencyFormatter(12345678, 4)).toBe(
       new Intl.NumberFormat().format(12.35) + ' million'
+    );
+
+    expect(frequencyFormatter(-123, 1)).toBe(new Intl.NumberFormat().format(-100));
+    expect(frequencyFormatter(-42821, 2)).toBe(new Intl.NumberFormat().format(-43) + ' thousand');
+
+    expect(frequencyFormatter(0.1234, 1)).toBe(new Intl.NumberFormat().format(0));
+    expect(frequencyFormatter(-0.1234, 2)).toBe(new Intl.NumberFormat().format(-0.1));
+    expect(frequencyFormatter(-0.1234, 4)).toBe(new Intl.NumberFormat().format(-0.123));
+    expect(frequencyFormatter(70900000000000, 2)).toBe(
+      new Intl.NumberFormat().format(71) + ' trillion'
     );
   });
 
@@ -161,6 +172,12 @@ describe('getHighlightedText', () => {
     expect(results[1].props.children).toBe('test');
     expect(results[1].props.className).toBe('textBold');
   });
+
+  it('should work with special characters', () => {
+    const results = getHighlightedText('test)', ')');
+    expect(results[1].props.children).toBe(')');
+    expect(results[1].props.className).toBe('textBold');
+  });
 });
 
 const exampleDurationReport = {
@@ -244,6 +261,9 @@ it('should adjust groupby Variable Date option to unit', () => {
         type: 'variable',
         value: {type: 'Date'},
       },
+      configuration: {
+        groupByDateVariableUnit: 'day',
+      },
     },
   };
   const formatedResult = formatReportResult(
@@ -252,7 +272,7 @@ it('should adjust groupby Variable Date option to unit', () => {
   );
 
   expect(formatedResult[0].label).not.toContain('2015-03-25T');
-  expect(formatedResult[0].label).toContain('2015-03-25 ');
+  expect(formatedResult[0].label).toContain('2015-03-25');
 });
 
 describe('automatic interval selection', () => {
@@ -358,4 +378,18 @@ describe('File name formatting', () => {
 
   const anotherFileName = formatFileName('<another?|name>');
   expect(anotherFileName).toBe('anothername');
+});
+
+describe('getRelativeValue', () => {
+  it('should return correct relative value', () => {
+    expect(getRelativeValue(30, 100)).toBe('30%');
+  });
+
+  it('should return 0% if value is 0 regardless of total value', () => {
+    expect(getRelativeValue(0, 0)).toBe('0%');
+  });
+
+  it('should return -- if value is null or not defined', () => {
+    expect(getRelativeValue(null, 5)).toBe('--');
+  });
 });

@@ -1,11 +1,17 @@
 @import 'shared-styles/shared-styles.scss';
 
 .EntityNameForm {
-  .Input.name-input {
-    font-size: 2em;
+  .name-container {
+    position: relative;
+    flex-grow: 1;
+    display: flex;
     width: 100%;
-    font-weight: bold;
-    margin-bottom: 5px;
+    padding-right: 48px;
+  }
+
+  .Input.name-input {
+    font-size: 14px;
+    width: 100%;
 
     @include placeholder {
       font-weight: normal;

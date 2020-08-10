@@ -1,13 +1,12 @@
 #!/usr/bin/env groovy
 
-boolean slaveDisconnected() {
-  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
-}
+// https://github.com/camunda/jenkins-global-shared-library
+@Library('camunda-ci') _
 
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
@@ -31,11 +30,11 @@ spec:
   volumes:
   - name: cambpm-config
     configMap:
-      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci/deployments/optimize
+      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci-v2/deployments/optimize
       name: ci-optimize-cambpm-config
   - name: nginx-config
     configMap:
-      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci/deployments/optimize
+      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci-v2/deployments/optimize
       name: ci-optimize-nginx-proxy-config
   imagePullSecrets:
   - name: registry-camunda-cloud-secret
@@ -191,7 +190,7 @@ spec:
       effect: "NoSchedule"
   containers:
   - name: maven
-    image: maven:3.6.1-jdk-8-slim
+    image: maven:3.6.3-jdk-8-slim
     command: ["cat"]
     tty: true
     env:
@@ -273,7 +272,7 @@ pipeline {
     always {
       // Retrigger the build if the slave disconnected
       script {
-          if (slaveDisconnected()) {
+          if (agentDisconnected()) {
            build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }

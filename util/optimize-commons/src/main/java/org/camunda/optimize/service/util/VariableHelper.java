@@ -9,7 +9,6 @@ import lombok.experimental.UtilityClass;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 @UtilityClass
@@ -21,6 +20,6 @@ public class VariableHelper {
   }
 
   public static boolean isVariableTypeSupported(VariableType variableType) {
-    return Arrays.asList(ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES).contains(variableType);
+    return ReportConstants.ALL_SUPPORTED_VARIABLE_TYPES.contains(variableType);
   }
 }

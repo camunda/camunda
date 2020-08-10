@@ -11,7 +11,6 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
 
@@ -29,19 +28,6 @@ public class DefinitionVersionWithTenantsDto extends SimpleDefinitionDto {
   private String versionTag;
   @NonNull
   private List<TenantDto> tenants;
-
-  public DefinitionVersionWithTenantsDto(@NonNull final String key,
-                                         final String name,
-                                         @NonNull final DefinitionType type,
-                                         final Boolean isEventProcess,
-                                         @NonNull final String version,
-                                         final String versionTag,
-                                         @NonNull final List<TenantDto> tenants) {
-    super(key, name, type, isEventProcess);
-    this.version = version;
-    this.versionTag = versionTag;
-    this.tenants = tenants;
-  }
 
   public void sort() {
     tenants.sort(Comparator.comparing(TenantDto::getId, Comparator.nullsFirst(naturalOrder())));

@@ -20,14 +20,17 @@ import {
   Form,
 } from 'components';
 import {formatters, isDurationReport} from 'services';
-import {isEmailEnabled, getOptimizeVersion} from 'config';
-import ThresholdInput from './ThresholdInput';
+import {isEmailEnabled} from 'config';
 import {t} from 'translation';
+import {withDocs} from 'HOC';
+
+import ThresholdInput from './ThresholdInput';
+import MultiEmailInput from './MultiEmailInput';
 
 import './AlertModal.scss';
 
 const newAlert = {
-  email: '',
+  emails: [],
   reportId: '',
   thresholdOperator: '>',
   threshold: '100',
@@ -40,7 +43,7 @@ const newAlert = {
   webhook: undefined,
 };
 
-export default class AlertModal extends React.Component {
+export class AlertModal extends React.Component {
   constructor(props) {
     super(props);
 
@@ -49,6 +52,7 @@ export default class AlertModal extends React.Component {
       name: t('alert.newAlert'),
       inactive: false,
       invalid: false,
+      validEmails: true,
     };
   }
 
@@ -57,12 +61,8 @@ export default class AlertModal extends React.Component {
       this.loadAlert();
     }
 
-    const version = (await getOptimizeVersion()).split('.');
-    version.length = 2;
-
     this.setState({
       emailNotificationIsEnabled: await isEmailEnabled(),
-      optimizeVersion: version.join('.'),
     });
   };
 
@@ -76,7 +76,8 @@ export default class AlertModal extends React.Component {
 
     this.setState({
       ...alert,
-      inactive: alert.webhook && !alert.email && !this.props.webhooks?.includes(alert.webhook),
+      inactive:
+        alert.webhook && !alert.emails?.length && !this.props.webhooks?.includes(alert.webhook),
       threshold:
         this.getReportType(alert.reportId) === 'duration'
           ? formatters.convertDurationToObject(alert.threshold)
@@ -134,7 +135,7 @@ export default class AlertModal extends React.Component {
   };
 
   componentDidUpdate({initialAlert}) {
-    const {name, email, webhook, reportId, checkInterval, reminder} = this.state;
+    const {name, webhook, emails, reportId, checkInterval, reminder, validEmails} = this.state;
 
     if (this.props.initialAlert !== initialAlert) {
       this.loadAlert();
@@ -143,15 +144,11 @@ export default class AlertModal extends React.Component {
       this.setInvalid(true);
       return;
     }
-    if (
-      email &&
-      !email.match(/^[a-zA-Z0-9.!#$%&’*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/)
-    ) {
-      // taken from https://www.w3.org/TR/2012/WD-html-markup-20120320/input.email.html#input.email.attrs.value.single
+    if (emails.length && !validEmails) {
       this.setInvalid(true);
       return;
     }
-    if (!email && !webhook) {
+    if (!emails?.length && !webhook) {
       this.setInvalid(true);
       return;
     }
@@ -214,7 +211,7 @@ export default class AlertModal extends React.Component {
   render() {
     const {
       name,
-      email,
+      emails,
       reportId,
       thresholdOperator,
       threshold,
@@ -224,13 +221,12 @@ export default class AlertModal extends React.Component {
       emailNotificationIsEnabled,
       inactive,
       invalid,
-      optimizeVersion,
       webhook,
+      validEmails,
     } = this.state;
 
     const {reports, webhooks, onClose} = this.props;
 
-    const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/setup/configuration/#email`;
     const selectedReport = reports.find((report) => report.id === reportId) || {};
     return (
       <Modal open onClose={onClose} className="AlertModal">
@@ -242,7 +238,11 @@ export default class AlertModal extends React.Component {
             {!emailNotificationIsEnabled && (
               <MessageBox
                 type="warning"
-                dangerouslySetInnerHTML={{__html: t('alert.emailWarning', {docsLink})}}
+                dangerouslySetInnerHTML={{
+                  __html: t('alert.emailWarning', {
+                    docsLink: this.props.docsLink + 'technical-guide/setup/configuration/#email',
+                  }),
+                }}
               />
             )}
             {inactive && (
@@ -331,12 +331,15 @@ export default class AlertModal extends React.Component {
               </Labeled>
             </Form.Group>
             <Form.Group>
-              <LabeledInput
-                label={t('alert.form.email')}
-                placeholder={t('alert.form.emailPlaceholder')}
-                value={email}
-                onChange={({target: {value}}) => this.setState({email: value})}
-              />
+              <Labeled label={t('alert.form.email')}>
+                <MultiEmailInput
+                  placeholder={t('alert.form.emailPlaceholder')}
+                  emails={emails}
+                  onChange={(emails, validEmails) => this.setState({emails, validEmails})}
+                />
+              </Labeled>
+              <Message>{t('alert.form.emailThreshold')}</Message>
+              {!validEmails && <Message error>{t('alert.form.invalidEmail')}</Message>}
             </Form.Group>
             {webhooks?.length > 0 && (
               <Form.Group>
@@ -429,3 +432,5 @@ export default class AlertModal extends React.Component {
     );
   }
 }
+
+export default withDocs(AlertModal);

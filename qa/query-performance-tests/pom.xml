@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>3.1.0-alpha2</version>
+    <version>3.2.0-alpha2</version>
   </parent>
 
   <artifactId>query-performance-tests</artifactId>
@@ -15,8 +15,8 @@
     <version.camunda>${camunda.engine.version}</version.camunda>
     <failOnMissingWebXml>false</failOnMissingWebXml>
     <allure.version>2.13.2</allure.version>
-    <aspectj.version>1.9.5</aspectj.version>
-    <test.argLine>-Xmx1024m</test.argLine>
+    <aspectj.version>1.9.6</aspectj.version>
+    <argLine>-Xmx1024m -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"</argLine>
   </properties>
 
   <dependencies>
@@ -79,7 +79,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <argLine>${test.argLine} -javaagent:"${settings.localRepository}/org/aspectj/aspectjweaver/${aspectj.version}/aspectjweaver-${aspectj.version}.jar"</argLine>
               <redirectTestOutputToFile>false</redirectTestOutputToFile>
               <includes>**/*Test.java</includes>
             </configuration>

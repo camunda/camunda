@@ -61,7 +61,10 @@ public class EventProcessPublishStateReader {
     try {
       searchResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      final String reason = String.format("Could not fetch event process publish state with id [%s].", eventProcessMappingId);
+      final String reason = String.format(
+        "Could not fetch event process publish state with id [%s].",
+        eventProcessMappingId
+      );
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
@@ -74,7 +77,8 @@ public class EventProcessPublishStateReader {
           IndexableEventProcessPublishStateDto.class
         ).toEventProcessPublishStateDto();
       } catch (IOException e) {
-        String reason = "Could not deserialize information for event process publish state with id: " + eventProcessMappingId;
+        String reason =
+          "Could not deserialize information for event process publish state with id: " + eventProcessMappingId;
         log.error(
           "Was not able to retrieve event process publish state with id [{}]. Reason: {}",
           eventProcessMappingId,
@@ -85,6 +89,10 @@ public class EventProcessPublishStateReader {
     }
 
     return Optional.ofNullable(result);
+  }
+
+  public List<EventProcessPublishStateDto> getAllEventProcessPublishStates() {
+    return getAllEventProcessPublishStatesWithDeletedState(false);
   }
 
   public List<EventProcessPublishStateDto> getAllEventProcessPublishStatesWithDeletedState(final boolean deleted) {
@@ -104,7 +112,7 @@ public class EventProcessPublishStateReader {
       throw new OptimizeRuntimeException("Was not able to retrieve event process publish states!", e);
     }
 
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
       IndexableEventProcessPublishStateDto.class,
       objectMapper,

@@ -29,7 +29,11 @@ const report = {
     },
     view: {property: 'duration'},
     configuration: {
-      excludedColumns: [],
+      tableColumns: {
+        includeNewVariables: true,
+        includedColumns: [],
+        excludedColumns: [],
+      },
     },
     visualization: 'table',
   },

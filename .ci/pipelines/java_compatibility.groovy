@@ -1,12 +1,11 @@
 #!/usr/bin/env groovy
 
-boolean slaveDisconnected() {
-  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
-}
+// https://github.com/camunda/jenkins-global-shared-library
+@Library('camunda-ci') _
 
 // general properties for CI execution
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
-def static OPENJDK_MAVEN_DOCKER_IMAGE(String javaVersion) { return "maven:3.6.1-jdk-${javaVersion}" }
+def static OPENJDK_MAVEN_DOCKER_IMAGE(String javaVersion) { return "maven:3.6.3-jdk-${javaVersion}" }
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}" }
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}" }
 
@@ -32,7 +31,7 @@ spec:
   volumes:
   - name: cambpm-config
     configMap:
-      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci/deployments/optimize
+      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci-v2/deployments/optimize
       name: ci-optimize-cambpm-config
   initContainers:
     - name: init-sysctl
@@ -328,7 +327,7 @@ pipeline {
     always {
       // Retrigger the build if the slave disconnected
       script {
-        if (slaveDisconnected()) {
+        if (agentDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }

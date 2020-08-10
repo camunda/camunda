@@ -15,7 +15,6 @@ import {Login} from './Login';
 import {addHandler, removeHandler} from 'request';
 import {showError} from 'notifications';
 
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 const TestComponent = () => <div>TestComponent</div>;
 
 jest.mock('request', () => {

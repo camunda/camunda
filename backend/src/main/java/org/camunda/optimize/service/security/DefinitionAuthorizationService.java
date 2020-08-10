@@ -23,6 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -40,9 +41,9 @@ public class DefinitionAuthorizationService {
 
   public List<TenantDto> resolveAuthorizedTenantsForProcess(final String userId,
                                                             final SimpleDefinitionDto definitionDto,
-                                                            final List<String> tenantIds) {
-
-    if (definitionDto.getIsEventProcess()) {
+                                                            final List<String> tenantIds,
+                                                            final Set<String> engines) {
+    if (Boolean.TRUE.equals(definitionDto.getIsEventProcess())) {
       return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, definitionDto.getKey()).orElse(false)
         ? Collections.singletonList(TENANT_NOT_DEFINED)
         : Collections.emptyList();
@@ -60,7 +61,7 @@ public class DefinitionAuthorizationService {
 
       return engineDefinitionAuthorizationService
         .filterAuthorizedTenantsForDefinition(
-          userId, IdentityType.USER, definitionDto.getKey(), definitionDto.getType(), tenantIdsToCheck
+          userId, IdentityType.USER, definitionDto.getKey(), definitionDto.getType(), tenantIdsToCheck, engines
         )
         .stream()
         // resolve tenantDto for authorized tenantId
@@ -86,8 +87,8 @@ public class DefinitionAuthorizationService {
           userId, IdentityType.USER, definitionKey, tenantIds
         ));
       case DECISION:
-        return engineDefinitionAuthorizationService.isAuthorizedToSeeDefinition(
-          userId, IdentityType.USER, definitionKey, type, tenantIds
+        return engineDefinitionAuthorizationService.isAuthorizedToSeeDecisionDefinition(
+          userId, IdentityType.USER, definitionKey, tenantIds
         );
       default:
         throw new IllegalArgumentException("Unsupported definition type: " + type);
@@ -97,11 +98,11 @@ public class DefinitionAuthorizationService {
   public boolean isAuthorizedToAccessDefinition(final String userId,
                                                 final String tenantId,
                                                 final SimpleDefinitionDto definition) {
-    if (definition.getIsEventProcess()) {
+    if (Boolean.TRUE.equals(definition.getIsEventProcess())) {
       return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, definition.getKey()).orElse(false);
     } else {
       return engineDefinitionAuthorizationService.isAuthorizedToSeeDefinition(
-        userId, IdentityType.USER, definition.getKey(), definition.getType(), tenantId
+        userId, IdentityType.USER, definition.getKey(), definition.getType(), tenantId, definition.getEngines()
       );
     }
   }
@@ -120,7 +121,7 @@ public class DefinitionAuthorizationService {
 
   public boolean isAuthorizedToAccessProcessDefinition(final String userId,
                                                        final ProcessDefinitionOptimizeDto processDefinition) {
-    if (processDefinition.getIsEventBased()) {
+    if (processDefinition.isEventBased()) {
       return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey()).orElse(false);
     } else {
       return engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(

@@ -190,6 +190,7 @@ public class SessionService implements ConfigurationReloadable {
     } catch (OptimizeRuntimeException e) {
       log.warn(
         "Failed checking if session {} is a terminated session, defaulting to handle it as not terminated",
+        decodedJWT.getId(),
         e
       );
     }

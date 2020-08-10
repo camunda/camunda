@@ -2,18 +2,6 @@
 
 .InstanceStateFilter {
   .Popover {
-    .Popover__dialog {
-      box-shadow: none;
-      border-radius: 0;
-      margin-top: 4px;
-      padding: 0;
-    }
-
-    .Popover__dialog-arrow-border,
-    .Popover__dialog-arrow {
-      display: none;
-    }
-
     .Popover__button {
       .indicator {
         display: inline-block;
@@ -21,18 +9,10 @@
         height: 10px;
         background-color: $silver-darken-80;
         border-radius: 50%;
-        vertical-align: middle;
         margin-right: 0.7em;
-
         &.active {
           background-color: $blue-darken-55;
         }
-      }
-    }
-
-    .Form {
-      > fieldset {
-        padding: 10px 20px;
       }
     }
   }

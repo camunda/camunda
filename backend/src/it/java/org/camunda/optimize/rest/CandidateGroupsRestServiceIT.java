@@ -23,10 +23,9 @@ public class CandidateGroupsRestServiceIT extends AbstractIT {
   public void getCandidateGroups() {
     ProcessInstanceEngineDto processInstanceEngineDto = startSimpleUserTaskProcessWithCandidateGroup();
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     engineIntegrationExtension.completeUserTaskWithoutClaim(processInstanceEngineDto.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     AssigneeRequestDto requestDto = new AssigneeRequestDto(
       "aProcess",
@@ -38,7 +37,7 @@ public class CandidateGroupsRestServiceIT extends AbstractIT {
       .buildGetCandidateGroupsRequest(requestDto)
       .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
-    assertThat(assignees.size()).isEqualTo(2);
+    assertThat(assignees).hasSize(2);
     assertThat(assignees).containsOnly("sales", "marketing");
   }
 

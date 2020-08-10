@@ -1,10 +1,17 @@
 @import 'shared-styles/shared-styles.scss';
 
 .FiltersView {
-  border: 1px solid $silver-darken-80;
-  border-radius: 3px;
-  padding: 15px 13px 20px;
+  border-top: 1px solid $silver-darken-80;
+  border-bottom: 1px solid $silver-darken-80;
+  padding: 15px 40px 20px 40px;
   margin-bottom: 20px;
+
+  h3 {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 10px;
+  }
 
   > * {
     width: 190px;
@@ -15,6 +22,30 @@
       font-size: 14px;
       color: $grey-base-40;
       margin-bottom: 7px;
+    }
+  }
+
+  > .Button {
+    background: none;
+    border: none;
+    width: max-content;
+    font-size: 13px;
+    text-decoration: underline;
+    color: $grey-darken-13;
+    padding: 0;
+  }
+
+  > .VariableFilter__Dashboard {
+    width: max-content;
+
+    .BooleanFilter,
+    .SelectionFilter,
+    .DateFilter__Dashboard {
+      width: 180px;
+    }
+
+    .DateFilter__Dashboard.fixed {
+      width: max-content;
     }
   }
 
@@ -29,8 +60,36 @@
     background: none;
   }
 
+  .indicator {
+    vertical-align: middle;
+    color: $silver-darken-80;
+    &.active {
+      color: $blue-darken-55;
+    }
+  }
+
   hr {
     border: none;
     border-bottom: 1px solid $silver-darken-87;
+  }
+
+  .Popover {
+    .Popover__dialog {
+      box-shadow: none;
+      border-radius: 0;
+      margin-top: 4px;
+      padding: 0;
+    }
+
+    .Popover__dialog-arrow-border,
+    .Popover__dialog-arrow {
+      display: none;
+    }
+
+    .Form {
+      > fieldset {
+        padding: 10px 20px;
+      }
+    }
   }
 }

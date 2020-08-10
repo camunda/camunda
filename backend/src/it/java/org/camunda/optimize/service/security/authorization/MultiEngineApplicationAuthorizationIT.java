@@ -7,7 +7,9 @@ package org.camunda.optimize.service.security.authorization;
 
 import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.Test;
+import org.mockserver.model.HttpError;
 
 import javax.ws.rs.core.Response;
 
@@ -17,6 +19,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNull.notNullValue;
+import static org.mockserver.model.HttpRequest.request;
 
 public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT {
 
@@ -91,6 +94,25 @@ public class MultiEngineApplicationAuthorizationIT extends AbstractMultiEngineIT
     assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
     String responseEntity = response.readEntity(String.class);
     assertThat(responseEntity, containsString(INVALID_CREDENTIALS_ERROR_MESSAGE));
+  }
+
+  @Test
+  public void authorizationFailsWhenAllEnginesDown() {
+    // given
+    addSecondEngineToConfiguration();
+    defaultAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+    secondAuthorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    useAndGetMockServerForEngine(engineIntegrationExtension.getEngineName())
+      .when(request().withPath(".*")).error(HttpError.error().withDropConnection(true));
+    useAndGetMockServerForEngine(secondaryEngineIntegrationExtension.getEngineName())
+      .when(request().withPath(".*")).error(HttpError.error().withDropConnection(true));
+
+    // when
+    Response response = embeddedOptimizeExtension.authenticateUserRequest(KERMIT_USER, KERMIT_USER);
+
+    // then
+    assertThat(response.getStatus(), CoreMatchers.is(Response.Status.UNAUTHORIZED.getStatusCode()));
   }
 
 }

@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.validation.constraints.NotNull;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -39,7 +40,7 @@ public class CombinedProcessReportResult
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset) {
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
     Optional<ResultType> resultType = reportResult.getSingleReportResultType();
     return resultType.map(r -> mapCombinedReportResultsToCsvList(limit, offset, r))
       .orElseGet(() -> {
@@ -125,12 +126,15 @@ public class CombinedProcessReportResult
     return combinedResult.getData().values()
       .stream()
       .map(reportResultMapper::apply)
-      .map(reportResult -> reportResult.getResultAsCsv(limit, offset))
+      .map(reportResult -> reportResult.getResultAsCsv(limit, offset, ZoneId.systemDefault()))
       .collect(Collectors.toList());
   }
 
   private List<String[]> mergeSingleReportsToOneCsv(final List<List<String[]>> allSingleReportsAsCsvList) {
-    int numberOfRows = allSingleReportsAsCsvList.stream().mapToInt(List::size).max().getAsInt();
+    int numberOfRows = allSingleReportsAsCsvList.stream()
+      .mapToInt(List::size)
+      .max().orElseThrow(() -> new OptimizeRuntimeException("No single reports to merge"));
+
     return allSingleReportsAsCsvList.stream()
       .reduce((l1, l2) -> {
         fillMissingRowsWithEmptyEntries(numberOfRows, l1);
@@ -157,7 +161,7 @@ public class CombinedProcessReportResult
       .map(singleResultHeaderMapper)
       .reduce(ArrayUtils::addAll)
       .map(result -> Arrays.copyOf(result, result.length - 1))
-      .get();
+      .orElseThrow(() -> new OptimizeRuntimeException("Was not able to create combined report header"));
   }
 
   private void fillMissingRowsWithEmptyEntries(int numberOfRows, List<String[]> l1) {

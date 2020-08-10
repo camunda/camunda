@@ -9,13 +9,11 @@ import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
 public class TenantIndex extends DefaultIndexMappingCreator {
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   @Override
   public String getIndexName() {

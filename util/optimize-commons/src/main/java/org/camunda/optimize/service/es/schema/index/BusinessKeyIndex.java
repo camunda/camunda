@@ -9,14 +9,12 @@ import org.camunda.optimize.dto.optimize.persistence.BusinessKeyDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
 public class BusinessKeyIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   public static final String BUSINESS_KEY = BusinessKeyDto.Fields.businessKey;
   public static final String PROCESS_INSTANCE_ID = BusinessKeyDto.Fields.processInstanceId;

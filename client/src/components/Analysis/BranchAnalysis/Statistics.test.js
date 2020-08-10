@@ -15,10 +15,6 @@ import ChartRenderer from 'chart.js';
 
 import Statistics from './Statistics';
 
-function flushPromises() {
-  return new Promise((resolve) => setImmediate(resolve));
-}
-
 jest.mock('components', () => {
   return {
     LoadingIndicator: () => <span>loading</span>,

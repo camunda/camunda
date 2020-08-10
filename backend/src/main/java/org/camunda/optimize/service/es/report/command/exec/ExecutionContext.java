@@ -13,6 +13,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.service.es.report.command.CommandContext;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.util.Optional;
 import java.util.Set;
 
 @Data
@@ -20,10 +22,15 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
 
   private ReportData reportData;
   private Integer recordLimit;
+  private ZoneId timezone;
+  private long unfilteredInstanceCount;
 
   // only used/needed for group by date commands when evaluated for
   // a combined report.
   private Range<OffsetDateTime> dateIntervalRange;
+
+  // only used for group by number variable commands when evaluated for a combined report
+  private Range<Double> numberVariableRange;
 
   // used to ensure a complete list of distributedByResults (to include all keys, even if the result is empty)
   // e.g. used for groupBy usertask - distributedBy assignee reports, where it is possible that
@@ -34,11 +41,21 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
   public <RD extends ReportDefinitionDto<ReportData>> ExecutionContext(final CommandContext<RD> commandContext) {
     this.reportData = commandContext.getReportDefinition().getData();
     this.recordLimit = commandContext.getRecordLimit();
+    this.timezone = commandContext.getTimezone();
     this.dateIntervalRange = commandContext.getDateIntervalRange();
+    this.numberVariableRange = commandContext.getNumberVariableRange();
   }
 
   public SingleReportConfigurationDto getReportConfiguration() {
     return reportData.getConfiguration();
+  }
+
+  public Optional<Range<Double>> getNumberVariableRange() {
+    return Optional.ofNullable(numberVariableRange);
+  }
+
+  public Optional<Range<OffsetDateTime>> getDateIntervalRange() {
+    return Optional.ofNullable(dateIntervalRange);
   }
 
 }

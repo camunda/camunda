@@ -7,7 +7,8 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
 import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameRequestDto;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -16,50 +17,50 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DecisionVariableNamesRestServiceIT extends AbstractIT {
 
   private static final String TEST_VARIANT_INPUTS = "inputs";
   private static final String TEST_VARIANT_OUTPUTS = "outputs";
-  private static final String DECISION_KEY = "decisionKey";
-  private static final String DECISION_VERSION = "1";
 
   @ParameterizedTest
   @MethodSource("getInputOutputArgs")
-  public void getVariableValuesWithoutAuthentication(String inputOutput) {
-    // when
-    Response response = getExecutor(inputOutput, null)
-      .withoutAuthentication()
-      .execute();
+  public void getVariableNamesWithoutAuthentication(String inputOutput) {
+    // given
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDefinitionAndStartInstance();
+    DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
 
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    // when
+    List<DecisionVariableNameDto> responseList = getExecutor(inputOutput, request)
+      .withoutAuthentication()
+      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(responseList).isNotEmpty();
   }
 
   @ParameterizedTest
   @MethodSource("getInputOutputArgs")
-  public void getVariableValues(String inputOutput) {
+  public void getVariableNamesWithAuthentication(String inputOutput) {
     // given
-    deployDefinition();
-    DecisionVariableNameRequestDto request = generateDefaultVariableRequest();
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDefinitionAndStartInstance();
+    DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
 
     // when
-    List responseList = getExecutor(inputOutput, request)
-      .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
+    List<DecisionVariableNameDto> responseList = getExecutor(inputOutput, request)
+      .executeAndReturnList(DecisionVariableNameDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(responseList.isEmpty(), is(true));
+    assertThat(responseList).isNotEmpty();
   }
 
   @ParameterizedTest
   @MethodSource("getInputOutputArgs")
   public void missingDecisionDefinitionKeyQueryParamThrowsError(String inputOutput) {
     // given
-    DecisionVariableNameRequestDto request = generateDefaultVariableRequest();
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDefinitionAndStartInstance();
+    DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
     request.setDecisionDefinitionKey(null);
 
     // when
@@ -67,14 +68,15 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest
   @MethodSource("getInputOutputArgs")
   public void missingDecisionDefinitionVersionQueryParamDoesNotThrowError(String inputOutput) {
     // given
-    DecisionVariableNameRequestDto request = generateDefaultVariableRequest();
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDefinitionAndStartInstance();
+    DecisionVariableNameRequestDto request = generateDefaultVariableNameRequest(decisionDefinitionEngineDto);
     request.setDecisionDefinitionVersions(null);
 
     // when
@@ -82,30 +84,21 @@ public class DecisionVariableNamesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
-  private DecisionVariableNameRequestDto generateDefaultVariableRequest() {
+  private DecisionVariableNameRequestDto generateDefaultVariableNameRequest(final DecisionDefinitionEngineDto definition) {
     DecisionVariableNameRequestDto requestDto = new DecisionVariableNameRequestDto();
-    requestDto.setDecisionDefinitionKey(DECISION_KEY);
-    requestDto.setDecisionDefinitionVersion(DECISION_VERSION);
+    requestDto.setDecisionDefinitionKey(definition.getKey());
+    requestDto.setDecisionDefinitionVersion(definition.getVersionAsString());
     return requestDto;
   }
 
-  private void deployDefinition() {
-    DecisionDefinitionOptimizeDto definition = new DecisionDefinitionOptimizeDto();
-    definition.setId("fooId");
-    definition.setName("fooName");
-    definition.setKey(DECISION_KEY);
-    definition.setVersion(DECISION_VERSION);
-    definition.setTenantId(null);
-    definition.setDmn10Xml("someXml");
-    definition.setEngine(DEFAULT_ENGINE_ALIAS);
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      DECISION_DEFINITION_INDEX_NAME,
-      definition.getId(),
-      definition
-    );
+  private DecisionDefinitionEngineDto deployDefinitionAndStartInstance() {
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
+    importAllEngineEntitiesFromScratch();
+    return decisionDefinitionEngineDto;
   }
 
   private static Stream<String> getInputOutputArgs() {

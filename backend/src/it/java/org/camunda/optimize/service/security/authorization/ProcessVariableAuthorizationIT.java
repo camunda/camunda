@@ -8,8 +8,6 @@ package org.camunda.optimize.service.security.authorization;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import org.assertj.core.groups.Tuple;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -35,6 +33,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstants.RE
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class ProcessVariableAuthorizationIT extends AbstractIT {
 
@@ -52,8 +51,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
@@ -70,8 +68,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition, Collections.singletonList(null));
@@ -85,8 +82,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     // given
     final ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     startSimpleProcess(processDefinition);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response variableNameResponse = embeddedOptimizeExtension
@@ -119,8 +115,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
     startSimpleProcess(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
@@ -138,8 +133,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_PROCESS_DEFINITION);
     startSimpleProcess(processDefinition);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(processDefinition);
@@ -161,8 +155,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
     startSimpleProcess(processDefinition1);
     startSimpleProcess(processDefinition2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<Response> responses = executeVariableRequestsAsKermit(
@@ -331,11 +324,10 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
 
   private ProcessDefinitionEngineDto deploySimpleProcessDefinition(String processDefinitionKey,
                                                                    String tenantId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processDefinitionKey)
-      .startEvent()
-      .endEvent()
-      .done();
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSimpleBpmnDiagram(processDefinitionKey),
+      tenantId
+    );
   }
 
   private String createSingleReport(final ProcessDefinitionEngineDto processDefinition, String user) {
@@ -352,8 +344,7 @@ public class ProcessVariableAuthorizationIT extends AbstractIT {
   private void startInstanceAndImportEngineEntities(final ProcessDefinitionEngineDto processDefinition,
                                                     final Map<String, Object> variables) {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
   private void startSimpleProcess(ProcessDefinitionEngineDto processDefinition) {

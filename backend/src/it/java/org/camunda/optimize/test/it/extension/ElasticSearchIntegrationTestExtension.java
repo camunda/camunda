@@ -13,11 +13,13 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
@@ -35,8 +37,8 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.elasticsearch.ElasticsearchConnectionNodeConfiguration;
-import org.camunda.optimize.service.util.mapper.CustomDeserializer;
-import org.camunda.optimize.service.util.mapper.CustomSerializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
@@ -65,7 +67,6 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -79,7 +80,6 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -88,13 +88,15 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.mapHits;
+import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableIdField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
@@ -291,7 +293,10 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public OffsetDateTime getLastProcessInstanceImportTimestamp() throws IOException {
-    return getLastImportTimestampOfTimestampBasedImportIndex(ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME, "1");
+    return getLastImportTimestampOfTimestampBasedImportIndex(
+      ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME,
+      EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS
+    );
   }
 
   private OffsetDateTime getLastImportTimestampOfTimestampBasedImportIndex(final String esType, final String engine)
@@ -325,7 +330,15 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     getOptimizeElasticClient().getHighLevelClient().indices().putSettings(request, RequestOptions.DEFAULT);
   }
 
-  @SneakyThrows
+  public <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> type) {
+    return getAllDocumentsOfIndicesAs(new String[]{indexName}, type);
+  }
+
+  public <T> List<T> getAllDocumentsOfIndicesAs(final String[] indexNames, final Class<T> type) {
+    final SearchResponse response = getSearchResponseForAllDocumentsOfIndices(indexNames);
+    return mapHits(response.getHits(), type, getObjectMapper());
+  }
+
   public SearchResponse getSearchResponseForAllDocumentsOfIndex(final String indexName) {
     return getSearchResponseForAllDocumentsOfIndices(new String[]{indexName});
   }
@@ -518,8 +531,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   private static ObjectMapper createObjectMapper() {
     DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
     JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(dateTimeFormatter));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(dateTimeFormatter));
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(dateTimeFormatter));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(dateTimeFormatter));
 
     return Jackson2ObjectMapperBuilder
       .json()
@@ -571,38 +584,38 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     }
   }
 
+  public List<DecisionDefinitionOptimizeDto> getAllDecisionDefinitions() {
+    return getAllDocumentsOfIndexAs(DECISION_DEFINITION_INDEX_NAME, DecisionDefinitionOptimizeDto.class);
+  }
+
   public List<ProcessDefinitionOptimizeDto> getAllProcessDefinitions() {
-    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
-    return mapHits(response.getHits(), ProcessDefinitionOptimizeDto.class, getObjectMapper());
+    return getAllDocumentsOfIndicesAs(
+      new String[]{PROCESS_DEFINITION_INDEX_NAME, EVENT_PROCESS_DEFINITION_INDEX_NAME},
+      ProcessDefinitionOptimizeDto.class
+    );
   }
 
   public List<TenantDto> getAllTenants() {
-    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(TENANT_INDEX_NAME);
-    return mapHits(response.getHits(), TenantDto.class, getObjectMapper());
+    return getAllDocumentsOfIndexAs(TENANT_INDEX_NAME, TenantDto.class);
   }
 
   public List<EventDto> getAllStoredExternalEvents() {
-    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(EXTERNAL_EVENTS_INDEX_NAME);
-    return mapHits(response.getHits(), EventDto.class, getObjectMapper());
+    return getAllDocumentsOfIndexAs(EXTERNAL_EVENTS_INDEX_NAME, EventDto.class);
+  }
+
+  public List<DecisionInstanceDto> getAllDecisionInstances() {
+    return getAllDocumentsOfIndexAs(DECISION_INSTANCE_INDEX_NAME, DecisionInstanceDto.class);
   }
 
   public List<ProcessInstanceDto> getAllProcessInstances() {
-    final SearchResponse response = getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    return mapHits(response.getHits(), ProcessInstanceDto.class, getObjectMapper());
+    return getAllDocumentsOfIndexAs(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceDto.class);
   }
 
   @SneakyThrows
-  public List<CamundaActivityEventDto> getAllStoredCamundaActivityEvents(final String processDefinitionKey) {
-    SearchResponse response = getSearchResponseForAllDocumentsOfIndex(
-      new CamundaActivityEventIndex(processDefinitionKey).getIndexName()
+  public List<CamundaActivityEventDto> getAllStoredCamundaActivityEventsForDefinition(final String processDefinitionKey) {
+    return getAllDocumentsOfIndexAs(
+      new CamundaActivityEventIndex(processDefinitionKey).getIndexName(), CamundaActivityEventDto.class
     );
-    List<CamundaActivityEventDto> storedEvents = new ArrayList<>();
-    for (SearchHit searchHitFields : response.getHits()) {
-      final CamundaActivityEventDto camundaActivityEventDto = getObjectMapper().readValue(
-        searchHitFields.getSourceAsString(), CamundaActivityEventDto.class);
-      storedEvents.add(camundaActivityEventDto);
-    }
-    return storedEvents;
   }
 
   public EventProcessDefinitionDto addEventProcessDefinitionDtoToElasticsearch(final String key) {
@@ -700,14 +713,9 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   @SneakyThrows
   public List<VariableUpdateInstanceDto> getAllStoredVariableUpdateInstanceDtos() {
-    SearchResponse response = getSearchResponseForAllDocumentsOfIndex(VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "_*");
-    List<VariableUpdateInstanceDto> storedVariableUpdateDtos = new ArrayList<>();
-    for (SearchHit searchHitFields : response.getHits()) {
-      final VariableUpdateInstanceDto variableUpdateInstanceDto = getObjectMapper().readValue(
-        searchHitFields.getSourceAsString(), VariableUpdateInstanceDto.class);
-      storedVariableUpdateDtos.add(variableUpdateInstanceDto);
-    }
-    return storedVariableUpdateDtos;
+    return getAllDocumentsOfIndexAs(
+      VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "_*", VariableUpdateInstanceDto.class
+    );
   }
 
   public void deleteAllExternalEventIndices() {

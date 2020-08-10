@@ -8,8 +8,19 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ColumnSelection from './ColumnSelection';
+import {LabeledInput} from 'components';
 
-it('should have a switch for every column + all columns switch', () => {
+const data = {
+  configuration: {
+    tableColumns: {
+      includeNewVariables: true,
+      includedColumns: ['processDefinitionKey', 'processInstanceId'],
+      excludedColumns: [],
+    },
+  },
+};
+
+it('should have a switch for every column', () => {
   const node = shallow(
     <ColumnSelection
       report={{
@@ -23,7 +34,7 @@ it('should have a switch for every column + all columns switch', () => {
             },
           ],
         },
-        data: {configuration: {}},
+        data,
       }}
     />
   );
@@ -36,7 +47,7 @@ it('should change the switches labels to space case instead of camelCase for non
     <ColumnSelection
       report={{
         result: {data: [{processDefinitionKey: 1, variables: {testVariable: 1}}]},
-        data: {configuration: {}},
+        data,
       }}
     />
   );
@@ -44,35 +55,32 @@ it('should change the switches labels to space case instead of camelCase for non
   expect(node.find('.columnSelectionSwitch').at(1).dive()).toIncludeText('Variable: testVariable');
 });
 
-it('should call change with an empty array when all columns switch is enabled', () => {
+it('should call onChange with an empty included if all columns are excluded', () => {
   const spy = jest.fn();
   const node = shallow(
     <ColumnSelection
       report={{
         result: {data: [{processDefinitionKey: 1, processInstanceId: 3, variables: {}}]},
-        data: {configuration: {}},
+        data,
       }}
       onChange={spy}
     />
   );
-  node
-    .find('Switch')
-    .at(0)
-    .simulate('change', {target: {checked: false}});
+  node.find('AllColumnsButtons').prop('disableAll')();
 
-  node
-    .find('Switch')
-    .at(0)
-    .simulate('change', {target: {checked: true}});
-
-  expect(spy).toHaveBeenCalledWith({excludedColumns: {$set: []}});
+  expect(spy).toHaveBeenCalledWith({
+    tableColumns: {
+      excludedColumns: {$set: ['processDefinitionKey', 'processInstanceId']},
+      includedColumns: {$set: []},
+    },
+  });
 });
 
 it('should provde a sane interface for decision tables', () => {
   const node = shallow(
     <ColumnSelection
       report={{
-        data: {configuration: {}},
+        data,
         result: {
           data: [
             {
@@ -92,6 +100,23 @@ it('should provde a sane interface for decision tables', () => {
   );
 
   expect(node).toMatchSnapshot();
+});
+
+it('should update configuration when changing include variables checkbox', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <ColumnSelection
+      onChange={spy}
+      report={{
+        data,
+        result: {data: [{processDefinitionKey: 1, processInstanceId: 3, variables: {}}]},
+      }}
+    />
+  );
+
+  node.find(LabeledInput).simulate('change', {target: {checked: false}});
+
+  expect(spy).toHaveBeenCalledWith({tableColumns: {includeNewVariables: {$set: false}}});
 });
 
 it('should not crash if the report result is empty', () => {

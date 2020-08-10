@@ -52,17 +52,19 @@ public class CompletedUserTaskInstanceWriter extends AbstractUserTaskWriter<User
     // @formatter:off
     return
       "if (ctx._source.userTasks == null) ctx._source.userTasks = [];\n" +
-      "def existingUserTasksById = ctx._source.userTasks.stream().collect(Collectors.toMap(task -> task.id, task -> task));\n" +
+      "def existingUserTasksById = ctx._source.userTasks.stream()" +
+        ".collect(Collectors.toMap(task -> task.id, task -> task, (t1, t2) -> t1));\n" +
       "for (def newUserTask : params.userTasks) {\n" +
         "def existingTask  = existingUserTasksById.get(newUserTask.id);\n" +
         "if (existingTask != null) {\n" +
           UPDATE_USER_TASK_FIELDS_SCRIPT +
         "} else {\n" +
           "if (ctx._source.userTasks == null) ctx._source.userTasks = [];\n" +
-          "ctx._source.userTasks.add(newUserTask);\n" +
+          "existingUserTasksById.put(newUserTask.id, newUserTask);\n" +
         "}\n" +
-      "}\n"
-      + createUpdateUserTaskMetricsScript()
+      "}\n" +
+      "ctx._source.userTasks = existingUserTasksById.values();\n" +
+      createUpdateUserTaskMetricsScript()
       ;
     // @formatter:on
   }

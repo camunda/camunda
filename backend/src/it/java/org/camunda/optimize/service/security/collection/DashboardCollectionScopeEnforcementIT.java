@@ -45,7 +45,7 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
     final String authorizedTenant = "authorizedTenant";
     final List<String> tenants = singletonList(authorizedTenant);
     engineIntegrationExtension.createTenant(authorizedTenant);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.addScopeEntryToCollection(
@@ -83,7 +83,7 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
     final String authorizedTenant = "authorizedTenant";
     final List<String> tenants = singletonList(authorizedTenant);
     engineIntegrationExtension.createTenant(authorizedTenant);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.addScopeEntryToCollection(
@@ -117,7 +117,7 @@ public class DashboardCollectionScopeEnforcementIT extends AbstractIT {
     final String authorizedTenant = "authorizedTenant";
     final List<String> tenants = singletonList(authorizedTenant);
     engineIntegrationExtension.createTenant(authorizedTenant);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollection();
     collectionClient.addScopeEntryToCollection(

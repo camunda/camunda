@@ -9,14 +9,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewProperty;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
+import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.report.command.decision.mapping.RawDecisionDataResultDtoMapper;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
@@ -40,8 +42,12 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.INPUT_PREFIX;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.OUTPUT_PREFIX;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.INPUTS;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.OUTPUTS;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllDecisionInstanceDtoFieldKeys;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableClauseIdField;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableMultivalueFields;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
@@ -83,10 +89,10 @@ public class DecisionViewRawData extends DecisionViewPart {
 
   private void addSortingToQuery(final DecisionReportDataDto decisionReportData,
                                  final SearchSourceBuilder searchRequestBuilder) {
-    final Optional<SortingDto> customSorting = decisionReportData.getConfiguration().getSorting();
-    final String sortByField = customSorting.flatMap(SortingDto::getBy)
+    final Optional<ReportSortingDto> customSorting = decisionReportData.getConfiguration().getSorting();
+    final String sortByField = customSorting.flatMap(ReportSortingDto::getBy)
       .orElse(DecisionInstanceIndex.EVALUATION_DATE_TIME);
-    final SortOrder sortOrder = customSorting.flatMap(SortingDto::getOrder)
+    final SortOrder sortOrder = customSorting.flatMap(ReportSortingDto::getOrder)
       .map(order -> SortOrder.valueOf(order.name()))
       .orElse(SortOrder.DESC);
 
@@ -164,7 +170,7 @@ public class DecisionViewRawData extends DecisionViewPart {
                                    final Aggregations aggs,
                                    final ExecutionContext<DecisionReportDataDto> context) {
     final List<DecisionInstanceDto> rawDataDecisionInstanceDtos =
-      ElasticsearchHelper.retrieveScrollResultsTillLimit(
+      ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
         response,
         DecisionInstanceDto.class,
         objectMapper,
@@ -172,10 +178,10 @@ public class DecisionViewRawData extends DecisionViewPart {
         configurationService.getElasticsearchScrollTimeout(),
         context.getRecordLimit()
       );
-
     final RawDataDecisionReportResultDto rawDataSingleReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
-      rawDataDecisionInstanceDtos, response.getHits().getTotalHits().value
+      rawDataDecisionInstanceDtos, response.getHits().getTotalHits().value, context.getUnfilteredInstanceCount()
     );
+    addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawDataSingleReportResultDto);
     return new ViewResult().setDecisionRawData(rawDataSingleReportResultDto);
   }
 
@@ -184,5 +190,35 @@ public class DecisionViewRawData extends DecisionViewPart {
     final DecisionViewDto view = new DecisionViewDto();
     view.setProperty(DecisionViewProperty.RAW_DATA);
     dataForCommandKey.setView(view);
+  }
+
+  private void addNewVariablesAndDtoFieldsToTableColumnConfig(final ExecutionContext<DecisionReportDataDto> context,
+                                                              final RawDataDecisionReportResultDto result) {
+    final List<String> variableNames = result.getData()
+      .stream()
+      .flatMap(rawDataDecisionInstanceDto -> rawDataDecisionInstanceDto.getInputVariables().values().stream())
+      .map(this::getPrefixedInputVariableId)
+      .collect(toList());
+    variableNames.addAll(
+      result.getData()
+        .stream()
+        .flatMap(rawDataDecisionInstanceDto -> rawDataDecisionInstanceDto.getOutputVariables().values().stream())
+        .map(this::getPrefixedOutputVariableId)
+        .collect(toList())
+    );
+    context.getReportConfiguration()
+      .getTableColumns()
+      .addNewVariableColumns(variableNames);
+    context.getReportConfiguration()
+      .getTableColumns()
+      .addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
+  }
+
+  private String getPrefixedInputVariableId(final InputVariableEntry inputVariableEntry) {
+    return INPUT_PREFIX + inputVariableEntry.getId();
+  }
+
+  private String getPrefixedOutputVariableId(final OutputVariableEntry outputVariableEntry) {
+    return OUTPUT_PREFIX + outputVariableEntry.getId();
   }
 }

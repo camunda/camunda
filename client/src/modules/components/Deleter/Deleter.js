@@ -82,8 +82,7 @@ export default withErrorHandling(
     };
 
     close = () => {
-      this.setState({conflicts: {}, loading: false});
-      this.props.onClose();
+      this.setState({conflicts: {}, loading: false}, this.props.onClose);
     };
 
     render() {

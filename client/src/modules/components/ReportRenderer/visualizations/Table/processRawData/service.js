@@ -158,3 +158,11 @@ function getNestedColumnsForEntryWithLabel(head, label) {
   const column = head.find((column) => column.label === label);
   return column && column.columns;
 }
+
+export function isVisibleColumn(column, {excludedColumns, includedColumns, includeNewVariables}) {
+  if (includeNewVariables) {
+    return !excludedColumns.includes(column);
+  } else {
+    return includedColumns.includes(column);
+  }
+}

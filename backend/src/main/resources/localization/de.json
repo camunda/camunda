@@ -22,7 +22,8 @@
     "connected": "ist verbunden",
     "notConnected": "ist nicht verbunden",
     "rightsReserved": "Alle Rechte vorbehalten",
-    "connectionError": "Verbindungsstatus unbekannt (Websocket-Verbindung kann nicht hergestellt werden)"
+    "connectionError": "Verbindungsstatus unbekannt (Websocket-Verbindung kann nicht hergestellt werden)",
+    "timezone": "Datum und Uhrzeit werden in der lokalen Zeitzone angezeigt:"
   },
   "license": {
     "licensedFor": "Lizenziert für",
@@ -118,6 +119,9 @@
   },
   "events": {
     "new": "Neuer Prozess",
+    "autogenerate": "Autogenerieren",
+    "generate": "Generieren",
+    "addedSources": "Added sources",
     "modelProcess": "Prozess modellieren",
     "upload": ".bpmn hochladen",
     "empty": "Es wurden noch keine Eventbasierten Prozesse erstellt",
@@ -129,6 +133,8 @@
     "publishStart": "Veröffentliche Prozess. Das kann eine Weile dauern.",
     "publishSuccess": "{name} wurde veröffentlicht.",
     "stateColumn": "Status",
+    "generationInfo": "Fügen Sie Eventquellen hinzu, um automatisch einen End-to-End-Prozess zu generieren. Generierte Prozesse basieren auf einer Stichprobe von Daten und repräsentieren möglicherweise nicht alle Events. Bearbeiten Sie den generierten Prozess, um ihn manuell zu verfeinern.",
+    "generationWarning": "Autogenerierte Prozesse basieren auf einer Stichprobe von Daten und repräsentieren möglicherweise nicht alle Events. Bearbeiten Sie den generierten Prozess, um ihn manuell zu verfeinern.",
     "table": {
       "group": "Gruppe",
       "mapping": "Zugeordnet als…",
@@ -192,16 +198,36 @@
       "eventListTip": "Konfigurieren Sie, welche Events in der Tabelle angezeigt werden.",
       "definitionChangeWarning": "Durch die Änderung der Prozessdefinition können Events hinzugefügt oder entfernt werden. Vorhandene Event Mappings können entfernt werden.",
       "eventListChangeWarning": "Durch die Änderung der Event-Liste können Events hinzugefügt oder entfernt werden. Vorhandene Event Mappings können entfernt werden.",
-      "remove": "Quelle entfernen"
+      "remove": "Quelle entfernen",
+      "camundaProcess": "Camunda Prozess"
     }
   },
   "report": {
     "label": "Bericht",
     "label-plural": "Berichte",
+    "create": "Bericht Erstellen",
+    "createNew": "Neuen Bericht Erstellen",
     "new": "Neuer Bericht",
+    "addName": "Berichtname hinzufügen",
     "downloadCSV": "CSV herunterladen",
     "incomplete": "Anzeigen von {count} Datenpunkten im Ergebnis. Um die Ergebnismenge zu verfeinern, bearbeiten Sie die oben angegebene Einstellung.",
+    "templates": {
+      "blank": "Leerer Bericht",
+      "heatmap": "Heatmap: Prozessknoten Anzahl",
+      "number": "Nummer: Prozessinstanz Dauer",
+      "table": "Datentabelle: Benutzeraufgaben Anzahl",
+      "chart": "Balkendiagram: Prozessinstanz Anzahl"
+    },
     "instanceCount": {
+      "appliedFilters": "Angewandte Filter",
+      "label": "Zeigt Daten von {count} Instanz.",
+      "label-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanz.",
+      "label-plural": "Zeigt Daten von {count} Instanzen.",
+      "label-plural-withFilter": "Zeigt Daten von {count} aus {totalCount} Instanzen.",
+      "reportFilters": "Berichtsfilter zeigen Daten von {count} Instanz.",
+      "reportFilters-withFilter": "Berichtsfilter zeigen Daten von {count} aus {totalCount} Instanz.",
+      "reportFilters-plural": "Berichtsfilter zeigen Daten von {count} Instanzen.",
+      "reportFilters-plural-withFilter": "Berichtsfilter zeigen Daten von {count} aus {totalCount} Instanzen.",
       "process": {
         "label": "{count} Instanz im aktuellen Filter",
         "label-plural": "{count} Instanzen im aktuellen Filter"
@@ -219,7 +245,10 @@
       "userTask": "Benutzeraufgabe",
       "count": "Anzahl",
       "duration": "Dauer",
-      "evaluationCount": "Evaluierungsanzahl"
+      "evaluationCount": "Evaluierungsanzahl",
+      "variable": "Variable",
+      "process": "Prozessansicht",
+      "decision": "Entscheidungsansicht"
     },
     "groupBy": {
       "label": "Gruppiere nach",
@@ -227,6 +256,7 @@
       "flowNodes": "Prozessknoten",
       "userTasks": "Benutzeraufgaben",
       "startDate": "Startdatum",
+      "runningDate": "Ausführungsdatum",
       "automatic": "Automatisch",
       "endDate": "Enddatum",
       "variable": "Variable",
@@ -350,8 +380,8 @@
     },
     "combined": {
       "multiSelect": {
-        "available": "Verfügbare Berichte",
-        "selected": "Ausgewählte Berichte",
+        "available": "Verfügbare Berichte:",
+        "selected": "Ausgewählte Berichte:",
         "search": "Suche nach Berichten",
         "empty": "Keine Berichte gefunden"
       }
@@ -365,6 +395,7 @@
       },
       "aggregation": {
         "legend": "Aggregation",
+        "sum": "Summe",
         "minimum": "Minimum",
         "average": "Durchschnitt",
         "median": "Median",
@@ -423,8 +454,16 @@
         }
       },
       "includeTableColumn": "Zu berücksichtigende Tabellenspalten",
-      "showGradientBars": "Verlaufsbalken anzeigen"
+      "includeNewVariables": "Daten von neuen Variablen anzeigen",
+      "showGradientBars": "Verlaufsbalken anzeigen",
+      "bucket": {
+        "buckets": "Buckets",
+        "bucketSize": "Bucket Größe",
+        "baseline": "Grundlinie",
+        "invalidNumber": "Muss eine gültige Zahl sein"
+      }
     },
+    "viewByGroup": "{view} nach {group}",
     "missingVariableValue": "nicht definiert",
     "missingAssignee": "Nicht zugewiesen",
     "runningEndedUserTaskWarning": "Bei der Gruppierung nach Enddatum werden nur abgeschlossene Benutzeraufgaben berücksichtigt. Daher zeigt das Setzen des Prozessknoten-Status auf 'In Ausführung' keine Ergebnisse"
@@ -450,12 +489,26 @@
     "noAuthorization": "Fehlende Berechtigung",
     "noReportAccess": "Kein Zugriff auf Report",
     "filter": {
-      "label": "Filter",
-      "notice": "Filter gelten für alle kompatiblen Berichte in diesem Dashboard.",
+      "varAbbreviation": "Var",
+      "label": "Berichtsfilter",
+      "viewLabel": "Berichtsdaten filtern",
+      "info": "Wählen Sie Filtertypen zur Verwendung im Dashboard aus",
+      "notice": "Hinzugefügte Optionen werden im gespeicherten Dashboard zur Auswahl verfügbar sein.",
+      "resetAll": "Alle zurücksetzen",
+      "operatorLink": "Werte werden durch {operator} verknüpft",
+      "multiple": "mehrere",
+      "modal": {
+        "pretext": {
+          "Date": "Datumsauswahl wird im resultierenden Filter verfügbar sein.",
+          "Boolean": "Wahr und Falsch Werte werden im resultierenden Filter verfügbar sein.",
+          "default": "Ausgewählte Optionen werden im resultierenden Filter verfügbar sein."
+        }
+      },
       "types": {
         "state": "Instanzstatus",
         "startDate": "Startdatum",
         "endDate": "Enddatum",
+        "variable": "Variable",
         "runningInstancesOnly": "Laufend",
         "completedInstancesOnly": "Abgeschlossen",
         "canceledInstancesOnly": "Abgebrochen",
@@ -494,11 +547,13 @@
       "frequency": "Bericht prüfen, jede",
       "email": "Schicke eine E-Mail an",
       "webhook": "An externes System senden",
-      "emailPlaceholder": "E-Mail-Addresse",
+      "emailPlaceholder": "Trennen Sie E-Mail-Adressen durch Eingabetaste oder Leertaste",
       "webookPlaceholder": "Zielsystem",
       "sendNotification": "Benachrichtigung senden, wenn gelöst",
       "reminder": "Erinnerung senden",
-      "reminderFrequency": "jede"
+      "reminderFrequency": "jede",
+      "emailThreshold": "Bis zu 20 E-Mails können hinzugefügt werden",
+      "invalidEmail": "Ungültige E-Mail hinzugefügt"
     },
     "apply": "Änderungen übernehmen",
     "create": "Alarm erstellen",
@@ -515,10 +570,6 @@
         "outlier": {
           "label": "Ausreißer",
           "label-plural": "Ausreißer"
-        },
-        "instance": {
-          "label": "Instanz",
-          "label-plural": "Instanzen"
         },
         "tookDuration": "Benötigte eine Dauer von"
       },
@@ -605,8 +656,18 @@
     "editAccess": "Zugriff bearbeiten",
     "id": "ID",
     "instanceIds": "Instanz IDs",
+    "seeDocs": "Siehe Dokumentation",
+    "undefined": "nicht definiert",
+    "null": "null",
+    "nullOrUndefined": "Null oder nicht definiert",
+    "timeAt": "um",
     "errors": {
-      "inValidLink": "Dieser Link ist nicht gültig"
+      "inValidLink": "Dieser Link ist nicht gültig",
+      "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
+    },
+    "instance": {
+      "label": "Instanz",
+      "label-plural": "Instanzen"
     },
     "tenant": {
       "label": "Mandant",
@@ -623,8 +684,17 @@
       "empty": "Keine Elemente gefunden"
     },
     "entity": {
+      "type": "Art",
       "modified": "Zuletzt bearbeitet",
-      "by": "durch",
+      "modifiedBy": "Bearbeitet von",
+      "modifiedTitle": "Bearbeitet",
+      "byModifier": "durch {modifier}",
+      "createdBy": "Erstellt von",
+      "viewRawData": "Rohdaten",
+      "viewModel": {
+        "decision": "Entscheidungstabelle",
+        "process": "Prozessmodell"
+      },
       "namePlaceholder": {
         "Report": "Berichtsname",
         "Dashboard": "Dashboard-Name",
@@ -715,11 +785,9 @@
           "neither": "ist weder",
           "nor": "noch",
           "or": "oder",
-          "occurs": "ist"
-        },
-        "values": {
-          "null": "null",
-          "undefined": "nicht definiert"
+          "occurs": "ist",
+          "contains": "enthält",
+          "notContains": "enthält nicht"
         },
         "executedFlowNode": "Ausgeführter Prozessknoten",
         "executingFlowNode": "Prozessknoten in Ausführung"
@@ -768,11 +836,10 @@
         "inputPlaceholder": "Variable auswählen oder suchen",
         "noVariables": "Keine Variablen gefunden",
         "loadMore": "Mehr anzeigen",
-        "filterForUndefined": "Filter nach Instanzen, in denen die angegebene Variable entweder <b>null</b> oder <b>nicht definiert</b> ist.",
-        "excludeUndefined": "Schließen Sie Instanzen aus, in denen die angegebene Variable entweder <b>null</b> oder <b>nicht definiert</b> ist.",
         "bool": {
-          "isTrue": "ist wahr",
-          "isFalse": "ist falsch"
+          "true": "ist wahr",
+          "false": "ist falsch",
+          "isNullOrUndefined": "ist null oder nicht definiert"
         },
         "enterValue": "Wert eingeben",
         "addValue": "Wert hinzufügen",
@@ -781,13 +848,14 @@
           "selected": "Ausgewählte Werte",
           "search": "Suche nach Werten",
           "empty": "Keine Werte gefunden"
-        }
+        },
+        "includeUndefined": "Schließen Sie Instanzen ein, in denen die ausgewählte Variable entweder <b>null</b> oder <b>nicht definiert</b> ist",
+        "excludeUndefined": "Schließen Sie Instanzen aus, in denen die ausgewählte Variable entweder <b>null</b> oder <b>nicht definiert</b> ist."
       },
       "durationModal": {
         "includeInstance": "Berücksichtigen Sie nur Prozessinstanzen, die gelaufen sind für ...",
         "moreThan": "mehr als",
         "lessThan": "weniger als",
-        "invalidInput": "Bitte einen positiven Zahlenwert eingeben",
         "appliedTo": "Filter wird angewendet auf"
       },
       "nodeModal": {
@@ -805,7 +873,10 @@
         },
         "unassigned": "Nicht zugewiesen",
         "selectValue": "Filter für ID",
-        "info": "Die folgenden Auswahlen werden eingeschlossen sein:"
+        "info": {
+          "included": "Die folgenden Auswahlen werden eingeschlossen sein:",
+          "excluded": "Die folgenden Auswahlen werden ausgeschlossen sein:"
+        }
       },
       "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind.",
       "suspensionFilterWarning": "Bitte beachten Sie die Einschränkungen der Suspensions-Filter, die in der <a href='{docsLink}'>Optimize Dokumentation</a> beschrieben sind."
@@ -870,6 +941,7 @@
       "areYouSure": "Sind Sie sicher, dass Sie fortfahren möchten?"
     },
     "unit": {
+      "automatic": "Automatisch",
       "milli": {
         "label": "Millisekunde",
         "label-plural": "Millisekunden "
@@ -913,6 +985,22 @@
       "million": {
         "label": "Million",
         "label-plural": "Millionen"
+      },
+      "billion": {
+        "label": "Milliarde",
+        "label-plural": "Milliarden"
+      },
+      "trillion": {
+        "label": "Billion",
+        "label-plural": "Billionen"
+      },
+      "quadrillion": {
+        "label": "Billiarde",
+        "label-plural": "Billiarden"
+      },
+      "quintillion": {
+        "label": "Trillion",
+        "label-plural": "Trillionen"
       }
     }
   },
@@ -921,6 +1009,7 @@
     "conflict": "Die Änderung konnten aufgrund von Konflikten nicht ausgeführt werden.",
     "reportConflict": "Die Änderung am Bericht konnte aufgrund von Konflikten nicht ausgeführt werden.",
     "collectionConflict": "Die Änderung an der Sammlung konnte aufgrund von Konflikten nicht ausgeführt werden.",
+    "invalidDashboardVariableFilter": "Dashboard konnte nicht gespeichert werden, da ein oder mehrere Variablenfilter nicht mehr gültig sind. Berichte könnten geändert worden sein seitdem der Variablenfilter hinzugefügt wurde.",
     "sharingNotAllowed": "Teilen nicht möglich, da diese Funktion momentan gesperrt ist.",
     "reportEvaluationError": "Der Bericht konnte nicht evaluiert werden.",
     "reportsNotCombinable": "Die ausgewählten Berichte sind nicht miteinander kombinierbar.",

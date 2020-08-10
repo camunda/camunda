@@ -44,6 +44,14 @@ public class ProcessVariableHelper {
     return VARIABLES + "." + VARIABLE_VALUE;
   }
 
+  public static String getValueSearchField(final String searchFieldName) {
+    return getNestedVariableValueField() + "." + searchFieldName;
+  }
+
+  public static String buildWildcardQuery(final String valueFilter) {
+    return "*" + valueFilter + "*";
+  }
+
   public static String getNestedVariableValueFieldForType(final VariableType type) {
     switch (Optional.ofNullable(type).orElseThrow(() -> new IllegalArgumentException("No Type provided"))) {
       case BOOLEAN:
@@ -99,8 +107,7 @@ public class ProcessVariableHelper {
           .must(termQuery(getNestedVariableTypeField(), variableTypeId))
           .must(existsQuery(getNestedVariableValueField())),
         ScoreMode.None
-      ))
-      .minimumShouldMatch(1);
+      ));
   }
 
 }

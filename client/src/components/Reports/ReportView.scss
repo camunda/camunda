@@ -1,4 +1,16 @@
 .ReportView {
+  .Report__header {
+    margin-bottom: 40px;
+
+    .InstanceCount {
+      margin-top: 0;
+
+      .Popover .countString {
+        display: none;
+      }
+    }
+  }
+
   .share-button .Popover__dialog {
     padding: 20px 40px;
   }

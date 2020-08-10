@@ -6,13 +6,25 @@
 
 import {get, post, put, del} from 'request';
 
-export async function loadEntities() {
-  const response = await get('api/entities');
+export async function loadEntities(sortBy, sortOrder) {
+  const params = {};
+  if (sortBy && sortOrder) {
+    params.sortBy = sortBy;
+    params.sortOrder = sortOrder;
+  }
+
+  const response = await get('api/entities', params);
   return await response.json();
 }
 
-export async function loadCollectionEntities(id) {
-  const response = await get(`api/collection/${id}/entities`);
+export async function loadCollectionEntities(id, sortBy, sortOrder) {
+  const params = {};
+  if (sortBy && sortOrder) {
+    params.sortBy = sortBy;
+    params.sortOrder = sortOrder;
+  }
+
+  const response = await get(`api/collection/${id}/entities`, params);
   return await response.json();
 }
 
@@ -51,7 +63,7 @@ export async function removeSource(collection, scopeId) {
 }
 
 export async function checkDeleteSourceConflicts(collection, scopeId) {
-  const response = await get(`/api/collection/${collection}/scope/${scopeId}/delete-conflicts`);
+  const response = await get(`api/collection/${collection}/scope/${scopeId}/delete-conflicts`);
   return await response.json();
 }
 

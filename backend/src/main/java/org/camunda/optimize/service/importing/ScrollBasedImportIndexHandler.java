@@ -22,34 +22,21 @@ import javax.annotation.PostConstruct;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.camunda.optimize.service.es.reader.ElasticsearchHelper.clearScroll;
+import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.clearScroll;
 
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class ScrollBasedImportIndexHandler
   implements ImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
-
-  @Autowired
-  private ImportIndexReader importIndexReader;
   @Autowired
   protected OptimizeElasticsearchClient esClient;
   @Autowired
   protected ConfigurationService configurationService;
-
-  private Long importIndex = 0L;
   protected String scrollId;
-
-  @PostConstruct
-  protected void init() {
-    readIndexFromElasticsearch();
-  }
-
-  protected abstract Set<String> performScrollQuery();
-
-  protected abstract Set<String> performInitialSearchQuery();
-
-  protected abstract String getElasticsearchTypeForStoring();
+  @Autowired
+  private ImportIndexReader importIndexReader;
+  private Long importIndex = 0L;
 
   @Override
   public IdSetBasedImportPage getNextPage() {
@@ -84,6 +71,17 @@ public abstract class ScrollBasedImportIndexHandler
   public void updateIndex(int pageSize) {
     importIndex += pageSize;
   }
+
+  @PostConstruct
+  protected void init() {
+    readIndexFromElasticsearch();
+  }
+
+  protected abstract Set<String> performScrollQuery();
+
+  protected abstract Set<String> performInitialSearchQuery();
+
+  protected abstract String getElasticsearchTypeForStoring();
 
   private Set<String> fetchNextPageOfIds() {
     Set<String> ids;

@@ -17,6 +17,12 @@ import org.camunda.optimize.service.es.report.command.modules.view.process.Proce
 import org.camunda.optimize.service.es.report.result.process.SingleProcessRawDataReportResult;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
+
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
+
 @Component
 public class RawProcessInstanceDataGroupByNoneCmd extends ProcessCmd<RawDataProcessReportResultDto> {
 
@@ -40,6 +46,26 @@ public class RawProcessInstanceDataGroupByNoneCmd extends ProcessCmd<RawDataProc
   public SingleProcessRawDataReportResult evaluate(
     final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     final RawDataProcessReportResultDto evaluate = executionPlan.evaluate(commandContext);
+    addNewVariablesAndDtoFieldsToTableColumnConfig(commandContext, evaluate);
     return new SingleProcessRawDataReportResult(evaluate, commandContext.getReportDefinition());
+  }
+
+  private void addNewVariablesAndDtoFieldsToTableColumnConfig(final CommandContext<SingleProcessReportDefinitionDto> commandContext,
+                                                              final RawDataProcessReportResultDto result) {
+    final List<String> variableNames = result.getData()
+      .stream()
+      .flatMap(rawDataProcessInstanceDto -> rawDataProcessInstanceDto.getVariables().keySet().stream())
+      .map(varKey -> VARIABLE_PREFIX + varKey)
+      .collect(toList());
+    commandContext.getReportDefinition()
+      .getData()
+      .getConfiguration()
+      .getTableColumns()
+      .addNewVariableColumns(variableNames);
+    commandContext.getReportDefinition()
+      .getData()
+      .getConfiguration()
+      .getTableColumns()
+      .addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
   }
 }

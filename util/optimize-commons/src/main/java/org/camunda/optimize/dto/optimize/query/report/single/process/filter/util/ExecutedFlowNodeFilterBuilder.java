@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.dto.optimize.query.report.single.process.filter.util;
 
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 
@@ -12,14 +13,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.IN;
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 
 public class ExecutedFlowNodeFilterBuilder {
 
-  private String operator = IN;
-  private List<String> values = new ArrayList<>();
-  private ProcessFilterBuilder filterBuilder;
+  private FilterOperator operator = IN;
+  private final List<String> values = new ArrayList<>();
+  private final ProcessFilterBuilder filterBuilder;
 
   private ExecutedFlowNodeFilterBuilder(ProcessFilterBuilder processFilterBuilder) {
     filterBuilder = processFilterBuilder;
@@ -39,7 +40,7 @@ public class ExecutedFlowNodeFilterBuilder {
     return this;
   }
 
-  public ExecutedFlowNodeFilterBuilder operator(String operator) {
+  public ExecutedFlowNodeFilterBuilder operator(FilterOperator operator) {
     this.operator = operator;
     return this;
   }

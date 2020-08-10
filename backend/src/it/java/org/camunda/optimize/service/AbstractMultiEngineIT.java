@@ -5,9 +5,9 @@
  */
 package org.camunda.optimize.service;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.DefaultTenant;
 import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticationConfiguration;
@@ -20,13 +20,17 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockserver.integration.ClientAndServer;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class AbstractMultiEngineIT extends AbstractIT {
   private static final String REST_ENDPOINT = "http://localhost:8080/engine-rest";
@@ -76,7 +80,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
                                                              final String tenantIdEngine2) {
     switch (definitionResourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        deployAndStartSimpleProcessDefinitionForAllEngines(tenantIdEngine1, tenantIdEngine2);
+        deployAndStartProcessDefinitionForAllEngines(tenantIdEngine1, tenantIdEngine2);
         break;
       case RESOURCE_TYPE_DECISION_DEFINITION:
         deployAndStartDecisionDefinitionForAllEngines(tenantIdEngine1, tenantIdEngine2);
@@ -85,8 +89,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
         throw new OptimizeIntegrationTestException("Unsupported resourceType: " + definitionResourceType);
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
   protected void deployAndStartDecisionDefinitionForAllEngines() {
@@ -94,26 +97,28 @@ public class AbstractMultiEngineIT extends AbstractIT {
   }
 
   protected void deployAndStartDecisionDefinitionForAllEngines(final String tenantId1, final String tenantId2) {
-    engineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(DECISION_KEY_1), tenantId1);
-    secondaryEngineIntegrationExtension.deployAndStartDecisionDefinition(
-      createSimpleDmnModel(DECISION_KEY_2),
-      tenantId2
-    );
+    deployAndStartDecisionDefinitionForAllEngines(tenantId1, tenantId2, DECISION_KEY_1, DECISION_KEY_2);
   }
 
-  protected void deployAndStartSimpleProcessDefinitionForAllEngines() {
-    deployAndStartSimpleProcessDefinitionForAllEngines(null, null);
+  protected void deployAndStartDecisionDefinitionForAllEngines(final String tenantId1, final String tenantId2,
+                                                               final String decisionKey1, final String decisionKey2) {
+    engineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(decisionKey1), tenantId1);
+    secondaryEngineIntegrationExtension.deployAndStartDecisionDefinition(createSimpleDmnModel(decisionKey2), tenantId2);
   }
 
-  protected void deployAndStartSimpleProcessDefinitionForAllEngines(final String tenantId1,
-                                                                    final String tenantId2) {
-    deployAndStartSimpleProcessDefinitionForAllEngines(PROCESS_KEY_1, PROCESS_KEY_2, tenantId1, tenantId2);
+  protected void deployAndStartProcessDefinitionForAllEngines() {
+    deployAndStartProcessDefinitionForAllEngines(null, null);
   }
 
-  protected void deployAndStartSimpleProcessDefinitionForAllEngines(final String key1,
-                                                                    final String key2,
-                                                                    final String tenantId1,
-                                                                    final String tenantId2) {
+  protected void deployAndStartProcessDefinitionForAllEngines(final String tenantId1,
+                                                              final String tenantId2) {
+    deployAndStartProcessDefinitionForAllEngines(PROCESS_KEY_1, PROCESS_KEY_2, tenantId1, tenantId2);
+  }
+
+  protected void deployAndStartProcessDefinitionForAllEngines(final String key1,
+                                                              final String key2,
+                                                              final String tenantId1,
+                                                              final String tenantId2) {
     deployAndStartProcessOnDefaultEngine(key1, tenantId1);
     deployAndStartProcessOnSecondEngine(key2, tenantId2);
   }
@@ -122,10 +127,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aStringVariable", "foo");
     secondaryEngineIntegrationExtension.deployAndStartProcessWithVariables(
-      Bpmn.createExecutableProcess(key2)
-        .startEvent()
-        .endEvent()
-        .done(),
+      getSimpleBpmnDiagram(key2),
       variables,
       tenantId
     );
@@ -135,30 +137,25 @@ public class AbstractMultiEngineIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aStringVariable", "foo");
     engineIntegrationExtension.deployAndStartProcessWithVariables(
-      Bpmn.createExecutableProcess(key1)
-        .startEvent()
-        .endEvent()
-        .done(),
+      getSimpleBpmnDiagram(key1),
       variables,
       tenantId
     );
   }
 
-  protected void deployAndStartUserTaskProcessForAllEngines() {
-    engineIntegrationExtension.deployAndStartProcess(
-      Bpmn.createExecutableProcess(PROCESS_KEY_1)
-        .startEvent()
-        .userTask()
-        .endEvent()
-        .done()
+  protected List<ProcessInstanceEngineDto> deployAndStartUserTaskProcessForAllEngines() {
+    final List<ProcessInstanceEngineDto> instances = new ArrayList<>();
+    instances.add(
+      engineIntegrationExtension.deployAndStartProcess(
+        getSingleUserTaskDiagram(PROCESS_KEY_1)
+      )
     );
-    secondaryEngineIntegrationExtension.deployAndStartProcess(
-      Bpmn.createExecutableProcess(PROCESS_KEY_2)
-        .startEvent()
-        .userTask()
-        .endEvent()
-        .done()
+    instances.add(
+      secondaryEngineIntegrationExtension.deployAndStartProcess(
+        getSingleUserTaskDiagram(PROCESS_KEY_2)
+      )
     );
+    return instances;
   }
 
   protected void addSecondEngineToConfiguration() {
@@ -217,7 +214,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
   protected void removeDefaultEngineConfiguration() {
     configurationService
       .getConfiguredEngines()
-      .remove("1");
+      .remove(DEFAULT_ENGINE_ALIAS);
     embeddedOptimizeExtension.reloadConfiguration();
   }
 

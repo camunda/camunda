@@ -35,7 +35,7 @@ public class DecisionViewCountInstanceFrequency extends DecisionViewPart {
   public ViewResult retrieveResult(final SearchResponse response, final Aggregations aggs,
                                    final ExecutionContext<DecisionReportDataDto> context) {
     final Filter count = aggs.get(COUNT_AGGREGATION);
-    return new ViewResult().setNumber(count.getDocCount());
+    return new ViewResult().setNumber((double) count.getDocCount());
   }
 
   @Override

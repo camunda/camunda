@@ -10,6 +10,7 @@ import {withRouter} from 'react-router-dom';
 import {loadReports, getCollection} from 'services';
 import {TypeaheadMultipleSelection, Popover, ColorPicker} from 'components';
 import {Configuration} from './Configuration';
+import equal from 'deep-equal';
 
 import './CombinedReportPanel.scss';
 import {t} from 'translation';
@@ -123,11 +124,16 @@ export default withRouter(
         !referenceReportData ||
         (this.checkSameGroupBy(referenceReportData, report.data) &&
           this.checkSameView(referenceReportData, report.data) &&
+          this.checkSameConfiguration(referenceReportData, report.data) &&
           report.data.visualization === referenceReportData.visualization)
       );
     };
 
     checkSameView = (referenceReport, data) => {
+      if (data.view.entity === 'variable' && referenceReport.view.entity === 'variable') {
+        return true;
+      }
+
       const sameEntity =
         data.view.entity === referenceReport.view.entity ||
         (data.view.entity === 'flowNode' && referenceReport.view.entity === 'userTask') ||
@@ -152,6 +158,22 @@ export default withRouter(
         convertGroupByType(data.groupBy.type) ===
           convertGroupByType(referenceReport.groupBy.type) && isSameValue
       );
+    };
+
+    checkSameConfiguration = ({groupBy, configuration}, data) => {
+      if (groupBy?.type === 'variable') {
+        if (groupBy.value?.type === 'Date') {
+          return (
+            configuration?.groupByDateVariableUnit === data.configuration.groupByDateVariableUnit
+          );
+        } else if (
+          ['Integer', 'Double', 'Short', 'Long'].includes(groupBy.value?.type) &&
+          configuration?.customNumberBucket.active
+        ) {
+          return equal(configuration.customNumberBucket, data.configuration.customNumberBucket);
+        }
+      }
+      return true;
     };
 
     updateColor = (idx) => (color) => {
@@ -195,6 +217,8 @@ export default withRouter(
         }
       }
 
+      const instanceCount = combinedReport.result?.instanceCount;
+
       return (
         <div className="CombinedReportPanel">
           <Configuration type={configurationType} report={combinedReport} onChange={updateReport} />
@@ -205,7 +229,19 @@ export default withRouter(
             toggleValue={this.update}
             labels={{
               available: t('report.combined.multiSelect.available'),
-              selected: t('report.combined.multiSelect.selected'),
+              selected: (
+                <>
+                  {t('report.combined.multiSelect.selected')}{' '}
+                  {instanceCount > 0 && (
+                    <span className="instanceCount">
+                      {instanceCount}{' '}
+                      {instanceCount.length === 1
+                        ? t('common.instance.label')
+                        : t('common.instance.label-plural')}
+                    </span>
+                  )}
+                </>
+              ),
               search: t('report.combined.multiSelect.search'),
               empty: t('report.combined.multiSelect.empty'),
             }}
@@ -243,7 +279,7 @@ export default withRouter(
 );
 
 function convertGroupByType(type) {
-  if (type === 'startDate' || type === 'endDate') {
+  if (['startDate', 'endDate', 'runningDate'].includes(type)) {
     return 'date';
   }
   if (type === 'userTasks') {

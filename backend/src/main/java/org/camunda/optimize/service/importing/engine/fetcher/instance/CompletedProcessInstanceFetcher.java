@@ -47,6 +47,20 @@ public class CompletedProcessInstanceFetcher extends
     );
   }
 
+  public List<HistoricProcessInstanceDto> fetchCompletedProcessInstances(OffsetDateTime endTimeOfLastInstance) {
+    logger.debug("Fetching completed historic process instances...");
+    long requestStart = System.currentTimeMillis();
+    List<HistoricProcessInstanceDto> secondEntries =
+      fetchWithRetry(() -> performCompletedProcessInstanceRequest(endTimeOfLastInstance));
+    long requestEnd = System.currentTimeMillis();
+    logger.debug(
+      "Fetched [{}] completed historic process instances for set end time within [{}] ms",
+      secondEntries.size(),
+      requestEnd - requestStart
+    );
+    return secondEntries;
+  }
+
   private List<HistoricProcessInstanceDto> fetchCompletedProcessInstances(OffsetDateTime timeStamp,
                                                                           long pageSize) {
     logger.debug("Fetching completed historic process instances...");
@@ -64,7 +78,8 @@ public class CompletedProcessInstanceFetcher extends
     return entries;
   }
 
-  private List<HistoricProcessInstanceDto> performCompletedProcessInstanceRequest(OffsetDateTime timeStamp, long pageSize) {
+  private List<HistoricProcessInstanceDto> performCompletedProcessInstanceRequest(OffsetDateTime timeStamp,
+                                                                                  long pageSize) {
     return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(COMPLETED_PROCESS_INSTANCE_ENDPOINT)
@@ -74,20 +89,6 @@ public class CompletedProcessInstanceFetcher extends
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricProcessInstanceDto>>() {
       });
-  }
-
-  public List<HistoricProcessInstanceDto> fetchCompletedProcessInstances(OffsetDateTime endTimeOfLastInstance) {
-    logger.debug("Fetching completed historic process instances...");
-    long requestStart = System.currentTimeMillis();
-    List<HistoricProcessInstanceDto> secondEntries =
-      fetchWithRetry(() -> performCompletedProcessInstanceRequest(endTimeOfLastInstance));
-    long requestEnd = System.currentTimeMillis();
-    logger.debug(
-      "Fetched [{}] completed historic process instances for set end time within [{}] ms",
-      secondEntries.size(),
-      requestEnd - requestStart
-    );
-    return secondEntries;
   }
 
   private List<HistoricProcessInstanceDto> performCompletedProcessInstanceRequest(OffsetDateTime endTimeOfLastInstance) {

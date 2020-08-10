@@ -10,10 +10,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.ser.std.DateSerializer;
+import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
+import net.minidev.json.JSONValue;
 import org.apache.http.HttpEntity;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -41,7 +46,6 @@ import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
-import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
 import org.camunda.optimize.dto.engine.TenantEngineDto;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -55,8 +59,8 @@ import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.mapper.CustomDeserializer;
-import org.camunda.optimize.service.util.mapper.CustomSerializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
+import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.test.engine.EnginePluginClient;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
@@ -111,6 +115,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   public static final String DEFAULT_EMAIL_DOMAIN = "@camunda.org";
   public static final String DEFAULT_FIRSTNAME = "firstName";
   public static final String DEFAULT_LASTNAME = "lastName";
+  public static final String DEFAULT_FULLNAME = DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME;
   private static final int MAX_WAIT = 10;
   private static final String COUNT = "count";
   public static final String KERMIT_GROUP_NAME = "anyGroupName";
@@ -144,7 +149,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   @Override
-  public void afterEach(final ExtensionContext context) throws Exception {
+  public void afterEach(final ExtensionContext context) {
     if (usingMockServer) {
       log.info("Resetting all MockServer expectations and logs");
       mockServerClient.reset();
@@ -172,8 +177,9 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern(IntegrationTestConfigurationUtil.getEngineDateFormat());
     final JavaTimeModule javaTimeModule = new JavaTimeModule();
-    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(formatter));
-    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(formatter));
+    javaTimeModule.addSerializer(OffsetDateTime.class, new CustomOffsetDateTimeSerializer(formatter));
+    javaTimeModule.addSerializer(Date.class, new DateSerializer(false, new StdDateFormat().withColonInTimeZone(false)));
+    javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomOffsetDateTimeDeserializer(formatter));
 
     return Jackson2ObjectMapperBuilder
       .json()
@@ -477,71 +483,6 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     }
   }
 
-  public List<ProcessDefinitionEngineDto> getLatestProcessDefinitions() {
-    URI uri;
-    try {
-      uri = new URIBuilder(getProcessDefinitionUri())
-        .setParameter("latestVersion", "true")
-        .build();
-    } catch (URISyntaxException e) {
-      throw new OptimizeRuntimeException("Could not create URI!", e);
-    }
-    HttpRequestBase get = new HttpGet(uri);
-    CloseableHttpResponse response;
-    try {
-      response = HTTP_CLIENT.execute(get);
-      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      List<ProcessDefinitionEngineDto> procDefs =
-        OBJECT_MAPPER.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>() {
-        });
-      response.close();
-      return procDefs;
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Could not fetch the process definition!", e);
-    }
-  }
-
-  public List<DecisionDefinitionEngineDto> getLatestDecisionDefinitions() {
-    URI uri;
-    try {
-      uri = new URIBuilder(getDecisionDefinitionUri())
-        .setParameter("latestVersion", "true")
-        .build();
-    } catch (URISyntaxException e) {
-      throw new OptimizeRuntimeException("Could not create URI!", e);
-    }
-    HttpRequestBase get = new HttpGet(uri);
-    CloseableHttpResponse response;
-    try {
-      response = HTTP_CLIENT.execute(get);
-      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      List<DecisionDefinitionEngineDto> decDefs =
-        OBJECT_MAPPER.readValue(responseString, new TypeReference<List<DecisionDefinitionEngineDto>>() {
-        });
-      response.close();
-      return decDefs;
-    } catch (IOException e) {
-      throw new OptimizeRuntimeException("Could not fetch the process definition!", e);
-    }
-  }
-
-  public ProcessDefinitionXmlEngineDto getProcessDefinitionXml(String processDefinitionId) {
-    HttpRequestBase get = new HttpGet(getProcessDefinitionXmlUri(processDefinitionId));
-    CloseableHttpResponse response;
-    try {
-      response = HTTP_CLIENT.execute(get);
-      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      ProcessDefinitionXmlEngineDto xml =
-        OBJECT_MAPPER.readValue(responseString, ProcessDefinitionXmlEngineDto.class);
-      response.close();
-      return xml;
-    } catch (IOException e) {
-      String errorMessage =
-        String.format("Could not fetch the process definition xml for id [%s]!", processDefinitionId);
-      throw new OptimizeRuntimeException(errorMessage, e);
-    }
-  }
-
   public ProcessInstanceEngineDto deployAndStartProcess(BpmnModelInstance bpmnModelInstance) {
     return deployAndStartProcess(bpmnModelInstance, null);
   }
@@ -672,20 +613,52 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     }
   }
 
-  public void suspendProcessInstance(final String processInstanceId) throws IOException {
-    performProcessInstanceSuspensionRequest(processInstanceId, true);
+  public void suspendProcessInstanceByInstanceId(final String processInstanceId) throws IOException {
+    performProcessInstanceByInstanceIdSuspensionRequest(processInstanceId, true);
   }
 
-  public void unsuspendProcessInstance(final String processInstanceId) throws IOException {
-    performProcessInstanceSuspensionRequest(processInstanceId, false);
+  public void suspendProcessInstanceByDefinitionId(final String processDefinitionId) throws IOException {
+    performProcessInstanceByDefinitionIdSuspensionRequest(processDefinitionId, true);
   }
 
-  public void suspendProcessDefinition(final String processDefinitionId) throws IOException {
-    performProcessDefinitionSuspensionRequest(processDefinitionId, true);
+  public void suspendProcessInstanceByDefinitionKey(final String processDefinitionKey) throws IOException {
+    performProcessInstanceByDefinitionKeySuspensionRequest(processDefinitionKey, true);
   }
 
-  public void unsuspendProcessDefinition(final String processDefinitionId) throws IOException {
-    performProcessDefinitionSuspensionRequest(processDefinitionId, false);
+  public void suspendProcessDefinitionById(final String processDefinitionId) throws IOException {
+    performProcessDefinitionSuspensionByIdRequest(processDefinitionId, true);
+  }
+
+  public void suspendProcessDefinitionByKey(final String processDefinitionKey) throws IOException {
+    performProcessDefinitionSuspensionByKeyRequest(processDefinitionKey, true);
+  }
+
+  public void unsuspendProcessInstanceByInstanceId(final String processInstanceId) throws IOException {
+    performProcessInstanceByInstanceIdSuspensionRequest(processInstanceId, false);
+  }
+
+  public void unsuspendProcessInstanceByDefinitionId(final String processDefinitionId) throws IOException {
+    performProcessInstanceByDefinitionIdSuspensionRequest(processDefinitionId, false);
+  }
+
+  public void unsuspendProcessInstanceByDefinitionKey(final String processDefinitionKey) throws IOException {
+    performProcessInstanceByDefinitionKeySuspensionRequest(processDefinitionKey, false);
+  }
+
+  public void unsuspendProcessDefinitionById(final String processDefinitionId) throws IOException {
+    performProcessDefinitionSuspensionByIdRequest(processDefinitionId, false);
+  }
+
+  public void unsuspendProcessDefinitionByKey(final String processDefinitionKey) throws IOException {
+    performProcessDefinitionSuspensionByKeyRequest(processDefinitionKey, false);
+  }
+
+  public void suspendProcessInstanceViaBatch(final String processInstanceId) throws IOException {
+    performProcessInstanceSuspensionViaBatchRequestAndForceBatchExecution(processInstanceId, true);
+  }
+
+  public void unsuspendProcessInstanceViaBatch(final String processInstanceId) throws IOException {
+    performProcessInstanceSuspensionViaBatchRequestAndForceBatchExecution(processInstanceId, false);
   }
 
   public void deleteVariableInstanceForProcessInstance(String variableName, String processInstanceId) {
@@ -740,41 +713,117 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return deployment;
   }
 
-  private void performProcessDefinitionSuspensionRequest(
+  private void performProcessDefinitionSuspensionByIdRequest(
     final String processDefinitionId,
     final boolean suspended) throws IOException {
-    HttpPut suspendRequest = new HttpPut(getSuspendProcessDefinitionByIdUri(processDefinitionId));
+    performSuspensionRequest(
+      getSuspendProcessDefinitionByIdUri(processDefinitionId),
+      new StringEntity(
+        "{\n" +
+          "\"includeProcessInstances\": true,\n" +
+          "\"suspended\": " + suspended + "\n" +
+          "}"
+      )
+    );
+  }
+
+  private void performProcessDefinitionSuspensionByKeyRequest(
+    final String processDefinitionKey,
+    final boolean suspended) throws IOException {
+    performSuspensionRequest(
+      getSuspendProcessDefinitionByKeyUri(),
+      new StringEntity(
+        "{\n" +
+          "\"processDefinitionKey\": \"" + processDefinitionKey + "\",\n" +
+          "\"includeProcessInstances\": true,\n" +
+          "\"suspended\": " + suspended + "\n" +
+          "}"
+      )
+    );
+  }
+
+  private void performProcessInstanceByInstanceIdSuspensionRequest(
+    final String processInstanceId,
+    final boolean suspended) throws IOException {
+    performSuspensionRequest(
+      getSuspendProcessInstanceByInstanceIdUri(processInstanceId),
+      new StringEntity(
+        "{\n" +
+          "\"suspended\": " + suspended + "\n" +
+          "}"
+      )
+    );
+  }
+
+  private void performProcessInstanceByDefinitionIdSuspensionRequest(
+    final String processDefinitionId,
+    final boolean suspended) throws IOException {
+    performSuspensionRequest(
+      getSuspendProcessInstanceByDefinitionUri(),
+      new StringEntity(
+        "{\n" +
+          "\"processDefinitionId\": \"" + processDefinitionId + "\",\n" +
+          "\"suspended\": " + suspended + "\n" +
+          "}"
+      )
+    );
+  }
+
+  private void performProcessInstanceByDefinitionKeySuspensionRequest(
+    final String processDefinitionKey,
+    final boolean suspended) throws IOException {
+    performSuspensionRequest(
+      getSuspendProcessInstanceByDefinitionUri(),
+      new StringEntity(
+        "{\n" +
+          "\"processDefinitionKey\": \"" + processDefinitionKey + "\",\n" +
+          "\"suspended\": \"" + suspended + "\"\n" +
+          "}"
+      )
+    );
+  }
+
+  private void performProcessInstanceSuspensionViaBatchRequestAndForceBatchExecution(
+    final String processInstanceId,
+    final boolean suspended) throws IOException {
+    HttpPost suspendRequest = new HttpPost(getSuspendProcessInstanceViaBatchUri());
     suspendRequest.setHeader("Content-type", "application/json");
     suspendRequest.setEntity(new StringEntity(
       "{\n" +
-        "\"includeProcessInstances\": true,\n" +
-        "\"suspended\": " + suspended + "\n" +
+        "\"processInstanceIds\": [\"" + processInstanceId + "\"],\n" +
+        "\"suspended\": \"" + suspended + "\"\n" +
         "}"
     ));
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(suspendRequest)) {
-      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
         throw new RuntimeException(
-          "Could not suspend process definition. Status-code: " + response.getStatusLine().getStatusCode()
+          String.format(
+            "Could not suspend or activate process instance with ID %s via batch. Status-code: %s",
+            processInstanceId,
+            response.getStatusLine().getStatusCode()
+          )
         );
       }
+      final String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      final JSONObject batchJsonObject = (JSONObject) JSONValue.parse(responseString);
+      executeBatch(batchJsonObject);
     }
   }
 
-
-  private void performProcessInstanceSuspensionRequest(
-    final String processInstanceId,
-    final boolean suspended) throws IOException {
-    HttpPut suspendRequest = new HttpPut(getSuspendProcessInstanceUri(processInstanceId));
+  private void performSuspensionRequest(final String suspensionUri,
+                                        final StringEntity entity) throws IOException {
+    HttpPut suspendRequest = new HttpPut(suspensionUri);
     suspendRequest.setHeader("Content-type", "application/json");
-    suspendRequest.setEntity(new StringEntity(
-      "{\n" +
-        "\"suspended\": " + suspended + "\n" +
-        "}"
-    ));
+    suspendRequest.setEntity(entity);
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(suspendRequest)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
         throw new RuntimeException(
-          "Could not suspend process instance. Status-code: " + response.getStatusLine().getStatusCode()
+          String.format(
+            "Could not execute suspend operation on endpoint [%s] with parameters [%s]. Status-code: %s",
+            suspensionUri,
+            entity,
+            response.getStatusLine().getStatusCode()
+          )
         );
       }
     }
@@ -804,7 +853,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
             body = EntityUtils.toString(response.getEntity());
           }
           throw new RuntimeException(
-            "Could not start the decision definition. " +
+            "Could not start the decision definition instance. " +
               "Request: [" + post.toString() + "]. " +
               "Response: [" + body + "]"
           );
@@ -817,6 +866,69 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     }
   }
 
+  private void executeBatch(final JSONObject batchJsonObject) throws IOException {
+    // First execute the seed job
+    final String seedJobDefinitionId = batchJsonObject.getAsString("seedJobDefinitionId");
+    final String seedJobId = getJobId(seedJobDefinitionId);
+    executeJob(seedJobId);
+
+    // Then execute the batch job
+    final String batchJobDefinitionId = batchJsonObject.getAsString("batchJobDefinitionId");
+    final String batchJobId = getJobId(batchJobDefinitionId);
+    executeJob(batchJobId);
+  }
+
+  private String getJobId(final String jobDefinitionId) throws IOException {
+    HttpPost getJobRequest = new HttpPost(getGetJobUri());
+    getJobRequest.setHeader("Content-type", "application/json");
+    getJobRequest.setEntity(new StringEntity(
+      "{\n" +
+        "\"jobDefinitionId\": \"" + jobDefinitionId + "\"\n" +
+        "}"
+    ));
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(getJobRequest)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
+        throw new RuntimeException(
+          String.format(
+            "Could not get job with jobDefinitionID %s. Status-code: %s",
+            jobDefinitionId,
+            response.getStatusLine().getStatusCode()
+          )
+        );
+      }
+      final String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+
+      final JSONArray responseJsonArray = (JSONArray) JSONValue.parse(responseString);
+      if (responseJsonArray.size() != 1) {
+        throw new RuntimeException(
+          String.format(
+            "Could not find unique job with jobDefinitionID %s. Found: %s",
+            jobDefinitionId,
+            responseJsonArray
+          )
+        );
+      }
+      final JSONObject jobJson = (JSONObject) responseJsonArray.get(0);
+      return jobJson.getAsString("id");
+    }
+  }
+
+  private void executeJob(final String jobId) throws IOException {
+    HttpPost executeJobRequest = new HttpPost(getExecuteJobUri(jobId));
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(executeJobRequest)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+        throw new RuntimeException(
+          String.format(
+            "Could not execute job with jobID %s. Status-code: %s",
+            jobId,
+            response.getStatusLine().getStatusCode()
+          )
+        );
+      }
+      log.debug("Executed Job with ID " + jobId);
+    }
+  }
+
   private HttpPost createDeploymentRequest(String process, String fileName, String tenantId) {
     HttpPost post = new HttpPost(getDeploymentUri());
     final MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder
@@ -824,7 +936,12 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
       .addTextBody("deployment-name", "deployment")
       .addTextBody("enable-duplicate-filtering", "false")
       .addTextBody("deployment-source", "process application")
-      .addBinaryBody("data", process.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_OCTET_STREAM, fileName);
+      .addBinaryBody(
+        "data",
+        process.getBytes(StandardCharsets.UTF_8),
+        ContentType.APPLICATION_OCTET_STREAM,
+        fileName
+      );
 
     if (tenantId != null) {
       multipartEntityBuilder.addTextBody("tenant-id", tenantId);
@@ -875,7 +992,6 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return getEngineUrl() + "/decision-definition";
   }
 
-
   private String getStartDecisionInstanceUri(final String decisionDefinitionId) {
     return getEngineUrl() + "/decision-definition/" + decisionDefinitionId + "/evaluate";
   }
@@ -884,12 +1000,32 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return getEngineUrl() + "/history/process-instance/count";
   }
 
-  private String getSuspendProcessInstanceUri(final String processInstanceId) {
+  private String getSuspendProcessInstanceByInstanceIdUri(final String processInstanceId) {
     return getEngineUrl() + "/process-instance/" + processInstanceId + "/suspended";
+  }
+
+  private String getSuspendProcessInstanceByDefinitionUri() {
+    return getEngineUrl() + "/process-instance/suspended";
   }
 
   private String getSuspendProcessDefinitionByIdUri(final String processDefinitionId) {
     return getEngineUrl() + "/process-definition/" + processDefinitionId + "/suspended";
+  }
+
+  private String getSuspendProcessDefinitionByKeyUri() {
+    return getEngineUrl() + "/process-definition/suspended";
+  }
+
+  private String getSuspendProcessInstanceViaBatchUri() {
+    return getEngineUrl() + "/process-instance/suspended-async";
+  }
+
+  private String getGetJobUri() {
+    return getEngineUrl() + "/job";
+  }
+
+  private String getExecuteJobUri(final String jobId) {
+    return getEngineUrl() + "/job/" + jobId + "/execute";
   }
 
   private String getEngineUrl() {
@@ -981,8 +1117,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   public ProcessInstanceEngineDto startProcessInstance(String procDefId,
-                                                        Map<String, Object> variables,
-                                                        String businessKey) {
+                                                       Map<String, Object> variables,
+                                                       String businessKey) {
     HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
     post.addHeader("Content-Type", "application/json");
     Map<String, Object> requestBodyAsMap = convertVariableMap(variables);
@@ -998,7 +1134,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
             body = EntityUtils.toString(response.getEntity());
           }
           throw new RuntimeException(
-            "Could not start the process definition. " +
+            "Could not start the process instance. " +
               "Request: [" + post.toString() + "]. " +
               "Response: [" + body + "]"
           );
@@ -1012,7 +1148,6 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
       throw new RuntimeException(message, e);
     }
   }
-
 
   private Map<String, Object> convertVariableMap(Map<String, Object> plainVariables) {
     Map<String, Object> variables = createConvertedVariableMap(plainVariables);

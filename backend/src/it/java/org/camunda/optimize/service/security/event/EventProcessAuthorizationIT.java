@@ -7,7 +7,6 @@ package org.camunda.optimize.service.security.event;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.apache.http.HttpStatus;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
@@ -80,8 +79,9 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   public void getEventProcessMappingWithIdWithoutEventSourceAuthorization() {
     // given
     final String eventProcessName = "anEventProcessName";
-    final String definitionKey1 = "aKey1";
-    final String definitionKey2 = "aKey2";
+    final String definitionKey1 = deployAndStartProcess().getProcessDefinitionKey();
+    final String definitionKey2 = deployAndStartProcess().getProcessDefinitionKey();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
     final Map<String, EventMappingDto> processMappings = Collections.singletonMap(
       USER_TASK_ID_THREE,
@@ -120,7 +120,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -139,8 +139,9 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
   @Test
   public void getAllEventProcessMappingsWithPartialEventSourceAuthorization() {
     final String eventProcessName = "anEventProcessName";
-    final String definitionKey1 = "aKey1";
-    final String definitionKey2 = "aKey2";
+    final String definitionKey1 = deployAndStartProcess().getProcessDefinitionKey();
+    final String definitionKey2 = deployAndStartProcess().getProcessDefinitionKey();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
 
     final Map<String, EventMappingDto> processMappings = Collections.singletonMap(
       USER_TASK_ID_THREE,
@@ -188,7 +189,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
     List<EventProcessMappingDto> allMappings = eventProcessClient.getAllEventProcessMappings(KERMIT_USER, KERMIT_USER);
 
     // then only mappings where the user has authorization to see all event sources are returned
-    assertThat(allMappings.size()).isEqualTo(1);
+    assertThat(allMappings).hasSize(1);
     assertThat(allMappings.get(0).getId()).isEqualTo(expectedId);
   }
 
@@ -247,7 +248,7 @@ public class EventProcessAuthorizationIT extends AbstractEventProcessIT {
     ).execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(HttpStatus.SC_FORBIDDEN);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private EventSourceEntryDto createCamundaEventSourceEntry(final String processDefinitionKey) {

@@ -5,23 +5,23 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import com.google.common.collect.ImmutableList;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+
+import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ReportConstants {
 
   // report data structure constants
   public static final String VIEW_RAW_DATA_OPERATION = "rawData";
-  public static final String VIEW_COUNT_OPERATION = "count";
 
   public static final String VIEW_FLOW_NODE_ENTITY = "flowNode";
   public static final String VIEW_USER_TASK_ENTITY = "userTask";
   public static final String VIEW_PROCESS_INSTANCE_ENTITY = "processInstance";
-
-  public static final String VIEW_DECISION_MATCHED_RULE_ENTITY = "matchedRule";
-  public static final String VIEW_DECISION_INSTANCE_ENTITY = "decisionInstance";
+  public static final String VIEW_VARIABLE_ENTITY = "variable";
 
   public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
   public static final String VIEW_DURATION_PROPERTY = "duration";
@@ -65,6 +65,7 @@ public class ReportConstants {
   public static final String MIN_AGGREGATION_TYPE = "min";
   public static final String MAX_AGGREGATION_TYPE = "max";
   public static final String MEDIAN_AGGREGATION_TYPE = "median";
+  public static final String SUM_AGGREGATION_TYPE = "sum";
 
   public static final String DISTRIBUTED_BY_NONE = "none";
   public static final String DISTRIBUTED_BY_USER_TASK = "userTask";
@@ -78,6 +79,10 @@ public class ReportConstants {
   public static final String IDLE_USER_TASK_DURATION_TIME = "idle";
   public static final String WORK_USER_TASK_DURATION_TIME = "work";
   public static final String TOTAL_USER_TASK_DURATION_TIME = "total";
+
+  // alert constants
+  public static final String ALERT_THRESHOLD_OPERATOR_GREATER = ">";
+  public static final String ALERT_THRESHOLD_OPERATOR_LESS = "<";
 
   // miscellaneous report constants
   public static final String ALL_VERSIONS = "ALL";
@@ -111,5 +116,13 @@ public class ReportConstants {
   public static final String DATE_TYPE = "Date";
   public static final String DATE_TYPE_LOWERCASE = "date";
 
-  public static final VariableType[] ALL_SUPPORTED_VARIABLE_TYPES = VariableType.values();
+  public static final List<VariableType> ALL_SUPPORTED_VARIABLE_TYPES = ImmutableList.copyOf(VariableType.values());
+
+  // A report result can have three states in theory for duration reports:
+  // * an arbitrary positive value,
+  // * zero duration
+  // * no data available
+  // To differentiate between an activity/process instance took 0ms and no data available the
+  // null result indicates that there's no data.
+  public static final Double NO_DATA_AVAILABLE_RESULT = null;
 }

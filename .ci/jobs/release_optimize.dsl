@@ -3,6 +3,11 @@ pipelineJob('camunda-optimize-release') {
   displayName 'Release Camunda Optimize'
   description 'Release Camunda Optimize to Camunda Nexus and tag GitHub repository.'
 
+  // By default, this job is disabled in non-prod envs.
+  if (binding.variables.get("ENVIRONMENT") != "prod") {
+    disabled()
+  }
+
   definition {
     cpsScm {
       scriptPath('.ci/pipelines/release_optimize.groovy')

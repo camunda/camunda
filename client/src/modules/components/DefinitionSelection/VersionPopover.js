@@ -31,7 +31,7 @@ export default function VersionPopover({
   }
 
   return (
-    <Popover className="VersionPopover" title={title} disabled={disabled}>
+    <Popover className="VersionPopover" title={title} disabled={disabled || !versions}>
       <Form compact>
         <Form.Group>
           <LabeledInput
@@ -49,7 +49,7 @@ export default function VersionPopover({
           <LabeledInput
             label={t(
               `common.definitionSelection.version.specific.label${
-                versions.length === 1 ? '' : '-plural'
+                versions?.length === 1 ? '' : '-plural'
               }`
             )}
             type="radio"
@@ -62,7 +62,7 @@ export default function VersionPopover({
               disabled: !specific,
             })}
           >
-            {versions.map(({version, versionTag}) => {
+            {versions?.map(({version, versionTag}) => {
               return (
                 <LabeledInput
                   key={version}

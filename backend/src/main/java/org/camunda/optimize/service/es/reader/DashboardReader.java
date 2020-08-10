@@ -22,9 +22,9 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.DashboardIndex.COLLECTION_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
@@ -38,7 +38,7 @@ public class DashboardReader {
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
 
-  public DashboardDefinitionDto getDashboard(String dashboardId) {
+  public Optional<DashboardDefinitionDto> getDashboard(String dashboardId) {
     log.debug("Fetching dashboard with id [{}]", dashboardId);
     GetRequest getRequest = new GetRequest(DASHBOARD_INDEX_NAME).id(dashboardId);
 
@@ -51,22 +51,21 @@ public class DashboardReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    if (getResponse.isExists()) {
-      String responseAsString = getResponse.getSourceAsString();
-      try {
-        return objectMapper.readValue(responseAsString, DashboardDefinitionDto.class);
-      } catch (IOException e) {
-        String reason = "Could not deserialize dashboard information for dashboard " + dashboardId;
-        log.error(
-          "Was not able to retrieve dashboard with id [{}] from Elasticsearch. Reason: {}",
-          dashboardId,
-          reason
-        );
-        throw new OptimizeRuntimeException(reason, e);
-      }
-    } else {
-      log.error("Was not able to retrieve dashboard with id [{}] from Elasticsearch.", dashboardId);
-      throw new NotFoundException("Dashboard does not exist! Tried to retrieve dashboard with id " + dashboardId);
+    if (!getResponse.isExists()) {
+      return Optional.empty();
+    }
+
+    String responseAsString = getResponse.getSourceAsString();
+    try {
+      return Optional.ofNullable(objectMapper.readValue(responseAsString, DashboardDefinitionDto.class));
+    } catch (IOException e) {
+      String reason = "Could not deserialize dashboard information for dashboard " + dashboardId;
+      log.error(
+        "Was not able to retrieve dashboard with id [{}] from Elasticsearch. Reason: {}",
+        dashboardId,
+        reason
+      );
+      throw new OptimizeRuntimeException(reason, e);
     }
   }
 
@@ -88,10 +87,10 @@ public class DashboardReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
   }
 
-  public List<DashboardDefinitionDto> findFirstDashboardsForReport(String reportId) {
+  public List<DashboardDefinitionDto> findDashboardsForReport(String reportId) {
     log.debug("Fetching dashboards using report with id {}", reportId);
 
     final QueryBuilder getCombinedReportsBySimpleReportIdQuery = QueryBuilders.boolQuery()
@@ -116,7 +115,7 @@ public class DashboardReader {
       throw new OptimizeRuntimeException(reason, e);
     }
 
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
   }
 
 }

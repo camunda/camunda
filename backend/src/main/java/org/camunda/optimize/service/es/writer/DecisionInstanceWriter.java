@@ -42,14 +42,14 @@ public class DecisionInstanceWriter {
   private final DateTimeFormatter dateTimeFormatter;
   private final OptimizeElasticsearchClient esClient;
 
-  public void importDecisionInstances(List<DecisionInstanceDto> decisionInstanceDtos) throws Exception {
+  public void importDecisionInstances(List<DecisionInstanceDto> decisionInstanceDtos) {
     String importItemName = "decision definition information";
     log.debug("Writing [{}] {} to ES.", decisionInstanceDtos.size(), importItemName);
     ElasticsearchWriterUtil.doBulkRequestWithList(
       esClient,
       importItemName,
       decisionInstanceDtos,
-      (request, dto) -> addImportDecisionInstanceRequest(request, dto)
+      this::addImportDecisionInstanceRequest
     );
   }
 
@@ -102,6 +102,7 @@ public class DecisionInstanceWriter {
         filterQuery,
         deletedItemName,
         deletedItemIdentifier,
+        true,
         DECISION_INSTANCE_INDEX_NAME
       );
     } finally {

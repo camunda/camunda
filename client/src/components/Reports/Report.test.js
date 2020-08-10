@@ -13,6 +13,10 @@ import ReportView from './ReportView';
 
 import {loadEntity, evaluateReport} from 'services';
 
+jest.mock('config', () => ({
+  newReport: {new: {data: {configuration: {data: 'rest of configuration'}}}},
+}));
+
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
   return {
@@ -73,6 +77,35 @@ it('should not evaluate the report if it is new', () => {
   shallow(<Report {...props} match={{params: {id: 'new'}}} />);
 
   expect(evaluateReport).not.toHaveBeenCalled();
+});
+
+it('should apply templates from the location state', async () => {
+  const node = await shallow(
+    <Report
+      {...props}
+      match={{params: {id: 'new', viewMode: 'edit'}}}
+      location={{
+        state: {
+          name: 'Template Report',
+          data: {
+            configuration: {xml: 'processXML'},
+            processDefinitionKey: 'key',
+            processDefinitionName: 'Definition Name',
+            processDefinitionVersions: ['latest'],
+            tenantIds: [null, 'a'],
+            view: {entity: 'flowNode', property: 'frequency'},
+            groupBy: {type: 'flowNodes', value: null},
+            visualization: 'heat',
+          },
+        },
+      }}
+    />
+  );
+
+  const report = node.find(ReportEdit).prop('report');
+
+  expect(report.name).toBe('Template Report');
+  expect(report.data).toMatchSnapshot();
 });
 
 it('should render ReportEdit component if viewMode is edit', () => {

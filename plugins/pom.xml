@@ -5,11 +5,15 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.0-alpha2</version>
+    <version>3.2.0-alpha2</version>
   </parent>
 
   <artifactId>optimize-plugin-parent</artifactId>
   <packaging>pom</packaging>
+
+  <properties>
+    <sonar.skip>true</sonar.skip>
+  </properties>
 
   <modules>
     <module>plugin</module>

@@ -58,7 +58,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.sum;
 public class EventSequenceCountReader {
 
   private static final String GROUP_AGG = EventCountDto.Fields.group;
-  private static final String SOURCE__AGG = EventCountDto.Fields.source;
+  private static final String SOURCE_AGG = EventCountDto.Fields.source;
   private static final String EVENT_NAME_AGG = EventCountDto.Fields.eventName;
   private static final String COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION =
     "compositeEventNameSourceAndGroupAggregation";
@@ -91,7 +91,7 @@ public class EventSequenceCountReader {
       log.error("Was not able to retrieve event sequence counts!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve event sequence counts!", e);
     }
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
   }
 
   public List<EventCountDto> getEventCounts(final String searchTerm) {
@@ -146,7 +146,7 @@ public class EventSequenceCountReader {
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
-    return ElasticsearchHelper.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
+    return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
   }
 
   public List<EventSequenceCountDto> getAllSequenceCounts() {
@@ -162,11 +162,14 @@ public class EventSequenceCountReader {
     try {
       scrollResponse = esClient.search(searchRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      final String errorMessage = String.format("Was not able to retrieve event sequence counts for index key %s!", indexKey);
+      final String errorMessage = String.format(
+        "Was not able to retrieve event sequence counts for index key %s!",
+        indexKey
+      );
       log.error(errorMessage, e);
       throw new OptimizeRuntimeException(errorMessage, e);
     }
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResponse,
       EventSequenceCountDto.class,
       objectMapper,
@@ -175,14 +178,11 @@ public class EventSequenceCountReader {
     );
   }
 
-  private QueryBuilder buildSequencedEventsQuery(
-    final List<EventTypeDto> incomingEvents,
-    final List<EventTypeDto> outgoingEvents) {
+  private QueryBuilder buildSequencedEventsQuery(final List<EventTypeDto> incomingEvents,
+                                                 final List<EventTypeDto> outgoingEvents) {
     final BoolQueryBuilder query = boolQuery();
-    incomingEvents
-      .forEach(eventType -> query.should(buildEventTypeBoolQueryForProperty(eventType, SOURCE_EVENT)));
-    outgoingEvents
-      .forEach(eventType -> query.should(buildEventTypeBoolQueryForProperty(eventType, TARGET_EVENT)));
+    incomingEvents.forEach(eventType -> query.should(buildEventTypeBoolQueryForProperty(eventType, SOURCE_EVENT)));
+    outgoingEvents.forEach(eventType -> query.should(buildEventTypeBoolQueryForProperty(eventType, TARGET_EVENT)));
     return query;
   }
 
@@ -230,7 +230,7 @@ public class EventSequenceCountReader {
     List<CompositeValuesSourceBuilder<?>> eventAndSourceAndGroupTerms = new ArrayList<>();
     eventAndSourceAndGroupTerms.add(new TermsValuesSourceBuilder(EVENT_NAME_AGG)
                                       .field(SOURCE_EVENT + "." + EVENT_NAME));
-    eventAndSourceAndGroupTerms.add(new TermsValuesSourceBuilder(SOURCE__AGG)
+    eventAndSourceAndGroupTerms.add(new TermsValuesSourceBuilder(SOURCE_AGG)
                                       .field(SOURCE_EVENT + "." + SOURCE)
                                       .missingBucket(true));
     eventAndSourceAndGroupTerms.add(new TermsValuesSourceBuilder(GROUP_AGG)
@@ -247,7 +247,7 @@ public class EventSequenceCountReader {
 
   private EventCountDto extractEventCounts(final ParsedComposite.ParsedBucket bucket) {
     final String eventName = (String) (bucket.getKey()).get(EVENT_NAME_AGG);
-    final String source = (String) (bucket.getKey().get(SOURCE__AGG));
+    final String source = (String) (bucket.getKey().get(SOURCE_AGG));
     final String group = (String) (bucket.getKey().get(GROUP_AGG));
 
     final long count = (long) ((Sum) bucket.getAggregations().get(COUNT_AGG)).getValue();

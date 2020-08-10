@@ -20,8 +20,8 @@ public class InsertDataStep implements UpgradeStep {
   }
 
   @Override
-  public void execute(final ESIndexAdjuster ESIndexAdjuster) {
-    ESIndexAdjuster.insertDataByIndexName(index, data);
+  public void execute(final ESIndexAdjuster esIndexAdjuster) {
+    esIndexAdjuster.insertDataByIndexName(index, data);
   }
 
 }

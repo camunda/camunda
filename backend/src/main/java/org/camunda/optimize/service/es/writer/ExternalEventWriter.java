@@ -9,7 +9,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -18,17 +20,25 @@ import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
+
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 
 @AllArgsConstructor
 @Slf4j
 @Component
 public class ExternalEventWriter {
   private final OptimizeElasticsearchClient esClient;
+  private final DateTimeFormatter dateTimeFormatter;
   private final ObjectMapper objectMapper;
 
   public void upsertEvents(final List<EventDto> eventDtos) {
@@ -56,6 +66,34 @@ public class ExternalEventWriter {
         log.error(errorMessage, e);
         throw new OptimizeRuntimeException(errorMessage, e);
       }
+    }
+  }
+
+  public void deleteEventsOlderThan(final OffsetDateTime timestamp) {
+    final String deletedItemName = "external events";
+    final String deletedItemIdentifier = String.format("%s with timestamp older than %s", deletedItemName, timestamp);
+
+    log.info("Deleting {} with timestamp older than {}", deletedItemName, timestamp);
+    final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
+      getClass().getName(), esClient, DeleteByQueryAction.NAME
+    );
+    try {
+      progressReporter.start();
+      final BoolQueryBuilder filterQuery = boolQuery()
+        .filter(rangeQuery(EventIndex.TIMESTAMP).lt(dateTimeFormatter.format(timestamp)));
+
+      ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+        esClient,
+        filterQuery,
+        deletedItemName,
+        deletedItemIdentifier,
+        false,
+        // use wildcarded index name to catch all indices that exist after potential rollover
+        esClient.getIndexNameService()
+          .createVersionedOptimizeIndexPattern(new EventIndex())
+      );
+    } finally {
+      progressReporter.stop();
     }
   }
 

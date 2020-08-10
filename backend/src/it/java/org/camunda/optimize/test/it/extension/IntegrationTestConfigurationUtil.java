@@ -14,10 +14,10 @@ import java.util.Properties;
 
 @UtilityClass
 public class IntegrationTestConfigurationUtil {
-  public static final String DEFAULT_PROPERTIES_PATH = "integration-extensions.properties";
+  private static final String DEFAULT_PROPERTIES_PATH = "integration-extensions.properties";
   private static final Properties PROPERTIES = PropertyUtil.loadProperties(DEFAULT_PROPERTIES_PATH);
 
-  public static String getDefaultEngineName() {
+  private static String getDefaultEngineName() {
     return PROPERTIES.getProperty("camunda.optimize.engine.default.name");
   }
 

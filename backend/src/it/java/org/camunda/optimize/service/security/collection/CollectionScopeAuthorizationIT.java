@@ -12,8 +12,6 @@ import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -61,6 +59,7 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class CollectionScopeAuthorizationIT extends AbstractIT {
 
@@ -216,14 +215,13 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
   @Test
   public void getScopesForAuthorizedCollection_groupSpecific() {
     // given
-    deploySimpleProcessDefinition("KEY_1", null);
-    deploySimpleProcessDefinition("KEY_2", null);
+    engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram("KEY_1"), null);
+    engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram("KEY_2"), null);
     final String collectionId = collectionClient.createNewCollection();
     createScopeForCollection(collectionId, "KEY_1", RESOURCE_TYPE_PROCESS_DEFINITION);
     createScopeForCollection(collectionId, "KEY_2", RESOURCE_TYPE_PROCESS_DEFINITION);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     authorizationClient.addKermitUserWithoutAuthorizations();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
@@ -579,7 +577,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
     final String unauthorizedTenant = "unauthorizedTenant";
     engineIntegrationExtension.createTenant(unauthorizedTenant);
     // import tenant so he's available in the tenant cache
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
     final String collectionId = collectionClient.createNewCollection();
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantSingleResourceAuthorizationForKermit("KEY", definitionResourceType);
@@ -665,7 +663,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
                                          final String tenantId) {
     switch (definitionResourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        deploySimpleProcessDefinition(definitionKey, tenantId);
+        engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram(definitionKey), tenantId);
         break;
       case RESOURCE_TYPE_DECISION_DEFINITION:
         deploySimpleDecisionDefinition(definitionKey, tenantId);
@@ -674,16 +672,7 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
         throw new IllegalStateException("Uncovered definitionResourceType: " + definitionResourceType);
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-  }
-
-  private void deploySimpleProcessDefinition(final String key, String tenantId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(key)
-      .startEvent()
-      .endEvent()
-      .done();
-    engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
+    importAllEngineEntitiesFromScratch();
   }
 
   private void deploySimpleDecisionDefinition(final String decisionKey, final String tenantId) {

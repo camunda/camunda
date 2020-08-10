@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import {Switch} from 'components';
+import {Switch, LabeledInput} from 'components';
 import AllColumnsButtons from './AllColumnsButtons';
 
 import './ColumnSelection.scss';
@@ -26,7 +26,10 @@ export default function ColumnSelection({report, onChange}) {
     return null;
   }
 
-  const excludedColumns = data.configuration.excludedColumns || [];
+  const {
+    tableColumns: {excludedColumns, includedColumns, includeNewVariables},
+  } = data.configuration;
+
   const allColumns = Object.keys(columns).reduce((prev, curr) => {
     const value = columns[curr];
     if (typeof value !== 'object' || value === null) {
@@ -40,8 +43,24 @@ export default function ColumnSelection({report, onChange}) {
     <fieldset className="ColumnSelection">
       <legend>{t('report.config.includeTableColumn')}</legend>
       <AllColumnsButtons
-        enableAll={() => onChange({excludedColumns: {$set: []}})}
-        disableAll={() => onChange({excludedColumns: {$set: allColumns}})}
+        enableAll={() =>
+          onChange({
+            tableColumns: {excludedColumns: {$set: []}, includedColumns: {$set: allColumns}},
+          })
+        }
+        disableAll={() =>
+          onChange({
+            tableColumns: {excludedColumns: {$set: allColumns}, includedColumns: {$set: []}},
+          })
+        }
+      />
+      <LabeledInput
+        type="checkbox"
+        checked={includeNewVariables}
+        label={t('report.config.includeNewVariables')}
+        onChange={({target: {checked}}) =>
+          onChange({tableColumns: {includeNewVariables: {$set: checked}}})
+        }
       />
       {allColumns.map((column) => {
         let prefix, name;
@@ -70,10 +89,18 @@ export default function ColumnSelection({report, onChange}) {
             onChange={({target: {checked}}) => {
               if (checked) {
                 onChange({
-                  excludedColumns: {$set: excludedColumns.filter((entry) => column !== entry)},
+                  tableColumns: {
+                    excludedColumns: {$set: excludedColumns.filter((entry) => column !== entry)},
+                    includedColumns: {$push: [column]},
+                  },
                 });
               } else {
-                onChange({excludedColumns: {$set: excludedColumns.concat(column)}});
+                onChange({
+                  tableColumns: {
+                    excludedColumns: {$push: [column]},
+                    includedColumns: {$set: includedColumns.filter((entry) => column !== entry)},
+                  },
+                });
               }
             }}
             label={

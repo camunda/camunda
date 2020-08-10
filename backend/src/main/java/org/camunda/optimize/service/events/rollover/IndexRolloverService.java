@@ -10,7 +10,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.reader.ElasticsearchHelper;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
 import org.elasticsearch.client.GetAliasesResponse;
@@ -61,7 +61,7 @@ public class IndexRolloverService extends AbstractScheduledService {
     aliasesToConsiderRolling
       .forEach(indexAlias -> {
         try {
-          boolean isRolledOver = ElasticsearchHelper.triggerRollover(
+          boolean isRolledOver = ElasticsearchWriterUtil.triggerRollover(
             esClient,
             indexAlias,
             configurationService.getEventIndexRolloverConfiguration().getMaxIndexSizeGB()
@@ -88,4 +88,5 @@ public class IndexRolloverService extends AbstractScheduledService {
       .map(alias -> alias.substring(configurationService.getEsIndexPrefix().length() + 1))
       .collect(Collectors.toSet());
   }
+
 }

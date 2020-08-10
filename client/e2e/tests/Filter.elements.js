@@ -6,20 +6,19 @@
 
 import {Selector} from 'testcafe';
 
-export const variableFilterTypeahead = Selector('.Modal__content .Typeahead');
-export const variableFilterTypeaheadInput = Selector('.Modal__content .Typeahead .Input');
-export const variableFilterTypeaheadOption = (text) =>
+export const typeahead = Selector('.Modal__content .Typeahead');
+export const typeaheadInput = Selector('.Modal__content .Typeahead .Input');
+export const typeaheadOption = (text) =>
   Selector('.Modal__content .Typeahead .DropdownOption').withText(text);
 export const variableFilterOperatorButton = (text) =>
-  Selector('.Modal .VariableFilter__buttonRow .Button').withText(text);
-export const variableFilterValueInput = Selector('.Modal .VariableFilter__valueFields input').nth(
-  -1
-);
+  Selector('.Modal .buttonRow .Button').withText(text);
+export const variableFilterValueInput = Selector('.Modal .valueFields input').nth(-1);
+export const typeaheadAddButton = Selector('.InputGroup > .Button').withText('Add');
 export const dateFilterTypeSelect = Selector('.DateRangeInput .Dropdown');
 export const dateFilterTypeOption = (text) =>
   Selector('.DateRangeInput .DropdownOption').withText(text);
-export const dateFilterStartInput = Selector('.DateFields .DateInput:first-child input');
-export const dateFilterEndInput = Selector('.DateFields .DateInput:last-child input');
+export const dateFilterStartInput = Selector('.DateFields .PickerDateInput:first-child input');
+export const dateFilterEndInput = Selector('.DateFields .PickerDateInput:last-child input');
 export const pickerDate = (number) =>
   Selector('.DateFields .rdrMonths .rdrMonth:first-child .rdrDay').withText(number);
 export const infoText = Selector('.Modal__content .tip');
@@ -29,6 +28,10 @@ export const customDateInput = Selector('.unitSelection').find('input');
 export const durationFilterOperator = Selector('.DurationFilter .Select');
 export const durationFilterInput = Selector('.DurationFilter input[type="text"]');
 export const modalCancel = Selector('.Modal .Button').withText('Cancel');
-export const addValueButton = Selector('.Modal .NumberInput__addValueButton');
-export const nullSwitch = Selector('.Modal__content .Form .Switch');
+export const addValueButton = Selector('.Modal .addValueButton');
 export const stringValues = Selector('.TypeaheadMultipleSelection__valueList');
+export const firstMultiSelectValue = Selector(
+  '.TypeaheadMultipleSelection__valueList .LabeledInput'
+);
+export const multiSelectValue = (text) => firstMultiSelectValue.withText(text);
+export const confirmButton = Selector('.Modal .Modal__actions .primary');

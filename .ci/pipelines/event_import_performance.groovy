@@ -1,10 +1,9 @@
 #!/usr/bin/env groovy
 
-boolean slaveDisconnected() {
-  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
-}
+// https://github.com/camunda/jenkins-global-shared-library
+@Library('camunda-ci') _
 
-def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.1-jdk-8-slim" }
+def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
@@ -28,11 +27,11 @@ spec:
     tty: true
     resources:
       limits:
-        cpu: 500m
-        memory: 512Mi
+        cpu: 2
+        memory: 1Gi
       requests:
-        cpu: 500m
-        memory: 512Mi
+        cpu: 2
+        memory: 1Gi
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}
     command: ["cat"]
@@ -196,7 +195,7 @@ pipeline {
                 set -o pipefail
 
                 # ingest events
-                bash .ci/pipelines/event_import_performance/ingestEvents.sh ${NAMESPACE} .ci/pipelines/event_import_performance/eventTemplates ${EXTERNAL_EVENT_COUNT} secret
+                bash .ci/pipelines/event_import_performance/ingestEvents.sh ${NAMESPACE} ${EXTERNAL_EVENT_COUNT} secret
 
                 curl -s -X POST 'http://elasticsearch.${NAMESPACE}:9200/_refresh'
                 # assert expected counts
@@ -260,7 +259,7 @@ pipeline {
       }
       // Retrigger the build if the slave disconnected
       script {
-        if (slaveDisconnected()) {
+        if (agentDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }

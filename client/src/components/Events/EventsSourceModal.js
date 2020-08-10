@@ -17,29 +17,33 @@ import {
   Message,
   ButtonGroup,
   MessageBox,
+  DocsLink,
 } from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
 import {loadVariables} from 'services';
 import {showError} from 'notifications';
+
 import ExternalSource from './ExternalSource';
 import {loadEvents} from './service';
 
 import './EventsSourceModal.scss';
-import {getOptimizeVersion} from 'config';
 
+const defaultSource = {
+  processDefinitionKey: '',
+  processDefinitionName: '',
+  versions: [],
+  tenants: [],
+  eventScope: ['process_instance'],
+  tracedByBusinessKey: false,
+  traceVariable: null,
+};
 export default withErrorHandling(
   class EventsSourceModal extends React.Component {
     state = {
-      source: {
-        processDefinitionKey: '',
-        processDefinitionName: '',
-        versions: [],
-        tenants: [],
-        eventScope: ['process_instance'],
-        tracedByBusinessKey: false,
-        traceVariable: null,
-      },
+      source: this.props.initialSource?.processDefinitionKey
+        ? this.props.initialSource
+        : defaultSource,
       variables: null,
       type: 'camunda',
       externalExist: false,
@@ -47,14 +51,9 @@ export default withErrorHandling(
 
     componentDidMount = async () => {
       if (this.isEditing()) {
-        this.setState({source: this.props.initialSource});
         const {processDefinitionKey, versions, tenants} = this.props.initialSource;
         this.loadVariables(processDefinitionKey, versions, tenants);
       }
-
-      const version = (await getOptimizeVersion()).split('.');
-      version.length = 2;
-      this.setState({optimizeVersion: version.join('.')});
 
       this.props.mightFail(
         loadEvents({eventSources: [{type: 'external'}]}),
@@ -88,7 +87,7 @@ export default withErrorHandling(
       this.props.onConfirm(updatedSources);
     };
 
-    isEditing = () => this.props.initialSource.processDefinitionKey;
+    isEditing = () => this.props.initialSource?.processDefinitionKey;
 
     alreadyExists = () =>
       this.props.existingSources.some(
@@ -129,7 +128,7 @@ export default withErrorHandling(
 
     render() {
       const {onClose, existingSources, autoGenerate} = this.props;
-      const {optimizeVersion, source, variables, type, externalExist} = this.state;
+      const {source, variables, type, externalExist} = this.state;
       const {
         processDefinitionKey,
         versions,
@@ -138,7 +137,6 @@ export default withErrorHandling(
         traceVariable,
         eventScope,
       } = source;
-      const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/user-guide/event-based-processes/#camunda-events`;
       const externalAlreadyAdded = existingSources.some((src) => src.type === 'external');
 
       return (
@@ -147,18 +145,23 @@ export default withErrorHandling(
             {this.isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
           </Modal.Header>
           <Modal.Content>
-            <ButtonGroup>
-              <Button active={type === 'camunda'} onClick={() => this.setState({type: 'camunda'})}>
-                {t('events.sources.camundaEvents')}
-              </Button>
-              <Button
-                active={type === 'external'}
-                onClick={() => this.setState({type: 'external'})}
-                disabled={this.isEditing() || externalAlreadyAdded}
-              >
-                {t('events.sources.externalEvents')}
-              </Button>
-            </ButtonGroup>
+            {!this.isEditing() && (
+              <ButtonGroup>
+                <Button
+                  active={type === 'camunda'}
+                  onClick={() => this.setState({type: 'camunda'})}
+                >
+                  {t('events.sources.camundaEvents')}
+                </Button>
+                <Button
+                  active={type === 'external'}
+                  onClick={() => this.setState({type: 'external'})}
+                  disabled={externalAlreadyAdded}
+                >
+                  {t('events.sources.externalEvents')}
+                </Button>
+              </ButtonGroup>
+            )}
             {type === 'camunda' && (
               <>
                 <DefinitionSelection
@@ -168,7 +171,7 @@ export default withErrorHandling(
                   tenants={tenants}
                   disableDefinition={this.isEditing()}
                   expanded
-                  excludeEventProcesses
+                  camundaEventImportedOnly
                   onChange={({key, name, versions, tenantIds}) => {
                     this.loadVariables(key, versions, tenantIds);
                     this.setState({
@@ -224,12 +227,12 @@ export default withErrorHandling(
                       <div className="displayHeader">
                         <h4>
                           {autoGenerate
-                            ? t('events.source.generatedEvents')
+                            ? t('events.sources.generatedEvents')
                             : t('events.sources.display')}
                         </h4>
-                        <a href={docsLink} target="_blank" rel="noopener noreferrer">
+                        <DocsLink location="user-guide/event-based-processes/#camunda-events">
                           {t('events.sources.learnMore')}
-                        </a>
+                        </DocsLink>
                       </div>
                       <LabeledInput
                         label={t('events.sources.startAndEnd')}
@@ -256,9 +259,9 @@ export default withErrorHandling(
                   {this.isEditing() && (
                     <MessageBox type="warning">
                       {t('events.sources.definitionChangeWarning')}{' '}
-                      <a href={docsLink} target="_blank" rel="noopener noreferrer">
+                      <DocsLink location="user-guide/event-based-processes/#camunda-events">
                         {t('events.sources.learnMore')}
-                      </a>
+                      </DocsLink>
                     </MessageBox>
                   )}
                 </Form>

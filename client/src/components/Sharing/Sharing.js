@@ -14,6 +14,10 @@ import {
   Button,
   LoadingIndicator,
   ErrorPage,
+  EntityName,
+  LastModifiedInfo,
+  ReportDetails,
+  InstanceCount,
 } from 'components';
 import {Link} from 'react-router-dom';
 import {evaluateEntity, createLoadReportCallback} from './service';
@@ -68,33 +72,46 @@ export default class Sharing extends React.Component {
 
   render() {
     const {loading, evaluationResult} = this.state;
+    const type = this.getType();
+
     if (loading) {
       return <LoadingIndicator />;
     }
 
-    if (!evaluationResult || !this.hasValidType(this.getType())) {
+    if (!evaluationResult || !this.hasValidType(type)) {
       return <ErrorPage noLink />;
     }
 
     const SharingView = this.getSharingView();
     return (
       <div className="Sharing">
-        <div className="Sharing__header">
-          <div className="Sharing__title-container">
-            <h1 className="Sharing__title">{evaluationResult.name}</h1>
+        <div className="header">
+          <div className="title-container">
+            <EntityName
+              details={
+                type === 'report' ? (
+                  <ReportDetails report={evaluationResult} />
+                ) : (
+                  <LastModifiedInfo entity={evaluationResult} />
+                )
+              }
+            >
+              {evaluationResult.name}
+            </EntityName>
             <Link
               target="_blank"
               to={`/${this.getType()}/${this.state.evaluationResult.id}/`}
-              className="Sharing__title-button"
+              className="title-button"
             >
-              <Button>
+              <Button main>
                 <Icon type="share" renderedIn="span" />
                 <span>{t('common.sharing.openInOptimize')}</span>
               </Button>
             </Link>
           </div>
+          {type === 'report' && <InstanceCount report={evaluationResult} />}
         </div>
-        <div className="Sharing__content">{SharingView}</div>
+        <div className="content">{SharingView}</div>
       </div>
     );
   }

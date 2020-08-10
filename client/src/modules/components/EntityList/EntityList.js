@@ -5,11 +5,10 @@
  */
 
 import React, {useState} from 'react';
-
 import classnames from 'classnames';
 
 import {t} from 'translation';
-import {LoadingIndicator} from 'components';
+import {LoadingIndicator, Icon, Dropdown} from 'components';
 
 import SearchField from './SearchField';
 import ListItem from './ListItem';
@@ -25,6 +24,8 @@ export default function EntityList({
   empty,
   embedded,
   columns,
+  sorting,
+  onSortingChange,
 }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [scrolled, setScrolled] = useState(false);
@@ -39,6 +40,7 @@ export default function EntityList({
   const hasResults = searchFilteredData.length > 0;
   const hasWarning = entries.some(({warning}) => warning);
   const hasSingleAction = entries.every(({actions}) => !actions || actions.length <= 1);
+  const hasSorting = columns?.some((config) => config.key);
 
   return (
     <div
@@ -48,27 +50,71 @@ export default function EntityList({
       <div className="header">
         <div className="titleBar">
           <h1>{name}</h1>
-          <SearchField value={searchQuery} onChange={setSearchQuery} />
+          {!embedded && <SearchField value={searchQuery} onChange={setSearchQuery} />}
+          {hasSorting && (
+            <Dropdown icon label={<Icon type="sort-menu" />} className="sortMenu">
+              {columns
+                .filter((config) => typeof config === 'object')
+                .map(({name, key, defaultOrder}) => (
+                  <Dropdown.Option
+                    checked={sorting?.key === key}
+                    key={key}
+                    onClick={() => onSortingChange(key, defaultOrder)}
+                  >
+                    {name}
+                  </Dropdown.Option>
+                ))}
+            </Dropdown>
+          )}
           <div className="action">{action}</div>
         </div>
         {columns && hasResults && (
           <div className="columnHeaders">
-            {columns.map((title, idx) => (
-              <div className={idx === 0 ? 'name' : 'meta'} key={idx} title={title}>
-                {title}
-              </div>
-            ))}
+            {columns
+              .filter((config) => !config?.hidden)
+              .map((titleOrConfig, idx) => {
+                const title = titleOrConfig.name || titleOrConfig;
+                const sortable = titleOrConfig.key;
+                const sorted = sorting?.key && sorting.key === titleOrConfig.key;
+
+                function changeSorting() {
+                  if (sortable) {
+                    onSortingChange(
+                      titleOrConfig.key,
+                      sorted ? reverseOrder(sorting.order) : titleOrConfig.defaultOrder
+                    );
+                  }
+                }
+
+                return (
+                  <div
+                    className={classnames({
+                      name: idx === 0,
+                      meta: idx !== 0,
+                      sortable,
+                      sorted,
+                    })}
+                    key={idx}
+                    title={title}
+                  >
+                    <span onClick={changeSorting}>{title}</span>
+                    {sorted && (
+                      <Icon type="sort-arrow" onClick={changeSorting} className={sorting.order} />
+                    )}
+                  </div>
+                );
+              })}
           </div>
         )}
+        {isLoading && <LoadingIndicator />}
       </div>
       <div className="content">
-        {isLoading && <LoadingIndicator />}
         {isEmpty && <div className="empty">{empty}</div>}
         {!isLoading && !isEmpty && !hasResults && (
           <div className="empty">{t('common.notFound')}</div>
         )}
         {hasResults && (
-          <ul>
+          <ul className={classnames({isLoading})}>
             {searchFilteredData.map((data, idx) => (
               <ListItem
                 key={idx}
@@ -83,4 +129,8 @@ export default function EntityList({
       </div>
     </div>
   );
+}
+
+function reverseOrder(order) {
+  return order === 'asc' ? 'desc' : 'asc';
 }

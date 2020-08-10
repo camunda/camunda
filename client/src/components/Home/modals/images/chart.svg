@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="220" height="69" viewBox="0 0 220 69">
+    <defs>
+        <filter id="prefix__a" width="101.8%" height="102.6%" x="-.9%" y="-1.3%" filterUnits="objectBoundingBox">
+            <feOffset in="SourceAlpha" result="shadowOffsetOuter1"/>
+            <feGaussianBlur in="shadowOffsetOuter1" result="shadowBlurOuter1" stdDeviation="4"/>
+            <feColorMatrix in="shadowBlurOuter1" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.0045 0"/>
+        </filter>
+        <rect id="prefix__b" width="1342" height="921" x="47" y="47" rx="3"/>
+    </defs>
+    <g fill="none" fill-rule="evenodd" transform="translate(-1106 -721)">
+        <path fill="#434343" d="M0 0H1440V1024H0z"/>
+        <use fill="#000" filter="url(#prefix__a)" xlink:href="#prefix__b"/>
+        <use fill="#FFF" xlink:href="#prefix__b"/>
+        <g>
+            <g transform="translate(1088 128) translate(0 578)">
+                <rect width="261" height="125" x="-.5" y="-.5" fill="#FFF" stroke="#D3D3D3" rx="3"/>
+                <path fill="#E4E4E4" d="M85 48v31h-7V48h7zm20-6v37h-8V42h8zm20-19v56h-8V23h8zm19 12v44h-7V35h7zm19 7v37h-7V42h7zm19-11v48h-7V31h7z"/>
+            </g>
+        </g>
+    </g>
+</svg>

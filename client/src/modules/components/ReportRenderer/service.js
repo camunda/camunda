@@ -12,6 +12,11 @@ export function isEmpty(str) {
 }
 
 export function getFormatter(viewProperty) {
+  if (typeof viewProperty === 'object') {
+    // can only happen for variable reports
+    return formatters.frequency;
+  }
+
   switch (viewProperty) {
     case 'frequency':
       return formatters.frequency;
@@ -25,7 +30,7 @@ export function getFormatter(viewProperty) {
 export function processResult({data, result}) {
   const filteredResult = filterResult(result, data);
   const formattedResult = formatResult(filteredResult, data);
-  if (data.view.property.toLowerCase().includes('duration')) {
+  if (data.view.property.toLowerCase?.().includes('duration')) {
     if (formattedResult.type === 'number') {
       return {...formattedResult, data: formattedResult.data};
     }

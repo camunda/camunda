@@ -1,0 +1,28 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should apply templates from the location state 1`] = `
+Object {
+  "configuration": Object {
+    "data": "rest of configuration",
+    "xml": "processXML",
+  },
+  "groupBy": Object {
+    "type": "flowNodes",
+    "value": null,
+  },
+  "processDefinitionKey": "key",
+  "processDefinitionName": "Definition Name",
+  "processDefinitionVersions": Array [
+    "latest",
+  ],
+  "tenantIds": Array [
+    null,
+    "a",
+  ],
+  "view": Object {
+    "entity": "flowNode",
+    "property": "frequency",
+  },
+  "visualization": "heat",
+}
+`;

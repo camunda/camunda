@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect, useRef} from 'react';
 import classnames from 'classnames';
 import {Select, Icon, Button} from 'components';
 import {useTable, useSortBy, usePagination, useResizeColumns, useFlexLayout} from 'react-table';
@@ -26,6 +26,7 @@ export default function Table({
   disablePagination,
   noHighlight,
   noData = t('common.noData'),
+  onScroll,
 }) {
   const columns = React.useMemo(() => Table.formatColumns(head), [head]);
   const data = React.useMemo(() => Table.formatData(head, body), [head, body]);
@@ -98,10 +99,31 @@ export default function Table({
     };
   }
 
+  const thead = useRef();
+  const tbody = useRef();
+  useEffect(() => {
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver((entries) => {
+        // We wrap it in requestAnimationFrame to avoid this error - ResizeObserver loop limit exceeded
+        window.requestAnimationFrame(() => {
+          if (!Array.isArray(entries) || !entries.length) {
+            return;
+          }
+          if (tbody.current && thead.current) {
+            thead.current.style.width = tbody.current.clientWidth + 'px';
+          }
+        });
+      });
+      if (tbody.current) {
+        ro.observe(tbody.current);
+      }
+    }
+  }, []);
+
   return (
     <div className={classnames('Table', className, {highlight: !noHighlight})}>
       <table {...getTableProps()}>
-        <thead>
+        <thead ref={thead}>
           {headerGroups.map((headerGroup, i) => (
             <tr
               {...headerGroup.getHeaderGroupProps()}
@@ -124,14 +146,24 @@ export default function Table({
             </tr>
           ))}
         </thead>
-        <tbody {...getTableBodyProps()}>
+        <tbody {...getTableBodyProps()} onScroll={onScroll} ref={tbody}>
           {page.map((row) => {
             prepareRow(row);
             return (
               <tr {...row.getRowProps(row.original.__props)}>
-                {row.cells.map((cell) => (
-                  <td {...cell.getCellProps()}>{cell.render('Cell')}</td>
-                ))}
+                {row.cells.map((cell) => {
+                  const props = cell.getCellProps();
+                  return (
+                    <td
+                      {...props}
+                      className={classnames(props.className, {
+                        noOverflow: cell.value?.type === Select,
+                      })}
+                    >
+                      {cell.render('Cell')}
+                    </td>
+                  );
+                })}
               </tr>
             );
           })}

@@ -7,9 +7,8 @@
 import React from 'react';
 import update from 'immutability-helper';
 import deepEqual from 'deep-equal';
-import moment from 'moment';
 
-import {EntityNameForm, BPMNDiagram, LoadingIndicator, ModificationInfo} from 'components';
+import {EntityNameForm, BPMNDiagram, LoadingIndicator} from 'components';
 import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {nowDirty, nowPristine} from 'saveGuard';
@@ -44,8 +43,6 @@ export class ProcessEdit extends React.Component {
       mappings: {},
       eventSources: null,
       selectedEvent: null,
-      lastModified: null,
-      lastModifier: null,
     };
   }
 
@@ -72,41 +69,36 @@ export class ProcessEdit extends React.Component {
 
   initializeNewProcess = async () => {
     const id = 'Process_' + Math.random().toString(36).substr(2);
-
     this.setState({
       name: t('events.new'),
       xml: `<?xml version="1.0" encoding="UTF-8"?>
-    <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_15hceqv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.4.1">
-      <bpmn:process id="${id}" name="${t('events.new')}" isExecutable="true">
+      <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_15hceqv" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.4.1">
+        <bpmn:process id="${id}" name="${t('events.new')}" isExecutable="true">
         <bpmn:startEvent id="StartEvent_1" />
-      </bpmn:process>
-      <bpmndi:BPMNDiagram id="BPMNDiagram_1">
-        <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${id}">
-          <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
-            <dc:Bounds x="179" y="99" width="36" height="36" />
-          </bpmndi:BPMNShape>
-        </bpmndi:BPMNPlane>
-      </bpmndi:BPMNDiagram>
-    </bpmn:definitions>
-    `,
+        </bpmn:process>
+        <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+          <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="${id}">
+            <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+              <dc:Bounds x="179" y="99" width="36" height="36" />
+            </bpmndi:BPMNShape>
+          </bpmndi:BPMNPlane>
+        </bpmndi:BPMNDiagram>
+      </bpmn:definitions>
+      `,
       mappings: {},
       eventSources: [],
-      lastModifier: (await this.props.getUser()).id,
-      lastModified: moment().format('Y-MM-DDTHH:mm:ss.SSSZZ'),
     });
   };
 
   loadProcess = () => {
     this.props.mightFail(
       loadProcess(this.props.id),
-      ({name, xml, mappings, eventSources, lastModifier, lastModified}) =>
+      ({name, xml, mappings, eventSources}) =>
         this.setState({
           name,
           xml,
           mappings,
           eventSources,
-          lastModifier,
-          lastModified,
         }),
       showError
     );
@@ -118,7 +110,7 @@ export class ProcessEdit extends React.Component {
       const {name, mappings, xml, eventSources} = this.state;
 
       if (this.isNew()) {
-        mightFail(createProcess(name, xml, mappings, eventSources), resolve, (error) =>
+        mightFail(createProcess({name, xml, mappings, eventSources}), resolve, (error) =>
           reject(showError(error))
         );
       } else {
@@ -229,16 +221,7 @@ export class ProcessEdit extends React.Component {
   };
 
   render() {
-    const {
-      name,
-      mappings,
-      selectedNode,
-      xml,
-      eventSources,
-      selectedEvent,
-      lastModified,
-      lastModifier,
-    } = this.state;
+    const {name, mappings, selectedNode, xml, eventSources, selectedEvent} = this.state;
 
     if (!xml) {
       return <LoadingIndicator />;
@@ -258,17 +241,18 @@ export class ProcessEdit extends React.Component {
             onSave={this.saveAndGoBack}
             onCancel={nowPristine}
           />
-          <ModificationInfo user={lastModifier} date={lastModified} />
         </div>
-        <BPMNDiagram xml={xml} allowModeling>
-          <ProcessRenderer
-            name={name}
-            selectedEvent={selectedEvent}
-            mappings={mappings}
-            onChange={this.updateXml}
-            onSelectNode={this.onSelectNode}
-          />
-        </BPMNDiagram>
+        <div className="content">
+          <BPMNDiagram xml={xml} allowModeling>
+            <ProcessRenderer
+              name={name}
+              selectedEvent={selectedEvent}
+              mappings={mappings}
+              onChange={this.updateXml}
+              onSelectNode={this.onSelectNode}
+            />
+          </BPMNDiagram>
+        </div>
         <EventTable
           selection={selectedNode}
           mappings={mappings}

@@ -5,18 +5,19 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.1.0-alpha2</version>
+    <version>3.2.0-alpha2</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
 
   <properties>
-    <jetty.version>9.4.29.v20200521</jetty.version>
+    <jetty.version>9.4.31.v20200723</jetty.version>
     <jersey.version>2.31</jersey.version>
     <it.test.excludedGroups />
     <test.forkCount />
 
-    <test.argLine>-Xms256m -Xmx512m -Dnashorn.args="--no-deprecation-warning"</test.argLine>
+    <argLine>-Xms512m -Xmx1024m</argLine>
+    <sonar.coverage.jacoco.xmlReportPaths>${basedir}/../${aggregate.report.dir}</sonar.coverage.jacoco.xmlReportPaths>
   </properties>
 
   <dependencies>
@@ -218,19 +219,24 @@
     <dependency>
       <groupId>com.github.ben-manes.caffeine</groupId>
       <artifactId>caffeine</artifactId>
-      <version>2.8.4</version>
+      <version>2.8.5</version>
     </dependency>
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-math3</artifactId>
       <version>3.6.1</version>
     </dependency>
+    <dependency>
+      <groupId>com.github.sisyphsu</groupId>
+      <artifactId>dateparser</artifactId>
+      <version>1.0.4</version>
+    </dependency>
 
     <!-- ClassGraph  -->
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.78</version>
+      <version>4.8.87</version>
     </dependency>
 
     <!--Test dependencies-->
@@ -248,7 +254,7 @@
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.6</version>
+      <version>2.7</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -266,7 +272,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.5.13</version>
+      <version>1.5.14</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -315,10 +321,7 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <workingDirectory>${project.build.directory}</workingDirectory>
-          <argLine>${test.argLine}</argLine>
           <trimStackTrace>false</trimStackTrace>
-          <forkCount>${test.forkCount}</forkCount>
-          <reuseForks>true</reuseForks>
         </configuration>
       </plugin>
 
@@ -435,7 +438,7 @@
         <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-          <version>42.2.12</version>
+          <version>42.2.14</version>
           <scope>test</scope>
         </dependency>
         <dependency>
@@ -465,7 +468,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-failsafe-plugin</artifactId>
             <configuration>
-              <argLine>${test.argLine}</argLine>
               <excludedGroups>${it.test.excludedGroups}</excludedGroups>
               <forkCount>${test.forkCount}</forkCount>
               <reuseForks>true</reuseForks>

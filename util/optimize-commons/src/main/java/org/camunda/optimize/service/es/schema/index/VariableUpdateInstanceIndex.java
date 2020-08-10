@@ -10,7 +10,6 @@ import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
@@ -20,7 +19,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
 
-@Component
 public class VariableUpdateInstanceIndex extends DefaultIndexMappingCreator {
 
   public static final String INSTANCE_ID = VariableUpdateInstanceDto.Fields.instanceId;
@@ -31,7 +29,7 @@ public class VariableUpdateInstanceIndex extends DefaultIndexMappingCreator {
   public static final String TENANT_ID = VariableUpdateInstanceDto.Fields.tenantId;
   public static final String TIMESTAMP = VariableUpdateInstanceDto.Fields.timestamp;
 
-  public static final int VERSION = 1;
+  public static final int VERSION = 2;
 
   @Override
   public String getIndexName() {
@@ -44,7 +42,7 @@ public class VariableUpdateInstanceIndex extends DefaultIndexMappingCreator {
   }
 
   @Override
-  public Boolean getCreateFromTemplate() {
+  public boolean getCreateFromTemplate() {
     return true;
   }
 

@@ -5,17 +5,33 @@
   }
 
   .djs-overlay-container {
-    z-index: 2;
+    z-index: var(--z-above);
   }
 
   .djs-palette {
-    z-index: 3;
+    z-index: calc(var(--z-above) + 1);
   }
 }
 
 .BPMNDiagram {
   flex-grow: 1;
   position: relative;
+
+  &.loading .bjs-container {
+    opacity: 0.5;
+  }
+
+  .diagramLoading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .djs-element.hover .djs-outline,
+  .djs-element.selected .djs-outline {
+    stroke-width: 0;
+  }
 }
 
 .bjs-powered-by {

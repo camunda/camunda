@@ -19,23 +19,23 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.LongVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.ShortVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class VariableFilterBuilder {
   private ProcessFilterBuilder filterBuilder;
   private VariableType type;
   private List<String> values = new ArrayList<>();
-  private String operator;
+  private FilterOperator operator;
   private DateFilterDataDto<?> dateFilterDataDto;
   private String name;
-  private boolean filterForUndefined = false;
-  private boolean excludeUndefined = false;
-
 
   private VariableFilterBuilder(ProcessFilterBuilder filterBuilder) {
     this.filterBuilder = filterBuilder;
@@ -91,22 +91,23 @@ public class VariableFilterBuilder {
     return this;
   }
 
+  public VariableFilterBuilder booleanValues(final List<Boolean> values) {
+    values(
+      Optional.ofNullable(values)
+        .map(theValues -> theValues.stream()
+          .map(aBoolean -> aBoolean != null ? aBoolean.toString() : null)
+          .collect(Collectors.toList())
+        ).orElse(null)
+    );
+    return this;
+  }
+
   public VariableFilterBuilder values(List<String> values) {
     if (values == null) {
       this.values = null;
       return this;
     }
     this.values.addAll(values);
-    return this;
-  }
-
-  public VariableFilterBuilder filterForUndefined() {
-    this.filterForUndefined = true;
-    return this;
-  }
-
-  public VariableFilterBuilder excludeUndefined() {
-    this.excludeUndefined = true;
     return this;
   }
 
@@ -122,18 +123,23 @@ public class VariableFilterBuilder {
     return this;
   }
 
-  public VariableFilterBuilder operator(String operator) {
+  public VariableFilterBuilder operator(FilterOperator operator) {
     this.operator = operator;
     return this;
   }
 
-  public VariableFilterBuilder relativeDate(final Long value, final DateFilterUnit unit) {
-    this.dateFilterDataDto = new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit));
+  public VariableFilterBuilder dateFilter(final DateFilterDataDto dateFilterDataDto) {
+    this.dateFilterDataDto = dateFilterDataDto;
     return this;
   }
 
   public VariableFilterBuilder rollingDate(final Long value, final DateFilterUnit unit) {
     this.dateFilterDataDto = new RollingDateFilterDataDto(new RollingDateFilterStartDto(value, unit));
+    return this;
+  }
+
+  public VariableFilterBuilder relativeDate(final Long value, final DateFilterUnit unit) {
+    this.dateFilterDataDto = new RelativeDateFilterDataDto(new RelativeDateFilterStartDto(value, unit));
     return this;
   }
 
@@ -160,11 +166,14 @@ public class VariableFilterBuilder {
   }
 
   public ProcessFilterBuilder createBooleanVariableFilter() {
-    BooleanVariableFilterDataDto dataDto = new BooleanVariableFilterDataDto(
+    final BooleanVariableFilterDataDto dataDto = new BooleanVariableFilterDataDto(
       name,
-      values == null || values.isEmpty() ? null : Boolean.valueOf(values.get(0))
+      Optional.ofNullable(values)
+        .map(theValues -> theValues.stream()
+          .map(value -> value != null ? Boolean.valueOf(value) : null)
+          .collect(Collectors.toList()))
+        .orElse(null)
     );
-    dataDto.setFilterForUndefined(filterForUndefined);
     VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dataDto);
     filterBuilder.addFilter(filter);
@@ -172,12 +181,10 @@ public class VariableFilterBuilder {
   }
 
   public ProcessFilterBuilder createVariableDateFilter() {
-
     DateVariableFilterDataDto dateVariableFilterDataDto = new DateVariableFilterDataDto(
       name,
       dateFilterDataDto != null ? dateFilterDataDto : new FixedDateFilterDataDto(null, null)
     );
-    dateVariableFilterDataDto.setFilterForUndefined(filterForUndefined);
     VariableFilterDto filter = new VariableFilterDto();
     filter.setData(dateVariableFilterDataDto);
     filterBuilder.addFilter(filter);
@@ -205,7 +212,6 @@ public class VariableFilterBuilder {
       default:
         break;
     }
-    filter.getData().setFilterForUndefined(filterForUndefined);
     filterBuilder.addFilter(filter);
     return filterBuilder;
   }

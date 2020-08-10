@@ -17,9 +17,14 @@ import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 import java.util.ArrayList;
@@ -100,13 +105,71 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     }
     ProcessReportDataDto that = (ProcessReportDataDto) o;
     return Combinable.isCombinable(view, that.view) &&
-      Combinable.isCombinable(groupBy, that.groupBy) &&
+      isGroupByCombinable(that) &&
       Combinable.isCombinable(getConfiguration(), that.getConfiguration()) &&
       Objects.equals(visualization, that.visualization);
   }
 
   public List<String> getTenantIds() {
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
+  }
+
+  @JsonIgnore
+  public List<ProcessFilterDto<?>> getAdditionalFiltersForReportType() {
+    if (isGroupByEndDateReport()) {
+      return ProcessFilterBuilder.filter().completedInstancesOnly().add().buildList();
+    }
+    return Collections.emptyList();
+  }
+
+  private boolean isGroupByCombinable(final ProcessReportDataDto that) {
+    if (Combinable.isCombinable(this.groupBy, that.groupBy)) {
+      if (isGroupByDateVariableReport()) {
+        return this.getConfiguration()
+          .getGroupByDateVariableUnit()
+          .equals(that.getConfiguration().getGroupByDateVariableUnit());
+      } else if (isGroupByNumberVariableReport()) {
+        return isBucketSizeCombinable(that);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private boolean isBucketSizeCombinable(final ProcessReportDataDto that) {
+    return this.getConfiguration().getCustomNumberBucket().isActive()
+      && that.getConfiguration().getCustomNumberBucket().isActive()
+      && Objects.equals(
+      this.getConfiguration().getCustomNumberBucket().getBucketSize(),
+      that.getConfiguration().getCustomNumberBucket().getBucketSize()
+    ) || isBucketSizeIrrelevant(this) && isBucketSizeIrrelevant(that);
+  }
+
+  private boolean isBucketSizeIrrelevant(final ProcessReportDataDto reportData) {
+    // Bucket size settings for combined reports are not relevant if custom bucket config is
+    // inactive or bucket size is null
+    if (reportData.getConfiguration().getCustomNumberBucket().isActive()) {
+      return reportData.getConfiguration().getCustomNumberBucket().getBucketSize() == null;
+    }
+    return true;
+  }
+
+  private boolean isGroupByDateVariableReport() {
+    return groupBy != null
+      && ProcessGroupByType.VARIABLE.equals(groupBy.getType())
+      && VariableType.DATE.equals(((VariableGroupByDto) groupBy).getValue().getType());
+  }
+
+  private boolean isGroupByEndDateReport() {
+    return groupBy != null
+      && ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity())
+      && ProcessGroupByType.END_DATE.equals(groupBy.getType());
+  }
+
+  private boolean isGroupByNumberVariableReport() {
+    return groupBy != null
+      && ProcessGroupByType.VARIABLE.equals(groupBy.getType())
+      && (VariableType.getNumericTypes().contains(((VariableGroupByDto) groupBy).getValue().getType()));
   }
 
 }

@@ -50,16 +50,16 @@ public class ProcessFilterBuilder {
     return RunningInstancesOnlyFilterBuilder.construct(this);
   }
 
-  public RelativeDateFilterBuilder relativeEndDate() {
-    return RelativeDateFilterBuilder.endDate(this);
-  }
-
-  public RelativeDateFilterBuilder relativeStartDate() {
-    return RelativeDateFilterBuilder.startDate(this);
+  public RollingDateFilterBuilder rollingEndDate() {
+    return RollingDateFilterBuilder.endDate(this);
   }
 
   public RollingDateFilterBuilder rollingStartDate() {
     return RollingDateFilterBuilder.startDate(this);
+  }
+
+  public RelativeDateFilterBuilder relativeStartDate() {
+    return RelativeDateFilterBuilder.startDate(this);
   }
 
   public FixedDateFilterBuilder fixedEndDate() {
@@ -82,12 +82,12 @@ public class ProcessFilterBuilder {
     return FlowNodeDurationFilterBuilder.construct(this);
   }
 
-  public AssigneeOrCandidateGroupFilterBuilder assignee() {
-    return AssigneeOrCandidateGroupFilterBuilder.constructAssigneeFilterBuilder(this);
+  public IdentityLinkFilterBuilder assignee() {
+    return IdentityLinkFilterBuilder.constructAssigneeFilterBuilder(this);
   }
 
-  public AssigneeOrCandidateGroupFilterBuilder candidateGroups() {
-    return AssigneeOrCandidateGroupFilterBuilder.constructCandidateGroupFilterBuilder(this);
+  public IdentityLinkFilterBuilder candidateGroups() {
+    return IdentityLinkFilterBuilder.constructCandidateGroupFilterBuilder(this);
   }
 
   void addFilter(ProcessFilterDto<?> result) {

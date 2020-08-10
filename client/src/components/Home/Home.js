@@ -5,9 +5,10 @@
  */
 
 import React from 'react';
-import moment from 'moment';
 import {Redirect} from 'react-router-dom';
+import {parseISO} from 'date-fns';
 
+import {format} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
@@ -17,9 +18,10 @@ import {createEntity, updateEntity, checkDeleteConflict} from 'services';
 import Copier from './Copier';
 import CreateNewButton from './CreateNewButton';
 import CollectionModal from './modals/CollectionModal';
+import ReportTemplateModal from './modals/ReportTemplateModal';
 import {loadEntities} from './service';
 
-import {formatLink, formatType, formatSubEntities, formatUserCount} from './formatters';
+import {formatLink, formatType, formatSubEntities} from './formatters';
 
 import './Home.scss';
 
@@ -30,20 +32,24 @@ export class Home extends React.Component {
     copying: null,
     redirect: null,
     creatingCollection: false,
+    creatingProcessReport: false,
     editingCollection: null,
+    sorting: null,
+    isLoading: true,
   };
 
   componentDidMount() {
     this.loadList();
   }
 
-  loadList = () => {
+  loadList = (sortBy, sortOrder) => {
+    this.setState({isLoading: true, sorting: {key: sortBy, order: sortOrder}});
     this.props.mightFail(
-      loadEntities(),
-      (entities) => this.setState({entities}),
+      loadEntities(sortBy, sortOrder),
+      (entities) => this.setState({entities, isLoading: false}),
       (error) => {
         showError(error);
-        this.setState({entities: []});
+        this.setState({entities: [], isLoading: false});
       }
     );
   };
@@ -73,8 +79,11 @@ export class Home extends React.Component {
       deleting,
       copying,
       creatingCollection,
+      creatingProcessReport,
       editingCollection,
       redirect,
+      sorting,
+      isLoading,
     } = this.state;
 
     if (redirect) {
@@ -89,14 +98,22 @@ export class Home extends React.Component {
         <div className="content">
           <EntityList
             name={t('home.title')}
-            action={<CreateNewButton createCollection={this.startCreatingCollection} />}
+            action={
+              <CreateNewButton
+                createCollection={this.startCreatingCollection}
+                createProcessReport={() => this.setState({creatingProcessReport: true})}
+              />
+            }
             empty={t('home.empty')}
-            isLoading={!entities}
+            isLoading={isLoading}
+            sorting={sorting}
+            onSortingChange={this.loadList}
             columns={[
-              t('common.name'),
+              {name: 'Type', key: 'entityType', defaultOrder: 'asc', hidden: true},
+              {name: t('common.name'), key: 'name', defaultOrder: 'asc'},
               t('home.contents'),
-              t('common.entity.modified'),
-              t('home.members'),
+              {name: 'Modified by', key: 'lastModifier', defaultOrder: 'asc'},
+              {name: t('common.entity.modified'), key: 'lastModified', defaultOrder: 'desc'},
             ]}
             data={
               entities &&
@@ -106,6 +123,7 @@ export class Home extends React.Component {
                   entityType,
                   currentUserRole,
                   lastModified,
+                  lastModifier,
                   name,
                   data,
                   reportType,
@@ -119,8 +137,8 @@ export class Home extends React.Component {
                   name,
                   meta: [
                     formatSubEntities(data.subEntityCounts),
-                    moment(lastModified).format('YYYY-MM-DD HH:mm'),
-                    formatUserCount(data.roleCounts),
+                    lastModifier,
+                    format(parseISO(lastModified), 'PP'),
                   ],
                   actions: (entityType !== 'collection' || currentUserRole === 'manager') && [
                     {
@@ -188,6 +206,9 @@ export class Home extends React.Component {
               this.loadList();
             }}
           />
+        )}
+        {creatingProcessReport && (
+          <ReportTemplateModal onClose={() => this.setState({creatingProcessReport: false})} />
         )}
       </div>
     );

@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.plugin.security.authentication;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
@@ -25,10 +24,11 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class AuthenticationExtractorPluginIT extends AbstractIT {
 
@@ -225,8 +225,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
 
   private void deployAndImportTestDefinition() {
     deploySimpleProcessDefinition();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
   private void createKermitUserAndGrantOptimizeAccess() {
@@ -249,10 +248,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
   }
 
   private void deploySimpleProcessDefinition() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(AuthenticationExtractorPluginIT.TEST_DEFINITION)
-      .startEvent()
-      .endEvent()
-      .done();
+    BpmnModelInstance modelInstance = getSimpleBpmnDiagram(AuthenticationExtractorPluginIT.TEST_DEFINITION);
     engineIntegrationExtension.deployProcessAndGetId(modelInstance);
   }
 

@@ -5,9 +5,24 @@
  */
 package org.camunda.optimize.test.util;
 
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.instance.EndEvent;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
+import org.camunda.bpm.model.dmn.Dmn;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
+import org.camunda.bpm.model.dmn.instance.Decision;
+import org.camunda.bpm.model.dmn.instance.DecisionTable;
+import org.camunda.bpm.model.dmn.instance.Input;
+import org.camunda.bpm.model.dmn.instance.InputEntry;
+import org.camunda.bpm.model.dmn.instance.InputExpression;
+import org.camunda.bpm.model.dmn.instance.Output;
+import org.camunda.bpm.model.dmn.instance.OutputEntry;
+import org.camunda.bpm.model.dmn.instance.Rule;
+import org.camunda.bpm.model.dmn.instance.Text;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -15,57 +30,65 @@ import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.util.client.SimpleEngineClient;
+import org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 
 import java.io.ByteArrayInputStream;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants.LESS_THAN;
+import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.util.DmnModels.INPUT_AMOUNT_ID;
 
+@Slf4j
 public class ReportsGenerator {
 
   private static final Random randomGen = new Random();
-  public static final String DOUBLE_VAR = "doubleVar";
-  private static SimpleEngineClient client =
-    new SimpleEngineClient(IntegrationTestConfigurationUtil.getEngineRestEndpoint() + "default");
+  private static final String DOUBLE_VAR = "doubleVar";
+  private static final SimpleEngineClient client = new SimpleEngineClient(
+    IntegrationTestConfigurationUtil.getEngineRestEndpoint() + "default"
+  );
 
-  public static List<SingleReportDataDto> createAllPossibleReports() {
-    List<ProcessDefinitionEngineDto> latestDefinitionVersions =
-      client.getLatestProcessDefinitions();
+  public static List<SingleReportDataDto> createAllReportTypesForAllDefinitions() {
+    final List<ProcessDefinitionEngineDto> processDefinitions = client.getLatestProcessDefinitions();
+    final List<DecisionDefinitionEngineDto> decisionDefinitions = client.getLatestDecisionDefinitions();
+    return createAllReportTypesForDefinitions(processDefinitions, decisionDefinitions);
+  }
 
-    List<DecisionDefinitionEngineDto> latestDecisionDefs =
-      client.getLatestDecisionDefinitions();
-
-
-    List<ProcessReportDataDto> processReportDataDtos = latestDefinitionVersions
-      .stream()
-      .map(ReportsGenerator::createProcessReportsFromDefinition)
-      .flatMap(Collection::stream)
-      .collect(Collectors.toList());
-
-    List<DecisionReportDataDto> decisionReportDataDtos = latestDecisionDefs
+  public static List<SingleReportDataDto> createAllReportTypesForDefinitions(final List<ProcessDefinitionEngineDto> processDefinitions,
+                                                                             final List<DecisionDefinitionEngineDto> decisionDefinitions) {
+    final List<DecisionReportDataDto> decisionReportDataDtos = decisionDefinitions
       .stream()
       .map(ReportsGenerator::createDecisionReportsFromDefinition)
       .flatMap(Collection::stream)
       .collect(Collectors.toList());
 
-    List<SingleReportDataDto> reports = new ArrayList<>();
+    final List<ProcessReportDataDto> processReportDataDtos = processDefinitions
+      .stream()
+      .map(ReportsGenerator::createProcessReportsFromDefinition)
+      .flatMap(Collection::stream)
+      .collect(Collectors.toList());
+
+    final List<SingleReportDataDto> reports = new ArrayList<>();
     reports.addAll(decisionReportDataDtos);
     reports.addAll(processReportDataDtos);
     return reports;
@@ -85,7 +108,6 @@ public class ReportsGenerator {
         .setStartFlowNodeId(processPart.getStart())
         .setEndFlowNodeId(processPart.getEnd())
         .setFilter(createProcessFilter());
-
       ProcessReportDataDto reportDataLatestDefinitionVersion =
         reportDataBuilder.build();
       reports.add(reportDataLatestDefinitionVersion);
@@ -97,20 +119,19 @@ public class ReportsGenerator {
   }
 
   private static List<DecisionReportDataDto> createDecisionReportsFromDefinition(DecisionDefinitionEngineDto definition) {
-    List<DecisionReportDataDto> reports = new ArrayList<>();
-
-    for (DecisionReportDataType type : DecisionReportDataType.values()) {
-      DecisionReportDataDto reportDataDto = DecisionReportDataBuilder.create().setReportDataType(type)
+    DmnFilterData dmnFilterData = retrieveVariablesForDecision(definition);
+    List<DecisionFilterDto<?>> decisionFilters = createDecisionFilters(dmnFilterData);
+    return Arrays.stream(DecisionReportDataType.values())
+      .map(type -> DecisionReportDataBuilder.create().setReportDataType(type)
         .setDecisionDefinitionKey(definition.getKey())
         .setDecisionDefinitionVersion(definition.getVersionAsString())
         .setDateInterval(GroupByDateUnit.DAY)
         .setVariableName(DOUBLE_VAR)
         .setVariableType(VariableType.DOUBLE)
         .setVariableId(INPUT_AMOUNT_ID)
-        .build();
-      reports.add(reportDataDto);
-    }
-    return reports;
+        .setFilter(decisionFilters)
+        .build())
+      .collect(Collectors.toList());
   }
 
   private static ProcessPartDto createProcessPart(ProcessDefinitionEngineDto definition) {
@@ -124,6 +145,162 @@ public class ReportsGenerator {
     processPart.setStart(startFlowNodeId);
     processPart.setEnd(endFlowNodeId);
     return processPart;
+  }
+
+  private static List<DecisionFilterDto<?>> createDecisionFilters(DmnFilterData data) {
+    List<DecisionFilterDto<?>> result = new ArrayList<>();
+
+    result.add(createInputVariableFilter(data));
+    result.add(createOutputVariableFilter(data));
+    result.add(
+      DecisionFilterUtilHelper.createFixedEvaluationDateFilter(
+        OffsetDateTime.now().minusYears(200L),
+        OffsetDateTime.now().plusYears(100L)
+      )
+    );
+
+    return result;
+  }
+
+  private static DecisionFilterDto createInputVariableFilter(DmnFilterData filterData) {
+    switch (filterData.getInputType()) {
+      case STRING:
+        return DecisionFilterUtilHelper.createStringInputVariableFilter(
+          filterData.getInputName(),
+          FilterOperator.IN,
+          filterData.getPossibleInputValue()
+        );
+      case BOOLEAN:
+        return DecisionFilterUtilHelper.createBooleanInputVariableFilter(
+          filterData.getInputName(), true
+        );
+      case DOUBLE:
+      case INTEGER:
+      case LONG:
+      case SHORT:
+        return DecisionFilterUtilHelper.createNumericInputVariableFilter(
+          filterData.getInputName(),
+          filterData.getInputType(),
+          LESS_THAN,
+          Collections.singletonList("100")
+        );
+      case DATE:
+        return DecisionFilterUtilHelper.createFixedDateInputVariableFilter(
+          filterData.getInputName(),
+          OffsetDateTime.now().minusYears(200L),
+          OffsetDateTime.now().plusYears(100L)
+        );
+      default:
+        throw new OptimizeRuntimeException("Unknown input variable type to create decision filter for.");
+    }
+  }
+
+  private static DecisionFilterDto createOutputVariableFilter(DmnFilterData filterData) {
+    switch (filterData.getOutputType()) {
+      case STRING:
+        return DecisionFilterUtilHelper.createStringOutputVariableFilter(
+          filterData.getInputName(),
+          FilterOperator.IN,
+          filterData.getPossibleOutputValue()
+        );
+      case BOOLEAN:
+        return DecisionFilterUtilHelper.createBooleanOutputVariableFilter(
+          filterData.getOutputName(), Collections.singletonList(true)
+        );
+      case DOUBLE:
+      case INTEGER:
+      case LONG:
+      case SHORT:
+        return DecisionFilterUtilHelper.createNumericOutputVariableFilter(
+          filterData.getOutputName(),
+          filterData.getOutputType(),
+          LESS_THAN,
+          Collections.singletonList("100")
+        );
+      case DATE:
+        return DecisionFilterUtilHelper.createFixedDateOutputVariableFilter(
+          filterData.getOutputName(),
+          OffsetDateTime.now().minusYears(200L),
+          OffsetDateTime.now().plusYears(100L)
+        );
+      default:
+        throw new OptimizeRuntimeException("Unknown output variable type to create decision filter for.");
+    }
+  }
+
+  private static DmnFilterData retrieveVariablesForDecision(DecisionDefinitionEngineDto definition) {
+    DmnFilterData resultData = new DmnFilterData();
+
+    DecisionTable decisionTable = getDecisionTableForDefinition(definition);
+
+    Input input = decisionTable.getInputs().stream().findFirst().get();
+    Output output = decisionTable.getOutputs().stream().findFirst().get();
+
+    assignPossibleVariableValues(resultData, decisionTable);
+
+    assignInputTypeAndName(resultData, input);
+    assignOutputTypeAndName(resultData, output);
+
+    return resultData;
+  }
+
+  private static void assignOutputTypeAndName(DmnFilterData resultData, Output output) {
+    String outputTypeString = output.getTypeRef();
+    VariableType outputType = VariableType.getTypeForId(outputTypeString);
+    resultData.setOutputType(outputType);
+
+    String outputName = output.getName();
+    resultData.setOutputName(outputName);
+  }
+
+  private static void assignInputTypeAndName(DmnFilterData resultData, Input input) {
+    InputExpression inputExpression = input.getChildElementsByType(InputExpression.class)
+      .stream()
+      .findFirst()
+      .get();
+
+    String inputTypeString = inputExpression
+      .getAttributeValue("typeRef");
+    VariableType inputType = VariableType.getTypeForId(inputTypeString);
+    resultData.setInputType(inputType);
+
+    String inputName = inputExpression
+      .getUniqueChildElementByType(Text.class)
+      .getTextContent();
+    resultData.setInputName(inputName);
+  }
+
+  private static void assignPossibleVariableValues(DmnFilterData resultData, DecisionTable decisionTable) {
+    Rule rule = decisionTable.getRules()
+      .stream()
+      .findFirst()
+      .get();
+    InputEntry inputEntry = rule
+      .getInputEntries()
+      .stream()
+      .findFirst()
+      .get();
+    OutputEntry outputEntry = rule
+      .getOutputEntries()
+      .stream()
+      .findFirst()
+      .get();
+
+    String possibleInputValue = inputEntry.getTextContent();
+    String possibleOutputValue = outputEntry.getTextContent();
+
+    resultData.setPossibleInputValue(possibleInputValue);
+    resultData.setPossibleOutputValue(possibleOutputValue);
+  }
+
+  private static DecisionTable getDecisionTableForDefinition(DecisionDefinitionEngineDto definition) {
+    String xml = client.getDecisionDefinitionXml(definition.getId()).getDmnXml();
+    DmnModelInstance model = Dmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes()));
+
+    Collection<Decision> decisions = model.getDefinitions().getChildElementsByType(Decision.class);
+    Optional<Decision> optionalDecision = decisions.stream().findFirst();
+    Decision decision = optionalDecision.get();
+    return (DecisionTable) decision.getExpression();
   }
 
   private static List<ProcessFilterDto<?>> createProcessFilter() {
@@ -153,4 +330,17 @@ public class ReportsGenerator {
       .buildList();
   }
   // @formatter:on
+
+  @NoArgsConstructor
+  @Setter
+  @Getter
+  private static class DmnFilterData {
+    private String inputName;
+    private VariableType inputType;
+    private String possibleInputValue;
+
+    private String outputName;
+    private VariableType outputType;
+    private String possibleOutputValue;
+  }
 }

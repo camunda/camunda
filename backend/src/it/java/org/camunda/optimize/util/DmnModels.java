@@ -5,23 +5,34 @@
  */
 package org.camunda.optimize.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.HitPolicy;
 import org.camunda.optimize.test.util.decision.DecisionTypeRef;
 import org.camunda.optimize.test.util.decision.DmnModelGenerator;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DmnModels {
   //invoice variables
   public static final String OUTPUT_CLASSIFICATION_ID = "classificationOutput";
   public static final String OUTPUT_AUDIT_ID = "auditOutput";
+  public static final String STRING_OUTPUT_ID = "stringOutput";
+  public static final String INTEGER_OUTPUT_ID = "integerOutput";
   public static final String INPUT_AMOUNT_ID = "amountInput";
   public static final String INPUT_CATEGORY_ID = "categoryInput";
+  public static final String STRING_INPUT_ID = "stringInput";
+  public static final String INTEGER_INPUT_ID = "integerInput";
   public static final String INPUT_INVOICE_DATE_ID = "invoiceDateInput";
   public static final String INPUT_VARIABLE_INVOICE_CATEGORY = "invoiceCategory";
   public static final String INPUT_VARIABLE_AMOUNT = "amount";
+  public static final String INPUT_VARIABLE_STRING_INPUT = "stringInput";
+  public static final String INPUT_VARIABLE_INTEGER_INPUT = "integerInput";
   public static final String INPUT_VARIABLE_INVOICE_DATE = "invoiceDate";
   public static final String OUTPUT_VARIABLE_AUDIT = "audit";
   public static final String OUTPUT_VARIABLE_CLASSIFICATION = "invoiceClassification";
+  public static final String OUTPUT_VARIABLE_STRING_OUTPUT = "stringOutput";
+  public static final String OUTPUT_VARIABLE_INTEGER_OUTPUT = "integerOutput";
 
   // dish variables
   public static final String INPUT_SEASON_ID = "seasonInput";
@@ -30,6 +41,7 @@ public class DmnModels {
   public static final String INPUT_VARIABLE_SEASON = "season";
   public static final String INPUT_VARIABLE_NUMBER_OF_GUESTS = "guestCount";
   public static final String INPUT_VARIABLE_GUEST_WITH_CHILDREN = "guestsWithChildren";
+  public static final String OUTPUT_BEVERAGES = "OutputClause_99999";
 
   //rules
   public static final String INVOICE_RULE_1_ID = "invoiceRule1";
@@ -88,6 +100,27 @@ public class DmnModels {
             .addStringOutputEntry("\"budget\"")
             .addStringOutputEntry("false")
           .buildRule("row-49839158-2")
+        .buildDecision()
+      .build();
+  }
+
+  public static DmnModelInstance createInputEqualsOutput() {
+    return DmnModelGenerator
+      .create()
+        .decision()
+          .decisionDefinitionVersionTag("aVersionTag")
+          .decisionDefinitionKey("inputEqualsOutput")
+          .decisionDefinitionName("Input equals output")
+          .addInput("String Input", STRING_INPUT_ID, INPUT_VARIABLE_STRING_INPUT, DecisionTypeRef.STRING)
+          .addInput("Integer Input", INTEGER_INPUT_ID, INPUT_VARIABLE_INTEGER_INPUT, DecisionTypeRef.STRING)
+          .addOutput("String Output", STRING_OUTPUT_ID, OUTPUT_VARIABLE_STRING_OUTPUT,  DecisionTypeRef.STRING)
+          .addOutput("Integer Output", INTEGER_OUTPUT_ID, OUTPUT_VARIABLE_INTEGER_OUTPUT,  DecisionTypeRef.STRING)
+          .rule()
+            .addStringInputEntry("")
+            .addStringInputEntry("")
+            .addStringOutputEntry(INPUT_VARIABLE_STRING_INPUT)
+            .addStringOutputEntry(INPUT_VARIABLE_INTEGER_INPUT)
+          .buildRule()
         .buildDecision()
       .build();
   }
@@ -208,7 +241,7 @@ public class DmnModels {
           .decisionDefinitionName("Beverages")
           .decisionDefinitionKey("beverages")
           .addInput("Guests with children", "InputClause_0bo3uen","guestsWithChildren", DecisionTypeRef.BOOLEAN)
-          .addOutput("Beverages", "OuputClause_99999","beverages", DecisionTypeRef.STRING)
+          .addOutput("Beverages", OUTPUT_BEVERAGES,"beverages", DecisionTypeRef.STRING)
           .rule()
             .addStringInputEntry("true")
             .addStringOutputEntry("\"Aecht Schlenkerla Rauchbier\"")

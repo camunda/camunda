@@ -16,7 +16,8 @@ import org.springframework.stereotype.Component;
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class CompletedProcessInstanceImportIndexHandler extends TimestampBasedEngineImportIndexHandler {
 
-  public static final String COMPLETED_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID = ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+  public static final String COMPLETED_PROCESS_INSTANCE_IMPORT_INDEX_DOC_ID =
+    ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
   private final EngineContext engineContext;
 

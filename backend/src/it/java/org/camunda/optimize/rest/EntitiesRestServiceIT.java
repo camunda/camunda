@@ -5,45 +5,40 @@
  */
 package org.camunda.optimize.rest;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import org.camunda.optimize.AbstractIT;
+import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.RoleType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
-import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.util.Collections;
+import java.time.OffsetDateTime;
+import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.name;
+import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
+import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
-public class EntitiesRestServiceIT extends AbstractIT {
+public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
 
   @Test
   public void getEntities_WithoutAuthentication() {
@@ -55,7 +50,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -71,15 +66,38 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> privateEntities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(privateEntities.size(), is(3));
-    assertThat(
-      privateEntities.stream().map(EntityDto::getReportType).collect(Collectors.toList()),
-      containsInAnyOrder(ReportType.PROCESS, ReportType.PROCESS, ReportType.DECISION)
-    );
-    assertThat(
-      privateEntities.stream().map(EntityDto::getCombined).collect(Collectors.toList()),
-      containsInAnyOrder(false, false, true)
-    );
+    assertThat(privateEntities)
+      .hasSize(3)
+      .extracting(EntityDto::getReportType, EntityDto::getCombined)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(ReportType.PROCESS, true),
+        Tuple.tuple(ReportType.PROCESS, false),
+        Tuple.tuple(ReportType.DECISION, false)
+      );
+  }
+
+  @Test
+  public void getEntities_adoptTimezoneFromHeader() {
+    //given
+    OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
+
+    addSingleReportToOptimize("My Report", ReportType.PROCESS);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // when
+    final List<EntityDto> privateEntities = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildGetAllEntitiesRequest()
+      .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
+      .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(privateEntities).isNotNull().hasSize(1);
+    EntityDto entityDto = privateEntities.get(0);
+    assertThat(entityDto.getCreated()).isEqualTo(now);
+    assertThat(entityDto.getLastModified()).isEqualTo(now);
+    assertThat(getOffsetDiffInHours(entityDto.getCreated(), now)).isEqualTo(1.);
+    assertThat(getOffsetDiffInHours(entityDto.getLastModified(), now)).isEqualTo(1.);
   }
 
   @Test
@@ -97,21 +115,19 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(defaultUserEntities.size(), is(2));
-    assertThat(
-      defaultUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
-      containsInAnyOrder("A Report", "D Combined")
-    );
+    assertThat(defaultUserEntities)
+      .hasSize(2)
+      .extracting(EntityDto::getName)
+      .containsExactlyInAnyOrder("A Report", "D Combined");
 
     // when
     final List<EntityDto> kermitUserEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(kermitUserEntities.size(), is(1));
-    assertThat(
-      kermitUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
-      containsInAnyOrder("B Report")
-    );
+    assertThat(kermitUserEntities)
+      .hasSize(1)
+      .extracting(EntityDto::getName)
+      .containsExactly("B Report");
   }
 
   @Test
@@ -130,11 +146,10 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(defaultUserEntities.size(), is(1));
-    assertThat(
-      defaultUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
-      containsInAnyOrder(singleProcessReportDefinitionDto.getName())
-    );
+    assertThat(defaultUserEntities)
+      .hasSize(1)
+      .extracting(EntityDto::getName)
+      .containsExactly(singleProcessReportDefinitionDto.getName());
   }
 
   @Test
@@ -149,7 +164,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> privateEntities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(privateEntities.size(), is(2));
+    assertThat(privateEntities).hasSize(2);
   }
 
   @Test
@@ -166,21 +181,19 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(defaultUserEntities.size(), is(1));
-    assertThat(
-      defaultUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
-      containsInAnyOrder("A Dashboard")
-    );
+    assertThat(defaultUserEntities)
+      .hasSize(1)
+      .extracting(EntityDto::getName)
+      .containsExactly("A Dashboard");
 
     // when
     final List<EntityDto> kermitUserEntities = entitiesClient.getAllEntitiesAsUser(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(kermitUserEntities.size(), is(1));
-    assertThat(
-      kermitUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
-      containsInAnyOrder("B Dashboard")
-    );
+    assertThat(kermitUserEntities)
+      .hasSize(1)
+      .extracting(EntityDto::getName)
+      .containsExactly("B Dashboard");
   }
 
   @Test
@@ -195,7 +208,7 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> privateEntities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(privateEntities.size(), is(2));
+    assertThat(privateEntities).hasSize(2);
   }
 
   @Test
@@ -214,15 +227,14 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(defaultUserEntities.size(), is(3));
-    assertThat(
-      defaultUserEntities.stream().map(EntityDto::getName).collect(Collectors.toList()),
-      containsInAnyOrder("A Report", "D Combined", DEFAULT_COLLECTION_NAME)
-    );
+    assertThat(defaultUserEntities)
+      .hasSize(3)
+      .extracting(EntityDto::getName)
+      .containsExactlyInAnyOrder("A Report", "D Combined", DEFAULT_COLLECTION_NAME);
   }
 
   @Test
-  public void getEntities_OrderedByTypeAndLastModified() {
+  public void getEntities__noSortApplied_OrderedByTypeAndLastModified() {
     //given
     addCollection("B Collection");
     addCollection("A Collection");
@@ -237,19 +249,17 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> entities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(entities.size(), is(6));
-    assertThat(entities.get(0).getName(), is("A Collection"));
-    assertThat(entities.get(0).getEntityType(), is(EntityType.COLLECTION));
-    assertThat(entities.get(1).getName(), is("B Collection"));
-    assertThat(entities.get(1).getEntityType(), is(EntityType.COLLECTION));
-    assertThat(entities.get(2).getName(), is("A Dashboard"));
-    assertThat(entities.get(2).getEntityType(), is(EntityType.DASHBOARD));
-    assertThat(entities.get(3).getName(), is("B Dashboard"));
-    assertThat(entities.get(3).getEntityType(), is(EntityType.DASHBOARD));
-    assertThat(entities.get(4).getName(), is("C Report"));
-    assertThat(entities.get(4).getEntityType(), is(EntityType.REPORT));
-    assertThat(entities.get(5).getName(), is("D Report"));
-    assertThat(entities.get(5).getEntityType(), is(EntityType.REPORT));
+    assertThat(entities)
+      .hasSize(6)
+      .extracting(EntityDto::getName, EntityDto::getEntityType)
+      .containsExactly(
+        Tuple.tuple("A Collection", EntityType.COLLECTION),
+        Tuple.tuple("B Collection", EntityType.COLLECTION),
+        Tuple.tuple("A Dashboard", EntityType.DASHBOARD),
+        Tuple.tuple("B Dashboard", EntityType.DASHBOARD),
+        Tuple.tuple("C Report", EntityType.REPORT),
+        Tuple.tuple("D Report", EntityType.REPORT)
+      );
   }
 
   @Test
@@ -263,11 +273,15 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(defaultUserEntities.size(), is(1));
-    final EntityDto collectionEntityDto = defaultUserEntities.get(0);
-    assertThat(collectionEntityDto.getData().getSubEntityCounts().size(), is(2));
-    assertThat(collectionEntityDto.getData().getSubEntityCounts().get(EntityType.REPORT), is(0L));
-    assertThat(collectionEntityDto.getData().getSubEntityCounts().get(EntityType.DASHBOARD), is(0L));
+    assertThat(defaultUserEntities)
+      .hasSize(1)
+      .allSatisfy(entry -> assertThat(entry.getData().getSubEntityCounts())
+        .hasSize(2)
+        .containsExactlyInAnyOrderEntriesOf(ImmutableMap.of(
+          EntityType.REPORT, 0L,
+          EntityType.DASHBOARD, 0L
+        ))
+      );
   }
 
   @Test
@@ -286,11 +300,15 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(defaultUserEntities.size(), is(1));
-    final EntityDto collectionEntityDto = defaultUserEntities.get(0);
-    assertThat(collectionEntityDto.getData().getSubEntityCounts().size(), is(2));
-    assertThat(collectionEntityDto.getData().getSubEntityCounts().get(EntityType.REPORT), is(3L));
-    assertThat(collectionEntityDto.getData().getSubEntityCounts().get(EntityType.DASHBOARD), is(1L));
+    assertThat(defaultUserEntities)
+      .hasSize(1)
+      .allSatisfy(entry -> assertThat(entry.getData().getSubEntityCounts())
+        .hasSize(2)
+        .containsExactlyInAnyOrderEntriesOf(ImmutableMap.of(
+          EntityType.REPORT, 3L,
+          EntityType.DASHBOARD, 1L
+        ))
+      );
   }
 
   @Test
@@ -304,11 +322,15 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(defaultUserEntities.size(), is(1));
-    final EntityDto collectionEntityDto = defaultUserEntities.get(0);
-    assertThat(collectionEntityDto.getData().getRoleCounts().size(), is(2));
-    assertThat(collectionEntityDto.getData().getRoleCounts().get(IdentityType.USER), is(1L));
-    assertThat(collectionEntityDto.getData().getRoleCounts().get(IdentityType.GROUP), is(0L));
+    assertThat(defaultUserEntities)
+      .hasSize(1)
+      .allSatisfy(entry -> assertThat(entry.getData().getRoleCounts())
+        .hasSize(2)
+        .containsExactlyInAnyOrderEntriesOf(ImmutableMap.of(
+          IdentityType.USER, 1L,
+          IdentityType.GROUP, 0L
+        ))
+      );
   }
 
   @Test
@@ -334,11 +356,15 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(defaultUserEntities.size(), is(1));
-    final EntityDto collectionEntityDto = defaultUserEntities.get(0);
-    assertThat(collectionEntityDto.getData().getRoleCounts().size(), is(2));
-    assertThat(collectionEntityDto.getData().getRoleCounts().get(IdentityType.USER), is(2L));
-    assertThat(collectionEntityDto.getData().getRoleCounts().get(IdentityType.GROUP), is(3L));
+    assertThat(defaultUserEntities)
+      .hasSize(1)
+      .allSatisfy(entry -> assertThat(entry.getData().getRoleCounts())
+        .hasSize(2)
+        .containsExactlyInAnyOrderEntriesOf(ImmutableMap.of(
+          IdentityType.USER, 2L,
+          IdentityType.GROUP, 3L
+        ))
+      );
   }
 
   @Test
@@ -356,136 +382,116 @@ public class EntitiesRestServiceIT extends AbstractIT {
     final List<EntityDto> defaultUserEntities = entitiesClient.getAllEntities();
 
     // then
-    assertThat(defaultUserEntities.size(), is(3));
-    final EntityDto combinedReportEntityDto = defaultUserEntities.stream()
-      .filter(EntityDto::getCombined)
-      .findFirst()
-      .get();
-    assertThat(combinedReportEntityDto.getData().getSubEntityCounts().size(), is(1));
-    assertThat(combinedReportEntityDto.getData().getSubEntityCounts().get(EntityType.REPORT), is(2L));
+    assertThat(defaultUserEntities)
+      .hasSize(3)
+      .filteredOn(EntityDto::getCombined)
+      .hasSize(1)
+      .allSatisfy(entry -> assertThat(entry.getData().getSubEntityCounts())
+        .hasSize(1)
+        .containsExactlyInAnyOrderEntriesOf(ImmutableMap.of(
+          EntityType.REPORT, 2L
+        ))
+      );
   }
 
-  @Test
-  public void getEntityNames_WorksForAllPossibleEntities() {
+  @ParameterizedTest(name = "sortBy={0}, sortOrder={1}")
+  @MethodSource("sortParamsAndExpectedComparator")
+  public void getEntities_resultsAreSortedAccordingToExpectedComparator(String sortBy, SortOrder sortOrder,
+                                                                        Comparator<EntityDto> expectedComparator) {
     //given
-    String reportId = addSingleReportToOptimize("aReportName", ReportType.PROCESS);
-    String dashboardId = addDashboardToOptimize("aDashboardName");
-    String collectionId = addCollection("aCollectionName");
-    String eventProcessId = addEventProcessMappingToOptimize("anEventProcessName");
+    addCollection("B Collection");
+    addCollection("A Collection");
+    addSingleReportToOptimize("D Report", ReportType.PROCESS);
+    addSingleReportToOptimize("C Report", ReportType.DECISION);
+    addDashboardToOptimize("B Dashboard");
+    addDashboardToOptimize("A Dashboard");
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
+    EntitySorter sorter = entitySorter(sortBy, sortOrder);
+
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, eventProcessId);
+    final List<EntityDto> allEntities = entitiesClient.getAllEntities(sorter);
 
     // then
-    assertThat(result.getCollectionName(), is("aCollectionName"));
-    assertThat(result.getDashboardName(), is("aDashboardName"));
-    assertThat(result.getReportName(), is("aReportName"));
-    assertThat(result.getEventBasedProcessName(), is("anEventProcessName"));
+    assertThat(allEntities)
+      .hasSize(6)
+      .isSortedAccordingTo(expectedComparator);
   }
 
   @Test
-  public void getEntityNames_ReturnsNoResponseForEventBasedProcessIfThereIsNone() {
-    //given
-    String reportId = addSingleReportToOptimize("aReportName", ReportType.PROCESS);
-    String dashboardId = addDashboardToOptimize("aDashboardName");
-    String collectionId = addCollection("aCollectionName");
+  public void getEntities_unresolvableResultsAreSortedAccordingToDefaultComparator() {
+    // given
+    addCollection("An Entity");
+    addCollection("An Entity");
+    addSingleReportToOptimize("An Entity", ReportType.PROCESS);
+    addSingleReportToOptimize("An Entity", ReportType.DECISION);
+    addDashboardToOptimize("An Entity");
+    addDashboardToOptimize("An Entity");
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
+    EntitySorter sorter = entitySorter(name, SortOrder.ASC);
+    final Comparator<EntityDto> expectedComparator = Comparator.comparing(EntityDto::getName)
+      .thenComparing(EntityDto::getEntityType)
+      .thenComparing(Comparator.comparing(EntityDto::getLastModified).reversed());
+
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(collectionId, dashboardId, reportId, "eventProcessId");
+    final List<EntityDto> allEntities = entitiesClient.getAllEntities(sorter);
 
     // then
-    assertThat(result.getCollectionName(), is("aCollectionName"));
-    assertThat(result.getDashboardName(), is("aDashboardName"));
-    assertThat(result.getReportName(), is("aReportName"));
-    assertThat(result.getEventBasedProcessName(), is(nullValue()));
+    assertThat(allEntities)
+      .hasSize(6)
+      .isSortedAccordingTo(expectedComparator);
   }
 
   @Test
-  public void getEntityNames_SeveralReportsDoNotDistortResult() {
-    //given
-    String reportId = addSingleReportToOptimize("aProcessReportName", ReportType.PROCESS);
-    addSingleReportToOptimize("aDecisionReportName", ReportType.DECISION);
-    addCombinedReport("aCombinedReportName");
+  public void getEntities_resultsAreSortedInAscendingOrderIfNoOrderSupplied() {
+    // given
+    addCollection("A Entity");
+    addCollection("B Entity");
+    addSingleReportToOptimize("C Entity", ReportType.PROCESS);
+    addSingleReportToOptimize("D Entity", ReportType.DECISION);
+    addDashboardToOptimize("E Entity");
+    addDashboardToOptimize("F Entity");
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
+    EntitySorter sorter = entitySorter(name, null);
+    final Comparator<EntityDto> expectedComparator = Comparator.comparing(EntityDto::getName);
+
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(null, null, reportId, null);
+    final List<EntityDto> allEntities = entitiesClient.getAllEntities(sorter);
 
     // then
-    assertThat(result.getCollectionName(), nullValue());
-    assertThat(result.getDashboardName(), nullValue());
-    assertThat(result.getReportName(), is("aProcessReportName"));
-    assertThat(result.getEventBasedProcessName(), nullValue());
+    assertThat(allEntities)
+      .hasSize(6)
+      .isSortedAccordingTo(expectedComparator);
   }
 
   @Test
-  public void getEntityNames_WorksForDecisionReports() {
-    //given
-    String reportId = addSingleReportToOptimize("aDecisionReportName", ReportType.DECISION);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  public void getEntities_invalidSortByParameterPassed() {
+    // given a sortBy field which is not supported
+    EntitySorter sorter = entitySorter(EntityDto.Fields.currentUserRole, SortOrder.ASC);
 
     // when
-    EntityNameDto result = entitiesClient.getEntityNames(null, null, reportId, null);
-
-    // then
-    assertThat(result.getCollectionName(), nullValue());
-    assertThat(result.getDashboardName(), nullValue());
-    assertThat(result.getReportName(), is("aDecisionReportName"));
-    assertThat(result.getEventBasedProcessName(), nullValue());
-  }
-
-  @Test
-  public void getEntityNames_WorksForCombinedReports() {
-    //given
-    String reportId = addCombinedReport("aCombinedReportName");
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    EntityNameDto result = entitiesClient.getEntityNames(null, null, reportId, null);
-
-    // then
-    assertThat(result.getCollectionName(), nullValue());
-    assertThat(result.getDashboardName(), nullValue());
-    assertThat(result.getReportName(), is("aCombinedReportName"));
-    assertThat(result.getEventBasedProcessName(), nullValue());
-  }
-
-  @Test
-  public void getEntityNames_NotAvailableIdReturns404() {
-    //given
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetEntityNamesRequest(new EntityNameRequestDto(null, null, "notAvailableRequest", null))
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetAllEntitiesRequest(sorter)
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
-  public void getEntityNames_NoIdProvidedReturns400() {
-    //given
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  public void getEntities_sortOrderSuppliedWithNoSortByField() {
+    // given
+    EntitySorter sorter = entitySorter(null, SortOrder.ASC);
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildGetEntityNamesRequest(new EntityNameRequestDto(null, null, null, null))
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetAllEntitiesRequest(sorter)
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
-  }
-
-  private String addCollection(final String collectionName) {
-    final String collectionId = collectionClient.createNewCollection();
-    collectionClient.updateCollection(collectionId, new PartialCollectionDefinitionDto(collectionName));
-    return collectionId;
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   private void addRoleToCollection(final String collectionId,
@@ -494,70 +500,11 @@ public class EntitiesRestServiceIT extends AbstractIT {
 
     final CollectionRoleDto roleDto = new CollectionRoleDto(
       identityType.equals(IdentityType.USER)
-        ? new IdentityDto(identityId, identityType.USER)
+        ? new IdentityDto(identityId, IdentityType.USER)
         : new IdentityDto(identityId, IdentityType.GROUP),
       RoleType.EDITOR
     );
     collectionClient.addRoleToCollection(collectionId, roleDto);
-  }
-
-  private String addSingleReportToOptimize(String name, ReportType reportType) {
-    return addSingleReportToOptimize(name, reportType, null, DEFAULT_USERNAME);
-  }
-
-  private String addSingleReportToOptimize(String name, ReportType reportType, String collectionId, String user) {
-    switch (reportType) {
-      case PROCESS:
-        SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-        singleProcessReportDefinitionDto.setName(name);
-        singleProcessReportDefinitionDto.setCollectionId(collectionId);
-        return reportClient.createSingleProcessReportAsUser(singleProcessReportDefinitionDto, user, user);
-      case DECISION:
-        SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
-        singleDecisionReportDefinitionDto.setName(name);
-        singleDecisionReportDefinitionDto.setCollectionId(collectionId);
-        return reportClient.createNewDecisionReportAsUser(singleDecisionReportDefinitionDto, user, user);
-      default:
-        throw new IllegalStateException("ReportType not allowed!");
-    }
-  }
-
-  private String addDashboardToOptimize(String name) {
-    return addDashboardToOptimize(name, null, DEFAULT_USERNAME);
-  }
-
-  private String addDashboardToOptimize(String name, String collectionId, String user) {
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
-    dashboardDefinitionDto.setName(name);
-    dashboardDefinitionDto.setCollectionId(collectionId);
-    return dashboardClient.createDashboardAsUser(dashboardDefinitionDto, user, user);
-  }
-
-  private String addCombinedReport(String name) {
-    return addCombinedReport(name, null);
-  }
-
-  private String addCombinedReport(String name, String collectionId) {
-    CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
-    combinedReportDefinitionDto.setName(name);
-    combinedReportDefinitionDto.setCollectionId(collectionId);
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest(combinedReportDefinitionDto)
-      .withUserAuthentication(DEFAULT_USERNAME, DEFAULT_PASSWORD)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode()).getId();
-  }
-
-  private String addEventProcessMappingToOptimize(final String eventProcessName) {
-    EventProcessMappingCreateRequestDto eventBasedProcessDto = EventProcessMappingCreateRequestDto.eventProcessMappingCreateBuilder()
-      .name(eventProcessName)
-      .eventSources(Collections.singletonList(
-        EventSourceEntryDto.builder()
-          .eventScope(Collections.singletonList(EventScopeType.ALL))
-          .type(EventSourceType.EXTERNAL)
-          .build()))
-      .build();
-    return eventProcessClient.createEventProcessMapping(eventBasedProcessDto);
   }
 
 }

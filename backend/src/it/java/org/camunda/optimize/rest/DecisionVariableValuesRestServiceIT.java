@@ -16,15 +16,14 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class DecisionVariableValuesRestServiceIT extends AbstractIT {
 
   private static final String TEST_VARIANT_INPUTS = "inputs";
   private static final String TEST_VARIANT_OUTPUTS = "outputs";
 
-  @ParameterizedTest(name = "get variable values without authentication for type {0}")
+  @ParameterizedTest
   @MethodSource("getInputOutputArgs")
   public void getVariableValuesWithoutAuthentication(String inputOutput) {
     // when
@@ -33,10 +32,10 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
-  @ParameterizedTest(name = "get variable values for type {0}")
+  @ParameterizedTest
   @MethodSource("getInputOutputArgs")
   public void getVariableValues(String inputOutput) {
     // given
@@ -47,10 +46,10 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .executeAndReturnList(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(responseList.isEmpty(), is(true));
+    assertThat(responseList).isEmpty();
   }
 
-  @ParameterizedTest(name = "missing variable id query param throws error for type {0}")
+  @ParameterizedTest
   @MethodSource("getInputOutputArgs")
   public void missingVariableIdQueryParamThrowsError(String inputOutput) {
     // given
@@ -62,10 +61,10 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  @ParameterizedTest(name = "missing variable type query param throws error for type {0}")
+  @ParameterizedTest
   @MethodSource("getInputOutputArgs")
   public void missingVariableTypeQueryParamThrowsError(String inputOutput) {
     // given
@@ -77,10 +76,10 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  @ParameterizedTest(name = "missing decision definition key query param throws error for type {0}")
+  @ParameterizedTest
   @MethodSource("getInputOutputArgs")
   public void missingDecisionDefinitionKeyQueryParamThrowsError(String inputOutput) {
     // given
@@ -92,10 +91,10 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
-  @ParameterizedTest(name = "missing decision definition version query param does not throw error for type {0}")
+  @ParameterizedTest
   @MethodSource("getInputOutputArgs")
   public void missingDecisionDefinitionVersionQueryParamDoesNotThrowError(String inputOutput) {
     // given
@@ -107,7 +106,7 @@ public class DecisionVariableValuesRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   private static Stream<String> getInputOutputArgs() {

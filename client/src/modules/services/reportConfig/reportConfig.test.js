@@ -12,6 +12,7 @@ const {
   options: {view, groupBy, visualization},
   getLabelFor,
   isAllowed,
+  findSelectedOption,
   update,
 } = reportConfig(process);
 
@@ -51,6 +52,34 @@ it('should allow only groupBy options that make sense for the selected view', ()
   expect(
     isAllowed(null, {property: 'rawData', entity: null}, {type: 'flowNodes', value: null})
   ).toBeFalsy();
+  expect(
+    isAllowed(
+      null,
+      {property: 'frequency', entity: 'processInstance'},
+      {type: 'runningDate', value: {unit: 'automatic'}}
+    )
+  ).toBeTruthy();
+  expect(
+    isAllowed(
+      null,
+      {property: 'duration', entity: 'processInstance'},
+      {type: 'runningDate', value: {unit: 'automatic'}}
+    )
+  ).toBeFalsy();
+  expect(
+    isAllowed(
+      null,
+      {property: {name: 'doubleVar', type: 'Double'}, entity: 'variable'},
+      {type: 'flowNodes', value: null}
+    )
+  ).toBeFalsy();
+  expect(
+    isAllowed(
+      null,
+      {property: {name: 'doubleVar', type: 'Double'}, entity: 'variable'},
+      {type: 'none', value: null}
+    )
+  ).toBeTruthy();
 });
 
 it('should allow only visualization options that make sense for the selected view and group', () => {
@@ -114,6 +143,13 @@ it('should forbid line, pie charts and heatmap for distributed userTask reports'
   expect(isAllowed(report, view, groupBy, 'heat')).toBeFalsy();
 });
 
+it('should find a selected option based on property', () => {
+  expect(findSelectedOption(view, 'data', {property: 'frequency', entity: 'processInstance'})).toBe(
+    view[1].options[0]
+  );
+  expect(findSelectedOption(groupBy, 'key', 'startDate_day')).toBe(groupBy[3].options[4]);
+});
+
 describe('update', () => {
   const countProcessInstances = {
     entity: 'processInstance',
@@ -139,7 +175,7 @@ describe('update', () => {
           },
         },
       })
-    ).toEqual({groupBy: {$set: startDate}});
+    ).toEqual({groupBy: {$set: startDate}, configuration: {xLabel: {$set: 'Start Date'}}});
   });
 
   it("should reset visualization when it's incompatible with the new group", () => {
@@ -151,8 +187,8 @@ describe('update', () => {
             visualization: 'number',
           },
         },
-      })
-    ).toEqual({groupBy: {$set: startDate}, visualization: {$set: null}});
+      }).visualization
+    ).toEqual({$set: null});
   });
 
   it('should automatically select an unambiguous visualization when updating group', () => {
@@ -168,8 +204,8 @@ describe('update', () => {
             },
           },
         }
-      )
-    ).toEqual({groupBy: {$set: {type: 'none', value: null}}, visualization: {$set: 'number'}});
+      ).visualization
+    ).toEqual({$set: 'number'});
   });
 
   it('should update view', () => {
@@ -182,7 +218,10 @@ describe('update', () => {
           },
         },
       })
-    ).toEqual({view: {$set: countProcessInstances}});
+    ).toEqual({
+      view: {$set: countProcessInstances},
+      configuration: {xLabel: {$set: 'Start Date'}, yLabel: {$set: 'Process Instance Count'}},
+    });
   });
 
   it('should adjust groupby and visualization when changing view', () => {
@@ -195,10 +234,6 @@ describe('update', () => {
           },
         },
       })
-    ).toEqual({
-      view: {$set: countProcessInstances},
-      groupBy: {$set: null},
-      visualization: {$set: null},
-    });
+    ).toMatchSnapshot();
   });
 });

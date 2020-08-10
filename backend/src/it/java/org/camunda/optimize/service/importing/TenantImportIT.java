@@ -25,8 +25,7 @@ public class TenantImportIT extends AbstractImportIT {
     engineIntegrationExtension.createTenant(tenantId, tenantName);
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -47,8 +46,7 @@ public class TenantImportIT extends AbstractImportIT {
     engineIntegrationExtension.createTenant("tenant3");
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -64,14 +62,12 @@ public class TenantImportIT extends AbstractImportIT {
     engineIntegrationExtension.createTenant(tenantId, tenantName);
 
     //when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final String newTenantName = "My New Tenant";
     engineIntegrationExtension.updateTenant(tenantId, newTenantName);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     //then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
@@ -86,8 +82,7 @@ public class TenantImportIT extends AbstractImportIT {
   public void afterRestartOfOptimizeAlsoNewDataIsImported() throws Exception {
     // given
     engineIntegrationExtension.createTenant("tenantId", "My New Tenant");
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     embeddedOptimizeExtension.stopOptimize();
@@ -95,8 +90,7 @@ public class TenantImportIT extends AbstractImportIT {
 
     // and
     engineIntegrationExtension.createTenant("tenantId2", "My New Tenant 2");
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     assertThat(

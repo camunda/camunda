@@ -12,8 +12,8 @@ import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.cleanup.DecisionDefinitionCleanupConfiguration;
-import org.camunda.optimize.service.util.configuration.cleanup.OptimizeCleanupConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,23 +63,23 @@ public class OptimizeDecisionCleanupServiceTest {
     mockDecisionDefinitions(decisionDefinitionKeys);
 
     //when
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
-    assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfig().getDefaultTtl());
+    assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
   @Test
   public void testCleanupRunForMultipleDecisionDefinitionsDifferentDefaultTtl() {
     // given
     final Period customTtl = Period.parse("P2M");
-    getCleanupConfig().setDefaultTtl(customTtl);
+    getCleanupConfiguration().setTtl(customTtl);
     final List<String> decisionDefinitionKeys = generateRandomDefinitionsKeys(3);
 
     //when
     mockDecisionDefinitions(decisionDefinitionKeys);
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
@@ -92,7 +92,7 @@ public class OptimizeDecisionCleanupServiceTest {
     final Period customTtl = Period.parse("P2M");
     final List<String> decisionDefinitionKeysWithSpecificTtl = generateRandomDefinitionsKeys(3);
     final Map<String, DecisionDefinitionCleanupConfiguration> decisionDefinitionSpecificConfiguration =
-      getCleanupConfig().getDecisionDefinitionSpecificConfiguration();
+      getCleanupConfiguration().getDecisionCleanupConfiguration().getDecisionDefinitionSpecificConfiguration();
     decisionDefinitionKeysWithSpecificTtl.forEach(decisionDefinitionKey -> decisionDefinitionSpecificConfiguration.put(
       decisionDefinitionKey, new DecisionDefinitionCleanupConfiguration(customTtl)
     ));
@@ -104,7 +104,7 @@ public class OptimizeDecisionCleanupServiceTest {
 
     //when
     mockDecisionDefinitions(allDecisionDefinitionKeys);
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
@@ -113,7 +113,7 @@ public class OptimizeDecisionCleanupServiceTest {
     );
     assertKeysWereCalledWithExpectedTtl(capturedArguments, decisionDefinitionKeysWithSpecificTtl, customTtl);
     assertKeysWereCalledWithExpectedTtl(
-      capturedArguments, decisionDefinitionKeysWithDefaultTtl, getCleanupConfig().getDefaultTtl()
+      capturedArguments, decisionDefinitionKeysWithDefaultTtl, getCleanupConfiguration().getTtl()
     );
   }
 
@@ -125,21 +125,24 @@ public class OptimizeDecisionCleanupServiceTest {
     mockDecisionDefinitions(ListUtils.union(decisionDefinitionKeys, decisionDefinitionKeys));
 
     //when
-    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    final CleanupService underTest = createOptimizeCleanupServiceToTest();
     doCleanup(underTest);
 
     //then
-    assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfig().getDefaultTtl());
+    assertDeleteDecisionInstancesExecutedFor(decisionDefinitionKeys, getCleanupConfiguration().getTtl());
   }
 
   @Test
   public void testFailCleanupOnSpecificKeyConfigWithNoMatchingDecisionDefinition() {
     // given I have a key specific config
     final String configuredKey = "myMistypedKey";
-    getCleanupConfig().getDecisionDefinitionSpecificConfiguration().put(
-      configuredKey,
-      new DecisionDefinitionCleanupConfiguration(Period.parse("P2M"))
-    );
+    getCleanupConfiguration()
+      .getDecisionCleanupConfiguration()
+      .getDecisionDefinitionSpecificConfiguration()
+      .put(
+        configuredKey,
+        new DecisionDefinitionCleanupConfiguration(Period.parse("P2M"))
+      );
     // and this key is not present in the known process definition keys
     mockDecisionDefinitions(generateRandomDefinitionsKeys(3));
 
@@ -149,11 +152,11 @@ public class OptimizeDecisionCleanupServiceTest {
     assertThat(exception.getMessage(), containsString(configuredKey));
   }
 
-  private void doCleanup(final OptimizeCleanupService underTest) {
+  private void doCleanup(final CleanupService underTest) {
     underTest.doCleanup(OffsetDateTime.now());
   }
 
-  private OptimizeCleanupConfiguration getCleanupConfig() {
+  private CleanupConfiguration getCleanupConfiguration() {
     return configurationService.getCleanupServiceConfiguration();
   }
 
@@ -224,8 +227,8 @@ public class OptimizeDecisionCleanupServiceTest {
     return decisionDefinitionOptimizeDto;
   }
 
-  private OptimizeDecisionCleanupService createOptimizeCleanupServiceToTest() {
-    return new OptimizeDecisionCleanupService(
+  private EngineDataDecisionCleanupService createOptimizeCleanupServiceToTest() {
+    return new EngineDataDecisionCleanupService(
       configurationService,
       decisionDefinitionReader,
       decisionInstanceWriter

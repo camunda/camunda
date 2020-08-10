@@ -3,33 +3,50 @@
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  padding: 36px 20px 0px 20px;
-}
+  padding: 30px 25px 0 40px;
 
-.Sharing__header {
-  display: flex;
-  flex-shrink: 0;
-  margin-bottom: 32px;
-}
+  .ReportDetails .modalsButtons {
+    display: none;
+  }
 
-.Sharing__title-container {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  align-items: baseline;
-  flex-grow: 1;
-  padding-right: 48px;
-}
+  .InstanceCount {
+    margin-top: 0;
 
-.Sharing__content {
-  margin-top: 24px;
-  margin-bottom: 24px;
-  display: flex;
-  justify-content: flex-start;
-  flex-direction: column;
-  flex-grow: 1;
+    .Popover .countString {
+      display: none;
+    }
+  }
 
-  .Table {
-    min-width: 25%;
+  .header {
+    flex-shrink: 0;
+    margin-bottom: 40px;
+
+    .title-button {
+      flex-shrink: 0;
+    }
+  }
+
+  .title-container {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+  }
+
+  > .content {
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: flex-start;
+    flex-direction: column;
+    flex-grow: 1;
+
+    .Table {
+      min-width: 25%;
+    }
+  }
+
+  .OptimizeReport:hover {
+    .Popover__button {
+      opacity: 1;
+    }
   }
 }

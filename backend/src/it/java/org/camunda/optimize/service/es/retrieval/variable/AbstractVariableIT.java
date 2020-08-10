@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.retrieval.variable;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
@@ -20,6 +19,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public abstract class AbstractVariableIT extends AbstractIT {
 
@@ -60,24 +61,19 @@ public abstract class AbstractVariableIT extends AbstractIT {
   protected void startInstanceAndImportEngineEntities(final ProcessDefinitionEngineDto processDefinition,
                                                     final Map<String, Object> variables) {
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
   protected DecisionDefinitionEngineDto startDecisionInstanceAndImportEngineEntities(Map<String, Object> variables) {
     final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(
       DmnHelper.createSimpleDmnModel("someKey"));
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionEngineDto.getId(), variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     return decisionDefinitionEngineDto;
   }
 
   protected ProcessDefinitionEngineDto deploySimpleProcessDefinition(String tenantId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .startEvent()
-      .endEvent()
-      .done();
+    BpmnModelInstance modelInstance = getSimpleBpmnDiagram(PROCESS_DEFINITION_KEY);
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 

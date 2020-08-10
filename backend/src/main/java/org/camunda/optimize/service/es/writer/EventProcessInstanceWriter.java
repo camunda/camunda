@@ -10,32 +10,53 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.importing.EventProcessGatewayDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
+import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.index.reindex.UpdateByQueryAction;
 import org.elasticsearch.script.Script;
 
+import java.text.MessageFormat;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 
 @RequiredArgsConstructor
 @Slf4j
 public class EventProcessInstanceWriter {
 
+  public static final Script VARIABLE_CLEAR_SCRIPT = new Script(
+    MessageFormat.format("ctx._source.{0} = new ArrayList();\n", VARIABLES)
+  );
+
   private final EventProcessInstanceIndex eventProcessInstanceIndex;
   private final OptimizeElasticsearchClient esClient;
   private final ObjectMapper objectMapper;
+  private final DateTimeFormatter dateTimeFormatter;
+
   private List<Object> gatewayLookup;
 
   public void setGatewayLookup(final List<EventProcessGatewayDto> gatewayLookup) {
@@ -54,6 +75,60 @@ public class EventProcessInstanceWriter {
       eventProcessInstanceDtos,
       this::addImportProcessInstanceRequest
     );
+  }
+
+  public void deleteInstancesThatEndedBefore(final OffsetDateTime endDate) {
+    final String indexName = getIndexName();
+    final String deletedItemName = "event process instances";
+    final String deletedItemIdentifier = String.format(
+      "%s in index %s that ended before %s", deletedItemName, indexName, endDate
+    );
+    log.info("Performing cleanup on {}", deletedItemIdentifier);
+
+    final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
+      getClass().getName(), esClient, DeleteByQueryAction.NAME
+    );
+    try {
+      progressReporter.start();
+      final BoolQueryBuilder filterQuery = boolQuery()
+        .filter(rangeQuery(END_DATE).lt(dateTimeFormatter.format(endDate)));
+
+      ElasticsearchWriterUtil.tryDeleteByQueryRequest(
+        esClient, filterQuery, deletedItemName, deletedItemIdentifier, false, indexName
+      );
+    } finally {
+      progressReporter.stop();
+    }
+
+    log.info("Finished cleanup on {}", deletedItemIdentifier);
+  }
+
+  public void deleteVariablesOfInstancesThatEndedBefore(final OffsetDateTime endDate) {
+    final String indexName = getIndexName();
+    final String updateItemName = "event process variables";
+    final String updatedItemIdentifier = String.format(
+      "%s in index %s that ended before %s", updateItemName, indexName, endDate
+    );
+    log.info("Performing cleanup on {}", updatedItemIdentifier);
+
+    final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
+      getClass().getName(), esClient, UpdateByQueryAction.NAME
+    );
+    try {
+      progressReporter.start();
+
+      final BoolQueryBuilder filterQuery = boolQuery()
+        .filter(rangeQuery(END_DATE).lt(dateTimeFormatter.format(endDate)))
+        .filter(nestedQuery(VARIABLES, existsQuery(VARIABLES + "." + VARIABLE_ID), ScoreMode.None));
+
+      ElasticsearchWriterUtil.tryUpdateByQueryRequest(
+        esClient, updateItemName, updatedItemIdentifier, VARIABLE_CLEAR_SCRIPT, filterQuery, indexName
+      );
+    } finally {
+      progressReporter.stop();
+    }
+
+    log.info("Finished cleanup on {}", updatedItemIdentifier);
   }
 
   private String getIndexName() {
@@ -197,7 +272,7 @@ public class EventProcessInstanceWriter {
         ".filter(flowNodeInstanceUpdate -> !appliedUpdates.contains(flowNodeInstanceUpdate))\n" +
         ".collect(Collectors.toList());\n" +
 
-      "addGatewaysForProcessInstance(processInstance, params.gatewayLookup, eventDateComparator, dateFormatter);\n" +
+      "addGatewaysForProcessInstance(processInstance, params.gatewayLookup, eventDateComparator, processInstanceUpdate.processInstanceId, dateFormatter);\n" +
       "updateProcessInstance(processInstance, dateFormatter);\n"
       ;
     // @formatter:on
@@ -249,7 +324,7 @@ public class EventProcessInstanceWriter {
   private String createAddGatewaysForProcessInstanceFunction() {
     // @formatter:off
     return
-      "void addGatewaysForProcessInstance(def instance, def gatewayLookup, def startEndDateComparator, def dateFormatter) {\n" +
+      "void addGatewaysForProcessInstance(def instance, def gatewayLookup, def startEndDateComparator, def processInstanceId, def dateFormatter) {\n" +
         "List gatewayEventsToAdd = new ArrayList();\n" +
         "List gatewayIdsInModel = gatewayLookup.stream().map(gateway -> gateway.id).collect(Collectors.toList());\n" +
         "List existingEvents = new ArrayList(instance.events);\n" +
@@ -260,11 +335,11 @@ public class EventProcessInstanceWriter {
             // Gateways with a single source flow node are opening gateways.
             "if (possibleGateway.previousNodeIds.size() == 1) {\n" +
               "addOpeningGatewayInstances(possibleGateway, gatewayIdsInModel, existingEvents, gatewayEventsToAdd," +
-                                  "eventAddedCount, dateFormatter);\n" +
+                                  "eventAddedCount, processInstanceId, dateFormatter);\n" +
             // Gateways with a single target flow node are closing gateways.
             "} else if (possibleGateway.nextNodeIds.size() == 1) {\n" +
               "addClosingGatewayInstances(possibleGateway, gatewayIdsInModel, existingEvents, gatewayEventsToAdd," +
-                                  "eventAddedCount, dateFormatter);\n" +
+                                  "eventAddedCount, processInstanceId, dateFormatter);\n" +
             "}\n" +
           "}\n" +
           "existingEvents.addAll(gatewayEventsToAdd);\n" +
@@ -278,7 +353,7 @@ public class EventProcessInstanceWriter {
     // @formatter:off
     return
       "void addOpeningGatewayInstances(def possibleGateway, def gatewayIdsInModel, def existingEvents, def gatewayEventsToAdd," +
-                             "def eventAddedCount, def dateFormatter) {\n" +
+                             "def eventAddedCount, def processInstanceId, def dateFormatter) {\n" +
         // For event based gateways
         "if (possibleGateway.type.equals(\"eventBasedGateway\")) {\n" +
           "def previousNodeId = possibleGateway.previousNodeIds.get(0);\n" +
@@ -289,7 +364,7 @@ public class EventProcessInstanceWriter {
               "if (possibleGateway.nextNodeIds.contains(event.activityId) && event.startDate != null) {\n" +
                 "eventAddedCount ++;\n" +
                 "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                    "event.startDate, event.startDate, eventAddedCount);\n" +
+                                    "event.startDate, event.startDate, processInstanceId, eventAddedCount);\n" +
                 "gatewayEventsToAdd.add(newGateway);\n" +
               "}\n" +
             "}\n" +
@@ -308,7 +383,7 @@ public class EventProcessInstanceWriter {
               "def targetEvent = targetEvents.remove(0);\n" +
               "eventAddedCount ++;\n" +
               "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                  "sourceEvent.endDate, targetEvent.startDate, eventAddedCount);\n" +
+                                  "sourceEvent.endDate, targetEvent.startDate, processInstanceId, eventAddedCount);\n" +
               "calculateAndAssignEventDuration(newGateway, dateFormatter);\n" +
               "gatewayEventsToAdd.add(newGateway);\n" +
               "gatewayCanBeAdded = !sourceEvents.isEmpty() && !targetEvents.isEmpty();\n" +
@@ -322,7 +397,7 @@ public class EventProcessInstanceWriter {
             "if (possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null) {\n" +
               "eventAddedCount ++;\n" +
               "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                  "event.endDate, event.endDate, eventAddedCount);\n" +
+                                  "event.endDate, event.endDate, processInstanceId, eventAddedCount);\n" +
               "gatewayEventsToAdd.add(newGateway);\n" +
             "}\n" +
           "}\n" +
@@ -333,7 +408,7 @@ public class EventProcessInstanceWriter {
             "if (possibleGateway.nextNodeIds.contains(event.activityId)) {\n" +
               "eventAddedCount ++;\n" +
               "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                  "event.startDate, event.startDate, eventAddedCount);\n" +
+                                  "event.startDate, event.startDate, processInstanceId, eventAddedCount);\n" +
               "gatewayEventsToAdd.add(newGateway);\n" +
             "}\n" +
           "}\n" +
@@ -346,7 +421,7 @@ public class EventProcessInstanceWriter {
     // @formatter:off
     return
       "void addClosingGatewayInstances(def possibleGateway, def gatewayIdsInModel, def existingEvents, def gatewayEventsToAdd," +
-                             "def eventAddedCount, def dateFormatter) {\n" +
+                             "def eventAddedCount, def processInstanceId, def dateFormatter) {\n" +
         // For exclusive gateways
         "if (possibleGateway.type.equals(\"exclusiveGateway\")) {\n" +
           // if the target flow node event is not a gateway, we can add an exclusive gateway for every
@@ -356,7 +431,7 @@ public class EventProcessInstanceWriter {
               "if (possibleGateway.nextNodeIds.contains(event.activityId)) {\n" +
                 "eventAddedCount ++;\n" +
                 "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                    "event.startDate, event.startDate, eventAddedCount);\n" +
+                                    "event.startDate, event.startDate, processInstanceId, eventAddedCount);\n" +
                 "gatewayEventsToAdd.add(newGateway);\n" +
               "}\n" +
             "}\n" +
@@ -367,7 +442,7 @@ public class EventProcessInstanceWriter {
               "if (possibleGateway.previousNodeIds.contains(event.activityId) && event.endDate != null) {\n" +
                 "eventAddedCount ++;\n" +
                 "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                    "event.endDate, event.endDate, eventAddedCount);\n" +
+                                    "event.endDate, event.endDate, processInstanceId, eventAddedCount);\n" +
                 "gatewayEventsToAdd.add(newGateway);\n" +
               "}\n" +
             "}\n" +
@@ -394,7 +469,7 @@ public class EventProcessInstanceWriter {
             "def lastEventForGateway = eventsForGateway.get(eventsForGateway.size() - 1);" +
             "eventAddedCount ++;\n" +
             "def newGateway = createNewGateway(possibleGateway.id, possibleGateway.type, \n" +
-                                  "firstEventForGateway.endDate, lastEventForGateway.endDate, eventAddedCount);\n" +
+                                  "firstEventForGateway.endDate, lastEventForGateway.endDate, processInstanceId, eventAddedCount);\n" +
             "calculateAndAssignEventDuration(newGateway, dateFormatter);\n" +
             "gatewayEventsToAdd.add(newGateway);\n" +
             "gatewayCanBeAdded = !relatedEventsByActivityId.values().stream().anyMatch(eventsForActivity -> eventsForActivity.isEmpty());\n" +
@@ -407,14 +482,15 @@ public class EventProcessInstanceWriter {
   private String createNewGatewayFunction() {
     // @formatter:off
     return
-      "def createNewGateway(def activityId, def activityType, def startDate, def endDate, def eventAddedCount) {\n" +
+      "def createNewGateway(def activityId, def activityType, def startDate, def endDate, def processInstanceId, def eventAddedCount) {\n" +
         "def newGateway = [\n" +
           "'id': activityId + '_' + eventAddedCount,\n" +
           "'activityId': activityId,\n" +
           "'activityType': activityType,\n" +
           "'durationInMs': 0,\n" +
           "'startDate': startDate,\n" +
-          "'endDate': endDate\n" +
+          "'endDate': endDate,\n" +
+          "'processInstanceId': processInstanceId\n" +
         "];\n" +
         "return newGateway;\n" +
       "}\n";

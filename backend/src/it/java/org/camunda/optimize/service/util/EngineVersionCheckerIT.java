@@ -21,7 +21,7 @@ public class EngineVersionCheckerIT extends AbstractIT {
   @RegisterExtension
   @Order(4)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension2 =
-    new EmbeddedOptimizeExtension("classpath:versionCheckContext.xml");
+    EmbeddedOptimizeExtension.customPropertiesBuilder().context("classpath:versionCheckContext.xml").build();
 
   @Test
   public void engineVersionCantBeDetermined() {
@@ -47,8 +47,9 @@ public class EngineVersionCheckerIT extends AbstractIT {
   @AfterEach
   public void setContextBack() throws Exception {
     embeddedOptimizeExtension2.stopOptimize();
-    EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension(
-      "classpath:embeddedOptimizeContext.xml");
+    EmbeddedOptimizeExtension embeddedOptimizeExtension = EmbeddedOptimizeExtension.customPropertiesBuilder()
+      .context("classpath:embeddedOptimizeContext.xml")
+      .build();
     embeddedOptimizeExtension.startOptimize();
   }
 }

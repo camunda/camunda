@@ -10,21 +10,21 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.metrics.Max;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
-import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToLongOrNull;
+import static org.camunda.optimize.service.es.report.command.util.ElasticsearchAggregationResultMappingUtil.mapToDoubleOrNull;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.max;
 
 public class MaxAggregation implements AggregationStrategy {
-  private static final String MAX_DURATION_AGGREGATION = "maxAggregatedDuration";
+  private static final String MAX_AGGREGATION = "maxAggregation";
 
   @Override
-  public Long getValue(final Aggregations aggs) {
-    final Max aggregation = aggs.get(MAX_DURATION_AGGREGATION);
-    return mapToLongOrNull(aggregation.getValue());
+  public Double getValue(final Aggregations aggs) {
+    final Max aggregation = aggs.get(MAX_AGGREGATION);
+    return mapToDoubleOrNull(aggregation.getValue());
   }
 
   @Override
-  public ValuesSourceAggregationBuilder getAggregationBuilder() {
-    return max(MAX_DURATION_AGGREGATION);
+  public ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder() {
+    return max(MAX_AGGREGATION);
   }
 
   @Override

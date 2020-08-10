@@ -5,16 +5,15 @@
  */
 
 import React from 'react';
-import moment from 'moment';
 
+import {format} from 'dates';
 import {withErrorHandling, withUser} from 'HOC';
 import {ErrorPage, LoadingIndicator} from 'components';
 import {evaluateReport} from 'services';
+import {newReport} from 'config';
 
 import ReportEdit from './ReportEdit';
 import ReportView from './ReportView';
-
-import newReport from './newReport.json';
 
 import './Report.scss';
 import {t} from 'translation';
@@ -43,16 +42,34 @@ export class Report extends React.Component {
   };
 
   createReport = async () => {
+    const {location} = this.props;
+
     const user = await this.props.getUser();
     const now = getFormattedNowDate();
+
+    const report = {
+      ...newReport[this.getId()],
+      name: t('report.new'),
+      lastModified: now,
+      created: now,
+      lastModifier: user.name,
+      owner: user.name,
+    };
+
+    if (this.getId() === 'new' && location.state) {
+      // creating a new process report from template
+      const {name, data} = location.state;
+
+      report.name = name;
+      report.data = {
+        ...report.data,
+        ...data,
+        configuration: {...report.data.configuration, ...data.configuration},
+      };
+    }
+
     this.setState({
-      report: {
-        ...newReport[this.getId()],
-        name: t('report.new'),
-        lastModified: now,
-        created: now,
-        lastModifier: user.id,
-      },
+      report,
     });
   };
 
@@ -102,7 +119,7 @@ export class Report extends React.Component {
                 report: {
                   ...newReport,
                   lastModified: getFormattedNowDate(),
-                  lastModifier: user.id,
+                  lastModifier: user.name,
                 },
               });
             }}
@@ -119,5 +136,5 @@ export class Report extends React.Component {
 export default withErrorHandling(withUser(Report));
 
 function getFormattedNowDate() {
-  return moment().format('Y-MM-DDTHH:mm:ss.SSSZZ');
+  return format(new Date(), "y-MM-dd'T'HH:mm:ss.SSSXX");
 }

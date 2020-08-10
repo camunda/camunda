@@ -13,10 +13,11 @@ import disableCollapsedSubprocessModule from 'bpmn-js-disable-collapsed-subproce
 
 import {withErrorHandling} from 'HOC';
 import {themed} from 'theme';
-
-import './BPMNDiagram.scss';
 import ZoomControls from './ZoomControls';
 import {LoadingIndicator} from 'components';
+import classnames from 'classnames';
+
+import './BPMNDiagram.scss';
 
 const availableViewers = [];
 
@@ -32,18 +33,23 @@ export default themed(
       };
 
       render() {
+        const {loading, style, xml, children} = this.props;
+        const {loaded} = this.state;
+
         return (
-          <div className="BPMNDiagram" style={this.props.style} ref={this.storeContainer}>
-            {this.state.loaded &&
-              this.props.xml &&
-              this.props.children &&
-              React.Children.map(this.props.children, (child) =>
+          <div
+            className={classnames('BPMNDiagram', {loading: loading})}
+            style={style}
+            ref={this.storeContainer}
+          >
+            {loaded &&
+              xml &&
+              children &&
+              React.Children.map(children, (child) =>
                 React.cloneElement(child, {viewer: this.viewer})
               )}
-            {this.state.loaded && this.props.xml && (
-              <ZoomControls zoom={this.zoom} fit={this.fitDiagram} />
-            )}
-            {!this.state.loaded && <LoadingIndicator />}
+            {loaded && xml && <ZoomControls zoom={this.zoom} fit={this.fitDiagram} />}
+            {(!loaded || loading) && <LoadingIndicator className="diagramLoading" />}
           </div>
         );
       }
@@ -82,7 +88,7 @@ export default themed(
         }
       };
 
-      findOrCreateViewerFor = (xml, theme) => {
+      findOrCreateViewerFor = async (xml, theme) => {
         const idx = availableViewers.findIndex(
           (conf) =>
             conf.xml === xml &&
@@ -115,19 +121,17 @@ export default themed(
           additionalModules,
         });
 
-        return new Promise((resolve) => {
-          viewer.importXML(xml, () => {
-            const defs = viewer._container.querySelector('defs');
-            if (defs) {
-              const highlightMarker = defs.querySelector('marker').cloneNode(true);
+        await viewer.importXML(xml);
+        const defs = viewer._container.querySelector('defs');
+        if (defs) {
+          const highlightMarker = defs.querySelector('marker').cloneNode(true);
 
-              highlightMarker.setAttribute('id', 'sequenceflow-end-highlight');
+          highlightMarker.setAttribute('id', 'sequenceflow-end-highlight');
 
-              defs.appendChild(highlightMarker);
-            }
-            resolve(viewer);
-          });
-        });
+          defs.appendChild(highlightMarker);
+        }
+
+        return viewer;
       };
 
       importXML = (xml) => {
@@ -135,6 +139,13 @@ export default themed(
           this.setState({loaded: false});
 
           this.props.mightFail(this.findOrCreateViewerFor(xml, this.props.theme), (viewer) => {
+            if (this.props.xml !== xml) {
+              // The xml we are supposed to render has changed while the viewer was created
+              // The viewer for the old XML must be discarded, otherwise multiple viewers
+              // would be attached to the same container
+              return;
+            }
+
             this.viewer = viewer;
             this.viewer.attachTo(this.container);
 

@@ -18,7 +18,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_FIELD_
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_ORDER_SETTING;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SORT_SETTING;
 
-@Component
 public class EventIndex extends DefaultIndexMappingCreator {
 
   public static final String ID = EventDto.Fields.id;
@@ -30,7 +29,7 @@ public class EventIndex extends DefaultIndexMappingCreator {
   public static final String SOURCE = EventDto.Fields.source;
   public static final String DATA = EventDto.Fields.data;
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 3;
 
   @Override
   public String getIndexName() {
@@ -43,7 +42,7 @@ public class EventIndex extends DefaultIndexMappingCreator {
   }
 
   @Override
-  public Boolean getCreateFromTemplate() {
+  public boolean getCreateFromTemplate() {
     return true;
   }
 

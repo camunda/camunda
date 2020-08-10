@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.google.common.collect.Sets;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -36,6 +36,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.ForbiddenException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -50,18 +51,20 @@ import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Component
 @Slf4j
 public class BranchAnalysisReader {
 
-  private OptimizeElasticsearchClient esClient;
-  private DefinitionService definitionService;
+  private final OptimizeElasticsearchClient esClient;
+  private final DefinitionService definitionService;
   private final EngineDefinitionAuthorizationService definitionAuthorizationService;
-  private ProcessQueryFilterEnhancer queryFilterEnhancer;
-  private ProcessDefinitionReader processDefinitionReader;
+  private final ProcessQueryFilterEnhancer queryFilterEnhancer;
+  private final ProcessDefinitionReader processDefinitionReader;
 
-  public BranchAnalysisDto branchAnalysis(final String userId, final BranchAnalysisQueryDto request) {
+  public BranchAnalysisDto branchAnalysis(final String userId,
+                                          final BranchAnalysisQueryDto request,
+                                          final ZoneId timezone) {
     ValidationHelper.validate(request);
     if (!definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
       userId, IdentityType.USER, request.getProcessDefinitionKey(), request.getTenantIds()
@@ -94,7 +97,7 @@ public class BranchAnalysisReader {
         BranchAnalysisOutcomeDto branchAnalysis = new BranchAnalysisOutcomeDto();
         if (canReachEndFromGateway) {
           branchAnalysis = branchAnalysis(
-            activity, request, activitiesToExcludeFromBranchAnalysis
+            activity, request, activitiesToExcludeFromBranchAnalysis, timezone
           );
         } else {
           branchAnalysis.setActivityId(activity.getId());
@@ -102,14 +105,15 @@ public class BranchAnalysisReader {
           branchAnalysis.setActivityCount((calculateActivityCount(
             activity.getId(),
             request,
-            activitiesToExcludeFromBranchAnalysis
+            activitiesToExcludeFromBranchAnalysis,
+            timezone
           )));
         }
         result.getFollowingNodes().put(branchAnalysis.getActivityId(), branchAnalysis);
       }
 
       result.setEndEvent(request.getEnd());
-      result.setTotal(calculateActivityCount(request.getEnd(), request, Collections.emptySet()));
+      result.setTotal(calculateActivityCount(request.getEnd(), request, Collections.emptySet(), timezone));
     });
 
     return result;
@@ -150,33 +154,41 @@ public class BranchAnalysisReader {
 
   private BranchAnalysisOutcomeDto branchAnalysis(final FlowNode flowNode,
                                                   final BranchAnalysisQueryDto request,
-                                                  final Set<String> activitiesToExclude) {
+                                                  final Set<String> activitiesToExclude,
+                                                  final ZoneId timezone) {
 
     BranchAnalysisOutcomeDto result = new BranchAnalysisOutcomeDto();
     result.setActivityId(flowNode.getId());
-    result.setActivityCount(calculateActivityCount(flowNode.getId(), request, activitiesToExclude));
-    result.setActivitiesReached(calculateReachedEndEventActivityCount(flowNode.getId(), request, activitiesToExclude));
+    result.setActivityCount(calculateActivityCount(flowNode.getId(), request, activitiesToExclude, timezone));
+    result.setActivitiesReached(calculateReachedEndEventActivityCount(
+      flowNode.getId(),
+      request,
+      activitiesToExclude,
+      timezone
+    ));
 
     return result;
   }
 
   private long calculateReachedEndEventActivityCount(final String activityId,
                                                      final BranchAnalysisQueryDto request,
-                                                     final Set<String> activitiesToExclude) {
+                                                     final Set<String> activitiesToExclude,
+                                                     final ZoneId timezone) {
     final BoolQueryBuilder query = buildBaseQuery(request, activitiesToExclude)
       .must(createMustMatchActivityIdQuery(request.getGateway()))
       .must(createMustMatchActivityIdQuery(activityId))
       .must(createMustMatchActivityIdQuery(request.getEnd()));
-    return executeQuery(request, query);
+    return executeQuery(request, query, timezone);
   }
 
   private long calculateActivityCount(final String activityId,
                                       final BranchAnalysisQueryDto request,
-                                      final Set<String> activitiesToExclude) {
+                                      final Set<String> activitiesToExclude,
+                                      final ZoneId timezone) {
     final BoolQueryBuilder query = buildBaseQuery(request, activitiesToExclude)
       .must(createMustMatchActivityIdQuery(request.getGateway()))
       .must(createMustMatchActivityIdQuery(activityId));
-    return executeQuery(request, query);
+    return executeQuery(request, query, timezone);
   }
 
   private BoolQueryBuilder buildBaseQuery(final BranchAnalysisQueryDto request, final Set<String> activitiesToExclude) {
@@ -206,8 +218,10 @@ public class BranchAnalysisReader {
     );
   }
 
-  private long executeQuery(final BranchAnalysisQueryDto request, final BoolQueryBuilder query) {
-    queryFilterEnhancer.addFilterToQuery(query, request.getFilter());
+  private long executeQuery(final BranchAnalysisQueryDto request,
+                            final BoolQueryBuilder query,
+                            final ZoneId timezone) {
+    queryFilterEnhancer.addFilterToQuery(query, request.getFilter(), timezone);
 
     final CountRequest searchRequest = new CountRequest(PROCESS_INSTANCE_INDEX_NAME)
       .source(new SearchSourceBuilder().query(query));

@@ -34,13 +34,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createFixedEvaluationDateFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRelativeEvaluationDateFilter;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createRollingEvaluationDateFilter;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT {
 
@@ -60,19 +58,18 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(OffsetDateTime.now(), null)));
+    reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(OffsetDateTime.now().plusDays(1), null)));
 
     RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(0L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(0));
+    assertThat(result.getInstanceCount()).isEqualTo(0L);
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).isEmpty();
   }
 
   private DecisionReportDataDto createReportWithAllVersion(DecisionDefinitionEngineDto decisionDefinitionDto) {
@@ -93,19 +90,18 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(null, OffsetDateTime.now())));
+    reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(null, OffsetDateTime.now().plusDays(1))));
 
     RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(5L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(5));
+    assertThat(result.getInstanceCount()).isEqualTo(5L);
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(5);
   }
 
   @Test
@@ -114,9 +110,12 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     // this one is from before the filter StartDate
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
-    OffsetDateTime evaluationTimeOfFirstRun = OffsetDateTime.now().minusSeconds(2L);
-    engineDatabaseExtension.changeDecisionInstanceEvaluationDate(decisionDefinitionDto.getId(), evaluationTimeOfFirstRun);
-    OffsetDateTime evaluationTimeAfterFirstRun = evaluationTimeOfFirstRun.plusSeconds(1L);
+    OffsetDateTime evaluationTimeOfFirstRun = OffsetDateTime.now().minusDays(2L);
+    engineDatabaseExtension.changeDecisionInstanceEvaluationDate(
+      decisionDefinitionDto.getId(),
+      evaluationTimeOfFirstRun
+    );
+    OffsetDateTime evaluationTimeAfterFirstRun = evaluationTimeOfFirstRun.plusDays(1L);
 
     decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
@@ -126,28 +125,27 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
     reportData.setFilter(Lists.newArrayList(createFixedEvaluationDateFilter(
       evaluationTimeAfterFirstRun,
-      OffsetDateTime.now()
+      OffsetDateTime.now().plusDays(1)
     )));
 
     RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(5L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(5));
+    assertThat(result.getInstanceCount()).isEqualTo(5L);
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(5);
   }
 
   @Test
   public void resultLimited_onTooBroadFixedEvaluationDateFilter() throws SQLException {
     // given
-    final OffsetDateTime beforeStart = OffsetDateTime.now();
+    final OffsetDateTime beforeStart = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
 
     // third bucket
@@ -171,8 +169,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
 
@@ -184,77 +181,77 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       .setDateInterval(GroupByDateUnit.DAY)
       .setFilter(createFixedEvaluationDateFilter(beforeStart.minusDays(3L), beforeStart))
       .build();
-    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult = reportClient.evaluateMapReport(
-      reportData);
+    final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
+      reportClient.evaluateMapReport(
+        reportData);
 
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(result.getIsComplete(), is(false));
-    assertThat(resultData.size(), is(1));
+    assertThat(result.getIsComplete()).isFalse();
+    assertThat(resultData).hasSize(1);
   }
 
   @ParameterizedTest
-  @MethodSource("supportedRelativeDateFilterUnits")
+  @MethodSource("supportedRollingDateFilterUnits")
   @SneakyThrows
-  public void resultFilterByRelativeEvaluationDateStartFrom(DateFilterUnit dateFilterUnit) {
+  public void resultFilterByRollingEvaluationDateStartFrom(DateFilterUnit dateFilterUnit) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     freezeCurrentTimeAndStartDecisionInstance(decisionDefinitionDto);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(1L, dateFilterUnit)));
+    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, dateFilterUnit)));
 
     RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(1L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(1);
   }
 
   @Test
-  public void resultFilterByRelativeEvaluationDateStartFrom_unsupportedQuarterUnit() {
+  public void resultFilterByRollingEvaluationDateStartFrom_unsupportedQuarterUnit() {
     // when
-    DecisionReportDataDto reportData = createReportWithAllVersion(engineIntegrationExtension.deployDecisionDefinition());
-    reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(1L, DateFilterUnit.QUARTERS)));
+    DecisionReportDataDto reportData =
+      createReportWithAllVersion(engineIntegrationExtension.deployDecisionDefinition());
+    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, DateFilterUnit.QUARTERS)));
 
     // then
     Response response = reportClient.evaluateReportAndReturnResponse(reportData);
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
-  public void resultFilterByRelativeEvaluationDateOutOfRange() {
+  public void resultFilterByRollingEvaluationDateOutOfRange() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(1L, DateFilterUnit.DAYS)));
+    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, DateFilterUnit.DAYS)));
 
     LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2L));
 
     RawDataDecisionReportResultDto result = evaluateReportWithNewAuthToken(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(0L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(0));
+    assertThat(result.getInstanceCount()).isEqualTo(0L);
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).isEmpty();
   }
 
   @Test
-  public void resultLimited_onTooBroadRelativeEvaluationDateFilter() throws SQLException {
+  public void resultLimited_onTooBroadRollingEvaluationDateFilter() throws SQLException {
     // given
-    final OffsetDateTime beforeStart = OffsetDateTime.now();
+    final OffsetDateTime beforeStart = OffsetDateTime.now().minusDays(1);
     OffsetDateTime lastEvaluationDateFilter = beforeStart;
 
     // third bucket
@@ -266,11 +263,11 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, thirdBucketEvaluationDate);
 
     // second bucket
-    lastEvaluationDateFilter = OffsetDateTime.now();
+    lastEvaluationDateFilter = beforeStart.plusDays(1);
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    final OffsetDateTime secondBucketEvaluationDate = beforeStart.minusDays(1);
+    final OffsetDateTime secondBucketEvaluationDate = beforeStart;
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, secondBucketEvaluationDate);
 
     // first bucket
@@ -278,8 +275,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto1.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
 
@@ -289,73 +285,68 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
       .setDateInterval(GroupByDateUnit.DAY)
-      .setFilter(createRelativeEvaluationDateFilter(3L, DateFilterUnit.DAYS))
+      .setFilter(createRollingEvaluationDateFilter(4L, DateFilterUnit.DAYS))
       .build();
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
       reportClient.evaluateMapReport(
-      reportData);
+        reportData);
 
     // then
     final ReportMapResultDto result = evaluationResult.getResult();
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(result.getIsComplete(), is(false));
-    assertThat(resultData.size(), is(2));
+    assertThat(result.getIsComplete()).isFalse();
+    assertThat(resultData).hasSize(2);
 
-    assertThat(
-      resultData.get(0).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
-    );
+    assertThat(resultData.get(0).getKey())
+      .isEqualTo((embeddedOptimizeExtension.formatToHistogramBucketKey(lastEvaluationDateFilter, ChronoUnit.DAYS))
+      );
 
-    assertThat(
-      resultData.get(1).getKey(),
-      is(embeddedOptimizeExtension.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS))
-    );
+    assertThat(resultData.get(1).getKey())
+      .isEqualTo(embeddedOptimizeExtension.formatToHistogramBucketKey(secondBucketEvaluationDate, ChronoUnit.DAYS));
   }
 
   @ParameterizedTest
   @MethodSource("dateFilterUnits")
   @SneakyThrows
-  public void resultFilterByRollingEvaluationDateCurrentInterval(DateFilterUnit dateFilterUnit) {
+  public void resultFilterByRelativeEvaluationDateCurrentInterval(DateFilterUnit dateFilterUnit) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     freezeCurrentTimeAndStartDecisionInstance(decisionDefinitionDto);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(0L, dateFilterUnit)));
+    reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(0L, dateFilterUnit)));
 
     RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(1L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(1);
   }
 
   @ParameterizedTest
   @MethodSource("dateFilterUnits")
   @SneakyThrows
-  public void resultFilterByRollingEvaluationDatePreviousInterval(DateFilterUnit dateFilterUnit) {
+  public void resultFilterByRelativeEvaluationDatePreviousInterval(DateFilterUnit dateFilterUnit) {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
     freezeCurrentTimeAndStartDecisionInstance(decisionDefinitionDto);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = createReportWithAllVersion(decisionDefinitionDto);
-    reportData.setFilter(Lists.newArrayList(createRollingEvaluationDateFilter(1L, dateFilterUnit)));
+    reportData.setFilter(Lists.newArrayList(createRelativeEvaluationDateFilter(1L, dateFilterUnit)));
 
     RawDataDecisionReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(0L));
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(0));
+    assertThat(result.getInstanceCount()).isEqualTo(0L);
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).isEmpty();
   }
 
   @SneakyThrows
@@ -366,7 +357,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(decisionDefinitionDto.getId(), frozenTime);
   }
 
-  private static Stream<DateFilterUnit> supportedRelativeDateFilterUnits() {
+  private static Stream<DateFilterUnit> supportedRollingDateFilterUnits() {
     return Stream.of(
       DateFilterUnit.MINUTES,
       DateFilterUnit.HOURS,
@@ -379,10 +370,11 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
 
   private static Stream<DateFilterUnit> dateFilterUnits() {
     return Stream.concat(
-      supportedRelativeDateFilterUnits(),
+      supportedRollingDateFilterUnits(),
       Stream.of(DateFilterUnit.QUARTERS)
     );
   }
+
 
   private AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateReportWithNewAuthToken(final DecisionReportDataDto reportData) {
     return embeddedOptimizeExtension

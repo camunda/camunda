@@ -8,20 +8,17 @@ import React from 'react';
 import equal from 'deep-equal';
 
 import {DefinitionSelection} from 'components';
-
-import {Configuration} from './Configuration';
-import ReportSelect from './ReportSelect';
-
-import {DecisionFilter} from './filter';
-
+import {DecisionFilter} from 'filter';
 import {
   loadInputVariables,
   loadOutputVariables,
   reportConfig,
   loadDecisionDefinitionXml,
 } from 'services';
-
 import {t} from 'translation';
+
+import {Configuration} from './Configuration';
+import ReportSelect from './ReportSelect';
 
 const {decision: decisionConfig} = reportConfig;
 
@@ -63,15 +60,22 @@ export default class DecisionControlPanel extends React.Component {
     }
   };
 
-  changeDefinition = async ({key, versions, tenantIds}) => {
+  changeDefinition = async ({key, versions, tenantIds, name}) => {
     const {groupBy, filter} = this.props.report.data;
 
     const change = {
       decisionDefinitionKey: {$set: key},
+      decisionDefinitionName: {$set: name},
       decisionDefinitionVersions: {$set: versions},
       tenantIds: {$set: tenantIds},
       configuration: {
-        excludedColumns: {$set: []},
+        tableColumns: {
+          $set: {
+            includeNewVariables: true,
+            includedColumns: [],
+            excludedColumns: [],
+          },
+        },
         columnOrder: {
           $set: {
             inputVariables: [],

@@ -81,8 +81,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
   @Test
   public void reminderJobsAreRemovedOnReportUpdate() throws Exception {
     ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
@@ -131,7 +130,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     reminderInterval.setUnit("Minutes");
     simpleAlert.setReminder(reminderInterval);
 
-    simpleAlert.setThreshold(1500);
+    simpleAlert.setThreshold(1500.0);
 
     String id = alertClient.createAlert(simpleAlert);
 
@@ -144,8 +143,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
     //when
     engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     triggerAndCompleteReminderJob(id);
 

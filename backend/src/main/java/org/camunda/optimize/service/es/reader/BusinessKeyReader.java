@@ -58,7 +58,7 @@ public class BusinessKeyReader {
       log.error("Was not able to retrieve business keys!", e);
       throw new OptimizeRuntimeException("Was not able to retrieve event business keys!", e);
     }
-    return ElasticsearchHelper.retrieveAllScrollResults(
+    return ElasticsearchReaderUtil.retrieveAllScrollResults(
       searchResponse,
       BusinessKeyDto.class,
       objectMapper,

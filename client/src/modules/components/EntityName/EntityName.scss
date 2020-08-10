@@ -1,0 +1,106 @@
+@import 'shared-styles/shared-styles.scss';
+
+.EntityName {
+  position: relative;
+  flex-grow: 1;
+  display: flex;
+  width: 100%;
+  padding-right: 48px;
+
+  .name-container {
+    position: absolute;
+    display: inline-block;
+    flex-shrink: 1;
+    width: 100%;
+    padding-right: inherit;
+
+    margin: 0;
+
+    .name {
+      display: inline-block;
+
+      line-height: 35px;
+      font-weight: 500;
+      font-size: 18px;
+      color: $grey-darken-23;
+      max-width: calc(100% - 30px);
+
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .Tooltip {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    max-width: 346px;
+    pointer-events: none;
+
+    .Tooltip__text-bottom {
+      padding: 9px 13px 9px 11px;
+      color: rgba(255, 255, 255, 0.85);
+      font-size: 14px;
+      font-weight: normal;
+      text-align: left;
+    }
+  }
+
+  .Popover {
+    display: inline-block;
+    vertical-align: top;
+    margin-top: 7px;
+
+    .Popover__button {
+      width: 20px;
+      height: 20px;
+      margin-left: 3px;
+
+      &:hover {
+        background-color: $silver-darken-94;
+      }
+
+      &:active,
+      &.active {
+        background-color: $silver-darken-80;
+      }
+
+      .Icon {
+        margin: 2px;
+      }
+
+      .downIcon {
+        display: none;
+      }
+    }
+
+    .Popover__dialog {
+      margin-left: -20px;
+      padding-top: 20px;
+      width: 277px;
+
+      dl {
+        margin: 0;
+
+        dt {
+          font-size: 12px;
+          color: $grey-lighten-56;
+        }
+
+        dd {
+          margin: 3px 0 10px;
+          font-size: 14px;
+          color: $grey-darken-33;
+        }
+      }
+    }
+  }
+}
+
+.dark .EntityName {
+  .name-container .name {
+    color: $silver-darken-87;
+  }
+}

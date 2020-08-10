@@ -60,3 +60,8 @@ it('should construct the label based on the selected tenants', () => {
   expect(node.find('Popover').prop('title')).toBe('Not defined');
   expect(node.find('Popover')).toBeDisabled();
 });
+
+it('should not crash, but be disabled if no tenants are provided', () => {
+  const node = shallow(<TenantPopover selected={[]} />);
+  expect(node.find('Popover').prop('disabled')).toBe(true);
+});

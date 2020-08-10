@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.security.authorization;
 
 import com.google.common.collect.ImmutableList;
-import org.camunda.bpm.model.bpmn.Bpmn;
+import com.google.common.collect.Lists;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.AbstractIT;
@@ -14,8 +14,13 @@ import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
+import org.camunda.optimize.dto.optimize.TenantDto;
+import org.camunda.optimize.dto.optimize.query.definition.DefinitionKeyDto;
 import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantsDto;
 import org.camunda.optimize.dto.optimize.query.definition.TenantWithDefinitionsDto;
+import org.camunda.optimize.dto.optimize.rest.DefinitionVersionDto;
+import org.camunda.optimize.dto.optimize.rest.TenantResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,6 +31,7 @@ import javax.ws.rs.core.Response;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.READ_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -34,13 +40,13 @@ import static org.camunda.optimize.service.util.configuration.EngineConstants.RE
 import static org.camunda.optimize.test.engine.AuthorizationClient.GROUP_ID;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public static final String PROCESS_KEY = "aProcess";
   public static final String DECISION_KEY = "aDecision";
+  private static final String TENANT_ID_1 = "tenant1";
+  private static final String TENANT_ID_2 = "tenant2";
 
   private static Stream<Integer> definitionType() {
     return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
@@ -61,7 +67,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
   }
 
   @ParameterizedTest
@@ -73,13 +79,13 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     authorizationClient.addGlobalAuthorizationForResource(RESOURCE_TYPE_TENANT);
 
     deployAndImportDefinition(definitionResourceType);
-    deployAndImportDefinition(definitionResourceType, "tenant1");
+    deployAndImportDefinition(definitionResourceType, TENANT_ID_1);
 
     //when
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
-    assertThat(definitions.size(), is(2));
+    assertThat(definitions).hasSize(2);
   }
 
   @ParameterizedTest
@@ -97,7 +103,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
   }
 
   @ParameterizedTest
@@ -114,7 +120,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
   }
 
   @ParameterizedTest
@@ -129,14 +135,14 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     );
     authorizationClient.revokeAllResourceAuthorizationsForKermit(RESOURCE_TYPE_TENANT);
 
-    deployAndImportDefinition(definitionResourceType, "tenant1");
-    deployAndImportDefinition(definitionResourceType, "tenant2");
+    deployAndImportDefinition(definitionResourceType, TENANT_ID_1);
+    deployAndImportDefinition(definitionResourceType, TENANT_ID_2);
 
     // when
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
   }
 
   @ParameterizedTest
@@ -151,14 +157,14 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     );
     authorizationClient.grantAllResourceAuthorizationsForKermit(RESOURCE_TYPE_TENANT);
 
-    deployAndImportDefinition(definitionResourceType, "tenant1");
-    deployAndImportDefinition(definitionResourceType, "tenant2");
+    deployAndImportDefinition(definitionResourceType, TENANT_ID_1);
+    deployAndImportDefinition(definitionResourceType, TENANT_ID_2);
 
     // when
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(2));
+    assertThat(definitions).hasSize(2);
   }
 
   @ParameterizedTest
@@ -179,7 +185,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
   }
 
   @ParameterizedTest
@@ -199,14 +205,14 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
   }
 
   @ParameterizedTest
   @MethodSource("definitionType")
   public void revokeSingleTenantAuthorizationForGroup(int definitionResourceType) {
     // given
-    final String tenantId = "tenant1";
+    final String tenantId = TENANT_ID_1;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
@@ -219,14 +225,14 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
   }
 
   @ParameterizedTest
   @MethodSource("definitionType")
   public void grantSingleTenantAuthorizationsForGroup(int definitionResourceType) {
     // given
-    final String tenantId = "tenant1";
+    final String tenantId = TENANT_ID_1;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.createKermitGroupAndAddKermitToThatGroup();
     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
@@ -238,7 +244,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
   }
 
   @ParameterizedTest
@@ -255,7 +261,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
   }
 
   @ParameterizedTest
@@ -271,7 +277,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
   }
 
   @ParameterizedTest
@@ -291,7 +297,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
   }
 
   @ParameterizedTest
@@ -310,14 +316,14 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
   }
 
   @ParameterizedTest
   @MethodSource("definitionType")
   public void revokeSingleTenantAuthorizationForUser(int definitionResourceType) {
     // given
-    final String tenantId = "tenant1";
+    final String tenantId = TENANT_ID_1;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(RESOURCE_TYPE_TENANT);
@@ -329,14 +335,14 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
   }
 
   @ParameterizedTest
   @MethodSource("definitionType")
   public void grantSingleTenantAuthorizationsForUser(int definitionResourceType) {
     // given
-    final String tenantId = "tenant1";
+    final String tenantId = TENANT_ID_1;
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
     authorizationClient.grantSingleResourceAuthorizationsForUser(KERMIT_USER, tenantId, RESOURCE_TYPE_TENANT);
@@ -347,7 +353,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
   }
 
   @ParameterizedTest
@@ -361,14 +367,14 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     );
     authorizationClient.grantSingleResourceAuthorizationForKermit(ALL_RESOURCES_RESOURCE_ID, RESOURCE_TYPE_TENANT);
 
-    deployAndImportDefinition(definitionResourceType, "tenant1");
-    deployAndImportDefinition(definitionResourceType, "tenant2");
+    deployAndImportDefinition(definitionResourceType, TENANT_ID_1);
+    deployAndImportDefinition(definitionResourceType, TENANT_ID_2);
 
     // when
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(2));
+    assertThat(definitions).hasSize(2);
   }
 
   @ParameterizedTest
@@ -382,14 +388,14 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     );
     authorizationClient.revokeAllResourceAuthorizationsForUser(KERMIT_USER, RESOURCE_TYPE_TENANT);
 
-    deployAndImportDefinition(definitionResourceType, "tenant1");
-    deployAndImportDefinition(definitionResourceType, "tenant2");
+    deployAndImportDefinition(definitionResourceType, TENANT_ID_1);
+    deployAndImportDefinition(definitionResourceType, TENANT_ID_2);
 
     // when
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
   }
 
   @ParameterizedTest
@@ -406,21 +412,21 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
 
     // when
     authorizationClient.revokeAllDefinitionAuthorizationsForKermitGroup(definitionResourceType);
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
 
     // when
     authorizationClient.grantAllResourceAuthorizationsForKermitGroup(definitionResourceType);
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
 
     // when
     authorizationClient.revokeSingleResourceAuthorizationsForKermitGroup(
@@ -430,7 +436,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
 
     // when
     authorizationClient.grantSingleResourceAuthorizationForKermitGroup(
@@ -440,21 +446,21 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
 
     // when
     authorizationClient.revokeAllResourceAuthorizationsForKermit(definitionResourceType);
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
 
     // when
     authorizationClient.grantAllResourceAuthorizationsForKermit(definitionResourceType);
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
 
     // when
     authorizationClient.revokeSingleResourceAuthorizationsForKermit(
@@ -464,7 +470,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
 
     // when
     authorizationClient.grantSingleResourceAuthorizationForKermit(
@@ -474,7 +480,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
   }
 
   @ParameterizedTest
@@ -493,7 +499,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(1));
+    assertThat(definitions).hasSize(1);
   }
 
   @ParameterizedTest
@@ -517,7 +523,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     );
 
     // then
-    assertThat(genzosDefinitions.size(), is(0));
+    assertThat(genzosDefinitions).isEmpty();
   }
 
   @ParameterizedTest
@@ -533,14 +539,14 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       KERMIT_USER, ImmutableList.of(READ_PERMISSION), ALL_RESOURCES_RESOURCE_ID, RESOURCE_TYPE_TENANT
     );
 
-    deployAndImportDefinition(definitionResourceType, "tenant1");
-    deployAndImportDefinition(definitionResourceType, "tenant2");
+    deployAndImportDefinition(definitionResourceType, TENANT_ID_1);
+    deployAndImportDefinition(definitionResourceType, TENANT_ID_2);
 
     // when
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(2));
+    assertThat(definitions).hasSize(2);
   }
 
   @ParameterizedTest
@@ -560,7 +566,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(2));
+    assertThat(definitions).hasSize(2);
   }
 
   @ParameterizedTest(name = "No access to unauthorized definition of type {0}")
@@ -585,7 +591,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest(name = "If no single tenant is authorized do not allow access to definition of type {0}")
@@ -593,7 +599,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public void revokeTenantAuthorizationsUser_getDefinitionByTypeAndKey(final DefinitionType definitionType) {
     //given
     final String definitionKey = "key";
-    final String tenant1 = "tenant1";
+    final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
     final int engineResourceType = getEngineResourceType(definitionType);
 
@@ -612,7 +618,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest(name = "On partial tenant authorization only authorized tenants are returned of type {0}")
@@ -620,9 +626,9 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public void revokeJustOneTenantAuthorizationsUser_getDefinitionByTypeAndKey(final DefinitionType definitionType) {
     //given
     final String definitionKey = "key";
-    final String tenant1 = "tenant1";
+    final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
-    final String tenant2 = "tenant2";
+    final String tenant2 = TENANT_ID_2;
     engineIntegrationExtension.createTenant(tenant2);
     final int engineResourceType = getEngineResourceType(definitionType);
 
@@ -643,10 +649,12 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       .execute(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definition, is(is(notNullValue())));
-    assertThat(definition.getKey(), is(definitionKey));
-    assertThat(definition.getTenants().size(), is(1));
-    assertThat(definition.getTenants().get(0).getId(), is(tenant2));
+    assertThat(definition).isNotNull();
+    assertThat(definition.getKey()).isEqualTo(definitionKey);
+    assertThat(definition.getTenants())
+      .hasSize(1)
+      .extracting(TenantDto::getId)
+      .containsExactly(tenant2);
   }
 
   @ParameterizedTest(name = "Unauthorized definition of type {0} is not in definitions result")
@@ -671,7 +679,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
   }
 
   @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not in definitions result")
@@ -679,7 +687,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public void revokeTenantAuthorizationsUser_getDefinitions(final DefinitionType definitionType) {
     //given
     final String definitionKey = "key";
-    final String tenant1 = "tenant1";
+    final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
     final int engineResourceType = getEngineResourceType(definitionType);
 
@@ -698,7 +706,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitions.size(), is(0));
+    assertThat(definitions).isEmpty();
   }
 
   @ParameterizedTest(name = "On partial tenant authorization only authorized tenants are returned of type {0}")
@@ -706,9 +714,9 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public void revokeJustOneTenantAuthorizationsUser_getDefinitions(final DefinitionType definitionType) {
     //given
     final String definitionKey = "key";
-    final String tenant1 = "tenant1";
+    final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
-    final String tenant2 = "tenant2";
+    final String tenant2 = TENANT_ID_2;
     engineIntegrationExtension.createTenant(tenant2);
     final int engineResourceType = getEngineResourceType(definitionType);
 
@@ -729,9 +737,253 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       .executeAndReturnList(DefinitionWithTenantsDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getTenants().size(), is(1));
-    assertThat(definitions.get(0).getTenants().get(0).getId(), is(tenant2));
+    assertThat(definitions)
+      .flatExtracting(DefinitionWithTenantsDto::getTenants)
+      .extracting(TenantDto::getId)
+      .containsExactly(tenant2);
+  }
+
+  @ParameterizedTest(name = "Unauthorized definition of type {0} is not in definitions result")
+  @EnumSource(DefinitionType.class)
+  public void revokeDefinitionAuthorizationsUser_getDefinitionKeysByType(final DefinitionType definitionType) {
+    //given
+    final String definitionKey = "key";
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(definitionKey, engineResourceType);
+
+    deployAndImportDefinition(definitionType, definitionKey, null);
+
+    // when
+    final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByTypeAsUser(
+      definitionType, null, KERMIT_USER, KERMIT_USER
+    );
+
+    // then
+    assertThat(definitionKeys).isEmpty();
+  }
+
+  @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not in definitionKeys result")
+  @EnumSource(DefinitionType.class)
+  public void revokeTenantAuthorizationsUser_getDefinitionKeysByType(final DefinitionType definitionType) {
+    //given
+    final String definitionKey = "key";
+    final String tenant1 = TENANT_ID_1;
+    engineIntegrationExtension.createTenant(tenant1);
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(tenant1, RESOURCE_TYPE_TENANT);
+
+    deployAndImportDefinition(definitionType, definitionKey, tenant1);
+
+    // when
+    final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByTypeAsUser(
+      definitionType, null, KERMIT_USER, KERMIT_USER
+    );
+
+    // then
+    assertThat(definitionKeys).isEmpty();
+  }
+
+  @ParameterizedTest(
+    name = "On partial tenant authorization for the same definition of type {0} the key is still returned"
+  )
+  @EnumSource(DefinitionType.class)
+  public void revokeJustOneTenantAuthorizationsUser_getDefinitionKeysByType(final DefinitionType definitionType) {
+    //given
+    final String definitionKey = "key";
+    final String tenant1 = TENANT_ID_1;
+    engineIntegrationExtension.createTenant(tenant1);
+    final String tenant2 = TENANT_ID_2;
+    engineIntegrationExtension.createTenant(tenant2);
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    // access to tenant1 is revoked
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(tenant1, RESOURCE_TYPE_TENANT);
+    authorizationClient.grantSingleResourceAuthorizationForKermit(tenant2, RESOURCE_TYPE_TENANT);
+
+    // definition exists for both tenants
+    deployAndImportDefinition(definitionType, definitionKey, tenant1);
+    deployAndImportDefinition(definitionType, definitionKey, tenant2);
+
+    // when I get the definition keys
+    final List<DefinitionKeyDto> definitionKeys = definitionClient.getDefinitionKeysByTypeAsUser(
+      definitionType, null, KERMIT_USER, KERMIT_USER
+    );
+
+    // then the key is still available as there is access to at least one tenant
+    assertThat(definitionKeys).extracting(DefinitionKeyDto::getKey).containsExactly(definitionKey);
+  }
+
+  @ParameterizedTest(name = "Unauthorized definition of type {0} is not accessible")
+  @EnumSource(DefinitionType.class)
+  public void revokeDefinitionAuthorizationsUser_getDefinitionVersionsByKeyByType(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(definitionKey, engineResourceType);
+
+    deployAndImportDefinition(definitionType, definitionKey, null);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDefinitionVersionsByTypeAndKeyRequest(definitionType.getId(), definitionKey)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not accessible")
+  @EnumSource(DefinitionType.class)
+  public void revokeTenantAuthorizationsUser_getDefinitionVersionsByKeyByType(final DefinitionType definitionType) {
+    //given
+    final String definitionKey = "key";
+    final String tenant1 = TENANT_ID_1;
+    engineIntegrationExtension.createTenant(tenant1);
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(tenant1, RESOURCE_TYPE_TENANT);
+
+    deployAndImportDefinition(definitionType, definitionKey, tenant1);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildGetDefinitionVersionsByTypeAndKeyRequest(definitionType.getId(), definitionKey)
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void revokeJustOneTenantAuthorizationsUser_getDefinitionVersionsByKeyByType(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    engineIntegrationExtension.createTenant(TENANT_ID_1);
+    engineIntegrationExtension.createTenant(TENANT_ID_2);
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    // access to tenant1 is revoked
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(TENANT_ID_1, RESOURCE_TYPE_TENANT);
+    authorizationClient.grantSingleResourceAuthorizationForKermit(TENANT_ID_2, RESOURCE_TYPE_TENANT);
+
+    // definition exists for both tenants but only on tenant 1 there is a version 2
+    deployAndImportDefinition(definitionType, definitionKey, TENANT_ID_1);
+    deployAndImportDefinition(definitionType, definitionKey, TENANT_ID_1);
+    deployAndImportDefinition(definitionType, definitionKey, TENANT_ID_2);
+
+    // when I get the definition keys
+    final List<DefinitionVersionDto> definitionKeys = definitionClient.getDefinitionVersionsByTypeAndKeyAsUser(
+      definitionType, definitionKey, null, KERMIT_USER, KERMIT_USER
+    );
+
+    // then only version 1 as available on the authorized tenant is returned
+    assertThat(definitionKeys).extracting(DefinitionVersionDto::getVersion).containsExactly("1");
+  }
+
+  @ParameterizedTest(name = "Unauthorized definition of type {0} is not accessible")
+  @EnumSource(DefinitionType.class)
+  public void revokeDefinitionAuthorizationsUser_getDefinitionTenantsByTypeKeyAndVersions(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(definitionKey, engineResourceType);
+
+    deployAndImportDefinition(definitionType, definitionKey, null);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(
+        definitionType.getId(), definitionKey, Lists.newArrayList("1")
+      )
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not accessible")
+  @EnumSource(DefinitionType.class)
+  public void revokeTenantAuthorizationsUser_getDefinitionTenantsByTypeKeyAndVersions(final DefinitionType definitionType) {
+    //given
+    final String definitionKey = "key";
+    engineIntegrationExtension.createTenant(TENANT_ID_1);
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(TENANT_ID_1, RESOURCE_TYPE_TENANT);
+
+    deployAndImportDefinition(definitionType, definitionKey, TENANT_ID_1);
+
+    // when
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildResolveDefinitionTenantsByTypeKeyAndVersionsRequest(
+        definitionType.getId(), definitionKey, Lists.newArrayList("1")
+      )
+      .withUserAuthentication(KERMIT_USER, KERMIT_USER)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(DefinitionType.class)
+  public void revokeJustOneTenantAuthorizationsUser_getDefinitionTenantsByTypeKeyAndVersions(final DefinitionType definitionType) {
+    // given
+    final String definitionKey = "key";
+    engineIntegrationExtension.createTenant(TENANT_ID_1);
+    engineIntegrationExtension.createTenant(TENANT_ID_2);
+    final int engineResourceType = getEngineResourceType(definitionType);
+
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+    authorizationClient.createKermitGroupAndAddKermitToThatGroup();
+    authorizationClient.addGlobalAuthorizationForResource(engineResourceType);
+    // access to tenant1 is revoked
+    authorizationClient.revokeSingleResourceAuthorizationsForKermit(TENANT_ID_1, RESOURCE_TYPE_TENANT);
+    authorizationClient.grantSingleResourceAuthorizationForKermit(TENANT_ID_2, RESOURCE_TYPE_TENANT);
+
+    // definition exists for both tenants
+    deployAndImportDefinition(definitionType, definitionKey, TENANT_ID_1);
+    deployAndImportDefinition(definitionType, definitionKey, TENANT_ID_2);
+
+    // when I get the definition tenants
+    final List<TenantResponseDto> tenants = definitionClient.resolveDefinitionTenantsByTypeKeyAndVersionsAsUser(
+      definitionType, definitionKey, Lists.newArrayList("1"), null, KERMIT_USER, KERMIT_USER
+    );
+
+    // then only the authorized tenant2 is returned
+    assertThat(tenants).extracting(TenantResponseDto::getId).containsExactly(TENANT_ID_2);
   }
 
   @ParameterizedTest(name = "Unauthorized definition of type {0} is not in definitions grouped by tenant result")
@@ -756,7 +1008,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitionsGroupedByTenant.size(), is(0));
+    assertThat(definitionsGroupedByTenant).isEmpty();
   }
 
   @ParameterizedTest(name = "Unauthorized single tenant definition of type {0} is not in definitions result")
@@ -764,7 +1016,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public void revokeTenantAuthorizationsUser_getDefinitionsGroupByTenant(final DefinitionType definitionType) {
     //given
     final String definitionKey = "key";
-    final String tenant1 = "tenant1";
+    final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
     final int engineResourceType = getEngineResourceType(definitionType);
 
@@ -783,7 +1035,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitionsGroupedByTenant.size(), is(0));
+    assertThat(definitionsGroupedByTenant).isEmpty();
   }
 
   @ParameterizedTest(name = "On partial definition authorization only authorized definitions are returned of type {0}")
@@ -792,7 +1044,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
     //given
     final String definitionKey1 = "key";
     final String definitionKey2 = "key";
-    final String tenant1 = "tenant1";
+    final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
     final int engineResourceType = getEngineResourceType(definitionType);
 
@@ -813,9 +1065,10 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitionsGroupedByTenant.size(), is(1));
-    assertThat(definitionsGroupedByTenant.get(0).getDefinitions().size(), is(1));
-    assertThat(definitionsGroupedByTenant.get(0).getDefinitions().get(0).getKey(), is(definitionKey2));
+    assertThat(definitionsGroupedByTenant)
+      .flatExtracting(TenantWithDefinitionsDto::getDefinitions)
+      .extracting(SimpleDefinitionDto::getKey)
+      .containsExactly(definitionKey2);
   }
 
   @ParameterizedTest(name = "On partial tenant authorization for the same definition authorized tenants are returned " +
@@ -824,9 +1077,9 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
   public void revokeJustOneTenantAuthorizationsUser_getDefinitionsGroupByTenant(final DefinitionType definitionType) {
     //given
     final String definitionKey = "key";
-    final String tenant1 = "tenant1";
+    final String tenant1 = TENANT_ID_1;
     engineIntegrationExtension.createTenant(tenant1);
-    final String tenant2 = "tenant2";
+    final String tenant2 = TENANT_ID_2;
     engineIntegrationExtension.createTenant(tenant2);
     final int engineResourceType = getEngineResourceType(definitionType);
 
@@ -847,10 +1100,13 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       .executeAndReturnList(TenantWithDefinitionsDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitionsGroupedByTenant.size(), is(1));
-    assertThat(definitionsGroupedByTenant.get(0).getId(), is(tenant2));
-    assertThat(definitionsGroupedByTenant.get(0).getDefinitions().size(), is(1));
-    assertThat(definitionsGroupedByTenant.get(0).getDefinitions().get(0).getKey(), is(definitionKey));
+    assertThat(definitionsGroupedByTenant)
+      .extracting(TenantWithDefinitionsDto::getId)
+      .containsExactly(tenant2);
+    assertThat(definitionsGroupedByTenant)
+      .flatExtracting(TenantWithDefinitionsDto::getDefinitions)
+      .extracting(SimpleDefinitionDto::getKey)
+      .containsExactly(definitionKey);
   }
 
   private int getEngineResourceType(final DefinitionType definitionType) {
@@ -875,8 +1131,7 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
         throw new IllegalStateException("Uncovered definitionResourceType: " + definitionResourceType);
     }
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
   }
 
   private String getDefinitionKey(final int definitionResourceType) {
@@ -928,16 +1183,12 @@ public class EngineDefinitionAuthorizationIT extends AbstractIT {
       default:
         throw new OptimizeIntegrationTestException("Unsupported type: " + type);
     }
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     return definitionId;
   }
 
   private String deploySimpleProcessDefinition(final String processId, String tenantId) {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
-      .startEvent()
-      .endEvent()
-      .done();
+    BpmnModelInstance modelInstance = getSimpleBpmnDiagram(processId);
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId).getId();
   }
 

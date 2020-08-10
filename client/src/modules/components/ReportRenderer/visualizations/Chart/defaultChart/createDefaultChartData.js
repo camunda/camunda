@@ -38,7 +38,6 @@ export function extractDefaultChartData({report, theme, targetValue}) {
   } = data;
 
   const formattedResult = formatReportResult(data, result.data);
-  formattedResult.reverse();
 
   const labels = formattedResult.map(({key, label}) => label || key);
 

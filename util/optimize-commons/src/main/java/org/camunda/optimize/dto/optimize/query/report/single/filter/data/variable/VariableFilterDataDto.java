@@ -51,9 +51,6 @@ public abstract class VariableFilterDataDto<DATA> implements FilterDataDto {
   protected String name;
   protected DATA data;
 
-  protected boolean filterForUndefined;
-  protected boolean excludeUndefined;
-
   public VariableFilterDataDto(final String name, final VariableType type, final DATA data) {
     this.name = name;
     this.type = type;

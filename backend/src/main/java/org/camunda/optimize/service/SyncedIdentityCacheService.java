@@ -76,7 +76,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
     resetCache();
   }
 
-  public void initCronSequenceGenerator() {
+  private void initCronSequenceGenerator() {
     this.cronSequenceGenerator = new CronSequenceGenerator(getIdentitySyncConfiguration().getCronTrigger());
   }
 
@@ -163,15 +163,13 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
         }
       }
     } catch (MaxEntryLimitHitException e) {
-      log.error(String.format(
-        "Could not synchronize identity cache as the limit of %s records was reached on refresh.\n"
-          + ERROR_INCREASE_CACHE_LIMIT,
-        IdentitySyncConfiguration.Fields.maxEntryLimit.name()
-      ));
+      log.error(
+        "Could not synchronize identity cache as the limit of {}} records was reached on refresh.\n {}",
+        IdentitySyncConfiguration.Fields.maxEntryLimit.name(), ERROR_INCREASE_CACHE_LIMIT
+      );
       throw e;
     } catch (OptimizeRuntimeException e) {
-      log.error("Could not synchronize identity cache as there was a problem receiving authorizations from the engine" +
-                  ".");
+      log.error("Could not synchronize identity cache as there was a problem receiving authorizations from the engine");
       throw e;
     }
   }
@@ -181,12 +179,14 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
       activeIdentityCache.addIdentity(identity);
     } catch (MaxEntryLimitHitException e) {
       log.warn(
-        String.format(
-          "Identity [%s] could not be added to active identity cache as the limit of %s records was reached.\n"
-            + ERROR_INCREASE_CACHE_LIMIT,
-          identity,
-          getIdentitySyncConfiguration().getMaxEntryLimit()
-        )
+        "Identity [{}] could not be added to active identity cache as the limit of {}} records was reached.\n {}",
+        identity,
+        getIdentitySyncConfiguration().getMaxEntryLimit(),
+        ERROR_INCREASE_CACHE_LIMIT
+      );
+      log.error(
+        "Could not synchronize identity cache as the limit of {}} records was reached on refresh.%n{}",
+        IdentitySyncConfiguration.Fields.maxEntryLimit.name(), ERROR_INCREASE_CACHE_LIMIT
       );
     }
   }
@@ -276,7 +276,7 @@ public class SyncedIdentityCacheService extends AbstractScheduledService impleme
   private void populateGrantedIdentitiesToCache(final EngineContext engineContext,
                                                 final SearchableIdentityCache identityCache,
                                                 final AuthorizedIdentitiesResult authorizedIdentities) {
-    if (authorizedIdentities.getGrantedGroupIds().size() > 0) {
+    if (!authorizedIdentities.getGrantedGroupIds().isEmpty()) {
       // add all granted groups (as group grant wins over group revoke)
       // https://docs.camunda.org/manual/7.11/user-guide/process-engine/authorization-service/#authorization-precedence
       final Set<String> grantedGroupIdsNotYetImported = authorizedIdentities.getGrantedGroupIds().stream()

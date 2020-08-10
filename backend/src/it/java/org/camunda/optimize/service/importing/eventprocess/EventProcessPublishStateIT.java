@@ -56,6 +56,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
   @MethodSource("eventSourceEntryTypeCombinations")
   public void afterPublishPublishStateIsCreated(List<EventSourceEntryDto> eventSourceEntries) {
     // given
+    setupOptimizeForImportingExternalSources(eventSourceEntries);
     final String eventProcessMappingId = createEventProcessMappingWithMappingsAndEventSources(
       Collections.singletonMap(BPMN_START_EVENT_ID, buildExternalEventMapping("someEventName", MappedEventType.END)),
       eventSourceEntries
@@ -523,7 +524,7 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
     // then the import source last imported timestamp reflects the latest imported event
     assertThat(publishState.getEventImportSources()
                  .get(0)
-                 .getLastImportedEventTimestamp()).isEqualTo(timeBaseLine.toString());
+                 .getLastImportedEventTimestamp()).isEqualTo(timeBaseLine);
   }
 
   @Test
@@ -712,20 +713,11 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
 
   private String createEventProcessMappingWithMappingsAndEventSources(Map<String, EventMappingDto> eventMappings,
                                                                       List<EventSourceEntryDto> eventSourceEntries) {
-    for (EventSourceEntryDto eventSource : eventSourceEntries) {
-      if (eventSource.getType().equals(CAMUNDA)) {
-        elasticSearchIntegrationTestExtension.addProcessDefinitionToElasticsearch(
-          eventSource.getProcessDefinitionKey(),
-          null,
-          "1"
-        );
-      }
-    }
     final EventProcessMappingDto eventProcessMappingDto =
       eventProcessClient.buildEventProcessMappingDtoWithMappingsWithXmlAndEventSources(
         eventMappings,
         "someName",
-        createThreeEventActivitiesProcessDefinitionXml(),
+        createTwoEventAndOneTaskActivitiesProcessDefinitionXml(),
         eventSourceEntries
       );
     return eventProcessClient.createEventProcessMapping(eventProcessMappingDto);
@@ -784,4 +776,19 @@ public class EventProcessPublishStateIT extends AbstractEventProcessIT {
       .versions(Collections.singletonList("ALL"))
       .build();
   }
+
+  private void setupOptimizeForImportingExternalSources(final List<EventSourceEntryDto> eventSourceEntries) {
+    // We import the definition and instance to create the event indices
+    eventSourceEntries
+      .forEach(entry -> {
+        if (CAMUNDA.equals(entry.getType())) {
+          final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartProcess();
+          entry.setProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
+        }
+      });
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    // then we remove all imported data so the test can use its own fixtures
+    elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
+  }
+
 }

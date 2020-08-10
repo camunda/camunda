@@ -26,11 +26,12 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 
-import static org.camunda.optimize.service.security.AuthCookieService.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.constants.RestConstants.CACHE_CONTROL_NO_STORE;
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
+
 
 public class SingleSignOnFilter implements Filter {
 
-  private static final String NO_STORE = "no-store";
   private static final Logger logger = LoggerFactory.getLogger(SingleSignOnFilter.class);
   private SpringAwareServletConfiguration awareDelegate;
 
@@ -65,7 +66,7 @@ public class SingleSignOnFilter implements Filter {
     HttpServletRequest servletRequest = (HttpServletRequest) request;
 
     if (authenticationExtractorProvider.hasPluginsConfigured()) {
-      servletResponse.addHeader(HttpHeaders.CACHE_CONTROL, NO_STORE);
+      servletResponse.addHeader(HttpHeaders.CACHE_CONTROL, CACHE_CONTROL_NO_STORE);
       provideAuthentication(servletResponse, servletRequest);
     }
 
@@ -121,7 +122,7 @@ public class SingleSignOnFilter implements Filter {
       logger.debug("User [{}] was authorized to access Optimize, creating new session token.", userId);
       String securityToken = sessionService.createAuthToken(userId);
       authorizeCurrentRequest(servletRequest, securityToken);
-      writeOptimizeAuthorizationCookieToResponse(servletResponse, securityToken);
+      writeOptimizeAuthorizationCookieToResponse(servletRequest, servletResponse, securityToken);
     }
   }
 
@@ -131,9 +132,10 @@ public class SingleSignOnFilter implements Filter {
     servletRequest.setAttribute(OPTIMIZE_AUTHORIZATION, optimizeAuthToken);
   }
 
-  private void writeOptimizeAuthorizationCookieToResponse(final HttpServletResponse servletResponse,
+  private void writeOptimizeAuthorizationCookieToResponse(final HttpServletRequest servletRequest,
+                                                          final HttpServletResponse servletResponse,
                                                           final String token) {
-    final String optimizeAuthCookie = authCookieService.createNewOptimizeAuthCookie(token);
+    final String optimizeAuthCookie = authCookieService.createNewOptimizeAuthCookie(token, servletRequest.getScheme());
     servletResponse.addHeader(HttpHeaders.SET_COOKIE, optimizeAuthCookie);
   }
 

@@ -16,10 +16,8 @@ import {
   LoadingIndicator,
   MessageBox,
   EntityNameForm,
-  ModificationInfo,
+  InstanceCount,
 } from 'components';
-import {getOptimizeVersion} from 'config';
-
 import {
   incompatibleFilters,
   containsSuspensionFilter,
@@ -29,10 +27,12 @@ import {
   getCollection,
 } from 'services';
 import {showError} from 'notifications';
+import {t} from 'translation';
+import {withDocs} from 'HOC';
+
 import ReportControlPanel from './controlPanels/ReportControlPanel';
 import DecisionControlPanel from './controlPanels/DecisionControlPanel';
 import CombinedReportPanel from './controlPanels/CombinedReportPanel';
-import {t} from 'translation';
 import ConflictModal from './ConflictModal';
 
 export class ReportEdit extends React.Component {
@@ -41,17 +41,18 @@ export class ReportEdit extends React.Component {
     redirect: '',
     conflict: null,
     originalData: this.props.report,
+    updatePromise: null,
     optimizeVersion: 'latest',
     report: this.props.report,
   };
 
   async componentDidMount() {
-    const version = (await getOptimizeVersion()).split('.');
-    version.length = 2;
+    const {report} = this.state;
 
-    this.setState({
-      optimizeVersion: version.join('.'),
-    });
+    if (this.isReportComplete(report) && !report.result) {
+      this.loadReport(report);
+      nowDirty(t('report.label'), this.save);
+    }
   }
 
   showSaveError = (error) => {
@@ -78,8 +79,8 @@ export class ReportEdit extends React.Component {
                 },
                 {alert: [], combined_report: []}
               ),
+              updatePromise: resolve,
             });
-            resolve(null);
           } else {
             reject(this.showSaveError(error));
           }
@@ -107,6 +108,10 @@ export class ReportEdit extends React.Component {
 
   saveAndGoBack = async () => {
     const id = await this.save();
+    if (this.state.updatePromise) {
+      this.state.updatePromise(id);
+      this.setState({updatePromise: null});
+    }
     if (id) {
       nowPristine();
       this.props.updateOverview(update(this.state.report, {id: {$set: id}}));
@@ -158,11 +163,13 @@ export class ReportEdit extends React.Component {
     }
   };
 
+  isReportComplete = ({data: {view, groupBy, visualization}, combined}) =>
+    (view && groupBy && visualization) || combined;
+
   loadReport = async (query) => {
     this.setState({report: query});
 
-    const {view, groupBy, visualization} = query.data;
-    if ((view && groupBy && visualization) || query.combined) {
+    if (this.isReportComplete(query)) {
       this.setState({loadingReportData: true});
       await this.props.mightFail(
         evaluateReport(query),
@@ -190,17 +197,18 @@ export class ReportEdit extends React.Component {
     return !report.result.isComplete;
   };
 
-  closeConflictModal = () => this.setState({conflict: null});
+  closeConflictModal = () => {
+    this.state.updatePromise(null);
+    this.setState({conflict: null, updatePromise: null});
+  };
 
   render() {
-    const {report, loadingReportData, conflict, redirect, optimizeVersion} = this.state;
-    const {name, lastModifier, lastModified, data, combined, reportType} = report;
+    const {report, loadingReportData, conflict, redirect} = this.state;
+    const {name, data, combined, reportType} = report;
 
     if (redirect) {
       return <Redirect to={redirect} />;
     }
-
-    const docsLink = `https://docs.camunda.org/optimize/${optimizeVersion}/technical-guide/update/2.7-to-3.0/#suspension-filter`;
 
     return (
       <div className="Report">
@@ -213,7 +221,7 @@ export class ReportEdit extends React.Component {
             onSave={this.saveAndGoBack}
             onCancel={this.cancel}
           />
-          <ModificationInfo user={lastModifier} date={lastModified} />
+          <InstanceCount noInfo report={report} />
         </div>
 
         {!combined && reportType === 'process' && (
@@ -240,7 +248,10 @@ export class ReportEdit extends React.Component {
           <MessageBox
             type="warning"
             dangerouslySetInnerHTML={{
-              __html: t('common.filter.suspensionFilterWarning', {docsLink}),
+              __html: t('common.filter.suspensionFilterWarning', {
+                docsLink:
+                  this.props.docsLink + 'technical-guide/update/2.7-to-3.0/#suspension-filter',
+              }),
             }}
           />
         )}
@@ -270,4 +281,4 @@ export class ReportEdit extends React.Component {
   }
 }
 
-export default withRouter(withErrorHandling(ReportEdit));
+export default withRouter(withErrorHandling(withDocs(ReportEdit)));

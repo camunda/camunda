@@ -5,32 +5,32 @@
  */
 package org.camunda.optimize.service.importing.user_task;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableSet;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.IDENTITY_LINK_OPERATION_ADD;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.IDENTITY_LINK_OPERATION_DELETE;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 
 public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
@@ -40,29 +40,28 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     // given
     embeddedOptimizeExtension.getConfigurationService().setImportUserTaskWorkerDataEnabled(false);
     embeddedOptimizeExtension.reloadConfiguration();
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     String defaultCandidateGroup = "defaultCandidateGroupId";
     engineIntegrationExtension.createGroup(defaultCandidateGroup);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(defaultCandidateGroup);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
       persistedProcessInstanceDto.getUserTasks().forEach(task -> {
-        assertThat(task.getAssignee(), nullValue());
-        assertThat(task.getCandidateGroups().size(), is(0));
-        assertThat(task.getCandidateGroupOperations().size(), is(0));
-        assertThat(task.getAssigneeOperations().size(), is(0));
+        assertThat(task.getAssignee()).isNull();
+        assertThat(task.getCandidateGroups()).isEmpty();
+        assertThat(task.getCandidateGroupOperations()).isEmpty();
+        assertThat(task.getAssigneeOperations()).isEmpty();
       });
     }
   }
@@ -70,41 +69,40 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void identityLinksLogsAreImported() throws Exception {
     // given
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     String defaultCandidateGroup = "defaultCandidateGroupId";
     engineIntegrationExtension.createGroup(defaultCandidateGroup);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(defaultCandidateGroup);
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
       persistedProcessInstanceDto.getUserTasks()
         .forEach(userTask -> {
-          assertThat(userTask.getAssignee(), is(DEFAULT_USERNAME));
-          assertThat(userTask.getCandidateGroups(), contains(defaultCandidateGroup));
-          assertThat(userTask.getAssigneeOperations().size(), is(1));
+          assertThat(userTask.getAssignee()).isEqualTo(DEFAULT_USERNAME);
+          assertThat(userTask.getCandidateGroups()).containsExactly(defaultCandidateGroup);
+          assertThat(userTask.getAssigneeOperations()).hasSize(1);
           userTask.getAssigneeOperations().forEach(assigneeOperationDto -> {
-            assertThat(assigneeOperationDto.getId(), is(notNullValue()));
-            assertThat(assigneeOperationDto.getUserId(), is(DEFAULT_USERNAME));
-            assertThat(assigneeOperationDto.getTimestamp(), is(notNullValue()));
-            assertThat(assigneeOperationDto.getOperationType(), is(IDENTITY_LINK_OPERATION_ADD));
+            assertThat(assigneeOperationDto.getId()).isNotNull();
+            assertThat(assigneeOperationDto.getUserId()).isEqualTo(DEFAULT_USERNAME);
+            assertThat(assigneeOperationDto.getTimestamp()).isNotNull();
+            assertThat(assigneeOperationDto.getOperationType()).isEqualTo(IDENTITY_LINK_OPERATION_ADD);
           });
-          assertThat(userTask.getCandidateGroupOperations().size(), is(1));
+          assertThat(userTask.getCandidateGroupOperations()).hasSize(1);
           userTask.getCandidateGroupOperations().forEach(candidateGroupOperationDto -> {
-            assertThat(candidateGroupOperationDto.getId(), is(notNullValue()));
-            assertThat(candidateGroupOperationDto.getGroupId(), is(defaultCandidateGroup));
-            assertThat(candidateGroupOperationDto.getTimestamp(), is(notNullValue()));
-            assertThat(candidateGroupOperationDto.getOperationType(), is(IDENTITY_LINK_OPERATION_ADD));
+            assertThat(candidateGroupOperationDto.getId()).isNotNull();
+            assertThat(candidateGroupOperationDto.getGroupId()).isEqualTo(defaultCandidateGroup);
+            assertThat(candidateGroupOperationDto.getTimestamp()).isNotNull();
+            assertThat(candidateGroupOperationDto.getOperationType()).isEqualTo(IDENTITY_LINK_OPERATION_ADD);
           });
         });
     }
@@ -119,7 +117,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     // given
     engineIntegrationExtension.addUser("kermit", "foo");
     engineIntegrationExtension.grantAllAuthorizations("kermit");
-    ProcessInstanceEngineDto instanceDto = deployAndStartOneUserTaskProcess();
+    ProcessInstanceEngineDto instanceDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.claimAllRunningUserTasks();
     engineIntegrationExtension.unclaimAllRunningUserTasks();
     engineIntegrationExtension.claimAllRunningUserTasks("kermit", "foo", instanceDto.getId());
@@ -129,19 +127,18 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineDatabaseExtension.changeLinkLogTimestampForLastTwoAssigneeOperations(timestamp);
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto persistedProcessInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
       persistedProcessInstanceDto.getUserTasks()
-        .forEach(userTask -> assertThat(userTask.getAssignee(), is("kermit")));
+        .forEach(userTask -> assertThat(userTask.getAssignee()).isEqualTo("kermit"));
     }
   }
 
@@ -155,24 +152,23 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks("secondUser", "fooPassword");
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
       List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
-      assertThat(userTasks.size(), is(2));
+      assertThat(userTasks).hasSize(2);
       Set<String> expectedAssignees = ImmutableSet.of(DEFAULT_USERNAME, "secondUser");
       Set<String> actualAssignees = userTasks.stream()
         .map(UserTaskInstanceDto::getAssignee)
         .collect(Collectors.toSet());
-      assertThat(actualAssignees, is(expectedAssignees));
+      assertThat(actualAssignees).isEqualTo(expectedAssignees);
     }
   }
 
@@ -188,34 +184,33 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
       List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
-      assertThat(userTasks.size(), is(2));
+      assertThat(userTasks).hasSize(2);
       Set<String> expectedCandidateGroups = ImmutableSet.of("firstGroup", "secondGroup");
       Set<String> actualCandidateGroups = userTasks.stream()
         .map(userTask -> {
-          assertThat(userTask.getCandidateGroups().size(), is(1));
+          assertThat(userTask.getCandidateGroups()).hasSize(1);
           return userTask.getCandidateGroups().get(0);
         })
         .collect(Collectors.toSet());
-      assertThat(actualCandidateGroups, is(expectedCandidateGroups));
+      assertThat(actualCandidateGroups).isEqualTo(expectedCandidateGroups);
     }
   }
 
   @Test
   public void severalAssigneeOperationsLeadToCorrectResult() throws Exception {
     // given
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.claimAllRunningUserTasks();
     engineIntegrationExtension.unclaimAllRunningUserTasks();
     engineIntegrationExtension.addUser("secondUser", "secondPassword");
@@ -223,79 +218,76 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks("secondUser", "secondPassword");
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
       List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
-      assertThat(userTasks.size(), is(1));
+      assertThat(userTasks).hasSize(1);
       List<AssigneeOperationDto> assigneeOperations = userTasks.get(0).getAssigneeOperations();
-      assertThat(assigneeOperations.get(0).getOperationType(), is(IDENTITY_LINK_OPERATION_ADD));
-      assertThat(assigneeOperations.get(1).getOperationType(), is(IDENTITY_LINK_OPERATION_DELETE));
-      assertThat(assigneeOperations.get(2).getOperationType(), is(IDENTITY_LINK_OPERATION_ADD));
-      assertThat(userTasks.get(0).getAssignee(), is("secondUser"));
+      assertThat(assigneeOperations.get(0).getOperationType()).isEqualTo(IDENTITY_LINK_OPERATION_ADD);
+      assertThat(assigneeOperations.get(1).getOperationType()).isEqualTo(IDENTITY_LINK_OPERATION_DELETE);
+      assertThat(assigneeOperations.get(2).getOperationType()).isEqualTo(IDENTITY_LINK_OPERATION_ADD);
+      assertThat(userTasks.get(0).getAssignee()).isEqualTo("secondUser");
     }
   }
 
   @Test
   public void assigneeWithoutClaimIsNull() throws Exception {
     // given
-    ProcessInstanceEngineDto engineDto = deployAndStartOneUserTaskProcess();
+    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.completeUserTaskWithoutClaim(engineDto.getId());
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
       List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
-      assertThat(userTasks.size(), is(1));
-      assertThat(userTasks.get(0).getAssignee(), nullValue());
+      assertThat(userTasks).hasSize(1);
+      assertThat(userTasks.get(0).getAssignee()).isNull();
     }
   }
 
   @Test
   public void assigneeCanBeDeterminedForStillRunningUserTasks() throws Exception {
     // given
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.claimAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
       List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
-      assertThat(userTasks.size(), is(1));
-      assertThat(userTasks.get(0).getAssignee(), is(DEFAULT_USERNAME));
+      assertThat(userTasks).hasSize(1);
+      assertThat(userTasks.get(0).getAssignee()).isEqualTo(DEFAULT_USERNAME);
     }
   }
 
   @Test
   public void severalCandidateGroupOperationsLeadToCorrectResult() throws Exception {
     // given
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.createGroup("firstGroup");
     engineIntegrationExtension.createGroup("secondGroup");
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks("firstGroup");
@@ -304,31 +296,30 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
       List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
-      assertThat(userTasks.size(), is(1));
+      assertThat(userTasks).hasSize(1);
       List<CandidateGroupOperationDto> candidateGroupOperations = userTasks.get(0).getCandidateGroupOperations();
-      assertThat(candidateGroupOperations.get(0).getOperationType(), is(IDENTITY_LINK_OPERATION_ADD));
-      assertThat(candidateGroupOperations.get(1).getOperationType(), is(IDENTITY_LINK_OPERATION_ADD));
-      assertThat(candidateGroupOperations.get(2).getOperationType(), is(IDENTITY_LINK_OPERATION_DELETE));
-      assertThat(userTasks.get(0).getCandidateGroups(), contains("secondGroup"));
+      assertThat(candidateGroupOperations.get(0).getOperationType()).isEqualTo(IDENTITY_LINK_OPERATION_ADD);
+      assertThat(candidateGroupOperations.get(1).getOperationType()).isEqualTo(IDENTITY_LINK_OPERATION_ADD);
+      assertThat(candidateGroupOperations.get(2).getOperationType()).isEqualTo(IDENTITY_LINK_OPERATION_DELETE);
+      assertThat(userTasks.get(0).getCandidateGroups()).containsExactly("secondGroup");
     }
   }
 
   @Test
   public void deleteAssigneeAndDeleteCandidateGroupAsLastOperations() throws Exception {
     // given
-    ProcessInstanceEngineDto engineDto = deployAndStartOneUserTaskProcess();
+    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.createGroup("firstGroup");
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks("firstGroup");
     engineIntegrationExtension.deleteCandidateGroupForAllRunningUserTasks("firstGroup");
@@ -337,78 +328,130 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
     engineIntegrationExtension.completeUserTaskWithoutClaim(engineDto.getId());
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
       List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
-      assertThat(userTasks.size(), is(1));
-      assertThat(userTasks.get(0).getAssignee(), nullValue());
-      assertThat(userTasks.get(0).getCandidateGroups().size(), is(0));
+      assertThat(userTasks).hasSize(1);
+      assertThat(userTasks.get(0).getAssignee()).isNull();
+      assertThat(userTasks.get(0).getCandidateGroups()).isEmpty();
     }
   }
 
   @Test
   public void importIsNotAffectedByPagination() throws Exception {
     // given
-    ProcessInstanceEngineDto engineDto = deployAndStartOneUserTaskProcess();
+    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.claimAllRunningUserTasks();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     engineIntegrationExtension.unclaimAllRunningUserTasks();
     engineIntegrationExtension.addUser("secondUser", "aPassword");
     engineIntegrationExtension.grantAllAuthorizations("secondUser");
     engineIntegrationExtension.finishAllRunningUserTasks("secondUser", "aPassword");
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
       List<UserTaskInstanceDto> userTasks = processInstanceDto.getUserTasks();
-      assertThat(userTasks.size(), is(1));
-      assertThat(userTasks.get(0).getAssignee(), is("secondUser"));
+      assertThat(userTasks).hasSize(1);
+      assertThat(userTasks.get(0).getAssignee()).isEqualTo("secondUser");
     }
   }
 
   @Test
   public void onlyUserAssigneeOperationLogsRelatedToProcessInstancesAreImported() throws IOException {
     // given
-    deployAndStartOneUserTaskProcess();
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.createIndependentUserTask();
     engineIntegrationExtension.finishAllRunningUserTasks();
 
     // when
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getTotalHits().value, is(1L));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     for (SearchHit searchHitFields : idsResp.getHits()) {
       final ProcessInstanceDto processInstanceDto = objectMapper.readValue(
         searchHitFields.getSourceAsString(), ProcessInstanceDto.class
       );
-      assertThat(processInstanceDto.getUserTasks().size(), is(1));
+      assertThat(processInstanceDto.getUserTasks()).hasSize(1);
       processInstanceDto.getUserTasks()
-        .forEach(userTask -> assertThat(userTask.getAssigneeOperations().size(), is(1)));
+        .forEach(userTask -> assertThat(userTask.getAssigneeOperations()).hasSize(1));
     }
   }
 
+  @Test
+  public void duplicateUserTasksAreHandledOnUpsert() throws JsonProcessingException {
+    // given
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
+    String defaultCandidateGroup = "defaultCandidateGroupId";
+    engineIntegrationExtension.createGroup(defaultCandidateGroup);
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(defaultCandidateGroup);
+    engineIntegrationExtension.finishAllRunningUserTasks();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final ProcessInstanceDto storedInstance = getStoredProcessInstance();
+    assertThat(storedInstance.getUserTasks()).hasSize(1);
+
+    // when duplicate user tasks and tasks with same ID have been stored
+    final UserTaskInstanceDto userTaskInstanceDto = storedInstance.getUserTasks().get(0);
+    final UserTaskInstanceDto sameIdTaskInstanceDto = new UserTaskInstanceDto(
+      userTaskInstanceDto.getId(),
+      userTaskInstanceDto.getProcessInstanceId(),
+      userTaskInstanceDto.getEngine()
+    );
+    final List<UserTaskInstanceDto> duplicateTaskList = Arrays.asList(
+      userTaskInstanceDto,
+      userTaskInstanceDto,
+      sameIdTaskInstanceDto
+    );
+    storedInstance.setUserTasks(duplicateTaskList);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_INSTANCE_INDEX_NAME,
+      storedInstance.getProcessInstanceId(),
+      storedInstance
+    );
+
+    final ProcessInstanceDto storedInstanceWithDuplicateUserTasks = getStoredProcessInstance();
+    assertThat(storedInstanceWithDuplicateUserTasks.getUserTasks())
+      .hasSize(3)
+      .containsExactlyElementsOf(duplicateTaskList);
+
+    // and we reimport tasks
+    importAllEngineEntitiesFromScratch();
+
+    // then only single user task with ID remains
+    final ProcessInstanceDto updatedInstance = getStoredProcessInstance();
+    assertThat(updatedInstance.getUserTasks()).hasSize(1);
+  }
+
+  private ProcessInstanceDto getStoredProcessInstance() throws JsonProcessingException {
+    final SearchResponse idsResp = elasticSearchIntegrationTestExtension
+      .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
+    return objectMapper.readValue(
+      idsResp.getHits().getHits()[0].getSourceAsString(), ProcessInstanceDto.class
+    );
+  }
 
 }

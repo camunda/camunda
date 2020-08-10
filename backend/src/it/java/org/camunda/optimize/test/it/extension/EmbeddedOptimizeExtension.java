@@ -6,6 +6,7 @@
 package org.camunda.optimize.test.it.extension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,7 @@ import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
-import org.camunda.optimize.service.cleanup.OptimizeCleanupScheduler;
+import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -77,21 +78,20 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 public class EmbeddedOptimizeExtension
   implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
 
-  public static final String DEFAULT_ENGINE_ALIAS = "1";
+  public static final String DEFAULT_ENGINE_ALIAS = "camunda-bpm";
 
-  private String context = null;
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
 
+  private String context = null;
   private boolean beforeAllMode = false;
   private boolean resetImportOnStart = true;
 
-  public EmbeddedOptimizeExtension(final boolean beforeAllMode) {
-    this.beforeAllMode = beforeAllMode;
-  }
-
-  public EmbeddedOptimizeExtension(final String context) {
+  @Builder(builderMethodName = "customPropertiesBuilder")
+  public EmbeddedOptimizeExtension(final String context,
+                                   final boolean beforeAllMode) {
     this.context = context;
+    this.beforeAllMode = beforeAllMode;
   }
 
   @Override
@@ -428,6 +428,10 @@ public class EmbeddedOptimizeExtension
     }
   }
 
+  public void reinitializeSchema() {
+    getElasticSearchSchemaManager().initializeSchema(getOptimizeElasticClient());
+  }
+
   public boolean isImporting() {
     return this.getElasticsearchImportJobExecutor().isActive();
   }
@@ -444,7 +448,7 @@ public class EmbeddedOptimizeExtension
     return getOptimize().getConfigurationService();
   }
 
-  public OptimizeCleanupScheduler getCleanupScheduler() {
+  public CleanupScheduler getCleanupScheduler() {
     return getOptimize().getCleanupService();
   }
 

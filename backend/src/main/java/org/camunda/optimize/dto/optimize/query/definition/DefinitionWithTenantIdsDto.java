@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
 import java.util.List;
+import java.util.Set;
 
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -29,8 +30,9 @@ public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
                                     final String name,
                                     @NonNull final DefinitionType type,
                                     final Boolean isEventProcess,
-                                    @NonNull final List<String> tenantIds) {
-    super(key, name, type, isEventProcess);
+                                    @NonNull final List<String> tenantIds,
+                                    @NonNull final Set<String> engines) {
+    super(key, name, type, isEventProcess, engines);
     this.tenantIds = tenantIds;
   }
 

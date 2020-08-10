@@ -3,6 +3,11 @@ pipelineJob('generate-cambpm-test-data') {
     displayName 'Generate Camunda BPM test datasets'
     description 'Generates and stores Camunda BPM test datasets for use in other jobs'
 
+    // By default, this job is disabled in non-prod envs.
+    if (binding.variables.get("ENVIRONMENT") != "prod") {
+        disabled()
+    }
+
     definition {
         cps {
             script(readFileFromWorkspace('.ci/pipelines/generate_cambpm_test_data.groovy'))

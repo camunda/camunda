@@ -19,6 +19,7 @@ import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.VariableTestUtil;
+import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,8 @@ import static org.camunda.optimize.dto.optimize.query.variable.VariableType.STRI
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
 
@@ -58,8 +61,7 @@ public class VariableImportIT extends AbstractImportIT {
     // when
     engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId());
     engineIntegrationExtension.startProcessInstance(firstProcInst.getDefinitionId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     assertThatEveryFlowNodeWasExecuted4Times(firstProcInst.getProcessDefinitionKey());
@@ -68,13 +70,12 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void variableImportWorks() throws JsonProcessingException {
     //given
-    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
@@ -88,16 +89,18 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void variableImportWorks_evenIfSeriesOfEsUpdateFailures() throws JsonProcessingException {
     // given
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // then
     assertThat(getStoredVariableUpdateInstances()).isEmpty();
 
     // when
-    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
-    ProcessInstanceEngineDto instanceDto = engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
+    ProcessInstanceEngineDto instanceDto = engineIntegrationExtension.deployAndStartProcessWithVariables(
+      processModel,
+      variables
+    );
 
     // whenES update writes fail
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
@@ -110,8 +113,7 @@ public class VariableImportIT extends AbstractImportIT {
     esMockServer
       .when(variableImportMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
@@ -128,12 +130,11 @@ public class VariableImportIT extends AbstractImportIT {
     //given
     embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(false);
 
-    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
@@ -157,9 +158,8 @@ public class VariableImportIT extends AbstractImportIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", complexVariableDto);
     ProcessInstanceEngineDto instanceDto = deployAndStartSimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
@@ -173,17 +173,12 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void variableUpdateImport() throws JsonProcessingException {
     //given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
-      .userTask()
-      .endEvent()
-      .done();
+    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
@@ -197,13 +192,12 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void variablesCanHaveNullValue() throws JsonProcessingException {
     //given
-    BpmnModelInstance processModel = createSimpleProcessDefinition();
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
 
     Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariablesWithNullValues();
     ProcessInstanceEngineDto instanceDto =
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     SearchResponse responseForAllDocumentsOfIndex = elasticSearchIntegrationTestExtension
@@ -239,8 +233,7 @@ public class VariableImportIT extends AbstractImportIT {
     variables.put("stringVar", "aStringValue");
     ProcessInstanceEngineDto instanceDto =
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariablesForProcessInstance(instanceDto);
@@ -272,8 +265,7 @@ public class VariableImportIT extends AbstractImportIT {
     variables.put("stringVar", "aStringValue");
     ProcessInstanceEngineDto instanceDto =
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -308,8 +300,7 @@ public class VariableImportIT extends AbstractImportIT {
     // @formatter:on
 
     ProcessInstanceEngineDto instanceDto = engineIntegrationExtension.deployAndStartProcess(processModel);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -357,12 +348,10 @@ public class VariableImportIT extends AbstractImportIT {
     variables.put("stringVar", "aStringValue");
     ProcessInstanceEngineDto instanceDto =
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     engineIntegrationExtension.finishAllRunningUserTasks(instanceDto.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -380,19 +369,14 @@ public class VariableImportIT extends AbstractImportIT {
   @Test
   public void deletingARuntimeVariableAlsoRemovesItFromOptimize() {
     //given
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
-      .userTask()
-      .endEvent()
-      .done();
+    BpmnModelInstance processModel = BpmnModels.getSingleUserTaskDiagram();
 
     Map<String, Object> variables = new HashMap<>();
     variables.put("stringVar", "aStringValue");
     ProcessInstanceEngineDto instanceDto =
       engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
     engineIntegrationExtension.deleteVariableInstanceForProcessInstance("stringVar", instanceDto.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     //when
     ProcessVariableValueRequestDto requestDto = new ProcessVariableValueRequestDto();
@@ -433,8 +417,7 @@ public class VariableImportIT extends AbstractImportIT {
       firstProcInst.getDefinitionId(),
       variables
     );
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
     engineIntegrationExtension.deleteHistoricProcessInstance(firstProcInst.getId());
     engineIntegrationExtension.deleteHistoricProcessInstance(secondProcInst.getId());
     return firstProcInst;

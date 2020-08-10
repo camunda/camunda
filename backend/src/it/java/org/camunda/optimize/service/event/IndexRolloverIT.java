@@ -5,8 +5,6 @@
  */
 package org.camunda.optimize.service.event;
 
-import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
@@ -36,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class IndexRolloverIT extends AbstractIT {
 
@@ -52,6 +51,7 @@ public class IndexRolloverIT extends AbstractIT {
       .setEnabled(true);
   }
 
+  @BeforeEach
   @AfterEach
   public void cleanUpEventIndices() {
     elasticSearchIntegrationTestExtension.deleteAllExternalEventIndices();
@@ -285,7 +285,7 @@ public class IndexRolloverIT extends AbstractIT {
   }
 
   private List<CamundaActivityEventDto> getAllStoredCamundaActivityEventsForDefinitionKey(final String indexName) {
-    return elasticSearchIntegrationTestExtension.getAllStoredCamundaActivityEvents(indexName);
+    return elasticSearchIntegrationTestExtension.getAllStoredCamundaActivityEventsForDefinition(indexName);
   }
 
   private List<VariableUpdateInstanceDto> getAllStoredVariableUpdateInstanceDtos() {
@@ -303,8 +303,7 @@ public class IndexRolloverIT extends AbstractIT {
 
   private void importNextCamundaEventsForProcessInstance(final ProcessInstanceEngineDto processInstanceEngineDto) {
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
-    embeddedOptimizeExtension.importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromLastIndex();
   }
 
   private void importVariableUpdateInstances(final int count) {
@@ -328,15 +327,14 @@ public class IndexRolloverIT extends AbstractIT {
   }
 
   private ProcessInstanceEngineDto importCamundaEvents() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent("start_event_id")
-      .userTask("some_user_task")
-      .endEvent("end_event_id")
-      .done();
-    final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(
-      modelInstance);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    final ProcessInstanceEngineDto processInstanceEngineDto = engineIntegrationExtension
+      .deployAndStartProcess(getSingleUserTaskDiagram(
+        "akey",
+        "start_event_id",
+        "end_event_id",
+        "some_user_task"
+      ));
+    importAllEngineEntitiesFromScratch();
     return processInstanceEngineDto;
   }
 

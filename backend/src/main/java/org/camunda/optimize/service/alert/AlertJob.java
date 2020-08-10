@@ -8,14 +8,17 @@ package org.camunda.optimize.service.alert;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertThresholdOperator;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
+import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.es.report.result.NumberResult;
 import org.camunda.optimize.service.es.writer.AlertWriter;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -25,6 +28,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -55,11 +60,18 @@ public class AlertJob implements Job {
     String alertId = dataMap.getString("alertId");
     log.debug("Executing status check for alert [{}]", alertId);
 
-    AlertDefinitionDto alert = alertReader.getAlert(alertId);
+    AlertDefinitionDto alert = alertReader.getAlert(alertId)
+      .orElseThrow(() -> new OptimizeRuntimeException("Alert does not exist!"));
 
     try {
-      ReportDefinitionDto reportDefinition = reportReader.getReport(alert.getReportId());
-      NumberResult reportResult = (NumberResult) reportEvaluator.evaluateReport(reportDefinition).getEvaluationResult();
+      ReportDefinitionDto reportDefinition = reportReader.getReport(alert.getReportId())
+        .orElseThrow(() -> new OptimizeRuntimeException("Was not able to retrieve report with id "
+                                                          + "[" + alert.getReportId() + "]"
+                                                          + "from Elasticsearch. Report does not exist."));
+      final ReportEvaluationInfo reportEvaluationInfo = ReportEvaluationInfo.builder(reportDefinition).build();
+      NumberResult reportResult = (NumberResult) reportEvaluator
+        .evaluateReport(reportEvaluationInfo)
+        .getEvaluationResult();
 
       AlertJobResult alertJobResult = null;
       if (thresholdExceeded(alert, reportResult)) {
@@ -121,13 +133,13 @@ public class AlertJob implements Job {
   private void notifyAvailableTargets(final String alertContent, final AlertDefinitionDto alert) {
     for (NotificationService notificationService : notificationServices) {
       try {
-        String destination = "";
+        List<String> recipients = new ArrayList<>();
         if (notificationService instanceof EmailNotificationService) {
-          destination = alert.getEmail();
+          recipients = alert.getEmails();
         } else if (notificationService instanceof WebhookNotificationService) {
-          destination = alert.getWebhook();
+          recipients = Collections.singletonList(alert.getWebhook());
         }
-        notificationService.notifyRecipient(alertContent, destination);
+        notificationService.notifyRecipients(alertContent, recipients);
       } catch (Exception e) {
         log.error("Exception thrown while trying to send notification", e);
       }
@@ -143,7 +155,7 @@ public class AlertJob implements Job {
     ReportDefinitionDto reportDefinition,
     NumberResult result
   ) {
-    String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
+    String statusText = AlertThresholdOperator.LESS.equals(alert.getThresholdOperator())
       ? "is not reached" : "was exceeded";
     return composeAlertText(alert, reportDefinition, result, statusText);
   }
@@ -152,7 +164,7 @@ public class AlertJob implements Job {
     AlertDefinitionDto alert,
     ReportDefinitionDto reportDefinition,
     NumberResult result) {
-    String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
+    String statusText = AlertThresholdOperator.LESS.equals(alert.getThresholdOperator())
       ? "has been reached" : "is not exceeded anymore";
     return composeAlertText(alert, reportDefinition, result, statusText);
   }
@@ -175,15 +187,17 @@ public class AlertJob implements Job {
 
   private boolean thresholdExceeded(AlertDefinitionDto alert, NumberResult result) {
     boolean exceeded = false;
-    if (AlertDefinitionDto.GREATER.equals(alert.getThresholdOperator())) {
-      exceeded = result.getResultAsNumber() > alert.getThreshold();
-    } else if (AlertDefinitionDto.LESS.equals(alert.getThresholdOperator())) {
-      exceeded = result.getResultAsNumber() < alert.getThreshold();
+    if (result.getResultAsNumber() != null) {
+      if (AlertThresholdOperator.GREATER.equals(alert.getThresholdOperator())) {
+        exceeded = result.getResultAsNumber() > alert.getThreshold();
+      } else if (AlertThresholdOperator.LESS.equals(alert.getThresholdOperator())) {
+        exceeded = result.getResultAsNumber() < alert.getThreshold();
+      }
     }
     return exceeded;
   }
 
-  private String formatValueToHumanReadableString(final long value, final ReportDefinitionDto reportDefinition) {
+  private String formatValueToHumanReadableString(final Double value, final ReportDefinitionDto reportDefinition) {
     return isDurationReport(reportDefinition)
       ? durationInMsToReadableFormat(value)
       : String.valueOf(value);
@@ -197,7 +211,15 @@ public class AlertJob implements Job {
     return false;
   }
 
-  private String durationInMsToReadableFormat(final long durationInMs) {
+  private String durationInMsToReadableFormat(final Double durationInMsAsDouble) {
+    if (durationInMsAsDouble == null) {
+      return String.valueOf(durationInMsAsDouble);
+    }
+    final long durationInMs = durationInMsAsDouble.longValue();
+    return formatMilliSecondsToReadableDurationString(durationInMs);
+  }
+
+  private String formatMilliSecondsToReadableDurationString(final long durationInMs) {
     final long days = TimeUnit.MILLISECONDS.toDays(durationInMs);
     final long hours = TimeUnit.MILLISECONDS.toHours(durationInMs) - TimeUnit.DAYS.toHours(days);
     final long minutes = TimeUnit.MILLISECONDS.toMinutes(durationInMs)
@@ -229,7 +251,12 @@ public class AlertJob implements Job {
   }
 
   private String createViewLinkFragment(final AlertDefinitionDto alert) {
-    String collectionId = reportReader.getReport(alert.getReportId()).getCollectionId();
+    ReportDefinitionDto reportDefinition = reportReader.getReport(alert.getReportId())
+      .orElseThrow(() -> new OptimizeRuntimeException("Was not able to retrieve report with id "
+                                                        + "[" + alert.getReportId() + "]"
+                                                        + "from Elasticsearch. Report does not exist."));
+
+    String collectionId = reportDefinition.getCollectionId();
     if (collectionId != null) {
       return String.format(
         "/#/collection/%s/report/%s/",

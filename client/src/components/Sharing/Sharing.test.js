@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Button, ReportRenderer} from 'components';
+import {Button, ReportRenderer, InstanceCount} from 'components';
 
 import Sharing from './Sharing';
 import {evaluateEntity} from './service';
@@ -86,7 +86,7 @@ it('should retrieve report for the given id', () => {
   expect(evaluateEntity).toHaveBeenCalledWith(123, 'report');
 });
 
-it('should display the report name', () => {
+it('should display the report name and include report details', () => {
   props.match.params.type = 'report';
   const node = shallow(<Sharing {...props} />);
 
@@ -95,7 +95,22 @@ it('should display the report name', () => {
     evaluationResult: {name: 'My report name'},
   });
 
-  expect(node).toIncludeText('My report name');
+  expect(node.find('EntityName')).toExist();
+  expect(node.find('EntityName').prop('children')).toBe('My report name');
+  expect(node.find('EntityName').prop('details').props.report).toEqual({name: 'My report name'});
+});
+
+it('should include the InstanceCount for reports', () => {
+  props.match.params.type = 'report';
+  const node = shallow(<Sharing {...props} />);
+
+  node.setState({
+    loading: false,
+    evaluationResult: {name: 'My report name'},
+  });
+
+  expect(node.find(InstanceCount)).toExist();
+  expect(node.find(InstanceCount).prop('report')).toEqual({name: 'My report name'});
 });
 
 it('should have dashboard if everything is fine', () => {
@@ -117,7 +132,7 @@ it('should retrieve dashboard for the given id', () => {
   expect(evaluateEntity).toHaveBeenCalledWith(123, 'dashboard');
 });
 
-it('should display the dashboard name', () => {
+it('should display the dashboard name and last modification info', () => {
   props.match.params.type = 'dashboard';
   const node = shallow(<Sharing {...props} />);
 
@@ -126,7 +141,9 @@ it('should display the dashboard name', () => {
     evaluationResult: {name: 'My dashboard name'},
   });
 
-  expect(node).toIncludeText('My dashboard name');
+  expect(node.find('EntityName')).toExist();
+  expect(node.find('EntityName').prop('children')).toBe('My dashboard name');
+  expect(node.find('EntityName').prop('details').props.entity).toEqual({name: 'My dashboard name'});
 });
 
 it('should render a button linking to view mode', () => {

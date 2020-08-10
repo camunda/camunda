@@ -45,6 +45,14 @@ public class DecisionVariableHelper {
     return getVariableValueFieldForType(variablePath, VariableType.STRING);
   }
 
+  public static String getValueSearchField(final String variablePath, final String searchFieldName) {
+    return getVariableStringValueField(variablePath) + "." + searchFieldName;
+  }
+
+  public static String buildWildcardQuery(final String valueFilter) {
+    return "*" + valueFilter + "*";
+  }
+
   public static String getVariableValueFieldForType(final String variablePath, final VariableType type) {
     switch (Optional.ofNullable(type).orElseThrow(() -> new IllegalArgumentException("No Type provided"))) {
       case BOOLEAN:

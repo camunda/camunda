@@ -27,7 +27,7 @@ public class StatusRestServiceIT extends AbstractIT {
     final StatusWithProgressDto statusWithProgressDto = statusClient.getImportStatus();
 
     assertThat(statusWithProgressDto.getConnectionStatus().isConnectedToElasticsearch()).isTrue();
-    assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections().size()).isEqualTo(1);
+    assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections()).hasSize(1);
     assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections().get(DEFAULT_ENGINE_ALIAS)).isTrue();
   }
 
@@ -41,7 +41,7 @@ public class StatusRestServiceIT extends AbstractIT {
   @Test
   public void importStatusIsTrueWhenImporting() {
     // given
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final StatusWithProgressDto status = statusClient.getImportStatus();

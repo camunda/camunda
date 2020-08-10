@@ -26,4 +26,8 @@ global.MutationObserver = class MutationObserver {
   observe() {}
 };
 
+// since jest does not offer an out of the box way to flush promises:
+// https://github.com/facebook/jest/issues/2157
+global.flushPromises = () => new Promise((resolve) => setImmediate(resolve));
+
 objectValuesShim();

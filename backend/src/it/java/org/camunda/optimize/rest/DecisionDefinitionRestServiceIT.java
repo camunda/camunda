@@ -6,13 +6,10 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionVersionsWithTenantsDto;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
-import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -47,7 +44,7 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
     grantSingleDefinitionAuthorizationsForUser(KERMIT_USER, authorizedDefinitionKey);
 
     final DecisionDefinitionOptimizeDto authorizedToSee = createDecisionDefinitionDto(authorizedDefinitionKey);
-    final DecisionDefinitionOptimizeDto notAuthorizedToSee = createDecisionDefinitionDto(notAuthorizedDefinitionKey);
+    createDecisionDefinitionDto(notAuthorizedDefinitionKey);
 
     // when
     List<DecisionDefinitionOptimizeDto> definitions = definitionClient.getAllDecisionDefinitionsAsUser(
@@ -241,39 +238,8 @@ public class DecisionDefinitionRestServiceIT extends AbstractDefinitionRestServi
   }
 
   @Override
-  protected List<DefinitionVersionsWithTenantsDto> getDefinitionVersionsWithTenantsAsUser(String userId,
-                                                                                          String collectionId) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(userId, userId)
-      .buildGetDecisionDefinitionVersionsWithTenants(collectionId)
-      .executeAndReturnList(DefinitionVersionsWithTenantsDto.class, Response.Status.OK.getStatusCode());
-  }
-
-  @Override
   protected int getDefinitionResourceType() {
     return RESOURCE_TYPE_DECISION_DEFINITION;
-  }
-
-  @Override
-  protected DefinitionType getDefinitionType() {
-    return DefinitionType.DECISION;
-  }
-
-  @Override
-  protected void createDefinitionsForKey(final String definitionKey, final int versionCount, final String tenantId) {
-    createDecisionDefinitionsForKey(definitionKey, versionCount, tenantId);
-  }
-
-  private void createDecisionDefinitionsForKey(String key, int count, String tenantId) {
-    IntStream.range(0, count).forEach(
-      i -> createDecisionDefinitionDto(key, String.valueOf(i), tenantId)
-    );
-  }
-
-  @Override
-  protected void createDefinition(final String key, final String version, final String tenantId, final String name) {
-    createDecisionDefinitionDto(key, version, tenantId, name);
   }
 
   private DecisionDefinitionOptimizeDto createDecisionDefinitionDto() {

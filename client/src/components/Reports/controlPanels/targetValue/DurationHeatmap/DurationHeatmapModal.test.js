@@ -31,7 +31,7 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
       };
     }
     attachTo = jest.fn();
-    importXML = jest.fn((xml, cb) => cb());
+    importXML = jest.fn();
     get = () => {
       return this.elementRegistry;
     };
@@ -66,8 +66,6 @@ const validProps = {
     result: {data: []},
   },
 };
-
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
 
 it('should display the bpmn diagram in the modal', () => {
   const node = shallow(<DurationHeatmapModal {...validProps} />);
@@ -121,6 +119,9 @@ it('should apply previously defined target values to input fields', async () => 
 });
 
 it('should set isInvalid property for input if value is invalid', async () => {
+  global.ResizeObserver = class {
+    observe(element, initObject) {}
+  };
   const node = mount(<DurationHeatmapModal {...validProps} />);
   node.setProps({open: true});
   await flushPromises();

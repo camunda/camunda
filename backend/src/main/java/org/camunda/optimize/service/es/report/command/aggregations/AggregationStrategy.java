@@ -10,9 +10,9 @@ import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 
 public interface AggregationStrategy {
-  Long getValue(Aggregations aggs);
+  Double getValue(Aggregations aggs);
 
-  ValuesSourceAggregationBuilder getAggregationBuilder();
+  ValuesSourceAggregationBuilder<?, ?> getAggregationBuilder();
 
   AggregationType getAggregationType();
 }

@@ -8,7 +8,7 @@ package org.camunda.optimize.test.secured.es;
 import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
-import org.camunda.optimize.upgrade.main.impl.TestUpgradeProcedure;
+import org.camunda.optimize.upgrade.main.TestUpgradeProcedure;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,9 +24,9 @@ public abstract class AbstractConnectToElasticsearchIT {
   @RegisterExtension
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = getEmbeddedOptimizeExtension();
 
-  protected abstract EmbeddedOptimizeExtension getEmbeddedOptimizeExtension();
-
   protected abstract String getCustomConfigFile();
+
+  protected abstract String getContextFile();
 
   @BeforeEach
   public void before() throws Exception {
@@ -66,6 +66,12 @@ public abstract class AbstractConnectToElasticsearchIT {
 
     // then
     testUpgradeProcedure.performUpgrade();
+  }
+
+  private EmbeddedOptimizeExtension getEmbeddedOptimizeExtension() {
+    return EmbeddedOptimizeExtension.customPropertiesBuilder()
+      .context(getContextFile())
+      .build();
   }
 
 }

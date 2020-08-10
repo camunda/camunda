@@ -38,8 +38,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     // different version
     deployDecisionAndStartInstances(2);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<DecisionReportDataDto> allPossibleReports = createAllPossibleDecisionReports(
       decisionDefinitionDto1.getKey(),
@@ -62,8 +61,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     deployDecisionAndStartInstances(1);
     DecisionDefinitionEngineDto decisionDefinitionDto3 = deployDecisionAndStartInstances(3);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<DecisionReportDataDto> allPossibleReports = createAllPossibleDecisionReports(
       decisionDefinitionDto1.getKey(),
@@ -86,8 +84,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionAndStartInstances(2);
     deployDecisionAndStartInstances(1);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<DecisionReportDataDto> allPossibleReports =
       createAllPossibleDecisionReports(decisionDefinitionDto1.getKey(), ImmutableList.of(LATEST_VERSION));
@@ -102,8 +99,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
 
     deployDecisionAndStartInstances(4);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     for (DecisionReportDataDto report : allPossibleReports) {
       // when
@@ -120,8 +116,7 @@ public class DecisionDefinitionVersionSelectionIT extends AbstractDecisionDefini
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = deployDecisionAndStartInstances(1);
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     List<DecisionReportDataDto> allPossibleReports = createAllPossibleDecisionReports(
       decisionDefinitionDto1.getKey(),

@@ -4,12 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runLastEffect} from 'react';
 
 import OptionsList from './OptionsList';
 import Typeahead from './Typeahead';
 
-import {shallow, mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 const props = {
   open: true,
@@ -27,7 +27,9 @@ it('should render an empty OptionsList', () => {
 });
 
 it('should attach keyPressEvent to input', () => {
-  mount(<OptionsList {...props} />);
+  shallow(<OptionsList {...props} />);
+
+  runLastEffect();
 
   expect(props.input.addEventListener).toHaveBeenCalled();
 });

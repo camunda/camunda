@@ -31,3 +31,12 @@ it('should call the createCollection prop', () => {
 
   expect(spy).toHaveBeenCalled();
 });
+
+it('should call the createProcessReport prop', () => {
+  const spy = jest.fn();
+  const node = shallow(<CreateNewButton createProcessReport={spy} />);
+
+  node.find(Dropdown.Submenu).find(Dropdown.Option).first().simulate('click');
+
+  expect(spy).toHaveBeenCalled();
+});

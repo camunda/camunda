@@ -23,28 +23,34 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.click(Report.filterButton);
   await t.click(Report.filterOption('Variable'));
 
-  await t.click(Filter.variableFilterTypeahead);
-  await t.typeText(Filter.variableFilterTypeaheadInput, 'dc', {replace: true});
+  await t.click(Filter.typeahead);
+  await t.typeText(Filter.typeaheadInput, 'dc', {replace: true});
 
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter.png');
 
-  await t.typeText(Filter.variableFilterTypeaheadInput, 'boolVar', {replace: true});
-  await t.click(Filter.variableFilterTypeaheadOption('boolVar'));
+  await t.typeText(Filter.typeaheadInput, 'boolVar', {replace: true});
+  await t.click(Filter.typeaheadOption('boolVar'));
+  await t.click(Filter.firstMultiSelectValue);
 
   await t.takeElementScreenshot(
     Report.modalContainer,
     'process/filter/variable-filter-boolean.png'
   );
 
-  await t.typeText(Filter.variableFilterTypeaheadInput, 'stringVar', {replace: true});
-  await t.click(Filter.variableFilterTypeaheadOption('stringVar'));
+  await t.typeText(Filter.typeaheadInput, 'stringVar', {replace: true});
+  await t.click(Filter.typeaheadOption('stringVar'));
 
   await t.expect(Filter.stringValues.textContent).contains('aStringValue');
 
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-string.png');
 
-  await t.typeText(Filter.variableFilterTypeaheadInput, 'integerVar', {replace: true});
-  await t.click(Filter.variableFilterTypeaheadOption('integerVar'));
+  await t.click(Filter.variableFilterOperatorButton('contains'));
+  await t.typeText(Filter.variableFilterValueInput, 'aSubString', {replace: true});
+  await t.click(Filter.addValueButton);
+  await t.typeText(Filter.variableFilterValueInput, 'anotherSubstring', {replace: true});
+
+  await t.typeText(Filter.typeaheadInput, 'integerVar', {replace: true});
+  await t.click(Filter.typeaheadOption('integerVar'));
 
   await t.typeText(Filter.variableFilterValueInput, '14', {replace: true});
   await t.click(Filter.addValueButton);
@@ -57,15 +63,8 @@ test('variable filter modal dependent on variable type', async (t) => {
     'process/filter/variable-filter-numeric.png'
   );
 
-  await t.click(Filter.nullSwitch);
-
-  await t.takeElementScreenshot(
-    Report.modalContainer,
-    'process/filter/variable-filter-undefinedOrNull.png'
-  );
-
-  await t.typeText(Filter.variableFilterTypeaheadInput, 'dateVar', {replace: true});
-  await t.click(Filter.variableFilterTypeaheadOption('dateVar'));
+  await t.typeText(Filter.typeaheadInput, 'dateVar', {replace: true});
+  await t.click(Filter.typeaheadOption('dateVar'));
   await t.click(Filter.dateFilterTypeSelect);
   await t.click(Filter.dateFilterTypeOption('Fixed Date'));
   await t.click(Filter.dateFilterStartInput);
@@ -94,8 +93,8 @@ test('should apply a filter to the report result', async (t) => {
 
   await t.click(Report.filterOption('Variable'));
 
-  await t.click(Filter.variableFilterTypeahead);
-  await t.click(Filter.variableFilterTypeaheadOption('amount'));
+  await t.click(Filter.typeahead);
+  await t.click(Filter.typeaheadOption('amount'));
   await t.click(Filter.variableFilterOperatorButton('is less than'));
 
   await t.typeText(Filter.variableFilterValueInput, '100', {replace: true});
@@ -237,11 +236,7 @@ test('add flow node duration filter', async (t) => {
   await t.click(Report.subFilterOption('Flow Node'));
 
   await t.typeText(Report.targetValueInput('Approve Invoice'), '1');
-  await t.click(Report.targetValueUnitSelect('Approve Invoice'));
-  await t.click(Report.dropdownOption('minutes'));
   await t.typeText(Report.targetValueInput('Prepare Bank Transfer'), '5');
-  await t.click(Report.targetValueUnitSelect('Prepare Bank Transfer'));
-  await t.click(Report.dropdownOption('minutes'));
   await t.click(Report.nodeFilterOperator('Prepare Bank Transfer'));
   await t.click(Report.dropdownOption('less than'));
   await t.typeText(Report.targetValueInput('Review Invoice'), '15');
@@ -251,6 +246,27 @@ test('add flow node duration filter', async (t) => {
     Report.modalContainer,
     'process/filter/flowNode-duration-filter.png'
   );
+
+  await t.click(Report.primaryModalButton);
+  await t.expect(Report.reportRenderer.visible).ok();
+});
+
+test('add assignee filter', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable');
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'None');
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Assignee'));
+
+  await t.click(Filter.typeahead);
+  await t.click(Filter.typeaheadOption('unassigned'));
+  await t.click(Filter.typeaheadAddButton);
+  await t.click(Filter.typeahead);
+  await t.click(Filter.typeaheadOption('demo'));
+  await t.click(Filter.typeaheadAddButton);
+
+  await t.takeElementScreenshot(Report.modalContainer, 'process/filter/assignee-filter.png');
 
   await t.click(Report.primaryModalButton);
   await t.expect(Report.reportRenderer.visible).ok();

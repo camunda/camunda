@@ -15,3 +15,7 @@ es:
     nodes:
       - host: '${es.host}'
         httpPort: 9200
+
+plugin:
+  # as default just use an existing directory
+  directory: '.'

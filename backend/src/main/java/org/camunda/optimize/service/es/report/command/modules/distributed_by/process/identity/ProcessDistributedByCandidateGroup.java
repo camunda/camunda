@@ -7,8 +7,8 @@ package org.camunda.optimize.service.es.report.command.modules.distributed_by.pr
 
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.LocalizationService;
-import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -23,8 +23,8 @@ public class ProcessDistributedByCandidateGroup extends ProcessDistributedByIden
 
   public ProcessDistributedByCandidateGroup(final ConfigurationService configurationService,
                                             final LocalizationService localizationService,
-                                            final ProcessDefinitionReader processDefinitionReader) {
-    super(configurationService, localizationService, processDefinitionReader);
+                                            final DefinitionService definitionService) {
+    super(configurationService, localizationService, definitionService);
   }
 
   @Override

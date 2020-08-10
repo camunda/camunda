@@ -21,8 +21,6 @@ jest.mock('services', () => {
   };
 });
 
-const flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
 const data = {
   processDefinitionKey: 'aKey',
   processDefinitionVersions: ['aVersion'],

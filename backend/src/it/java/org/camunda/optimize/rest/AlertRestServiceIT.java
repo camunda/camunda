@@ -7,7 +7,6 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.junit.jupiter.api.Test;
@@ -15,14 +14,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class AlertRestServiceIT extends AbstractAlertIT {
 
@@ -42,7 +39,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -54,17 +51,17 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @ParameterizedTest(name = "cannot update alert without report with definition type {0}")
   @MethodSource("definitionType")
   public void cantUpdateWithoutReport(final DefinitionType definitionType) {
     //given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
-    String id = addAlertToOptimize(alert);
+    String id = alertClient.createAlert(alert);
     alert.setReportId(TEST);
 
     // when
@@ -74,7 +71,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @ParameterizedTest(name = "cannot create for private reports with definition type {0}")
@@ -91,14 +88,14 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest(name = "create new report with report definition type {0}")
   @MethodSource("definitionType")
   public void createNewAlert(final DefinitionType definitionType) {
     //given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
 
@@ -109,17 +106,60 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(id, is(notNullValue()));
+    assertThat(id).isNotNull();
+  }
+
+  @Test
+  public void createNewAlert_atLeastOneNotificationServiceNeedsToBeDefined() {
+    //given
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    String reportId = createNumberReportForCollection(collectionId, DefinitionType.PROCESS);
+    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
+
+    // when
+    alert.setEmails(new ArrayList<>());
+    alert.setWebhook(null);
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateAlertRequest(alert)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(String.class))
+      .contains("The fields [emails] and [webhook] are not allowed to both be empty");
+
+    // when
+    alert.setEmails(new ArrayList<>());
+    alert.setWebhook("foo");
+    response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateAlertRequest(alert)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+
+    // when
+    alert.setEmails(Collections.singletonList("foo@bar.com"));
+    alert.setWebhook(null);
+    response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateAlertRequest(alert)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @ParameterizedTest(name = "create new alert with max threshold and report definition type {0}")
   @MethodSource("definitionType")
-  public void createNewAlertAllowsMaxInt(final DefinitionType definitionType) {
+  public void createNewAlertAllowsMaxDouble(final DefinitionType definitionType) {
     //given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
-    alert.setThreshold(Integer.MAX_VALUE);
+    alert.setThreshold(Double.MAX_VALUE);
 
     // when
     String id = embeddedOptimizeExtension
@@ -128,7 +168,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute(String.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(id, is(notNullValue()));
+    assertThat(id).isNotNull();
   }
 
   @Test
@@ -141,14 +181,14 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @ParameterizedTest(name = "update existing alert for report with definition type {0}")
   @MethodSource("definitionType")
   public void updateNonExistingAlert(final DefinitionType definitionType) {
     // given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
 
     // when
@@ -158,18 +198,18 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then 
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @ParameterizedTest(name = "update alert for report with definition type {0}")
   @MethodSource("definitionType")
   public void updateAlert(final DefinitionType definitionType) {
     //given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
-    String id = addAlertToOptimize(alert);
-    alert.setEmail("new@camunda.com");
+    String id = alertClient.createAlert(alert);
+    alert.setEmails(Collections.singletonList("new@camunda.com"));
 
 
     // when
@@ -179,24 +219,68 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+  }
+
+  @Test
+  public void updateAlert_atLeastOneNotificationServiceNeedsToBeDefined() {
+    //given
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(DefinitionType.PROCESS);
+    String reportId = createNumberReportForCollection(collectionId, DefinitionType.PROCESS);
+    AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
+    String alertId = alertClient.createAlert(alert);
+
+    // when
+    alert.setEmails(new ArrayList<>());
+    alert.setWebhook(null);
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateAlertRequest(alertId, alert)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+    assertThat(response.readEntity(String.class))
+      .contains("The fields [emails] and [webhook] are not allowed to both be empty");
+
+    // when
+    alert.setEmails(new ArrayList<>());
+    alert.setWebhook("foo");
+    response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateAlertRequest(alertId, alert)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+
+    // when
+    alert.setEmails(Collections.singletonList("foo@bar.com"));
+    alert.setWebhook(null);
+    response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildUpdateAlertRequest(alertId, alert)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @ParameterizedTest
   @MethodSource("definitionType")
   public void getStoredAlerts(final DefinitionType definitionType) {
     //given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
-    String id = addAlertToOptimize(alert);
+    String id = alertClient.createAlert(alert);
 
     // when
     List<AlertDefinitionDto> allAlerts = alertClient.getAlertsForCollectionAsDefaultUser(collectionId);
 
     // then
-    assertThat(allAlerts.size(), is(1));
-    assertThat(allAlerts.get(0).getId(), is(id));
+    assertThat(allAlerts.size()).isEqualTo(1);
+    assertThat(allAlerts.get(0).getId()).isEqualTo(id);
   }
 
   @Test
@@ -209,17 +293,17 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @ParameterizedTest
   @MethodSource("definitionType")
   public void deleteNewAlert(final DefinitionType definitionType) {
     //given
-    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);;
+    String collectionId = collectionClient.createNewCollectionWithDefaultScope(definitionType);
     String reportId = createNumberReportForCollection(collectionId, definitionType);
     AlertCreationDto alert = alertClient.createSimpleAlert(reportId);
-    String id = addAlertToOptimize(alert);
+    String id = alertClient.createAlert(alert);
 
     // when
     Response response = embeddedOptimizeExtension
@@ -228,8 +312,8 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
-    assertThat(alertClient.getAllAlerts().size(), is(0));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(alertClient.getAllAlerts().size()).isZero();
   }
 
   @Test
@@ -241,21 +325,7 @@ public class AlertRestServiceIT extends AbstractAlertIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
-  private String addAlertToOptimize(AlertCreationDto creationDto) {
-    return addAlertToOptimizeAsUser(creationDto, DEFAULT_USERNAME, DEFAULT_PASSWORD);
-  }
-
-  private String addAlertToOptimizeAsUser(final AlertCreationDto creationDto,
-                                          final String user,
-                                          final String password) {
-    return embeddedOptimizeExtension
-      .getRequestExecutor()
-      .withUserAuthentication(user, password)
-      .buildCreateAlertRequest(creationDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode())
-      .getId();
-  }
 }

@@ -17,7 +17,7 @@ export default function Number({report, formatter}) {
 
   if (targetValue && targetValue.active) {
     let min, max;
-    if (data.view.property === 'frequency') {
+    if (data.view.property === 'frequency' || data.view.entity === 'variable') {
       min = targetValue.countProgress.baseline;
       max = targetValue.countProgress.target;
     } else {

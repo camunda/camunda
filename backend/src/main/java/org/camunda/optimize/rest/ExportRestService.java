@@ -8,6 +8,7 @@ package org.camunda.optimize.rest;
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.ReportType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -30,7 +31,12 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
+
+import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
+import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInstanceDtoFieldKeys;
 
 @AllArgsConstructor
 @Path("/export")
@@ -49,14 +55,21 @@ public class ExportRestService {
                                @PathParam("reportId") String reportId,
                                @PathParam("fileName") String fileName) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final ZoneId timezone = extractTimezone(requestContext);
 
-    final Optional<byte[]> csvForReport = exportService.getCsvBytesForEvaluatedReportResult(userId, reportId);
+    final Optional<byte[]> csvForReport =
+      exportService.getCsvBytesForEvaluatedReportResult(userId, reportId, timezone);
 
     return csvForReport
       .map(csvBytes -> createOctetStreamResponse(fileName, csvBytes))
       .orElse(Response.status(Response.Status.NOT_FOUND).build());
   }
 
+  /**
+   * This endpoint returns only the columns specified in the includedColumns list in the request.
+   * All other columns (dto fields, new and existing variables not in includedColumns) are to be excluded.
+   * It is used for example to return process instance Ids in the branch analysis export.
+   */
   @POST
   // octet stream on success, json on potential error
   @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
@@ -65,6 +78,7 @@ public class ExportRestService {
                                 @PathParam("fileName") final String fileName,
                                 @Valid final ProcessRawDataCsvExportRequestDto request) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
+    final ZoneId timezone = extractTimezone(requestContext);
 
     final SingleProcessReportDefinitionDto reportDefinitionDto = SingleProcessReportDefinitionDto.builder()
       .reportType(ReportType.PROCESS)
@@ -75,7 +89,13 @@ public class ExportRestService {
           .processDefinitionVersions(request.getProcessDefinitionVersions())
           .tenantIds(request.getTenantIds())
           .filter(request.getFilter())
-          .configuration(SingleReportConfigurationDto.builder().includedColumns(request.getIncludedColumns()).build())
+          .configuration(SingleReportConfigurationDto.builder()
+                           .tableColumns(TableColumnDto.builder()
+                                           .includeNewVariables(false)
+                                           .excludedColumns(getAllExcludedDtoFields(request))
+                                           .includedColumns(request.getIncludedColumns())
+                                           .build())
+                           .build())
           .view(new ProcessViewDto(ProcessViewProperty.RAW_DATA))
           .groupBy(new NoneGroupByDto())
           .visualization(ProcessVisualization.TABLE)
@@ -85,8 +105,14 @@ public class ExportRestService {
 
     return createOctetStreamResponse(
       fileName,
-      exportService.getCsvBytesForEvaluatedReportResult(userId, reportDefinitionDto)
+      exportService.getCsvBytesForEvaluatedReportResult(userId, reportDefinitionDto, timezone)
     );
+  }
+
+  private List<String> getAllExcludedDtoFields(final ProcessRawDataCsvExportRequestDto request) {
+    final List<String> dtoFields = extractAllProcessInstanceDtoFieldKeys();
+    dtoFields.removeAll(request.getIncludedColumns());
+    return dtoFields;
   }
 
   private Response createOctetStreamResponse(final String fileName,

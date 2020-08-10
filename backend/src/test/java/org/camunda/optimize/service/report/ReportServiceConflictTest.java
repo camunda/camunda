@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
 import org.camunda.optimize.service.es.reader.ReportReader;
-import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.relations.ReportRelationService;
@@ -42,9 +41,6 @@ public class ReportServiceConflictTest {
   ReportReader reportReader;
 
   @Mock
-  AuthorizationCheckReportEvaluationHandler reportEvaluator;
-
-  @Mock
   ReportAuthorizationService authorizationService;
 
   @Mock
@@ -60,7 +56,6 @@ public class ReportServiceConflictTest {
     underTest = new ReportService(
       reportWriter,
       reportReader,
-      reportEvaluator,
       authorizationService,
       reportRelationService,
       collectionService
@@ -72,7 +67,7 @@ public class ReportServiceConflictTest {
     // given
     SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
     updateDto.setId("test1");
-    when(reportReader.getSingleProcessReportOmitXml("test1")).thenReturn(updateDto);
+    when(reportReader.getSingleProcessReportOmitXml("test1")).thenReturn(Optional.of(updateDto));
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
     when(authorizationService.isAuthorizedToReport(any(), any())).thenReturn(true);
 
@@ -91,7 +86,7 @@ public class ReportServiceConflictTest {
     // given
     SingleProcessReportDefinitionDto updateDto = new SingleProcessReportDefinitionDto();
     updateDto.setId("test1");
-    when(reportReader.getSingleProcessReportOmitXml("test1")).thenReturn(updateDto);
+    when(reportReader.getSingleProcessReportOmitXml("test1")).thenReturn(Optional.of(updateDto));
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
     when(authorizationService.isAuthorizedToReport(any(), any())).thenReturn(true);
 
@@ -114,7 +109,7 @@ public class ReportServiceConflictTest {
     // given
     SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
     updateDto.setId("test1");
-    when(reportReader.getSingleDecisionReportOmitXml("test1")).thenReturn(updateDto);
+    when(reportReader.getSingleDecisionReportOmitXml("test1")).thenReturn(Optional.of(updateDto));
     when(authorizationService.isAuthorizedToReport(any(), any())).thenReturn(true);
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
     // when
@@ -131,7 +126,7 @@ public class ReportServiceConflictTest {
     // given
     SingleDecisionReportDefinitionDto updateDto = new SingleDecisionReportDefinitionDto();
     updateDto.setId("test1");
-    when(reportReader.getSingleDecisionReportOmitXml("test1")).thenReturn(updateDto);
+    when(reportReader.getSingleDecisionReportOmitXml("test1")).thenReturn(Optional.of(updateDto));
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
     when(authorizationService.isAuthorizedToReport(any(), any())).thenReturn(true);
 
@@ -153,7 +148,7 @@ public class ReportServiceConflictTest {
   public void testDeleteReport() {
     // given
     final SingleProcessReportDefinitionDto testDefinition = new SingleProcessReportDefinitionDto();
-    when(reportReader.getReport("test1")).thenReturn(testDefinition);
+    when(reportReader.getReport("test1")).thenReturn(Optional.of(testDefinition));
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     // when
@@ -168,7 +163,7 @@ public class ReportServiceConflictTest {
   @Test
   public void testDeleteReportWithConflicts() {
     // given
-    when(reportReader.getReport("test1")).thenReturn(new SingleProcessReportDefinitionDto());
+    when(reportReader.getReport("test1")).thenReturn(Optional.of(new SingleProcessReportDefinitionDto()));
     when(authorizationService.getAuthorizedRole(any(), any())).thenReturn(Optional.of(RoleType.EDITOR));
 
     Set<ConflictedItemDto> conflicts = Sets.newHashSet(

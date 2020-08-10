@@ -55,7 +55,6 @@ import org.elasticsearch.search.aggregations.metrics.StatsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.ArrayList;
@@ -204,9 +203,7 @@ public class DurationOutliersReader {
         .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
       if (outlierProcessInstanceCount == 0) {
-        throw new NotFoundException(
-          String.format("No outliers found for the provided parameters [%s]", outlierParams.toString())
-        );
+        return new ArrayList<>();
       }
 
       // #2 get counts of the same terms from non outlier instances
@@ -266,7 +263,7 @@ public class DurationOutliersReader {
 
     try {
       final SearchResponse response = esClient.search(scrollSearchRequest, RequestOptions.DEFAULT);
-      return ElasticsearchHelper.retrieveScrollResultsTillLimit(
+      return ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
         response,
         ProcessInstanceIdDto.class,
         objectMapper,
@@ -359,20 +356,20 @@ public class DurationOutliersReader {
                                                               final List<String> variableNames) {
     final BoolQueryBuilder flowNodeFilterQuery = createFlowNodeOutlierQuery(outlierParams);
 
-    final NestedAggregationBuilder nestedVariableAggregation = AggregationBuilders.nested(AGG_VARIABLES, VARIABLES);
+    final NestedAggregationBuilder nestedVariableAggregation =
+      AggregationBuilders.nested(AGG_VARIABLES, VARIABLES);
     variableNames.stream().distinct().forEach(variableName -> {
       nestedVariableAggregation.subAggregation(
-        AggregationBuilders.filter(
-          variableName, termQuery(VARIABLES + "." + VARIABLE_NAME, variableName)
-        ).subAggregation(
-          AggregationBuilders.terms(AGG_VARIABLE_VALUE_TERMS).field(VARIABLES + "." + VARIABLE_VALUE)
-            // This corresponds to the min doc count also used by elasticsearch's own significant terms implementation
-            // and serves the purpose to ignore high cardinality values
-            // @formatter:off
-            // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
-            // @formatter:on
-            .minDocCount(3)
-        )
+        AggregationBuilders.filter(variableName, termQuery(VARIABLES + "." + VARIABLE_NAME, variableName))
+          .subAggregation(
+            AggregationBuilders.terms(AGG_VARIABLE_VALUE_TERMS).field(VARIABLES + "." + VARIABLE_VALUE)
+              // This corresponds to the min doc count also used by elasticsearch's own significant terms implementation
+              // and serves the purpose to ignore high cardinality values
+              // @formatter:off
+              // https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-significantterms-aggregation.html
+              // @formatter:on
+              .minDocCount(3)
+          )
       );
     });
 
@@ -396,7 +393,10 @@ public class DurationOutliersReader {
       );
     }
 
-    final NestedAggregationBuilder nestedVariableAggregation = AggregationBuilders.nested(AGG_VARIABLES, VARIABLES);
+    final NestedAggregationBuilder nestedVariableAggregation = AggregationBuilders.nested(
+      AGG_VARIABLES,
+      VARIABLES
+    );
     variablesAndTerms
       .forEach((variableName, value) -> nestedVariableAggregation.subAggregation(
         AggregationBuilders.filter(
@@ -462,7 +462,7 @@ public class DurationOutliersReader {
               new long[]{nonOutlierTermCount, nonOutlierProcessInstanceCount},
               new long[]{outlierTermCount, outlierProcessInstanceCount},
               // This is the confidence level or alpha that defines the degree of confidence of the test result.
-              // The test returns true if the null hypothesis (both datasets orignate from the same distribution)
+              // The test returns true if the null hypothesis (both datasets originate from the same distribution)
               // can be rejected with 100 * (1 - alpha) percent confidence and thus the sets can be considered
               // to be significantly different
               0.001D
@@ -483,7 +483,7 @@ public class DurationOutliersReader {
       final Filter variableFilterAggregation = (Filter) aggregation;
       final Terms variableValueTerms = variableFilterAggregation.getAggregations().get(AGG_VARIABLE_VALUE_TERMS);
 
-      if (variableValueTerms.getBuckets().size() > 0) {
+      if (!variableValueTerms.getBuckets().isEmpty()) {
         final Map<String, Long> termOccurrences = variableValueTerms.getBuckets().stream()
           .map(bucket -> (Terms.Bucket) bucket)
           .map(bucket -> new AbstractMap.SimpleEntry<>(bucket.getKeyAsString(), bucket.getDocCount()))

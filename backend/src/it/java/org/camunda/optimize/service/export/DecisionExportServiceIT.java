@@ -24,9 +24,8 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.rest.RestTestUtil.getResponseContentAsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DecisionExportServiceIT extends AbstractIT {
 
@@ -34,39 +33,39 @@ public class DecisionExportServiceIT extends AbstractIT {
 
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @ParameterizedTest
   @MethodSource("getArguments")
   public void reportCsvHasExpectedValue(DecisionReportDataDto currentReport, String expectedCSV) throws Exception {
     //given
     OffsetDateTime lastEvaluationDateFilter = OffsetDateTime.parse("2019-01-29T18:20:23.277+01:00");
-    DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployAndStartDecisionDefinition();
+    DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+      engineIntegrationExtension.deployAndStartDecisionDefinition();
 
     currentReport.setDecisionDefinitionKey(decisionDefinitionEngineDto.getKey());
     currentReport.setDecisionDefinitionVersion(decisionDefinitionEngineDto.getVersionAsString());
     String reportId = createAndStoreDefaultReportDefinition(currentReport);
     engineDatabaseExtension.changeDecisionInstanceEvaluationDate(lastEvaluationDateFilter, lastEvaluationDateFilter);
     String decisionInstanceId =
-      engineDatabaseExtension.getDecisionInstanceIdsWithEvaluationDateEqualTo(
-        lastEvaluationDateFilter).get(0);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+      engineDatabaseExtension.getDecisionInstanceIdsWithEvaluationDateEqualTo(lastEvaluationDateFilter).get(0);
+    importAllEngineEntitiesFromScratch();
 
     // when
     Response response = exportClient.exportReportAsCsv(reportId, "my_file.csv");
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
 
     String actualContent = getResponseContentAsString(response);
     String stringExpected = getExpectedContentAsString(decisionInstanceId, decisionDefinitionEngineDto, expectedCSV);
 
-    assertThat(actualContent, is(stringExpected));
+    assertThat(actualContent).isEqualTo(stringExpected);
   }
 
   private String getExpectedContentAsString(String decisionInstanceId,
-                                              DecisionDefinitionEngineDto decisionDefinitionEngineDto,
+                                            DecisionDefinitionEngineDto decisionDefinitionEngineDto,
                                             String expectedCSV) {
     String expectedString = FileReaderUtil.readFileWithWindowsLineSeparator(expectedCSV);
     expectedString = expectedString.replace("${DI_ID}", decisionInstanceId);
@@ -89,36 +88,44 @@ public class DecisionExportServiceIT extends AbstractIT {
 
   private static Stream<Arguments> getArguments() {
     return Stream.of(
-      Arguments.of(DecisionReportDataBuilder
-                     .create()
-                     .setDecisionDefinitionKey(FAKE)
-                     .setDecisionDefinitionVersion(FAKE)
-                     .setReportDataType(DecisionReportDataType.RAW_DATA)
-                     .build(),
-                   "/csv/decision/raw_decision_data_grouped_by_none.csv",
-                   "Raw Data Grouped By None"),
-      Arguments.of(DecisionReportDataBuilder.create()
-                     .setDecisionDefinitionKey(FAKE)
-                     .setDecisionDefinitionVersion(FAKE)
-                     .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-                     .setDateInterval(GroupByDateUnit.DAY)
-                     .build(),
-                   "/csv/decision/count_decision_frequency_group_by_evaluation_date.csv",
-                   "Count Decision Frequency grouped by evaluation date"),
-      Arguments.of(DecisionReportDataBuilder.create()
-                     .setDecisionDefinitionKey(FAKE)
-                     .setDecisionDefinitionVersion(FAKE)
-                     .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
-                     .build(),
-                   "/csv/decision/count_decision_frequency_group_by_none.csv",
-                   "Count Decision Frequency grouped by none"),
-      Arguments.of(DecisionReportDataBuilder.create()
-                     .setDecisionDefinitionKey(FAKE)
-                     .setDecisionDefinitionVersion(FAKE)
-                     .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
-                     .build(),
-                   "/csv/decision/count_decision_frequency_group_by_matched_rule.csv",
-                   "Count Decision Frequency grouped by matched rule")
+      Arguments.of(
+        DecisionReportDataBuilder
+          .create()
+          .setDecisionDefinitionKey(FAKE)
+          .setDecisionDefinitionVersion(FAKE)
+          .setReportDataType(DecisionReportDataType.RAW_DATA)
+          .build(),
+        "/csv/decision/raw_decision_data_grouped_by_none.csv",
+        "Raw Data Grouped By None"
+      ),
+      Arguments.of(
+        DecisionReportDataBuilder.create()
+          .setDecisionDefinitionKey(FAKE)
+          .setDecisionDefinitionVersion(FAKE)
+          .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
+          .setDateInterval(GroupByDateUnit.DAY)
+          .build(),
+        "/csv/decision/count_decision_frequency_group_by_evaluation_date.csv",
+        "Count Decision Frequency grouped by evaluation date"
+      ),
+      Arguments.of(
+        DecisionReportDataBuilder.create()
+          .setDecisionDefinitionKey(FAKE)
+          .setDecisionDefinitionVersion(FAKE)
+          .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_NONE)
+          .build(),
+        "/csv/decision/count_decision_frequency_group_by_none.csv",
+        "Count Decision Frequency grouped by none"
+      ),
+      Arguments.of(
+        DecisionReportDataBuilder.create()
+          .setDecisionDefinitionKey(FAKE)
+          .setDecisionDefinitionVersion(FAKE)
+          .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
+          .build(),
+        "/csv/decision/count_decision_frequency_group_by_matched_rule.csv",
+        "Count Decision Frequency grouped by matched rule"
+      )
     );
   }
 }

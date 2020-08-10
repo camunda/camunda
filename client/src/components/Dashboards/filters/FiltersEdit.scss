@@ -1,10 +1,10 @@
 @import 'shared-styles/shared-styles.scss';
 
 .FiltersEdit {
-  border: 1px solid $silver-darken-87;
-  border-radius: 6px;
+  border-top: 1px solid $silver-darken-87;
+  border-bottom: 1px solid $silver-darken-87;
   background-color: $silver-base-97;
-  padding: 15px 13px 4px;
+  padding: 15px 40px 4px 40px;
   margin-bottom: 20px;
 
   h3 {
@@ -28,9 +28,29 @@
       margin-right: 12px;
 
       .ActionItem .content {
+        display: inline-block;
         padding: 0 11px;
-        min-width: 142px;
+        width: 142px;
+        white-space: pre;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        line-height: 32px;
+
+        .variableName {
+          font-weight: bold;
+        }
       }
     }
+  }
+}
+
+.dashboardVariableFilter {
+  .BooleanInput,
+  .DateInput {
+    display: none;
+  }
+
+  .preText {
+    margin-bottom: 22px;
   }
 }

@@ -28,12 +28,24 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.fromTracedEventDto;
+
 @AllArgsConstructor
 public class EventTraceStateService {
   private final EventTraceStateWriter eventTraceStateWriter;
   private final EventTraceStateReader eventTraceStateReader;
   private final EventSequenceCountWriter eventSequenceCountWriter;
   private final EventSequenceCountReader eventSequenceCountReader;
+
+  public List<EventSequenceCountDto> getAllSequenceCounts() {
+    return eventSequenceCountReader.getAllSequenceCounts();
+  }
+
+  public List<EventTraceStateDto> getTracesContainingAtLeastOneEventFromEach(final List<EventTypeDto> startEvents,
+                                                                             final List<EventTypeDto> endEvents,
+                                                                             final int maxResultsSize) {
+    return eventTraceStateReader.getTracesContainingAtLeastOneEventFromEach(startEvents, endEvents, maxResultsSize);
+  }
 
   public void updateTracesAndCountsForEvents(final List<EventDto> eventsToProcess) {
     Map<String, EventTraceStateDto> eventTraceStatesForUpdate = getEventTraceStatesForIds(
@@ -84,9 +96,13 @@ public class EventTraceStateService {
     updateEventSequenceWithAdjustments(adjustmentsToWrite);
   }
 
+  public List<EventTraceStateDto> getTracesWithTraceIdIn(final List<String> traceIds) {
+    return eventTraceStateReader.getTracesWithTraceIdIn(traceIds);
+  }
+
   private void sortTracedEvents(final List<TracedEventDto> eventTrace) {
     eventTrace.sort(Comparator.comparing(TracedEventDto::getTimestamp)
-                    .thenComparing(compareOrderCounters())
+                      .thenComparing(compareOrderCounters())
                       .thenComparing(compareExistingSequenceCounts()));
   }
 
@@ -101,8 +117,8 @@ public class EventTraceStateService {
 
   private Comparator<TracedEventDto> compareExistingSequenceCounts() {
     return (tracedEventA, tracedEventB) -> {
-      final EventTypeDto eventATypeDto = toEventType(tracedEventA);
-      final EventTypeDto eventBTypeDto = toEventType(tracedEventB);
+      final EventTypeDto eventATypeDto = fromTracedEventDto(tracedEventA);
+      final EventTypeDto eventBTypeDto = fromTracedEventDto(tracedEventB);
       final List<EventSequenceCountDto> eventSequencesContainingEventTypes =
         eventSequenceCountReader.getEventSequencesContainingBothEventTypes(eventATypeDto, eventBTypeDto);
       if (eventSequencesContainingEventTypes.isEmpty()) {
@@ -117,14 +133,6 @@ public class EventTraceStateService {
         return 1;
       }
     };
-  }
-
-  private EventTypeDto toEventType(TracedEventDto tracedEventDto) {
-    return EventTypeDto.builder()
-      .eventName(tracedEventDto.getEventName())
-      .source(tracedEventDto.getSource())
-      .group(tracedEventDto.getGroup())
-      .build();
   }
 
   private List<EventTraceStateDto> getEventTraceStatesForIds(List<String> traceIds) {
@@ -240,18 +248,10 @@ public class EventTraceStateService {
   private EventSequenceCountDto createAdjustment(TracedEventDto sourceEvent, TracedEventDto targetEvent) {
     EventSequenceCountDto eventSequenceCountDto = EventSequenceCountDto.builder()
       .sourceEvent(Optional.ofNullable(sourceEvent)
-                     .map(source -> EventTypeDto.builder()
-                       .eventName(sourceEvent.getEventName())
-                       .source(sourceEvent.getSource())
-                       .group(sourceEvent.getGroup())
-                       .build())
+                     .map(source -> fromTracedEventDto(sourceEvent))
                      .orElse(null))
       .targetEvent(Optional.ofNullable(targetEvent)
-                     .map(target -> EventTypeDto.builder()
-                       .eventName(targetEvent.getEventName())
-                       .source(targetEvent.getSource())
-                       .group(targetEvent.getGroup())
-                       .build())
+                     .map(target -> fromTracedEventDto(targetEvent))
                      .orElse(null))
       .build();
     eventSequenceCountDto.generateIdForEventSequenceCountDto();

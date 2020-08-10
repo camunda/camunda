@@ -18,9 +18,7 @@ exports[`should match snapshot 1`] = `
   <Submenu
     label="New Report"
   >
-    <ForwardRef(DropdownOption)
-      link="report/new/edit"
-    >
+    <ForwardRef(DropdownOption)>
       Process Report
     </ForwardRef(DropdownOption)>
     <ForwardRef(DropdownOption)
@@ -52,9 +50,7 @@ exports[`should not show the collection option if it is in a collection 1`] = `
   <Submenu
     label="New Report"
   >
-    <ForwardRef(DropdownOption)
-      link="report/new/edit"
-    >
+    <ForwardRef(DropdownOption)>
       Process Report
     </ForwardRef(DropdownOption)>
     <ForwardRef(DropdownOption)

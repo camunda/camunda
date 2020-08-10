@@ -9,11 +9,9 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.definition.DefinitionWithTenantIdsDto;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Optional;
 
 @AllArgsConstructor
 @Component
@@ -22,37 +20,9 @@ public class ProcessDefinitionReader {
 
   private final DefinitionReader definitionReader;
 
-  public Optional<DefinitionWithTenantIdsDto> getProcessDefinition(final String processDefinitionKey) {
-    return definitionReader.getDefinition(DefinitionType.PROCESS, processDefinitionKey);
-  }
-
-  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionByKeyAndEngineOmitXml(final String processDefinitionKey,
-                                                                                          final String engineAlias) {
-    return definitionReader.getDefinitionByKeyAndEngineOmitXml(
-      DefinitionType.PROCESS,
-      processDefinitionKey,
-      engineAlias
-    );
-  }
-
   public List<ProcessDefinitionOptimizeDto> getProcessDefinitions(final boolean fullyImported,
                                                                   final boolean withXml) {
-    return (List<ProcessDefinitionOptimizeDto>) definitionReader.getDefinitions(
-      DefinitionType.PROCESS,
-      fullyImported,
-      withXml
-    );
-  }
-
-  public Optional<ProcessDefinitionOptimizeDto> getLatestProcessDefinition(final String definitionKey,
-                                                                           final List<String> definitionVersions,
-                                                                           final List<String> tenantIds) {
-    return definitionReader.getDefinitionFromFirstTenantIfAvailable(
-      DefinitionType.PROCESS,
-      definitionKey,
-      definitionVersions,
-      tenantIds
-    );
+    return definitionReader.getDefinitions(DefinitionType.PROCESS, fullyImported, withXml);
   }
 
   public String getLatestVersionToKey(String key) {

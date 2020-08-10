@@ -6,22 +6,27 @@
 package org.camunda.optimize.plugin.adapter.variable;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.RandomUtils;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
+import org.camunda.optimize.service.util.DateFormatterUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -46,8 +51,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variables.put("var3", 1);
     variables.put("var4", 1);
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
@@ -69,8 +73,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variables.put("var3", "bar");
     variables.put("var4", "bar");
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
@@ -87,8 +90,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variables.put("var1", 1);
     variables.put("var2", 1);
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
@@ -105,8 +107,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variables.put("var1", 1);
     variables.put("var2", 1);
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
@@ -122,8 +123,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", 1);
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
@@ -156,8 +156,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("person", complexVariableDto);
     ProcessInstanceEngineDto instanceDto = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(instanceDto);
@@ -178,8 +177,7 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     variables.put("var1", 1);
     variables.put("var2", 1);
     ProcessInstanceEngineDto processInstance = deploySimpleServiceTaskWithVariables(variables);
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     List<ProcessVariableNameResponseDto> variablesResponseDtos = getVariables(processInstance);
@@ -188,6 +186,40 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
     assertThat(variablesResponseDtos).hasSize(2);
   }
 
+  @Test
+  public void variableImportConvertsDateVariableFormats() {
+    // given plugin that replaces date formats with improper date formats
+    addVariableImportPluginBasePackagesToConfiguration("org.camunda.optimize.testplugin.adapter.variable.util7");
+    final String dateVarName = "dateVar";
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(dateVarName, new Date(RandomUtils.nextInt()));
+    // We deploy 7 instances because the plugin tests 7 invalid date formats
+    final ProcessDefinitionEngineDto processDefinitionEngineDto = deploySimpleServiceTaskDefinition();
+    IntStream.range(0, 7)
+      .forEach(defIndex -> engineIntegrationExtension.startProcessInstance(
+        processDefinitionEngineDto.getId(),
+        variables
+      ));
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = variablesClient
+      .getProcessVariableNames(processDefinitionEngineDto.getKey(), processDefinitionEngineDto.getVersionAsString());
+    final List<String> processVariableValues = variablesClient.getProcessVariableValues(
+      processDefinitionEngineDto,
+      dateVarName,
+      VariableType.DATE
+    );
+
+    // then all variables are stored in Optimize
+    assertThat(variablesResponseDtos).hasSize(1);
+    assertThat(processVariableValues)
+      .hasSize(7)
+      .allSatisfy(DateFormatterUtil::isValidOptimizeDateFormat);
+  }
+
+
   private List<ProcessVariableNameResponseDto> getVariables(ProcessInstanceEngineDto instanceDto) {
     return variablesClient
       .getProcessVariableNames(instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion());
@@ -195,21 +227,30 @@ public class VariableImportAdapterPluginIT extends AbstractIT {
 
   private ProcessInstanceEngineDto deploySimpleServiceTaskWithVariables(Map<String, Object> variables)
     throws Exception {
-    // @formatter:off
-    BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
-      .name("aProcessName" + System.currentTimeMillis())
-        .startEvent()
-        .serviceTask()
-          .camundaExpression("${true}")
-        .endEvent()
-      .done();
-    // @formatter:on
+    BpmnModelInstance processModel = simpleServiceModel();
     ProcessInstanceEngineDto procInstance = engineIntegrationExtension.deployAndStartProcessWithVariables(
       processModel,
       variables
     );
     engineIntegrationExtension.waitForAllProcessesToFinish();
     return procInstance;
+  }
+
+  private ProcessDefinitionEngineDto deploySimpleServiceTaskDefinition() {
+    final BpmnModelInstance modelInstance = simpleServiceModel();
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+  }
+
+  private BpmnModelInstance simpleServiceModel() {
+    // @formatter:off
+    return Bpmn.createExecutableProcess("aProcess" + System.currentTimeMillis())
+      .name("aProcessName" + System.currentTimeMillis())
+      .startEvent()
+      .serviceTask()
+      .camundaExpression("${true}")
+      .endEvent()
+      .done();
+    // @formatter:on
   }
 
   private void addVariableImportPluginBasePackagesToConfiguration(String... basePackages) {

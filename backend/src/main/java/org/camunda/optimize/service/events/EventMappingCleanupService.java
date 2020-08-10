@@ -8,12 +8,12 @@ package org.camunda.optimize.service.events;
 import lombok.AllArgsConstructor;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.xml.ModelParseException;
-import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
-import org.camunda.optimize.service.util.BpmnModelUtility;
+import org.camunda.optimize.service.util.BpmnModelUtil;
+import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
@@ -32,11 +32,11 @@ public class EventMappingCleanupService {
     final Set<EventTypeDto> availableEventTypeDtos = eventCountService
       .getEventCounts(userId, null, mapToEventCountRequest(requestDto))
       .stream()
-      .map(this::mapToEventTypeDto)
+      .map(EventDtoBuilderUtil::fromEventCountDto)
       .collect(Collectors.toSet());
 
     final Set<String> currentModelFlowNodeIds =
-      BpmnModelUtility.extractFlowNodeNames(parseXmlIntoBpmnModel(requestDto.getXml()))
+      BpmnModelUtil.extractFlowNodeNames(parseXmlIntoBpmnModel(requestDto.getXml()))
       .keySet();
     return requestDto.getMappings().entrySet()
       .stream()
@@ -48,7 +48,7 @@ public class EventMappingCleanupService {
 
   private BpmnModelInstance parseXmlIntoBpmnModel(final String xmlString) {
     try {
-      return BpmnModelUtility.parseBpmnModel(xmlString);
+      return BpmnModelUtil.parseBpmnModel(xmlString);
     } catch (ModelParseException ex) {
       throw new BadRequestException("The provided xml is not valid");
     }
@@ -60,14 +60,6 @@ public class EventMappingCleanupService {
       .targetFlowNodeId(null)
       .xml(requestDto.getXml())
       .mappings(requestDto.getMappings())
-      .build();
-  }
-
-  private EventTypeDto mapToEventTypeDto(final EventCountDto eventCountDto) {
-    return EventTypeDto.builder()
-      .source(eventCountDto.getSource())
-      .group(eventCountDto.getGroup())
-      .eventName(eventCountDto.getEventName())
       .build();
   }
 

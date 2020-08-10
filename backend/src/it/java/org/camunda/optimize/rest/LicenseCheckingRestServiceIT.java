@@ -9,7 +9,6 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.LicenseInformationDto;
 import org.camunda.optimize.service.license.LicenseManager;
-import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.util.FileReaderUtil;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -24,6 +23,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -35,7 +35,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
   private static final String CUSTOMER_ID = "schrottis inn";
   private static OffsetDateTime VALID_UNTIL;
 
-  private static DateTimeFormatter sdf = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+  private static final DateTimeFormatter sdf = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   @BeforeAll
   public static void init() {
@@ -65,7 +65,7 @@ public class LicenseCheckingRestServiceIT extends AbstractIT {
     // when
     Response response = embeddedOptimizeExtension.getRequestExecutor()
       .withoutAuthentication()
-      .addSingleCookie(AuthCookieService.OPTIMIZE_AUTHORIZATION, "invalid")
+      .addSingleCookie(OPTIMIZE_AUTHORIZATION, "invalid")
       .buildValidateAndStoreLicenseRequest(license)
       .execute();
 

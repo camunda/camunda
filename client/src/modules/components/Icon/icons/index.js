@@ -48,9 +48,12 @@ import {ReactComponent as expand} from './expand.svg';
 import {ReactComponent as alert} from './alert.svg';
 import {ReactComponent as dashboard} from './dashboard.svg';
 import {ReactComponent as dataSource} from './data-source.svg';
+import {ReactComponent as camundaSource} from './camunda-source.svg';
 import {ReactComponent as report} from './report.svg';
 import {ReactComponent as process} from './process.svg';
 import {ReactComponent as filter} from './filter.svg';
+import {ReactComponent as sortArrow} from './sort-arrow.svg';
+import {ReactComponent as sortMenu} from './sort-menu.svg';
 
 const icons = {
   autorefresh,
@@ -100,6 +103,9 @@ const icons = {
   report,
   process,
   filter,
+  'camunda-source': camundaSource,
+  'sort-arrow': sortArrow,
+  'sort-menu': sortMenu,
 };
 
 export default icons;

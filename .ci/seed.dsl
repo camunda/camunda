@@ -93,31 +93,33 @@ def seedJob = job('seed-job-optimize') {
 
 queue(seedJob)
 
-
-multibranchPipelineJob('camunda-optimize') {
-
-  displayName 'Camunda Optimize'
-  description 'MultiBranchJob for Camunda Optimize'
-
-  branchSources {
-    github {
-      id 'optimize-repo'
-      repoOwner githubOrga
-      repository gitRepository
-      scanCredentialsId 'camunda-jenkins-github'
-      excludes 'noci-*'
+// By default, this job is enabled for prod env only.
+if (binding.variables.get("ENVIRONMENT") == "prod") {
+  multibranchPipelineJob('camunda-optimize') {
+  
+    displayName 'Camunda Optimize'
+    description 'MultiBranchJob for Camunda Optimize'
+  
+    branchSources {
+      github {
+        id 'optimize-repo'
+        repoOwner githubOrga
+        repository gitRepository
+        scanCredentialsId 'camunda-jenkins-github'
+        excludes 'noci-*'
+      }
     }
-  }
-
-  orphanedItemStrategy {
-    discardOldItems {
-      daysToKeep(1)
+  
+    orphanedItemStrategy {
+      discardOldItems {
+        daysToKeep(1)
+      }
     }
-  }
-
-  triggers {
-    periodicFolderTrigger {
-      interval('1d')
+  
+    triggers {
+      periodicFolderTrigger {
+        interval('1d')
+      }
     }
   }
 }

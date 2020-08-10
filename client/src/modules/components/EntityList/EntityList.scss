@@ -26,6 +26,14 @@
       margin: 0;
       padding: 18px 0;
       width: 100%;
+
+      .titleBar h1 {
+        font-weight: bold;
+        font-size: 16px;
+        color: initial;
+        line-height: normal;
+        align-self: flex-end;
+      }
     }
   }
 
@@ -40,7 +48,7 @@
     box-shadow: none;
     border-bottom: 1px solid transparent;
     transition: box-shadow 0.2s, border 0.2s;
-    z-index: 100000;
+    z-index: var(--z-above);
 
     .titleBar {
       line-height: 32px;
@@ -53,10 +61,28 @@
         font-weight: normal;
         color: $grey-darken-23;
         margin: 0;
+        flex-grow: 1;
       }
 
       > .action:not(:empty) {
         margin-left: 20px;
+      }
+
+      .sortMenu {
+        width: 32px;
+        height: 32px;
+        margin-left: 20px;
+        margin-top: 2px;
+
+        .activateButton .Icon {
+          font-size: 24px;
+        }
+        .downIcon {
+          display: none;
+        }
+        .menu {
+          margin-top: -6px;
+        }
       }
     }
   }
@@ -75,6 +101,26 @@
       overflow: hidden;
       white-space: nowrap;
       padding-right: 10px;
+
+      &.sortable > span {
+        cursor: pointer;
+      }
+
+      &.sorted {
+        color: $grey-darken-23;
+      }
+
+      .Icon {
+        font-size: 24px;
+        position: absolute;
+        margin-left: 4px;
+        margin-top: -3px;
+        transition: 0.2s transform;
+
+        &.desc {
+          transform: rotate(180deg);
+        }
+      }
     }
 
     .name {
@@ -89,9 +135,17 @@
   ul {
     padding: 0;
     margin: 0 0 20px 0;
+    transition: 0.1s opacity;
+
+    &.isLoading {
+      opacity: 0.34;
+      pointer-events: none;
+    }
   }
 
   .LoadingIndicator {
-    margin-top: 74px;
+    margin-top: 50px;
+    margin-left: calc(50% - 70px);
+    position: absolute;
   }
 }

@@ -7,9 +7,8 @@ package org.camunda.optimize.service.importing.engine.mediator;
 
 
 import org.camunda.optimize.dto.engine.HistoricUserOperationLogDto;
-import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
-import org.camunda.optimize.service.importing.engine.fetcher.instance.UserOperationLogInstanceFetcher;
+import org.camunda.optimize.service.importing.engine.fetcher.instance.UserOperationLogFetcher;
 import org.camunda.optimize.service.importing.engine.handler.UserOperationLogImportIndexHandler;
 import org.camunda.optimize.service.importing.engine.service.UserOperationLogImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -18,7 +17,6 @@ import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -27,19 +25,17 @@ import java.util.List;
 public class UserOperationLogEngineImportMediator
   extends TimestampBasedImportMediator<UserOperationLogImportIndexHandler, HistoricUserOperationLogDto> {
 
-  private UserOperationLogInstanceFetcher engineEntityFetcher;
+  private UserOperationLogFetcher engineEntityFetcher;
 
   public UserOperationLogEngineImportMediator(final UserOperationLogImportIndexHandler importIndexHandler,
-                                              final UserOperationLogInstanceFetcher engineEntityFetcher,
+                                              final UserOperationLogFetcher engineEntityFetcher,
                                               final UserOperationLogImportService importService,
                                               final ConfigurationService configurationService,
-                                              final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
                                               final BackoffCalculator idleBackoffCalculator) {
     this.importIndexHandler = importIndexHandler;
     this.engineEntityFetcher = engineEntityFetcher;
     this.importService = importService;
     this.configurationService = configurationService;
-    this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.idleBackoffCalculator = idleBackoffCalculator;
   }
 

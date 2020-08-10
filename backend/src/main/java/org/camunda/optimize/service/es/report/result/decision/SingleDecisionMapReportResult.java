@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.service.export.CSVUtils;
 
 import javax.validation.constraints.NotNull;
+import java.time.ZoneId;
 import java.util.List;
 
 public class SingleDecisionMapReportResult
@@ -22,7 +23,7 @@ public class SingleDecisionMapReportResult
   }
 
   @Override
-  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset) {
+  public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
     final List<String[]> csvStrings = CSVUtils.map(reportResult.getData(), limit, offset);
 
     final String normalizedCommandKey =

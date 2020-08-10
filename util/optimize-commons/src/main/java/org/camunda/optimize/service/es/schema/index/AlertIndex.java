@@ -5,40 +5,39 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
+import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-
-@Component
 public class AlertIndex extends DefaultIndexMappingCreator {
 
-  public static final int VERSION = 2;
+  public static final int VERSION = 4;
 
-  public static final String ID = "id";
-  public static final String NAME = "name";
-  public static final String LAST_MODIFIED = "lastModified";
-  public static final String CREATED = "created";
-  public static final String OWNER = "owner";
-  public static final String LAST_MODIFIER = "lastModifier";
-  public static final String REPORT_ID = "reportId";
-  public static final String EMAIL = "email";
-  public static final String WEBHOOK = "webhook";
-  public static final String THRESHOLD = "threshold";
-  public static final String THRESHOLD_OPERATOR = "thresholdOperator";
-  public static final String FIX_NOTIFICATION = "fixNotification";
+  public static final String ID = AlertDefinitionDto.Fields.id;
+  public static final String NAME = AlertDefinitionDto.Fields.name;
+  public static final String LAST_MODIFIED = AlertDefinitionDto.Fields.lastModified;
+  public static final String CREATED = AlertDefinitionDto.Fields.created;
+  public static final String OWNER = AlertDefinitionDto.Fields.owner;
+  public static final String LAST_MODIFIER = AlertDefinitionDto.Fields.lastModifier;
+  public static final String REPORT_ID = AlertDefinitionDto.Fields.reportId;
+  public static final String EMAILS = AlertDefinitionDto.Fields.emails;
+  public static final String WEBHOOK = AlertDefinitionDto.Fields.webhook;
+  public static final String THRESHOLD = AlertDefinitionDto.Fields.threshold;
+  public static final String THRESHOLD_OPERATOR = AlertDefinitionDto.Fields.thresholdOperator;
+  public static final String FIX_NOTIFICATION = AlertDefinitionDto.Fields.fixNotification;
 
-  public static final String CHECK_INTERVAL = "checkInterval";
-  public static final String REMINDER_INTERVAL = "reminder";
-  public static final String TRIGGERED = "triggered";
+  public static final String CHECK_INTERVAL = AlertDefinitionDto.Fields.checkInterval;
+  public static final String REMINDER_INTERVAL = AlertDefinitionDto.Fields.reminder;
+  public static final String TRIGGERED = AlertDefinitionDto.Fields.triggered;
 
-  public static final String INTERVAL_VALUE = "value";
-  public static final String INTERVAL_UNIT = "unit";
+  public static final String INTERVAL_VALUE = AlertInterval.Fields.value;
+  public static final String INTERVAL_UNIT = AlertInterval.Fields.unit;
 
   @Override
   public String getIndexName() {
@@ -52,7 +51,8 @@ public class AlertIndex extends DefaultIndexMappingCreator {
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
-    XContentBuilder newBuilder = xContentBuilder
+    // @formatter:off
+    return xContentBuilder
       .startObject(ID)
         .field("type", "keyword")
       .endObject()
@@ -76,7 +76,7 @@ public class AlertIndex extends DefaultIndexMappingCreator {
       .startObject(REPORT_ID)
         .field("type", "keyword")
       .endObject()
-      .startObject(EMAIL)
+      .startObject(EMAILS)
         .field("type", "keyword")
       .endObject()
       .startObject(WEBHOOK)
@@ -89,7 +89,7 @@ public class AlertIndex extends DefaultIndexMappingCreator {
         .field("type", "boolean")
       .endObject()
       .startObject(THRESHOLD)
-        .field("type", "long")
+        .field("type", "double")
       .endObject()
 
       .startObject(TRIGGERED)
@@ -119,8 +119,7 @@ public class AlertIndex extends DefaultIndexMappingCreator {
           .endObject()
         .endObject()
       .endObject();
-
-    return newBuilder;
+    // @formatter:on
   }
 
 }

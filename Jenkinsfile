@@ -1,9 +1,16 @@
 #!/usr/bin/env groovy
 
+// https://github.com/camunda/jenkins-global-shared-library
+@Library('camunda-ci') _
+
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
-boolean slaveDisconnected() {
-  return currentBuild.rawBuild.getLog(10000).join('') ==~ /.*(ChannelClosedException|KubernetesClientException|ClosedChannelException|FlowInterruptedException).*/
+MAVEN_DOCKER_IMAGE = "maven:3.6.3-jdk-8-slim";
+
+static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
+
+static String getCamBpmDockerImage(String camBpmVersion) {
+  return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
 }
 
 String storeNumOfBuilds() {
@@ -14,22 +21,15 @@ String storeNumOfArtifacts() {
   return env.BRANCH_NAME == 'master' ? '5' : '1'
 }
 
-MAVEN_DOCKER_IMAGE = "maven:3.6.1-jdk-8-slim"
-
-def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
-
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 PREV_ES_TEST_VERSION_POM_PROPERTY = "previous.optimize.elasticsearch.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
-
-String getCamBpmDockerImage(String camBpmVersion) {
-  return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
-}
-
 /************************ START OF PIPELINE ***********************/
 
-String basePodSpec(String mavenDockerImage = MAVEN_DOCKER_IMAGE) {
+String basePodSpec(Integer mavenForkCount = 1, Integer mavenCpuLimit = 3, String mavenDockerImage = MAVEN_DOCKER_IMAGE) {
+  // assuming 1Gig for each fork + management overhead
+  String mavenMemoryLimit = mavenCpuLimit + 2;
   return """
 apiVersion: v1
 kind: Pod
@@ -46,7 +46,7 @@ spec:
   volumes:
   - name: cambpm-config
     configMap:
-      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci/deployments/optimize
+      # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci-v2/deployments/optimize
       name: ci-optimize-cambpm-config
   - name: gcloud2postgres
     emptyDir: {}
@@ -77,21 +77,22 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 3
+        value: ${mavenForkCount}
       - name: TZ
         value: Europe/Berlin
     resources:
       limits:
-        cpu: 6
-        memory: 6Gi
+        cpu: ${mavenCpuLimit}
+        memory: ${mavenMemoryLimit}Gi
       requests:
-        cpu: 6
-        memory: 6Gi
+        cpu: ${mavenCpuLimit}
+        memory: ${mavenMemoryLimit}Gi
     """
 }
 
-String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false) {
+String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false, Integer cpuLimit = 2, Integer memoryLimitInGb = 2) {
   String camBpmDockerImage = getCamBpmDockerImage(camBpmVersion)
+  Integer jvmMemory = memoryLimitInGb - 1;
   String additionalEnv = usePostgres ? """
       - name: DB_DRIVER
         value: "org.postgresql.Driver"
@@ -110,17 +111,17 @@ String camBpmContainerSpec(String camBpmVersion, boolean usePostgres = false) {
     tty: true
     env:
       - name: JAVA_OPTS
-        value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m"
+        value: "-Xms${jvmMemory}g -Xmx${jvmMemory}g -XX:MaxMetaspaceSize=256m"
       - name: TZ
         value: Europe/Berlin
 ${additionalEnv}
     resources:
       limits:
-        cpu: 4
-        memory: 3Gi
+        cpu: ${cpuLimit}
+        memory: ${memoryLimitInGb}Gi
       requests:
-        cpu: 4
-        memory: 3Gi
+        cpu: ${cpuLimit}
+        memory: ${memoryLimitInGb}Gi
     volumeMounts:
     - name: cambpm-config
       mountPath: /camunda/conf/tomcat-users.xml
@@ -131,8 +132,9 @@ ${additionalEnv}
     """
 }
 
-String elasticSearchContainerSpec(String esVersion) {
+String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Integer memoryLimitInGb = 4) {
   String httpPort = "9200"
+  Integer jvmMemory = memoryLimitInGb / 2
   return """
   - name: elasticsearch-${httpPort}
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:${esVersion}
@@ -142,11 +144,11 @@ String elasticSearchContainerSpec(String esVersion) {
         add: ["IPC_LOCK", "SYS_RESOURCE"]
     resources:
       limits:
-        cpu: 5
-        memory: 4Gi
+        cpu: ${cpuLimit}
+        memory: ${memoryLimitInGb}Gi
       requests:
-        cpu: 5
-        memory: 4Gi
+        cpu: ${cpuLimit}
+        memory: ${memoryLimitInGb}Gi
     volumeMounts:
     - name: es-snapshot
       mountPath: /var/lib/elasticsearch/snapshots
@@ -156,7 +158,7 @@ String elasticSearchContainerSpec(String esVersion) {
           fieldRef:
             fieldPath: metadata.name
       - name: ES_JAVA_OPTS
-        value: "-Xms2g -Xmx2g"
+        value: "-Xms${jvmMemory}g -Xmx${jvmMemory}g"
       - name: bootstrap.memory_lock
         value: true
       - name: discovery.type
@@ -253,21 +255,27 @@ String gcloudContainerSpec() {
   """
 }
 
-String integrationTestPodSpec(String camBpmVersion, String esVersion, String prevEsVersion) {
-  return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchUpgradeContainerSpec( prevEsVersion)+
-          elasticSearchContainerSpec(esVersion)
+String upgradeTestPodSpec(String camBpmVersion, String esVersion, String prevEsVersion) {
+  return basePodSpec(1, 2) +
+          camBpmContainerSpec(camBpmVersion) +
+          elasticSearchUpgradeContainerSpec(prevEsVersion)+
+          elasticSearchContainerSpec(esVersion, 2, 2)
 }
 
 String itLatestPodSpec(String camBpmVersion, String esVersion) {
-  return basePodSpec() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec(esVersion)
+  return basePodSpec(8, 16) +
+          camBpmContainerSpec(camBpmVersion, false, 6, 4) +
+          elasticSearchContainerSpec(esVersion, 6, 4)
 }
 
 String e2eTestPodSpec(String camBpmVersion, String esVersion) {
   // use Docker image with preinstalled Chrome (large) and install Maven (small)
   // manually for performance reasons
-  return basePodSpec('selenium/node-chrome:3.141.59-xenon') +
-          camBpmContainerSpec(camBpmVersion, true) + elasticSearchContainerSpec(esVersion) +
-          postgresContainerSpec() + gcloudContainerSpec()
+  return basePodSpec(1, 6, 'selenium/node-chrome:3.141.59-xenon') +
+          camBpmContainerSpec(camBpmVersion, true) +
+          elasticSearchContainerSpec(esVersion) +
+          postgresContainerSpec() +
+          gcloudContainerSpec()
 }
 
 pipeline {
@@ -351,7 +359,7 @@ pipeline {
       environment {
         CAM_REGISTRY = credentials('repository-camunda-cloud')
       }
-      failFast true
+      failFast false
       parallel {
         stage('Migration') {
           agent {
@@ -359,7 +367,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-migration_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION, env.PREV_ES_VERSION)
+              yaml upgradeTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION, env.PREV_ES_VERSION)
             }
           }
           steps {
@@ -373,13 +381,13 @@ pipeline {
             }
           }
         }
-        stage('Rolling data upgrade') {
+        stage('Data upgrade test') {
           agent {
             kubernetes {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION, env.PREV_ES_VERSION)
+              yaml upgradeTestPodSpec(env.CAMBPM_VERSION, env.ES_VERSION, env.PREV_ES_VERSION)
             }
           }
           steps {
@@ -449,6 +457,7 @@ pipeline {
             SNAPSHOT = readMavenPom().getVersion().contains('SNAPSHOT')
             IMAGE_TAG = getImageTag()
             GCR_REGISTRY = credentials('docker-registry-ci3')
+            REGISTRY_CAMUNDA_CLOUD = credentials('registry-camunda-cloud')
           }
           steps {
             container('docker') {
@@ -456,6 +465,7 @@ pipeline {
                 sh("""
                 cp \$MAVEN_SETTINGS_XML settings.xml
                 echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
+                echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
 
                 docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
                   --build-arg SKIP_DOWNLOAD=true \
@@ -468,6 +478,9 @@ pipeline {
                 if [ "${env.BRANCH_NAME}" = 'master' ]; then
                   docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} ${PROJECT_DOCKER_IMAGE()}:latest
                   docker push ${PROJECT_DOCKER_IMAGE()}:latest
+
+                  docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} registry.camunda.cloud/team-optimize/optimize:master
+                  docker push registry.camunda.cloud/team-optimize/optimize:master
                 fi
               """)
               }
@@ -482,7 +495,7 @@ pipeline {
     changed {
       // Do not send email if the slave disconnected
       script {
-        if (!slaveDisconnected()){
+        if (!agentDisconnected()){
           buildNotification(currentBuild.result)
         }
       }
@@ -490,7 +503,7 @@ pipeline {
     always {
       // Retrigger the build if the slave disconnected
       script {
-        if (slaveDisconnected()) {
+        if (agentDisconnected()) {
           build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
         }
       }

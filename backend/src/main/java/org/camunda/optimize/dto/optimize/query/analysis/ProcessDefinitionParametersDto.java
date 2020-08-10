@@ -25,10 +25,12 @@ public class ProcessDefinitionParametersDto {
     this.tenantIds = normalizeTenants(tenantIds);
   }
 
+  protected List<String> normalizeNullTenants(List<String> tenantIds) {
+    return tenantIds.stream().map(QueryParamUtil::normalizeNullStringValue).collect(Collectors.toList());
+  }
+
   private List<String> normalizeTenants(List<String> tenantIds) {
-    final List<String> normalizedTenantIds = tenantIds.stream()
-      .map(QueryParamUtil::normalizeNullStringValue)
-      .collect(Collectors.toList());
+    final List<String> normalizedTenantIds = normalizeNullTenants(tenantIds);
     return normalizedTenantIds.isEmpty() ? DEFAULT_TENANT_IDS : normalizedTenantIds;
   }
 

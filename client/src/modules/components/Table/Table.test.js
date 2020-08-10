@@ -7,6 +7,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {Select} from 'components';
+
 import Table from './Table';
 
 function generateData(amount) {
@@ -117,4 +119,10 @@ it('should show empty message', () => {
   const node = shallow(<Table head={['a']} body={[]} />);
 
   expect(node.find('.noData')).toExist();
+});
+
+it('should add a noOverflow classname to tds with Selects', () => {
+  const node = shallow(<Table head={['a']} body={[[<Select />]]} />);
+
+  expect(node.find('td')).toHaveClassName('noOverflow');
 });

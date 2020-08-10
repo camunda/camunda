@@ -1,0 +1,125 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.service.es.report.process.combined;
+
+import com.google.common.collect.ImmutableMap;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
+import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
+import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.junit.jupiter.api.Test;
+
+import javax.ws.rs.core.Response;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
+import static org.camunda.optimize.test.util.ProcessReportDataType.VARIABLE_AGGREGATION_GROUP_BY_NONE;
+
+public class CombinedVariableReportsIT extends AbstractProcessDefinitionIT {
+
+  private static final String TEST_VARIABLE = "var";
+
+  @Test
+  public void combineVariableAggregationReports() {
+    // given
+    Map<String, Object> variables = ImmutableMap.of(TEST_VARIABLE, 1);
+    deployAndStartSimpleProcessWithVariables(variables);
+    String singleReportId1 = createVariableReport();
+    String singleReportId2 = createVariableReport();
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
+      createCombinedReportData(singleReportId1, singleReportId2));
+
+    // then
+    Map<String, AuthorizedProcessReportEvaluationResultDto<NumberResultDto>> resultMap =
+      result.getData();
+    assertThat(resultMap).hasSize(2);
+    assertThat(resultMap.keySet()).contains(singleReportId1, singleReportId2);
+  }
+
+  @Test
+  public void variableAggregationReportIsNotCombinableWithOtherViewReports() {
+    // given
+    Map<String, Object> variables = ImmutableMap.of(TEST_VARIABLE, 1);
+    deployAndStartSimpleProcessWithVariables(variables);
+    String variableReport = createVariableReport();
+    String frequencyReport = createProcessInstanceFrequencyReport();
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final CombinedReportDataDto combinedReportData = createCombinedReportData(variableReport, frequencyReport);
+    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
+    combinedReport.setData(combinedReportData);
+
+    //when
+    Response response = embeddedOptimizeExtension
+      .getRequestExecutor()
+      .buildCreateCombinedReportRequest(combinedReport)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void combineDifferentAggregationTypes() {
+    // given
+    Map<String, Object> variables = ImmutableMap.of(TEST_VARIABLE, 1);
+    deployAndStartSimpleProcessWithVariables(variables);
+    String singleReportId1 = createVariableReport(AggregationType.SUM);
+    String singleReportId2 = createVariableReport(AggregationType.AVERAGE);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    CombinedProcessReportResultDataDto<NumberResultDto> result = reportClient.evaluateUnsavedCombined(
+      createCombinedReportData(singleReportId1, singleReportId2));
+
+    // then
+    assertThat(result.getData()).containsOnlyKeys(singleReportId1, singleReportId2);
+  }
+
+  private String createVariableReport() {
+    return createVariableReport(AggregationType.AVERAGE);
+  }
+
+  private String createVariableReport(final AggregationType aggregationType) {
+    ProcessReportDataDto data = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(TEST_PROCESS)
+      .setProcessDefinitionVersion("1")
+      .setVariableName(TEST_VARIABLE)
+      .setVariableType(VariableType.INTEGER)
+      .setReportDataType(VARIABLE_AGGREGATION_GROUP_BY_NONE)
+      .build();
+    data.getConfiguration().setAggregationType(aggregationType);
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(data);
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
+  }
+
+  private String createProcessInstanceFrequencyReport() {
+    ProcessReportDataDto countFlowNodeFrequencyGroupByFlowNode = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(TEST_PROCESS)
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE)
+      .build();
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
+  }
+}

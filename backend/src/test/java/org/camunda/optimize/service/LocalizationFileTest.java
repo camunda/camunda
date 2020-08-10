@@ -15,8 +15,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class LocalizationFileTest {
 
@@ -41,7 +40,7 @@ public class LocalizationFileTest {
     );
 
     //then
-    assertThat(enKeys, containsInAnyOrder(deKeys.toArray()));
+    assertThat(enKeys).containsExactlyInAnyOrderElementsOf(deKeys);
   }
 
   private List<String> buildQualifiedKeyList(Map<String, Object> jsonMap, List<String> keys, String parentKeyPath) {

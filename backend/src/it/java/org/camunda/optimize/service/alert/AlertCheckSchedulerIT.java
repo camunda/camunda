@@ -50,8 +50,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
   public void reportUpdateToNotNumberRemovesAlert() throws Exception {
     //given
     ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
@@ -121,7 +120,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     setEmailConfiguration();
 
     // when
-    String id = alertClient.createAlert(simpleAlert);
+    alertClient.createAlert(simpleAlert);
 
     // then
     assertThat(greenMail.waitForIncomingEmail(3000, 1), is(true));
@@ -198,8 +197,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
 
     //given
     final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
@@ -233,8 +231,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     //given
 
     final ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     final String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
     final String reportId = createNewProcessReportAsUser(collectionId, processDefinition);
@@ -260,16 +257,6 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
         reportId
       ))
     );
-  }
-
-  private String startProcessAndCreateReport() {
-    ProcessDefinitionEngineDto processDefinition = deployAndStartSimpleServiceTaskProcess();
-
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-
-    String collectionId = collectionClient.createNewCollectionWithProcessScope(processDefinition);
-    return createNewProcessReportAsUser(collectionId, processDefinition);
   }
 
   @Test

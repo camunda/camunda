@@ -15,6 +15,14 @@ const data = [
   {key: '1', value: '20', outlier: false},
 ];
 
+jest.mock('services', () => ({
+  ...jest.requireActual('services'),
+  formatters: {
+    createDurationFormattingOptions: jest.fn(),
+    duration: (val) => 'formatted ' + val,
+  },
+}));
+
 it('should construct a bar Chart with the noda data', () => {
   shallow(<DurationChart data={data} />);
 
@@ -27,4 +35,13 @@ it('should create correct chart options', () => {
   shallow(<DurationChart data={data} />);
 
   expect(Chart.mock.calls[0][1].options).toMatchSnapshot();
+});
+
+it('should format tooltip durations', () => {
+  shallow(<DurationChart data={data} />);
+
+  const durationInMs = 1020;
+  expect(Chart.mock.calls[0][1].options.tooltips.callbacks.label({xLabel: durationInMs})).toContain(
+    'formatted ' + durationInMs
+  );
 });

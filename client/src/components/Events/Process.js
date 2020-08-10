@@ -36,7 +36,11 @@ export default class Process extends React.Component {
         {viewMode === 'edit' ? (
           <ProcessEdit id={id} onSave={(id) => this.setState({redirect: `../${id}/`})} />
         ) : (
-          <ProcessView id={id} onDelete={() => this.setState({redirect: '../'})} />
+          <ProcessView
+            id={id}
+            generated={viewMode === 'generated'}
+            onDelete={() => this.setState({redirect: '../'})}
+          />
         )}
       </div>
     );

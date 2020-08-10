@@ -53,7 +53,6 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractImportMed
         engineContext
       ),
       configurationService,
-      elasticsearchImportJobExecutor,
       new BackoffCalculator(configurationService)
     );
   }

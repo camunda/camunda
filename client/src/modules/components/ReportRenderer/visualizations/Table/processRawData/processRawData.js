@@ -4,11 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import moment from 'moment';
+import {parseISO} from 'date-fns';
 
+import {format} from 'dates';
 import {formatters} from 'services';
-import {sortColumns, cockpitLink, getNoDataMessage} from './service';
 import {t} from 'translation';
+
+import {sortColumns, cockpitLink, getNoDataMessage, isVisibleColumn} from './service';
 
 const {duration} = formatters;
 
@@ -17,7 +19,7 @@ export default function processRawData(
     report: {
       data: {
         configuration: {
-          excludedColumns = [],
+          tableColumns,
           columnOrder = {instanceProps: [], variables: [], inputVariables: [], outputVariables: []},
         },
       },
@@ -26,19 +28,17 @@ export default function processRawData(
   },
   endpoints = {}
 ) {
-  const allColumnsLength =
-    Object.keys(result[0]).length - 1 + Object.keys(result[0].variables).length;
-  // If all columns is excluded return a message to enable one
-  if (allColumnsLength === excludedColumns.length) {
+  const instanceProps = Object.keys(result[0]).filter(
+    (entry) => entry !== 'variables' && isVisibleColumn(entry, tableColumns)
+  );
+  const variableNames = Object.keys(result[0].variables).filter((entry) =>
+    isVisibleColumn('variable:' + entry, tableColumns)
+  );
+
+  // If all columns are excluded return a message to enable one
+  if (instanceProps.length + variableNames.length === 0) {
     return getNoDataMessage();
   }
-
-  const instanceProps = Object.keys(result[0]).filter(
-    (entry) => entry !== 'variables' && !excludedColumns.includes(entry)
-  );
-  const variableNames = Object.keys(result[0].variables).filter(
-    (entry) => !excludedColumns.includes('variable:' + entry)
-  );
 
   const body = result.map((instance) => {
     const row = instanceProps.map((entry) => {
@@ -46,7 +46,7 @@ export default function processRawData(
         return cockpitLink(endpoints, instance, 'process');
       }
       if ((entry === 'startDate' || entry === 'endDate') && instance[entry]) {
-        return moment.parseZone(instance[entry]).format('YYYY-MM-DD HH:mm:ss [UTC]Z');
+        return format(parseISO(instance[entry]), "yyyy-MM-dd HH:mm:ss 'UTC'X");
       }
       if (entry === 'duration') {
         return duration(instance[entry]);

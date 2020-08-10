@@ -8,14 +8,10 @@ package org.camunda.optimize.service.importing.event;
 import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.reader.CamundaActivityEventReader;
 import org.camunda.optimize.service.importing.event.mediator.EventTraceImportMediator;
 import org.camunda.optimize.service.importing.event.mediator.EventTraceImportMediatorFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
-import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
-import org.elasticsearch.client.GetAliasesResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
@@ -23,17 +19,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @AllArgsConstructor
 @Component
 public class EventTraceImportMediatorManager implements ConfigurationReloadable {
 
-  private final OptimizeElasticsearchClient elasticsearchClient;
   private final EventTraceImportMediatorFactory eventTraceImportMediatorFactory;
+  private final CamundaActivityEventReader camundaActivityEventReader;
 
   private final Map<String, EventTraceImportMediator> mediators = new ConcurrentHashMap<>();
 
@@ -54,30 +48,13 @@ public class EventTraceImportMediatorManager implements ConfigurationReloadable 
       key -> eventTraceImportMediatorFactory.createExternalEventTraceImportMediator()
     );
 
-    final Set<String> definitionKeysOfActivityEvents = getDefinitionKeysOfCurrentActivityIndices();
+    final Set<String> definitionKeysOfActivityEvents =
+      camundaActivityEventReader.getIndexSuffixesForCurrentActivityIndices();
     definitionKeysOfActivityEvents
       .stream()
       .filter(definitionKey -> !mediators.containsKey(definitionKey))
-      .forEach(definitionKey -> {
-        mediators.put(
-          definitionKey, eventTraceImportMediatorFactory.createCamundaEventTraceImportMediator(definitionKey)
-        );
-      });
+      .forEach(definitionKey -> mediators.put(
+        definitionKey, eventTraceImportMediatorFactory.createCamundaEventTraceImportMediator(definitionKey)
+      ));
   }
-
-  @SneakyThrows
-  private Set<String> getDefinitionKeysOfCurrentActivityIndices() {
-    final GetAliasesResponse aliases = elasticsearchClient.getAlias(
-      new GetAliasesRequest(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"), RequestOptions.DEFAULT
-    );
-    return aliases.getAliases()
-      .values()
-      .stream()
-      .flatMap(aliasMetaDataPerIndex -> aliasMetaDataPerIndex.stream().map(AliasMetaData::alias))
-      .map(fullAliasName -> fullAliasName.substring(
-        fullAliasName.lastIndexOf(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX) + CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX.length()
-      ))
-      .collect(Collectors.toSet());
-  }
-
 }

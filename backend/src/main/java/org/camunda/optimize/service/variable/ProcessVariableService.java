@@ -56,13 +56,20 @@ public class ProcessVariableService {
   }
 
   public List<ProcessVariableNameResponseDto> getVariableNamesForReports(String userId, List<String> reportIds) {
-    final List<ProcessVariableNameRequestDto> processVariableNameRequestDtos = covertAuthorizedReportsToVariableQuery(
+    final List<ProcessVariableNameRequestDto> processVariableNameRequestDtos = convertAuthorizedReportsToVariableQuery(
       userId,
       reportIds,
       definitionDto -> convertToProcessVariableNameRequest((SingleProcessReportDefinitionDto) definitionDto)
     );
-
     return processVariableReader.getVariableNames(processVariableNameRequestDtos);
+  }
+
+  public List<ProcessVariableNameResponseDto> getVariableNamesForReportDefinitions(List<SingleProcessReportDefinitionDto> definitions) {
+    final List<ProcessVariableNameRequestDto> processVariableNameRequests = definitions.stream()
+      .filter(definition -> definition.getData().getProcessDefinitionKey() != null)
+      .map(this::convertToProcessVariableNameRequest)
+      .collect(Collectors.toList());
+    return processVariableReader.getVariableNames(processVariableNameRequests);
   }
 
   public List<String> getVariableValues(String userId, ProcessVariableValueRequestDto requestDto) {
@@ -86,7 +93,7 @@ public class ProcessVariableService {
     ensureNotEmpty("variable name", requestDto.getName());
     ensureNotEmpty("variable type", requestDto.getType());
 
-    final List<SingleProcessReportDefinitionDto> authorizedReports = covertAuthorizedReportsToVariableQuery(
+    final List<SingleProcessReportDefinitionDto> authorizedReports = convertAuthorizedReportsToVariableQuery(
       userId,
       requestDto.getReportIds(),
       SingleProcessReportDefinitionDto.class::cast
@@ -96,9 +103,9 @@ public class ProcessVariableService {
     );
   }
 
-  private <T> List<T> covertAuthorizedReportsToVariableQuery(final String userId,
-                                                             final List<String> reportIds,
-                                                             final Function<ReportDefinitionDto, T> mappingFunction) {
+  private <T> List<T> convertAuthorizedReportsToVariableQuery(final String userId,
+                                                              final List<String> reportIds,
+                                                              final Function<ReportDefinitionDto, T> mappingFunction) {
     final List<? extends ReportDefinitionDto> allAuthorizedReportsForIds = reportService.getAllAuthorizedReportsForIds(
       userId,
       reportIds

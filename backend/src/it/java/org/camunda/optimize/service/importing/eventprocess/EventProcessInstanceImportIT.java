@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.eventprocess;
 
+import lombok.SneakyThrows;
 import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
@@ -14,6 +15,8 @@ import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceI
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,6 +30,7 @@ import java.util.Map;
 import java.util.function.BiConsumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 
 public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
 
@@ -104,9 +108,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     executeImportCycle();
 
     // then
-    final Map<String, List<AliasMetaData>> eventProcessInstanceIndicesAndAliases =
-      getEventProcessInstanceIndicesWithAliasesFromElasticsearch();
-    assertThat(eventProcessInstanceIndicesAndAliases).hasSize(0);
+    final boolean eventProcessInstanceIndicesExist = eventProcessInstanceIndicesExist();
+    assertThat(eventProcessInstanceIndicesExist).isFalse();
   }
 
   @ParameterizedTest(name = "Only expected instance index is deleted on {0}, other is still present.")
@@ -181,6 +184,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build(),
                     FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
@@ -189,6 +193,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -272,6 +277,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build(),
                     FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
@@ -280,6 +286,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -337,6 +344,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build(),
                     FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
@@ -345,6 +353,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -405,6 +414,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build(),
                     FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
@@ -413,6 +423,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -481,6 +492,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -537,6 +549,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("startEvent")
                       .activityId(BPMN_START_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build(),
                     FlowNodeInstanceDto.builder()
                       .id(ingestedEndEventId)
@@ -545,6 +558,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -594,6 +608,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
                       .durationInMs(0L)
                       .activityType("endEvent")
                       .activityId(BPMN_END_EVENT_ID)
+                      .processInstanceId(processInstanceDto.getProcessInstanceId())
                       .build()
                   )
             );
@@ -638,6 +653,16 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .getIndexNameService()
       .getOptimizeIndexAliasForIndex(indexName);
+  }
+
+  @SneakyThrows
+  private boolean eventProcessInstanceIndicesExist() {
+    final String indexAlias = elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+      .getIndexNameService()
+      .getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX) + "*";
+    return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
+      .getHighLevelClient()
+      .indices().exists(new GetIndexRequest(indexAlias), RequestOptions.DEFAULT);
   }
 
 }

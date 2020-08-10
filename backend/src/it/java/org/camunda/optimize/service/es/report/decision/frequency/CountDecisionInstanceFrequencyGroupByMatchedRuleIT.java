@@ -8,13 +8,13 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.report.FilterOperatorConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
-import org.camunda.optimize.dto.optimize.query.sorting.SortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
@@ -28,8 +28,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_KEY;
-import static org.camunda.optimize.dto.optimize.query.sorting.SortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createNumericInputVariableFilter;
 import static org.camunda.optimize.util.DmnModels.BEVERAGES_RULE_1_ID;
 import static org.camunda.optimize.util.DmnModels.BEVERAGES_RULE_2_ID;
@@ -81,8 +81,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -95,10 +94,10 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
 
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(4));
-    assertThat(result.getEntryForKey(INVOICE_RULE_1_ID).get().getValue(), is(2L));
-    assertThat(result.getEntryForKey(INVOICE_RULE_2_ID).get().getValue(), is(1L));
-    assertThat(result.getEntryForKey(INVOICE_RULE_3_ID).get().getValue(), is(2L));
-    assertThat(result.getEntryForKey(INVOICE_RULE_4_ID).get().getValue(), is(1L));
+    assertThat(result.getEntryForKey(INVOICE_RULE_1_ID).get().getValue(), is(2.));
+    assertThat(result.getEntryForKey(INVOICE_RULE_2_ID).get().getValue(), is(1.));
+    assertThat(result.getEntryForKey(INVOICE_RULE_3_ID).get().getValue(), is(2.));
+    assertThat(result.getEntryForKey(INVOICE_RULE_4_ID).get().getValue(), is(1.));
   }
 
   @Test
@@ -133,8 +132,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     DecisionDefinitionEngineDto decisionDefinitionDto2 = engineIntegrationExtension.deployAndStartDecisionDefinition();
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto2.getId());
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
 
@@ -178,8 +176,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto1.getId(), createInputs(3000.0, "Travel Expenses")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -187,7 +184,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
-    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_KEY, SortOrder.DESC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -229,8 +226,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto1.getId(), createInputs(3000.0, "Travel Expenses")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -238,13 +234,13 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .build();
-    reportData.getConfiguration().setSorting(new SortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(4));
-    final List<Long> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
+    final List<Double> bucketValues = resultData.stream().map(MapResultEntryDto::getValue).collect(Collectors.toList());
     assertThat(
       bucketValues,
       contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
@@ -289,8 +285,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto2.getId(), createInputs(200.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -301,10 +296,10 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     assertThat(result.getInstanceCount(), is(8L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(4));
-    assertThat(result.getEntryForKey(INVOICE_RULE_1_ID).get().getValue(), is(4L));
-    assertThat(result.getEntryForKey(INVOICE_RULE_2_ID).get().getValue(), is(1L));
-    assertThat(result.getEntryForKey(INVOICE_RULE_3_ID).get().getValue(), is(2L));
-    assertThat(result.getEntryForKey(INVOICE_RULE_4_ID).get().getValue(), is(1L));
+    assertThat(result.getEntryForKey(INVOICE_RULE_1_ID).get().getValue(), is(4.));
+    assertThat(result.getEntryForKey(INVOICE_RULE_2_ID).get().getValue(), is(1.));
+    assertThat(result.getEntryForKey(INVOICE_RULE_3_ID).get().getValue(), is(2.));
+    assertThat(result.getEntryForKey(INVOICE_RULE_4_ID).get().getValue(), is(1.));
   }
 
   @Test
@@ -324,8 +319,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto.getId(), createInputs(300.0, "Misc")
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
@@ -333,7 +327,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_MATCHED_RULE)
       .setFilter(createNumericInputVariableFilter(
-        INPUT_AMOUNT_ID, FilterOperatorConstants.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
+        INPUT_AMOUNT_ID, FilterOperator.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
       .build();
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
@@ -344,7 +338,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
     assertThat(resultData.get(0).getKey(), is(INVOICE_RULE_2_ID));
-    assertThat(resultData.get(0).getValue(), is(1L));
+    assertThat(resultData.get(0).getValue(), is(1.));
   }
 
   @Test
@@ -364,8 +358,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto1.getId(), createDishInputs("Winter", 8, false)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -376,8 +369,8 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     assertThat(result.getInstanceCount(), is(3L));
     assertThat(result.getData(), is(notNullValue()));
     assertThat(result.getData().size(), is(2));
-    assertThat(result.getEntryForKey(BEVERAGES_RULE_1_ID).get().getValue(), is(2L));
-    assertThat(result.getEntryForKey(BEVERAGES_RULE_2_ID).get().getValue(), is(1L));
+    assertThat(result.getEntryForKey(BEVERAGES_RULE_1_ID).get().getValue(), is(2.));
+    assertThat(result.getEntryForKey(BEVERAGES_RULE_2_ID).get().getValue(), is(1.));
   }
 
   @Test
@@ -397,8 +390,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       decisionDefinitionDto2.getId(), createDishInputs("Winter", 8, true)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByMatchedRule(
@@ -410,7 +402,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData, is(notNullValue()));
     assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(2L));
+    assertThat(resultData.get(0).getValue(), is(2.));
   }
 
   @Test
@@ -423,8 +415,7 @@ public class CountDecisionInstanceFrequencyGroupByMatchedRuleIT extends Abstract
       Lists.newArrayList(null, tenantId1, tenantId2)
     );
 
-    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    importAllEngineEntitiesFromScratch();
 
     // when
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()

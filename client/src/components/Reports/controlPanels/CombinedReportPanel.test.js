@@ -41,7 +41,14 @@ const singleReportData = {
     type: 'flowNodes',
     value: null,
   },
-  configuration: {},
+  configuration: {
+    groupByDateVariableUnit: 'day',
+    customNumberBucket: {
+      active: true,
+      bucketSize: '10',
+      baseline: '-10',
+    },
+  },
   visualization: 'bar',
 };
 
@@ -78,7 +85,15 @@ const reportsList = [
     combined: false,
     collectionId: null,
     reportType: 'process',
-    data: singleReportData,
+    data: {
+      ...singleReportData,
+      groupBy: {
+        type: 'variable',
+        value: {
+          type: 'Date',
+        },
+      },
+    },
   },
   {
     id: 'reportInAnotherCollection',
@@ -86,7 +101,15 @@ const reportsList = [
     combined: false,
     collectionId: '123',
     reportType: 'process',
-    data: singleReportData,
+    data: {
+      ...singleReportData,
+      groupBy: {
+        type: 'variable',
+        value: {
+          type: 'Integer',
+        },
+      },
+    },
   },
   {
     id: 'flow-node-report',
@@ -104,6 +127,22 @@ const reportsList = [
         value: null,
       },
       visualization: 'heat',
+    },
+  },
+  {
+    id: 'variableViewReport',
+    name: 'Variable View Report',
+    combined: false,
+    collectionId: null,
+    reportType: 'process',
+    data: {
+      ...singleReportData,
+      view: {
+        entity: 'variable',
+        property: {name: 'doubleVar', type: 'Double'},
+      },
+      groupBy: {type: 'none', value: null},
+      visualization: 'number',
     },
   },
 ];
@@ -205,6 +244,106 @@ describe('isCompatible', () => {
     expect(node.instance().isCompatible(reportSameProperty)).toBeFalsy();
   });
 
+  it('should only allow to combine if both reports have the same date variable grouping', async () => {
+    const combinedReport = {
+      ...reportsList[1],
+      result: {
+        ...reportsList[1].result,
+        data: {
+          singleReport: {
+            id: 'singleReport',
+            data: reportsList[2].data,
+          },
+        },
+      },
+    };
+    node.setProps({report: combinedReport});
+    const reportWithDifferentDateConfiguration = {
+      ...reportsList[2],
+      data: {
+        ...reportsList[2].data,
+        configuration: {
+          groupByDateVariableUnit: 'month',
+        },
+      },
+    };
+
+    expect(node.instance().isCompatible(reportWithDifferentDateConfiguration)).toBeFalsy();
+  });
+
+  it('should only allow to combine if both reports have the same number variable grouping', async () => {
+    const combinedReport = {
+      ...reportsList[1],
+      result: {
+        ...reportsList[1].result,
+        data: {
+          singleReport: {
+            id: 'singleReport',
+            data: reportsList[3].data,
+          },
+        },
+      },
+    };
+    node.setProps({report: combinedReport});
+    const reportWithDifferentDateConfiguration = {
+      ...reportsList[3],
+      data: {
+        ...reportsList[3].data,
+        configuration: {
+          customNumberBucket: {
+            active: true,
+            bucketSize: '5',
+            baseline: '0',
+          },
+        },
+      },
+    };
+
+    expect(node.instance().isCompatible(reportWithDifferentDateConfiguration)).toBeFalsy();
+  });
+
+  it('should allow to combine if both reports have variable view', async () => {
+    const referenceReport = reportsList.find(({id}) => id === 'variableViewReport');
+
+    node = await shallow(
+      <CombinedReportPanel
+        {...props}
+        report={{
+          id: 'combinedReport',
+          name: 'Combined Report',
+          combined: true,
+          data: {
+            configuration: {},
+            reports: [{id: 'variableViewReport'}],
+            visualization: 'bar',
+          },
+          result: {
+            data: {
+              variableViewReport: {
+                id: 'variableViewReport',
+                data: referenceReport.data,
+              },
+            },
+          },
+        }}
+      />
+    );
+    await node.update();
+
+    const reportWithDifferentViewVariable = {
+      ...referenceReport,
+      data: {
+        ...referenceReport.data,
+        view: {
+          entity: 'variable',
+          property: {name: 'longVar', type: 'Long'},
+        },
+      },
+    };
+
+    expect(node.instance().isCompatible(reportWithDifferentViewVariable)).toBe(true);
+  });
+
   it('should allow to combined a userTask duration report with a flowNode duration report', async () => {
     const report = {
       ...reportsList[0],
@@ -248,6 +387,62 @@ describe('isCompatible', () => {
         },
         groupBy: {
           type: 'endDate',
+          value: {unit: 'month'},
+        },
+        visualization: 'bar',
+      },
+    };
+    const node = shallow(
+      <CombinedReportPanel
+        {...props}
+        report={{
+          id: 'combinedReport',
+          name: 'Combined Report',
+          combined: true,
+          data: {
+            configuration: {},
+            reports: [{id: '1'}],
+            visualization: 'bar',
+          },
+          result: {
+            data: {
+              '1': report1,
+            },
+          },
+        }}
+      />
+    );
+    expect(node.instance().isCompatible(report2)).toBeTruthy();
+  });
+
+  it('should allow to combine a running date with an start date report', () => {
+    const report1 = {
+      id: '1',
+      data: {
+        processDefinitionKey: 'leadQualification',
+        processDefinitionVersion: '1',
+        view: {
+          entity: 'processInstance',
+          property: 'frequency',
+        },
+        groupBy: {
+          type: 'runningDate',
+          value: {unit: 'month'},
+        },
+        visualization: 'bar',
+      },
+    };
+    const report2 = {
+      id: '2',
+      data: {
+        processDefinitionKey: 'leadQualification',
+        processDefinitionVersion: '2',
+        view: {
+          entity: 'processInstance',
+          property: 'frequency',
+        },
+        groupBy: {
+          type: 'startDate',
           value: {unit: 'month'},
         },
         visualization: 'bar',

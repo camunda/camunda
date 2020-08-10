@@ -29,7 +29,7 @@ public class SecurityRequestHeadersInResponseIT extends AbstractIT {
 
     //when
     Response authResponse = embeddedOptimizeExtension.securedRootTarget()
-      .path("authentication")
+      .path("api/authentication")
       .request()
       .post(Entity.json(entity));
 
@@ -37,6 +37,7 @@ public class SecurityRequestHeadersInResponseIT extends AbstractIT {
     defaultSecurityHeadersAreSet(authResponse);
 
     //then
+    assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     assertThat(authResponse.getHeaderString(STRICT_TRANSPORT_SECURITY)).isNotNull();
   }
 
@@ -46,6 +47,7 @@ public class SecurityRequestHeadersInResponseIT extends AbstractIT {
     Response authResponse = embeddedOptimizeExtension.authenticateUserRequest(DEFAULT_USERNAME, DEFAULT_PASSWORD);
 
     // then
+    assertThat(authResponse.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     defaultSecurityHeadersAreSet(authResponse);
   }
 
