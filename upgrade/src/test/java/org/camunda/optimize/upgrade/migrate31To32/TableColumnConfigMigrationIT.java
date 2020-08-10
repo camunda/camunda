@@ -52,6 +52,7 @@ public class TableColumnConfigMigrationIT extends AbstractUpgrade31IT {
     // then
     final List<TableColumnDto> allTableColumnConfigs = getAllTableColumnConfigs("report-with-exclude-and-include-cols");
     assertThat(allTableColumnConfigs)
+      .isNotEmpty()
       .allMatch(tableColumnDto -> tableColumnDto.equals(expectedTableColumnDto));
   }
 
@@ -72,6 +73,7 @@ public class TableColumnConfigMigrationIT extends AbstractUpgrade31IT {
     // then
     final List<TableColumnDto> allTableColumnConfigs = getAllTableColumnConfigs("report-with-empty-exclude");
     assertThat(allTableColumnConfigs)
+      .isNotEmpty()
       .allMatch(tableColumnDto -> tableColumnDto.equals(expectedTableColumnDto));
   }
 
@@ -92,6 +94,7 @@ public class TableColumnConfigMigrationIT extends AbstractUpgrade31IT {
     // then
     final List<TableColumnDto> allTableColumnConfigs = getAllTableColumnConfigs("report-with-empty-include");
     assertThat(allTableColumnConfigs)
+      .isNotEmpty()
       .allMatch(tableColumnDto -> tableColumnDto.equals(expectedTableColumnDto));
   }
 
@@ -112,6 +115,7 @@ public class TableColumnConfigMigrationIT extends AbstractUpgrade31IT {
     // then
     final List<TableColumnDto> allTableColumnConfigs = getAllTableColumnConfigs("report-with-null-exclude");
     assertThat(allTableColumnConfigs)
+      .isNotEmpty()
       .allMatch(tableColumnDto -> tableColumnDto.equals(expectedTableColumnDto));
   }
 
@@ -132,6 +136,7 @@ public class TableColumnConfigMigrationIT extends AbstractUpgrade31IT {
     // then
     final List<TableColumnDto> allTableColumnConfigs = getAllTableColumnConfigs("report-with-null-include");
     assertThat(allTableColumnConfigs)
+      .isNotEmpty()
       .allMatch(tableColumnDto -> tableColumnDto.equals(expectedTableColumnDto));
   }
 
