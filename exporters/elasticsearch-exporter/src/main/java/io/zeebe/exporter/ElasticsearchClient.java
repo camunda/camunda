@@ -89,7 +89,6 @@ public class ElasticsearchClient {
     bulk(request);
   }
 
-  @SuppressWarnings("unchecked")
   private void checkRecord(final Record<?> record) {
     if (record.getValueType() == ValueType.VARIABLE) {
       checkVariableRecordValue((Record<VariableRecordValue>) record);
@@ -128,6 +127,10 @@ public class ElasticsearchClient {
     if (bulkSize > 0) {
       try {
         metrics.recordBulkSize(bulkSize);
+
+        final var bulkMemorySize = getBulkMemorySize();
+        metrics.recordBulkMemorySize(bulkMemorySize);
+
         final BulkResponse responses = exportBulk();
         success = checkBulkResponses(responses);
       } catch (final IOException e) {
@@ -161,7 +164,12 @@ public class ElasticsearchClient {
   }
 
   public boolean shouldFlush() {
-    return bulkRequest.numberOfActions() >= configuration.bulk.size;
+    return bulkRequest.numberOfActions() >= configuration.bulk.size
+        || getBulkMemorySize() >= configuration.bulk.memoryLimit;
+  }
+
+  private int getBulkMemorySize() {
+    return (int) bulkRequest.estimatedSizeInBytes();
   }
 
   /** @return true if request was acknowledged */
