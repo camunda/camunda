@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker;
 
+import static io.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -36,6 +37,7 @@ public final class SimpleBrokerStartTest {
   public void shouldFailToStartBrokerWithSmallTimeout() {
     // given
     final var brokerCfg = new BrokerCfg();
+    assignSocketAddresses(brokerCfg);
     brokerCfg.setStepTimeout(Duration.ofMillis(1));
 
     final var broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
@@ -65,7 +67,9 @@ public final class SimpleBrokerStartTest {
   public void shouldCallPartitionListenerAfterStart() throws Exception {
     // given
     final var brokerCfg = new BrokerCfg();
+    assignSocketAddresses(brokerCfg);
     final var broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
+
     final var leaderLatch = new CountDownLatch(1);
     broker.addPartitionListener(
         new PartitionListener() {
