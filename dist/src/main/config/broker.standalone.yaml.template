@@ -1,11 +1,7 @@
 # Zeebe Standalone Broker configuration file (with embedded gateway)
 
 # ! ! ! ! ! ! ! ! ! !
-# In order to activate the settings in this file, please choose one of the following ways:
-# a) rename this file to application.yaml
-# b) remove the *.template suffix and
-#      Set the following environment variable: export SPRING_CONFIG_LOCATION='file:./config/broker.standalone.yaml'
-#      Alternatively, you can also pass it as a command line argument: ./bin/broker --spring.config.location=file:./config/broker.standalone.yaml
+# In order to activate the settings in this file, rename this file to application.yaml.
 # ! ! ! ! ! ! ! ! ! !
 
 # Overview -------------------------------------------
