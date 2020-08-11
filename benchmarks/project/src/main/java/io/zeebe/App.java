@@ -15,6 +15,7 @@
  */
 package io.zeebe;
 
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigBeanFactory;
 import com.typesafe.config.ConfigFactory;
@@ -22,7 +23,10 @@ import io.prometheus.client.exporter.HTTPServer;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.Topology;
 import io.zeebe.config.AppCfg;
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.function.Function;
 import me.dinowernli.grpc.prometheus.Configuration;
 import me.dinowernli.grpc.prometheus.MonitoringClientInterceptor;
@@ -75,6 +79,30 @@ abstract class App implements Runnable {
       } catch (Exception e) {
         // retry
       }
+    }
+  }
+
+  protected String readVariables(final String payloadPath) {
+    try {
+      final StringBuilder stringBuilder = new StringBuilder();
+      final var classLoader = App.class.getClassLoader();
+      try (final InputStream variablesStream = classLoader.getResourceAsStream(payloadPath)) {
+        if (variablesStream == null) {
+          throw new IllegalStateException(
+              "Expected to access " + payloadPath + ", but failed to open an input stream.");
+        }
+
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(variablesStream))) {
+          String line;
+          while ((line = br.readLine()) != null) {
+            stringBuilder.append(line).append("\n");
+          }
+        }
+      }
+
+      return stringBuilder.toString();
+    } catch (IOException e) {
+      throw new UncheckedExecutionException(e);
     }
   }
 }

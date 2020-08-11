@@ -15,15 +15,10 @@
  */
 package io.zeebe;
 
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.config.AppCfg;
 import io.zeebe.config.StarterCfg;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
@@ -60,11 +55,10 @@ public class Starter extends App {
     deployWorkflow(client, starterCfg.getBpmnXmlPath());
 
     // start instances
-    final ClassLoader classLoader = getClass().getClassLoader();
     final int intervalMs = Math.floorDiv(1000, rate);
     LOG.info("Creating an instance every {}ms", intervalMs);
 
-    final String variables = readVariables(starterCfg, classLoader);
+    final String variables = readVariables(starterCfg.getPayloadPath());
     executorService.scheduleAtFixedRate(
         () -> {
           try {
@@ -111,32 +105,6 @@ public class Starter extends App {
                   client.close();
                   responseChecker.close();
                 }));
-  }
-
-  private String readVariables(final StarterCfg starterCfg, final ClassLoader classLoader) {
-    try {
-      final StringBuilder stringBuilder = new StringBuilder();
-      try (final InputStream variablesStream =
-          classLoader.getResourceAsStream(starterCfg.getPayloadPath())) {
-        if (variablesStream == null) {
-          throw new IllegalStateException(
-              "Expected to access "
-                  + starterCfg.getPayloadPath()
-                  + ", but failed to open an input stream.");
-        }
-
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(variablesStream))) {
-          String line;
-          while ((line = br.readLine()) != null) {
-            stringBuilder.append(line).append("\n");
-          }
-        }
-      }
-
-      return stringBuilder.toString();
-    } catch (IOException e) {
-      throw new UncheckedExecutionException(e);
-    }
   }
 
   private ZeebeClient createZeebeClient() {
