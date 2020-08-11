@@ -159,7 +159,7 @@ The commit message should match the following pattern:
 Zeebe uses a bot which will check your commit messages when a pull request is
 submitted. Please make sure to address any hints from the bot.
 
-### Contributor License Agreement
+## Contributor License Agreement
 
 You will be asked to sign our Contributor License Agreement when you open a Pull Request. We are not
 asking you to assign copyright to us, but to give us the right to distribute
