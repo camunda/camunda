@@ -98,7 +98,8 @@ class ContainerStateRule extends TestWatcher {
             .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERNAME", "zeebe-cluster")
             .withNetwork(network)
             .withEmbeddedGateway(gatewayVersion == null)
-            .withLogLevel(Level.DEBUG);
+            .withLogLevel(Level.DEBUG)
+            .withDebug(true);
 
     Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> broker.start());
 
