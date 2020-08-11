@@ -43,7 +43,6 @@ import org.camunda.optimize.service.importing.event.EventTraceStateProcessingSch
 import org.camunda.optimize.service.importing.eventprocess.EventBasedProcessesInstanceImportScheduler;
 import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceImportMediatorManager;
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
-import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.telemetry.TelemetryScheduler;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -70,6 +69,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
 /**
@@ -130,8 +131,9 @@ public class EmbeddedOptimizeExtension
       objectMapper = getApplicationContext().getBean(ObjectMapper.class);
       requestExecutor =
         new OptimizeRequestExecutor(
-          getOptimize().target(),
-          getAuthorizationCookieValue(),
+          DEFAULT_USERNAME,
+          DEFAULT_PASSWORD,
+          IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint(),
           objectMapper
         );
       if (isResetImportOnStart()) {
@@ -330,14 +332,6 @@ public class EmbeddedOptimizeExtension
 
   public void refreshAuthenticationToken() {
     getOptimize().refreshAuthenticationToken();
-  }
-
-  private String getAuthenticationToken() {
-    return getOptimize().getAuthenticationToken();
-  }
-
-  private String getAuthorizationCookieValue() {
-    return AuthCookieService.createOptimizeAuthCookieValue(getAuthenticationToken());
   }
 
   public String getNewAuthenticationToken() {

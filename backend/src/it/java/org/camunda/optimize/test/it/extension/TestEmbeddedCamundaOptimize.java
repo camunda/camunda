@@ -215,10 +215,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     }
   }
 
-  public String getAuthenticationToken() {
-    return authenticationToken;
-  }
-
   public Optional<String> getNewAuthenticationToken() {
     return this.authenticateDemoUser();
   }

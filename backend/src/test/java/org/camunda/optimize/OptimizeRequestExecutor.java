@@ -56,8 +56,14 @@ import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.Sorter;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.security.AuthCookieService;
+import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
+import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 
+import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
@@ -100,17 +106,34 @@ public class OptimizeRequestExecutor {
 
   private ObjectMapper objectMapper;
 
-  public OptimizeRequestExecutor(final WebTarget client, final ObjectMapper objectMapper) {
-    this(client, null, objectMapper);
+  public OptimizeRequestExecutor(final String username, final String password, final String restEndpoint) {
+    this.objectMapper = getDefaultObjectMapper();
+    this.client = getOptimizeClient(restEndpoint, objectMapper);
+    String authCookie = authenticateUserRequest(username, password);
+    this.defaultAuthCookie = authCookie;
+    this.authCookie = authCookie;
   }
 
-  public OptimizeRequestExecutor(final WebTarget client,
-                                 final String defaultAuthToken,
-                                 final ObjectMapper objectMapper) {
-    this.client = client;
-    this.authCookie = defaultAuthToken;
-    this.defaultAuthCookie = defaultAuthToken;
+  public OptimizeRequestExecutor(final String username, final String password, final String restEndpoint,
+                                 ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
+    this.client = getOptimizeClient(restEndpoint, objectMapper);
+    String authCookie = authenticateUserRequest(username, password);
+    this.defaultAuthCookie = authCookie;
+    this.authCookie = authCookie;
+  }
+
+  public WebTarget getOptimizeClient(String restEndpoint, ObjectMapper objectMapper) {
+    return ClientBuilder.newClient()
+      .target(restEndpoint)
+      .register(new OptimizeObjectMapperContextResolver(objectMapper));
+  }
+
+  public ObjectMapper getDefaultObjectMapper() {
+    final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
+    return new ObjectMapperFactory(
+      new OptimizeDateTimeFormatterFactory().getObject(), configurationService
+    ).createOptimizeMapper();
   }
 
   public OptimizeRequestExecutor addQueryParams(Map<String, Object> queryParams) {
