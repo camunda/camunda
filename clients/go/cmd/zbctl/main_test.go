@@ -79,7 +79,7 @@ var tests = []struct {
 	},
 	{
 		name:       "deploy workflow",
-		cmd:        "--insecure deploy testdata/model.bpmn",
+		cmd:        "--insecure deploy testdata/model.bpmn testdata/job_model.bpmn --resourceNames=model.bpmn,job.bpmn",
 		goldenFile: "testdata/deploy.golden",
 	},
 	{
