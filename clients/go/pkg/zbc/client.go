@@ -40,7 +40,7 @@ const DefaultKeepAlive = 45 * time.Second
 const InsecureEnvVar = "ZEEBE_INSECURE_CONNECTION"
 const CaCertificatePath = "ZEEBE_CA_CERTIFICATE_PATH"
 const KeepAliveEnvVar = "ZEEBE_KEEP_ALIVE"
-const GatewayAddressVar = "ZEEBE_GATEWAY"
+const GatewayAddressEnvVar = "ZEEBE_ADDRESS"
 
 type ClientImpl struct {
 	gateway             pb.GatewayClient
@@ -171,9 +171,9 @@ func applyClientEnvOverrides(config *ClientConfig) error {
 		config.CaCertificatePath = caCertificatePath
 	}
 
-	if gatewayAddress := env.get(GatewayAddressVar); gatewayAddress != "" {
-	    config.GatewayAddress = gatewayAddress
-    }
+	if gatewayAddress := env.get(GatewayAddressEnvVar); gatewayAddress != "" {
+		config.GatewayAddress = gatewayAddress
+	}
 
 	if val := env.get(KeepAliveEnvVar); val != "" {
 		keepAlive, err := strconv.ParseUint(val, 10, 64)
