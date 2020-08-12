@@ -46,6 +46,7 @@ import java.util.Optional;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.util.DateAggregationService.RANGE_AGGREGATION;
+import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -214,7 +215,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     );
 
     if (VariableType.DATE.equals(getVariableType(context))) {
-      return minMaxStatsService.getMinMaxDateRange(
+      return minMaxStatsService.getMinMaxDateRangeForNestedField(
         context,
         baseQuery,
         getIndexName(),
@@ -223,7 +224,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
         filterQuery
       );
     } else {
-      return minMaxStatsService.getMinMaxNumberRange(
+      return minMaxStatsService.getMinMaxNumberRangeForNestedField(
         context,
         baseQuery,
         getIndexName(),
@@ -304,8 +305,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .getConfiguration()
       .getBaselineForNumberVariableReport();
 
-    if (!range.isPresent()
-      && baselineForSingleReport.isPresent()) {
+    if (!range.isPresent() && baselineForSingleReport.isPresent()) {
       if (baselineForSingleReport.get() > minMaxStats.getMax()) {
         // if report is single report and invalid baseline is set, return empty result
         return Optional.empty();
@@ -315,8 +315,8 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     }
 
     return range.isPresent()
-      ? Optional.of(roundBaselineToNearestPowerOfTen(range.get().getMinimum()))
-      : Optional.of(roundBaselineToNearestPowerOfTen(minMaxStats.getMin()));
+      ? Optional.of(roundDownToNearestPowerOfTen(range.get().getMinimum()))
+      : Optional.of(roundDownToNearestPowerOfTen(minMaxStats.getMin()));
   }
 
   private Double getGroupByNumberVariableUnit(final ExecutionContext<Data> context,
@@ -335,9 +335,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
         (maxVariableValue - baseline)
           / (NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1); // -1 because the end of the loop is
       // inclusive and would otherwise create 81 buckets
-      unit = unit == 0
-        ? 1
-        : roundToNearestPowerOfTen(unit);
+      unit = unit == 0 ? 1 : roundDownToNearestPowerOfTen(unit);
     }
     if (!VariableType.DOUBLE.equals(getVariableType(context))) {
       // round unit up if grouped by number variable without decimal point
@@ -359,27 +357,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private GroupByDateUnit getGroupByDateUnit(final ExecutionContext<Data> context) {
     return context.getReportData().getConfiguration().getGroupByDateVariableUnit();
-  }
-
-  private Double roundBaselineToNearestPowerOfTen(Double baselineToRound) {
-    if (baselineToRound >= 0) {
-      return roundDownToNearestPowerOfTen(baselineToRound);
-    } else {
-      // round up if baseline is negative and apply sign again after rounding
-      return roundUpToNearestPowerOfTen(Math.abs(baselineToRound)) * -1;
-    }
-  }
-
-  private Double roundDownToNearestPowerOfTen(Double numberToRound) {
-    return Math.pow(10, Math.floor(Math.log10(numberToRound)));
-  }
-
-  private Double roundUpToNearestPowerOfTen(Double numberToRound) {
-    return Math.pow(10, Math.ceil(Math.log10(numberToRound)));
-  }
-
-  private Double roundToNearestPowerOfTen(Double numberToRound) {
-    return Math.pow(10, Math.round(Math.log10(numberToRound)));
   }
 
   private boolean isGroupedByNumberVariable(final VariableType varType) {

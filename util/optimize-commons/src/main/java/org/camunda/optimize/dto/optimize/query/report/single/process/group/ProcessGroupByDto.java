@@ -17,6 +17,7 @@ import java.util.Objects;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_ASSIGNEE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_CANDIDATE_GROUP;
+import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_DURATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_END_DATE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_FLOW_NODES_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_NONE_TYPE;
@@ -40,7 +41,8 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_VARIABL
   @JsonSubTypes.Type(value = NoneGroupByDto.class, name = GROUP_BY_NONE_TYPE),
   @JsonSubTypes.Type(value = VariableGroupByDto.class, name = GROUP_BY_VARIABLE_TYPE),
   @JsonSubTypes.Type(value = AssigneeGroupByDto.class, name = GROUP_BY_ASSIGNEE),
-  @JsonSubTypes.Type(value = CandidateGroupGroupByDto.class, name = GROUP_BY_CANDIDATE_GROUP)
+  @JsonSubTypes.Type(value = CandidateGroupGroupByDto.class, name = GROUP_BY_CANDIDATE_GROUP),
+  @JsonSubTypes.Type(value = DurationGroupByDto.class, name = GROUP_BY_DURATION),
 }
 )
 @Data

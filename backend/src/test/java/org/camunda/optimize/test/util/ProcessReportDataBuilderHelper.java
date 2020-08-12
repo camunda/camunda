@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByAssignee;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByCandidateGroup;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByDuration;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByEndDateDto;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByNone;
@@ -51,13 +53,13 @@ public class ProcessReportDataBuilderHelper {
   private ProcessPartDto processPart = null;
 
   public ProcessReportDataDto build() {
-    ProcessGroupByDto groupBy = createGroupBy();
-    ProcessViewDto view = new ProcessViewDto(viewEntity, viewProperty);
+    final ProcessGroupByDto<?> groupBy = createGroupBy();
+    final ProcessViewDto view = new ProcessViewDto(viewEntity, viewProperty);
     if (processPartStart != null && processPartEnd != null) {
       processPart = createProcessPart(processPartStart, processPartEnd);
     }
 
-    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    final ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setProcessDefinitionKey(processDefinitionKey);
     reportData.setProcessDefinitionVersions(processDefinitionVersions);
     reportData.setVisualization(visualization);
@@ -68,10 +70,9 @@ public class ProcessReportDataBuilderHelper {
     return reportData;
   }
 
-  private ProcessGroupByDto createGroupBy() {
+  private ProcessGroupByDto<?> createGroupBy() {
     switch (groupByType) {
       case NONE:
-      default:
         return createGroupByNone();
       case VARIABLE:
         return createGroupByVariable(variableName, variableType);
@@ -89,6 +90,10 @@ public class ProcessReportDataBuilderHelper {
         return createGroupByFlowNode();
       case USER_TASKS:
         return createGroupByUserTasks();
+      case DURATION:
+        return createGroupByDuration();
+      default:
+        throw new OptimizeRuntimeException("Unsupported groupBy value:" + groupByType);
     }
   }
 

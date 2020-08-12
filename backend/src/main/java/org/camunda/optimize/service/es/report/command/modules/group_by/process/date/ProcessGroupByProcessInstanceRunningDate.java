@@ -59,7 +59,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
       DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
         return Optional.of(
-          minMaxStatsService.getMinMaxDateRange(
+          minMaxStatsService.getMinMaxDateRangeForCrossField(
             context,
             baseQuery,
             PROCESS_INSTANCE_INDEX_NAME,
@@ -74,7 +74,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxDateRange(
+    final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxDateRangeForCrossField(
       context,
       searchSourceBuilder.query(),
       PROCESS_INSTANCE_INDEX_NAME,

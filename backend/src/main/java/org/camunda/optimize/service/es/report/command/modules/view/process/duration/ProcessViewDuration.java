@@ -48,7 +48,7 @@ public abstract class ProcessViewDuration extends ProcessViewPart {
   }
 
   private Script getScriptedAggregationField(final ProcessReportDataDto reportData) {
-    return ExecutionStateAggregationUtil.getDurationAggregationScript(
+    return ExecutionStateAggregationUtil.getDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
       getDurationFieldName(reportData),
       getReferenceDateFieldName(reportData)

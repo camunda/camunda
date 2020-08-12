@@ -8,10 +8,10 @@ package org.camunda.optimize.service.es.report.command.process.util;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.AssigneeGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.CandidateGroupGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.DurationGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.EndDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.FlowNodesGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.RunningDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.StartDateGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.UserTasksGroupByDto;
@@ -23,7 +23,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 public class ProcessGroupByDtoCreator {
 
-  public static ProcessGroupByDto<?> createGroupByStartDateDto(GroupByDateUnit dateInterval) {
+  public static StartDateGroupByDto createGroupByStartDateDto(GroupByDateUnit dateInterval) {
     StartDateGroupByDto groupByDto = new StartDateGroupByDto();
     DateGroupByValueDto valueDto = new DateGroupByValueDto();
     valueDto.setUnit(dateInterval);
@@ -32,11 +32,11 @@ public class ProcessGroupByDtoCreator {
     return groupByDto;
   }
 
-  public static ProcessGroupByDto<?> createGroupByStartDateDto() {
+  public static StartDateGroupByDto createGroupByStartDateDto() {
     return createGroupByStartDateDto(null);
   }
 
-  public static ProcessGroupByDto<?> createGroupByEndDateDto(GroupByDateUnit dateInterval) {
+  public static EndDateGroupByDto createGroupByEndDateDto(GroupByDateUnit dateInterval) {
     EndDateGroupByDto groupByDto = new EndDateGroupByDto();
     DateGroupByValueDto valueDto = new DateGroupByValueDto();
     valueDto.setUnit(dateInterval);
@@ -45,11 +45,11 @@ public class ProcessGroupByDtoCreator {
     return groupByDto;
   }
 
-  public static ProcessGroupByDto<?> createGroupByEndDateDto() {
+  public static EndDateGroupByDto createGroupByEndDateDto() {
     return createGroupByEndDateDto(null);
   }
 
-  public static ProcessGroupByDto<?> createGroupByRunningDateDto(GroupByDateUnit dateInterval) {
+  public static RunningDateGroupByDto createGroupByRunningDateDto(GroupByDateUnit dateInterval) {
     RunningDateGroupByDto groupByDto = new RunningDateGroupByDto();
     DateGroupByValueDto valueDto = new DateGroupByValueDto();
     valueDto.setUnit(dateInterval);
@@ -58,31 +58,35 @@ public class ProcessGroupByDtoCreator {
     return groupByDto;
   }
 
-  public static ProcessGroupByDto<?> createGroupByRunningDateDto() {
+  public static RunningDateGroupByDto createGroupByRunningDateDto() {
     return createGroupByRunningDateDto(null);
   }
 
-  public static ProcessGroupByDto<?> createGroupByFlowNode() {
+  public static FlowNodesGroupByDto createGroupByFlowNode() {
     return new FlowNodesGroupByDto();
   }
 
-  public static ProcessGroupByDto<?> createGroupByUserTasks() {
+  public static UserTasksGroupByDto createGroupByUserTasks() {
     return new UserTasksGroupByDto();
   }
 
-  public static ProcessGroupByDto<?> createGroupByAssignee() {
+  public static AssigneeGroupByDto createGroupByAssignee() {
     return new AssigneeGroupByDto();
   }
 
-  public static ProcessGroupByDto<?> createGroupByCandidateGroup() {
+  public static CandidateGroupGroupByDto createGroupByCandidateGroup() {
     return new CandidateGroupGroupByDto();
   }
 
-  public static ProcessGroupByDto<?> createGroupByNone() {
+  public static DurationGroupByDto createGroupByDuration() {
+    return new DurationGroupByDto();
+  }
+
+  public static NoneGroupByDto createGroupByNone() {
     return new NoneGroupByDto();
   }
 
-  public static ProcessGroupByDto<?> createGroupByVariable(String variableName, VariableType variableType) {
+  public static VariableGroupByDto createGroupByVariable(String variableName, VariableType variableType) {
     VariableGroupByValueDto groupByValueDto = new VariableGroupByValueDto();
     groupByValueDto.setName(variableName);
     groupByValueDto.setType(variableType);
@@ -91,7 +95,7 @@ public class ProcessGroupByDtoCreator {
     return groupByDto;
   }
 
-  public static ProcessGroupByDto<?> createGroupByVariable() {
+  public static VariableGroupByDto createGroupByVariable() {
     return createGroupByVariable(null, null);
   }
 }

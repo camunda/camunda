@@ -218,6 +218,16 @@ public class TemplatedProcessReportDataBuilder {
           .variableName(variableName)
           .build();
         break;
+      case COUNT_PROC_INST_FREQ_GROUP_BY_DURATION:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.DURATION)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .build();
+        break;
       case FLOW_NODE_DUR_GROUP_BY_FLOW_NODE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.FLOW_NODE)

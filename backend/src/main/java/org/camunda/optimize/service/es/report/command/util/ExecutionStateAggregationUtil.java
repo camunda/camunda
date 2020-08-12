@@ -42,9 +42,9 @@ public class ExecutionStateAggregationUtil {
     }
   }
 
-  public static Script getDurationAggregationScript(final long currRequestDateInMs,
-                                                    final String durationFieldName,
-                                                    final String referenceDateFieldName) {
+  public static Script getDurationScript(final long currRequestDateInMs,
+                                         final String durationFieldName,
+                                         final String referenceDateFieldName) {
     final Map<String, Object> params = new HashMap<>();
 
     return createDefaultScript(

@@ -432,9 +432,10 @@ public class EngineDatabaseExtension implements Extension {
     changeProcessInstanceStartAndEndDate(processInstanceId, null, endDate);
   }
 
+  @SneakyThrows
   public void changeProcessInstanceStartAndEndDate(String processInstanceId,
                                                    OffsetDateTime startDate,
-                                                   OffsetDateTime endDate) throws SQLException {
+                                                   OffsetDateTime endDate) {
     PreparedStatement statement;
     if (startDate != null) {
       statement = connection.prepareStatement(handleDatabaseSyntax(UPDATE_INSTANCE_START_TIME_SQL));

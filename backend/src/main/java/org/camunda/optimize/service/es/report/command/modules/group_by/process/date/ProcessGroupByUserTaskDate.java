@@ -65,7 +65,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
       final GroupByDateUnit groupByDateUnit = getGroupByDateUnit(context.getReportData());
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDateUnit)) {
         return Optional.of(
-          minMaxStatsService.getMinMaxDateRange(
+          minMaxStatsService.getMinMaxDateRangeForNestedField(
             context,
             baseQuery,
             PROCESS_INSTANCE_INDEX_NAME,
@@ -89,7 +89,7 @@ public abstract class ProcessGroupByUserTaskDate extends GroupByPart<ProcessRepo
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context,
                                                     final GroupByDateUnit unit) {
-    final MinMaxStatDto stats = minMaxStatsService.getMinMaxDateRange(
+    final MinMaxStatDto stats = minMaxStatsService.getMinMaxDateRangeForNestedField(
       context,
       searchSourceBuilder.query(),
       PROCESS_INSTANCE_INDEX_NAME,
