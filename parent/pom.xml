@@ -60,6 +60,7 @@
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
     <version.junit>5.6.2</version.junit>
     <version.junit4>4.13</version.junit4>
+    <version.opentest4j>1.2.0</version.opentest4j>
     <version.log4j>2.13.3</version.log4j>
     <version.mockito>3.4.6</version.mockito>
     <version.mockito-jupiter>2.23.0</version.mockito-jupiter>
@@ -233,7 +234,12 @@
         <groupId>org.mockito</groupId>
         <artifactId>mockito-junit-jupiter</artifactId>
         <version>${version.mockito-jupiter}</version>
-        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opentest4j</groupId>
+        <artifactId>opentest4j</artifactId>
+        <version>${version.opentest4j}</version>
       </dependency>
 
       <dependency>
@@ -1331,10 +1337,12 @@
         <dependency>
           <groupId>org.junit.jupiter</groupId>
           <artifactId>junit-jupiter-engine</artifactId>
+          <scope>test</scope>
         </dependency>
         <dependency>
           <groupId>org.junit.vintage</groupId>
           <artifactId>junit-vintage-engine</artifactId>
+          <scope>test</scope>
         </dependency>
       </dependencies>
       <build>
