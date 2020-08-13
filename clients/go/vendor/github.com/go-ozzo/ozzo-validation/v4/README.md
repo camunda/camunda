@@ -38,8 +38,7 @@ or `validation.ValidateStruct()` to validate the value.
 Run the following command to install the package:
 
 ```
-go get github.com/go-ozzo/ozzo-validation/v4
-go get github.com/go-ozzo/ozzo-validation/v4/is
+go get github.com/go-ozzo/ozzo-validation
 ```
 
 ### Validating a Simple Value
@@ -583,6 +582,7 @@ When performing context-aware validation, if a rule does not implement `validati
 The following rules are provided in the `validation` package:
 
 * `In(...interface{})`: checks if a value can be found in the given list of values.
+* `NotIn(...interface{})`: checks if a value is NOT among the given list of values.
 * `Length(min, max int)`: checks if the length of a value is within the specified range.
   This rule should only be used for validating strings, slices, maps, and arrays.
 * `RuneLength(min, max int)`: checks if the length of a string is within the specified range.
