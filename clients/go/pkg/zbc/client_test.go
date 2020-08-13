@@ -94,6 +94,36 @@ func (s *clientTestSuite) TestInsecureEnvVar() {
 	s.EqualValues(true, config.UsePlaintextConnection)
 }
 
+func (s *clientTestSuite) TestGatewayAddressEnvVar() {
+	// given
+	lis, grpcServer := createServer()
+
+	go grpcServer.Serve(lis)
+	defer func() {
+		grpcServer.Stop()
+		_ = lis.Close()
+	}()
+	parts := strings.Split(lis.Addr().String(), ":")
+
+	// when
+	config := &ClientConfig{
+		UsePlaintextConnection: true,
+		GatewayAddress:         "wrong_address",
+	}
+	env.set(GatewayAddressEnvVar, fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]))
+
+	cli, err := NewClient(config)
+	s.NoError(err)
+
+	_, err = cli.NewTopologyCommand().Send(context.Background())
+
+	// then
+	if errStat, ok := status.FromError(err); ok {
+		s.EqualValues(codes.Unimplemented, errStat.Code())
+	}
+	s.EqualValues(fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]), config.GatewayAddress)
+}
+
 func (s *clientTestSuite) TestCaCertificateEnvVar() {
 	// given
 	lis, grpcServer := createSecureServer()
