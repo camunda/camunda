@@ -22,7 +22,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class CountProcessInstanceFrequencyGroupByNoneCmd extends ProcessCmd<NumberResultDto> {
 
-
   public CountProcessInstanceFrequencyGroupByNoneCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }

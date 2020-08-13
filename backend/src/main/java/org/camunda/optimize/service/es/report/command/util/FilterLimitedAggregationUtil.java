@@ -9,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -29,10 +30,9 @@ public class FilterLimitedAggregationUtil {
     return wrapWithFilterLimitedParentAggregation(FILTER_LIMITED_AGGREGATION, limitFilterQuery, subAggregationToLimit);
   }
 
-  public static FilterAggregationBuilder wrapWithFilterLimitedParentAggregation(
-    final String filterParentAggregationName,
-    final BoolQueryBuilder limitFilterQuery,
-    final AggregationBuilder subAggregationToLimit) {
+  public static FilterAggregationBuilder wrapWithFilterLimitedParentAggregation(final String filterParentAggregationName,
+                                                                                final QueryBuilder limitFilterQuery,
+                                                                                final AggregationBuilder subAggregationToLimit) {
     return AggregationBuilders
       .filter(filterParentAggregationName, limitFilterQuery)
       .subAggregation(subAggregationToLimit);

@@ -206,6 +206,26 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .build();
         break;
+      case FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .build();
+        break;
+      case FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .build();
+        break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
@@ -278,7 +298,7 @@ public class TemplatedProcessReportDataBuilder {
           .dateInterval(dateInterval)
           .build();
         break;
-        case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE_BY_CANDIDATE_GROUP:
+      case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE_BY_CANDIDATE_GROUP:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.FREQUENCY)

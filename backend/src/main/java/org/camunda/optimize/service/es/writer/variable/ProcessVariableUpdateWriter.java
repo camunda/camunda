@@ -76,8 +76,7 @@ public class ProcessVariableUpdateWriter {
       throw new InvalidParameterException("Method called with incorrect instance of DTO.");
     }
     final List<ProcessVariableDto> variablesWithAllInformation =
-      (List<ProcessVariableDto>) (List<?>) processInstanceIdToVariables
-        .getValue();
+      (List<ProcessVariableDto>) (List<?>) processInstanceIdToVariables.getValue();
     final String processInstanceId = processInstanceIdToVariables.getKey();
 
     List<SimpleProcessVariableDto> variables = mapToSimpleVariables(variablesWithAllInformation);

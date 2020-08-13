@@ -44,7 +44,7 @@ import static java.time.temporal.TemporalAdjusters.previousOrSame;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToDateHistogramInterval;
 import static org.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezone;
-import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createUserTaskDateHistogramBucketLimitingFilterFor;
+import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createModelElementDateHistogramBucketLimitingFilterFor;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.extendBoundsAndCreateDecisionDateHistogramBucketLimitingFilterFor;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.extendBoundsAndCreateProcessDateHistogramBucketLimitingFilterFor;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
@@ -77,7 +77,7 @@ public class DateAggregationService {
     return Optional.of(createFilterLimitedProcessDateHistogramWithSubAggregation(context));
   }
 
-  public Optional<AggregationBuilder> createUserTaskDateAggregation(final DateAggregationContext context) {
+  public Optional<AggregationBuilder> createModelElementDateAggregation(final DateAggregationContext context) {
     if (context.getMinMaxStats().isEmpty()) {
       // no instances present
       return Optional.empty();
@@ -86,10 +86,10 @@ public class DateAggregationService {
     if (GroupByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
       return createAutomaticIntervalAggregationOrFallbackToMonth(
         context,
-        this::createFilterLimitedUserTaskDateHistogramWithSubAggregation
+        this::createFilterLimitedModelElementDateHistogramWithSubAggregation
       );
     }
-    return Optional.of(createFilterLimitedUserTaskDateHistogramWithSubAggregation(context));
+    return Optional.of(createFilterLimitedModelElementDateHistogramWithSubAggregation(context));
   }
 
   public Optional<AggregationBuilder> createProcessDateVariableAggregation(final DateAggregationContext context) {
@@ -325,11 +325,11 @@ public class DateAggregationService {
     );
   }
 
-  private AggregationBuilder createFilterLimitedUserTaskDateHistogramWithSubAggregation(final DateAggregationContext context) {
+  private AggregationBuilder createFilterLimitedModelElementDateHistogramWithSubAggregation(final DateAggregationContext context) {
     final DateHistogramAggregationBuilder dateHistogramAggregation = createDateHistogramAggregation(context);
 
     final BoolQueryBuilder limitFilterQuery =
-      createUserTaskDateHistogramBucketLimitingFilterFor(
+      createModelElementDateHistogramBucketLimitingFilterFor(
         context,
         dateTimeFormatter,
         configurationService.getEsAggregationBucketLimit()

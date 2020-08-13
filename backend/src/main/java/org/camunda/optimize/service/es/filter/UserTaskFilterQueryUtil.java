@@ -61,7 +61,7 @@ public class UserTaskFilterQueryUtil {
     return filterBoolQuery;
   }
 
-  public static void addUserTaskIdFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
+  private static void addUserTaskIdFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
                                          final Set<String> userTaskIds) {
     userTaskFilterBoolQuery.filter(QueryBuilders.termsQuery(USER_TASKS + "." + USER_TASK_ACTIVITY_ID, userTaskIds));
   }
@@ -82,16 +82,16 @@ public class UserTaskFilterQueryUtil {
     return userTaskFilterBoolQuery;
   }
 
-  public static final QueryBuilder createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter) {
+  public static QueryBuilder createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter) {
     return createIdentityLinkFilterQuery(assigneeFilter, USER_TASK_ASSIGNEE);
   }
 
-  public static final QueryBuilder createCandidateGroupFilterQuery(final IdentityLinkFilterDataDto candidateGroupFilter) {
+  public static QueryBuilder createCandidateGroupFilterQuery(final IdentityLinkFilterDataDto candidateGroupFilter) {
     return createIdentityLinkFilterQuery(candidateGroupFilter, USER_TASK_CANDIDATE_GROUPS);
   }
 
-  private static final QueryBuilder createIdentityLinkFilterQuery(final IdentityLinkFilterDataDto assigneeFilter,
-                                                                  final String valueField) {
+  private static QueryBuilder createIdentityLinkFilterQuery(final IdentityLinkFilterDataDto assigneeFilter,
+                                                            final String valueField) {
     if (CollectionUtils.isEmpty(assigneeFilter.getValues())) {
       throw new OptimizeValidationException("Filter values are not allowed to be empty.");
     }

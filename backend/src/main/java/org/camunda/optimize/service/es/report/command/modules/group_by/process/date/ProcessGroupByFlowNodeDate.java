@@ -11,26 +11,26 @@ import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
 
-import static org.camunda.optimize.service.es.filter.UserTaskFilterQueryUtil.createUserTaskAggregationFilter;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 
 @Slf4j
-public abstract class ProcessGroupByUserTaskDate extends AbstractProcessGroupByModelElementDate {
+public abstract class ProcessGroupByFlowNodeDate extends AbstractProcessGroupByModelElementDate {
 
-  ProcessGroupByUserTaskDate(final DateAggregationService dateAggregationService,
+  ProcessGroupByFlowNodeDate(final DateAggregationService dateAggregationService,
                              final MinMaxStatsService minMaxStatsService) {
     super(dateAggregationService, minMaxStatsService);
   }
 
   @Override
   protected QueryBuilder getFilterQuery(final ExecutionContext<ProcessReportDataDto> context) {
-    return createUserTaskAggregationFilter(context.getReportData());
+    return QueryBuilders.matchAllQuery();
   }
 
   @Override
   protected String getPathToElementField() {
-    return USER_TASKS;
+    return EVENTS;
   }
 
 }

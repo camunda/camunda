@@ -65,7 +65,7 @@ public abstract class ReportEvaluationHandler {
         evaluationInfo.getReport().getName()
       )));
     final ReportEvaluationResult result;
-    if (!evaluationInfo.getReport().getCombined()) {
+    if (Boolean.FALSE.equals(evaluationInfo.getReport().getCombined())) {
       result = evaluateSingleReportWithErrorCheck(evaluationInfo, currentUserRole);
     } else {
       result = evaluateCombinedReport(evaluationInfo, currentUserRole);

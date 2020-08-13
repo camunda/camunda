@@ -152,9 +152,10 @@ public class EngineDatabaseExtension implements Extension {
     connection.commit();
   }
 
+  @SneakyThrows
   public void changeActivityInstanceStartDate(String processInstanceId,
                                               String activityId,
-                                              OffsetDateTime startDate) throws SQLException {
+                                              OffsetDateTime startDate) {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET START_TIME_ = ? WHERE " +
       "PROC_INST_ID_ = ?" +
@@ -182,7 +183,7 @@ public class EngineDatabaseExtension implements Extension {
 
   @SneakyThrows
   public void changeActivityInstanceStartDateForProcessDefinition(final String processDefinitionId,
-                                                                  final OffsetDateTime startDate)  {
+                                                                  final OffsetDateTime startDate) {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET START_TIME_ = ? WHERE " +
       "PROC_DEF_ID_ = ?";
@@ -219,9 +220,10 @@ public class EngineDatabaseExtension implements Extension {
     connection.commit();
   }
 
+  @SneakyThrows
   public void changeActivityInstanceEndDate(String processInstanceId,
                                             String activityId,
-                                            OffsetDateTime endDate) throws SQLException {
+                                            OffsetDateTime endDate) {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET END_TIME_ = ? WHERE " +
       "PROC_INST_ID_ = ?" +

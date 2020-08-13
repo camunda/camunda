@@ -27,11 +27,13 @@ public abstract class ProcessCmd<R extends ProcessReportResultDto>
 
   protected abstract ProcessReportCmdExecutionPlan<R> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder);
 
+  @Override
   public Optional<MinMaxStatDto> retrieveStatsForCombinedAutomaticGroupByDate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     ExecutionContext<ProcessReportDataDto> executionContext = new ExecutionContext<>(commandContext);
     return executionPlan.calculateDateRangeForAutomaticGroupByDate(executionContext);
   }
 
+  @Override
   public Optional<MinMaxStatDto> retrieveStatsForCombinedGroupByNumberVariable(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     ExecutionContext<ProcessReportDataDto> executionContext = new ExecutionContext<>(commandContext);
     return executionPlan.calculateNumberRangeForGroupByNumberVariable(executionContext);
