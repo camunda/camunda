@@ -29,14 +29,13 @@ import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
+import com.esotericsoftware.minlog.Log;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
-import io.atomix.utils.config.ConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import org.apache.commons.lang3.tuple.Pair;
@@ -78,13 +77,8 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
   private final boolean registrationRequired;
   private final String friendlyName;
 
-  public NamespaceImpl(final NamespaceConfig config) {
-    this(
-        buildRegistrationBlocks(config),
-        Thread.currentThread().getContextClassLoader(),
-        config.isRegistrationRequired(),
-        config.isCompatible(),
-        config.getName());
+  static {
+    Log.NONE();
   }
 
   /**
@@ -95,7 +89,7 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
    * @param compatible whether compatible serialization is enabled
    * @param friendlyName friendly name for the namespace
    */
-  private NamespaceImpl(
+  public NamespaceImpl(
       final List<RegistrationBlock> registeredTypes,
       final ClassLoader classLoader,
       final boolean registrationRequired,
@@ -106,33 +100,6 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
     this.classLoader = classLoader;
     this.compatible = compatible;
     this.friendlyName = checkNotNull(friendlyName);
-  }
-
-  @SuppressWarnings("unchecked")
-  private static List<RegistrationBlock> buildRegistrationBlocks(final NamespaceConfig config) {
-    final List<Pair<Class<?>[], Serializer<?>>> types = new ArrayList<>();
-    final List<RegistrationBlock> blocks = new ArrayList<>();
-    blocks.addAll(Namespaces.BASIC.registeredBlocks);
-    for (final NamespaceTypeConfig type : config.getTypes()) {
-      try {
-        if (type.getId() == null) {
-          types.add(
-              Pair.of(
-                  new Class[] {type.getType()},
-                  type.getSerializer() != null ? type.getSerializer().newInstance() : null));
-        } else {
-          blocks.add(
-              new RegistrationBlock(
-                  type.getId(),
-                  Collections.singletonList(
-                      Pair.of(new Class[] {type.getType()}, type.getSerializer().newInstance()))));
-        }
-      } catch (final InstantiationException | IllegalAccessException e) {
-        throw new ConfigurationException("Failed to instantiate serializer from configuration", e);
-      }
-    }
-    blocks.add(new RegistrationBlock(FLOATING_ID, types));
-    return blocks;
   }
 
   /**
