@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.upgrade.main;
 
-import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
@@ -42,7 +41,7 @@ public class TestUpgradeProcedure extends UpgradeProcedure {
   }
 
   public void setMetadataVersionInElasticSearch(String version) {
-    upgradeDependencies.getMetadataService().writeMetadata(upgradeDependencies.getEsClient(), new MetadataDto(version));
+    upgradeDependencies.getMetadataService().upsertMetadata(upgradeDependencies.getEsClient(), version);
   }
 
 }

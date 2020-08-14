@@ -122,7 +122,7 @@ public class ElasticSearchSchemaManager {
     } else {
       updateAllMappingsAndDynamicSettings(esClient);
     }
-    metadataService.initMetadataVersionIfMissing(esClient);
+    metadataService.initMetadataIfMissing(esClient);
   }
 
   public void addMapping(IndexMappingCreator mapping) {

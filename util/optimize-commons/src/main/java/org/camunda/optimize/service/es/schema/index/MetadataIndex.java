@@ -5,19 +5,19 @@
  */
 package org.camunda.optimize.service.es.schema.index;
 
+import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE_SCHEMA_VERSION;
-
 public class MetadataIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 3;
 
-  public static final String SCHEMA_VERSION = METADATA_TYPE_SCHEMA_VERSION;
+  public static final String SCHEMA_VERSION = MetadataDto.Fields.schemaVersion.name();
+  public static final String INSTALLATION_ID = MetadataDto.Fields.installationId.name();
 
   @Override
   public String getIndexName() {
@@ -35,6 +35,9 @@ public class MetadataIndex extends DefaultIndexMappingCreator {
     // @formatter:off
     return xContentBuilder
       .startObject(SCHEMA_VERSION)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(INSTALLATION_ID)
         .field("type", "keyword")
       .endObject();
     // @formatter:on

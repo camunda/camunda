@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.schema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
@@ -13,20 +14,26 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
 import org.elasticsearch.ElasticsearchException;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
+import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 
 @RequiredArgsConstructor
@@ -35,16 +42,21 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 public class ElasticsearchMetadataService {
 
   private static final String ID = "1";
-  private static final String ERROR_MESSAGE_ES_REQUEST = "Could not write Optimize version to Elasticsearch.";
+  private static final String ERROR_MESSAGE_ES_REQUEST = "Could not write Optimize metadata (version and " +
+    "installationID) to Elasticsearch.";
 
   private static final String CURRENT_OPTIMIZE_VERSION = Version.VERSION;
 
   private final ObjectMapper objectMapper;
 
-  public void initMetadataVersionIfMissing(final OptimizeElasticsearchClient esClient) {
-    if (!readMetadata(esClient).isPresent()) {
-      writeMetadata(esClient, new MetadataDto(CURRENT_OPTIMIZE_VERSION));
-    }
+  public void initMetadataIfMissing(final OptimizeElasticsearchClient esClient) {
+    final String newInstallationId = UUID.randomUUID().toString();
+    upsertMetadataWithScript(
+      esClient,
+      CURRENT_OPTIMIZE_VERSION,
+      newInstallationId,
+      createInitInstallationIdScriptIfMissing(newInstallationId)
+    );
   }
 
   public void validateSchemaVersionCompatibility(final OptimizeElasticsearchClient esClient) {
@@ -82,7 +94,7 @@ public class ElasticsearchMetadataService {
           );
           result = Optional.ofNullable(parsed);
         } catch (IOException e) {
-          log.error("can't parse metadata", e);
+          log.error("Can't parse metadata", e);
         }
       } else if (totalHits > 1) {
         throw new OptimizeRuntimeException("Metadata search returned [" + totalHits + "] hits");
@@ -97,20 +109,34 @@ public class ElasticsearchMetadataService {
     return result;
   }
 
-  public void writeMetadata(final OptimizeElasticsearchClient esClient, final MetadataDto metadataDto) {
+  public void upsertMetadata(final OptimizeElasticsearchClient esClient, final String schemaVersion) {
+    final String newInstallationId = UUID.randomUUID().toString();
+    upsertMetadataWithScript(
+      esClient,
+      schemaVersion,
+      newInstallationId,
+      createUpdateMetadataScript(newInstallationId, schemaVersion)
+    );
+  }
+
+  private void upsertMetadataWithScript(final OptimizeElasticsearchClient esClient,
+                                        final String schemaVersion,
+                                        final String newInstallationId,
+                                        final Script updateScript) {
+    final MetadataDto newMetadataIfAbsent = new MetadataDto(schemaVersion, newInstallationId);
+
     try {
-      final String source = objectMapper.writeValueAsString(metadataDto);
+      final UpdateRequest request = new UpdateRequest()
+        .index(METADATA_INDEX_NAME)
+        .id(ID)
+        .script(updateScript)
+        .upsert(objectMapper.writeValueAsString(newMetadataIfAbsent), XContentType.JSON)
+        .setRefreshPolicy(IMMEDIATE)
+        .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
 
-      final IndexRequest request =
-        new IndexRequest(METADATA_INDEX_NAME)
-          .id(ID)
-          .source(source, XContentType.JSON)
-          .setRefreshPolicy(IMMEDIATE);
-
-      final IndexResponse indexResponse = esClient.index(request, RequestOptions.DEFAULT);
-
-      if (!indexResponse.getResult().equals(IndexResponse.Result.CREATED)
-        && !indexResponse.getResult().equals(IndexResponse.Result.UPDATED)) {
+      final UpdateResponse response = esClient.update(request, RequestOptions.DEFAULT);
+      if (!response.getResult().equals(DocWriteResponse.Result.CREATED)
+        && !response.getResult().equals(DocWriteResponse.Result.UPDATED)) {
         log.error(ERROR_MESSAGE_ES_REQUEST);
         throw new OptimizeRuntimeException(ERROR_MESSAGE_ES_REQUEST);
       }
@@ -119,4 +145,48 @@ public class ElasticsearchMetadataService {
       throw new OptimizeRuntimeException(ERROR_MESSAGE_ES_REQUEST, e);
     }
   }
+
+  private Script createUpdateMetadataScript(final String newInstallationId,
+                                            final String newSchemaVersion) {
+    final Map<String, Object> params = ImmutableMap.<String, Object>builder()
+      .put("newInstallationId", newInstallationId)
+      .put("newSchemaVersion", newSchemaVersion)
+      .build();
+
+    //@formatter:off
+    final String scriptString =
+      "ctx._source." + MetadataDto.Fields.schemaVersion.name() + " = params.newSchemaVersion;\n" +
+      "if(ctx._source." + MetadataDto.Fields.installationId.name() + " == null){\n" +
+        "ctx._source." + MetadataDto.Fields.installationId.name() + " = params.newInstallationId;\n" +
+      "}\n";
+    //@formatter:on
+
+    return new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      scriptString,
+      params
+    );
+  }
+
+  private Script createInitInstallationIdScriptIfMissing(final String newInstallationId) {
+    final Map<String, Object> params = ImmutableMap.<String, Object>builder()
+      .put("newInstallationId", newInstallationId)
+      .build();
+
+    //@formatter:off
+    final String scriptString =
+      "if(ctx._source." + MetadataDto.Fields.installationId.name() + " == null){\n" +
+        "ctx._source." + MetadataDto.Fields.installationId.name() + " = params.newInstallationId;\n" +
+      "}\n";
+    //@formatter:on
+
+    return new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      scriptString,
+      params
+    );
+  }
+
 }
