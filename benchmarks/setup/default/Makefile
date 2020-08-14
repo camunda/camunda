@@ -42,7 +42,7 @@ clean-zeebe:
 	-helm uninstall default
 	-kubectl delete -f curator-cronjob.yaml
 	-kubectl delete -f curator-configmap.yaml
-	-kubectl delete pvc -l app=default-zeebe
+	-kubectl delete pvc -l app.kubernetes.io/instance=default
 	-kubectl delete pvc -l app=elasticsearch-master
 
 .PHONY: clean-starter
