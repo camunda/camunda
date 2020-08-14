@@ -13,8 +13,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 public class ElasticMetadataVersionIT extends AbstractIT {
   private static final String SCHEMA_VERSION = "testVersion";
@@ -35,15 +35,11 @@ public class ElasticMetadataVersionIT extends AbstractIT {
       .getVersion();
 
     assertThat(metadataDto)
-      .isPresent()
-      .get()
-      .extracting(MetadataDto::getSchemaVersion)
-      .isEqualTo(expectedVersion);
-    assertThat(metadataDto)
-      .isPresent()
-      .get()
-      .extracting(MetadataDto::getInstallationId)
-      .isNotNull();
+      .isPresent().get()
+      .satisfies(metadata -> {
+        assertThat(metadata.getSchemaVersion()).isEqualTo(expectedVersion);
+        assertThat(metadata.getInstallationId()).isNotNull();
+      });
   }
 
   @Test
@@ -83,8 +79,8 @@ public class ElasticMetadataVersionIT extends AbstractIT {
       embeddedOptimizeExtension.startOptimize();
     } catch (Exception e) {
       // expected
-      assertThat(e.getCause()
-                   .getMessage()).contains("The Elasticsearch Optimize schema version [" + SCHEMA_VERSION + "]");
+      assertThat(e.getCause().getMessage())
+        .contains("The Elasticsearch Optimize schema version [" + SCHEMA_VERSION + "]");
       elasticSearchIntegrationTestExtension.deleteAllOptimizeData();
       embeddedOptimizeExtension.stopOptimize();
       embeddedOptimizeExtension.startOptimize();

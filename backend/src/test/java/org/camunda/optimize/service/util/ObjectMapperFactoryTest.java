@@ -62,7 +62,7 @@ public class ObjectMapperFactoryTest {
       getClass().getResourceAsStream("/test/data/single-process-report-definition-create-request.json"),
       ReportDefinitionDto.class
     );
-    assertThat(reportDefinitionDto.getCombined()).isFalse();
+    assertThat(reportDefinitionDto.isCombined()).isFalse();
     assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.PROCESS);
     assertThat(reportDefinitionDto)
       .isInstanceOf(SingleProcessReportDefinitionDto.class)
@@ -78,7 +78,7 @@ public class ObjectMapperFactoryTest {
       SingleProcessReportDefinitionDto.class
     );
 
-    assertThat(reportDefinitionDto.getCombined()).isFalse();
+    assertThat(reportDefinitionDto.isCombined()).isFalse();
     assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.PROCESS);
     assertThat(reportDefinitionDto)
       .isInstanceOf(SingleProcessReportDefinitionDto.class);
@@ -91,7 +91,7 @@ public class ObjectMapperFactoryTest {
       SingleDecisionReportDefinitionDto.class
     );
 
-    assertThat(reportDefinitionDto.getCombined()).isFalse();
+    assertThat(reportDefinitionDto.isCombined()).isFalse();
     assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.DECISION);
     assertThat(reportDefinitionDto)
       .isInstanceOf(SingleDecisionReportDefinitionDto.class);
@@ -104,7 +104,7 @@ public class ObjectMapperFactoryTest {
       CombinedReportDefinitionDto.class
     );
 
-    assertThat(reportDefinitionDto.getCombined()).isTrue();
+    assertThat(reportDefinitionDto.isCombined()).isTrue();
     assertThat(reportDefinitionDto.getReportType()).isEqualTo(ReportType.PROCESS);
     assertThat(reportDefinitionDto)
       .isInstanceOf(CombinedReportDefinitionDto.class);

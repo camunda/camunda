@@ -169,6 +169,19 @@ public class EngineDatabaseExtension implements Extension {
   }
 
   @SneakyThrows
+  public void changeActivityInstanceStartDates(Map<String, OffsetDateTime> processInstanceIdToEndDate) {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToEndDate.entrySet()) {
+      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
+      statement.setString(2, idToStartDate.getKey());
+      statement.executeUpdate();
+    }
+    connection.commit();
+  }
+
+  @SneakyThrows
   public void changeFirstActivityInstanceStartDate(String activityInstanceId,
                                                    OffsetDateTime startDate) {
     String sql = "UPDATE ACT_HI_ACTINST " +
@@ -233,6 +246,19 @@ public class EngineDatabaseExtension implements Extension {
     statement.setString(2, processInstanceId);
     statement.setString(3, activityId);
     statement.executeUpdate();
+    connection.commit();
+  }
+
+  @SneakyThrows
+  public void changeActivityInstanceEndDates(Map<String, OffsetDateTime> processInstanceIdToEndDate) {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceIdToEndDate.entrySet()) {
+      statement.setTimestamp(1, toLocalTimestampWithoutNanos(idToStartDate.getValue()));
+      statement.setString(2, idToStartDate.getKey());
+      statement.executeUpdate();
+    }
     connection.commit();
   }
 

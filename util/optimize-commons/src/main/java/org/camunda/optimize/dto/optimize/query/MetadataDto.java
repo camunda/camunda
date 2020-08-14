@@ -5,39 +5,22 @@
  */
 package org.camunda.optimize.dto.optimize.query;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
 import java.io.Serializable;
 
 @FieldNameConstants(asEnum = true)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Data
 public class MetadataDto implements OptimizeDto, Serializable {
 
   private String schemaVersion;
   private String installationId;
 
-  protected MetadataDto() {
-  }
-
-  public MetadataDto(final String schemaVersion,
-                     final String installationId) {
-    this.schemaVersion = schemaVersion;
-    this.installationId = installationId;
-  }
-
-  public String getSchemaVersion() {
-    return schemaVersion;
-  }
-
-  public void setSchemaVersion(String schemaVersion) {
-    this.schemaVersion = schemaVersion;
-  }
-
-  public String getInstallationId() {
-    return installationId;
-  }
-
-  public void setInstallationId(String installationId) {
-    this.installationId = installationId;
-  }
 }

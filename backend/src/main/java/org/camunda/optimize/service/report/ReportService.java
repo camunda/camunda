@@ -374,7 +374,7 @@ public class ReportService implements CollectionReferencingService {
 
   private void removeReportAndAssociatedResources(final String reportId, final ReportDefinitionDto reportDefinition) {
     reportRelationService.handleDeleted(reportDefinition);
-    if (reportDefinition.getCombined()) {
+    if (reportDefinition.isCombined()) {
       reportWriter.deleteCombinedReport(reportId);
     } else {
       reportWriter.removeSingleReportFromCombinedReports(reportId);
@@ -430,7 +430,7 @@ public class ReportService implements CollectionReferencingService {
     final String newName = newReportName != null ? newReportName : originalReportDefinition.getName() + " – Copy";
     final String oldCollectionId = originalReportDefinition.getCollectionId();
 
-    if (!originalReportDefinition.getCombined()) {
+    if (!originalReportDefinition.isCombined()) {
       switch (originalReportDefinition.getReportType()) {
         case PROCESS:
           SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
@@ -518,7 +518,7 @@ public class ReportService implements CollectionReferencingService {
 
   private Set<ConflictedItemDto> getConflictedItemsForDeleteReport(ReportDefinitionDto reportDefinition) {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
-    if (!reportDefinition.getCombined()) {
+    if (!reportDefinition.isCombined()) {
       conflictedItems.addAll(
         mapCombinedReportsToConflictingItems(reportReader.findCombinedReportsForSimpleReport(reportDefinition.getId()))
       );
@@ -532,7 +532,7 @@ public class ReportService implements CollectionReferencingService {
       .orElseThrow(() -> new NotFoundException("Was not able to retrieve report with id [" + reportId + "]"
                                                  + "from Elasticsearch. Report does not exist."));
 
-    if (!reportDefinition.getCombined()) {
+    if (!reportDefinition.isCombined()) {
       SingleReportDefinitionDto<?> singleProcessReportDefinitionDto =
         (SingleReportDefinitionDto<?>) reportDefinition;
       ensureCompliesWithCollectionScope(userId, collectionId, singleProcessReportDefinitionDto);

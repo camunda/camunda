@@ -8,7 +8,7 @@ package org.camunda.optimize.service.es.report.process.single.flownode.frequency
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.report.process.single.flownode.ModelElementFrequencyByModelElementDateReportEvaluationIT;
+import org.camunda.optimize.service.es.report.process.single.ModelElementFrequencyByModelElementDateReportEvaluationIT;
 
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;

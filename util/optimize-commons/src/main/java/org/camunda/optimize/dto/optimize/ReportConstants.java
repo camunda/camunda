@@ -70,6 +70,7 @@ public class ReportConstants {
 
   public static final String DISTRIBUTED_BY_NONE = "none";
   public static final String DISTRIBUTED_BY_USER_TASK = "userTask";
+  public static final String DISTRIBUTED_BY_FLOW_NODE = "flowNode";
   public static final String DISTRIBUTED_BY_ASSIGNEE = "assignee";
   public static final String DISTRIBUTED_BY_CANDIDATE_GROUP = "candidateGroup";
 

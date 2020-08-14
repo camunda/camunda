@@ -16,31 +16,31 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessDistributedByUserTask extends ProcessDistributedByModelElement {
+public class ProcessDistributedByFlowNode extends ProcessDistributedByModelElement {
 
-  public ProcessDistributedByUserTask(final ConfigurationService configurationService,
+  public ProcessDistributedByFlowNode(final ConfigurationService configurationService,
                                       final DefinitionService definitionService) {
     super(configurationService, definitionService);
   }
 
   @Override
   protected String getModelElementIdPath() {
-    return USER_TASKS + "." + USER_TASK_ACTIVITY_ID;
+    return EVENTS + "." + ACTIVITY_ID;
   }
 
   @Override
   protected Map<String, String> extractModelElementNames(DefinitionOptimizeDto def) {
-    return ((ProcessDefinitionOptimizeDto) def).getUserTaskNames();
+    return ((ProcessDefinitionOptimizeDto) def).getFlowNodeNames();
   }
 
   @Override
   protected DistributedBy getDistributedBy() {
-    return DistributedBy.USER_TASK;
+    return DistributedBy.FLOW_NODE;
   }
 
 }

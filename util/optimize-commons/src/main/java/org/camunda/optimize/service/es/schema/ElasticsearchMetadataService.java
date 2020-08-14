@@ -156,7 +156,7 @@ public class ElasticsearchMetadataService {
     //@formatter:off
     final String scriptString =
       "ctx._source." + MetadataDto.Fields.schemaVersion.name() + " = params.newSchemaVersion;\n" +
-      "if(ctx._source." + MetadataDto.Fields.installationId.name() + " == null){\n" +
+      "if (ctx._source." + MetadataDto.Fields.installationId.name() + " == null) {\n" +
         "ctx._source." + MetadataDto.Fields.installationId.name() + " = params.newInstallationId;\n" +
       "}\n";
     //@formatter:on
@@ -176,7 +176,7 @@ public class ElasticsearchMetadataService {
 
     //@formatter:off
     final String scriptString =
-      "if(ctx._source." + MetadataDto.Fields.installationId.name() + " == null){\n" +
+      "if (ctx._source." + MetadataDto.Fields.installationId.name() + " == null) {\n" +
         "ctx._source." + MetadataDto.Fields.installationId.name() + " = params.newInstallationId;\n" +
       "}\n";
     //@formatter:on

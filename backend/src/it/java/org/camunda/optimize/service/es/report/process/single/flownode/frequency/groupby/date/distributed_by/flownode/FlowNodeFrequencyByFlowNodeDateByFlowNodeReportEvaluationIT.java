@@ -3,16 +3,13 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.date.distributed_by.usertask;
+package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby.date.distributed_by.flownode;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -32,7 +29,6 @@ import org.camunda.optimize.service.es.report.process.single.ModelElementFrequen
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
@@ -45,21 +41,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
-public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationIT
+public abstract class FlowNodeFrequencyByFlowNodeDateByFlowNodeReportEvaluationIT
   extends ModelElementFrequencyByModelElementDateByModelElementReportEvaluationIT {
 
   @Test
@@ -81,7 +72,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
-    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
@@ -89,7 +80,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .extracting(DateGroupByValueDto.class::cast)
       .extracting(DateGroupByValueDto::getUnit)
       .isEqualTo(GroupByDateUnit.DAY);
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy()).isEqualTo(DistributedBy.USER_TASK);
+    assertThat(resultReportDataDto.getConfiguration().getDistributedBy()).isEqualTo(DistributedBy.FLOW_NODE);
 
     final ReportHyperMapResultDto result = evaluationResponse.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
@@ -99,6 +90,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(localDateTimeToString(startOfToday))
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -130,6 +123,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(localDateTimeToString(startOfToday))
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -139,20 +134,23 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     // @formatter:off
+    final String splittingGatewayId = "splittingGateway";
+    final String mergingGatewayId = "mergingGateway";
+    final String splittingGatewayLabel = "Should we go to task 1?";
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("aProcess")
-      .startEvent()
-      .exclusiveGateway("splittingGateway")
-        .name("Should we go to task 1?")
+      .startEvent(START_EVENT)
+      .exclusiveGateway(splittingGatewayId)
+        .name(splittingGatewayLabel)
         .condition("yes", "${goToTask1}")
         .userTask(USER_TASK_1)
           .name(USER_TASK_1_NAME)
-      .exclusiveGateway("mergingGateway")
-      .endEvent()
-      .moveToNode("splittingGateway")
+      .exclusiveGateway(mergingGatewayId)
+      .endEvent(END_EVENT)
+      .moveToNode(splittingGatewayId)
         .condition("no", "${!goToTask1}")
         .userTask(USER_TASK_2)
           .name(USER_TASK_2_NAME)
-        .connectTo("mergingGateway")
+        .connectTo(mergingGatewayId)
       .done();
     // @formatter:on
     final ProcessDefinitionEngineDto processDefinition =
@@ -174,6 +172,10 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .groupByContains(groupedByDayDateAsString(referenceDate))
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(splittingGatewayId, 1., splittingGatewayLabel)
+        .distributedByContains(mergingGatewayId, 1., mergingGatewayId)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -182,20 +184,16 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
   public void resultIsSortedInDescendingOrder() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
-    changeModelElementDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(1));
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
-    changeModelElementDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(4));
 
     importAllEngineEntitiesFromScratch();
 
@@ -209,17 +207,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -228,20 +226,16 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
-    changeModelElementDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(1));
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
-    changeModelElementDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(4));
 
     importAllEngineEntitiesFromScratch();
 
@@ -256,17 +250,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(END_EVENT, null, END_EVENT)
+        .distributedByContains(START_EVENT, 1., START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(END_EVENT, null, END_EVENT)
+        .distributedByContains(START_EVENT, 1., START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -274,28 +268,23 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
   @Test
   public void testCustomOrderOnResultValueIsApplied() {
     // given
+
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
-    changeModelElementDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(1));
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
-    changeModelElementDate(processInstance2, USER_TASK_2, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(2));
 
     ProcessInstanceEngineDto processInstance3 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance3, USER_TASK_1, referenceDate.minusDays(3));
-    changeModelElementDate(processInstance3, USER_TASK_2, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance3, START_EVENT, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance3, END_EVENT, referenceDate.minusDays(3));
 
     importAllEngineEntitiesFromScratch();
 
@@ -310,14 +299,14 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
+        .distributedByContains(START_EVENT, 1., START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
+        .distributedByContains(START_EVENT, 2., START_EVENT)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -326,20 +315,16 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
   public void multipleBuckets_noFilter_resultLimitedByConfig() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
-    changeModelElementDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(1));
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
-    changeModelElementDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(4));
 
     importAllEngineEntitiesFromScratch();
 
@@ -356,33 +341,29 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
 
   @Test
-  public void userTasksStartedAtSameIntervalAreGroupedTogether() {
+  public void flowNodesStartedAtSameIntervalAreGroupedTogether() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
-    changeModelElementDate(processInstance1, USER_TASK_2, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(2));
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(1));
-    changeModelElementDate(processInstance2, USER_TASK_2, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(2));
 
     importAllEngineEntitiesFromScratch();
 
@@ -396,11 +377,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 2., START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, 2., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, 2., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -409,13 +390,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
   public void emptyIntervalBetweenTwoUserTaskDates() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    ProcessInstanceEngineDto processInstance =
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
+    ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance, USER_TASK_1, referenceDate.minusDays(1));
-    changeModelElementDate(processInstance, USER_TASK_2, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(3));
 
     importAllEngineEntitiesFromScratch();
 
@@ -429,14 +408,14 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -449,7 +428,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
     final int groupingCount = 5;
     OffsetDateTime referenceDate = OffsetDateTime.now();
 
-    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     List<ProcessInstanceEngineDto> processInstanceDtos = IntStream.range(0, groupingCount)
       .mapToObj(i -> {
         ProcessInstanceEngineDto processInstanceEngineDto =
@@ -472,12 +451,14 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCount(groupingCount)
       .processInstanceCountWithoutFilters(groupingCount)
       .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
-      .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME);
+      .distributedByContains(START_EVENT, 1., START_EVENT)
+      .distributedByContains(END_EVENT, 1., END_EVENT);
 
     for (int i = 1; i < groupingCount; i++) {
       groupByAdder = groupByAdder
         .groupByContains(groupedByDateAsString(referenceDate.minus(i, groupByUnitAsChrono), groupByUnitAsChrono))
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME);
+        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, 1., END_EVENT);
     }
     groupByAdder.doAssert(result);
   }
@@ -486,17 +467,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
   public void otherProcessDefinitionsDoNotAffectResult() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition1 = deployOneUserTaskDefinition();
+    ProcessDefinitionEngineDto processDefinition1 = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(1));
 
-    ProcessDefinitionEngineDto processDefinition2 = deployOneUserTaskDefinition();
+    ProcessDefinitionEngineDto processDefinition2 = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(1));
 
     importAllEngineEntitiesFromScratch();
 
@@ -510,7 +491,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -540,130 +522,22 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
         .distributedByContains(USER_TASK_1, 1., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 1., START_EVENT)
+        .distributedByContains(END_EVENT, 1., END_EVENT)
       .doAssert(result);
     // @formatter:on
-  }
-
-  public static Stream<Arguments> assigneeFilterScenarios() {
-    return Stream.of(
-      Arguments.of(
-        IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(USER_TASK_1, null), Tuple.tuple(USER_TASK_2, 1.))
-      ),
-      Arguments.of(
-        IN,
-        new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.))
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_USER},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, null))
-      ),
-      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, Lists.newArrayList())
-    );
-  }
-
-  @ParameterizedTest
-  @MethodSource("assigneeFilterScenarios")
-  @SuppressWarnings("unchecked")
-  public void filterByAssigneeOnlyCountsUserTasksWithThatAssignee(final FilterOperator filterOperator,
-                                                                  final String[] filterValues,
-                                                                  final List<Tuple> expectedResult) {
-    // given
-    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
-    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
-
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
-      .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
-    );
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
-    );
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
-      .filter().assignee().ids(filterValues).operator(filterOperator).add().buildList();
-    reportData.setFilter(inclusiveAssigneeFilter);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData())
-      .flatExtracting(HyperMapResultEntryDto::getValue)
-      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactlyInAnyOrderElementsOf(expectedResult);
-  }
-
-  public static Stream<Arguments> candidateGroupFilterScenarios() {
-    return Stream.of(
-      Arguments.of(
-        IN,
-        new String[]{SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, null), Tuple.tuple(USER_TASK_2, 1.))
-      ),
-      Arguments.of(
-        IN,
-        new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, 1.))
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 1.), Tuple.tuple(USER_TASK_2, null))
-      ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, Lists.newArrayList())
-    );
-  }
-
-  @ParameterizedTest
-  @MethodSource("candidateGroupFilterScenarios")
-  @SuppressWarnings("unchecked")
-  public void filterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final FilterOperator filterOperator,
-                                                                              final String[] filterValues,
-                                                                              final List<Tuple> expectedResult) {
-    // given
-    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
-    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
-
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
-    engineIntegrationExtension.finishAllRunningUserTasks();
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
-      .filter().candidateGroups().ids(filterValues).operator(filterOperator).add().buildList();
-    reportData.setFilter(inclusiveAssigneeFilter);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData())
-      .flatExtracting(HyperMapResultEntryDto::getValue)
-      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
 
   @Test
   public void automaticIntervalSelection_takesAllUserTasksIntoAccount() {
     //given
-    final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    final ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstanceDto1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstanceDto2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstanceDto3 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
     Map<String, OffsetDateTime> updates = new HashMap<>();
     OffsetDateTime startOfToday = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
     updates.put(processInstanceDto1.getId(), startOfToday);
@@ -689,28 +563,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .map(MapResultEntryDto::getValue)
       .filter(Objects::nonNull)
       .mapToInt(Double::intValue).sum();
-    assertThat(sumOfAllValues).isEqualTo(3);
-  }
-
-  @Test
-  public void automaticIntervalSelection_forOneDataPoint() {
-    // given there is only one data point
-    final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then the single data point should be grouped by month
-    final List<HyperMapResultEntryDto> resultData = result.getData();
-    ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
-    String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
-    assertThat(resultData).hasSize(1);
-    assertThat(resultData).first().extracting(HyperMapResultEntryDto::getKey).isEqualTo(nowStrippedToMonthAsString);
+    assertThat(sumOfAllValues).isEqualTo(6);
   }
 
   @Test
@@ -740,6 +593,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 2., START_EVENT)
+        .distributedByContains(END_EVENT, 2., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -774,6 +629,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
         .distributedByContains(USER_TASK_2, 1., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 2., START_EVENT)
+        .distributedByContains(END_EVENT, 2., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -804,6 +661,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
         .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 2., START_EVENT)
+        .distributedByContains(END_EVENT, 2., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -837,6 +696,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByUserTaskReportEvaluationI
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
         .distributedByContains(USER_TASK_1, 2., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 2., START_EVENT)
+        .distributedByContains(END_EVENT, 2., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
