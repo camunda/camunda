@@ -26,8 +26,8 @@ public class CommandContext<T extends ReportDefinitionDto> {
   // a combined report.
   private Range<OffsetDateTime> dateIntervalRange;
 
-  // only used for group by number variable commands when evaluated for a combined report
-  private Range<Double> numberVariableRange;
+  // only used for group by number variable & group by duration commands when evaluated for a combined report
+  private Range<Double> numberIntervalRange;
 
   // users can define which timezone the date data should be based on
   private ZoneId timezone = ZoneId.systemDefault();

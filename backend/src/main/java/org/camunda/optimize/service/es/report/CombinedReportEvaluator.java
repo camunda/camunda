@@ -131,7 +131,7 @@ public class CombinedReportEvaluator {
           Optional<MinMaxStatDto> dateStats = command.retrieveStatsForCombinedAutomaticGroupByDate(commandContext);
           dateStats.ifPresent(dateIntervalCalculator::addStat);
 
-          Optional<MinMaxStatDto> numberStat = command.retrieveStatsForCombinedGroupByNumberVariable(commandContext);
+          Optional<MinMaxStatDto> numberStat = command.retrieveStatsForCombinedGroupByNumber(commandContext);
           numberStat.ifPresent(numberRangeCalculator::addStat);
         }
       );
@@ -141,7 +141,7 @@ public class CombinedReportEvaluator {
     );
     Optional<Range<Double>> numberIntervalForCombinedReport = numberRangeCalculator.calculateInterval();
     numberIntervalForCombinedReport.ifPresent(
-      singleReportEvaluator::setNumberVariableRange
+      singleReportEvaluator::setNumberIntervalRange
     );
   }
 
@@ -171,7 +171,7 @@ public class CombinedReportEvaluator {
     @Setter
     private Range<OffsetDateTime> dateIntervalRange;
     @Setter
-    private Range<Double> numberVariableRange;
+    private Range<Double> numberIntervalRange;
 
     private SingleReportEvaluatorForCombinedReports(SingleReportEvaluator evaluator) {
       super(
@@ -185,7 +185,7 @@ public class CombinedReportEvaluator {
     <T extends ReportDefinitionDto<?>> ReportEvaluationResult<?, T> evaluate(final CommandContext<T> commandContext)
       throws OptimizeException {
       commandContext.setDateIntervalRange(dateIntervalRange);
-      commandContext.setNumberVariableRange(numberVariableRange);
+      commandContext.setNumberIntervalRange(numberIntervalRange);
       return super.evaluate(commandContext);
     }
   }

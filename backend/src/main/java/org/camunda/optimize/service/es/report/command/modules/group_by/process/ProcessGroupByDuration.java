@@ -18,6 +18,7 @@ import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggrega
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
@@ -51,7 +53,9 @@ public class ProcessGroupByDuration extends GroupByPart<ProcessReportDataDto> {
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final MinMaxStatDto minMaxStats = getMinMaxDurationStats(searchSourceBuilder.query());
+    final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForScriptedField(
+      context, searchSourceBuilder.query(), PROCESS_INSTANCE_INDEX_NAME, getDurationScript()
+    );
     if (minMaxStats.isEmpty()) {
       return Collections.emptyList();
     }
@@ -70,6 +74,7 @@ public class ProcessGroupByDuration extends GroupByPart<ProcessReportDataDto> {
       .histogram(DURATION_HISTOGRAM_AGGREGATION)
       .interval(interval)
       .script(getDurationScript())
+      .extendedBounds(minMaxStats.getMin(), minMaxStats.getMax())
       .subAggregation(distributedByPart.createAggregation(context));
 
     return Collections.singletonList(rangeAgg);
@@ -102,7 +107,14 @@ public class ProcessGroupByDuration extends GroupByPart<ProcessReportDataDto> {
     reportData.setGroupBy(new DurationGroupByDto());
   }
 
-  private MinMaxStatDto getMinMaxDurationStats(final QueryBuilder baseQuery) {
+  @Override
+  public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumber(
+    final ExecutionContext<ProcessReportDataDto> context,
+    final BoolQueryBuilder baseQuery) {
+    return Optional.of(retrieveMinMaxDurationStats(baseQuery));
+  }
+
+  private MinMaxStatDto retrieveMinMaxDurationStats(final QueryBuilder baseQuery) {
     return minMaxStatsService.getScriptedMinMaxStats(baseQuery, PROCESS_INSTANCE_INDEX_NAME, getDurationScript());
   }
 

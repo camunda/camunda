@@ -28,9 +28,9 @@ public interface Command<RD extends ReportDefinitionDto<?>> {
     return Optional.empty();
   }
 
-  default Optional<MinMaxStatDto> retrieveStatsForCombinedGroupByNumberVariable(
+  default Optional<MinMaxStatDto> retrieveStatsForCombinedGroupByNumber(
     final CommandContext<SingleProcessReportDefinitionDto> reportDefinitionDto) {
-    // this method is used for *combined* grouped by number variable report
+    // this method is used for *combined* grouped by number reports
     // to calculate what's the total data range. This allows to calculate
     // the same number interval for each single report in the combined report.
     // By default, it's assumed that there is no number range to be calculated.

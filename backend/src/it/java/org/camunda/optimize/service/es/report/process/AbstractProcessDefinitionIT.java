@@ -17,12 +17,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -193,7 +194,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected List<ProcessInstanceEngineDto> startAndEndProcessInstancesWithGivenRuntime(
     final int numberOfInstances,
     final Duration instanceRuntime,
-    final OffsetDateTime startTimeOfFirstInstance) throws SQLException {
+    final OffsetDateTime startTimeOfFirstInstance) {
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(numberOfInstances);
 
     for (int i = 0; i < numberOfInstances; i++) {
@@ -206,6 +207,21 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       );
     }
     return processInstanceDtos;
+  }
+
+  protected ProcessInstanceEngineDto startInstanceAndModifyDuration(final String definitionId,
+                                                                    final int durationInMilliseconds) {
+    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension
+      .startProcessInstance(definitionId);
+    changeProcessInstanceDuration(processInstance, durationInMilliseconds);
+    return processInstance;
+  }
+
+  protected void changeProcessInstanceDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                               final int durationInMilliseconds) {
+    final OffsetDateTime startDate = LocalDateUtil.getCurrentDateTime();
+    final OffsetDateTime endDate = startDate.plus(durationInMilliseconds, ChronoUnit.MILLIS);
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(processInstanceDto.getId(), startDate, endDate);
   }
 
   protected ProcessReportDataDto createReportDataSortedDesc(final String definitionKey,

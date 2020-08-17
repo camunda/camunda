@@ -20,14 +20,12 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
-import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 
@@ -401,21 +399,6 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
         Tuple.tuple(createDurationBucketKey(10), 2.0D),
         Tuple.tuple(createDurationBucketKey(11), 1.0D)
       );
-  }
-
-  private ProcessInstanceEngineDto startInstanceAndModifyDuration(final String definitionId,
-                                                                  final int durationInMilliseconds) {
-    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension
-      .startProcessInstance(definitionId);
-    changeProcessInstanceDuration(processInstance, durationInMilliseconds);
-    return processInstance;
-  }
-
-  private void changeProcessInstanceDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                             final int durationInMilliseconds) {
-    final OffsetDateTime startDate = LocalDateUtil.getCurrentDateTime();
-    final OffsetDateTime endDate = startDate.plus(durationInMilliseconds, ChronoUnit.MILLIS);
-    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(processInstanceDto.getId(), startDate, endDate);
   }
 
   private String createDurationBucketKey(final int durationInMs) {

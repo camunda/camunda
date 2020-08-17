@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -101,16 +102,20 @@ public class MinMaxStatsService {
                                                           final String field,
                                                           final String pathForNestedStatsAgg,
                                                           final BoolQueryBuilder filterQueryToWrapStatsWith) {
-    return context.getNumberVariableRange()
-      .map(combinedRange -> new MinMaxStatDto(
-        combinedRange.getMinimum(),
-        combinedRange.getMaximum(),
-        combinedRange.getMinimum().toString(),
-        combinedRange.getMaximum().toString()
-      ))
+    return context.getNumberIntervalRange()
+      .map(this::mapToMinMaxStatDto)
       .orElseGet(
         () -> getSingleFieldMinMaxStats(query, indexName, field, pathForNestedStatsAgg, filterQueryToWrapStatsWith)
       );
+  }
+
+  public MinMaxStatDto getMinMaxNumberRangeForScriptedField(final ExecutionContext<? extends SingleReportDataDto> context,
+                                                            final QueryBuilder query,
+                                                            final String indexName,
+                                                            final Script script) {
+    return context.getNumberIntervalRange()
+      .map(this::mapToMinMaxStatDto)
+      .orElseGet(() -> getScriptedMinMaxStats(query, indexName, script));
   }
 
   public MinMaxStatDto getScriptedMinMaxStats(final QueryBuilder query,
@@ -134,19 +139,23 @@ public class MinMaxStatsService {
     }
 
     final Stats minMaxStats = response.getAggregations().get(STATS_AGGREGATION_FIRST_FIELD);
-    return new MinMaxStatDto(
-      minMaxStats.getMin(), minMaxStats.getMax(), minMaxStats.getMinAsString(), minMaxStats.getMaxAsString()
-    );
+    return new MinMaxStatDto(minMaxStats.getMin(), minMaxStats.getMax());
   }
 
-  private MinMaxStatDto getSingleFieldMinMaxStats(final QueryBuilder query,
-                                                  final String indexName,
-                                                  final String field,
-                                                  final String pathForNestedStatsAgg,
-                                                  final BoolQueryBuilder filterQueryToWrapStatsWith) {
+  public MinMaxStatDto getSingleFieldMinMaxStats(final QueryBuilder query,
+                                                 final String indexName,
+                                                 final String field,
+                                                 final String pathForNestedStatsAgg,
+                                                 final BoolQueryBuilder filterQueryToWrapStatsWith) {
     return getCrossFieldMinMaxStats(
       query, indexName, field, field, null, pathForNestedStatsAgg, filterQueryToWrapStatsWith
     );
+  }
+
+  public MinMaxStatDto mapToMinMaxStatDto(final Range<Double> range) {
+    final Double minimum = range.getMinimum();
+    final Double maximum = range.getMaximum();
+    return new MinMaxStatDto(minimum, maximum);
   }
 
   private MinMaxStatDto getCrossFieldMinMaxStats(final QueryBuilder query,
@@ -246,10 +255,7 @@ public class MinMaxStatsService {
       : minMaxStats2;
 
     return new MinMaxStatDto(
-      minStats.getMin(),
-      maxStats.getMax(),
-      minStats.getMinAsString(),
-      maxStats.getMaxAsString()
+      minStats.getMin(), maxStats.getMax(), minStats.getMinAsString(), maxStats.getMaxAsString()
     );
   }
 

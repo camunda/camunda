@@ -85,7 +85,7 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
   }
 
   public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<ProcessReportDataDto> context) {
-    return groupByPart.calculateNumberRangeForGroupByNumberVariable(context, setupBaseQuery(context));
+    return groupByPart.calculateNumberRangeForGroupByNumber(context, setupBaseQuery(context));
   }
 
   private List<ProcessFilterDto<?>> getAllFilters(final ProcessReportDataDto reportData) {

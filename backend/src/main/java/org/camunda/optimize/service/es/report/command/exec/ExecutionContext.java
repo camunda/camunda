@@ -30,7 +30,7 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
   private Range<OffsetDateTime> dateIntervalRange;
 
   // only used for group by number variable commands when evaluated for a combined report
-  private Range<Double> numberVariableRange;
+  private Range<Double> numberIntervalRange;
 
   // used to ensure a complete list of distributedByResults (to include all keys, even if the result is empty)
   // e.g. used for groupBy usertask - distributedBy assignee reports, where it is possible that
@@ -43,15 +43,15 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
     this.recordLimit = commandContext.getRecordLimit();
     this.timezone = commandContext.getTimezone();
     this.dateIntervalRange = commandContext.getDateIntervalRange();
-    this.numberVariableRange = commandContext.getNumberVariableRange();
+    this.numberIntervalRange = commandContext.getNumberIntervalRange();
   }
 
   public SingleReportConfigurationDto getReportConfiguration() {
     return reportData.getConfiguration();
   }
 
-  public Optional<Range<Double>> getNumberVariableRange() {
-    return Optional.ofNullable(numberVariableRange);
+  public Optional<Range<Double>> getNumberIntervalRange() {
+    return Optional.ofNullable(numberIntervalRange);
   }
 
   public Optional<Range<OffsetDateTime>> getDateIntervalRange() {

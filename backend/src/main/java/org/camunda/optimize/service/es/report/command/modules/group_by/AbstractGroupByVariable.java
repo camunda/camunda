@@ -86,8 +86,8 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   protected abstract BoolQueryBuilder getVariableUndefinedOrNullQuery(final ExecutionContext<Data> context);
 
   @Override
-  public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<Data> context,
-                                                                              final BoolQueryBuilder baseQuery) {
+  public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumber(final ExecutionContext<Data> context,
+                                                                      final BoolQueryBuilder baseQuery) {
     if (isGroupedByNumberVariable(getVariableType(context))) {
       return Optional.of(getMinMaxStats(baseQuery, context));
     }
@@ -293,14 +293,14 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private Double getMaxForNumberVariableAggregation(final ExecutionContext<Data> context,
                                                     final MinMaxStatDto minMaxStats) {
-    return context.getNumberVariableRange().isPresent()
-      ? context.getNumberVariableRange().get().getMaximum()
+    return context.getNumberIntervalRange().isPresent()
+      ? context.getNumberIntervalRange().get().getMaximum()
       : minMaxStats.getMax();
   }
 
   private Optional<Double> getBaselineForNumberVariableAggregation(final ExecutionContext<Data> context,
                                                                    final MinMaxStatDto minMaxStats) {
-    final Optional<Range<Double>> range = context.getNumberVariableRange();
+    final Optional<Range<Double>> range = context.getNumberIntervalRange();
     final Optional<Double> baselineForSingleReport = context.getReportData()
       .getConfiguration()
       .getBaselineForNumberVariableReport();
@@ -322,7 +322,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   private Double getGroupByNumberVariableUnit(final ExecutionContext<Data> context,
                                               final Double baseline,
                                               final MinMaxStatDto minMaxStats) {
-    final Optional<Range<Double>> rangeForCombinedReport = context.getNumberVariableRange();
+    final Optional<Range<Double>> rangeForCombinedReport = context.getNumberIntervalRange();
     final double maxVariableValue = rangeForCombinedReport.isPresent()
       ? rangeForCombinedReport.get().getMaximum()
       : minMaxStats.getMax();
