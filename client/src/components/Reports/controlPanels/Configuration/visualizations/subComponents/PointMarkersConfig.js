@@ -13,9 +13,9 @@ export default function PointMarkersConfig({configuration, onChange}) {
     <fieldset className="PointMarkersConfig">
       <legend>{t('report.config.pointMarkers.legend')}</legend>
       <Switch
-        checked={!configuration.pointMarkers}
-        onChange={({target: {checked}}) => onChange({pointMarkers: {$set: !checked}})}
-        label={t('report.config.pointMarkers.disableMarkers')}
+        checked={configuration.pointMarkers}
+        onChange={({target: {checked}}) => onChange({pointMarkers: {$set: checked}})}
+        label={t('report.config.pointMarkers.enableMarkers')}
       />
     </fieldset>
   );

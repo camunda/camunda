@@ -444,7 +444,7 @@
       },
       "pointMarkers": {
         "legend": "Line points",
-        "disableMarkers": "Disable point markers"
+        "enableMarkers": "Enable point markers"
       },
       "limitPrecision": {
         "legend": "Limit Precision",

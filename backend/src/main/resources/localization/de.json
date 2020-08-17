@@ -444,7 +444,7 @@
       },
       "pointMarkers": {
         "legend": "Linienpunkte",
-        "disableMarkers": "Punktmarkierungen deaktivieren"
+        "enableMarkers": "Punktmarkierungen aktivieren"
       },
       "limitPrecision": {
         "legend": "Genauigkeit begrenzen",
