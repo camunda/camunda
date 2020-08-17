@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
@@ -150,11 +151,9 @@ public class ProcessViewRawData extends ProcessViewPart {
       .flatMap(rawDataProcessInstanceDto -> rawDataProcessInstanceDto.getVariables().keySet().stream())
       .map(varKey -> VARIABLE_PREFIX + varKey)
       .collect(toList());
-    context.getReportConfiguration()
-      .getTableColumns()
-      .addNewVariableColumns(variableNames);
-    context.getReportConfiguration()
-      .getTableColumns()
-      .addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
+
+    TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
+    tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
+    tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
   }
 }

@@ -29,7 +29,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
@@ -81,7 +80,7 @@ public class CSVUtils {
     tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
 
     // Ensure all variables are taken into account by tableColumns
-    tableColumns.addNewVariableColumns(allVariableKeys);
+    tableColumns.addNewAndRemoveUnexpectedVariableColumns(allVariableKeys);
     final List<String> allIncludedKeysInOrder = tableColumns.getIncludedColumns();
 
     // header line
@@ -112,15 +111,17 @@ public class CSVUtils {
                                                              final Integer offset,
                                                              final TableColumnDto tableColumns) {
     final List<String[]> result = new ArrayList<>();
+    List<String> allVariableKeys = new ArrayList<>();
     final List<String> allInputVariableKeys = extractAllPrefixedDecisionInputKeys(rawData);
     final List<String> allOutputVariableKeys = extractAllPrefixedDecisionOutputKeys(rawData);
+    allVariableKeys.addAll(allInputVariableKeys);
+    allVariableKeys.addAll(allOutputVariableKeys);
 
     // Ensure all dto fields are taken into account by tableColumns
     tableColumns.addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
 
     // Ensure all variables are taken into account by tableColumns
-    tableColumns.addNewVariableColumns(allInputVariableKeys);
-    tableColumns.addNewVariableColumns(allOutputVariableKeys);
+    tableColumns.addNewAndRemoveUnexpectedVariableColumns(allVariableKeys);
     final List<String> allIncludedKeysInOrder = tableColumns.getIncludedColumns();
 
     // header line
@@ -207,7 +208,7 @@ public class CSVUtils {
         variableKeys.addAll(pi.getVariables().keySet());
       }
     }
-    return variableKeys.stream().map(key -> VARIABLE_PREFIX + key).collect(Collectors.toList());
+    return variableKeys.stream().map(key -> VARIABLE_PREFIX + key).collect(toList());
   }
 
   private static List<String> extractAllPrefixedDecisionInputKeys(List<RawDataDecisionInstanceDto> rawData) {
@@ -217,7 +218,7 @@ public class CSVUtils {
         inputKeys.addAll(pi.getInputVariables().keySet());
       }
     }
-    return inputKeys.stream().map(key -> INPUT_PREFIX + key).collect(Collectors.toList());
+    return inputKeys.stream().map(key -> INPUT_PREFIX + key).collect(toList());
   }
 
   private static List<String> extractAllPrefixedDecisionOutputKeys(List<RawDataDecisionInstanceDto> rawData) {
@@ -227,7 +228,7 @@ public class CSVUtils {
         outputKeys.addAll(di.getOutputVariables().keySet());
       }
     }
-    return outputKeys.stream().map(key -> OUTPUT_PREFIX + key).collect(Collectors.toList());
+    return outputKeys.stream().map(key -> OUTPUT_PREFIX + key).collect(toList());
   }
 
   private static <T> Optional<String> getDtoFieldValue(final T instanceDto,

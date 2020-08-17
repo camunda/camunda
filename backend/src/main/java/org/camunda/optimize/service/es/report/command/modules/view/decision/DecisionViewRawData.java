@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
@@ -206,12 +207,10 @@ public class DecisionViewRawData extends DecisionViewPart {
         .map(this::getPrefixedOutputVariableId)
         .collect(toList())
     );
-    context.getReportConfiguration()
-      .getTableColumns()
-      .addNewVariableColumns(variableNames);
-    context.getReportConfiguration()
-      .getTableColumns()
-      .addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
+
+    TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
+    tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
+    tableColumns.addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
   }
 
   private String getPrefixedInputVariableId(final InputVariableEntry inputVariableEntry) {

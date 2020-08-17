@@ -738,6 +738,41 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       );
   }
 
+  @Test
+  public void removeNonExistentVariableColumns() {
+    // given
+    final String nonExistentVariable1 = VARIABLE_PREFIX + "nonExistentVariable1";
+    final String nonExistentVariable2 = VARIABLE_PREFIX + "nonExistentVariable2";
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleProcessWithVariables(
+      ImmutableMap.of(
+        "someVar", 1,
+        "someOtherVar", 1
+      )
+    );
+    importAllEngineEntitiesFromScratch();
+
+    // when we have a report with variables columns that no longer exist in the instance data
+    final ProcessReportDataDto reportData = createReport(processInstanceDto);
+    reportData.getConfiguration().getTableColumns().getExcludedColumns().add(nonExistentVariable1);
+    reportData.getConfiguration().getTableColumns().getIncludedColumns().add(nonExistentVariable2);
+    final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
+      reportClient.evaluateRawReport(reportData);
+
+    // then the nonexistent variable columns are removed from the column configurations
+    final List<String> allColumns = evaluationResult.getReportDefinition()
+      .getData()
+      .getConfiguration()
+      .getTableColumns()
+      .getExcludedColumns();
+    allColumns.addAll(evaluationResult.getReportDefinition()
+                        .getData()
+                        .getConfiguration()
+                        .getTableColumns()
+                        .getIncludedColumns());
+
+    assertThat(allColumns).doesNotContain(nonExistentVariable1, nonExistentVariable2);
+  }
+
   private void assertBasicResultData(final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result,
                                      final ProcessInstanceEngineDto instance,
                                      final int expectedDataSize) {
