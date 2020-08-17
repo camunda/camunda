@@ -13,13 +13,20 @@
     .resetButton {
       margin-top: 15px;
       float: right;
+      border: none;
+      background: none;
+      padding: 0;
+
+      &:hover {
+        text-decoration: underline;
+      }
     }
 
     /* padding bottom workaround for firefox */
     padding-bottom: 0;
     &:after {
       content: '';
-      height: 15px;
+      height: 20px;
       display: block;
       clear: both;
     }
