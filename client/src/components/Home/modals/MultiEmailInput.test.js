@@ -73,3 +73,16 @@ it('should remove an email when clicking the x button of tag', () => {
 
   expect(props.onChange).toHaveBeenCalledWith(['email1@hotmail.com'], true);
 });
+
+it('should clear all emails when clicking the clear button', () => {
+  const node = shallow(<MultiEmailInput {...props} />);
+
+  node.find(Input).simulate('paste', {
+    preventDefault: jest.fn(),
+    clipboardData: {getData: () => `email1@test.com;email2@test.com email3@test.com`},
+  });
+
+  node.find('.searchClear').simulate('mouseDown', {type: 'mousedown', preventDefault: jest.fn()});
+
+  expect(props.onChange).toHaveBeenCalledWith([], true);
+});

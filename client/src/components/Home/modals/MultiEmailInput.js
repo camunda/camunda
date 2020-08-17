@@ -4,13 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useRef} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import classnames from 'classnames';
 
 import {Input, Button, Icon} from 'components';
 
 import './MultiEmailInput.scss';
-import {useEffect} from 'react';
 
 export default function MultiEmailInput({emails, onChange, placeholder}) {
   const [errors, setErrors] = useState([]);
@@ -65,14 +64,17 @@ export default function MultiEmailInput({emails, onChange, placeholder}) {
   }
 
   function handlePaste(evt) {
+    const paste = (evt.clipboardData || window.clipboardData).getData('text');
+    if (!paste.includes('@')) {
+      return;
+    }
     evt.preventDefault();
 
-    const paste = (evt.clipboardData || window.clipboardData).getData('text');
     const newEmails = paste.match(/[^\s<>!?:;]+/g);
 
     if (newEmails) {
-      if (newEmails.length > 20) {
-        newEmails.length = 20;
+      if (emails.length + newEmails.length > 20) {
+        newEmails.length = 20 - emails.length;
       }
       const invalidEmails = newEmails.filter((email) => !isValidEmail(email));
       setErrors([...errors, ...invalidEmails]);
@@ -94,6 +96,16 @@ export default function MultiEmailInput({emails, onChange, placeholder}) {
   return (
     <div className="MultiEmailInput" onClick={() => input.current?.focus()}>
       {emails.length === 0 && value === '' && <span className="placeholder">{placeholder}</span>}
+      <Input
+        disabled={emails.length >= 20}
+        value={value}
+        ref={input}
+        onKeyDown={handleKeyPress}
+        onBlur={addEmail}
+        onPaste={handlePaste}
+        onInput={resize}
+        onChange={(evt) => setValue(evt.target.value)}
+      />
       {emails.map((email, i) => (
         <div key={i} className={classnames('tag', {error: errors.includes(email)})}>
           <span className="tagText" title={email}>
@@ -104,17 +116,6 @@ export default function MultiEmailInput({emails, onChange, placeholder}) {
           </Button>
         </div>
       ))}
-      {emails.length < 20 && (
-        <Input
-          value={value}
-          ref={input}
-          onKeyDown={handleKeyPress}
-          onBlur={addEmail}
-          onPaste={handlePaste}
-          onInput={resize}
-          onChange={(evt) => setValue(evt.target.value)}
-        />
-      )}
       {emails.length > 0 && (
         <button className="searchClear" onKeyDown={triggerClear} onMouseDown={triggerClear}>
           <Icon type="clear" />

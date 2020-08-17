@@ -5,6 +5,8 @@
   padding: 6px 10px 0px;
   border-radius: 3px;
   position: relative;
+  display: flex;
+  flex-wrap: wrap;
 
   .placeholder {
     position: absolute;
@@ -34,6 +36,7 @@
     background-color: $silver-darken-87;
     margin-right: 6px;
     margin-bottom: 6px;
+    order: 1;
 
     .tagText {
       display: inline-block;
@@ -67,9 +70,18 @@
     padding: 0;
     margin-bottom: 6px;
     max-width: 100%;
+    order: 2;
 
     &:focus {
       box-shadow: none;
+    }
+
+    &:disabled {
+      visibility: hidden;
+    }
+
+    &:not(:valid) ~ .searchClear {
+      display: block;
     }
   }
 
