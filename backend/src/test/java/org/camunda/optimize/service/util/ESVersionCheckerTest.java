@@ -5,11 +5,13 @@
  */
 package org.camunda.optimize.service.util;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -23,6 +25,11 @@ import static org.camunda.optimize.service.util.ESVersionChecker.getLatestSuppor
 
 public class ESVersionCheckerTest {
   public static final List<String> SUPPORTED_VERSIONS = ESVersionChecker.getSupportedVersions();
+
+  @AfterEach
+  public void resetSupportedVersions() {
+    ESVersionChecker.setSupportedVersions(SUPPORTED_VERSIONS);
+  }
 
   @ParameterizedTest
   @MethodSource("validVersions")
@@ -46,6 +53,20 @@ public class ESVersionCheckerTest {
     final boolean doesWarn = ESVersionChecker.doesVersionNeedWarning(version, getLeastSupportedESVersion());
 
     assertThat(doesWarn).isTrue();
+  }
+
+  @Test
+  public void testGetLatestSupportedVersion() {
+    // given
+    final String expectedLatestVersion = "7.11.5";
+
+    List<String> versionsToTest = Arrays.asList("0.0.1", "7.2.0", expectedLatestVersion, "7.11.4", "7.10.6");
+    ESVersionChecker.setSupportedVersions(versionsToTest);
+
+    // when
+    final String latestSupportedVersion = getLatestSupportedESVersion();
+
+    assertThat(latestSupportedVersion).isEqualTo(expectedLatestVersion);
   }
 
   private static Stream<String> validVersions() {
