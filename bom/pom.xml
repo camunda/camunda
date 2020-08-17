@@ -4,7 +4,7 @@
   <name>Zeebe BOM</name>
   <groupId>io.zeebe</groupId>
   <artifactId>zeebe-bom</artifactId>
-  <version>0.23.5-SNAPSHOT</version>
+  <version>0.23.6-SNAPSHOT</version>
   <packaging>pom</packaging>
   <inceptionYear>2017</inceptionYear>
   <url>http://zeebe.io/</url>
