@@ -13,19 +13,7 @@ import {getCsrfToken, CsrfKeyName} from 'modules/utils/getCsrfToken';
 import {login} from 'modules/stores/login';
 
 const client = new ApolloClient({
-  cache: new InMemoryCache({
-    typePolicies: {
-      Query: {
-        fields: {
-          tasks: {
-            merge(existing, incoming) {
-              return {...existing, ...incoming}; // TODO - Issue #243
-            },
-          },
-        },
-      },
-    },
-  }),
+  cache: new InMemoryCache(), //TODO - Issue #243
   link: onError((error) => {
     const {networkError} = error;
 
