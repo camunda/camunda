@@ -331,6 +331,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     }
   }
 
+  public Phase getCurrentPhase() {
+    return phase;
+  }
+
   @Override
   public void addFailureListener(final FailureListener failureListener) {
     actor.run(() -> this.failureListener = failureListener);
@@ -359,7 +363,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
         });
   }
 
-  private enum Phase {
+  protected enum Phase {
     REPROCESSING,
     PROCESSING,
     FAILED,

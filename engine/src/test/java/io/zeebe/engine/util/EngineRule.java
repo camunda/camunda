@@ -276,6 +276,13 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getCommandResponseWriter();
   }
 
+  public void pauseProcessing(final int partitionId) {
+    environmentRule.pauseProcessing(partitionId);
+  }
+
+  public void resumeProcessing(final int partitionId) {
+    environmentRule.resumeProcessing(partitionId);
+  }
   /////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////// PROCESSOR EXPORTER CROSSOVER ///////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////
