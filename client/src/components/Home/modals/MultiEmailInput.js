@@ -15,6 +15,7 @@ export default function MultiEmailInput({emails, onChange, placeholder}) {
   const [errors, setErrors] = useState([]);
   const [value, setValue] = useState('');
   const input = useRef();
+  const sizer = useRef();
 
   function handleKeyPress(evt) {
     if (['Enter', ' ', 'Tab', ','].includes(evt.key)) {
@@ -84,8 +85,11 @@ export default function MultiEmailInput({emails, onChange, placeholder}) {
   }
 
   function resize() {
-    if (input.current) {
-      input.current.style.width = (input.current.value.length + 1) * 10 + 'px';
+    if (input.current && sizer.current) {
+      sizer.current.textContent = input.current.value;
+      sizer.current.style.display = 'inline-block';
+      input.current.style.width = sizer.current.getBoundingClientRect().width + 'px';
+      sizer.current.style.display = 'none';
     }
   }
 
@@ -106,6 +110,7 @@ export default function MultiEmailInput({emails, onChange, placeholder}) {
         onInput={resize}
         onChange={(evt) => setValue(evt.target.value)}
       />
+      <span className="sizer" ref={sizer} />
       {emails.map((email, i) => (
         <div key={i} className={classnames('tag', {error: errors.includes(email)})}>
           <span className="tagText" title={email}>
