@@ -120,11 +120,19 @@ public class DevDataGenerator implements DataGenerator {
   }
 
   private void startWorkflowInstances() {
-    final int instancesCount = random.nextInt(50) + 50;
+    final int instancesCount = random.nextInt(20) + 20;
     for (int i = 0; i < instancesCount; i++) {
       startOrderProcess();
       startFlightRegistrationProcess();
+      startSimpleProcess();
     }
+  }
+
+  private void startSimpleProcess() {
+    ZeebeTestUtil.startWorkflowInstance(
+        zeebeClient,
+        "simpleProcess",
+        null);
   }
 
   private void startOrderProcess() {
@@ -187,6 +195,7 @@ public class DevDataGenerator implements DataGenerator {
   private void deployWorkflows() {
     ZeebeTestUtil.deployWorkflow(zeebeClient, "orderProcess.bpmn");
     ZeebeTestUtil.deployWorkflow(zeebeClient, "registerPassenger.bpmn");
+    ZeebeTestUtil.deployWorkflow(zeebeClient, "simpleProcess.bpmn");
   }
 
   public boolean shouldCreateData() {
