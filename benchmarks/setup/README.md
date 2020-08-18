@@ -74,6 +74,8 @@ This will switch to the default namespace, delete the given namespace and delete
 
 ## How to run a Benchmark in Camunda Cloud
 
+_This targets only internal use cases and is not available for external parties._
+
 We currently waiting until https://github.com/camunda-cloud/enhancements/blob/master/CEP017-programmatic-access-to-console.md is implemented, until this is done we need to do some steps manually.
 
 ### Setup Cloud Cluster
