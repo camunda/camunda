@@ -71,29 +71,38 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
   @Override
   public Optional<TransientSnapshot> takeTransientSnapshot(final long lowerBoundSnapshotPosition) {
     if (!isDbOpened()) {
+      LOG.warn(
+          "Expected to take snapshot for last processed position {}, but database was closed.",
+          lowerBoundSnapshotPosition);
       return Optional.empty();
     }
 
-    final long exportedPosition = exporterPositionSupplier.applyAsLong(openDb());
-    final long snapshotPosition = Math.min(exportedPosition, lowerBoundSnapshotPosition);
-
+    final long snapshotPosition = determineSnapshotPosition(lowerBoundSnapshotPosition);
     final var optionalIndexed = entrySupplier.getIndexedEntry(snapshotPosition);
+    if (optionalIndexed.isEmpty()) {
+      LOG.warn(
+          "Failed to take snapshot. Expected to find an indexed entry for given snapshot position {}, but found no matching indexed entry which contains this position.",
+          lowerBoundSnapshotPosition);
+      return Optional.empty();
+    }
 
-    final Long previousSnapshotIndex =
+    final var snapshotIndexedEntry = optionalIndexed.get();
+    final long previousSnapshotIndex =
         store.getLatestSnapshot().map(PersistedSnapshot::getCompactionBound).orElse(-1L);
+    if (snapshotIndexedEntry.index() == previousSnapshotIndex) {
+      LOG.debug(
+          "Previous snapshot was taken for the same indexed entry {}, will not take snapshot.",
+          snapshotIndexedEntry);
+      return Optional.empty();
+    }
 
-    final var optTransientSnapshot =
-        optionalIndexed
-            .filter(indexed -> indexed.index() != previousSnapshotIndex)
-            .map(
-                indexed ->
-                    store.newTransientSnapshot(
-                        indexed.index(),
-                        indexed.entry().term(),
-                        WallClockTimestamp.from(System.currentTimeMillis())));
-
-    optTransientSnapshot.ifPresent(this::createSnapshot);
-    return optTransientSnapshot;
+    final var transientSnapshot =
+        store.newTransientSnapshot(
+            snapshotIndexedEntry.index(),
+            snapshotIndexedEntry.entry().term(),
+            WallClockTimestamp.from(System.currentTimeMillis()));
+    takeSnapshot(transientSnapshot);
+    return Optional.of(transientSnapshot);
   }
 
   @Override
@@ -159,7 +168,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     return db != null;
   }
 
-  private void createSnapshot(final TransientSnapshot snapshot) {
+  private void takeSnapshot(final TransientSnapshot snapshot) {
     snapshot.take(
         snapshotDir -> {
           if (db == null) {
@@ -277,12 +286,23 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     return new ReplicationContext(metrics, startTimestamp, transientSnapshot);
   }
 
+  private long determineSnapshotPosition(final long lowerBoundSnapshotPosition) {
+    final long exportedPosition = exporterPositionSupplier.applyAsLong(openDb());
+    final long snapshotPosition = Math.min(exportedPosition, lowerBoundSnapshotPosition);
+    LOG.debug(
+        "Based on lowest exporter position '{}' and last processed position '{}', determined '{}' as snapshot position.",
+        exportedPosition,
+        lowerBoundSnapshotPosition,
+        snapshotPosition);
+    return snapshotPosition;
+  }
+
   private static final class ReplicationContext {
 
     private final long startTimestamp;
     private final ReceivedSnapshot receivedSnapshot;
-    private long chunkCount;
     private final SnapshotReplicationMetrics metrics;
+    private long chunkCount;
 
     ReplicationContext(
         final SnapshotReplicationMetrics metrics,

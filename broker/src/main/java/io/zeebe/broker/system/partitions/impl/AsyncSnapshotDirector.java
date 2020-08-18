@@ -140,9 +140,6 @@ public final class AsyncSnapshotDirector extends Actor {
                 final var optionalPendingSnapshot =
                     stateController.takeTransientSnapshot(tempSnapshotPosition);
                 if (optionalPendingSnapshot.isEmpty()) {
-                  LOG.warn(
-                      "Failed to obtain a pending snapshot directory for position {}",
-                      tempSnapshotPosition);
                   takingSnapshot = false;
                   return;
                 }
