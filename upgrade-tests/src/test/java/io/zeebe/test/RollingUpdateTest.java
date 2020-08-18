@@ -60,6 +60,10 @@ public class RollingUpdateTest {
 
   private static final File SHARED_DATA;
 
+  // There's an issue when running tests with a docker-in-docker sibling on our CI platform, where
+  // mounting shared folders to /tmp on the test container fails to persist anything. So on CI we
+  // use a different mount point, but locally it makes sense to use /tmp to ensure the folder is
+  // later removed.
   static {
     final var sharedDataPath =
         Optional.ofNullable(System.getenv("ZEEBE_CI_SHARED_DATA"))
