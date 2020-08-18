@@ -188,9 +188,8 @@ public class PassiveRole extends InactiveRole {
     }
 
     final var snapshotChunk = new SnapshotChunkImpl();
-    try {
-      snapshotChunk.wrap(new UnsafeBuffer(request.data()), 0, request.data().capacity());
-    } catch (final RuntimeException e) {
+    final var snapshotChunkBuffer = new UnsafeBuffer(request.data());
+    if (!snapshotChunk.tryWrap(snapshotChunkBuffer)) {
       return CompletableFuture.completedFuture(
           logResponse(
               InstallResponse.builder()
