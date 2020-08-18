@@ -20,7 +20,6 @@ import {
 } from 'components';
 import {
   incompatibleFilters,
-  containsSuspensionFilter,
   updateEntity,
   createEntity,
   evaluateReport,
@@ -242,18 +241,6 @@ export class ReportEdit extends React.Component {
 
         {data?.filter && incompatibleFilters(data.filter) && (
           <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
-        )}
-
-        {data?.filter && containsSuspensionFilter(data.filter) && (
-          <MessageBox
-            type="warning"
-            dangerouslySetInnerHTML={{
-              __html: t('common.filter.suspensionFilterWarning', {
-                docsLink:
-                  this.props.docsLink + 'technical-guide/update/2.7-to-3.0/#suspension-filter',
-              }),
-            }}
-          />
         )}
 
         {data?.groupBy?.type === 'endDate' &&

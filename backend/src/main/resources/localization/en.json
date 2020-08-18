@@ -878,8 +878,7 @@
           "excluded": "The following selections will be excluded:"
         }
       },
-      "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other",
-      "suspensionFilterWarning": "Please note the limitations of the Suspension Filter described in the <a href='{docsLink}'>Optimize documentation</a>."
+      "incompatibleFilters": "No data is shown since the combination of filters is incompatible with each other"
     },
     "definitionSelection": {
       "latest": "Latest",
