@@ -171,6 +171,28 @@ public class RaftFailOverTest {
   }
 
   @Test
+  public void shouldReplicateSnapshotWithManyFilesOnJoin() throws Exception {
+    // given
+    final var follower = raftRule.shutdownFollower();
+    raftRule.appendEntries(20);
+    final long snapshotIndex = 10L;
+    raftRule.doSnapshot(snapshotIndex, 10);
+    final var leaderSnapshot = raftRule.getSnapshotFromLeader();
+
+    // when
+    raftRule.joinCluster(follower);
+
+    // then
+    assertThat(raftRule.allNodesHaveSnapshotWithIndex(snapshotIndex)).isTrue();
+    final var snapshot = raftRule.getSnapshotOnNode(follower);
+
+    assertThat(snapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(snapshotIndex);
+    assertThat(snapshot.getTerm()).isEqualTo(snapshot.getTerm());
+    assertThat(snapshot.getPath().toFile().list())
+        .containsExactlyInAnyOrder(leaderSnapshot.getPath().toFile().list());
+  }
+
+  @Test
   public void shouldReplicateEntriesAfterSnapshotOnJoin() throws Exception {
     // given
     final var follower = raftRule.shutdownFollower();
