@@ -194,9 +194,7 @@ public class PassiveRole extends InactiveRole {
           logResponse(
               InstallResponse.builder()
                   .withStatus(RaftResponse.Status.ERROR)
-                  .withError(
-                      RaftError.Type.APPLICATION_ERROR,
-                      "Failed to parse incoming snapshot chunk: " + e.getMessage())
+                  .withError(RaftError.Type.APPLICATION_ERROR, "Failed to parse request data")
                   .build()));
     }
 
