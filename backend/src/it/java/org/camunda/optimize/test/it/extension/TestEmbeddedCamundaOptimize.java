@@ -9,7 +9,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.http.entity.mime.MIME;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
@@ -36,18 +35,14 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.ClientResponseFilter;
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.Response;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyManagementException;
 import java.security.cert.X509Certificate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * This class is wrapper around the embedded optimize to ensure
@@ -66,7 +61,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   private static final String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
   private static final int MAX_LOGGED_BODY_SIZE = 10_000;
 
-  private static String authenticationToken;
   private static TestEmbeddedCamundaOptimize testOptimizeInstance;
   /**
    * This configuration is stored the first time optimize is started
@@ -115,7 +109,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
       resetConfiguration();
       reloadConfiguration();
     }
-    initAuthenticationToken();
   }
 
   private boolean isThisTheFirstTimeOptimizeWasStarted() {
@@ -166,10 +159,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return getApplicationContext().getBean(ConfigurationService.class);
   }
 
-  public SessionService getSessionService() {
-    return getApplicationContext().getBean(SessionService.class);
-  }
-
   public CleanupScheduler getCleanupService() {
     return getApplicationContext().getBean(CleanupScheduler.class);
   }
@@ -196,43 +185,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public DateTimeFormatter getDateTimeFormatter() {
     return getApplicationContext().getBean(DateTimeFormatter.class);
-  }
-
-  public void refreshAuthenticationToken() {
-    authenticationToken = getNewAuthenticationToken()
-      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not obtain authentication token."));
-  }
-
-  private void initAuthenticationToken() {
-    if (authenticationToken == null) {
-      refreshAuthenticationToken();
-    } else {
-      final LocalDateTime expiresAtLocalDateTime = getSessionService().getExpiresAtLocalDateTime(authenticationToken)
-        .orElseThrow(() -> new OptimizeIntegrationTestException("Could not get token expiryDate"));
-      if (LocalDateTime.now().plusMinutes(10).isAfter(expiresAtLocalDateTime)) {
-        refreshAuthenticationToken();
-      }
-    }
-  }
-
-  public Optional<String> getNewAuthenticationToken() {
-    return this.authenticateDemoUser();
-  }
-
-  private Optional<String> authenticateDemoUser() {
-    Response tokenResponse = authenticateDemo();
-    if (tokenResponse.getStatus() == Response.Status.OK.getStatusCode()) {
-      return Optional.of(tokenResponse.readEntity(String.class));
-    }
-    return Optional.empty();
-  }
-
-  private Response authenticateDemo() {
-    final CredentialsDto entity = new CredentialsDto(DEFAULT_USERNAME, DEFAULT_PASSWORD);
-    return target()
-      .path("authentication")
-      .request()
-      .post(Entity.json(entity));
   }
 
   public WebTarget target() {

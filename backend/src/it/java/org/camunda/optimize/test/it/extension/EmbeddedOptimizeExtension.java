@@ -133,8 +133,8 @@ public class EmbeddedOptimizeExtension
         new OptimizeRequestExecutor(
           DEFAULT_USERNAME,
           DEFAULT_PASSWORD,
-          IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint(),
-          objectMapper
+          objectMapper,
+          target()
         );
       if (isResetImportOnStart()) {
         resetImportStartIndexes();
@@ -330,12 +330,8 @@ public class EmbeddedOptimizeExtension
     return requestExecutor;
   }
 
-  public void refreshAuthenticationToken() {
-    getOptimize().refreshAuthenticationToken();
-  }
-
   public String getNewAuthenticationToken() {
-    return getOptimize().getNewAuthenticationToken().orElse(null);
+    return authenticateUser(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
   public String authenticateUser(String username, String password) {

@@ -108,7 +108,7 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor(final String username, final String password, final String restEndpoint) {
     this.objectMapper = getDefaultObjectMapper();
-    this.client = getOptimizeClient(restEndpoint, objectMapper);
+    this.client = getSimpleOptimizeClient(restEndpoint, objectMapper);
     String authCookie = authenticateUserRequest(username, password);
     this.defaultAuthCookie = authCookie;
     this.authCookie = authCookie;
@@ -117,23 +117,19 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor(final String username, final String password, final String restEndpoint,
                                  ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
-    this.client = getOptimizeClient(restEndpoint, objectMapper);
+    this.client = getSimpleOptimizeClient(restEndpoint, objectMapper);
     String authCookie = authenticateUserRequest(username, password);
     this.defaultAuthCookie = authCookie;
     this.authCookie = authCookie;
   }
 
-  public WebTarget getOptimizeClient(String restEndpoint, ObjectMapper objectMapper) {
-    return ClientBuilder.newClient()
-      .target(restEndpoint)
-      .register(new OptimizeObjectMapperContextResolver(objectMapper));
-  }
-
-  public ObjectMapper getDefaultObjectMapper() {
-    final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
-    return new ObjectMapperFactory(
-      new OptimizeDateTimeFormatterFactory().getObject(), configurationService
-    ).createOptimizeMapper();
+  public OptimizeRequestExecutor(final String username, final String password,
+                                 ObjectMapper objectMapper, WebTarget client) {
+    this.objectMapper = objectMapper;
+    this.client = client;
+    String authCookie = authenticateUserRequest(username, password);
+    this.defaultAuthCookie = authCookie;
+    this.authCookie = authCookie;
   }
 
   public OptimizeRequestExecutor addQueryParams(Map<String, Object> queryParams) {
@@ -178,11 +174,6 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor withGivenAuthToken(String authToken) {
     this.authCookie = AuthCookieService.createOptimizeAuthCookieValue(authToken);
-    return this;
-  }
-
-  public OptimizeRequestExecutor withCurrentUserAuthenticationAsNewDefaultToken() {
-    this.defaultAuthCookie = authCookie;
     return this;
   }
 
@@ -1333,6 +1324,19 @@ public class OptimizeRequestExecutor {
     sorter.getSortBy().ifPresent(sortBy -> params.put(Sorter.SORT_BY, sortBy));
     sorter.getSortOrder().ifPresent(sortOrder -> params.put(Sorter.SORT_ORDER, sortOrder.toString().toLowerCase()));
     return params;
+  }
+
+  private WebTarget getSimpleOptimizeClient(String restEndpoint, ObjectMapper objectMapper) {
+    return ClientBuilder.newClient()
+      .target(restEndpoint)
+      .register(new OptimizeObjectMapperContextResolver(objectMapper));
+  }
+
+  private ObjectMapper getDefaultObjectMapper() {
+    final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
+    return new ObjectMapperFactory(
+      new OptimizeDateTimeFormatterFactory().getObject(), configurationService
+    ).createOptimizeMapper();
   }
 
 }
