@@ -8,7 +8,7 @@ spec:
   selector:
     matchLabels:
       app: starter
-  replicas: 8
+  replicas: 1
   template:
     metadata:
       labels:
@@ -16,26 +16,37 @@ spec:
     spec:
       containers:
       - name: starter
-        image: gcr.io/zeebe-io/starter:zeebe-chaos
+        image: gcr.io/zeebe-io/starter:zeebe
         imagePullPolicy: Always
         env:
           - name: JAVA_OPTIONS
             value: >-
-              -Dapp.brokerUrl=ebb14880-485a-4d0d-bf48-425ce506c0e3.zeebe.ultrawombat.com:443
-              -Dapp.starter.rate=500
+              -Dapp.starter.rate=100
               -Dapp.tls=true
               -Dzeebe.client.requestTimeout=62000
               -XX:+HeapDumpOnOutOfMemoryError
           - name: LOG_LEVEL
-            value: "debug"
+            value: "debug"      
           - name: ZEEBE_ADDRESS
-            value: "ebb14880-485a-4d0d-bf48-425ce506c0e3.zeebe.ultrawombat.com:443"
+            valueFrom:
+              secretKeyRef:
+                name: cloud-credentials
+                key: zeebeAddress
           - name: ZEEBE_CLIENT_ID
-            value: ".9ydL3P9dC1ksp-TEZ2Z1sOms09HOprO"
+            valueFrom:
+              secretKeyRef:
+                name: cloud-credentials
+                key: clientId
           - name: ZEEBE_CLIENT_SECRET
-            value: "sDAjFsOWC2aEPni49tlQXPUeAAmZaWjqicoOizvf5U7mAh8xLE1rOnEQ0nqoKnok"
+            valueFrom:
+              secretKeyRef:
+                name: cloud-credentials
+                key: clientSecret
           - name: ZEEBE_AUTHORIZATION_SERVER_URL
-            value: "https://login.cloud.ultrawombat.com/oauth/token"
+            valueFrom:
+              secretKeyRef:
+                name: cloud-credentials
+                key: authServer
 
         resources:
           requests:
@@ -47,7 +58,7 @@ kind: Service
 metadata:
   labels:
     app: zeebe
-    app.kubernetes.io/instance: zell-large-cluster
+    app.kubernetes.io/instance: default
     app.kubernetes.io/name: zeebe-cluster
   name: starter
 spec:
