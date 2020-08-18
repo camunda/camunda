@@ -24,6 +24,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.Topology;
 import io.zeebe.config.AppCfg;
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -84,25 +85,31 @@ abstract class App implements Runnable {
 
   protected String readVariables(final String payloadPath) {
     try {
-      final StringBuilder stringBuilder = new StringBuilder();
       final var classLoader = App.class.getClassLoader();
-      try (final InputStream variablesStream = classLoader.getResourceAsStream(payloadPath)) {
-        if (variablesStream == null) {
-          throw new IllegalStateException(
-              "Expected to access " + payloadPath + ", but failed to open an input stream.");
+      try (InputStream fromResource = classLoader.getResourceAsStream(payloadPath)) {
+        if (fromResource != null) {
+          return tryReadVariables(fromResource);
         }
-
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(variablesStream))) {
-          String line;
-          while ((line = br.readLine()) != null) {
-            stringBuilder.append(line).append("\n");
-          }
+        // unable to find from resources, try as regular file
+        try (InputStream fromFile = new FileInputStream(payloadPath)) {
+          return tryReadVariables(fromFile);
         }
       }
-
-      return stringBuilder.toString();
     } catch (IOException e) {
       throw new UncheckedExecutionException(e);
     }
+  }
+
+  private String tryReadVariables(final InputStream inputStream) throws IOException {
+    final StringBuilder stringBuilder = new StringBuilder();
+    try (InputStreamReader reader = new InputStreamReader(inputStream)) {
+      try (BufferedReader br = new BufferedReader(reader)) {
+        String line;
+        while ((line = br.readLine()) != null) {
+          stringBuilder.append(line).append("\n");
+        }
+      }
+    }
+    return stringBuilder.toString();
   }
 }
