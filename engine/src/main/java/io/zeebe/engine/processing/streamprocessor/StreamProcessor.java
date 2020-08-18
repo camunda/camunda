@@ -49,6 +49,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   // processing
   private final ProcessingContext processingContext;
   private final TypedRecordProcessorFactory typedRecordProcessorFactory;
+  private final String actorName;
   private LogStreamReader logStreamReader;
   private ActorCondition onCommitPositionUpdatedCondition;
   private long snapshotPosition = -1L;
@@ -59,10 +60,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
   private CompletableActorFuture<Void> openFuture;
   private CompletableActorFuture<Void> closeFuture = CompletableActorFuture.completed(null);
-  private final String actorName;
   private FailureListener failureListener;
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
+  /** Recover future is completed after reprocessing is done. */
+  private ActorFuture<Void> recoverFuture;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorScheduler = processorBuilder.getActorScheduler();
@@ -115,8 +117,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
       final ReProcessingStateMachine reProcessingStateMachine =
           new ReProcessingStateMachine(processingContext);
 
-      final ActorFuture<Void> recoverFuture =
-          reProcessingStateMachine.startRecover(snapshotPosition);
+      recoverFuture = reProcessingStateMachine.startRecover(snapshotPosition);
 
       actor.runOnCompletion(
           recoverFuture,
@@ -331,36 +332,42 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     }
   }
 
-  public Phase getCurrentPhase() {
-    return phase;
-  }
-
   @Override
   public void addFailureListener(final FailureListener failureListener) {
     actor.run(() -> this.failureListener = failureListener);
   }
 
+  public ActorFuture<Phase> getCurrentPhase() {
+    return actor.call(() -> phase);
+  }
+
   public void pauseProcessing() {
     actor.call(
-        () -> {
-          if (this.shouldProcess) {
-            lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
-            this.shouldProcess = false;
-            phase = Phase.PAUSED;
-          }
-        });
+        () ->
+            recoverFuture.onComplete(
+                (v, t) -> {
+                  if (this.shouldProcess) {
+                    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
+                    this.shouldProcess = false;
+                    phase = Phase.PAUSED;
+                    LOG.debug("Paused processing for partition {}", partitionId);
+                  }
+                }));
   }
 
   public void resumeProcessing() {
     actor.call(
-        () -> {
-          if (!this.shouldProcess) {
-            lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
-            this.shouldProcess = true;
-            phase = Phase.PROCESSING;
-            actor.submit(processingStateMachine::readNextEvent);
-          }
-        });
+        () ->
+            recoverFuture.onComplete(
+                (v, t) -> {
+                  if (!this.shouldProcess) {
+                    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
+                    this.shouldProcess = true;
+                    phase = Phase.PROCESSING;
+                    actor.submit(processingStateMachine::readNextEvent);
+                    LOG.debug("Resumed processing for partition {}", partitionId);
+                  }
+                }));
   }
 
   protected enum Phase {
