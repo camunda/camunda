@@ -4,10 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, computed} from 'mobx';
+import {observable, decorate, action, computed, when} from 'mobx';
 import {fetchVariables, applyOperation} from 'modules/api/instances';
 import {differenceWith, differenceBy} from 'lodash';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {currentInstance} from 'modules/stores/currentInstance';
+import {STATE} from 'modules/constants';
 
 const DEFAULT_STATE = {
   items: [],
@@ -154,7 +156,6 @@ class Variables {
 
   get hasActiveOperation() {
     const {items} = this.state;
-
     return items.some(({hasActiveOperation}) => hasActiveOperation);
   }
 
@@ -163,10 +164,21 @@ class Variables {
     return !isLoading && isInitialLoadComplete && items.length === 0;
   }
 
-  startPolling = async (workflowInstanceId) => {
+  init = async (workflowInstanceId) => {
     this.intervalId = setInterval(() => {
       this.handlePolling(workflowInstanceId);
     }, 5000);
+
+    when(
+      () => currentInstance.state.instance?.state === STATE.CANCELED,
+      this.removeVariablesWithActiveOperations
+    );
+  };
+
+  removeVariablesWithActiveOperations = () => {
+    this.state.items = this.state.items.filter(
+      ({hasActiveOperation}) => !hasActiveOperation
+    );
   };
 
   stopPolling = () => {

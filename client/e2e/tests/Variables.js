@@ -10,6 +10,7 @@ import * as Variables from './Variables.elements.js';
 import {Selector} from 'testcafe';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
+import {screen} from '@testing-library/testcafe';
 
 fixture('Add/Edit Variables')
   .page(config.endpoint)
@@ -188,4 +189,26 @@ test('Add variables', async (t) => {
   //   .navigateTo(`${config.endpoint}/#/instances/${instanceId}`)
   //   .expect(Selector('[data-test="secondTestKey"]').exists)
   //   .ok();
+});
+
+test('Remove fields when instance is canceled', async (t) => {
+  await t
+    .click(Variables.addButton)
+    .expect(screen.getByRole('textbox', {name: /variable/i}))
+    .ok()
+    .expect(screen.getByRole('textbox', {name: /value/i}))
+    .ok();
+
+  await t
+    .click(screen.getByRole('button', {name: /^Cancel Instance/}))
+    .expect(screen.getByTestId('operation-spinner').exists)
+    .ok();
+
+  await t
+    .expect(screen.queryByTestId('operation-spinner').exists)
+    .notOk({timeout: 20000})
+    .expect(screen.queryByRole('textbox', {name: /variable/i}).exists)
+    .notOk()
+    .expect(screen.queryByRole('textbox', {name: /value/i}).exists)
+    .notOk();
 });

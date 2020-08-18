@@ -249,7 +249,9 @@ const Variables = observer(function Variables() {
                 )}
               </TR>
             ))}
-            {editMode === VARIABLE_MODE.ADD && renderInlineAdd()}
+            {editMode === VARIABLE_MODE.ADD &&
+              isCurrentInstanceRunning &&
+              renderInlineAdd()}
           </tbody>
         </Table>
       </Styled.TableScroll>
