@@ -20,6 +20,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import io.atomix.raft.snapshot.SnapshotChunkReader;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.storage.journal.JournalReader.Mode;
@@ -50,6 +51,7 @@ public final class RaftMemberContext {
   private int failures;
   private long failureTime;
   private volatile RaftLogReader reader;
+  private SnapshotChunkReader snapshotChunkReader;
 
   RaftMemberContext(final DefaultRaftMember member, final RaftClusterContext cluster) {
     this.member = checkNotNull(member, "member cannot be null").setCluster(cluster);
@@ -404,5 +406,13 @@ public final class RaftMemberContext {
    */
   public void setSnapshotIndex(final long snapshotIndex) {
     this.snapshotIndex = snapshotIndex;
+  }
+
+  public void setSnapshotChunkReader(final SnapshotChunkReader snapshotChunkReader) {
+    this.snapshotChunkReader = snapshotChunkReader;
+  }
+
+  public SnapshotChunkReader getSnapshotChunkReader() {
+    return snapshotChunkReader;
   }
 }

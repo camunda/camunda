@@ -268,6 +268,10 @@ public final class RaftRule extends ExternalResource {
   }
 
   public void doSnapshot(final long index) throws Exception {
+    doSnapshot(index, 1);
+  }
+
+  public void doSnapshot(final long index, final int size) throws Exception {
     awaitNewLeader();
 
     // we write on all nodes the same snapshot
@@ -280,7 +284,7 @@ public final class RaftRule extends ExternalResource {
         final var snapshotStore = raftContext.getPersistedSnapshotStore();
 
         compactAwaiters.get(raftServer.name()).set(new CountDownLatch(1));
-        writeSnapshot(index, raftContext.getTerm(), snapshotStore);
+        writeSnapshot(index, raftContext.getTerm(), snapshotStore, size);
       }
     }
 
@@ -320,23 +324,28 @@ public final class RaftRule extends ExternalResource {
   }
 
   private void writeSnapshot(
-      final long index, final long term, final PersistedSnapshotStore persistedSnapshotStore) {
+      final long index,
+      final long term,
+      final PersistedSnapshotStore persistedSnapshotStore,
+      final int size) {
 
     final var transientSnapshot =
         persistedSnapshotStore.newTransientSnapshot(index, term, new WallClockTimestamp());
     transientSnapshot.take(
         path -> {
           IoUtil.ensureDirectoryExists(path.toFile(), "snapshot dir should exist");
-          final var snapshotFile = path.resolve("snapshot.file");
-          try {
-            Files.write(
-                snapshotFile,
-                RandomStringUtils.random(128).getBytes(),
-                StandardOpenOption.CREATE_NEW,
-                StandardOpenOption.WRITE);
-          } catch (final IOException e) {
-            e.printStackTrace();
-            return false;
+          for (int i = 0; i < size; i++) {
+            final var snapshotFile = path.resolve("snapshot-" + i + ".file");
+            try {
+              Files.write(
+                  snapshotFile,
+                  RandomStringUtils.random(128).getBytes(),
+                  StandardOpenOption.CREATE_NEW,
+                  StandardOpenOption.WRITE);
+            } catch (final IOException e) {
+              e.printStackTrace();
+              return false;
+            }
           }
           // do something
           return true;
