@@ -472,3 +472,8 @@ eventBasedProcess:
     scheduleIntervalInMinutes: 10
     # A rollover is triggered when the size of the current event index matches or exceeds the maxIndexSizeGB threshold.
     maxIndexSizeGB: 50
+
+telemetry:
+  # Sets the initial property value of telemetry configuration once when it has never been enabled/disabled before.
+  # Telemetry can later be enabled/disabled in the UI by superusers
+  initializeTelemetry: false

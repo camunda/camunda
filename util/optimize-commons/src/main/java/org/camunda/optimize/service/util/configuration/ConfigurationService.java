@@ -36,6 +36,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
@@ -69,8 +70,6 @@ public class ConfigurationService {
   private String XXSSProtection;
   private Boolean XContentTypeOptions;
   private String contentSecurityPolicy;
-
-
 
   private String userValidationEndpoint;
   private String processDefinitionEndpoint;
@@ -189,6 +188,8 @@ public class ConfigurationService {
   private EventIndexRolloverConfiguration eventIndexRolloverConfiguration;
 
   private EventBasedProcessConfiguration eventBasedProcessConfiguration;
+
+  private TelemetryConfiguration telemetryConfiguration;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -1057,5 +1058,15 @@ public class ConfigurationService {
   @JsonIgnore
   public List<String> getEventBasedProcessAccessUserIds() {
     return getEventBasedProcessConfiguration().getAuthorizedUserIds();
+  }
+
+  public TelemetryConfiguration getTelemetryConfiguration() {
+    if (telemetryConfiguration == null) {
+      telemetryConfiguration = configJsonContext.read(
+        TELEMETRY_CONFIGURATION,
+        TelemetryConfiguration.class
+      );
+    }
+    return telemetryConfiguration;
   }
 }

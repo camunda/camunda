@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import org.camunda.optimize.dto.optimize.IdentityDto;
+import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -1270,6 +1271,19 @@ public class OptimizeRequestExecutor {
         sorter.getSortOrder().ifPresent(sortOrder -> addSingleQueryParam("sortOrder", sortOrder));
       });
     this.body = Optional.ofNullable(eventCountRequestDto).map(this::getBody).orElse(null);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetSettingsRequest() {
+    this.path = "settings/";
+    this.method = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildSetSettingsRequest(final SettingsDto settingsDto) {
+    this.path = "settings/";
+    this.method = PUT;
+    this.body = getBody(settingsDto);
     return this;
   }
 

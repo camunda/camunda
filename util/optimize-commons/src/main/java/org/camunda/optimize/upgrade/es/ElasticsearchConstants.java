@@ -58,6 +58,7 @@ public class ElasticsearchConstants {
   public static final String ONBOARDING_INDEX_NAME = "onboarding-state";
   public static final String VARIABLE_UPDATE_INSTANCE_INDEX_NAME = "variable-update-instance";
   public static final String BUSINESS_KEY_INDEX_NAME = "business-key";
+  public static final String SETTINGS_INDEX_NAME = "settings";
 
   public static final String EVENT_PROCESS_INSTANCE_INDEX_PREFIX = "event-process-instance-";
   public static final String CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX = "camunda-activity-event-";

@@ -67,7 +67,6 @@ public class ConfigurationServiceConstants {
   public static final String ELASTIC_SEARCH_CONNECTION_NODES = "$.es.connection.nodes";
   public static final String ELASTIC_SEARCH_PROXY = "$.es.connection.proxy";
 
-
   public static final String ELASTIC_SEARCH_SECURITY_USERNAME = "$.es.security.username";
   public static final String ELASTIC_SEARCH_SECURITY_PASSWORD = "$.es.security.password";
   public static final String ELASTIC_SEARCH_SECURITY_SSL_ENABLED = "$.es.security.ssl.enabled";
@@ -119,4 +118,6 @@ public class ConfigurationServiceConstants {
   public static final String IDENTITY_SYNC_CONFIGURATION = "$.import.identitySync";
 
   public static final String EVENT_BASED_PROCESS_CONFIGURATION = "$.eventBasedProcess";
+
+  public static final String TELEMETRY_CONFIGURATION = "$.telemetry";
 }

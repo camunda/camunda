@@ -22,6 +22,7 @@ import org.camunda.optimize.service.es.schema.index.OnboardingStateIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.ReportShareIndex;
+import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.es.schema.index.TenantIndex;
 import org.camunda.optimize.service.es.schema.index.TerminatedUserSessionIndex;
 import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
@@ -77,6 +78,7 @@ public class MappingMetadataUtil {
       new ProcessDefinitionIndex(),
       new ProcessInstanceIndex(),
       new ReportShareIndex(),
+      new SettingsIndex(),
       new TenantIndex(),
       new TerminatedUserSessionIndex(),
       new VariableUpdateInstanceIndex(),
