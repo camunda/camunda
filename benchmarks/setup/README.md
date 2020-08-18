@@ -91,5 +91,5 @@ We currently waiting until https://github.com/camunda-cloud/enhancements/blob/ma
  * Create a new cloud benchmark in our benchmark folder, via `./newCloudBenchmark`. This will create a new namespace in our k8 cluster, such that we can deploy our starters and workers. They will connect to the camunda cloud cluster after we added the correct credentials.
  * Edit the `cloudcredentials.yaml` file, replace the old/default values with your client credentials. **NOTE: Please make sure that you're not pushing your credentials to the repository!**
  * Deploy everything you need, e. g. run `make clean all` to deploy the secret, worker and starter.
- * To check the metrics for your benchmark, use htpps://grafana-ultrachaos.internal.ultrawombat.com/
+ * To check the metrics for your benchmark, use https://grafana-ultrachaos.internal.ultrawombat.com/?orgId=1
 
