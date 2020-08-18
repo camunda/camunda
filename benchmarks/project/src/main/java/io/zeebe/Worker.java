@@ -37,7 +37,8 @@ public class Worker extends App {
     final WorkerCfg workerCfg = appCfg.getWorker();
     final String jobType = workerCfg.getJobType();
     final long completionDelay = workerCfg.getCompletionDelay().toMillis();
-    final BlockingQueue<Future> requestFutures = new ArrayBlockingQueue<>(10_000);
+    final var variables = readVariables(workerCfg.getPayloadPath());
+    final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
 
     final ZeebeClient client = createZeebeClient();
     printTopology(client);
@@ -54,10 +55,7 @@ public class Worker extends App {
                     e.printStackTrace();
                   }
                   requestFutures.add(
-                      jobClient
-                          .newCompleteCommand(job.getKey())
-                          .variables(job.getVariables())
-                          .send());
+                      jobClient.newCompleteCommand(job.getKey()).variables(variables).send());
                 })
             .open();
 

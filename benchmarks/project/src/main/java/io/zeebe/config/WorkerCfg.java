@@ -28,6 +28,8 @@ public class WorkerCfg {
   private Duration pollingDelay;
   private Duration completionDelay;
 
+  private String payloadPath;
+
   public String getJobType() {
     return jobType;
   }
@@ -74,5 +76,13 @@ public class WorkerCfg {
 
   public void setCompletionDelay(Duration completionDelay) {
     this.completionDelay = completionDelay;
+  }
+
+  public String getPayloadPath() {
+    return payloadPath;
+  }
+
+  public void setPayloadPath(String payloadPath) {
+    this.payloadPath = payloadPath;
   }
 }
