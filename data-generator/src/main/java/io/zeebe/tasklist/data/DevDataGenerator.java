@@ -129,10 +129,7 @@ public class DevDataGenerator implements DataGenerator {
   }
 
   private void startSimpleProcess() {
-    ZeebeTestUtil.startWorkflowInstance(
-        zeebeClient,
-        "simpleProcess",
-        null);
+    ZeebeTestUtil.startWorkflowInstance(zeebeClient, "simpleProcess", null);
   }
 
   private void startOrderProcess() {
