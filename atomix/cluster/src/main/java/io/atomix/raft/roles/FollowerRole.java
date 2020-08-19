@@ -86,7 +86,7 @@ public final class FollowerRole extends ActiveRole {
   @Override
   public CompletableFuture<InstallResponse> onInstall(final InstallRequest request) {
     final CompletableFuture<InstallResponse> future = super.onInstall(request);
-    if (isRequestFromCurrentLeader(request.term(), request.leader())) {
+    if (isRequestFromCurrentLeader(request.currentTerm(), request.leader())) {
       resetHeartbeatTimeout();
     }
     return future;
