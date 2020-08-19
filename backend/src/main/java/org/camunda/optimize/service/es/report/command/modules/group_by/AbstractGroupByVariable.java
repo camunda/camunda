@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -86,9 +85,9 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   protected abstract BoolQueryBuilder getVariableUndefinedOrNullQuery(final ExecutionContext<Data> context);
 
   @Override
-  public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumber(final ExecutionContext<Data> context,
-                                                                      final BoolQueryBuilder baseQuery) {
-    if (isGroupedByNumberVariable(getVariableType(context))) {
+  public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<Data> context,
+                                                final BoolQueryBuilder baseQuery) {
+    if (isGroupedByNumberVariable(getVariableType(context)) || VariableType.DATE.equals(getVariableType(context))) {
       return Optional.of(getMinMaxStats(baseQuery, context));
     }
     return Optional.empty();
@@ -293,19 +292,17 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private Double getMaxForNumberVariableAggregation(final ExecutionContext<Data> context,
                                                     final MinMaxStatDto minMaxStats) {
-    return context.getNumberIntervalRange().isPresent()
-      ? context.getNumberIntervalRange().get().getMaximum()
-      : minMaxStats.getMax();
+    return context.getCombinedRangeMinMaxStats().map(MinMaxStatDto::getMax).orElse(minMaxStats.getMax());
   }
 
   private Optional<Double> getBaselineForNumberVariableAggregation(final ExecutionContext<Data> context,
                                                                    final MinMaxStatDto minMaxStats) {
-    final Optional<Range<Double>> range = context.getNumberIntervalRange();
+    final Optional<MinMaxStatDto> contextMinMaxStats = context.getCombinedRangeMinMaxStats();
     final Optional<Double> baselineForSingleReport = context.getReportData()
       .getConfiguration()
       .getBaselineForNumberVariableReport();
 
-    if (!range.isPresent() && baselineForSingleReport.isPresent()) {
+    if (!contextMinMaxStats.isPresent() && baselineForSingleReport.isPresent()) {
       if (baselineForSingleReport.get() > minMaxStats.getMax()) {
         // if report is single report and invalid baseline is set, return empty result
         return Optional.empty();
@@ -314,19 +311,13 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       return baselineForSingleReport;
     }
 
-    return range.isPresent()
-      ? Optional.of(roundDownToNearestPowerOfTen(range.get().getMinimum()))
-      : Optional.of(roundDownToNearestPowerOfTen(minMaxStats.getMin()));
+    return Optional.of(roundDownToNearestPowerOfTen(contextMinMaxStats.orElse(minMaxStats).getMin()));
   }
 
   private Double getGroupByNumberVariableUnit(final ExecutionContext<Data> context,
                                               final Double baseline,
                                               final MinMaxStatDto minMaxStats) {
-    final Optional<Range<Double>> rangeForCombinedReport = context.getNumberIntervalRange();
-    final double maxVariableValue = rangeForCombinedReport.isPresent()
-      ? rangeForCombinedReport.get().getMaximum()
-      : minMaxStats.getMax();
-
+    final double maxVariableValue = context.getCombinedRangeMinMaxStats().orElse(minMaxStats).getMax();
     final boolean customBucketsActive = context.getReportData().getConfiguration().getCustomNumberBucket().isActive();
     Double unit = context.getReportData().getConfiguration().getCustomNumberBucket().getBucketSize();
     if (!customBucketsActive || unit == null || unit <= 0) {

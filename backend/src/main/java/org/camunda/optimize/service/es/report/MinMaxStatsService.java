@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -27,7 +26,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
@@ -48,7 +46,6 @@ public class MinMaxStatsService {
   private static final String STATS_AGGREGATION_FIRST_FIELD = "statsAggField1";
   private static final String STATS_AGGREGATION_SECOND_FIELD = "statsAggField2";
 
-  private final DateTimeFormatter dateTimeFormatter;
   private final OptimizeElasticsearchClient esClient;
 
   public MinMaxStatDto getMinMaxDateRange(final ExecutionContext<? extends SingleReportDataDto> context,
@@ -84,16 +81,13 @@ public class MinMaxStatsService {
                                                          final String secondField,
                                                          final String pathForNestedStatsAgg,
                                                          final QueryBuilder filterQueryToWrapStatsWith) {
-    return context.getDateIntervalRange()
-      .map(combinedRange -> new MinMaxStatDto(
-        combinedRange.getMinimum().toInstant().toEpochMilli(),
-        combinedRange.getMaximum().toInstant().toEpochMilli(),
-        combinedRange.getMinimum().format(dateTimeFormatter),
-        combinedRange.getMaximum().format(dateTimeFormatter)
-      ))
-      .orElseGet(() -> getCrossFieldMinMaxStats(query, indexName, firstField, secondField, OPTIMIZE_DATE_FORMAT,
-                                                pathForNestedStatsAgg, filterQueryToWrapStatsWith
-      ));
+    return context.getCombinedRangeMinMaxStats()
+      .orElseGet(
+        () -> getCrossFieldMinMaxStats(
+          query, indexName, firstField, secondField, OPTIMIZE_DATE_FORMAT,
+          pathForNestedStatsAgg, filterQueryToWrapStatsWith
+        )
+      );
   }
 
   public MinMaxStatDto getMinMaxNumberRangeForNestedField(final ExecutionContext<? extends SingleReportDataDto> context,
@@ -102,8 +96,7 @@ public class MinMaxStatsService {
                                                           final String field,
                                                           final String pathForNestedStatsAgg,
                                                           final BoolQueryBuilder filterQueryToWrapStatsWith) {
-    return context.getNumberIntervalRange()
-      .map(this::mapToMinMaxStatDto)
+    return context.getCombinedRangeMinMaxStats()
       .orElseGet(
         () -> getSingleFieldMinMaxStats(query, indexName, field, pathForNestedStatsAgg, filterQueryToWrapStatsWith)
       );
@@ -113,9 +106,7 @@ public class MinMaxStatsService {
                                                             final QueryBuilder query,
                                                             final String indexName,
                                                             final Script script) {
-    return context.getNumberIntervalRange()
-      .map(this::mapToMinMaxStatDto)
-      .orElseGet(() -> getScriptedMinMaxStats(query, indexName, script));
+    return context.getCombinedRangeMinMaxStats().orElseGet(() -> getScriptedMinMaxStats(query, indexName, script));
   }
 
   public MinMaxStatDto getScriptedMinMaxStats(final QueryBuilder query,
@@ -150,12 +141,6 @@ public class MinMaxStatsService {
     return getCrossFieldMinMaxStats(
       query, indexName, field, field, null, pathForNestedStatsAgg, filterQueryToWrapStatsWith
     );
-  }
-
-  public MinMaxStatDto mapToMinMaxStatDto(final Range<Double> range) {
-    final Double minimum = range.getMinimum();
-    final Double maximum = range.getMaximum();
-    return new MinMaxStatDto(minimum, maximum);
   }
 
   private MinMaxStatDto getCrossFieldMinMaxStats(final QueryBuilder query,

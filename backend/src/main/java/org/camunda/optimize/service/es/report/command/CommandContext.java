@@ -6,11 +6,10 @@
 package org.camunda.optimize.service.es.report.command;
 
 import lombok.Data;
-import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Optional;
 
@@ -22,12 +21,8 @@ public class CommandContext<T extends ReportDefinitionDto> {
   private T reportDefinition;
   private Integer recordLimit = DEFAULT_RECORD_LIMIT;
 
-  // only used/needed for group by date commands when evaluated for
-  // a combined report.
-  private Range<OffsetDateTime> dateIntervalRange;
-
-  // only used for group by number variable & group by duration commands when evaluated for a combined report
-  private Range<Double> numberIntervalRange;
+  // used in the context of combined reports to establish identical bucket sizes/ranges across all single reports
+  private MinMaxStatDto combinedRangeMinMaxStats;
 
   // users can define which timezone the date data should be based on
   private ZoneId timezone = ZoneId.systemDefault();

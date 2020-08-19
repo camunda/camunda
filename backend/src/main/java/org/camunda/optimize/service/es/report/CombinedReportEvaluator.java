@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.report;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -27,7 +26,6 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -116,33 +114,22 @@ public class CombinedReportEvaluator {
   private void addIntervalsToReportEvaluator(final List<SingleProcessReportDefinitionDto> singleReportDefinitions,
                                              final SingleReportEvaluatorForCombinedReports singleReportEvaluator,
                                              final ZoneId timezone) {
-    CombinedAutomaticDateIntervalSelectionCalculator dateIntervalCalculator =
-      new CombinedAutomaticDateIntervalSelectionCalculator(dateTimeFormatter);
-    CombinedNumberIntervalSelectionCalculator numberRangeCalculator = new CombinedNumberIntervalSelectionCalculator();
+    final CombinedIntervalSelectionCalculator combinedIntervalCalculator = new CombinedIntervalSelectionCalculator();
 
     singleReportDefinitions
       .forEach(
         reportDefinition -> {
-          Command<?> command = singleReportEvaluator.extractCommand(reportDefinition);
-          CommandContext<SingleProcessReportDefinitionDto> commandContext = new CommandContext<>();
+          final Command<SingleProcessReportDefinitionDto> command =
+            singleReportEvaluator.extractCommand(reportDefinition);
+          final CommandContext<SingleProcessReportDefinitionDto> commandContext = new CommandContext<>();
           commandContext.setReportDefinition(reportDefinition);
           commandContext.setTimezone(timezone);
 
-          Optional<MinMaxStatDto> dateStats = command.retrieveStatsForCombinedAutomaticGroupByDate(commandContext);
-          dateStats.ifPresent(dateIntervalCalculator::addStat);
-
-          Optional<MinMaxStatDto> numberStat = command.retrieveStatsForCombinedGroupByNumber(commandContext);
-          numberStat.ifPresent(numberRangeCalculator::addStat);
+          Optional<MinMaxStatDto> minMaxStatDto = command.getGroupByMinMaxStats(commandContext);
+          minMaxStatDto.ifPresent(combinedIntervalCalculator::addStat);
         }
       );
-    Optional<Range<OffsetDateTime>> dateHistogramIntervalForCombinedReport = dateIntervalCalculator.calculateInterval();
-    dateHistogramIntervalForCombinedReport.ifPresent(
-      singleReportEvaluator::setDateIntervalRange
-    );
-    Optional<Range<Double>> numberIntervalForCombinedReport = numberRangeCalculator.calculateInterval();
-    numberIntervalForCombinedReport.ifPresent(
-      singleReportEvaluator::setNumberIntervalRange
-    );
+    combinedIntervalCalculator.getGlobalMinMaxStats().ifPresent(singleReportEvaluator::setCombinedRangeMinMaxStats);
   }
 
   private Optional<ReportEvaluationResult> evaluateWithoutThrowingError(final SingleProcessReportDefinitionDto reportDefinition,
@@ -169,23 +156,16 @@ public class CombinedReportEvaluator {
   private static class SingleReportEvaluatorForCombinedReports extends SingleReportEvaluator {
 
     @Setter
-    private Range<OffsetDateTime> dateIntervalRange;
-    @Setter
-    private Range<Double> numberIntervalRange;
+    private MinMaxStatDto combinedRangeMinMaxStats;
 
-    private SingleReportEvaluatorForCombinedReports(SingleReportEvaluator evaluator) {
-      super(
-        evaluator.notSupportedCommand,
-        evaluator.applicationContext,
-        evaluator.commandSuppliers.values()
-      );
+    private SingleReportEvaluatorForCombinedReports(final SingleReportEvaluator evaluator) {
+      super(evaluator.notSupportedCommand, evaluator.applicationContext, evaluator.commandSuppliers.values());
     }
 
     @Override
     <T extends ReportDefinitionDto<?>> ReportEvaluationResult<?, T> evaluate(final CommandContext<T> commandContext)
       throws OptimizeException {
-      commandContext.setDateIntervalRange(dateIntervalRange);
-      commandContext.setNumberIntervalRange(numberIntervalRange);
+      commandContext.setCombinedRangeMinMaxStats(combinedRangeMinMaxStats);
       return super.evaluate(commandContext);
     }
   }

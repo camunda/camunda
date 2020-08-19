@@ -58,8 +58,8 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
   private final MinMaxStatsService minMaxStatsService;
 
   @Override
-  public Optional<MinMaxStatDto> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context,
-                                                                           final BoolQueryBuilder baseQuery) {
+  public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
+                                                final BoolQueryBuilder baseQuery) {
     if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
       final GroupByDateUnit groupByDateUnit = getGroupByDateUnit(context.getReportData());
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDateUnit)) {

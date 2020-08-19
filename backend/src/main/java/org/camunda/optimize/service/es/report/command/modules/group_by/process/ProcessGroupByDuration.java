@@ -108,9 +108,8 @@ public class ProcessGroupByDuration extends GroupByPart<ProcessReportDataDto> {
   }
 
   @Override
-  public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumber(
-    final ExecutionContext<ProcessReportDataDto> context,
-    final BoolQueryBuilder baseQuery) {
+  public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
+                                                final BoolQueryBuilder baseQuery) {
     return Optional.of(retrieveMinMaxDurationStats(baseQuery));
   }
 
