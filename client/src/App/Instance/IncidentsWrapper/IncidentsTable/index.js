@@ -4,90 +4,62 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useState} from 'react';
 import PropTypes from 'prop-types';
 
 import Table from 'modules/components/Table';
 import Button from 'modules/components/Button';
 import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
-import Modal, {SIZES} from 'modules/components/Modal';
 import {TransitionGroup} from 'modules/components/Transition';
 import IncidentOperation from 'modules/components/IncidentOperation';
 
 import {formatDate} from 'modules/utils/date';
-import {withRouter} from 'react-router-dom';
+import {SORT_ORDER} from 'modules/constants';
+import {sortData} from './service';
+import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {observer} from 'mobx-react';
+import {useParams} from 'react-router-dom';
+import {ErrorMessageModal} from './ErrorMessageModal';
 
 import * as Styled from './styled';
 const {THead, TBody, TH, TR, TD} = Table;
 
-class IncidentsTable extends React.Component {
-  static propTypes = {
-    incidents: PropTypes.array.isRequired,
-    selectedFlowNodeInstanceIds: PropTypes.array,
-    sorting: PropTypes.object.isRequired,
-    onIncidentSelection: PropTypes.func.isRequired,
-    onSort: PropTypes.func.isRequired,
-    match: PropTypes.shape({
-      params: PropTypes.shape({
-        id: PropTypes.string.isRequired,
-      }).isRequired,
-    }).isRequired,
+const IncidentsTable = observer(function IncidentsTable({
+  incidents,
+  onIncidentSelection,
+}) {
+  const [isModalVisibile, setIsModalVisibile] = useState(false);
+  const [modalContent, setModalContent] = useState(null);
+  const [modalTitle, setModalTitle] = useState(null);
+  const [sorting, setSorting] = useState({
+    sortBy: 'errorType',
+    sortOrder: SORT_ORDER.DESC,
+  });
+  const {id: instanceId} = useParams();
+  const {
+    state: {selection},
+  } = flowNodeInstance;
+
+  const toggleModal = ({content, title}) => {
+    setIsModalVisibile(!isModalVisibile);
+    setModalContent(content ? content : null);
+    setModalTitle(title ? title : null);
   };
 
-  static defaultProps = {
-    forceSpinner: false,
-    selectedFlowNodeInstanceIds: [],
-  };
-
-  state = {
-    isModalVisibile: false,
-  };
-
-  toggleModal = ({content, title}) => {
-    this.setState((prevState) => ({
-      isModalVisibile: !prevState.isModalVisibile,
-      modalContent: content ? content : null,
-      modalTitle: title ? title : null,
-    }));
-  };
-
-  renderModal = () => {
-    return (
-      <Modal
-        onModalClose={this.toggleModal}
-        isVisible={this.state.isModalVisibile}
-        size={SIZES.BIG}
-      >
-        <Modal.Header>{this.state.modalTitle}</Modal.Header>
-        <Modal.Body>
-          <Modal.BodyText>{this.state.modalContent}</Modal.BodyText>
-        </Modal.Body>
-        <Modal.Footer>
-          <Modal.PrimaryButton title="Close Modal" onClick={this.toggleModal}>
-            Close
-          </Modal.PrimaryButton>
-        </Modal.Footer>
-      </Modal>
-    );
-  };
-
-  handleMoreButtonClick = (incident, e) => {
+  const handleMoreButtonClick = (incident, e) => {
     e.stopPropagation();
-    this.toggleModal({
+    toggleModal({
       content: incident.errorMessage,
       title: `Flow Node "${incident.flowNodeName}" Error`,
     });
   };
 
-  handleIncidentSelection = ({flowNodeInstanceId, flowNodeId}) => {
-    const {selectedFlowNodeInstanceIds, onIncidentSelection} = this.props;
-    const {id: instanceId} = this.props.match.params;
-
+  const handleIncidentSelection = ({flowNodeInstanceId, flowNodeId}) => {
     let newSelection;
 
     const isTheOnlySelectedIncident =
-      selectedFlowNodeInstanceIds.length === 1 &&
-      selectedFlowNodeInstanceIds[0] === flowNodeInstanceId;
+      selection.treeRowIds.length === 1 &&
+      selection.treeRowIds[0] === flowNodeInstanceId;
 
     if (isTheOnlySelectedIncident) {
       newSelection = {id: instanceId, activityId: null};
@@ -98,131 +70,145 @@ class IncidentsTable extends React.Component {
     onIncidentSelection(newSelection);
   };
 
-  render() {
-    const {incidents, sorting, selectedFlowNodeInstanceIds} = this.props;
-    const isJobIdPresent = (incidents) =>
-      !Boolean(incidents.find((item) => Boolean(item.jobId)));
+  const handleSort = (key) => {
+    let newSortOrder =
+      sorting.sortBy === key && sorting.sortOrder === SORT_ORDER.DESC
+        ? SORT_ORDER.ASC
+        : SORT_ORDER.DESC;
 
-    const {id: instanceId} = this.props.match.params;
-    return (
-      <>
-        <Table>
-          <THead>
-            <TR>
-              <Styled.FirstTH>
-                <Styled.Fake />
-                <ColumnHeader
-                  sortKey="errorType"
-                  label="Incident Type"
-                  sorting={sorting}
-                  onSort={this.props.onSort}
-                />
-              </Styled.FirstTH>
-              <TH>
-                <ColumnHeader
-                  sortKey="flowNodeName"
-                  label="Flow Node"
-                  sorting={sorting}
-                  onSort={this.props.onSort}
-                />
-              </TH>
-              <TH>
-                <ColumnHeader
-                  sortKey="jobId"
-                  label="Job Id"
-                  sorting={sorting}
-                  onSort={this.props.onSort}
-                  disabled={isJobIdPresent(incidents)}
-                />
-              </TH>
-              <TH>
-                <ColumnHeader
-                  sortKey="creationTime"
-                  label="Creation Time"
-                  sorting={sorting}
-                  onSort={this.props.onSort}
-                />
-              </TH>
-              <TH>
-                <ColumnHeader label="Error Message" />
-              </TH>
-              <TH>
-                <ColumnHeader label="Operations" />
-              </TH>
-            </TR>
-          </THead>
+    setSorting({sortOrder: newSortOrder, sortBy: key});
+  };
 
-          <TBody>
-            <TransitionGroup component={null}>
-              {incidents.map((incident, index) => {
-                return (
-                  <Styled.Transition
-                    key={incident.id}
-                    timeout={{enter: 500, exit: 200}}
-                    mountOnEnter
-                    unmountOnExit
+  const sortedIncidents = sortData(
+    incidents,
+    sorting.sortBy,
+    sorting.sortOrder
+  );
+  const isJobIdPresent = (sortedIncidents) =>
+    !Boolean(sortedIncidents.find((item) => Boolean(item.jobId)));
+
+  return (
+    <>
+      <Table>
+        <THead>
+          <TR>
+            <Styled.FirstTH>
+              <Styled.Fake />
+              <ColumnHeader
+                sortKey="errorType"
+                label="Incident Type"
+                sorting={sorting}
+                onSort={handleSort}
+              />
+            </Styled.FirstTH>
+            <TH>
+              <ColumnHeader
+                sortKey="flowNodeName"
+                label="Flow Node"
+                sorting={sorting}
+                onSort={handleSort}
+              />
+            </TH>
+            <TH>
+              <ColumnHeader
+                sortKey="jobId"
+                label="Job Id"
+                sorting={sorting}
+                onSort={handleSort}
+                disabled={isJobIdPresent(sortedIncidents)}
+              />
+            </TH>
+            <TH>
+              <ColumnHeader
+                sortKey="creationTime"
+                label="Creation Time"
+                sorting={sorting}
+                onSort={handleSort}
+              />
+            </TH>
+            <TH>
+              <ColumnHeader label="Error Message" />
+            </TH>
+            <TH>
+              <ColumnHeader label="Operations" />
+            </TH>
+          </TR>
+        </THead>
+
+        <TBody>
+          <TransitionGroup component={null}>
+            {sortedIncidents.map((incident, index) => {
+              return (
+                <Styled.Transition
+                  key={incident.id}
+                  timeout={{enter: 500, exit: 200}}
+                  mountOnEnter
+                  unmountOnExit
+                >
+                  <Styled.IncidentTR
+                    data-test={`tr-incident-${incident.id}`}
+                    isSelected={selection.treeRowIds.includes(
+                      incident.flowNodeInstanceId
+                    )}
+                    onClick={handleIncidentSelection.bind(this, incident)}
                   >
-                    <Styled.IncidentTR
-                      data-test={`tr-incident-${incident.id}`}
-                      isSelected={selectedFlowNodeInstanceIds.includes(
-                        incident.flowNodeInstanceId
-                      )}
-                      onClick={this.handleIncidentSelection.bind(
-                        this,
-                        incident
-                      )}
-                    >
-                      <TD>
-                        <Styled.FirstCell>
-                          <Styled.Index>{index + 1}</Styled.Index>
-                          {incident.errorType}
-                        </Styled.FirstCell>
-                      </TD>
-                      <TD>
-                        <div>{incident.flowNodeName}</div>
-                      </TD>
-                      <TD>
-                        <div>{incident.jobId || '--'}</div>
-                      </TD>
-                      <TD>
-                        <div>{formatDate(incident.creationTime)}</div>
-                      </TD>
-                      <TD>
-                        <Styled.Flex>
-                          <Styled.ErrorMessageCell>
-                            {incident.errorMessage}
-                          </Styled.ErrorMessageCell>
-                          {incident.errorMessage.length >= 58 && (
-                            <Button
-                              size="small"
-                              onClick={this.handleMoreButtonClick.bind(
-                                this,
-                                incident
-                              )}
-                            >
-                              More...
-                            </Button>
-                          )}
-                        </Styled.Flex>
-                      </TD>
-                      <TD>
-                        <IncidentOperation
-                          instanceId={instanceId}
-                          incident={incident}
-                          showSpinner={incident.hasActiveOperation}
-                        />
-                      </TD>
-                    </Styled.IncidentTR>
-                  </Styled.Transition>
-                );
-              })}
-            </TransitionGroup>
-          </TBody>
-        </Table>
-        {this.renderModal()}
-      </>
-    );
-  }
-}
+                    <TD>
+                      <Styled.FirstCell>
+                        <Styled.Index>{index + 1}</Styled.Index>
+                        {incident.errorType}
+                      </Styled.FirstCell>
+                    </TD>
+                    <TD>
+                      <div>{incident.flowNodeName}</div>
+                    </TD>
+                    <TD>
+                      <div>{incident.jobId || '--'}</div>
+                    </TD>
+                    <TD>
+                      <div>{formatDate(incident.creationTime)}</div>
+                    </TD>
+                    <TD>
+                      <Styled.Flex>
+                        <Styled.ErrorMessageCell>
+                          {incident.errorMessage}
+                        </Styled.ErrorMessageCell>
+                        {incident.errorMessage.length >= 58 && (
+                          <Button
+                            size="small"
+                            onClick={handleMoreButtonClick.bind(this, incident)}
+                          >
+                            More...
+                          </Button>
+                        )}
+                      </Styled.Flex>
+                    </TD>
+                    <TD>
+                      <IncidentOperation
+                        instanceId={instanceId}
+                        incident={incident}
+                        showSpinner={incident.hasActiveOperation}
+                      />
+                    </TD>
+                  </Styled.IncidentTR>
+                </Styled.Transition>
+              );
+            })}
+          </TransitionGroup>
+        </TBody>
+      </Table>
+      <ErrorMessageModal
+        isVisible={isModalVisibile}
+        title={modalTitle}
+        content={modalContent}
+        toggleModal={toggleModal}
+      />
+    </>
+  );
+});
 
-export default withRouter(IncidentsTable);
+IncidentsTable.propTypes = {
+  incidents: PropTypes.array.isRequired,
+  onIncidentSelection: PropTypes.func.isRequired,
+};
+
+export {IncidentsTable};

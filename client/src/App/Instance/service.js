@@ -5,16 +5,9 @@
  */
 
 import {STATE} from 'modules/constants';
-import * as api from 'modules/api/instances';
 
 export function isRunningInstance(instance) {
   return instance.state === STATE.ACTIVE || instance.state === STATE.INCIDENT;
-}
-
-export async function fetchIncidents(instance) {
-  return instance.state === 'INCIDENT'
-    ? await api.fetchWorkflowInstanceIncidents(instance.id)
-    : null;
 }
 
 // Subscription Handlers;

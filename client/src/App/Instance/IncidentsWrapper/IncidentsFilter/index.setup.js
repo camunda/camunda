@@ -6,7 +6,7 @@
 
 import {createIncident} from 'modules/testUtils';
 
-const incidentTableProps = {
+const mockIncidents = {
   count: 2,
   incidents: [
     createIncident({
@@ -18,66 +18,63 @@ const incidentTableProps = {
       flowNodeName: 'flowNodeName_alwaysFailingTask',
     }),
   ],
-  errorTypes: new Map(
-    Object.entries({
-      'Condition error': {
-        errorType: 'Condition error',
-        count: 1,
-      },
-      'Extract value error': {
-        errorType: 'Extract value error',
-        count: 1,
-      },
-    })
-  ),
-  flowNodes: new Map(
-    Object.entries({
-      flowNodeId_exclusiveGateway: {
-        flowNodeId: 'flowNodeId_exclusiveGateway',
-        flowNodeName: 'flowNodeName_exclusiveGateway',
-        count: 1,
-      },
-      flowNodeId_alwaysFailingTask: {
-        flowNodeId: 'flowNodeId_alwaysFailingTask',
-        flowNodeName: 'flowNodeName_alwaysFailingTask',
-        count: 1,
-      },
-    })
-  ),
+  errorTypes: [
+    {
+      errorType: 'Condition error',
+      count: 2,
+    },
+    {errorType: 'Extract value error', count: 1},
+  ],
+  flowNodes: [
+    {
+      flowNodeId: 'flowNodeId_exclusiveGateway',
+      flowNodeName: 'flowNodeName_exclusiveGateway',
+      count: 1,
+    },
+    {
+      flowNodeId: 'flowNodeId_alwaysFailingTask',
+      flowNodeName: 'flowNodeName_alwaysFailingTask',
+      count: 2,
+    },
+  ],
+};
+
+const mockIncidentsWithManyErrors = {
+  ...mockIncidents,
+  errorTypes: [
+    {
+      errorType: 'error type 1',
+      count: 1,
+    },
+    {
+      errorType: 'error type 2',
+      count: 1,
+    },
+    {
+      errorType: 'error type 3',
+      count: 1,
+    },
+    {
+      errorType: 'error type 4',
+      count: 1,
+    },
+    {
+      errorType: 'error type 5',
+      count: 1,
+    },
+    {
+      errorType: 'error type 6',
+      count: 1,
+    },
+  ],
 };
 
 const defaultProps = {
-  errorTypes: incidentTableProps.errorTypes,
-  flowNodes: incidentTableProps.flowNodes,
   selectedFlowNodes: [],
   selectedErrorTypes: [],
   onFlowNodeSelect: jest.fn(),
   onErrorTypeSelect: jest.fn(),
   onClearAll: jest.fn(),
-};
-
-const newErrorTypeMap = new Map(incidentTableProps.errorTypes);
-newErrorTypeMap
-  .set('error type 1', {
-    errorType: 'error type 1',
-    count: 1,
-  })
-  .set('error type 2', {
-    errorType: 'error type 2',
-    count: 1,
-  })
-  .set('error type 3', {
-    errorType: 'error type 3',
-    count: 1,
-  })
-  .set('error type 4', {
-    errorType: 'error type 4',
-    count: 1,
-  });
-
-const manyErrorsProps = {
-  ...defaultProps,
-  errorTypes: newErrorTypeMap,
 };
 
 const selectedErrorPillProps = {
@@ -86,10 +83,9 @@ const selectedErrorPillProps = {
   selectedErrorTypes: ['Condition error'],
 };
 
-export const testData = {
-  props: {
-    default: defaultProps,
-    manyErrors: manyErrorsProps,
-    selectedErrorPill: selectedErrorPillProps,
-  },
+export {
+  mockIncidents,
+  mockIncidentsWithManyErrors,
+  defaultProps,
+  selectedErrorPillProps,
 };

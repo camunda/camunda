@@ -18,11 +18,7 @@ import {
 } from '@testing-library/react';
 import {MemoryRouter, Route} from 'react-router-dom';
 
-import {
-  mockProps,
-  mockedExpandedPaneId,
-  mockSequenceFlows,
-} from './index.setup';
+import {mockProps, mockSequenceFlows, mockIncidents} from './index.setup';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
@@ -30,7 +26,11 @@ import SplitPane from 'modules/components/SplitPane';
 import {TopPanel} from './index';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
-import {fetchWorkflowInstance, fetchSequenceFlows} from 'modules/api/instances';
+import {
+  fetchWorkflowInstance,
+  fetchWorkflowInstanceIncidents,
+  fetchSequenceFlows,
+} from 'modules/api/instances';
 
 jest.mock('modules/utils/bpmn');
 jest.mock('modules/api/instances');
@@ -49,7 +49,7 @@ const Wrapper = ({children}) => {
   return (
     <MemoryRouter initialEntries={['/instances/1']}>
       <Route path="/instances/:id">
-        <SplitPane expandedPaneId={mockedExpandedPaneId}>
+        <SplitPane>
           {children}
           <SplitPane.Pane />
         </SplitPane>
@@ -70,6 +70,7 @@ describe('TopPanel', () => {
     singleInstanceDiagram.reset();
     currentInstance.reset();
     fetchWorkflowInstance.mockReset();
+    fetchWorkflowInstanceIncidents.mockReset();
   });
   beforeAll(() => {
     fetchSequenceFlows.mockResolvedValue(mockSequenceFlows);
@@ -98,12 +99,13 @@ describe('TopPanel', () => {
       state: 'INCIDENT',
     });
 
+    fetchWorkflowInstanceIncidents.mockResolvedValueOnce(mockIncidents);
     render(<TopPanel {...mockProps} />, {wrapper: Wrapper});
 
     await currentInstance.fetchCurrentInstance(1);
     await singleInstanceDiagram.fetchWorkflowXml(1);
     expect(
-      screen.getByText('There is 1 Incident in Instance 1.')
+      await screen.findByText('There is 1 Incident in Instance 1.')
     ).toBeInTheDocument();
   });
 });

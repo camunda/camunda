@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import IncidentsTable from './index';
+import {IncidentsTable} from './index';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createIncident} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';

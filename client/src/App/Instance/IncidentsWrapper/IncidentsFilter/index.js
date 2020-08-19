@@ -10,157 +10,145 @@ import Pill from 'modules/components/Pill';
 
 import Dropdown from 'modules/components/Dropdown';
 import * as Styled from './styled';
+import {incidents as incidentsStore} from 'modules/stores/incidents';
+import {observer} from 'mobx-react';
 
 const splitArray = (arr, size = 5) => {
   return [[...arr.slice(0, size)], [...arr.slice(size)]];
 };
 
-export default class IncidentsFilter extends React.Component {
-  render() {
-    const {
-      flowNodes,
-      errorTypes,
-      selectedErrorTypes,
-      selectedFlowNodes,
-    } = this.props;
+const IncidentsFilter = observer(function IncidentsFilter({
+  selectedErrorTypes,
+  selectedFlowNodes,
+  onErrorTypeSelect,
+  onFlowNodeSelect,
+  onClearAll,
+}) {
+  const {flowNodes, errorTypes} = incidentsStore;
 
-    const groupedFlowNodes = splitArray([...flowNodes.values()]);
-    const groupedErrorTypes = splitArray([...errorTypes.values()]);
+  const groupedFlowNodes = splitArray([...flowNodes.values()]);
+  const groupedErrorTypes = splitArray([...errorTypes.values()]);
 
-    return (
-      <Styled.FiltersWrapper>
-        <Styled.Content>
-          <Styled.PillsWrapper>
-            <Styled.FilterRow>
-              <Styled.Label>Incident type:</Styled.Label>
-              <Styled.Ul data-test="incidents-by-errorType">
-                {groupedErrorTypes[0].map((item) => {
-                  return (
-                    <li key={item.errorType}>
-                      <Pill
-                        data-test={item.errorType}
-                        type="FILTER"
-                        count={item.count}
-                        isActive={selectedErrorTypes.includes(item.errorType)}
-                        onClick={this.props.onErrorTypeSelect.bind(
-                          this,
-                          item.errorType
-                        )}
-                      >
-                        {item.errorType}
-                      </Pill>
-                    </li>
-                  );
-                })}
-                {Boolean(groupedErrorTypes[1].length) && (
-                  <li>
-                    <Styled.MoreDropdown
-                      label={`${groupedErrorTypes[1].length} more`}
+  return (
+    <Styled.FiltersWrapper>
+      <Styled.Content>
+        <Styled.PillsWrapper>
+          <Styled.FilterRow>
+            <Styled.Label>Incident type:</Styled.Label>
+            <Styled.Ul data-test="incidents-by-errorType">
+              {groupedErrorTypes[0].map((item) => {
+                return (
+                  <li key={item.errorType}>
+                    <Pill
+                      data-test={item.errorType}
+                      type="FILTER"
+                      count={item.count}
+                      isActive={selectedErrorTypes.includes(item.errorType)}
+                      onClick={() => onErrorTypeSelect(item.errorType)}
                     >
-                      {groupedErrorTypes[1].map((item) => {
-                        return (
-                          <Dropdown.Option key={item.errorType}>
-                            <Pill
-                              data-test={item.errorType}
-                              type="FILTER"
-                              count={item.count}
-                              isActive={selectedErrorTypes.includes(
-                                item.errorType
-                              )}
-                              onClick={this.props.onErrorTypeSelect.bind(
-                                this,
-                                item.errorType
-                              )}
-                              grow
-                            >
-                              {item.errorType}
-                            </Pill>
-                          </Dropdown.Option>
-                        );
-                      })}
-                    </Styled.MoreDropdown>
+                      {item.errorType}
+                    </Pill>
                   </li>
-                )}
-              </Styled.Ul>
-            </Styled.FilterRow>
-            <Styled.FilterRow>
-              <Styled.Label>Flow Node:</Styled.Label>
-              <Styled.Ul data-test="incidents-by-flowNode">
-                {groupedFlowNodes[0].map((item) => {
-                  return (
-                    <li key={item.flowNodeId}>
-                      <Pill
-                        data-test={item.flowNodeId}
-                        type="FILTER"
-                        count={item.count}
-                        isActive={selectedFlowNodes.includes(item.flowNodeId)}
-                        onClick={this.props.onFlowNodeSelect.bind(
-                          this,
-                          item.flowNodeId
-                        )}
-                      >
-                        {item.flowNodeName}
-                      </Pill>
-                    </li>
-                  );
-                })}
-                {Boolean(groupedFlowNodes[1].length) && (
-                  <li>
-                    <Styled.MoreDropdown
-                      label={`${groupedFlowNodes[1].length} more`}
+                );
+              })}
+              {Boolean(groupedErrorTypes[1].length) && (
+                <li>
+                  <Styled.MoreDropdown
+                    label={`${groupedErrorTypes[1].length} more`}
+                  >
+                    {groupedErrorTypes[1].map((item) => {
+                      return (
+                        <Dropdown.Option key={item.errorType}>
+                          <Pill
+                            data-test={item.errorType}
+                            type="FILTER"
+                            count={item.count}
+                            isActive={selectedErrorTypes.includes(
+                              item.errorType
+                            )}
+                            onClick={() => onErrorTypeSelect(item.errorType)}
+                            grow
+                          >
+                            {item.errorType}
+                          </Pill>
+                        </Dropdown.Option>
+                      );
+                    })}
+                  </Styled.MoreDropdown>
+                </li>
+              )}
+            </Styled.Ul>
+          </Styled.FilterRow>
+          <Styled.FilterRow>
+            <Styled.Label>Flow Node:</Styled.Label>
+            <Styled.Ul data-test="incidents-by-flowNode">
+              {groupedFlowNodes[0].map((item) => {
+                return (
+                  <li key={item.flowNodeId}>
+                    <Pill
+                      data-test={item.flowNodeId}
+                      type="FILTER"
+                      count={item.count}
+                      isActive={selectedFlowNodes.includes(item.flowNodeId)}
+                      onClick={() => onFlowNodeSelect(item.flowNodeId)}
                     >
-                      {groupedFlowNodes[1].map((item) => {
-                        return (
-                          <Dropdown.Option key={item.flowNodeId}>
-                            <Pill
-                              type="FILTER"
-                              count={item.count}
-                              isActive={selectedFlowNodes.includes(
-                                item.flowNodeId
-                              )}
-                              grow={true}
-                              onClick={this.props.onFlowNodeSelect.bind(
-                                this,
-                                item.flowNodeId
-                              )}
-                            >
-                              {item.flowNodeName}
-                            </Pill>
-                          </Dropdown.Option>
-                        );
-                      })}
-                    </Styled.MoreDropdown>
+                      {item.flowNodeName}
+                    </Pill>
                   </li>
-                )}
-              </Styled.Ul>
-            </Styled.FilterRow>
-          </Styled.PillsWrapper>
-          <Styled.ButtonWrapper>
-            <Styled.ClearButton
-              data-test="clear-button"
-              size="small"
-              title="Clear All"
-              onClick={this.props.onClearAll}
-              disabled={
-                selectedFlowNodes.length === 0 &&
-                selectedErrorTypes.length === 0
-              }
-            >
-              Clear All
-            </Styled.ClearButton>
-          </Styled.ButtonWrapper>
-        </Styled.Content>
-      </Styled.FiltersWrapper>
-    );
-  }
-}
+                );
+              })}
+              {Boolean(groupedFlowNodes[1].length) && (
+                <li>
+                  <Styled.MoreDropdown
+                    label={`${groupedFlowNodes[1].length} more`}
+                  >
+                    {groupedFlowNodes[1].map((item) => {
+                      return (
+                        <Dropdown.Option key={item.flowNodeId}>
+                          <Pill
+                            type="FILTER"
+                            count={item.count}
+                            isActive={selectedFlowNodes.includes(
+                              item.flowNodeId
+                            )}
+                            grow={true}
+                            onClick={() => onFlowNodeSelect(item.flowNodeId)}
+                          >
+                            {item.flowNodeName}
+                          </Pill>
+                        </Dropdown.Option>
+                      );
+                    })}
+                  </Styled.MoreDropdown>
+                </li>
+              )}
+            </Styled.Ul>
+          </Styled.FilterRow>
+        </Styled.PillsWrapper>
+        <Styled.ButtonWrapper>
+          <Styled.ClearButton
+            data-test="clear-button"
+            size="small"
+            title="Clear All"
+            onClick={onClearAll}
+            disabled={
+              selectedFlowNodes.length === 0 && selectedErrorTypes.length === 0
+            }
+          >
+            Clear All
+          </Styled.ClearButton>
+        </Styled.ButtonWrapper>
+      </Styled.Content>
+    </Styled.FiltersWrapper>
+  );
+});
 
 IncidentsFilter.propTypes = {
-  errorTypes: PropTypes.object,
   selectedErrorTypes: PropTypes.arrayOf(PropTypes.string),
-  flowNodes: PropTypes.object,
   selectedFlowNodes: PropTypes.arrayOf(PropTypes.string),
   onFlowNodeSelect: PropTypes.func.isRequired,
   onErrorTypeSelect: PropTypes.func.isRequired,
   onClearAll: PropTypes.func.isRequired,
 };
+
+export {IncidentsFilter};

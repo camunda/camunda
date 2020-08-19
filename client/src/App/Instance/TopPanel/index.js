@@ -7,7 +7,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {
-  mapify,
   getSelectedFlowNodeName,
   getFlowNodeStateOverlays,
   getMultiInstanceBodies,
@@ -17,7 +16,7 @@ import {
 import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 
 import Diagram from 'modules/components/Diagram';
-import IncidentsWrapper from '../IncidentsWrapper';
+import {IncidentsWrapper} from '../IncidentsWrapper';
 import {EXPAND_STATE} from 'modules/constants';
 
 import InstanceHeader from './InstanceHeader';
@@ -31,7 +30,6 @@ import {sequenceFlows} from 'modules/stores/sequenceFlows';
 const TopPanel = observer(
   class TopPanel extends React.PureComponent {
     static propTypes = {
-      incidents: PropTypes.object,
       children: PropTypes.node,
       onInstanceOperation: PropTypes.func,
       expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
@@ -60,7 +58,6 @@ const TopPanel = observer(
         (nodeMetaData && nodeMetaData.name) || object.flowNodeId;
       return modifiedObject;
     };
-
     /**
      * Handles selecting a flow node from the diagram
      * @param {string} flowNodeId: id of the selected flow node
@@ -89,7 +86,7 @@ const TopPanel = observer(
     };
 
     renderContent() {
-      const {incidents, onInstanceOperation, ...props} = this.props;
+      const {onInstanceOperation, ...props} = this.props;
 
       const {
         state: {selection},
@@ -98,6 +95,7 @@ const TopPanel = observer(
 
       const {items: processedSequenceFlows} = sequenceFlows.state;
       const {instance} = currentInstance.state;
+
       const {
         nodeMetaDataMap,
         state: {diagramModel},
@@ -105,21 +103,13 @@ const TopPanel = observer(
 
       const selectedFlowNodeId = selection?.flowNodeId;
       const metaData = singleInstanceDiagram.getMetaData(selectedFlowNodeId);
+
       return (
         <>
-          {instance.state === 'INCIDENT' && nodeMetaDataMap && (
+          {instance?.state === 'INCIDENT' && nodeMetaDataMap && (
             <IncidentsWrapper
               expandState={props.expandState}
-              incidents={this.addFlowNodeNames(incidents.incidents)}
-              incidentsCount={incidents.count}
-              selectedFlowNodeInstanceIds={selection.treeRowIds}
               onIncidentSelection={this.props.onTreeRowSelection}
-              errorTypes={mapify(incidents.errorTypes, 'errorType')}
-              flowNodes={mapify(
-                incidents.flowNodes,
-                'flowNodeId',
-                this.addFlowNodeName
-              )}
             />
           )}
           {diagramModel?.definitions && (
@@ -149,7 +139,6 @@ const TopPanel = observer(
     render() {
       const {
         onInstanceOperation,
-        incidents,
         onTreeRowSelection,
         getCurrentMetadata,
         ...props
@@ -158,10 +147,7 @@ const TopPanel = observer(
       const {isLoading, isInitialLoadComplete} = singleInstanceDiagram.state;
       return (
         <Styled.Pane {...props}>
-          <InstanceHeader
-            incidents={incidents}
-            onInstanceOperation={onInstanceOperation}
-          />
+          <InstanceHeader onInstanceOperation={onInstanceOperation} />
           <Styled.SplitPaneBody data-test="diagram-panel-body">
             {isLoading && <SpinnerSkeleton data-test="spinner" />}
             {isInitialLoadComplete && this.renderContent()}

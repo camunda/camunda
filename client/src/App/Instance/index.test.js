@@ -26,7 +26,7 @@ import {DataManagerProvider} from 'modules/DataManager';
 import {TopPanel} from './TopPanel';
 import BottomPanel from './BottomPanel';
 import {VariablePanel} from './BottomPanel/VariablePanel';
-import IncidentsWrapper from './IncidentsWrapper';
+import {IncidentsWrapper} from './IncidentsWrapper';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 
@@ -78,13 +78,13 @@ jest.mock('./BottomPanel/TimeStampPill', () => {
   };
 });
 
-jest.mock(
-  './IncidentsWrapper',
-  () =>
-    function Instances(props) {
+jest.mock('./IncidentsWrapper', () => {
+  return {
+    IncidentsWrapper: function IncidentsWrapper(props) {
       return <div data-test="IncidentsWrapper" />;
-    }
-);
+    },
+  };
+});
 jest.mock('modules/api/instances', () => ({
   fetchWorkflowInstance: jest.fn().mockImplementation((instance_id) => {
     const {testData} = require('./index.setup');
@@ -121,7 +121,6 @@ const {
   workflowInstanceCompleted,
   workflowInstanceCanceled,
   workflowInstanceWithIncident,
-  noIncidents,
   incidents,
   instanceHistoryTree,
   events,
@@ -172,8 +171,10 @@ describe('Instance', () => {
     });
 
     describe('load instance', () => {
-      it('should set the page title', () => {
+      it('should set the page title', async () => {
         // given
+        await currentInstance.fetchCurrentInstance('workflow_instance');
+
         const {dataManager} = node.instance().props;
         // when
         dataManager.publish({
@@ -202,33 +203,6 @@ describe('Instance', () => {
         //then
         expect(dataManager.getEvents).toHaveBeenCalledWith(workflowInstance.id);
       });
-
-      it('should request incidents', () => {
-        //given
-        const {dataManager} = node.instance().props;
-        // when
-        dataManager.publish({
-          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INSTANCE],
-          response: workflowInstanceWithIncident,
-        });
-
-        expect(dataManager.getIncidents).toHaveBeenCalledWith(
-          workflowInstanceWithIncident
-        );
-      });
-    });
-    describe('load incidents', () => {
-      it('should set loaded instance in state', () => {
-        //given
-        const {dataManager} = node.instance().props;
-        // when
-        dataManager.publish({
-          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INCIDENTS],
-          response: incidents,
-        });
-        // then
-        expect(node.instance().state.incidents).toEqual(incidents);
-      });
     });
     describe('load events', () => {
       it('should set loaded events in state', () => {
@@ -243,23 +217,11 @@ describe('Instance', () => {
         expect(node.instance().state.events).toEqual(events);
       });
     });
-    describe('load incidents', () => {
-      it('should set loaded instance in state', () => {
-        //given
-        const {dataManager} = node.instance().props;
-        // when
-        dataManager.publish({
-          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_INCIDENTS],
-          response: incidents,
-        });
-        // then
-        expect(node.instance().state.incidents).toEqual(incidents);
-      });
-    });
     describe('load data update', () => {
       it('should update some data by default', () => {
         //given
         const {dataManager} = node.instance().props;
+
         // when
         dataManager.publish({
           subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
@@ -271,9 +233,6 @@ describe('Instance', () => {
 
         //then
         expect(node.instance().state.events).toEqual(events);
-
-        // don't set conditional states.
-        expect(node.instance().state.incidents).toEqual(noIncidents);
       });
 
       it('should update some data just if existing', async () => {
@@ -287,7 +246,6 @@ describe('Instance', () => {
           subscription: subscriptions[SUBSCRIPTION_TOPIC.CONSTANT_REFRESH],
           response: {
             LOAD_INSTANCE: workflowInstance,
-            LOAD_INCIDENTS: incidents,
             LOAD_EVENTS: events,
             LOAD_INSTANCE_TREE: instanceHistoryTree,
           },
@@ -295,7 +253,7 @@ describe('Instance', () => {
 
         //then
         //Set conditional states.
-        expect(node.instance().state.incidents).toEqual(incidents);
+        expect(node.instance().state.events).toEqual(events);
       });
     });
   });

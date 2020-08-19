@@ -6,13 +6,6 @@
 
 import {STATE, TYPE} from 'modules/constants';
 
-export function mapify(arrayOfObjects, uniqueKey, modifier) {
-  return arrayOfObjects.reduce((acc, object) => {
-    const modifiedObj = modifier ? modifier(object) : object;
-    return acc.set(modifiedObj[uniqueKey], modifiedObj);
-  }, new Map());
-}
-
 export function getSelectedFlowNodeName(selectedFlowNodeId, nodeMetaData) {
   return !selectedFlowNodeId
     ? null

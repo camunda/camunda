@@ -5,33 +5,20 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render, screen, fireEvent} from '@testing-library/react';
 
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {IncidentsWrapper} from './index';
+import PropTypes from 'prop-types';
 
-import {SORT_ORDER} from 'modules/constants';
-import {act} from 'react-dom/test-utils';
-
-import Pill from 'modules/components/Pill';
-
-import IncidentsWrapper from './index';
-import IncidentsOverlay from './IncidentsOverlay';
-import IncidentsTable from './IncidentsTable';
-import {IncidentsBanner} from './IncidentsBanner';
-import IncidentsFilter from './IncidentsFilter';
-
-import {testData} from './index.setup';
+import {testData, mockIncidents, mockResolvedIncidents} from './index.setup';
 import {Router, Route} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
+import {incidents} from 'modules/stores/incidents';
+import {fetchWorkflowInstanceIncidents} from 'modules/api/instances';
+
+jest.mock('modules/api/instances');
 
 jest.mock('modules/utils/bpmn');
-
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useParams: () => ({
-    id: 1,
-  }),
-}));
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -59,320 +46,236 @@ jest.mock('react-transition-group', () => {
 });
 
 const history = createMemoryHistory({initialEntries: ['/instances/1']});
-const mountNode = () => {
-  return mount(
-    <ThemeProvider>
-      <Router history={history}>
-        <Route path="/instances/:id">
-          <IncidentsWrapper {...testData.props.default} />
-        </Route>
-      </Router>
-    </ThemeProvider>
+
+const Wrapper = ({children}) => {
+  return (
+    <Router history={history}>
+      <Route path="/instances/:id">{children}</Route>
+    </Router>
   );
+};
+Wrapper.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
 };
 
 describe('IncidentsWrapper', () => {
-  it('should hide the IncidentsOverlay by default', () => {
-    const node = mountNode(testData.props.default);
-    expect(node.find(IncidentsOverlay)).not.toExist();
+  beforeEach(async () => {
+    fetchWorkflowInstanceIncidents.mockResolvedValueOnce(mockIncidents);
+    await incidents.fetchIncidents(1);
+  });
+  afterAll(async () => {
+    fetchWorkflowInstanceIncidents.mockReset();
   });
 
   it('should render the IncidentsBanner', () => {
-    const node = mountNode(testData.props.default);
-    const bar = node.find(IncidentsBanner);
+    render(<IncidentsWrapper {...testData.props.default} />, {
+      wrapper: Wrapper,
+    });
 
-    expect(bar).toExist();
-    expect(bar.props().count).toEqual(testData.props.default.incidentsCount);
+    expect(
+      screen.getByText('There are 2 Incidents in Instance 1.')
+    ).toBeInTheDocument();
   });
 
   it('should toggle the IncidentsOverlay when clicking on the IncidentsBanner', () => {
-    const node = mountNode(testData.props.default);
-    expect(node.find(IncidentsOverlay).length).toEqual(0);
-
-    // open overlay
-    node.find(IncidentsBanner).simulate('click');
-
-    expect(node.find(IncidentsOverlay).length).toEqual(1);
-
-    // close overlay
-    node.find(IncidentsBanner).simulate('click');
-
-    node.update();
-
-    expect(node.find(IncidentsOverlay).length).toEqual(0);
+    render(<IncidentsWrapper {...testData.props.default} />, {
+      wrapper: Wrapper,
+    });
+    expect(screen.queryByText('Incident Type:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Flow Node:')).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'View 2 Incidents in Instance 1.',
+      })
+    );
+    expect(screen.getByText('Incident type:')).toBeInTheDocument();
+    expect(screen.getByText('Flow Node:')).toBeInTheDocument();
   });
 
   it('should render the IncidentsTable', () => {
-    const node = mountNode(testData.props.default);
+    render(<IncidentsWrapper {...testData.props.default} />, {
+      wrapper: Wrapper,
+    });
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'View 2 Incidents in Instance 1.',
+      })
+    );
 
-    // open overlay
-    node.find(IncidentsBanner).simulate('click');
-    node.update();
-
-    const IncidentsTableNode = node.find(IncidentsTable);
-    expect(IncidentsTableNode).toExist();
+    expect(
+      screen.getByRole('columnheader', {name: /^Incident Type/})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', {name: /^Flow Node/})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', {name: /^Job Id/})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', {name: /^Creation Time/})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', {name: /^Error Message/})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', {name: /^Operations/})
+    ).toBeInTheDocument();
   });
 
   it('should render the IncidentsFilter', () => {
-    const node = mountNode(testData.props.default);
-
-    // open overlay
-    node.find(IncidentsBanner).simulate('click');
-    node.update();
-
-    const IncidentsFilterNode = node.find(IncidentsFilter);
-
-    expect(IncidentsFilterNode).toExist();
-  });
-
-  describe('Sorting', () => {
-    it('it should apply default sorting to IncidentsTable', () => {
-      const node = mountNode(testData.props.default);
-
-      // open overlay
-      node.find(IncidentsBanner).simulate('click');
-      node.update();
-
-      const IncidentsTableNode = node.find(IncidentsTable);
-
-      expect(IncidentsTableNode.props().sorting.sortBy).toEqual('errorType');
-      expect(IncidentsTableNode.props().sorting.sortOrder).toEqual(
-        SORT_ORDER.DESC
-      );
+    render(<IncidentsWrapper {...testData.props.default} />, {
+      wrapper: Wrapper,
     });
-    it('should change the sorting', () => {
-      const node = mountNode(testData.props.default);
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'View 2 Incidents in Instance 1.',
+      })
+    );
 
-      // open overlay
-      node.find(IncidentsBanner).simulate('click');
-      node.update();
-
-      const IncidentsTableNode = node.find(IncidentsTable);
-      const onSort = IncidentsTableNode.props().onSort;
-
-      act(() => {
-        onSort('errorType');
-      });
-      node.update();
-
-      expect(node.find(IncidentsTable).props().sorting.sortBy).toEqual(
-        'errorType'
-      );
-      expect(node.find(IncidentsTable).props().sorting.sortOrder).toEqual(
-        SORT_ORDER.ASC
-      );
-      act(() => {
-        onSort('creationTime');
-      });
-      node.update();
-
-      expect(node.find(IncidentsTable).props().sorting.sortBy).toEqual(
-        'creationTime'
-      );
-      expect(node.find(IncidentsTable).props().sorting.sortOrder).toEqual(
-        SORT_ORDER.DESC
-      );
-    });
+    expect(
+      screen.getByRole('button', {name: /^Condition error/})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /^Extract value error/})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /^flowNodeId_exclusiveGateway/})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: /^Clear All/})
+    ).toBeInTheDocument();
   });
 
   describe('Filtering', () => {
-    let node;
+    let rerender;
     beforeEach(() => {
-      // when
-      node = mountNode(testData.props.default);
-      node.find(IncidentsBanner).simulate('click');
-      node.update();
+      const wrapper = render(<IncidentsWrapper {...testData.props.default} />, {
+        wrapper: Wrapper,
+      });
+      rerender = wrapper.rerender;
+      fireEvent.click(
+        screen.getByRole('button', {
+          name: 'View 2 Incidents in Instance 1.',
+        })
+      );
     });
 
     it('should not have active filters by default', () => {
-      // then
-
-      // flodeNode Filter
-      const PillsByFlowNode = node.find(
-        'ul[data-test="incidents-by-flowNode"]'
-      );
-      PillsByFlowNode.find(Pill).forEach((pill) => {
-        expect(pill.props().isActive).toEqual(false);
-      });
-
-      // errorType Filter
-      const PillsByErrorType = node.find(
-        'ul[data-test="incidents-by-errorType"]'
-      );
-      PillsByErrorType.find(Pill).forEach((pill) => {
-        expect(pill.props().isActive).toEqual(false);
-      });
+      expect(screen.getAllByRole('row').length).toBe(3);
     });
 
     it('should filter the incidents when errorTypes are selected', () => {
-      //given
-      expect(node.find(IncidentsTable).find('tr').length).toBe(3);
+      expect(screen.getAllByRole('row').length).toBe(3);
+      expect(
+        screen.getByRole('row', {name: /Condition errortype/})
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('row', {name: /Extract value errortype/})
+      ).toBeInTheDocument();
 
-      //when
-      node
-        .find('ul[data-test="incidents-by-errorType"]')
-        .find(Pill)
-        .find('[data-test="Condition error"]')
-        .simulate('click');
-      node.update();
-      // then
-      expect(node.find(IncidentsTable).find('tr').length).toBe(2);
+      fireEvent.click(
+        screen.getByRole('button', {name: /^Condition errortype/})
+      );
+
+      expect(screen.getAllByRole('row').length).toBe(2);
+      expect(
+        screen.getByRole('row', {name: /Condition errortype/})
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('row', {name: /Extract value errortype/})
+      ).not.toBeInTheDocument();
     });
 
     it('should filter the incidents when flowNodes are selected', () => {
-      //given
-      expect(node.find(IncidentsTable).find('tr').length).toBe(3);
-      //when
+      expect(screen.getAllByRole('row').length).toBe(3);
+      expect(
+        screen.getByRole('row', {name: /flowNodeId_exclusiveGateway/})
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('row', {name: /flowNodeId_alwaysFailingTask/})
+      ).toBeInTheDocument();
 
-      node
-        .find('ul[data-test="incidents-by-flowNode"]')
-        .find(Pill)
-        .find('[data-test="flowNodeId_exclusiveGateway"]')
-        .simulate('click');
-      node.update();
-      // then
-      expect(node.find(IncidentsTable).find('tr').length).toBe(2);
+      fireEvent.click(
+        screen.getByRole('button', {name: /^flowNodeId_exclusiveGateway/})
+      );
+
+      expect(screen.getAllByRole('row').length).toBe(2);
+      expect(
+        screen.getByRole('row', {name: /flowNodeId_exclusiveGateway/})
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole('row', {name: /flowNodeId_alwaysFailingTask/})
+      ).not.toBeInTheDocument();
     });
 
     it('should filter the incidents when both errorTypes & flowNodes are selected', () => {
-      // given
-      // all incidents shown
-      expect(node.find(IncidentsTable).find('tr').length).toBe(3);
+      expect(screen.getAllByRole('row').length).toBe(3);
+      fireEvent.click(
+        screen.getByRole('button', {name: /^Condition errortype/})
+      );
+      expect(screen.getAllByRole('row').length).toBe(2);
 
-      // when (1)
-      // mismatch task & error
-      node
-        .find('ul[data-test="incidents-by-flowNode"]')
-        .find(Pill)
-        .find('[data-test="flowNodeId_alwaysFailingTask"]')
-        .simulate('click');
-
-      node
-        .find('ul[data-test="incidents-by-errorType"]')
-        .find(Pill)
-        .find('[data-test="Condition error"]')
-        .simulate('click');
-
-      node.update();
-
-      // then (1)
-      // only header visible
-      expect(node.find(IncidentsTable).find('tr').length).toBe(1);
-
-      // when (2)
-      // match task & error
-      node
-        .find('ul[data-test="incidents-by-errorType"]')
-        .find(Pill)
-        .find('[data-test="Extract value error"]')
-        .simulate('click');
-
-      node.update();
-
-      // then (2)
-      // header and matching incident visible
-      expect(node.find(IncidentsTable).find('tr').length).toBe(2);
+      fireEvent.click(
+        screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
+      );
+      expect(screen.getAllByRole('row').length).toBe(1);
+      fireEvent.click(
+        screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
+      );
+      expect(screen.getAllByRole('row').length).toBe(2);
     });
 
-    it('should remove filter when only related incident gets resolved', () => {
-      // given
-      node
-        .find('ul[data-test="incidents-by-flowNode"]')
-        .find(Pill)
-        .find('[data-test="flowNodeId_exclusiveGateway"]')
-        .simulate('click');
+    it('should remove filter when only related incident gets resolved', async () => {
+      expect(screen.getAllByRole('row').length).toBe(3);
 
-      node
-        .find('ul[data-test="incidents-by-flowNode"]')
-        .find(Pill)
-        .find('[data-test="flowNodeId_alwaysFailingTask"]')
-        .simulate('click');
+      fireEvent.click(
+        screen.getByRole('button', {name: /^flowNodeId_exclusiveGateway/})
+      );
+      fireEvent.click(
+        screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
+      );
+      expect(screen.getAllByRole('row').length).toBe(3);
 
-      expect(node.find(IncidentsTable).find('tr').length).toBe(3);
+      // incident is resolved
+      fetchWorkflowInstanceIncidents.mockResolvedValueOnce(
+        mockResolvedIncidents
+      );
 
-      // when
-      // Incident is resolved
+      await incidents.fetchIncidents(1);
 
-      node.setProps({
-        children: (
-          <Router history={history}>
-            <Route path="/instances/:id">
-              <IncidentsWrapper {...testData.props.incidentResolved} />
-            </Route>
-          </Router>
-        ),
-      });
-      node.update();
+      rerender(<IncidentsWrapper {...testData.props.default} />);
 
-      // // then (1)
-      // // remove related filter Pill;
       expect(
-        node
-          .find('ul[data-test="incidents-by-flowNode"]')
-          .find(Pill)
-          .find('[data-test="flowNodeId_exclusiveGateway"]')
-      ).not.toExist();
+        screen.queryByRole('button', {name: /^flowNodeId_exclusiveGateway/})
+      ).not.toBeInTheDocument();
 
-      // // then (2)
-      // // remaining filters still visually active
       expect(
-        node
-          .find('ul[data-test="incidents-by-flowNode"]')
-          .find(Pill)
-          .find('[data-test="flowNodeId_alwaysFailingTask"]')
-          .props().isActive
-      ).toBe(true);
+        screen.getByRole('button', {name: /^flowNodeId_alwaysFailingTask/})
+      ).toBeInTheDocument();
 
-      // // then (3)
-      // // remaining filters still applied
-      expect(node.find(IncidentsTable).find('tr').length).toBe(2);
+      expect(screen.getAllByRole('row').length).toBe(2);
     });
 
     it('should drop all filters when clicking the clear all button', () => {
-      // given
+      expect(screen.getAllByRole('row').length).toBe(3);
 
-      // some filters are active
-      node
-        .find('ul[data-test="incidents-by-flowNode"]')
-        .find(Pill)
-        .find('[data-test="flowNodeId_exclusiveGateway"]')
-        .simulate('click');
-      node
-        .find('ul[data-test="incidents-by-errorType"]')
-        .find(Pill)
-        .find('[data-test="Condition error"]')
-        .simulate('click');
+      fireEvent.click(
+        screen.getByRole('button', {name: /^flowNodeId_exclusiveGateway/})
+      );
+      fireEvent.click(
+        screen.getByRole('button', {name: /^Condition errortype/})
+      );
+      expect(screen.getAllByRole('row').length).toBe(2);
 
-      expect(
-        node
-          .find('ul[data-test="incidents-by-flowNode"]')
-          .find(Pill)
-          .find('[data-test="flowNodeId_exclusiveGateway"]')
-          .props().isActive
-      ).toBe(true);
+      fireEvent.click(screen.getByRole('button', {name: /^Clear All/}));
 
-      expect(
-        node
-          .find('ul[data-test="incidents-by-errorType"]')
-          .find(Pill)
-          .find('[data-test="Condition error"]')
-          .props().isActive
-      ).toBe(true);
-
-      // Incidents in table are filtered.
-      expect(node.find(IncidentsTable).find('tr').length).toBe(2);
-
-      // when
-      node.find('button[data-test="clear-button"]').simulate('click');
-
-      //then
-      // Incidents in table not filtered.
-      expect(node.find(IncidentsTable).find('tr').length).toBe(3);
-
-      // no filter pill active
-      node.find(Pill).forEach((pill) => {
-        expect(pill.props().isActive).toEqual(false);
-      });
+      expect(screen.getAllByRole('row').length).toBe(3);
     });
   });
 });

@@ -11,7 +11,6 @@ import SplitPane from 'modules/components/SplitPane';
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 
 import {
-  PAGE_TITLE,
   SUBSCRIPTION_TOPIC,
   TYPE,
   LOADING_STATE,
@@ -19,7 +18,6 @@ import {
 } from 'modules/constants';
 
 import {compactObject} from 'modules/utils';
-import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
 import {withData} from 'modules/DataManager';
 
@@ -34,6 +32,7 @@ import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
 import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 import {observer} from 'mobx-react';
+import {autorun} from 'mobx';
 
 import * as Styled from './styled';
 const Instance = observer(
@@ -50,34 +49,19 @@ const Instance = observer(
     constructor(props) {
       super(props);
 
+      this.disposer = null;
       this.state = {
         events: [],
-        incidents: {
-          count: 0,
-          incidents: [],
-          flowNodes: [],
-          errorTypes: [],
-        },
         forceInstanceSpinner: false,
-        forceIncidentsSpinner: false,
         isPollActive: false,
       };
       this.pollingTimer = null;
       this.subscriptions = {
         LOAD_INSTANCE: ({response, state}) => {
           if (state === LOADING_STATE.LOADED) {
-            document.title = PAGE_TITLE.INSTANCE(
-              response.id,
-              getWorkflowName(response)
-            );
-
             const {dataManager} = this.props;
             // kick off all follow-up requests.
             dataManager.getEvents(response.id);
-            if (response.state === 'INCIDENT') {
-              dataManager.getIncidents(response);
-            }
-
             singleInstanceDiagram.fetchWorkflowXml(response.workflowId);
 
             flowNodeInstance.setCurrentSelection({
@@ -86,23 +70,17 @@ const Instance = observer(
             });
           }
         },
-        LOAD_INCIDENTS: (responseData) =>
-          storeResponse(responseData, (response) => {
-            this.setState({incidents: response});
-          }),
         LOAD_EVENTS: (responseData) =>
           storeResponse(responseData, (response) => {
             this.setState({events: response});
           }),
         CONSTANT_REFRESH: ({response, state}) => {
           if (state === LOADING_STATE.LOADED) {
-            const {LOAD_INCIDENTS, LOAD_EVENTS} = response;
+            const {LOAD_EVENTS} = response;
 
             this.setState({
               isPollActive: false,
               events: LOAD_EVENTS,
-              // conditional updates
-              ...(LOAD_INCIDENTS && {incidents: LOAD_INCIDENTS}),
             });
           }
         },
@@ -116,6 +94,11 @@ const Instance = observer(
       this.props.dataManager.getWorkflowInstance(id);
       flowNodeInstance.fetchInstanceExecutionHistory(id);
       flowNodeInstance.startPolling(id);
+
+      this.disposer = autorun(() => {
+        if (currentInstance.workflowTitle !== null)
+          document.title = currentInstance.workflowTitle;
+      });
     }
 
     componentDidUpdate() {
@@ -140,6 +123,9 @@ const Instance = observer(
       currentInstance.reset();
       flowNodeTimeStamp.reset();
       singleInstanceDiagram.reset();
+      if (this.disposer !== null) {
+        this.disposer();
+      }
     }
 
     handlePoll = () => {
@@ -147,19 +133,16 @@ const Instance = observer(
         topic: SUBSCRIPTION_TOPIC.CONSTANT_REFRESH,
         endpoints: [
           {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE}, // should later be removed and call currentInstance.fetchCurrentInstance(id); instead
-          {name: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS},
           {name: SUBSCRIPTION_TOPIC.LOAD_EVENTS},
         ],
       };
       statistics.fetchStatistics();
-
       this.props.dataManager.update(updateParams);
     };
 
     isAllDataLoaded = () => {
       const {
         forceInstanceSpinner,
-        forceIncidentsSpinner,
         isPollActive,
         ...initallyLoadedStates
       } = this.state;
@@ -268,7 +251,6 @@ const Instance = observer(
     };
 
     render() {
-      const {incidents} = this.state;
       const {instance} = currentInstance.state;
       return (
         <Styled.Instance>
@@ -280,7 +262,6 @@ const Instance = observer(
             expandedPaneId="instanceExpandedPaneId"
           >
             <TopPanel
-              incidents={incidents}
               getCurrentMetadata={this.getCurrentMetadata}
               onInstanceOperation={this.handleInstanceOperation}
               onTreeRowSelection={this.handleTreeRowSelection}

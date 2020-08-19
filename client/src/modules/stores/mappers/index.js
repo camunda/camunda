@@ -118,9 +118,25 @@ const getProcessedSequenceFlows = (sequenceFlows) => {
     .filter((value, index, self) => self.indexOf(value) === index);
 };
 
+const mapify = (arrayOfObjects, uniqueKey) => {
+  if (arrayOfObjects === undefined) return new Map();
+  return arrayOfObjects.reduce((acc, object) => {
+    return acc.set(object[uniqueKey], object);
+  }, new Map());
+};
+
+const addFlowNodeName = (object, nodeMetaData) => {
+  const modifiedObject = {...object};
+  modifiedObject.flowNodeName =
+    (nodeMetaData && nodeMetaData.name) || object.flowNodeId;
+  return modifiedObject;
+};
+
 export {
   constructFlowNodeIdToFlowNodeInstanceMap,
   getSelectableFlowNodes,
   createNodeMetaDataMap,
   getProcessedSequenceFlows,
+  mapify,
+  addFlowNodeName,
 };

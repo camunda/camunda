@@ -154,20 +154,6 @@ describe('DataManager', () => {
       });
     });
 
-    describe('fetch Incidents', () => {
-      it('should fetch and publish', () => {
-        dataManager.getIncidents(mockWorkflowInstance);
-
-        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
-          SUBSCRIPTION_TOPIC.LOAD_INCIDENTS
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
-          instancesApi.fetchWorkflowInstanceIncidents
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][2]).toBe(mockWorkflowInstance);
-      });
-    });
-
     describe('fetch Events', () => {
       it('should fetch and publish', () => {
         dataManager.getEvents(mockWorkflowInstance.id);

@@ -9,7 +9,6 @@ import {
   fetchWorkflowInstancesByIds,
   fetchWorkflowInstance,
   fetchWorkflowInstances,
-  fetchWorkflowInstanceIncidents,
   applyBatchOperation,
   applyOperation,
 } from 'modules/api/instances';
@@ -83,14 +82,6 @@ export class DataManager {
       SUBSCRIPTION_TOPIC.LOAD_EVENTS,
       fetchEvents,
       instanceId
-    );
-  };
-
-  getIncidents = (instance) => {
-    this.fetchAndPublish(
-      SUBSCRIPTION_TOPIC.LOAD_INCIDENTS,
-      fetchWorkflowInstanceIncidents,
-      instance
     );
   };
 

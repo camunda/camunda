@@ -10,15 +10,20 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 import {EXPAND_STATE} from 'modules/constants';
 import * as Styled from './styled';
 import {useParams} from 'react-router-dom';
+import {incidents as incidentsStore} from 'modules/stores/incidents';
+import {observer} from 'mobx-react';
 
-const IncidentsBanner = ({count, onClick, isOpen, expandState}) => {
+const IncidentsBanner = observer(({onClick, isOpen, expandState}) => {
   const {id} = useParams();
-  const isOnlyOne = count === 1;
-  const errorMessage = `There ${isOnlyOne ? 'is' : 'are'} ${pluralSuffix(
-    count,
+  const {incidentsCount} = incidentsStore;
+
+  const errorMessage = `There ${
+    incidentsCount === 1 ? 'is' : 'are'
+  } ${pluralSuffix(incidentsCount, 'Incident')} in Instance ${id}. `;
+  const title = `View ${pluralSuffix(
+    incidentsCount,
     'Incident'
   )} in Instance ${id}. `;
-  const title = `View ${pluralSuffix(count, 'Incident')} in Instance ${id}. `;
 
   return (
     expandState !== EXPAND_STATE.COLLAPSED && (
@@ -32,10 +37,9 @@ const IncidentsBanner = ({count, onClick, isOpen, expandState}) => {
       </Styled.IncidentsBanner>
     )
   );
-};
+});
 
 IncidentsBanner.propTypes = {
-  count: PropTypes.number.isRequired,
   onClick: PropTypes.func,
   isOpen: PropTypes.bool,
   expandState: PropTypes.string,

@@ -4,68 +4,37 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {STATE} from 'modules/constants';
-import {createIncident, createRawTreeNode} from 'modules/testUtils';
-import {createSequenceFlows} from 'modules/testUtils';
+import {createSequenceFlows, createIncident} from 'modules/testUtils';
 
-const mockIncidents = () => {
-  return {
-    count: 1,
-    incidents: [
-      createIncident({
-        errorType: 'Condition error',
-        flowNodeId: 'Service5678',
-      }),
-    ],
-    errorTypes: [
-      {
-        errorType: 'Condition error',
-        count: 1,
-      },
-    ],
-    flowNodes: [
-      {
-        flowNodeId: 'Service5678',
-        flowNodeName: 'Do something',
-        count: 1,
-      },
-    ],
-  };
+const mockIncidents = {
+  count: 1,
+  incidents: [
+    createIncident({
+      errorType: 'Condition error',
+      flowNodeId: 'Service5678',
+    }),
+  ],
+  errorTypes: [
+    {
+      errorType: 'Condition error',
+      count: 1,
+    },
+  ],
+  flowNodes: [
+    {
+      flowNodeId: 'Service5678',
+      flowNodeName: 'Do something',
+      count: 1,
+    },
+  ],
 };
 
-export const createRawTree = () => {
-  return {
-    children: [
-      createRawTreeNode({
-        activityId: 'StartEvent1234',
-        type: 'START_EVENT',
-        state: STATE.COMPLETED,
-      }),
-      createRawTreeNode({
-        activityId: 'Service5678',
-        type: 'SERVICE_TASK',
-        state: STATE.COMPLETED,
-      }),
-      createRawTreeNode({
-        activityId: 'EndEvent1234',
-        type: 'End_Event',
-        state: STATE.COMPLETED,
-      }),
-    ],
-  };
-};
+const mockSequenceFlows = createSequenceFlows();
 
-export const mockSequenceFlows = createSequenceFlows();
-
-export const mockProps = {
-  incidents: mockIncidents(),
-  selection: {
-    treeRowIds: [],
-    flowNodeId: null,
-  },
+const mockProps = {
   getCurrentMetadata: jest.fn(),
   onInstanceOperation: jest.fn(),
   onTreeRowSelection: jest.fn(),
 };
 
-export const mockedExpandedPaneId = 'myExpandedPaneId';
+export {mockIncidents, mockProps, mockSequenceFlows};

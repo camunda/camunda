@@ -8,28 +8,26 @@ import React from 'react';
 import {IncidentsBanner} from './index';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {EXPAND_STATE} from 'modules/constants';
-import {MemoryRouter} from 'react-router-dom';
+import {MemoryRouter, Route} from 'react-router-dom';
 import {render, screen} from '@testing-library/react';
 import PropTypes from 'prop-types';
+import {incidents} from 'modules/stores/incidents';
+import {fetchWorkflowInstanceIncidents} from 'modules/api/instances';
 
 const mockProps = {
-  count: 1,
   onClick: jest.fn(),
   isArrowFlipped: false,
   expandState: 'DEFAULT',
 };
 
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useParams: () => ({
-    id: 1,
-  }),
-}));
+jest.mock('modules/api/instances');
 
 const Wrapper = ({children}) => {
   return (
     <ThemeProvider>
-      <MemoryRouter>{children}</MemoryRouter>
+      <MemoryRouter initialEntries={['/instances/1']}>
+        <Route path="/instances/:id">{children}</Route>
+      </MemoryRouter>
     </ThemeProvider>
   );
 };
@@ -41,7 +39,15 @@ Wrapper.propTypes = {
 };
 
 describe('IncidentsBanner', () => {
-  it('should display incidents banner if banner is not collapsed', () => {
+  afterEach(async () => {
+    fetchWorkflowInstanceIncidents.mockReset();
+  });
+  it('should display incidents banner if banner is not collapsed', async () => {
+    fetchWorkflowInstanceIncidents.mockResolvedValueOnce({
+      count: 1,
+    });
+    await incidents.fetchIncidents(1);
+
     render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
 
     expect(
@@ -49,7 +55,12 @@ describe('IncidentsBanner', () => {
     ).toBeInTheDocument();
   });
 
-  it('should not display incidents banner if panel is collapsed', () => {
+  it('should not display incidents banner if panel is collapsed', async () => {
+    fetchWorkflowInstanceIncidents.mockResolvedValueOnce({
+      count: 1,
+    });
+    await incidents.fetchIncidents(1);
+
     render(
       <IncidentsBanner {...mockProps} expandState={EXPAND_STATE.COLLAPSED} />,
       {wrapper: Wrapper}
@@ -60,8 +71,13 @@ describe('IncidentsBanner', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should show the right text for more than 1 incident', () => {
-    render(<IncidentsBanner {...mockProps} count={2} />, {wrapper: Wrapper});
+  it('should show the right text for more than 1 incident', async () => {
+    fetchWorkflowInstanceIncidents.mockResolvedValueOnce({
+      count: 2,
+    });
+    await incidents.fetchIncidents(1);
+
+    render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
 
     expect(
       screen.getByText('There are 2 Incidents in Instance 1.')

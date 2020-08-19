@@ -10,36 +10,33 @@ import {isEqual} from 'lodash';
 import PropTypes from 'prop-types';
 import {IncidentsBanner} from './IncidentsBanner';
 import IncidentsOverlay from './IncidentsOverlay';
-import IncidentsTable from './IncidentsTable';
-import IncidentsFilter from './IncidentsFilter';
-import {SORT_ORDER} from 'modules/constants';
+import {IncidentsTable} from './IncidentsTable';
+import {IncidentsFilter} from './IncidentsFilter';
 import usePrevious from 'modules/hooks/usePrevious';
-import {sortData} from './service';
+import {incidents as incidentsStore} from 'modules/stores/incidents';
+import {observer} from 'mobx-react';
 
 import * as Styled from './styled';
 
-function IncidentsWrapper(props) {
-  const {
-    incidents,
-    incidentsCount,
-    errorTypes,
-    flowNodes,
-    selectedFlowNodeInstanceIds,
-    onIncidentSelection,
-    expandState,
-  } = props;
+const IncidentsWrapper = observer(function IncidentsWrapper(props) {
+  const {onIncidentSelection, expandState} = props;
+  const {incidents, flowNodes, errorTypes} = incidentsStore;
 
   const [isOpen, setIsOpen] = useState(false);
-  const [sorting, setSorting] = useState({
-    sortBy: 'errorType',
-    sortOrder: SORT_ORDER.DESC,
-  });
+
   const [selectedFlowNodes, setSelectedFlowNodes] = useState([]);
   const [selectedErrorTypes, setSelectedErrorTypes] = useState([]);
   const [isInTransition, setIsInTransition] = useState(false);
 
   const prevErrorTypes = usePrevious(errorTypes);
   const prevFlowNodes = usePrevious(flowNodes);
+  useEffect(() => {
+    incidentsStore.init();
+
+    return () => {
+      incidentsStore.reset();
+    };
+  }, []);
 
   useEffect(() => {
     if (didFiltersChange(prevErrorTypes, errorTypes)) {
@@ -69,27 +66,24 @@ function IncidentsWrapper(props) {
     !isInTransition && setIsOpen(!isOpen);
   }
 
-  function handleSelection(selectedFilters, updateFilterState) {
-    return (id) => {
-      let index = selectedFilters.findIndex((item) => item === id);
-      let list = [...selectedFilters];
-      if (index === -1) {
-        list.push(id);
-      } else {
-        list.splice(index, 1);
-      }
-      updateFilterState(list);
-    };
+  function handleSelection(selectedFilters, updateFilterState, id) {
+    let index = selectedFilters.findIndex((item) => item === id);
+    let list = [...selectedFilters];
+    if (index === -1) {
+      list.push(id);
+    } else {
+      list.splice(index, 1);
+    }
+    updateFilterState(list);
   }
 
-  function handleSort(key) {
-    let newSortOrder =
-      sorting.sortBy === key && sorting.sortOrder === SORT_ORDER.DESC
-        ? SORT_ORDER.ASC
-        : SORT_ORDER.DESC;
+  const handleErrorTypeSelect = (errorId) => {
+    handleSelection(selectedErrorTypes, setSelectedErrorTypes, errorId);
+  };
 
-    setSorting({sortOrder: newSortOrder, sortBy: key});
-  }
+  const handleFlowNodeSelect = (flowNodeId) => {
+    handleSelection(selectedFlowNodes, setSelectedFlowNodes, flowNodeId);
+  };
 
   function clearAll() {
     setSelectedErrorTypes([]);
@@ -123,67 +117,46 @@ function IncidentsWrapper(props) {
     return [...incidents].filter((item) => isSelected(item));
   }, [incidents, selectedErrorTypes, selectedFlowNodes]);
 
-  const sortedIncidents = sortData(
-    filteredIncidents,
-    sorting.sortBy,
-    sorting.sortOrder
-  );
-
   return (
-    <>
-      <IncidentsBanner
-        count={incidentsCount}
-        onClick={handleToggle}
-        isOpen={isOpen}
-        expandState={expandState}
-      />
-      <Styled.Transition
-        in={isOpen}
-        onEnter={() => setIsInTransition(true)}
-        onEntered={() => setIsInTransition(false)}
-        onExit={() => setIsInTransition(true)}
-        onExited={() => setIsInTransition(false)}
-        mountOnEnter
-        unmountOnExit
-        timeout={400}
-      >
-        <IncidentsOverlay>
-          <IncidentsFilter
-            flowNodes={flowNodes}
-            selectedFlowNodes={selectedFlowNodes}
-            errorTypes={errorTypes}
-            selectedErrorTypes={selectedErrorTypes}
-            onFlowNodeSelect={handleSelection(
-              selectedFlowNodes,
-              setSelectedFlowNodes
-            )}
-            onErrorTypeSelect={handleSelection(
-              selectedErrorTypes,
-              setSelectedErrorTypes
-            )}
-            onClearAll={clearAll}
-          />
-          <IncidentsTable
-            incidents={sortedIncidents}
-            selectedFlowNodeInstanceIds={selectedFlowNodeInstanceIds}
-            sorting={sorting}
-            onIncidentSelection={onIncidentSelection}
-            onSort={handleSort}
-          />
-        </IncidentsOverlay>
-      </Styled.Transition>
-    </>
+    incidentsStore.incidentsCount > 0 && (
+      <>
+        <IncidentsBanner
+          onClick={handleToggle}
+          isOpen={isOpen}
+          expandState={expandState}
+        />
+        <Styled.Transition
+          in={isOpen}
+          onEnter={() => setIsInTransition(true)}
+          onEntered={() => setIsInTransition(false)}
+          onExit={() => setIsInTransition(true)}
+          onExited={() => setIsInTransition(false)}
+          mountOnEnter
+          unmountOnExit
+          timeout={400}
+        >
+          <IncidentsOverlay>
+            <IncidentsFilter
+              selectedFlowNodes={selectedFlowNodes}
+              selectedErrorTypes={selectedErrorTypes}
+              onFlowNodeSelect={handleFlowNodeSelect}
+              onErrorTypeSelect={handleErrorTypeSelect}
+              onClearAll={clearAll}
+            />
+            <IncidentsTable
+              incidents={filteredIncidents}
+              onIncidentSelection={onIncidentSelection}
+            />
+          </IncidentsOverlay>
+        </Styled.Transition>
+      </>
+    )
   );
-}
+});
 
 IncidentsWrapper.propTypes = {
-  incidents: PropTypes.array,
-  incidentsCount: PropTypes.number.isRequired,
-  selectedFlowNodeInstanceIds: PropTypes.array,
   onIncidentSelection: PropTypes.func.isRequired,
-  flowNodes: PropTypes.object,
-  errorTypes: PropTypes.object,
   expandState: PropTypes.string.isRequired,
 };
 
-export default IncidentsWrapper;
+export {IncidentsWrapper};
