@@ -18,7 +18,5 @@ import lombok.experimental.FieldNameConstants;
 @Data
 @FieldNameConstants(asEnum = true)
 public class SettingsDto {
-  public static final String ID = "1";
-
   private boolean metadataTelemetryEnabled;
 }

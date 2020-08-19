@@ -12,6 +12,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
@@ -61,7 +62,7 @@ public class SettingsWriter {
 
     return new UpdateRequest()
       .index(SETTINGS_INDEX_NAME)
-      .id(SettingsDto.ID)
+      .id(SettingsIndex.ID)
       .upsert(objectMapper.writeValueAsString(settingsDto), XContentType.JSON)
       .script(updateScript)
       .setRefreshPolicy(IMMEDIATE)

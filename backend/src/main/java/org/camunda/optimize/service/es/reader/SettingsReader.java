@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.SettingsIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -32,7 +33,7 @@ public class SettingsReader {
   public Optional<SettingsDto> getSettings() {
     log.debug("Fetching Optimize Settings");
 
-    final GetRequest getRequest = new GetRequest(SETTINGS_INDEX_NAME).id(SettingsDto.ID);
+    final GetRequest getRequest = new GetRequest(SETTINGS_INDEX_NAME).id(SettingsIndex.ID);
 
     SettingsDto result = null;
     try {

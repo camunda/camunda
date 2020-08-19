@@ -19,7 +19,6 @@ import javax.ws.rs.ForbiddenException;
 @Component
 @Slf4j
 public class SettingsService {
-
   private final SettingsReader settingsReader;
   private final SettingsWriter settingsWriter;
   private final IdentityService identityService;

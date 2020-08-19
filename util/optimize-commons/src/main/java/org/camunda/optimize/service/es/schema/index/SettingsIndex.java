@@ -15,6 +15,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SETTINGS_IN
 
 public class SettingsIndex extends DefaultIndexMappingCreator {
   public static final int VERSION = 1;
+  public static final String ID = "1";
 
   public static final String METADATA_TELEMETRY_ENABLED = SettingsDto.Fields.metadataTelemetryEnabled.name();
 

@@ -15,6 +15,7 @@ import java.io.IOException;
 public class MetadataIndex extends DefaultIndexMappingCreator {
 
   public static final int VERSION = 3;
+  public static final String ID = "1";
 
   public static final String SCHEMA_VERSION = MetadataDto.Fields.schemaVersion.name();
   public static final String INSTALLATION_ID = MetadataDto.Fields.installationId.name();

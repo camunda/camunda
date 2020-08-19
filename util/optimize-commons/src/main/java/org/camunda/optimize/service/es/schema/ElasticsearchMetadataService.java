@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
 import org.elasticsearch.ElasticsearchException;
@@ -40,8 +41,6 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @Component
 @Slf4j
 public class ElasticsearchMetadataService {
-
-  private static final String ID = "1";
   private static final String ERROR_MESSAGE_ES_REQUEST = "Could not write Optimize metadata (version and " +
     "installationID) to Elasticsearch.";
 
@@ -128,7 +127,7 @@ public class ElasticsearchMetadataService {
     try {
       final UpdateRequest request = new UpdateRequest()
         .index(METADATA_INDEX_NAME)
-        .id(ID)
+        .id(MetadataIndex.ID)
         .script(updateScript)
         .upsert(objectMapper.writeValueAsString(newMetadataIfAbsent), XContentType.JSON)
         .setRefreshPolicy(IMMEDIATE)
