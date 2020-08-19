@@ -18,7 +18,11 @@ import {
 } from '@testing-library/react';
 import {MemoryRouter, Route} from 'react-router-dom';
 
-import {mockProps, mockedExpandedPaneId} from './index.setup';
+import {
+  mockProps,
+  mockedExpandedPaneId,
+  mockSequenceFlows,
+} from './index.setup';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
@@ -26,7 +30,7 @@ import SplitPane from 'modules/components/SplitPane';
 import {TopPanel} from './index';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
-import {fetchWorkflowInstance} from 'modules/api/instances';
+import {fetchWorkflowInstance, fetchSequenceFlows} from 'modules/api/instances';
 
 jest.mock('modules/utils/bpmn');
 jest.mock('modules/api/instances');
@@ -66,6 +70,12 @@ describe('TopPanel', () => {
     singleInstanceDiagram.reset();
     currentInstance.reset();
     fetchWorkflowInstance.mockReset();
+  });
+  beforeAll(() => {
+    fetchSequenceFlows.mockResolvedValue(mockSequenceFlows);
+  });
+  afterAll(() => {
+    fetchSequenceFlows.mockReset();
   });
 
   it('should render spinner while loading', async () => {

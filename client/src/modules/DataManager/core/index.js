@@ -10,7 +10,6 @@ import {
   fetchWorkflowInstance,
   fetchWorkflowInstances,
   fetchWorkflowInstanceIncidents,
-  fetchSequenceFlows,
   applyBatchOperation,
   applyOperation,
 } from 'modules/api/instances';
@@ -30,7 +29,6 @@ const {
   LOAD_STATE_STATISTICS,
   LOAD_BATCH_OPERATIONS,
   CREATE_BATCH_OPERATION,
-  LOAD_SEQUENCE_FLOWS,
   OPERATION_APPLIED,
 } = SUBSCRIPTION_TOPIC;
 
@@ -122,14 +120,6 @@ export class DataManager {
 
   getBatchOperations = (params) => {
     this.fetchAndPublish(LOAD_BATCH_OPERATIONS, fetchBatchOperations, params);
-  };
-
-  getSequenceFlows = (workflowInstanceId) => {
-    this.fetchAndPublish(
-      LOAD_SEQUENCE_FLOWS,
-      fetchSequenceFlows,
-      workflowInstanceId
-    );
   };
 
   /** Update Data */

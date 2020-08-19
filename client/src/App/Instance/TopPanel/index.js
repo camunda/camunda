@@ -26,6 +26,7 @@ import {observer} from 'mobx-react';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
+import {sequenceFlows} from 'modules/stores/sequenceFlows';
 
 const TopPanel = observer(
   class TopPanel extends React.PureComponent {
@@ -33,11 +34,18 @@ const TopPanel = observer(
       incidents: PropTypes.object,
       children: PropTypes.node,
       onInstanceOperation: PropTypes.func,
-      processedSequenceFlows: PropTypes.array,
       expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
       onTreeRowSelection: PropTypes.func,
       getCurrentMetadata: PropTypes.func,
     };
+
+    componentDidMount() {
+      sequenceFlows.init();
+    }
+
+    componentWillUnmount() {
+      sequenceFlows.reset();
+    }
 
     addFlowNodeNames = (incidents) =>
       incidents.map((incident) => this.addFlowNodeName(incident));
@@ -88,6 +96,7 @@ const TopPanel = observer(
         flowNodeIdToFlowNodeInstanceMap,
       } = flowNodeInstance;
 
+      const {items: processedSequenceFlows} = sequenceFlows.state;
       const {instance} = currentInstance.state;
       const {
         nodeMetaDataMap,
@@ -118,7 +127,7 @@ const TopPanel = observer(
               expandState={props.expandState}
               onFlowNodeSelection={this.handleFlowNodeSelection}
               selectableFlowNodes={[...flowNodeIdToFlowNodeInstanceMap.keys()]}
-              processedSequenceFlows={props.processedSequenceFlows}
+              processedSequenceFlows={processedSequenceFlows}
               selectedFlowNodeId={selection.flowNodeId}
               selectedFlowNodeName={getSelectedFlowNodeName(
                 selectedFlowNodeId,

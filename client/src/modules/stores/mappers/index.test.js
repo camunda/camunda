@@ -4,9 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {getProcessedSequenceFlows} from './service';
+import {getProcessedSequenceFlows} from './index';
 
-describe('instance service', () => {
+describe('mappers', () => {
   describe('getProcessedSequenceFlows', () => {
     it('should get distinct activity ids of processed sequence flows', () => {
       // given

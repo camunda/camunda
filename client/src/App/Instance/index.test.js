@@ -125,7 +125,6 @@ const {
   incidents,
   instanceHistoryTree,
   events,
-  processedSequenceFlows,
 } = testData.fetch.onPageLoad;
 
 describe('Instance', () => {
@@ -191,7 +190,7 @@ describe('Instance', () => {
         );
       });
 
-      it('should always request diagram, variables, events, sequence flows ', () => {
+      it('should always request diagram, variables, events ', () => {
         //given
         const {dataManager} = node.instance().props;
         // when
@@ -202,9 +201,6 @@ describe('Instance', () => {
 
         //then
         expect(dataManager.getEvents).toHaveBeenCalledWith(workflowInstance.id);
-        expect(dataManager.getSequenceFlows).toHaveBeenCalledWith(
-          workflowInstance.id
-        );
       });
 
       it('should request incidents', () => {
@@ -260,26 +256,6 @@ describe('Instance', () => {
         expect(node.instance().state.incidents).toEqual(incidents);
       });
     });
-    describe('load sequence flows', () => {
-      it('should set loaded sequence flows in state', async () => {
-        //given
-        await currentInstance.fetchCurrentInstance('workflow_instance');
-
-        const {dataManager} = node.instance().props;
-        // when
-        dataManager.publish({
-          subscription: subscriptions[SUBSCRIPTION_TOPIC.LOAD_SEQUENCE_FLOWS],
-          response: processedSequenceFlows,
-        });
-        // then
-        expect(node.instance().state.processedSequenceFlows).toEqual([
-          'SequenceFlow_0drux68',
-          'SequenceFlow_0j6tsnn',
-          'SequenceFlow_1dwqvrt',
-          'SequenceFlow_1fgekwd',
-        ]);
-      });
-    });
     describe('load data update', () => {
       it('should update some data by default', () => {
         //given
@@ -290,7 +266,6 @@ describe('Instance', () => {
           response: {
             LOAD_INSTANCE: workflowInstance,
             LOAD_EVENTS: events,
-            LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
           },
         });
 
@@ -315,7 +290,6 @@ describe('Instance', () => {
             LOAD_INCIDENTS: incidents,
             LOAD_EVENTS: events,
             LOAD_INSTANCE_TREE: instanceHistoryTree,
-            LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
           },
         });
 
@@ -359,7 +333,6 @@ describe('Instance', () => {
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
           LOAD_INSTANCE_TREE: instanceHistoryTree,
-          LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
         },
       });
       node.update();
@@ -385,7 +358,6 @@ describe('Instance', () => {
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
           LOAD_INSTANCE_TREE: instanceHistoryTree,
-          LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
         },
       });
       node.update();
@@ -414,7 +386,6 @@ describe('Instance', () => {
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
           LOAD_INSTANCE_TREE: instanceHistoryTree,
-          LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
         },
       });
       node.update();
@@ -436,7 +407,6 @@ describe('Instance', () => {
           LOAD_INCIDENTS: incidents,
           LOAD_EVENTS: events,
           LOAD_INSTANCE_TREE: instanceHistoryTree,
-          LOAD_SEQUENCE_FLOWS: processedSequenceFlows,
         },
       });
 

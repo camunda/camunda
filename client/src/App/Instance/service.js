@@ -11,12 +11,6 @@ export function isRunningInstance(instance) {
   return instance.state === STATE.ACTIVE || instance.state === STATE.INCIDENT;
 }
 
-export function getProcessedSequenceFlows(response) {
-  return response
-    .map((item) => item.activityId)
-    .filter((value, index, self) => self.indexOf(value) === index);
-}
-
 export async function fetchIncidents(instance) {
   return instance.state === 'INCIDENT'
     ? await api.fetchWorkflowInstanceIncidents(instance.id)

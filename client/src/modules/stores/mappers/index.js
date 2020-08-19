@@ -112,8 +112,15 @@ const getMultiInstanceType = (bpmnElement) => {
     : MULTI_INSTANCE_TYPE.PARALLEL;
 };
 
+const getProcessedSequenceFlows = (sequenceFlows) => {
+  return sequenceFlows
+    .map((item) => item.activityId)
+    .filter((value, index, self) => self.indexOf(value) === index);
+};
+
 export {
   constructFlowNodeIdToFlowNodeInstanceMap,
   getSelectableFlowNodes,
   createNodeMetaDataMap,
+  getProcessedSequenceFlows,
 };

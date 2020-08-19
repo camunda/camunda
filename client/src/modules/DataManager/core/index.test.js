@@ -181,21 +181,5 @@ describe('DataManager', () => {
         );
       });
     });
-
-    describe('fetch sequence flows', () => {
-      it('should fetch and publish', () => {
-        dataManager.getSequenceFlows(mockWorkflowInstance.id);
-
-        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
-          SUBSCRIPTION_TOPIC.LOAD_SEQUENCE_FLOWS
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
-          instancesApi.fetchSequenceFlows
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual(
-          mockWorkflowInstance.id
-        );
-      });
-    });
   });
 });

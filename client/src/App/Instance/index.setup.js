@@ -14,7 +14,6 @@ import {
   createIncident,
   createEvent,
   createEvents,
-  createSequenceFlows,
 } from 'modules/testUtils';
 
 const createRawTree = () => {
@@ -221,7 +220,6 @@ export const testData = {
       events: createEvents(createRawTree().children),
       incidents: mockIncidents(),
       noIncidents,
-      processedSequenceFlows: createSequenceFlows(),
     },
   },
   props: {

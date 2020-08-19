@@ -27,11 +27,7 @@ import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
 import {TopPanel} from './TopPanel';
 import BottomPanel from './BottomPanel';
 import {VariablePanel} from './BottomPanel/VariablePanel';
-import {
-  isRunningInstance,
-  storeResponse,
-  getProcessedSequenceFlows,
-} from './service';
+import {isRunningInstance, storeResponse} from './service';
 import {statistics} from 'modules/stores/statistics';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
@@ -55,7 +51,6 @@ const Instance = observer(
       super(props);
 
       this.state = {
-        processedSequenceFlows: [],
         events: [],
         incidents: {
           count: 0,
@@ -79,7 +74,6 @@ const Instance = observer(
             const {dataManager} = this.props;
             // kick off all follow-up requests.
             dataManager.getEvents(response.id);
-            dataManager.getSequenceFlows(response.id);
             if (response.state === 'INCIDENT') {
               dataManager.getIncidents(response);
             }
@@ -100,23 +94,13 @@ const Instance = observer(
           storeResponse(responseData, (response) => {
             this.setState({events: response});
           }),
-        LOAD_SEQUENCE_FLOWS: ({response, state}) => {
-          if (state === LOADING_STATE.LOADED) {
-            this.setState({
-              processedSequenceFlows: getProcessedSequenceFlows(response),
-            });
-          }
-        },
         CONSTANT_REFRESH: ({response, state}) => {
           if (state === LOADING_STATE.LOADED) {
-            const {LOAD_INCIDENTS, LOAD_EVENTS, LOAD_SEQUENCE_FLOWS} = response;
+            const {LOAD_INCIDENTS, LOAD_EVENTS} = response;
 
             this.setState({
               isPollActive: false,
               events: LOAD_EVENTS,
-              processedSequenceFlows: getProcessedSequenceFlows(
-                LOAD_SEQUENCE_FLOWS
-              ),
               // conditional updates
               ...(LOAD_INCIDENTS && {incidents: LOAD_INCIDENTS}),
             });
@@ -165,7 +149,6 @@ const Instance = observer(
           {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE}, // should later be removed and call currentInstance.fetchCurrentInstance(id); instead
           {name: SUBSCRIPTION_TOPIC.LOAD_INCIDENTS},
           {name: SUBSCRIPTION_TOPIC.LOAD_EVENTS},
-          {name: SUBSCRIPTION_TOPIC.LOAD_SEQUENCE_FLOWS},
         ],
       };
       statistics.fetchStatistics();
@@ -285,7 +268,7 @@ const Instance = observer(
     };
 
     render() {
-      const {incidents, processedSequenceFlows} = this.state;
+      const {incidents} = this.state;
       const {instance} = currentInstance.state;
       return (
         <Styled.Instance>
@@ -298,7 +281,6 @@ const Instance = observer(
           >
             <TopPanel
               incidents={incidents}
-              processedSequenceFlows={processedSequenceFlows}
               getCurrentMetadata={this.getCurrentMetadata}
               onInstanceOperation={this.handleInstanceOperation}
               onTreeRowSelection={this.handleTreeRowSelection}

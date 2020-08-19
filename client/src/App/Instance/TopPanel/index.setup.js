@@ -6,6 +6,7 @@
 
 import {STATE} from 'modules/constants';
 import {createIncident, createRawTreeNode} from 'modules/testUtils';
+import {createSequenceFlows} from 'modules/testUtils';
 
 const mockIncidents = () => {
   return {
@@ -53,6 +54,8 @@ export const createRawTree = () => {
     ],
   };
 };
+
+export const mockSequenceFlows = createSequenceFlows();
 
 export const mockProps = {
   incidents: mockIncidents(),
