@@ -138,4 +138,20 @@ describe('<Variables />', () => {
       screen.queryByRole('textbox', {name: 'new-variables[1].value'}),
     ).not.toBeInTheDocument();
   });
+
+  it('should add variable on task without variables', async () => {
+    render(<Variables canEdit />, {
+      wrapper: getWrapper({id: '0', mocks: [mockTaskWithoutVariables]}),
+    });
+
+    fireEvent.click(await screen.findByRole('button', {name: /Add Variable/}));
+
+    expect(
+      screen.getByRole('textbox', {name: 'new-variables[0].name'}),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.getByRole('textbox', {name: 'new-variables[0].value'}),
+    ).toBeInTheDocument();
+  });
 });

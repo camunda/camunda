@@ -7,7 +7,7 @@
 import React, {useEffect} from 'react';
 import {useQuery} from '@apollo/client';
 import {useParams} from 'react-router-dom';
-import {Field, useForm} from 'react-final-form';
+import {Field, useForm, useField} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 
 import {
@@ -42,6 +42,7 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
     variables: {id: taskId},
   });
   const form = useForm();
+  const newVariablesFieldArray = useField('new-variables');
 
   useEffect(() => {
     if (!canEdit && !form.getState().submitting) {
@@ -70,7 +71,8 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
         )}
       </Header>
 
-      {variables.length === 0 ? (
+      {variables.length === 0 &&
+      newVariablesFieldArray.input.value.length === 0 ? (
         <EmptyMessage>Task has no variables.</EmptyMessage>
       ) : (
         <Table data-testid="variables-table">
