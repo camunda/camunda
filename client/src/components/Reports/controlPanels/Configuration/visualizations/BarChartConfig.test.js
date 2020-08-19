@@ -44,7 +44,7 @@ it('should not display show instance count and color picker for combined reports
   expect(node.find('ColorPicker')).not.toExist();
 });
 
-it('should not display color picker for hyper reports (distributed by user task)', () => {
+it('should not display color picker for hyper reports (distributed by userTask/assignee/candidateGroup)', () => {
   const node = shallow(
     <BarChartConfig
       report={{
