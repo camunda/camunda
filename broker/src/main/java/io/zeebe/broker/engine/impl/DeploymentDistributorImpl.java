@@ -257,7 +257,6 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
     final DirectBuffer responseBuffer = new UnsafeBuffer(response);
 
     if (pushDeploymentResponse.tryWrap(responseBuffer)) {
-      pushDeploymentResponse.wrap(responseBuffer);
       if (handlePushResponse()) {
         final IntArrayList missingResponses = getPartitionResponses(topic);
         missingResponses.removeInt(pushDeploymentResponse.partitionId());
