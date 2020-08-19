@@ -12,35 +12,44 @@
   <packaging>war</packaging>
 
   <properties>
-    <version.camunda>${camunda.engine.version}-ee</version.camunda>
+    <camunda.engine.plugin.artifacts.version>${camunda.engine.version}-ee</camunda.engine.plugin.artifacts.version>
     <failOnMissingWebXml>false</failOnMissingWebXml>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>engine-snapshot</id>
+      <properties>
+        <camunda.engine.plugin.artifacts.version>${camunda.engine.version}</camunda.engine.plugin.artifacts.version>
+      </properties>
+    </profile>
+  </profiles>
 
   <dependencies>
 
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>
-      <version>${version.camunda}</version>
+      <version>${camunda.engine.plugin.artifacts.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine-rest</artifactId>
-      <version>${version.camunda}</version>
+      <version>${camunda.engine.plugin.artifacts.version}</version>
       <type>war</type>
       <classifier>tomcat</classifier>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine-rest-core</artifactId>
-      <version>${version.camunda}</version>
+      <version>${camunda.engine.plugin.artifacts.version}</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine-plugin-spin</artifactId>
-      <version>${version.camunda}</version>
+      <version>${camunda.engine.plugin.artifacts.version}</version>
       <scope>provided</scope>
     </dependency>
 

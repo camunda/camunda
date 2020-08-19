@@ -31,7 +31,7 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-bpmn-model</artifactId>
-      <version>${camunda.model.version}-ee</version>
+      <version>${camunda.maven.artifacts.version}</version>
       <scope>test</scope>
     </dependency>
 

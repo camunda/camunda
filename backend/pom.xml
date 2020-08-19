@@ -39,17 +39,17 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-bpmn-model</artifactId>
-      <version>${camunda.model.version}-ee</version>
+      <version>${camunda.maven.artifacts.version}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-dmn-model</artifactId>
-      <version>${camunda.model.version}-ee</version>
+      <version>${camunda.maven.artifacts.version}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>
-      <version>${camunda.model.version}-ee</version>
+      <version>${camunda.maven.artifacts.version}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
@@ -288,7 +288,7 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine-rest-core</artifactId>
-      <version>${camunda.model.version}</version>
+      <version>${camunda.maven.artifacts.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

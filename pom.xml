@@ -28,7 +28,7 @@
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.source>1.8</maven.compiler.source>
     <camunda.engine.version>7.13.0</camunda.engine.version>
-    <camunda.model.version>7.13.0</camunda.model.version>
+    <camunda.maven.artifacts.version>7.13.0-ee</camunda.maven.artifacts.version>
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
 
@@ -97,7 +97,13 @@
         <activeByDefault>true</activeByDefault>
       </activation>
       <properties>
-        <engine.profile.id>engine-latest</engine.profile.id>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>engine-snapshot</id>
+      <properties>
+        <camunda.engine.version>7.14.0-SNAPSHOT</camunda.engine.version>
       </properties>
     </profile>
 
@@ -105,7 +111,6 @@
       <id>engine-7.13</id>
       <properties>
         <camunda.engine.version>7.13.0</camunda.engine.version>
-        <engine.profile.id>engine-7.13</engine.profile.id>
       </properties>
     </profile>
 
@@ -113,7 +118,6 @@
       <id>engine-7.12</id>
       <properties>
         <camunda.engine.version>7.12.6</camunda.engine.version>
-        <engine.profile.id>engine-7.12</engine.profile.id>
       </properties>
     </profile>
 
@@ -121,7 +125,6 @@
       <id>engine-7.11</id>
       <properties>
         <camunda.engine.version>7.11.13</camunda.engine.version>
-        <engine.profile.id>engine-7.11</engine.profile.id>
       </properties>
     </profile>
 

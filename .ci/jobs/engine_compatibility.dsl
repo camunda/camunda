@@ -1,7 +1,7 @@
 pipelineJob('engine_compatibility') {
 
-  displayName 'Integration Tests against previous CamBPM Versions'
-  description 'Runs integration tests against the previous two CamBPM versions to check compatibility.'
+  displayName 'Integration Tests with supported CamBPM Versions'
+  description 'Runs integration tests with different supported CamBPM versions to check compatibility.'
 
   // By default, this job is disabled in non-prod envs.
   if (binding.variables.get("ENVIRONMENT") != "prod") {
