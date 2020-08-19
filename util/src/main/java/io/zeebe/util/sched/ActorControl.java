@@ -79,20 +79,6 @@ public class ActorControl {
     return subscription;
   }
 
-  public void pollBlocking(final Runnable condition, final Runnable action) {
-    ensureCalledFromWithinActor("pollBlocking(...)");
-
-    final ActorJob job = new ActorJob();
-    job.setRunnable(action);
-    job.onJobAddedToTask(task);
-
-    final BlockingPollSubscription subscription =
-        new BlockingPollSubscription(job, condition, task.getActorExecutor(), true);
-    job.setSubscription(subscription);
-
-    subscription.submit();
-  }
-
   /**
    * Conditional actions are called while the actor is in the following actor lifecycle phases:
    * {@link ActorLifecyclePhase#STARTED}
@@ -166,53 +152,6 @@ public class ActorControl {
    */
   public void run(final Runnable action) {
     scheduleRunnable(action, true);
-  }
-
-  /**
-   * run a blocking task
-   *
-   * <p>The provided runnable is executed in any of the actor's lifecycle phases.
-   */
-  public void runBlocking(final Runnable runnable) {
-    ensureCalledFromWithinActor("runBlocking(...)");
-
-    final ActorJob noop = new ActorJob();
-    noop.onJobAddedToTask(task);
-    noop.setAutoCompleting(true);
-    noop.setRunnable(
-        () -> {
-          // noop
-        });
-
-    final BlockingPollSubscription subscription =
-        new BlockingPollSubscription(noop, runnable, task.getActorExecutor(), false);
-    noop.setSubscription(subscription);
-
-    subscription.submit();
-  }
-
-  /**
-   * The provided runnable is executed in any of the actor's lifecycle phases. The provided
-   * completionConsumer is only executed while the actor is in one of the following lifecycle phases
-   * {@link ActorLifecyclePhase#STARTED}.
-   *
-   * @param runnable
-   * @param completionConsumer
-   */
-  public void runBlocking(final Runnable runnable, final Consumer<Throwable> completionConsumer) {
-    final RunnableAdapter<Void> adapter = RunnableAdapter.wrapRunnable(runnable);
-    ensureCalledFromWithinActor("runBlocking(...)");
-
-    final ActorJob noop = new ActorJob();
-    noop.onJobAddedToTask(task);
-    noop.setAutoCompleting(true);
-    noop.setRunnable(adapter.wrapConsumer(completionConsumer));
-
-    final BlockingPollSubscription subscription =
-        new BlockingPollSubscription(noop, adapter, task.getActorExecutor(), false);
-    noop.setSubscription(subscription);
-
-    subscription.submit();
   }
 
   /**
