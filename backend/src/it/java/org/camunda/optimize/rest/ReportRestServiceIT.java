@@ -476,8 +476,9 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
   @EnumSource(ReportType.class)
   public void forceDeleteReport_notDeletedIfEsFailsWhenDeletingAlertsForReport(final ReportType reportType) {
     //given
-    String reportId = addEmptyReportToOptimize(reportType);
-    alertClient.createSimpleAlert(reportId);
+    String collectionId = collectionClient.createNewCollection();
+    String reportId = addEmptyReportToOptimize(reportType, collectionId);
+    alertClient.createAlertForReport(reportId);
 
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
@@ -488,18 +489,18 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       .error(HttpError.error().withDropConnection(true));
 
     // when
-    Response response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildDeleteReportRequest(reportId, true)
-      .execute();
+    Response response = reportClient.deleteReport(reportId, true);
 
     // then
     esMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
-    assertThat(reportClient.getAllReportsAsUser())
+
+    assertThat(collectionClient.getReportsForCollection(collectionId))
       .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
       .extracting(ReportDefinitionDto::getId)
       .containsExactly(reportId);
+
+    assertThat(alertClient.getAllAlerts()).hasSize(1);
   }
 
   @ParameterizedTest
@@ -759,6 +760,12 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
     } else {
       return reportClient.updateDecisionReport(id, constructDecisionReportWithFakeDD());
     }
+  }
+
+  private String addEmptyReportToOptimize(final ReportType reportType, String collectionId) {
+    return ReportType.PROCESS.equals(reportType)
+      ? reportClient.createEmptySingleProcessReportInCollection(collectionId)
+      : reportClient.createEmptySingleDecisionReportInCollection(collectionId);
   }
 
   private String addEmptyReportToOptimize(final ReportType reportType) {
