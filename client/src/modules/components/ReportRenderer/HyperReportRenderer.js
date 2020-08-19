@@ -21,7 +21,7 @@ export default function HyperReportRenderer({report, ...rest}) {
   convertedReport.data = {
     configuration: report.data.configuration,
     reports: report.result.data[0].value.map(({key}, i) => ({id: key, color: colors[i]})),
-    visualization: report.data.visualization === 'table' ? 'table' : 'bar',
+    visualization: getVisualization(report.data.visualization),
   };
 
   const newResultData = {};
@@ -51,4 +51,11 @@ export default function HyperReportRenderer({report, ...rest}) {
   };
 
   return <CombinedReportRenderer {...rest} report={convertedReport} />;
+}
+
+function getVisualization(visualization) {
+  if (['table', 'line'].includes(visualization)) {
+    return visualization;
+  }
+  return 'bar';
 }

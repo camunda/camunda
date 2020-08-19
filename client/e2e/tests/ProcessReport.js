@@ -669,8 +669,8 @@ test('should be able to distribute candidate group by user task', async (t) => {
 
   await t.expect(e.option('Table').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Bar Chart').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Line Chart').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Number').hasAttribute('disabled')).ok();
-  await t.expect(e.option('Line Chart').hasAttribute('disabled')).ok();
   await t.expect(e.option('Pie Chart').hasAttribute('disabled')).ok();
 
   await t.click(e.option('Table'));

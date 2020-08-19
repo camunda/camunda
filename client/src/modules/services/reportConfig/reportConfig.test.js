@@ -122,23 +122,23 @@ it('should allow only visualization options that make sense for the selected vie
   ).toBeFalsy();
 });
 
-it('should forbid line and pie charts for distributed user task reports', () => {
+it('should forbid pie charts for distributed user task reports', () => {
   const report = {data: {configuration: {distributedBy: 'userTask'}}};
   const view = {entity: 'userTask', property: 'frequency'};
   const groupBy = {type: 'assignee', value: null};
 
   expect(isAllowed(report, view, groupBy, 'bar')).toBeTruthy();
-  expect(isAllowed(report, view, groupBy, 'line')).toBeFalsy();
+  expect(isAllowed(report, view, groupBy, 'line')).toBeTruthy();
   expect(isAllowed(report, view, groupBy, 'pie')).toBeFalsy();
 });
 
-it('should forbid line, pie charts and heatmap for distributed userTask reports', () => {
+it('should forbid pie charts and heatmap for distributed userTask reports', () => {
   const report = {data: {configuration: {distributedBy: 'assignee'}}};
   const view = {entity: 'userTask', property: 'frequency'};
   const groupBy = {type: 'userTasks', value: null};
 
   expect(isAllowed(report, view, groupBy, 'table')).toBeTruthy();
-  expect(isAllowed(report, view, groupBy, 'line')).toBeFalsy();
+  expect(isAllowed(report, view, groupBy, 'line')).toBeTruthy();
   expect(isAllowed(report, view, groupBy, 'pie')).toBeFalsy();
   expect(isAllowed(report, view, groupBy, 'heat')).toBeFalsy();
 });
