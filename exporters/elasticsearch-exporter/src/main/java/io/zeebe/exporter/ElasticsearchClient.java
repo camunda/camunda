@@ -140,6 +140,9 @@ public class ElasticsearchClient {
     final int bulkSize = bulkRequest.size();
     metrics.recordBulkSize(bulkSize);
 
+    final var bulkMemorySize = getBulkMemorySize();
+    metrics.recordBulkMemorySize(bulkMemorySize);
+
     final BulkResponse bulkResponse;
     try {
       bulkResponse = exportBulk();
@@ -188,7 +191,12 @@ public class ElasticsearchClient {
   }
 
   public boolean shouldFlush() {
-    return bulkRequest.size() >= configuration.bulk.size;
+    return bulkRequest.size() >= configuration.bulk.size
+        || getBulkMemorySize() >= configuration.bulk.memoryLimit;
+  }
+
+  private int getBulkMemorySize() {
+    return bulkRequest.stream().mapToInt(String::length).sum();
   }
 
   /** @return true if request was acknowledged */
