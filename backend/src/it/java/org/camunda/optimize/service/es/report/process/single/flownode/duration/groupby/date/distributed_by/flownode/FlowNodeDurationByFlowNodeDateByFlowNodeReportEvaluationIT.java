@@ -3,15 +3,11 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.date.distributed_by.usertask;
+package org.camunda.optimize.service.es.report.process.single.flownode.duration.groupby.date.distributed_by.flownode;
 
-import com.google.common.collect.Lists;
-import org.assertj.core.groups.Tuple;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -26,17 +22,14 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.Report
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.ModelElementDurationByModelElementDateByModelElementReportEvaluationIT;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -47,32 +40,26 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.getAggregationTypesAsListWithoutSum;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
-public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
+public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
   extends ModelElementDurationByModelElementDateByModelElementReportEvaluationIT {
 
   @Test
   public void reportEvaluationForOneProcess() {
     // given
-    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     final ProcessInstanceEngineDto processInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
 
     final Double expectedDuration = 20.;
     changeDuration(processInstance, expectedDuration);
@@ -90,7 +77,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).containsExactly(processDefinition.getVersionAsString());
     assertThat(resultReportDataDto.getView()).isNotNull();
-    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy()).isNotNull();
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
@@ -98,7 +85,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .extracting(DateGroupByValueDto.class::cast)
       .extracting(DateGroupByValueDto::getUnit)
       .isEqualTo(GroupByDateUnit.DAY);
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy()).isEqualTo(DistributedBy.USER_TASK);
+    assertThat(resultReportDataDto.getConfiguration().getDistributedBy()).isEqualTo(DistributedBy.FLOW_NODE);
 
     final ReportHyperMapResultDto result = evaluationResponse.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
@@ -107,7 +94,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains(USER_TASK_1, expectedDuration, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, expectedDuration, START_EVENT)
+        .distributedByContains(END_EVENT, expectedDuration, END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -115,10 +103,9 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   @Test
   public void simpleReportEvaluationById() {
     // given
-    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     final ProcessInstanceEngineDto processInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
 
     final Double expectedDuration = 20.;
     changeDuration(processInstance, expectedDuration);
@@ -142,7 +129,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains(USER_TASK_1, expectedDuration, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, expectedDuration, START_EVENT)
+        .distributedByContains(END_EVENT, expectedDuration, END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -150,26 +138,22 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   @Test
   public void evaluateReportForMultipleEventsWithAllAggregationTypes() {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     final OffsetDateTime today = OffsetDateTime.now();
 
     final ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstance1.getId());
-    changeModelElementDate(processInstance1, USER_TASK_1, today);
-    changeModelElementDate(processInstance1, USER_TASK_2, today.minusDays(1));
-    changeDuration(processInstance1, USER_TASK_1, 10.);
-    changeDuration(processInstance1, USER_TASK_2, 10.);
+    changeModelElementDate(processInstance1, START_EVENT, today);
+    changeModelElementDate(processInstance1, END_EVENT, today.minusDays(1));
+    changeDuration(processInstance1, START_EVENT, 10.);
+    changeDuration(processInstance1, END_EVENT, 10.);
 
     final ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstance2.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstance2.getId());
-    changeModelElementDate(processInstance2, USER_TASK_1, today);
-    changeModelElementDate(processInstance2, USER_TASK_2, today.minusDays(1));
-    changeDuration(processInstance2, USER_TASK_1, 20.);
-    changeDuration(processInstance2, USER_TASK_2, 20.);
+    changeModelElementDate(processInstance2, START_EVENT, today);
+    changeModelElementDate(processInstance2, END_EVENT, today.minusDays(1));
+    changeDuration(processInstance2, START_EVENT, 20.);
+    changeDuration(processInstance2, END_EVENT, 20.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -187,11 +171,11 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
         .groupByContains(groupedByDayDateAsString(today))
-          .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-          .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurations(10., 20.).get(aggType), USER_TASK_1_NAME)
+          .distributedByContains(START_EVENT, calculateExpectedValueGivenDurations(10., 20.).get(aggType), START_EVENT)
+          .distributedByContains(END_EVENT, null, END_EVENT)
         .groupByContains(groupedByDayDateAsString(today.minusDays(1)))
-          .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(10., 20.).get(aggType), USER_TASK_2_NAME)
-          .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+          .distributedByContains(START_EVENT, null, START_EVENT)
+          .distributedByContains(END_EVENT, calculateExpectedValueGivenDurations(10., 20.).get(aggType), END_EVENT)
         .doAssert(result);
       // @formatter:on
     });
@@ -201,24 +185,20 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   public void resultIsSortedInDescendingOrder() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
-    changeModelElementDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
-    changeDuration(processInstance1, USER_TASK_1, 10.);
-    changeDuration(processInstance1, USER_TASK_2, 10.);
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(1));
+    changeDuration(processInstance1, START_EVENT, 10.);
+    changeDuration(processInstance1, END_EVENT, 10.);
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
-    changeModelElementDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
-    changeDuration(processInstance2, USER_TASK_1, 10.);
-    changeDuration(processInstance2, USER_TASK_2, 10.);
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(4));
+    changeDuration(processInstance2, START_EVENT, 10.);
+    changeDuration(processInstance2, END_EVENT, 10.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -232,17 +212,17 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -251,24 +231,20 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   public void testCustomOrderOnResultKeyIsApplied() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
-    changeModelElementDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
-    changeDuration(processInstance1, USER_TASK_1, 10.);
-    changeDuration(processInstance1, USER_TASK_2, 10.);
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(1));
+    changeDuration(processInstance1, START_EVENT, 10.);
+    changeDuration(processInstance1, END_EVENT, 10.);
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
-    changeModelElementDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
-    changeDuration(processInstance2, USER_TASK_1, 10.);
-    changeDuration(processInstance2, USER_TASK_2, 10.);
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(4));
+    changeDuration(processInstance2, START_EVENT, 10.);
+    changeDuration(processInstance2, END_EVENT, 10.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -283,17 +259,17 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(END_EVENT, null, END_EVENT)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(END_EVENT, null, END_EVENT)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -302,33 +278,29 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   public void testCustomOrderOnResultValueIsApplied() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
-    changeModelElementDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
-    changeDuration(processInstance1, USER_TASK_1, 20.);
-    changeDuration(processInstance1, USER_TASK_2, 10.);
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(1));
+    changeDuration(processInstance1, START_EVENT, 20.);
+    changeDuration(processInstance1, END_EVENT, 10.);
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
-    changeModelElementDate(processInstance2, USER_TASK_2, referenceDate.minusDays(2));
-    changeDuration(processInstance2, USER_TASK_1, 10.);
-    changeDuration(processInstance2, USER_TASK_2, 20.);
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(2));
+    changeDuration(processInstance2, START_EVENT, 10.);
+    changeDuration(processInstance2, END_EVENT, 20.);
 
     ProcessInstanceEngineDto processInstance3 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance3, USER_TASK_1, referenceDate.minusDays(3));
-    changeModelElementDate(processInstance3, USER_TASK_2, referenceDate.minusDays(3));
-    changeDuration(processInstance3, USER_TASK_1, 30.);
-    changeDuration(processInstance3, USER_TASK_2, 20.);
+    changeModelElementDate(processInstance3, START_EVENT, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance3, END_EVENT, referenceDate.minusDays(3));
+    changeDuration(processInstance3, START_EVENT, 30.);
+    changeDuration(processInstance3, END_EVENT, 20.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -343,14 +315,14 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_1, 20., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
+        .distributedByContains(START_EVENT, 20., START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(END_EVENT, 20., END_EVENT)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_1, 30., USER_TASK_1_NAME)
-        .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
+        .distributedByContains(START_EVENT, 30., START_EVENT)
+        .distributedByContains(END_EVENT, 20., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -359,24 +331,22 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   public void multipleBuckets_noFilter_resultLimitedByConfig() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
-    changeModelElementDate(processInstance1, USER_TASK_2, referenceDate.minusDays(1));
-    changeDuration(processInstance1, USER_TASK_1, 10.);
-    changeDuration(processInstance1, USER_TASK_2, 10.);
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(1));
+    changeDuration(processInstance1, START_EVENT, 10.);
+    changeDuration(processInstance1, END_EVENT, 10.);
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
     engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
-    changeModelElementDate(processInstance2, USER_TASK_2, referenceDate.minusDays(4));
-    changeDuration(processInstance2, USER_TASK_1, 10.);
-    changeDuration(processInstance2, USER_TASK_2, 10.);
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(4));
+    changeDuration(processInstance2, START_EVENT, 10.);
+    changeDuration(processInstance2, END_EVENT, 10.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -393,37 +363,33 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
 
   @Test
-  public void userTasksStartedAtSameIntervalAreGroupedTogether() {
+  public void flowNodesStartedAtSameIntervalAreGroupedTogether() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
-    changeModelElementDate(processInstance1, USER_TASK_2, referenceDate.minusDays(2));
-    changeDuration(processInstance1, USER_TASK_1, 10.);
-    changeDuration(processInstance1, USER_TASK_2, 10.);
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(2));
+    changeDuration(processInstance1, START_EVENT, 10.);
+    changeDuration(processInstance1, END_EVENT, 10.);
 
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(1));
-    changeModelElementDate(processInstance2, USER_TASK_2, referenceDate.minusDays(2));
-    changeDuration(processInstance2, USER_TASK_1, 20.);
-    changeDuration(processInstance2, USER_TASK_2, 20.);
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(2));
+    changeDuration(processInstance2, START_EVENT, 20.);
+    changeDuration(processInstance2, END_EVENT, 20.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -437,28 +403,26 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 15., START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, 15., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, 15., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
 
   @Test
-  public void emptyIntervalBetweenTwoUserTaskDates() {
+  public void emptyIntervalBetweenTwoFlowNodeDates() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
-    changeModelElementDate(processInstance1, USER_TASK_2, referenceDate.minusDays(3));
-    changeDuration(processInstance1, USER_TASK_1, 10.);
-    changeDuration(processInstance1, USER_TASK_2, 10.);
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(3));
+    changeDuration(processInstance1, START_EVENT, 10.);
+    changeDuration(processInstance1, END_EVENT, 10.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -472,14 +436,14 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -492,12 +456,11 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     final int groupingCount = 5;
     final OffsetDateTime referenceDate = OffsetDateTime.parse("2019-06-15T12:00:00+02:00");
 
-    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
     List<ProcessInstanceEngineDto> processInstanceDtos = IntStream.range(0, groupingCount)
       .mapToObj(i -> {
         ProcessInstanceEngineDto processInstanceEngineDto =
           engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-        engineIntegrationExtension.finishAllRunningUserTasks(processInstanceEngineDto.getId());
         processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
         processInstanceEngineDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
         return processInstanceEngineDto;
@@ -517,12 +480,14 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(groupingCount)
       .processInstanceCountWithoutFilters(groupingCount)
       .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
-      .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME);
+      .distributedByContains(START_EVENT, 10., START_EVENT)
+      .distributedByContains(END_EVENT, 10., END_EVENT);
 
     for (int i = 1; i < groupingCount; i++) {
       groupByAdder = groupByAdder
         .groupByContains(groupedByDateAsString(referenceDate.minus(i, groupByUnitAsChrono), groupByUnitAsChrono))
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME);
+        .distributedByContains(START_EVENT, 10., START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT);
     }
     groupByAdder.doAssert(result);
   }
@@ -531,20 +496,19 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   public void otherProcessDefinitionsDoNotAffectResult() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
-    ProcessDefinitionEngineDto processDefinition1 = deployOneUserTaskDefinition();
+    ProcessDefinitionEngineDto processDefinition1 = deployStartEndDefinition();
     ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
-    changeDuration(processInstance1, USER_TASK_1, 10.);
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(1));
+    changeDuration(processInstance1, 10.);
 
     ProcessDefinitionEngineDto processDefinition2 = deployOneUserTaskDefinition();
     ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(1));
-    changeDuration(processInstance2, USER_TASK_1, 50.);
-
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(1));
+    changeDuration(processInstance2, 50.);
 
     importAllEngineEntitiesFromScratch();
 
@@ -558,7 +522,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-      .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -571,7 +536,9 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
     final ProcessInstanceEngineDto processInstance1 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks();
+    changeDuration(processInstance1, START_EVENT, 10.);
     changeDuration(processInstance1, USER_TASK_1, 10.);
+    changeDuration(processInstance1, END_EVENT, 10.);
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
     importAllEngineEntitiesFromScratch();
@@ -590,122 +557,10 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
       .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+      .distributedByContains(START_EVENT, 10., START_EVENT)
+      .distributedByContains(END_EVENT, 10., END_EVENT)
       .doAssert(result);
     // @formatter:on
-  }
-
-  public static Stream<Arguments> assigneeFilterScenarios() {
-    return Stream.of(
-      Arguments.of(
-        IN, new String[]{SECOND_USER}, Lists.newArrayList(Tuple.tuple(USER_TASK_1, null), Tuple.tuple(USER_TASK_2, 10.))
-      ),
-      Arguments.of(
-        IN,
-        new String[]{DEFAULT_USERNAME, SECOND_USER},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 10.), Tuple.tuple(USER_TASK_2, 10.))
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_USER},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 10.), Tuple.tuple(USER_TASK_2, null))
-      ),
-      Arguments.of(NOT_IN, new String[]{DEFAULT_USERNAME, SECOND_USER}, Lists.newArrayList())
-    );
-  }
-
-  @ParameterizedTest
-  @MethodSource("assigneeFilterScenarios")
-  @SuppressWarnings("unchecked")
-  public void filterByAssigneeOnlyCountsUserTasksWithThatAssignee(final FilterOperator filterOperator,
-                                                                  final String[] filterValues,
-                                                                  final List<Tuple> expectedResult) {
-    // given
-    engineIntegrationExtension.addUser(SECOND_USER, SECOND_USERS_PASSWORD);
-    engineIntegrationExtension.grantAllAuthorizations(SECOND_USER);
-
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
-      .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstanceDto.getId()
-    );
-    engineIntegrationExtension.finishAllRunningUserTasks(
-      SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId()
-    );
-    changeDuration(processInstanceDto, USER_TASK_1, 10.);
-    changeDuration(processInstanceDto, USER_TASK_2, 10.);
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
-      .filter().assignee().ids(filterValues).operator(filterOperator).add().buildList();
-    reportData.setFilter(inclusiveAssigneeFilter);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData())
-      .flatExtracting(HyperMapResultEntryDto::getValue)
-      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactlyInAnyOrderElementsOf(expectedResult);
-  }
-
-  public static Stream<Arguments> candidateGroupFilterScenarios() {
-    return Stream.of(
-      Arguments.of(
-        IN,
-        new String[]{SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, null), Tuple.tuple(USER_TASK_2, 10.))
-      ),
-      Arguments.of(
-        IN,
-        new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 10.), Tuple.tuple(USER_TASK_2, 10.))
-      ),
-      Arguments.of(
-        NOT_IN,
-        new String[]{SECOND_CANDIDATE_GROUP},
-        Lists.newArrayList(Tuple.tuple(USER_TASK_1, 10.), Tuple.tuple(USER_TASK_2, null))
-      ),
-      Arguments.of(NOT_IN, new String[]{FIRST_CANDIDATE_GROUP, SECOND_CANDIDATE_GROUP}, Lists.newArrayList())
-    );
-  }
-
-  @ParameterizedTest
-  @MethodSource("candidateGroupFilterScenarios")
-  @SuppressWarnings("unchecked")
-  public void filterByCandidateGroupOnlyCountsUserTasksWithThatCandidateGroup(final FilterOperator filterOperator,
-                                                                              final String[] filterValues,
-                                                                              final List<Tuple> expectedResult) {
-    // given
-    engineIntegrationExtension.createGroup(FIRST_CANDIDATE_GROUP);
-    engineIntegrationExtension.createGroup(SECOND_CANDIDATE_GROUP);
-
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension
-      .startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    changeDuration(processInstanceDto, USER_TASK_1, 10.);
-    changeDuration(processInstanceDto, USER_TASK_2, 10.);
-
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    final List<ProcessFilterDto<?>> inclusiveAssigneeFilter = ProcessFilterBuilder
-      .filter().candidateGroups().ids(filterValues).operator(filterOperator).add().buildList();
-    reportData.setFilter(inclusiveAssigneeFilter);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then
-    assertThat(result.getData())
-      .flatExtracting(HyperMapResultEntryDto::getValue)
-      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
 
   @Test
@@ -743,7 +598,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   }
 
   @Test
-  public void automaticIntervalSelection_takesAllUserTasksIntoAccount() {
+  public void automaticIntervalSelection_takesAllFlowNodesIntoAccount() {
     //given
     final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
     ProcessInstanceEngineDto processInstanceDto1 =
@@ -781,27 +636,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .map(MapResultEntryDto::getValue)
       .filter(Objects::nonNull)
       .mapToInt(Double::intValue).sum();
-    assertThat(sumOfAllValues).isEqualTo(80);
-  }
-
-  @Test
-  public void automaticIntervalSelection_forOneDataPoint() {
-    // given there is only one data point
-    final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
-    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    importAllEngineEntitiesFromScratch();
-
-    // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
-
-    // then the single data point should be grouped by month
-    final List<HyperMapResultEntryDto> resultData = result.getData();
-    ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
-    String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
-    assertThat(resultData).hasSize(1);
-    assertThat(resultData).first().extracting(HyperMapResultEntryDto::getKey).isEqualTo(nowStrippedToMonthAsString);
+    assertThat(sumOfAllValues).isEqualTo(240);
   }
 
   @Test
@@ -835,6 +670,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
         .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 15., START_EVENT)
+        .distributedByContains(END_EVENT, 15., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -873,6 +710,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
         .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 15., START_EVENT)
+        .distributedByContains(END_EVENT, 15., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -907,6 +746,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
         .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
+        .distributedByContains(START_EVENT, 15., START_EVENT)
+        .distributedByContains(END_EVENT, 15., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -944,42 +785,10 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
       .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
+      .distributedByContains(START_EVENT, 15., START_EVENT)
+      .distributedByContains(END_EVENT, 15., END_EVENT)
       .doAssert(result);
     // @formatter:on
-  }
-
-  @SuppressWarnings("SameParameterValue")
-  protected void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
-                                         final OffsetDateTime now,
-                                         final String userTaskId,
-                                         final long offsetDuration) {
-    engineDatabaseExtension.changeUserTaskStartDate(
-      processInstanceDto.getId(),
-      userTaskId,
-      now.minus(offsetDuration, ChronoUnit.MILLIS)
-    );
-  }
-
-  @SuppressWarnings("SameParameterValue")
-  protected void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
-                                         final OffsetDateTime now,
-                                         final String userTaskKey,
-                                         final long offsetDuration) {
-
-    engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
-      .forEach(
-        historicUserTaskInstanceDto ->
-        {
-          try {
-            engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
-              historicUserTaskInstanceDto.getId(),
-              now.minus(offsetDuration, ChronoUnit.MILLIS)
-            );
-          } catch (SQLException e) {
-            throw new OptimizeIntegrationTestException(e);
-          }
-        }
-      );
   }
 
   @Override
@@ -989,12 +798,29 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
-      .setUserTaskDurationTime(getUserTaskDurationTime())
       .setReportDataType(getReportDataType())
       .setDateInterval(groupByDateUnit)
       .build();
   }
 
-  protected abstract UserTaskDurationTime getUserTaskDurationTime();
+  @Override
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                final String modelElementId,
+                                final Double durationInMs) {
+    engineDatabaseExtension.changeActivityDuration(
+      processInstanceDto.getId(),
+      modelElementId,
+      durationInMs.longValue()
+    );
+  }
+
+  @Override
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                final Double durationInMs) {
+    engineDatabaseExtension.changeActivityDuration(
+      processInstanceDto.getId(),
+      durationInMs.longValue()
+    );
+  }
 
 }
