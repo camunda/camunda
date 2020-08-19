@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.flownode.frequency;
+package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby.flownode;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;

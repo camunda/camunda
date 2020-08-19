@@ -241,7 +241,7 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
       .build();
     return createNewSingleMapReport(processInstanceDurationGroupByNone);
   }

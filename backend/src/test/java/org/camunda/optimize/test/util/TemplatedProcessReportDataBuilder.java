@@ -248,6 +248,35 @@ public class TemplatedProcessReportDataBuilder {
           .dateInterval(dateInterval)
           .build();
         break;
+      case FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .build();
+        break;
+      case FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_START_DATE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .build();
+        break;
+      case FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE_END_DATE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .build();
+        break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
@@ -266,15 +295,6 @@ public class TemplatedProcessReportDataBuilder {
           .viewProperty(ProcessViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.DURATION)
           .visualization(ProcessVisualization.TABLE)
-          .processDefinitionKey(processDefinitionKey)
-          .processDefinitionVersions(processDefinitionVersions)
-          .build();
-        break;
-      case FLOW_NODE_DUR_GROUP_BY_FLOW_NODE:
-        reportData = new ProcessReportDataBuilderHelper()
-          .viewEntity(ProcessViewEntity.FLOW_NODE)
-          .viewProperty(ProcessViewProperty.DURATION)
-          .groupByType(ProcessGroupByType.FLOW_NODES)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();

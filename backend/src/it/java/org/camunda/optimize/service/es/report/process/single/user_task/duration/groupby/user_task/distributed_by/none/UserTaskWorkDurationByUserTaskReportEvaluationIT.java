@@ -13,9 +13,8 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class UserTaskWorkDurationByUserTaskReportEvaluationIT
   extends AbstractUserTaskDurationByUserTaskReportEvaluationIT {
@@ -51,14 +50,10 @@ public class UserTaskWorkDurationByUserTaskReportEvaluationIT
   @Override
   protected void assertEvaluateReportWithExecutionState(final ReportMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
-    assertThat(
-      result.getEntryForKey(USER_TASK_1).get().getValue(),
-      is(expectedValues.getExpectedWorkDurationValues().get(USER_TASK_1))
-    );
-    assertThat(
-      result.getEntryForKey(USER_TASK_2).get().getValue(),
-      is(expectedValues.getExpectedWorkDurationValues().get(USER_TASK_2))
-    );
+    assertThat(result.getEntryForKey(USER_TASK_1).get().getValue())
+      .isEqualTo(expectedValues.getExpectedWorkDurationValues().get(USER_TASK_1));
+    assertThat(result.getEntryForKey(USER_TASK_2).get().getValue())
+      .isEqualTo(expectedValues.getExpectedWorkDurationValues().get(USER_TASK_2));
   }
 
 }

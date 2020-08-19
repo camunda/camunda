@@ -23,9 +23,9 @@ public class UserTaskIdleDurationByUserTaskStartDateReportEvaluationIT
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                final String userTaskKey,
+                                final String modelElementId,
                                 final Double durationInMs) {
-    changeUserTaskIdleDuration(processInstanceDto, userTaskKey, durationInMs);
+    changeUserTaskIdleDuration(processInstanceDto, modelElementId, durationInMs);
   }
 
   @Override

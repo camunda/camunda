@@ -23,8 +23,8 @@ public class UserTaskWorkDurationByUserTaskEndDateReportEvaluationIT
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                final String userTaskKey,
+                                final String modelElementId,
                                 final Double durationInMs) {
-    changeUserTaskWorkDuration(processInstanceDto, userTaskKey, durationInMs);
+    changeUserTaskWorkDuration(processInstanceDto, modelElementId, durationInMs);
   }
 }

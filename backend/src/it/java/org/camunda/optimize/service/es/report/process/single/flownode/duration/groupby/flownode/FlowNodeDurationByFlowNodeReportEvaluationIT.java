@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.flownode.duration;
+package org.camunda.optimize.service.es.report.process.single.flownode.duration.groupby.flownode;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -958,7 +958,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersions(definitionVersions)
       .setTenantIds(tenantIds)
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
       .build();
   }
 

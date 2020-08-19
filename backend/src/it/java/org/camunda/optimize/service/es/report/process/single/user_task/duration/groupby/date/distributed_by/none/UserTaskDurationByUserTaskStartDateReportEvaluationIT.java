@@ -44,7 +44,7 @@ public abstract class UserTaskDurationByUserTaskStartDateReportEvaluationIT
     ExecutionStateTestValues runningStateValues =
       new ExecutionStateTestValues();
     runningStateValues.executionState = FlowNodeExecutionState.RUNNING;
-    runningStateValues.expectedIdleDurationValue =  200.;
+    runningStateValues.expectedIdleDurationValue = 200.;
     runningStateValues.expectedWorkDurationValue = 500.;
     runningStateValues.expectedTotalDurationValue = 700.;
 
@@ -115,14 +115,14 @@ public abstract class UserTaskDurationByUserTaskStartDateReportEvaluationIT
   }
 
   @Override
-  protected void changeUserTaskDates(final Map<String, OffsetDateTime> updates) {
+  protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
     engineDatabaseExtension.changeUserTaskStartDates(updates);
   }
 
   @Override
-  protected void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
-                                    final String userTaskKey,
-                                    final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
+                                        final String modelElementId,
+                                        final OffsetDateTime dateToChangeTo) {
+    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), modelElementId, dateToChangeTo);
   }
 }

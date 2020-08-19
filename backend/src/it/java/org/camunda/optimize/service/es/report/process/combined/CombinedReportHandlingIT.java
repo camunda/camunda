@@ -79,11 +79,14 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_IN
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
@@ -91,6 +94,7 @@ import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 public class CombinedReportHandlingIT extends AbstractIT {
 
   private static final String TEST_REPORT_NAME = "My foo report";
+
   @RegisterExtension
   @Order(4)
   public EngineDatabaseExtension engineDatabaseExtension =
@@ -125,7 +129,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   @ParameterizedTest
   @MethodSource("getUncombinableSingleReports")
   public void combineUncombinableSingleReports(List<SingleProcessReportDefinitionDto> singleReports) {
-    //given
+    // given
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
     List<CombinedReportItemDto> reportIds = singleReports.stream()
@@ -136,20 +140,20 @@ public class CombinedReportHandlingIT extends AbstractIT {
     CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     Response response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute();
 
-    //then
+    // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @ParameterizedTest
   @MethodSource("getCombinableSingleReports")
   public void combineCombinableSingleReports(List<SingleProcessReportDefinitionDto> singleReports) {
-    //given
+    // given
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
     List<CombinedReportItemDto> reportIds = singleReports.stream()
@@ -160,13 +164,13 @@ public class CombinedReportHandlingIT extends AbstractIT {
     CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
     combinedReport.setData(combinedReportData);
 
-    //when
+    // when
     IdDto response = embeddedOptimizeExtension
       .getRequestExecutor()
       .buildCreateCombinedReportRequest(combinedReport)
       .execute(IdDto.class, Response.Status.OK.getStatusCode());
 
-    //then
+    // then
     AuthorizedCombinedReportEvaluationResultDto<SingleReportResultDto> result =
       reportClient.evaluateCombinedReportById(response.getId());
 
@@ -174,7 +178,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private static Stream<List<SingleProcessReportDefinitionDto>> getCombinableSingleReports() {
-    //different procDefs
+    // different procDefs
     final SingleProcessReportDefinitionDto procDefKeyReport = new SingleProcessReportDefinitionDto();
     final ProcessReportDataDto procDefKeyReportData = TemplatedProcessReportDataBuilder
       .createReportData()
@@ -199,7 +203,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     procDefAnotherKeyReportData.setVisualization(ProcessVisualization.BAR);
     procDefAnotherKeyReport.setData(procDefAnotherKeyReportData);
 
-    //byStartDate/byEndDate
+    // byStartDate/byEndDate
     final SingleProcessReportDefinitionDto byEndDate = new SingleProcessReportDefinitionDto();
     final ProcessReportDataDto byEndDateData = TemplatedProcessReportDataBuilder
       .createReportData()
@@ -212,7 +216,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     byEndDateData.setVisualization(ProcessVisualization.BAR);
     byEndDate.setData(byEndDateData);
 
-    //userTaskDuration/flowNodeDuration
+    // userTaskDuration/flowNodeDuration
     final SingleProcessReportDefinitionDto userTaskDuration = new SingleProcessReportDefinitionDto();
     final ProcessReportDataDto userTaskDurationData = TemplatedProcessReportDataBuilder
       .createReportData()
@@ -227,7 +231,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
     final SingleProcessReportDefinitionDto flowNodeDuration = new SingleProcessReportDefinitionDto();
     final ProcessReportDataDto flowNodeDurationData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setReportDataType(FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+      .setReportDataType(FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
       .setProcessDefinitionKey("key")
       .setProcessDefinitionVersion("1")
       .setVisualization(ProcessVisualization.BAR)
@@ -301,8 +305,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
   private static Stream<List<SingleProcessReportDefinitionDto>> getUncombinableSingleReports() {
     // uncombinable visualization
-    SingleProcessReportDefinitionDto PICount_startDateYear_bar = new SingleProcessReportDefinitionDto();
-    ProcessReportDataDto PICount_startDateYear_barData = TemplatedProcessReportDataBuilder
+    SingleProcessReportDefinitionDto pICount_startDateYear_bar = new SingleProcessReportDefinitionDto();
+    ProcessReportDataDto pICount_startDateYear_barData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .setProcessDefinitionKey("key")
@@ -310,10 +314,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setDateInterval(GroupByDateUnit.YEAR)
       .build();
 
-    PICount_startDateYear_barData.setVisualization(ProcessVisualization.BAR);
-    PICount_startDateYear_bar.setData(PICount_startDateYear_barData);
+    pICount_startDateYear_barData.setVisualization(ProcessVisualization.BAR);
+    pICount_startDateYear_bar.setData(pICount_startDateYear_barData);
 
-    SingleProcessReportDefinitionDto PICount_startDateYear_line = new SingleProcessReportDefinitionDto();
+    SingleProcessReportDefinitionDto pICount_startDateYear_line = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto PICount_startDateYear_lineData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
@@ -323,10 +327,10 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
 
     PICount_startDateYear_lineData.setVisualization(ProcessVisualization.LINE);
-    PICount_startDateYear_line.setData(PICount_startDateYear_lineData);
+    pICount_startDateYear_line.setData(PICount_startDateYear_lineData);
 
-    //uncombinable groupBy
-    ProcessReportDataDto PICount_byVariable_barData = TemplatedProcessReportDataBuilder
+    // uncombinable groupBy
+    ProcessReportDataDto pICount_byVariable_barData = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
       .setProcessDefinitionKey("key")
@@ -334,12 +338,12 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setVariableName("var")
       .setVariableType(VariableType.BOOLEAN)
       .build();
-    PICount_byVariable_barData.setVisualization(ProcessVisualization.BAR);
-    SingleProcessReportDefinitionDto PICount_byVariable_bar = new SingleProcessReportDefinitionDto();
-    PICount_byVariable_bar.setData(PICount_byVariable_barData);
+    pICount_byVariable_barData.setVisualization(ProcessVisualization.BAR);
+    SingleProcessReportDefinitionDto pICount_byVariable_bar = new SingleProcessReportDefinitionDto();
+    pICount_byVariable_bar.setData(pICount_byVariable_barData);
 
-    //uncombinable view
-    SingleProcessReportDefinitionDto PIDuration_startDateYear_bar = new SingleProcessReportDefinitionDto();
+    // uncombinable view
+    SingleProcessReportDefinitionDto pIDuration_startDateYear_bar = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto PIDuration_startDateYear_barData = new ProcessReportDataBuilderHelper()
       .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
       .viewProperty(ProcessViewProperty.DURATION)
@@ -350,7 +354,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
 
     PIDuration_startDateYear_barData.setVisualization(ProcessVisualization.BAR);
-    PIDuration_startDateYear_bar.setData(PIDuration_startDateYear_barData);
+    pIDuration_startDateYear_bar.setData(PIDuration_startDateYear_barData);
 
     // groupBy number variable reports with different bucket size
     SingleProcessReportDefinitionDto groupByNumberVar1 = new SingleProcessReportDefinitionDto();
@@ -386,9 +390,9 @@ public class CombinedReportHandlingIT extends AbstractIT {
     groupByNumberVar2.setData(groupByNumberVar2Data);
 
     return Stream.of(
-      Arrays.asList(PICount_startDateYear_bar, PICount_startDateYear_line),
-      Arrays.asList(PICount_byVariable_bar, PICount_startDateYear_bar),
-      Arrays.asList(PICount_startDateYear_bar, PIDuration_startDateYear_bar),
+      Arrays.asList(pICount_startDateYear_bar, pICount_startDateYear_line),
+      Arrays.asList(pICount_byVariable_bar, pICount_startDateYear_bar),
+      Arrays.asList(pICount_startDateYear_bar, pIDuration_startDateYear_bar),
       Arrays.asList(groupByNumberVar1, groupByNumberVar2)
     );
   }
@@ -1458,6 +1462,59 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   @Test
+  public void canEvaluateUnsavedCombinedReportWithGroupedByFlowNodeStartAndEndDateReports() {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    ProcessInstanceEngineDto engineDto = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.finishAllRunningUserTasks(engineDto.getId());
+    engineDatabaseExtension.changeActivityInstanceStartDate(engineDto.getId(), START_EVENT, now.minusDays(2L));
+
+    engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
+
+    importAllEngineEntitiesFromScratch();
+
+    final ProcessReportDataDto groupedByEndDateReportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE)
+      .build();
+    String groupedByEndDateReportId = createNewSingleMapReport(groupedByEndDateReportData);
+    final ProcessReportDataDto groupedByStartDateReportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
+      .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
+      .setDateInterval(GroupByDateUnit.DAY)
+      .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE)
+      .build();
+    String groupedByStartDateReportId = createNewSingleMapReport(groupedByStartDateReportData);
+
+    // when
+    final CombinedProcessReportResultDataDto<ReportMapResultDto> result = reportClient.evaluateUnsavedCombined(
+      createCombinedReportData(groupedByEndDateReportId, groupedByStartDateReportId));
+
+    // then
+    final Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap = result.getData();
+    assertThat(resultMap).isNotNull();
+    assertThat(resultMap.keySet()).contains(groupedByEndDateReportId, groupedByStartDateReportId);
+
+    final ReportMapResultDto result1 = resultMap.get(groupedByEndDateReportId)
+      .getResult();
+    final List<MapResultEntryDto> resultData1 = result1.getData();
+    assertThat(resultData1)
+      .isNotNull()
+      .hasSize(1);
+
+    final ReportMapResultDto result2 = resultMap.get(groupedByStartDateReportId)
+      .getResult();
+    final List<MapResultEntryDto> resultData2 = result2.getData();
+    assertThat(resultData2)
+      .isNotNull()
+      .hasSize(3);
+  }
+
+  @Test
   public void canEvaluateUnsavedCombinedReportWithSingleNumberAndMapReport_firstWins() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
@@ -1578,7 +1635,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+      .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
       .setVisualization(ProcessVisualization.TABLE)
       .build();
     return createNewSingleMapReport(durationMapReportData);

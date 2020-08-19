@@ -100,9 +100,10 @@ public class EngineDatabaseExtension implements Extension {
     return (database.equals(DATABASE_POSTGRESQL)) ? statement.toLowerCase() : statement;
   }
 
+  @SneakyThrows
   public void changeActivityDuration(String processInstanceId,
                                      String activityId,
-                                     long duration) throws SQLException {
+                                     long duration) {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET DURATION_ = ? WHERE " +
       "PROC_INST_ID_ = ? AND " +
@@ -115,8 +116,9 @@ public class EngineDatabaseExtension implements Extension {
     connection.commit();
   }
 
+  @SneakyThrows
   public void changeActivityDuration(String processInstanceId,
-                                     long duration) throws SQLException {
+                                     long duration) {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET DURATION_ = ? WHERE " +
       "PROC_INST_ID_ = ?";

@@ -225,4 +225,5 @@ public abstract class ModelElementFrequencyByModelElementDateByModelElementRepor
   protected abstract void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
                                                  final String ActivityInstanceId,
                                                  final OffsetDateTime dateToChangeTo);
+
 }

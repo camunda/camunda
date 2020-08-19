@@ -139,7 +139,7 @@ public class ProcessExportServiceIT extends AbstractIT {
         .createReportData()
         .setProcessDefinitionKey(FAKE)
         .setProcessDefinitionVersion(FAKE)
-        .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+        .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
         .build();
     reportDataDto.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.RUNNING);
     return reportDataDto;
@@ -202,7 +202,7 @@ public class ProcessExportServiceIT extends AbstractIT {
           .createReportData()
           .setProcessDefinitionKey(FAKE)
           .setProcessDefinitionVersion(FAKE)
-          .setReportDataType(ProcessReportDataType.FLOW_NODE_DUR_GROUP_BY_FLOW_NODE)
+          .setReportDataType(ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
           .build(),
         "/csv/process/single/flownode_duration_group_by_flownodes.csv",
         "Flow Node Duration Grouped By Flow Node"
