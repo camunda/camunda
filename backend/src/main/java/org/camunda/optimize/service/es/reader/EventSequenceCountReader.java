@@ -19,7 +19,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.AbstractQueryBuilder;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -45,6 +44,7 @@ import static org.camunda.optimize.service.es.schema.index.events.EventSequenceC
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.TARGET_EVENT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -156,7 +156,7 @@ public class EventSequenceCountReader {
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(getIndexName())
       .source(searchSourceBuilder)
-      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     SearchResponse scrollResponse;
     try {
@@ -174,7 +174,7 @@ public class EventSequenceCountReader {
       EventSequenceCountDto.class,
       objectMapper,
       esClient,
-      configurationService.getElasticsearchScrollTimeout()
+      configurationService.getEsScrollTimeoutInSeconds()
     );
   }
 

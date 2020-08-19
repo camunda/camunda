@@ -18,7 +18,6 @@ import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
@@ -30,6 +29,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.elasticsearch.search.sort.SortOrder.ASC;
@@ -59,7 +59,7 @@ public class VariableUpdateInstanceReader {
       .size(MAX_RESPONSE_SIZE_LIMIT);
     SearchRequest searchRequest = new SearchRequest(ElasticsearchConstants.VARIABLE_UPDATE_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     SearchResponse searchResponse;
     try {
@@ -74,7 +74,7 @@ public class VariableUpdateInstanceReader {
       VariableUpdateInstanceDto.class,
       objectMapper,
       esClient,
-      configurationService.getElasticsearchScrollTimeout()
+      configurationService.getEsScrollTimeoutInSeconds()
     );
   }
 

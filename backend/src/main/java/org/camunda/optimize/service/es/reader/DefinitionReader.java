@@ -30,7 +30,6 @@ import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -87,6 +86,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -577,7 +577,7 @@ public class DefinitionReader {
     final SearchRequest searchRequest =
       new SearchRequest(resolveIndexNameForType(type))
         .source(searchSourceBuilder)
-        .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+        .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     final SearchResponse scrollResp;
     try {
@@ -594,7 +594,7 @@ public class DefinitionReader {
       typeClass,
       createMappingFunctionForDefinitionType(typeClass),
       esClient,
-      configurationService.getElasticsearchScrollTimeout()
+      configurationService.getEsScrollTimeoutInSeconds()
     );
   }
 

@@ -279,9 +279,9 @@ es:
       # used to enable or disable TLS/SSL for the HTTP connection
       enabled: false
 
-  # Maximum time a request to elasticsearch should last, before a timeout
+  # Maximum time in seconds a request to elasticsearch should last, before a timeout
   # triggers.
-  scrollTimeout: 60000
+  scrollTimeoutInSeconds: 60
   settings:
     # the maximum number of buckets returned for an aggregation
     aggregationBucketLimit: 1000

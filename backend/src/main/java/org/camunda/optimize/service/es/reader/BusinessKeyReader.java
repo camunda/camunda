@@ -16,7 +16,6 @@ import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
@@ -27,6 +26,7 @@ import java.util.List;
 import java.util.Set;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 
 @RequiredArgsConstructor
 @Component
@@ -49,7 +49,7 @@ public class BusinessKeyReader {
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(ElasticsearchConstants.BUSINESS_KEY_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     SearchResponse searchResponse;
     try {
@@ -63,7 +63,7 @@ public class BusinessKeyReader {
       BusinessKeyDto.class,
       objectMapper,
       esClient,
-      configurationService.getElasticsearchScrollTimeout()
+      configurationService.getEsScrollTimeoutInSeconds()
     );
   }
 

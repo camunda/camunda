@@ -20,7 +20,6 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -37,6 +36,7 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_SHARE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.REPORT_SHARE_INDEX_NAME;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 
 @RequiredArgsConstructor
 @Component
@@ -190,7 +190,7 @@ public class SharingReader {
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(REPORT_SHARE_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
     try {
@@ -205,7 +205,7 @@ public class SharingReader {
       ReportShareDto.class,
       objectMapper,
       esClient,
-      configurationService.getElasticsearchScrollTimeout()
+      configurationService.getEsScrollTimeoutInSeconds()
     );
 
     return reportShareDtos.stream().collect(Collectors.toMap(
@@ -234,7 +234,7 @@ public class SharingReader {
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(DASHBOARD_SHARE_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
     try {
@@ -249,7 +249,7 @@ public class SharingReader {
       DashboardShareDto.class,
       objectMapper,
       esClient,
-      configurationService.getElasticsearchScrollTimeout()
+      configurationService.getEsScrollTimeoutInSeconds()
     );
 
     return dashboardShareDtos.stream().collect(Collectors.toMap(

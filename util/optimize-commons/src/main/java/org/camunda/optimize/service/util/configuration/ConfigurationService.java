@@ -83,7 +83,7 @@ public class ConfigurationService {
 
   // elasticsearch connection
   private List<ElasticsearchConnectionNodeConfiguration> elasticsearchConnectionNodes;
-  private Integer elasticsearchScrollTimeout;
+  private Integer esScrollTimeoutInSeconds;
   private Integer elasticsearchConnectionTimeout;
   private ProxyConfiguration elasticSearchProxyConfig;
 
@@ -393,13 +393,13 @@ public class ConfigurationService {
     return elasticsearchJobExecutorThreadCount;
   }
 
-  public int getElasticsearchScrollTimeout() {
-    if (elasticsearchScrollTimeout == null) {
-      elasticsearchScrollTimeout = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTIC_SEARCH_SCROLL_TIMEOUT, Integer.class
+  public int getEsScrollTimeoutInSeconds() {
+    if (esScrollTimeoutInSeconds == null) {
+      esScrollTimeoutInSeconds = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTIC_SEARCH_SCROLL_TIMEOUT_IN_SECONDS, Integer.class
       );
     }
-    return elasticsearchScrollTimeout;
+    return esScrollTimeoutInSeconds;
   }
 
   public int getElasticsearchConnectionTimeout() {

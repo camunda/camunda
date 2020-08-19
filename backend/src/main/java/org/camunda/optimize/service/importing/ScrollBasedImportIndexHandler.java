@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing;
 
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.ImportIndexReader;
@@ -12,8 +13,6 @@ import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -24,11 +23,11 @@ import java.util.Set;
 
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.clearScroll;
 
+@Slf4j
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public abstract class ScrollBasedImportIndexHandler
   implements ImportIndexHandler<IdSetBasedImportPage, AllEntitiesBasedImportIndexDto> {
 
-  protected Logger logger = LoggerFactory.getLogger(getClass());
   @Autowired
   protected OptimizeElasticsearchClient esClient;
   @Autowired
@@ -63,7 +62,7 @@ public abstract class ScrollBasedImportIndexHandler
 
   @Override
   public void resetImportIndex() {
-    logger.debug("Resetting import index");
+    log.debug("Resetting import index");
     resetScroll();
     importIndex = 0L;
   }
@@ -110,7 +109,7 @@ public abstract class ScrollBasedImportIndexHandler
       try {
         clearScroll(this.getClass(), esClient, currentScrollId);
       } catch (ElasticsearchStatusException ex) {
-        logger.warn("Could not clear scroll. The scroll might have already been expired.");
+        log.warn("Could not clear scroll. The scroll might have already been expired.");
       }
     }
   }

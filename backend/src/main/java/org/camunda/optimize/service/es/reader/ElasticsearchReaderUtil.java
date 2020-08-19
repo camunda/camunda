@@ -36,9 +36,9 @@ public class ElasticsearchReaderUtil {
                                                      final Class<T> itemClass,
                                                      final ObjectMapper objectMapper,
                                                      final OptimizeElasticsearchClient esClient,
-                                                     final Integer scrollingTimeout) {
+                                                     final Integer scrollingTimeoutInSeconds) {
     return retrieveScrollResultsTillLimit(
-      initialScrollResponse, itemClass, objectMapper, esClient, scrollingTimeout, Integer.MAX_VALUE
+      initialScrollResponse, itemClass, objectMapper, esClient, scrollingTimeoutInSeconds, Integer.MAX_VALUE
     );
   }
 
@@ -46,9 +46,9 @@ public class ElasticsearchReaderUtil {
                                                      final Class<T> itemClass,
                                                      final Function<SearchHit, T> mappingFunction,
                                                      final OptimizeElasticsearchClient esClient,
-                                                     final Integer scrollingTimeout) {
+                                                     final Integer scrollingTimeoutInSeconds) {
     return retrieveScrollResultsTillLimit(
-      initialScrollResponse, itemClass, mappingFunction, esClient, scrollingTimeout, Integer.MAX_VALUE
+      initialScrollResponse, itemClass, mappingFunction, esClient, scrollingTimeoutInSeconds, Integer.MAX_VALUE
     );
   }
 
@@ -56,7 +56,7 @@ public class ElasticsearchReaderUtil {
                                                            final Class<T> itemClass,
                                                            final ObjectMapper objectMapper,
                                                            final OptimizeElasticsearchClient esClient,
-                                                           final Integer scrollingTimeout,
+                                                           final Integer scrollingTimeoutInSeconds,
                                                            final Integer limit) {
     Function<SearchHit, T> mappingFunction = hit -> {
       final String sourceAsString = hit.getSourceAsString();
@@ -71,7 +71,7 @@ public class ElasticsearchReaderUtil {
       }
     };
     return retrieveScrollResultsTillLimit(
-      initialScrollResponse, itemClass, mappingFunction, esClient, scrollingTimeout, limit
+      initialScrollResponse, itemClass, mappingFunction, esClient, scrollingTimeoutInSeconds, limit
     );
   }
 
@@ -79,7 +79,7 @@ public class ElasticsearchReaderUtil {
                                                                    final Class<T> itemClass,
                                                                    final Function<SearchHit, T> mappingFunction,
                                                                    final OptimizeElasticsearchClient esClient,
-                                                                   final Integer scrollingTimeout,
+                                                                   final Integer scrollingTimeoutInSeconds,
                                                                    final Integer limit) {
     final PageResultDto<T> pageResult = new PageResultDto<>(limit);
 
@@ -87,7 +87,8 @@ public class ElasticsearchReaderUtil {
     SearchHits currentHits;
     do {
       if (pageResult.getEntities().size() < limit) {
-        final SearchResponse currentScrollResp = getScrollResponse(esClient, scrollingTimeout, currentScrollId);
+        final SearchResponse currentScrollResp =
+          getScrollResponse(esClient, scrollingTimeoutInSeconds, currentScrollId);
         currentScrollId = currentScrollResp.getScrollId();
         currentHits = currentScrollResp.getHits();
         pageResult.getEntities().addAll(
@@ -108,11 +109,11 @@ public class ElasticsearchReaderUtil {
   }
 
   private static SearchResponse getScrollResponse(final OptimizeElasticsearchClient esClient,
-                                                  final Integer scrollingTimeout,
+                                                  final Integer scrollingTimeoutInSeconds,
                                                   final String scrollId) {
     final SearchResponse currentScrollResp;
     final SearchScrollRequest scrollRequest = new SearchScrollRequest(scrollId)
-      .scroll(TimeValue.timeValueSeconds(scrollingTimeout));
+      .scroll(TimeValue.timeValueSeconds(scrollingTimeoutInSeconds));
     try {
       currentScrollResp = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -123,12 +124,12 @@ public class ElasticsearchReaderUtil {
     return currentScrollResp;
   }
 
-  public static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
-                                                           final Class<T> itemClass,
-                                                           final Function<SearchHit, T> mappingFunction,
-                                                           final OptimizeElasticsearchClient esClient,
-                                                           final Integer scrollingTimeout,
-                                                           final Integer limit) {
+  private static <T> List<T> retrieveScrollResultsTillLimit(final SearchResponse initialScrollResponse,
+                                                            final Class<T> itemClass,
+                                                            final Function<SearchHit, T> mappingFunction,
+                                                            final OptimizeElasticsearchClient esClient,
+                                                            final Integer scrollingTimeoutInSeconds,
+                                                            final Integer limit) {
     final List<T> results = new ArrayList<>();
 
     SearchResponse currentScrollResp = initialScrollResponse;
@@ -139,7 +140,7 @@ public class ElasticsearchReaderUtil {
 
       if (results.size() < limit) {
         final SearchScrollRequest scrollRequest = new SearchScrollRequest(currentScrollResp.getScrollId());
-        scrollRequest.scroll(TimeValue.timeValueSeconds(scrollingTimeout));
+        scrollRequest.scroll(TimeValue.timeValueSeconds(scrollingTimeoutInSeconds));
         try {
           currentScrollResp = esClient.scroll(scrollRequest, RequestOptions.DEFAULT);
           hits = currentScrollResp.getHits();

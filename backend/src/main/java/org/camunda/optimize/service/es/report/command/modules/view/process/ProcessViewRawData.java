@@ -24,7 +24,6 @@ import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -47,6 +46,7 @@ import static org.camunda.optimize.service.export.CSVUtils.extractAllProcessInst
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableValueField;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Slf4j
@@ -83,7 +83,7 @@ public class ProcessViewRawData extends ProcessViewPart {
     addSorting(sortByField, sortOrder, searchRequest.source());
 
     searchRequest
-      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
   }
 
   private void addSorting(String sortByField, SortOrder sortOrder, SearchSourceBuilder searchSourceBuilder) {
@@ -125,7 +125,7 @@ public class ProcessViewRawData extends ProcessViewPart {
         ProcessInstanceDto.class,
         objectMapper,
         esClient,
-        configurationService.getElasticsearchScrollTimeout(),
+        configurationService.getEsScrollTimeoutInSeconds(),
         context.getRecordLimit()
       );
 
