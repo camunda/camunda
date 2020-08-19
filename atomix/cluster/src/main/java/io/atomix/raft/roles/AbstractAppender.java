@@ -40,10 +40,12 @@ import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 
 /** Abstract appender. */
@@ -451,24 +453,36 @@ abstract class AbstractAppender implements AutoCloseable {
   }
 
   /** Builds an install request for the given member. */
-  protected InstallRequest buildInstallRequest(
+  protected Optional<InstallRequest> buildInstallRequest(
       final RaftMemberContext member, final PersistedSnapshot persistedSnapshot) {
     if (member.getNextSnapshotIndex() != persistedSnapshot.getIndex()) {
+      try {
+        final SnapshotChunkReader snapshotChunkReader = persistedSnapshot.newChunkReader();
+        member.setSnapshotChunkReader(snapshotChunkReader);
+      } catch (final UncheckedIOException e) {
+        log.warn(
+            "Expected to send Snapshot {} to {}. But could not open SnapshotChunkReader. Will retry.",
+            persistedSnapshot.getId(),
+            e);
+        return Optional.empty();
+      }
       member.setNextSnapshotIndex(persistedSnapshot.getIndex());
       member.setNextSnapshotChunk(null);
     }
 
-    final InstallRequest request;
-    // Open a new snapshot reader.
-    try (final SnapshotChunkReader reader = persistedSnapshot.newChunkReader()) {
-      reader.seek(member.getNextSnapshotChunk());
+    final SnapshotChunkReader reader = member.getSnapshotChunkReader();
+    if (!reader.hasNext()) {
+      return Optional.empty();
+    }
+
+    try {
       final SnapshotChunk chunk = reader.next();
 
       // Create the install request, indicating whether this is the last chunk of data based on
-      // the number
-      // of bytes remaining in the buffer.
+      // the number of bytes remaining in the buffer.
       final DefaultRaftMember leader = raft.getLeader();
-      request =
+
+      final InstallRequest request =
           InstallRequest.builder()
               .withCurrentTerm(raft.getTerm())
               .withLeader(leader.memberId())
@@ -482,11 +496,15 @@ abstract class AbstractAppender implements AutoCloseable {
               .withComplete(!reader.hasNext())
               .withNextChunkId(reader.nextId())
               .build();
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
+      return Optional.of(request);
+    } catch (final UncheckedIOException e) {
+      log.warn(
+          "Expected to send next chunk of Snapshot {} to {}. But could not read SnapshotChunk. Snapshot may have been deleted. Will retry.",
+          persistedSnapshot.getId(),
+          member.getMember().memberId(),
+          e);
+      return Optional.empty();
     }
-
-    return request;
   }
 
   /** Connects to the member and sends a snapshot request. */
