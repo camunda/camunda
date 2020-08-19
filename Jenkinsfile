@@ -324,8 +324,30 @@ pipeline {
         }
       }
     }
-    stage('Unit tests') {
-      parallel {
+    stage('Unit tests and static analysis') {
+       parallel {
+        stage('SonarQube') {
+          environment {
+            SONARCLOUD_TOKEN = credentials('sonarcloud-token')
+            GITHUB_TOKEN     = credentials('camunda-jenkins-github')
+          }
+          steps {
+            container('maven') {
+              configFileProvider([configFile(
+                fileId: 'maven-nexus-settings-local-repo',
+                variable: 'MAVEN_SETTINGS_XML'
+              )]) {
+                sh '''
+                  apt-get update && apt-get install -qq git
+                  # This step is needed to fetch repo branches so SonarQube can diff them.
+                  # It's used to scan and report only differences instead whole branch.
+                  git config url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+                  .ci/scripts/sonarqube-mvn.sh
+                '''
+              }
+            }
+          }
+        }
         stage('Backend') {
           steps {
             container('maven') {

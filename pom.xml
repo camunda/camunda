@@ -31,6 +31,8 @@
     <camunda.maven.artifacts.version>7.13.0-ee</camunda.maven.artifacts.version>
 
     <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
+    <!-- maven plugins -->
+    <plugin.version.sonar>3.7.0.1746</plugin.version.sonar>
 
     <jackson.version>2.11.2</jackson.version>
     <jsonpath.version>2.4.0</jsonpath.version>
@@ -200,6 +202,38 @@
         </plugins>
       </build>
     </profile>
+
+    <!-- profile to perform only static code analysis using sonar scanner -->
+    <profile>
+      <id>sonar</id>
+      <properties>
+        <!-- sonarscanner integration -->
+        <!-- sonar.login token must be passed at runtime to avoid sharing token -->
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.organization>camunda</sonar.organization>
+        <sonar.projectKey>camunda_camunda-optimize</sonar.projectKey>
+        <sonar.moduleKey>${artifactId}</sonar.moduleKey>
+        <sonar.login>${env.SONARCLOUD_TOKEN}</sonar.login>
+      </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.sonarsource.scanner.maven</groupId>
+            <artifactId>sonar-maven-plugin</artifactId>
+            <version>${plugin.version.sonar}</version>
+            <executions>
+              <execution>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sonar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
   </profiles>
 
   <dependencies>
@@ -390,7 +424,7 @@
         <plugin>
           <groupId>org.sonarsource.scanner.maven</groupId>
           <artifactId>sonar-maven-plugin</artifactId>
-          <version>3.7.0.1746</version>
+          <version>${plugin.version.sonar}</version>
         </plugin>
         <plugin>
           <groupId>org.jacoco</groupId>
