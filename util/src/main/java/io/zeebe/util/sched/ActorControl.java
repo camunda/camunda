@@ -15,7 +15,6 @@ import io.zeebe.util.sched.channel.ChannelSubscription;
 import io.zeebe.util.sched.channel.ConsumableChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.AllCompletedFutureConsumer;
-import io.zeebe.util.sched.future.FirstSuccessfullyCompletedFutureConsumer;
 import io.zeebe.util.sched.future.FutureContinuationRunnable;
 import java.time.Duration;
 import java.util.Collection;
@@ -391,49 +390,6 @@ public class ActorControl {
       }
     } else {
       callback.accept(null);
-    }
-  }
-
-  /**
-   * Invoke the callback when the first future is completed successfully, or when all futures are
-   * completed exceptionally. This call does not block the actor.
-   *
-   * <p>The callback is is executed while the actor is in the following actor lifecycle phases:
-   * {@link ActorLifecyclePhase#STARTED}
-   *
-   * @param futures the futures to wait on
-   * @param callback the callback that handle the future's result. The throwable is <code>null
-   *     </code> when the first future is completed successfully. Otherwise, it holds the exception
-   *     of the last completed future.
-   */
-  public <T> void runOnFirstCompletion(
-      final Collection<ActorFuture<T>> futures, final BiConsumer<T, Throwable> callback) {
-    runOnFirstCompletion(futures, callback, null);
-  }
-
-  /**
-   * Invoke the callback when the first future is completed successfully, or when all futures are
-   * completed exceptionally. This call does not block the actor.
-   *
-   * <p>The callback is is executed while the actor is in the following actor lifecycle phases:
-   * {@link ActorLifecyclePhase#STARTED}
-   *
-   * @param futures the futures to wait on
-   * @param callback the callback that handle the future's result. The throwable is <code>null
-   *     </code> when the first future is completed successfully. Otherwise, it holds the exception
-   *     of the last completed future.
-   * @param closer the callback that is invoked when a future is completed after the first future is
-   *     completed
-   */
-  public <T> void runOnFirstCompletion(
-      final Collection<ActorFuture<T>> futures,
-      final BiConsumer<T, Throwable> callback,
-      final Consumer<T> closer) {
-    final BiConsumer<T, Throwable> futureConsumer =
-        new FirstSuccessfullyCompletedFutureConsumer<>(futures.size(), callback, closer);
-
-    for (final ActorFuture<T> future : futures) {
-      runOnCompletion(future, futureConsumer);
     }
   }
 
