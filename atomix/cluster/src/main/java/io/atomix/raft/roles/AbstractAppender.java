@@ -39,9 +39,11 @@ import io.atomix.raft.storage.snapshot.SnapshotChunkReader;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 
 /** Abstract appender. */
@@ -447,45 +449,63 @@ abstract class AbstractAppender implements AutoCloseable {
     // This prevents infinite loops when cluster configurations fail.
   }
 
-  /** Builds an install request for the given member. */
-  protected InstallRequest buildInstallRequest(
+  /**
+   * Builds an install request for the given member.
+   *
+   * @return
+   */
+  protected Optional<InstallRequest> buildInstallRequest(
       final RaftMemberContext member, final Snapshot snapshot) {
     if (member.getNextSnapshotIndex() != snapshot.index()) {
+      try {
+        final SnapshotChunkReader snapshotChunkReader = snapshot.newChunkReader();
+        member.setSnapshotChunkReader(snapshotChunkReader);
+      } catch (final UncheckedIOException e) {
+        log.warn(
+            "Expected to send Snapshot {} to {}. But could not open SnapshotChunkReader. Will retry.",
+            snapshot.getPath(),
+            e);
+        return Optional.empty();
+      }
       member.setNextSnapshotIndex(snapshot.index());
       member.setNextSnapshotChunk(null);
     }
 
     final InstallRequest request;
-    synchronized (snapshot) {
-      // Open a new snapshot reader.
-      try (final SnapshotChunkReader reader = snapshot.newChunkReader()) {
-        reader.seek(member.getNextSnapshotChunk());
-        final SnapshotChunk chunk = reader.next();
-
-        // Create the install request, indicating whether this is the last chunk of data based on
-        // the number
-        // of bytes remaining in the buffer.
-        final DefaultRaftMember leader = raft.getLeader();
-        request =
-            InstallRequest.builder()
-                .withCurrentTerm(raft.getTerm())
-                .withLeader(leader.memberId())
-                .withIndex(snapshot.index())
-                .withTerm(snapshot.term())
-                .withTimestamp(snapshot.timestamp().unixTimestamp())
-                .withVersion(snapshot.version())
-                .withData(chunk.data())
-                .withChunkId(chunk.id())
-                .withInitial(member.getNextSnapshotChunk() == null)
-                .withComplete(!reader.hasNext())
-                .withNextChunkId(reader.nextId())
-                .build();
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
+    final SnapshotChunkReader reader = member.getSnapshotChunkReader();
+    if (!reader.hasNext()) {
+      return Optional.empty();
     }
+    try {
+      final SnapshotChunk chunk = reader.next();
 
-    return request;
+      // Create the install request, indicating whether this is the last chunk of data based on
+      // the number
+      // of bytes remaining in the buffer.
+      final DefaultRaftMember leader = raft.getLeader();
+      request =
+          InstallRequest.builder()
+              .withCurrentTerm(raft.getTerm())
+              .withLeader(leader.memberId())
+              .withIndex(snapshot.index())
+              .withTerm(snapshot.term())
+              .withTimestamp(snapshot.timestamp().unixTimestamp())
+              .withVersion(snapshot.version())
+              .withData(chunk.data())
+              .withChunkId(chunk.id())
+              .withInitial(member.getNextSnapshotChunk() == null)
+              .withComplete(!reader.hasNext())
+              .withNextChunkId(reader.nextId())
+              .build();
+      return Optional.of(request);
+    } catch (final UncheckedIOException e) {
+      log.warn(
+          "Expected to send next chunk of Snapshot {} to {}. But could not read SnapshotChunk. Snapshot may have been deleted. Will retry.",
+          snapshot.getPath(),
+          member.getMember().memberId(),
+          e);
+      return Optional.empty();
+    }
   }
 
   /** Connects to the member and sends a snapshot request. */
