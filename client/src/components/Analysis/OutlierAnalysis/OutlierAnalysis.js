@@ -5,19 +5,21 @@
  */
 
 import React from 'react';
-
 import equal from 'deep-equal';
+import classnames from 'classnames';
+
 import {t} from 'translation';
-import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
-import {loadNodesOutliers, loadDurationData} from './service';
+import {showError} from 'notifications';
 import {BPMNDiagram, HeatmapOverlay, Button} from 'components';
+import {loadProcessDefinitionXml, getFlowNodeNames} from 'services';
+import {withErrorHandling} from 'HOC';
+
 import OutlierControlPanel from './OutlierControlPanel';
 import OutlierDetailsModal from './OutlierDetailsModal';
 import InstancesButton from './InstancesButton';
-import {withErrorHandling} from 'HOC';
+import {loadNodesOutliers, loadDurationData} from './service';
 
 import './OutlierAnalysis.scss';
-import {showError} from 'notifications';
 
 export class OutlierAnalysis extends React.Component {
   state = {
@@ -81,6 +83,7 @@ export class OutlierAnalysis extends React.Component {
   }
 
   loadOutlierData = (config) => {
+    this.setState({loading: true, heatData: {}});
     this.loadFlowNodeNames(config);
     this.props.mightFail(
       loadNodesOutliers(config),
@@ -93,6 +96,7 @@ export class OutlierAnalysis extends React.Component {
         this.setState({
           data,
           heatData,
+          loading: false,
         });
       },
       showError
@@ -151,10 +155,12 @@ export class OutlierAnalysis extends React.Component {
 
   render() {
     const {xml, config, heatData, loading} = this.state;
+    const empty = xml && !loading && Object.keys(heatData).length === 0;
+
     return (
       <div className="OutlierAnalysis">
         <OutlierControlPanel {...config} onChange={this.updateConfig} xml={xml} />
-        <div className="OutlierAnalysis__diagram">
+        <div className={classnames('OutlierAnalysis__diagram', {empty})}>
           {xml && (
             <BPMNDiagram xml={xml} loading={loading}>
               <HeatmapOverlay
@@ -165,6 +171,7 @@ export class OutlierAnalysis extends React.Component {
               />
             </BPMNDiagram>
           )}
+          {empty && <div className="noOutliers">{t('analysis.outlier.notFound')}</div>}
         </div>
         {this.state.selectedNode && (
           <OutlierDetailsModal

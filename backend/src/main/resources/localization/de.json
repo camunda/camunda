@@ -573,6 +573,7 @@
         },
         "tookDuration": "Benötigte eine Dauer von"
       },
+      "notFound": "Keine Ausreißer für den ausgewählten Prozess gefunden",
       "onlyCompletedHint": "Hinweis: Die Ausreißeranalyse wird nur für abgeschlossene Knoten durchgeführt",
       "info": "Die Heatmap zeigt die Häufigkeit nach oben abweichender Ausreißer basierend auf der Dauer an. Berechnet mit dem Z-Score.",
       "tooltipText": {

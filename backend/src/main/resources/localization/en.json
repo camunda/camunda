@@ -573,6 +573,7 @@
         },
         "tookDuration": "Took a duration of"
       },
+      "notFound": "No outliers found for the selected process",
       "onlyCompletedHint": "Note: The outlier analysis is performed on completed flow nodes only",
       "info": "Heatmap displays the incidence of higher outliers based on duration. Calculated by z-score.",
       "tooltipText": {
