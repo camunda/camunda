@@ -177,7 +177,6 @@ export const DEFAULT_SORTING = {
 export const DEFAULT_FIRST_ELEMENT = 0;
 
 export const DEFAULT_MAX_RESULTS = 50;
-export const DEFAULT_SELECTED_INSTANCES = {all: false, ids: [], excludeIds: []};
 export const VISIBLE_INSTANCES_IN_SELECTION = 10;
 
 export const PANE_ID = {
@@ -266,4 +265,10 @@ export const POLL_TOPICS = {
   INSTANCE: 'INSTANCE',
   INSTANCES_LIST: 'INSTANCES_LIST',
   OPERATIONS: 'OPERATIONS',
+};
+
+export const INSTANCE_SELECTION_MODE = {
+  INCLUDE: 'INCLUDE',
+  EXCLUDE: 'EXCLUDE',
+  ALL: 'ALL',
 };

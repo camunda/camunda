@@ -17,11 +17,6 @@ export const mockUseDataManager = {
 export const mockData = {
   // in this case all instances are selected and no filter is set
   noFilterSelectAll: {
-    instanceSelectionContext: {
-      ids: [],
-      excludeIds: [],
-      reset: jest.fn(),
-    },
     filterContext: {
       query: baseQuery,
     },
@@ -33,11 +28,6 @@ export const mockData = {
   },
   // in this case all instances are selected and an id filter is set
   setFilterSelectAll: {
-    instanceSelectionContext: {
-      ids: [],
-      excludeIds: [],
-      reset: jest.fn(),
-    },
     filterContext: {
       query: {
         ...baseQuery,
@@ -52,11 +42,6 @@ export const mockData = {
   },
   // in this case one instance is selected and an id filter is set
   setFilterSelectOne: {
-    instanceSelectionContext: {
-      ids: ['1'],
-      excludeIds: [],
-      reset: jest.fn(),
-    },
     filterContext: {
       query: {
         ...baseQuery,
@@ -71,11 +56,6 @@ export const mockData = {
   },
   // in this case one instance is excluded and an id filter is set
   setFilterExcludeOne: {
-    instanceSelectionContext: {
-      ids: [],
-      excludeIds: ['1'],
-      reset: jest.fn(),
-    },
     filterContext: {
       query: {
         ...baseQuery,
@@ -90,11 +70,6 @@ export const mockData = {
   },
   // in this case all instances are selected and a workflow filter is set
   setWorkflowFilterSelectOne: {
-    instanceSelectionContext: {
-      ids: ['1'],
-      excludeIds: [],
-      reset: jest.fn(),
-    },
     filterContext: {
       query: {
         ...baseQuery,

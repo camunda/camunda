@@ -14,19 +14,14 @@ import {
 } from '@testing-library/react';
 
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
-import {InstanceSelectionProvider} from 'modules/contexts/InstanceSelectionContext';
-import {mockUseOperationApply, instanceSelectionContext} from './index.setup';
+import {mockUseOperationApply} from './index.setup';
 import CreateOperationDropdown from './index';
 import PropTypes from 'prop-types';
 
 jest.mock('./useOperationApply', () => () => mockUseOperationApply);
 
 const Wrapper = ({children}) => {
-  return (
-    <InstanceSelectionProvider value={instanceSelectionContext}>
-      <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
-    </InstanceSelectionProvider>
-  );
+  return <CollapsablePanelProvider>{children}</CollapsablePanelProvider>;
 };
 Wrapper.propTypes = {
   children: PropTypes.oneOfType([

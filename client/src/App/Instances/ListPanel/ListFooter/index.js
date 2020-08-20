@@ -8,9 +8,9 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import {observer} from 'mobx-react';
 
-import useInstanceSelectionContext from 'modules/hooks/useInstanceSelectionContext';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {instances} from 'modules/stores/instances';
+import {instanceSelection} from 'modules/stores/instanceSelection';
 
 import Paginator from './Paginator';
 import * as Styled from './styled';
@@ -19,8 +19,7 @@ import CreateOperationDropdown from './CreateOperationDropdown';
 const ListFooter = observer(
   ({perPage, firstElement, onFirstElementChange, hasContent}) => {
     const {filteredInstancesCount} = instances.state;
-    const {getSelectedCount} = useInstanceSelectionContext();
-    const selectedCount = getSelectedCount();
+    const selectedCount = instanceSelection.getSelectedInstanceCount();
 
     const getMaxPage = () => {
       return Math.ceil(filteredInstancesCount / perPage);

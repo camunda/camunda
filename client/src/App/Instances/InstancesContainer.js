@@ -35,8 +35,8 @@ import {formatGroupedWorkflows} from 'modules/utils/instance';
 import {Instances} from './index';
 
 import FilterContext from 'modules/contexts/FilterContext';
-import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';
 import {instancesDiagram} from 'modules/stores/instancesDiagram';
+import {instanceSelection} from 'modules/stores/instanceSelection';
 import {observer} from 'mobx-react';
 
 import {
@@ -115,6 +115,7 @@ const InstancesContainer = observer(
     }
 
     async componentDidMount() {
+      instanceSelection.init();
       document.title = PAGE_TITLE.INSTANCES;
       this.props.dataManager.subscribe(this.subscriptions);
 
@@ -173,9 +174,8 @@ const InstancesContainer = observer(
     componentWillUnmount() {
       this.props.dataManager.unsubscribe(this.subscriptions);
       instancesDiagram.reset();
+      instanceSelection.reset();
     }
-
-    static contextType = InstanceSelectionContext;
 
     handleUrlUpdate() {
       const {groupedWorkflows} = this.state;
@@ -187,7 +187,7 @@ const InstancesContainer = observer(
     }
 
     handleFilterUpdate(prevState) {
-      this.context.reset();
+      instanceSelection.reset();
 
       const {filter, groupedWorkflows} = this.state;
 

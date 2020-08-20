@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useContext} from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
@@ -22,8 +22,8 @@ import ColumnHeader from './ColumnHeader';
 import ListContext, {useListContext} from './ListContext';
 import BaseSkeleton from './Skeleton';
 import * as Styled from './styled';
-
-import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';
+import {instanceSelection} from 'modules/stores/instanceSelection';
+import {observer} from 'mobx-react';
 
 const {THead, TBody, TH, TR, TD} = Table;
 
@@ -128,16 +128,13 @@ Message.propTypes = {
   message: PropTypes.string,
 };
 
-const Body = function (props) {
+const Body = observer(function (props) {
   const {data, rowsToDisplay, handleOperationButtonClick} = useListContext();
-  const {isInstanceChecked, handleCheckInstance} = useContext(
-    InstanceSelectionContext
-  );
 
   return (
     <TBody {...props} data-test="instances-list">
       {data.slice(0, rowsToDisplay).map((instance, idx) => {
-        const isSelected = isInstanceChecked(instance.id);
+        const isSelected = instanceSelection.isInstanceChecked(instance.id);
         return (
           <TR key={idx} selected={isSelected}>
             <TD>
@@ -147,7 +144,7 @@ const Body = function (props) {
                   data-test="instance-checkbox"
                   type="selection"
                   isChecked={isSelected}
-                  onChange={handleCheckInstance(instance.id)}
+                  onChange={() => instanceSelection.selectInstance(instance.id)}
                   title={`Select instance ${instance.id}`}
                 />
 
@@ -180,11 +177,11 @@ const Body = function (props) {
       })}
     </TBody>
   );
-};
+});
 
-const Header = function (props) {
+const Header = observer(function (props) {
   const {data, filter, sorting, onSort, isDataLoaded} = useListContext();
-  const {handleCheckAll, isAllChecked} = useContext(InstanceSelectionContext);
+  const {isAllChecked} = instanceSelection.state;
 
   const isListEmpty = !isDataLoaded || data.length === 0;
   const listHasFinishedInstances = filter.canceled || filter.completed;
@@ -197,7 +194,7 @@ const Header = function (props) {
               <Checkbox
                 disabled={isListEmpty}
                 isChecked={isAllChecked}
-                onChange={handleCheckAll}
+                onChange={instanceSelection.selectAllInstances}
                 title="Select all instances"
               />
             ) : (
@@ -254,7 +251,7 @@ const Header = function (props) {
       </Styled.TR>
     </THead>
   );
-};
+});
 
 List.Message = Message;
 List.Body = Body;

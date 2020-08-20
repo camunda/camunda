@@ -7,9 +7,3 @@
 export const mockUseOperationApply = {
   applyBatchOperation: jest.fn(),
 };
-
-export const instanceSelectionContext = {
-  ids: [],
-  excludeIds: [],
-  reset: jest.fn(),
-};

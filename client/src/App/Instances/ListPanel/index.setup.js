@@ -30,11 +30,6 @@ export const emptyList = {
   onSelectedInstancesUpdate: jest.fn(),
   onEntriesPerPageChange: jest.fn(),
   onSort: jest.fn(),
-  selectedInstances: {
-    all: false,
-    excludeIds: [],
-    ids: [],
-  },
   expandState: EXPAND_STATE.DEFAULT,
   sorting: {sortBy: 'foo', sortOrder: SORT_ORDER.ASC},
   isDataLoaded: true,

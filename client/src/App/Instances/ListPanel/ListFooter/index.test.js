@@ -7,10 +7,10 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 
-import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';
 import {instances} from 'modules/stores/instances';
 
 import ListFooter from './index';
+import {instanceSelection} from 'modules/stores/instanceSelection';
 
 const DROPDOWN_REGEX = /^Apply Operation on \d+ Instance[s]?...$/;
 const COPYRIGHT_REGEX = /^© Camunda Services GmbH \d{4}. All rights reserved./;
@@ -18,8 +18,6 @@ const COPYRIGHT_REGEX = /^© Camunda Services GmbH \d{4}. All rights reserved./;
 jest.mock('./CreateOperationDropdown', () => ({label}) => (
   <button>{label}</button>
 ));
-
-const defaultContext = {getSelectedCount: () => 0};
 
 const defaultProps = {
   onFirstElementChange: jest.fn(),
@@ -30,13 +28,12 @@ const defaultProps = {
 };
 
 describe('ListFooter', () => {
+  afterEach(() => {
+    instanceSelection.reset();
+  });
   it('should show pagination, copyright, no dropdown', () => {
     instances.setInstances({filteredInstancesCount: 11});
-    render(
-      <InstanceSelectionContext.Provider value={defaultContext}>
-        <ListFooter {...defaultProps} />
-      </InstanceSelectionContext.Provider>
-    );
+    render(<ListFooter {...defaultProps} />);
 
     const pageOneButton = screen.getByText(/^1$/i);
     const pageTwoButton = screen.getByText(/^2$/i);
@@ -52,11 +49,7 @@ describe('ListFooter', () => {
 
   it('should show copyright, no dropdown, no pagination', () => {
     instances.setInstances({filteredInstancesCount: 9});
-    render(
-      <InstanceSelectionContext.Provider value={defaultContext}>
-        <ListFooter {...defaultProps} />
-      </InstanceSelectionContext.Provider>
-    );
+    render(<ListFooter {...defaultProps} />);
 
     expect(screen.queryByText(/^1$/i)).toBeNull();
     expect(screen.queryByText(/^2$/i)).toBeNull();
@@ -70,14 +63,9 @@ describe('ListFooter', () => {
 
   it('should show Dropdown when there is selection', () => {
     instances.setInstances({filteredInstancesCount: 9});
-    render(
-      <InstanceSelectionContext.Provider
-        value={{...defaultContext, getSelectedCount: () => 2}}
-      >
-        <ListFooter {...defaultProps} />
-      </InstanceSelectionContext.Provider>
-    );
-
+    render(<ListFooter {...defaultProps} />);
+    instanceSelection.selectInstance('1');
+    instanceSelection.selectInstance('2');
     const dropdownButton = screen.getByText(
       'Apply Operation on 2 Instances...'
     );
@@ -89,13 +77,7 @@ describe('ListFooter', () => {
 
   it('should not show the pagination buttons when there is no content', () => {
     instances.setInstances({filteredInstancesCount: 11});
-    render(
-      <InstanceSelectionContext.Provider
-        value={{...defaultContext, getSelectedCount: () => 2}}
-      >
-        <ListFooter {...defaultProps} hasContent={false} />
-      </InstanceSelectionContext.Provider>
-    );
+    render(<ListFooter {...defaultProps} hasContent={false} />);
 
     const pageOneButton = screen.queryByText(/^1$/i);
     const pageTwoButton = screen.queryByText(/^2$/i);

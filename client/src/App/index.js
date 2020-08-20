@@ -18,7 +18,6 @@ import InstancesContainer from './Instances/InstancesContainer';
 import Instance from './Instance';
 import GlobalStyles from './GlobalStyles';
 import {DataManagerProvider} from 'modules/DataManager';
-import {InstanceSelectionProvider} from 'modules/contexts/InstanceSelectionContext';
 
 function App() {
   return (
@@ -30,16 +29,10 @@ function App() {
             <Switch>
               <Route path="/login" component={Login} />
               <Authentication>
-                <InstanceSelectionProvider>
-                  <Header />
-                  <Route exact path="/" component={Dashboard} />
-                  <Route
-                    exact
-                    path="/instances"
-                    component={InstancesContainer}
-                  />
-                  <Route exact path="/instances/:id" component={Instance} />
-                </InstanceSelectionProvider>
+                <Header />
+                <Route exact path="/" component={Dashboard} />
+                <Route exact path="/instances" component={InstancesContainer} />
+                <Route exact path="/instances/:id" component={Instance} />
               </Authentication>
             </Switch>
           </Router>

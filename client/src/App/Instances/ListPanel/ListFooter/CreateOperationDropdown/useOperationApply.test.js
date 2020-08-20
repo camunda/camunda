@@ -11,8 +11,9 @@ import {renderHook} from '@testing-library/react-hooks';
 
 import React from 'react';
 
-import InstanceSelectionContext from 'modules/contexts/InstanceSelectionContext';
 import FilterContext from 'modules/contexts/FilterContext';
+import {instanceSelection} from 'modules/stores/instanceSelection';
+import {INSTANCE_SELECTION_MODE} from 'modules/constants';
 import {
   mockUseDataManager,
   mockData,
@@ -26,13 +27,11 @@ jest.mock('modules/contexts/InstancesPollContext', () => ({
   useInstancesPollContext: () => mockUseInstancesPollContext,
 }));
 
-function renderUseOperationApply({instanceSelectionContext, filterContext}) {
+function renderUseOperationApply({filterContext}) {
   const {result} = renderHook(() => useOperationApply(), {
     wrapper: ({children}) => (
       <FilterContext.Provider value={filterContext}>
-        <InstanceSelectionContext.Provider value={instanceSelectionContext}>
-          {children}
-        </InstanceSelectionContext.Provider>
+        {children}
       </FilterContext.Provider>
     ),
   });
@@ -43,6 +42,9 @@ function renderUseOperationApply({instanceSelectionContext, filterContext}) {
 describe('useOperationApply', () => {
   beforeEach(() => {
     jest.resetAllMocks();
+  });
+  afterEach(() => {
+    instanceSelection.reset();
   });
 
   it('should call apply (no filter, select all ids)', () => {
@@ -58,7 +60,7 @@ describe('useOperationApply', () => {
 
   it('should call apply (set id filter, select all ids)', () => {
     const {expectedQuery, ...context} = mockData.setFilterSelectAll;
-
+    instanceSelection.setAllChecked();
     renderUseOperationApply(context);
 
     expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
@@ -69,6 +71,7 @@ describe('useOperationApply', () => {
 
   it('should call apply (set id filter, select one id)', () => {
     const {expectedQuery, ...context} = mockData.setFilterSelectOne;
+    instanceSelection.selectInstance('1');
 
     renderUseOperationApply(context);
 
@@ -80,7 +83,8 @@ describe('useOperationApply', () => {
 
   it('should call apply (set id filter, exclude one id)', () => {
     const {expectedQuery, ...context} = mockData.setFilterExcludeOne;
-
+    instanceSelection.setMode(INSTANCE_SELECTION_MODE.EXCLUDE);
+    instanceSelection.selectInstance('1');
     renderUseOperationApply(context);
 
     expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
@@ -91,7 +95,7 @@ describe('useOperationApply', () => {
 
   it('should call apply (set workflow filter, select one)', () => {
     const {expectedQuery, ...context} = mockData.setWorkflowFilterSelectOne;
-
+    instanceSelection.selectInstance('1');
     renderUseOperationApply(context);
 
     expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
@@ -110,6 +114,7 @@ describe('useOperationApply', () => {
 
   it('should poll the selected instances', () => {
     const {expectedQuery, ...context} = mockData.setWorkflowFilterSelectOne;
+    instanceSelection.selectInstance('1');
 
     renderUseOperationApply(context);
 

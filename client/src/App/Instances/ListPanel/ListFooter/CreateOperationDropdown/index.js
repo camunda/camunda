@@ -11,7 +11,7 @@ import PropTypes from 'prop-types';
 import {OPERATION_TYPE, DROPDOWN_PLACEMENT} from 'modules/constants';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import Dropdown from 'modules/components/Dropdown';
-import useInstanceSelectionContext from 'modules/hooks/useInstanceSelectionContext';
+import {instanceSelection} from 'modules/stores/instanceSelection';
 import CollapsablePanelContext from 'modules/contexts/CollapsablePanelContext';
 
 import * as Styled from './styled';
@@ -28,7 +28,6 @@ const CreateOperationDropdown = ({label, selectedCount}) => {
 
   const [dropdownWidth, setDropdownWidth] = useState();
   const {applyBatchOperation} = useOperationApply();
-  const {reset} = useInstanceSelectionContext();
   const {expandOperations} = useContext(CollapsablePanelContext);
 
   const closeModal = () => {
@@ -43,7 +42,7 @@ const CreateOperationDropdown = ({label, selectedCount}) => {
 
   const handleCancelClick = () => {
     closeModal();
-    reset();
+    instanceSelection.reset();
   };
 
   const getBodyText = () =>

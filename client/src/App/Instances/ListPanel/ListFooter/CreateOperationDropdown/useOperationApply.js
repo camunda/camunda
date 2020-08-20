@@ -5,37 +5,38 @@
  */
 
 import useFilterContext from 'modules/hooks/useFilterContext';
-import useInstanceSelectionContext from 'modules/hooks/useInstanceSelectionContext';
+import {instanceSelection} from 'modules/stores/instanceSelection';
 import useDataManager from 'modules/hooks/useDataManager';
 import {useInstancesPollContext} from 'modules/contexts/InstancesPollContext';
 
 export default function useOperationApply() {
   const {query} = useFilterContext();
-  const {ids: selectedIds, excludeIds, reset} = useInstanceSelectionContext();
+  const {selectedInstanceIds, excludedInstanceIds, reset} = instanceSelection;
   const {applyBatchOperation} = useDataManager();
   const {addAllVisibleIds, addIds} = useInstancesPollContext();
 
   return {
     applyBatchOperation: (operationType) => {
-      reset();
-
       const filterIds = query.ids || [];
 
       // if ids are selected, ignore ids from filter
       // if no ids are selected, apply ids from filter
-      const ids = selectedIds.length > 0 ? selectedIds : filterIds;
+      const ids =
+        selectedInstanceIds.length > 0 ? selectedInstanceIds : filterIds;
 
-      if (selectedIds.length > 0) {
-        addIds(selectedIds);
+      if (selectedInstanceIds.length > 0) {
+        addIds(selectedInstanceIds);
       } else {
-        addAllVisibleIds(excludeIds);
+        addAllVisibleIds(excludedInstanceIds);
       }
 
       applyBatchOperation(operationType, {
         ...query,
         ids,
-        excludeIds,
+        excludeIds: excludedInstanceIds,
       });
+
+      reset();
     },
   };
 }

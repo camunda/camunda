@@ -15,7 +15,6 @@ import {parseQueryString} from 'modules/utils/filter';
 import * as api from 'modules/api/instances';
 import * as apiDiagram from 'modules/api/diagram';
 import * as filterUtils from 'modules/utils/filter';
-import {InstanceSelectionProvider} from 'modules/contexts/InstanceSelectionContext';
 
 import {formatGroupedWorkflows} from 'modules/utils/instance';
 import {
@@ -81,11 +80,7 @@ function getRouterProps(filter = DEFAULT_FILTER) {
 }
 
 function ProviderWrapper(props) {
-  return (
-    <DataManagerProvider>
-      <InstanceSelectionProvider>{props.children}</InstanceSelectionProvider>
-    </DataManagerProvider>
-  );
+  return <DataManagerProvider>{props.children}</DataManagerProvider>;
 }
 ProviderWrapper.propTypes = {
   children: PropTypes.oneOfType([
