@@ -130,7 +130,7 @@ pipeline {
 
                 stage('Unit (Java)') {
                     environment {
-                      SUREFIRE_REPORT_NAME_SUFFIX = 'java'
+                      SUREFIRE_REPORT_NAME_SUFFIX = 'java-testrun'
                     }
 
                     steps {
@@ -143,13 +143,13 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
                         }
                     }
                 }
                 stage('Unit 8 (Java 8)') {
                     environment {
-                      SUREFIRE_REPORT_NAME_SUFFIX = 'java8'
+                      SUREFIRE_REPORT_NAME_SUFFIX = 'java8-testrun'
                     }
 
                     steps {
@@ -162,14 +162,14 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
                         }
                     }
                 }
 
                 stage('IT (Java)') {
                     environment {
-                      SUREFIRE_REPORT_NAME_SUFFIX = 'it'
+                      SUREFIRE_REPORT_NAME_SUFFIX = 'it-testrun'
                     }
 
                     steps {
@@ -182,7 +182,7 @@ pipeline {
 
                     post {
                         always {
-                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}.xml", keepLongStdio: true
+                            junit testResults: "**/*/TEST*${SUREFIRE_REPORT_NAME_SUFFIX}*.xml", keepLongStdio: true
                         }
                     }
                 }
