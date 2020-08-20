@@ -109,6 +109,10 @@ test('Navigation to Instances View', async (t) => {
 });
 
 test('Select instances by workflow', async (t) => {
+  await t
+    .expect(screen.queryByTestId('instances-by-workflow'))
+    .ok({timeout: 20000});
+
   const withinInstanceByWorkflow = within(
     screen.getByTestId('incident-byWorkflow-0')
   );
@@ -141,6 +145,10 @@ test('Select instances by workflow', async (t) => {
 });
 
 test('Select instances by error message', async (t) => {
+  await t
+    .expect(screen.queryByTestId('incidents-by-error'))
+    .ok({timeout: 20000});
+
   const withinInstanceByError = within(
     screen.getByTestId('incident-byError-0')
   );
@@ -176,6 +184,10 @@ test('Select instances by error message', async (t) => {
 });
 
 test('Select instances by error message (expanded)', async (t) => {
+  await t
+    .expect(screen.queryByTestId('incidents-by-error'))
+    .ok({timeout: 20000});
+
   const withinInstanceByError = within(
     screen.getByTestId('incident-byError-0')
   );
