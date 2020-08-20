@@ -32,9 +32,9 @@ export default function EntityList({
 
   const entries = data || [];
 
-  const searchFilteredData = entries.filter(({name}) =>
-    name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const matches = (value) =>
+    typeof value == 'string' && value.toLowerCase().includes(searchQuery.toLowerCase());
+  const searchFilteredData = entries.filter(({name, meta}) => matches(name) || meta.some(matches));
 
   const isEmpty = !isLoading && entries.length === 0;
   const hasResults = searchFilteredData.length > 0;

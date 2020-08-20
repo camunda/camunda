@@ -33,7 +33,7 @@ const props = {
     },
     {
       name: 'aReport',
-      meta: ['Some info', 'Some additional info', 'Some other info'],
+      meta: ['Some info', 'Some additional info', 'Some other info', 'special info'],
       icon: 'iconType',
       type: 'Report',
       link: 'link/to/somewhere',
@@ -62,7 +62,9 @@ it('should show an empty message if no entities exist', () => {
 it('should filter results based on search input', () => {
   const node = shallow(<EntityList {...props} />);
   node.find('SearchField').simulate('change', 'adashboard');
+  expect(node.find('ListItem').length).toBe(1);
 
+  node.find('SearchField').simulate('change', 'special info');
   expect(node.find('ListItem').length).toBe(1);
 });
 

@@ -59,6 +59,7 @@
     "contents": "Contents",
     "members": "Members",
     "search": {
+      "generic": "Type to search....",
       "name": "Search for name..."
     },
     "collectionTitle": "Dashboards and Reports",
@@ -634,7 +635,7 @@
     "change": "Change",
     "copyName": "Copy {name}",
     "copyLabel": "copy",
-    "description": "Description",
+    "condition": "Condition",
     "saving": "Saving...",
     "creating": "Creating...",
     "select": "Select...",

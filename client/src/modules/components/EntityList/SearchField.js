@@ -35,7 +35,7 @@ export default function SearchField({value, onChange = () => {}}) {
       <Input
         className={classnames({open})}
         value={value}
-        placeholder={t('home.search.name')}
+        placeholder={t('home.search.generic')}
         onChange={(evt) => onChange(evt.target.value)}
         onKeyDown={({key}) => {
           if (key === 'Escape') {

@@ -83,6 +83,7 @@ exports[`should match snapshot 1`] = `
               "Some info",
               "Some additional info",
               "Some other info",
+              "special info",
             ],
             "name": "aReport",
             "type": "Report",

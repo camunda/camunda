@@ -59,6 +59,7 @@
     "contents": "Inhalt",
     "members": "Mitglieder",
     "search": {
+      "generic": "Zum Suchen eingeben...",
       "name": "Nach Namen suchen..."
     },
     "collectionTitle": "Dashboards und Berichte",
@@ -634,7 +635,7 @@
     "change": "Ändern",
     "copyName": "{name} kopieren",
     "copyLabel": "Kopie",
-    "description": "Beschreibung",
+    "condition": "Bedingung",
     "saving": "Speichern ... ",
     "creating": "Erstellen ...",
     "select": "Auswählen ...",

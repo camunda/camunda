@@ -118,7 +118,12 @@ export default withErrorHandling(
             }
             empty={t('alert.notCreated')}
             isLoading={isLoading}
-            columns={[t('common.name'), t('alert.recipient'), t('common.description')]}
+            columns={[
+              t('common.name'),
+              t('report.label'),
+              t('common.condition'),
+              t('alert.recipient'),
+            ]}
             data={
               !isLoading &&
               this.state.alerts.map((alert) => {
@@ -130,8 +135,9 @@ export default withErrorHandling(
                   type: t('alert.label'),
                   name,
                   meta: [
-                    emails?.join(', ') || webhook,
+                    reports.find((report) => report.id === reportId).name,
                     this.formatDescription(reportId, thresholdOperator, threshold),
+                    emails?.join(', ') || webhook,
                   ],
                   warning: inactive && t('alert.inactiveStatus'),
                   actions: !readOnly && [
