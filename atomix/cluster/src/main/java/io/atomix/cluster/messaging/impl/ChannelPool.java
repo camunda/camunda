@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.atomix.utils.net.Address;
 import io.netty.channel.Channel;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +35,8 @@ class ChannelPool {
 
   private final Function<Address, CompletableFuture<Channel>> factory;
   private final int size;
-  private final Map<Address, List<CompletableFuture<Channel>>> channels = Maps.newConcurrentMap();
+  private final Map<InetSocketAddress, List<CompletableFuture<Channel>>> channels =
+      Maps.newConcurrentMap();
 
   ChannelPool(final Function<Address, CompletableFuture<Channel>> factory, final int size) {
     this.factory = factory;
@@ -48,12 +50,13 @@ class ChannelPool {
    * @return the channel pool for the given address
    */
   private List<CompletableFuture<Channel>> getChannelPool(final Address address) {
-    final List<CompletableFuture<Channel>> channelPool = channels.get(address);
+    final InetSocketAddress targetAddress = address.socketAddress();
+    final List<CompletableFuture<Channel>> channelPool = channels.get(targetAddress);
     if (channelPool != null) {
       return channelPool;
     }
     return channels.computeIfAbsent(
-        address,
+        targetAddress,
         e -> {
           final List<CompletableFuture<Channel>> defaultList = new ArrayList<>(size);
           for (int i = 0; i < size; i++) {
