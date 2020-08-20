@@ -55,13 +55,12 @@ public final class FileBasedSnapshotMetadata implements SnapshotId {
   }
 
   @Override
-  public String getSnapshotIdAsString() {
-    return String.format("%d-%d-%d", getIndex(), getTerm(), getTimestamp().unixTimestamp());
-  }
-
-  @Override
   public long getIndex() {
     return index;
+  }
+
+  public long getTerm() {
+    return term;
   }
 
   @Override
@@ -69,8 +68,9 @@ public final class FileBasedSnapshotMetadata implements SnapshotId {
     return timestamp;
   }
 
-  public long getTerm() {
-    return term;
+  @Override
+  public String getSnapshotIdAsString() {
+    return String.format("%d-%d-%d", getIndex(), getTerm(), getTimestamp().unixTimestamp());
   }
 
   @Override

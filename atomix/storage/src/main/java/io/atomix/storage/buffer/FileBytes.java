@@ -160,23 +160,13 @@ public class FileBytes extends AbstractBytes {
   }
 
   @Override
-  public boolean isFile() {
-    return true;
-  }
-
-  @Override
   public ByteOrder order() {
     return ByteOrder.BIG_ENDIAN;
   }
 
   @Override
-  public Bytes flush() {
-    try {
-      randomAccessFile.getFD().sync();
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
-    return this;
+  public boolean isFile() {
+    return true;
   }
 
   @Override
@@ -187,6 +177,16 @@ public class FileBytes extends AbstractBytes {
       throw new RuntimeException(e);
     }
     super.close();
+  }
+
+  @Override
+  public Bytes flush() {
+    try {
+      randomAccessFile.getFD().sync();
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+    return this;
   }
 
   /**

@@ -67,11 +67,6 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   }
 
   @Override
-  public PersistedSnapshot persist() {
-    return snapshotStore.newSnapshot(metadata, directory);
-  }
-
-  @Override
   public void abort() {
     try {
       LOGGER.debug("DELETE dir {}", directory);
@@ -79,6 +74,11 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
     } catch (final IOException e) {
       LOGGER.warn("Failed to delete pending snapshot {}", this, e);
     }
+  }
+
+  @Override
+  public PersistedSnapshot persist() {
+    return snapshotStore.newSnapshot(metadata, directory);
   }
 
   public Path getPath() {

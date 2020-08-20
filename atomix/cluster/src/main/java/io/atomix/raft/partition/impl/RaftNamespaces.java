@@ -132,14 +132,14 @@ public final class RaftNamespaces {
    */
   public static final FallbackNamespace RAFT_STORAGE;
 
-  private RaftNamespaces() {}
-
   static {
     final Namespace legacy = registerStorageClasses().build("RaftStorage");
     final Namespace compatible =
         registerStorageClasses().setCompatible(true).build("RaftStorage-compatible");
     RAFT_STORAGE = new FallbackNamespace(legacy, compatible);
   }
+
+  private RaftNamespaces() {}
 
   private static Builder registerStorageClasses() {
     return Namespace.builder()

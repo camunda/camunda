@@ -891,16 +891,6 @@ public class SwimMembershipProtocol
     }
 
     @Override
-    public Version version() {
-      return version;
-    }
-
-    @Override
-    public long timestamp() {
-      return timestamp;
-    }
-
-    @Override
     public String toString() {
       return toStringHelper(Member.class)
           .add("id", id())
@@ -911,6 +901,16 @@ public class SwimMembershipProtocol
           .add("state", state())
           .add("incarnationNumber", incarnationNumber())
           .toString();
+    }
+
+    @Override
+    public Version version() {
+      return version;
+    }
+
+    @Override
+    public long timestamp() {
+      return timestamp;
     }
 
     /**

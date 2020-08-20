@@ -82,6 +82,11 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   @Override
+  public void setNextExpected(final ByteBuffer nextChunkId) {
+    expectedId = nextChunkId;
+  }
+
+  @Override
   public boolean apply(final SnapshotChunk snapshotChunk) throws IOException {
     final var currentSnapshotChecksum = snapshotChunk.getSnapshotChecksum();
 
@@ -178,8 +183,18 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
   }
 
   @Override
-  public void setNextExpected(final ByteBuffer nextChunkId) {
-    expectedId = nextChunkId;
+  public void abort() {
+    try {
+      LOGGER.debug("DELETE dir {}", directory);
+      FileUtil.deleteFolder(directory);
+    } catch (final NoSuchFileException nsfe) {
+      LOGGER.debug(
+          "Tried to delete pending dir {}, but doesn't exist. Either was already removed or no chunk was applied until now.",
+          directory,
+          nsfe);
+    } catch (final IOException e) {
+      LOGGER.warn("Failed to delete pending snapshot {}", this, e);
+    }
   }
 
   @Override
@@ -216,21 +231,6 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     }
 
     return snapshotStore.newSnapshot(metadata, directory);
-  }
-
-  @Override
-  public void abort() {
-    try {
-      LOGGER.debug("DELETE dir {}", directory);
-      FileUtil.deleteFolder(directory);
-    } catch (final NoSuchFileException nsfe) {
-      LOGGER.debug(
-          "Tried to delete pending dir {}, but doesn't exist. Either was already removed or no chunk was applied until now.",
-          directory,
-          nsfe);
-    } catch (final IOException e) {
-      LOGGER.warn("Failed to delete pending snapshot {}", this, e);
-    }
   }
 
   public Path getPath() {

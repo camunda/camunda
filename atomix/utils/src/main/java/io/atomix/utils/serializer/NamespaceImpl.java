@@ -65,21 +65,19 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
   static final String NO_NAME = "(no name)";
 
   private static final Logger LOGGER = getLogger(NamespaceImpl.class);
-  private final KryoPool kryoPool = new KryoPool.Builder(this).softReferences().build();
-
-  private final KryoOutputPool kryoOutputPool = new KryoOutputPool();
-  private final KryoInputPool kryoInputPool = new KryoInputPool();
-
-  private final ImmutableList<RegistrationBlock> registeredBlocks;
-
-  private final ClassLoader classLoader;
-  private final boolean compatible;
-  private final boolean registrationRequired;
-  private final String friendlyName;
 
   static {
     Log.NONE();
   }
+
+  private final KryoPool kryoPool = new KryoPool.Builder(this).softReferences().build();
+  private final KryoOutputPool kryoOutputPool = new KryoOutputPool();
+  private final KryoInputPool kryoInputPool = new KryoInputPool();
+  private final ImmutableList<RegistrationBlock> registeredBlocks;
+  private final ClassLoader classLoader;
+  private final boolean compatible;
+  private final boolean registrationRequired;
+  private final String friendlyName;
 
   /**
    * Creates a Kryo instance pool.

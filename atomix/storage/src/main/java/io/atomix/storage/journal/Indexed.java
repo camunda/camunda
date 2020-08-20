@@ -79,8 +79,8 @@ public class Indexed<E> {
   }
 
   @Override
-  public String toString() {
-    return toStringHelper(this).add("index", index).add("entry", entry).toString();
+  public int hashCode() {
+    return Objects.hash(index, entry, size);
   }
 
   @Override
@@ -96,7 +96,7 @@ public class Indexed<E> {
   }
 
   @Override
-  public int hashCode() {
-    return Objects.hash(index, entry, size);
+  public String toString() {
+    return toStringHelper(this).add("index", index).add("entry", entry).toString();
   }
 }
