@@ -80,11 +80,6 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   }
 
   @Override
-  public void close() {
-    // nothing to be done
-  }
-
-  @Override
   public void delete() {
     if (!Files.exists(directory)) {
       return;
@@ -100,6 +95,21 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   @Override
   public Path getPath() {
     return getDirectory();
+  }
+
+  @Override
+  public long getCompactionBound() {
+    return getIndex();
+  }
+
+  @Override
+  public SnapshotId getId() {
+    return metadata;
+  }
+
+  @Override
+  public void close() {
+    // nothing to be done
   }
 
   @Override
@@ -124,15 +134,5 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
   @Override
   public String toString() {
     return "DbSnapshot{" + "directory=" + directory + ", metadata=" + metadata + '}';
-  }
-
-  @Override
-  public long getCompactionBound() {
-    return getIndex();
-  }
-
-  @Override
-  public SnapshotId getId() {
-    return metadata;
   }
 }

@@ -408,11 +408,11 @@ public final class RaftMemberContext {
     this.snapshotIndex = snapshotIndex;
   }
 
-  public void setSnapshotChunkReader(final SnapshotChunkReader snapshotChunkReader) {
-    this.snapshotChunkReader = snapshotChunkReader;
-  }
-
   public SnapshotChunkReader getSnapshotChunkReader() {
     return snapshotChunkReader;
+  }
+
+  public void setSnapshotChunkReader(final SnapshotChunkReader snapshotChunkReader) {
+    this.snapshotChunkReader = snapshotChunkReader;
   }
 }

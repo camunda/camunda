@@ -507,13 +507,6 @@ public class Atomix extends AtomixCluster {
   }
 
   @Override
-  protected CompletableFuture<Void> startServices() {
-    return super.startServices()
-        .thenComposeAsync(v -> partitions.start(), threadContext)
-        .thenApply(v -> null);
-  }
-
-  @Override
   public synchronized CompletableFuture<Void> stop() {
     if (shutdownHook != null) {
       try {
@@ -524,6 +517,13 @@ public class Atomix extends AtomixCluster {
       }
     }
     return super.stop();
+  }
+
+  @Override
+  protected CompletableFuture<Void> startServices() {
+    return super.startServices()
+        .thenComposeAsync(v -> partitions.start(), threadContext)
+        .thenApply(v -> null);
   }
 
   @Override
