@@ -7,7 +7,8 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -43,10 +44,10 @@ import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@UtilityClass
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ElasticsearchWriterUtil {
-  private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+  private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   public static Script createPrimitiveFieldUpdateScript(final Set<String> fields,
                                                         final Object entityDto) {
@@ -240,9 +241,9 @@ public class ElasticsearchWriterUtil {
     }
   }
 
-  private void checkBulkByScrollResponse(BulkByScrollResponse bulkByScrollResponse,
-                                         String itemName,
-                                         String verb) {
+  private static void checkBulkByScrollResponse(BulkByScrollResponse bulkByScrollResponse,
+                                                String itemName,
+                                                String verb) {
     if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
       throw new OptimizeRuntimeException(String.format(
         "There were failures while %s %s with message: %s",

@@ -5,10 +5,11 @@
  */
 package org.camunda.optimize.test.util.decision;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DmnHelper {
 
   public static DmnModelInstance createSimpleDmnModel(final String decisionKey) {

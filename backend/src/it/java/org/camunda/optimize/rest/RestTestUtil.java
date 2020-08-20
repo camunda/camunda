@@ -5,8 +5,9 @@
  */
 package org.camunda.optimize.rest;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.experimental.UtilityClass;
 import org.apache.commons.io.IOUtils;
 
 import javax.ws.rs.core.Response;
@@ -15,7 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.OffsetDateTime;
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class RestTestUtil {
 
   @SneakyThrows

@@ -5,7 +5,8 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
@@ -32,7 +33,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserTaskFilterQueryUtil {
 
   public static BoolQueryBuilder createUserTaskIdentityAggregationFilter(final ProcessReportDataDto reportDataDto,
@@ -66,20 +67,18 @@ public class UserTaskFilterQueryUtil {
     userTaskFilterBoolQuery.filter(QueryBuilders.termsQuery(USER_TASKS + "." + USER_TASK_ACTIVITY_ID, userTaskIds));
   }
 
-  private static BoolQueryBuilder addAssigneeFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
-                                                    final ProcessReportDataDto reportDataDto) {
+  private static void addAssigneeFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
+                                        final ProcessReportDataDto reportDataDto) {
     reportDataDto.getFilter().stream().filter(AssigneeFilterDto.class::isInstance)
       .map(filterDto -> (IdentityLinkFilterDataDto) filterDto.getData())
       .forEach(addAssigneeFilter -> userTaskFilterBoolQuery.filter(createAssigneeFilterQuery(addAssigneeFilter)));
-    return userTaskFilterBoolQuery;
   }
 
-  private static BoolQueryBuilder addCandidateGroupFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
-                                                          final ProcessReportDataDto reportDataDto) {
+  private static void addCandidateGroupFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
+                                              final ProcessReportDataDto reportDataDto) {
     reportDataDto.getFilter().stream().filter(CandidateGroupFilterDto.class::isInstance)
       .map(filterDto -> (IdentityLinkFilterDataDto) filterDto.getData())
       .forEach(addAssigneeFilter -> userTaskFilterBoolQuery.filter(createCandidateGroupFilterQuery(addAssigneeFilter)));
-    return userTaskFilterBoolQuery;
   }
 
   public static QueryBuilder createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter) {

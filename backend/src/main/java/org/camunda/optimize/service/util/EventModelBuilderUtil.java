@@ -5,7 +5,8 @@
  */
 package org.camunda.optimize.service.util;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.GatewayDirection;
@@ -44,7 +45,7 @@ import static org.camunda.bpm.model.bpmn.GatewayDirection.Converging;
 import static org.camunda.bpm.model.bpmn.GatewayDirection.Diverging;
 
 @Slf4j
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EventModelBuilderUtil {
 
   private static final String EVENT = "event";

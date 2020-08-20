@@ -5,15 +5,17 @@
  */
 package org.camunda.optimize.test.it.extension;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.test.util.PropertyUtil;
 
 import java.util.Properties;
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class IntegrationTestConfigurationUtil {
+
   private static final String DEFAULT_PROPERTIES_PATH = "integration-extensions.properties";
   private static final Properties PROPERTIES = PropertyUtil.loadProperties(DEFAULT_PROPERTIES_PATH);
 

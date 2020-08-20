@@ -137,16 +137,16 @@ public class CollectionAccessAuthorizationIT extends AbstractCollectionRoleIT {
     assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
   }
 
-  private String createSimpleProcessReportInCollectionAsDefaultUser(final String collectionId) {
+  private void createSimpleProcessReportInCollectionAsDefaultUser(final String collectionId) {
     CombinedReportDefinitionDto combinedReportDefinitionDto = new CombinedReportDefinitionDto();
     combinedReportDefinitionDto.setCollectionId(collectionId);
-    return reportClient.createCombinedReport(collectionId, new ArrayList<>());
+    reportClient.createCombinedReport(collectionId, new ArrayList<>());
   }
 
-  private String createDashboardInCollectionAsDefaultUser(final String collectionId) {
+  private void createDashboardInCollectionAsDefaultUser(final String collectionId) {
     DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setCollectionId(collectionId);
-    return dashboardClient.createDashboard(collectionId, new ArrayList<>());
+    dashboardClient.createDashboard(collectionId, new ArrayList<>());
   }
 
 }

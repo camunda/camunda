@@ -5,18 +5,20 @@
  */
 package org.camunda.optimize.service.util;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import java.util.Comparator;
 import java.util.List;
 
 import static java.util.Comparator.naturalOrder;
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class TenantListHandlingUtil {
-  private static Comparator TENANT_LIST_COMPARATOR = Comparator.nullsFirst(naturalOrder());
 
-  public List<String> sortAndReturnTenantIdList(List<String> tenantIdList) {
+  private static final Comparator<String> TENANT_LIST_COMPARATOR = Comparator.nullsFirst(naturalOrder());
+
+  public static List<String> sortAndReturnTenantIdList(List<String> tenantIdList) {
     if (tenantIdList != null) {
       tenantIdList.sort(TENANT_LIST_COMPARATOR);
     }

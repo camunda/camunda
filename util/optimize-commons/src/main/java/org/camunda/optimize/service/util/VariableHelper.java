@@ -5,14 +5,16 @@
  */
 package org.camunda.optimize.service.util;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 import java.util.Optional;
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class VariableHelper {
+
   public static boolean isVariableTypeSupported(String variableTypeString) {
     return isVariableTypeSupported(
       Optional.ofNullable(variableTypeString).map(VariableType::getTypeForId).orElse(null)

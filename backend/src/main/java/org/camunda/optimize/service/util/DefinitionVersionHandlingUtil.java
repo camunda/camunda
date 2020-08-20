@@ -6,8 +6,9 @@
 package org.camunda.optimize.service.util;
 
 import com.google.common.collect.ImmutableList;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefinitionVersionHandlingUtil {
 
   public static String convertToLatestParticularVersion(final String processDefinitionVersion,

@@ -5,7 +5,8 @@
  */
 package org.camunda.optimize.service.util;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
@@ -37,7 +38,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ValidationHelper {
 
   public static void validate(BranchAnalysisQueryDto dto) {
@@ -166,7 +167,7 @@ public class ValidationHelper {
     }
   }
 
-  public static void ensureAtLeastOneNotNull(String fieldName, Object... objects) {
+  private static void ensureAtLeastOneNotNull(String fieldName, Object... objects) {
     boolean oneNotNull = Arrays.stream(objects).anyMatch(Objects::nonNull);
     if (!oneNotNull) {
       throw new OptimizeValidationException(fieldName + " at least one sub field not allowed to be empty or null");
