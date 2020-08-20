@@ -10,7 +10,7 @@ import * as React from 'react';
 
 import './fonts.css';
 import {Style} from './styled';
-import {USING_KEYBOARD_CLASS_NAME} from './constans';
+import {USING_KEYBOARD_CLASS_NAME} from './constants';
 
 const TAB_KEY_CODE = 9;
 

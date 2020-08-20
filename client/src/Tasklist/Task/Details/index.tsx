@@ -122,7 +122,7 @@ const Details: React.FC = () => {
                 <>
                   {assignee.firstname} {assignee.lastname}
                   {taskState === TaskStates.Created && (
-                    <ClaimButton onClick={() => unclaimTask()}>
+                    <ClaimButton variant="small" onClick={() => unclaimTask()}>
                       Unclaim
                     </ClaimButton>
                   )}
@@ -131,7 +131,9 @@ const Details: React.FC = () => {
                 <>
                   --
                   {taskState === TaskStates.Created && (
-                    <ClaimButton onClick={() => claimTask()}>Claim</ClaimButton>
+                    <ClaimButton variant="small" onClick={() => claimTask()}>
+                      Claim
+                    </ClaimButton>
                   )}
                 </>
               )}

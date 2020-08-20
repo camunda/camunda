@@ -8,7 +8,7 @@ import styled, {css} from 'styled-components';
 import {ReactComponent as CrossIcon} from 'modules/icons/cross.svg';
 import {ReactComponent as PlusIcon} from 'modules/icons/plus.svg';
 import BasicTextareaAutosize from 'react-textarea-autosize';
-import {SmallButton} from 'modules/components/Button/styled';
+import {Button} from 'modules/components/Button';
 import {IconButton as BaseIconButton} from 'modules/components/IconButton';
 import {RowTH as BaseRowTH} from 'modules/components/Table/styled';
 
@@ -50,7 +50,7 @@ const RemoveButtonTD = styled.td`
   padding-left: 10px;
 `;
 
-const CreateButton = styled(SmallButton)`
+const CreateButton = styled(Button)`
   display: flex;
   align-items: center;
 `;

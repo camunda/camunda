@@ -20,7 +20,7 @@ import {
   CompleteTaskVariables,
 } from 'modules/mutations/complete-task';
 
-import {PrimaryButton} from 'modules/components/Button/styled';
+import {Button} from 'modules/components/Button';
 
 import {Variables} from './Variables';
 import {Details} from './Details';
@@ -109,12 +109,9 @@ const Task: React.FC = () => {
               <Variables canEdit={canCompleteTask} />
               {canCompleteTask && (
                 <Footer>
-                  <PrimaryButton
-                    type="submit"
-                    disabled={form.getState().submitting}
-                  >
+                  <Button type="submit" disabled={form.getState().submitting}>
                     Complete Task
-                  </PrimaryButton>
+                  </Button>
                 </Footer>
               )}
             </StyledForm>

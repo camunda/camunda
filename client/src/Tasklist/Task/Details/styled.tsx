@@ -5,13 +5,13 @@
  */
 
 import styled from 'styled-components';
-import {SmallButton} from 'modules/components/Button/styled';
+import {Button} from 'modules/components/Button';
 
 const Container = styled.div`
   margin-top: 13px;
 `;
 
-const ClaimButton = styled(SmallButton)`
+const ClaimButton = styled(Button)`
   margin-left: 22px;
 `;
 

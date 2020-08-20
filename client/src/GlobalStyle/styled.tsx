@@ -8,7 +8,7 @@
 
 import {createGlobalStyle} from 'styled-components';
 
-import {USING_KEYBOARD_CLASS_NAME} from './constans';
+import {USING_KEYBOARD_CLASS_NAME} from './constants';
 
 const Style = createGlobalStyle`
   html, body, #root {
@@ -41,6 +41,11 @@ const Style = createGlobalStyle`
     font-family: IBMPlexSans;
     cursor: pointer;
     border-width: 0;
+    font-weight: 600;
+
+    &::-moz-focus-inner {
+      border: 0;
+    }
   }
 
   body button:focus,

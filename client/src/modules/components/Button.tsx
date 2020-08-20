@@ -6,16 +6,7 @@
 
 import styled, {css} from 'styled-components';
 
-const commonStyles = css`
-  font-weight: 600;
-
-  &::-moz-focus-inner {
-    border: 0;
-  }
-`;
-
-const PrimaryButton = styled.button`
-  ${commonStyles}
+const primaryButtonStyles = css`
   height: 35px;
   padding: 0 11px;
   border-radius: 3px;
@@ -49,8 +40,7 @@ const PrimaryButton = styled.button`
   }
 `;
 
-const SmallButton = styled.button`
-  ${commonStyles}
+const smallButtonStyles = css`
   height: 22px;
   padding: 0 11px;
   border-radius: 11px;
@@ -77,8 +67,27 @@ const SmallButton = styled.button`
     background-color: ${({theme}) =>
       theme.colors.smallButton.disabled.backgroundColor};
     border-color: ${({theme}) => theme.colors.smallButton.disabled.borderColor};
+    color: ${({theme}) => theme.colors.smallButton.disabled.color};
     cursor: not-allowed;
   }
 `;
 
-export {SmallButton, PrimaryButton};
+interface Props {
+  variant?: 'primary' | 'small';
+}
+
+const Button = styled.button<Props>`
+  ${({variant}) => {
+    switch (variant) {
+      case 'small': {
+        return smallButtonStyles;
+      }
+      case 'primary':
+      default: {
+        return primaryButtonStyles;
+      }
+    }
+  }}
+`;
+
+export {Button};

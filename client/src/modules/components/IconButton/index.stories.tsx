@@ -16,7 +16,7 @@ const Icon = styled(PlusIcon)`
 `;
 
 export default {
-  title: 'IconButton',
+  title: 'Icon Button',
   component: IconButton,
 };
 

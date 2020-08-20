@@ -62,6 +62,7 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
         {canEdit && (
           <CreateButton
             type="button"
+            variant="small"
             onClick={() => {
               form.mutators.push('new-variables');
             }}

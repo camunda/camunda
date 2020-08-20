@@ -43,6 +43,7 @@ const theme = {
       disabled: {
         backgroundColor: '#f1f2f5',
         borderColor: palette.ui03,
+        color: 'rgba(69, 70, 78, 0.5)',
       },
     },
     primaryButton: {
