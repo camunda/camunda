@@ -17,12 +17,16 @@ package io.zeebe;
 
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.api.command.FinalCommandStep;
 import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.config.AppCfg;
 import io.zeebe.config.WorkerCfg;
+import java.time.Instant;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingDeque;
 
 public class Worker extends App {
 
@@ -39,6 +43,7 @@ public class Worker extends App {
     final long completionDelay = workerCfg.getCompletionDelay().toMillis();
     final var variables = readVariables(workerCfg.getPayloadPath());
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(10_000);
+    final BlockingDeque<DelayedCommand> delayedCommands = new LinkedBlockingDeque<>(10_000);
 
     final ZeebeClient client = createZeebeClient();
     printTopology(client);
@@ -49,18 +54,29 @@ public class Worker extends App {
             .jobType(jobType)
             .handler(
                 (jobClient, job) -> {
-                  try {
-                    Thread.sleep(completionDelay);
-                  } catch (Exception e) {
-                    e.printStackTrace();
+                  final var command =
+                      jobClient.newCompleteCommand(job.getKey()).variables(variables);
+                  if (workerCfg.isCompleteJobsAsync()) {
+                    delayedCommands.addLast(
+                        new DelayedCommand(Instant.now().plusMillis(completionDelay), command));
+                  } else {
+                    try {
+                      Thread.sleep(completionDelay);
+                    } catch (Exception e) {
+                      e.printStackTrace();
+                    }
+                    requestFutures.add(command.send());
                   }
-                  requestFutures.add(
-                      jobClient.newCompleteCommand(job.getKey()).variables(variables).send());
                 })
             .open();
 
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
+
+    final var asyncJobCompleter = new DelayedCommandSender(delayedCommands, requestFutures);
+    if (workerCfg.isCompleteJobsAsync()) {
+      asyncJobCompleter.start();
+    }
 
     Runtime.getRuntime()
         .addShutdownHook(
@@ -68,6 +84,7 @@ public class Worker extends App {
                 () -> {
                   worker.close();
                   client.close();
+                  asyncJobCompleter.close();
                   responseChecker.close();
                 }));
   }
@@ -94,5 +111,24 @@ public class Worker extends App {
 
   public static void main(String[] args) {
     createApp(Worker::new);
+  }
+
+  static final class DelayedCommand {
+
+    private final Instant expiration;
+    private final FinalCommandStep<?> command;
+
+    public DelayedCommand(final Instant expiration, final FinalCommandStep<?> command) {
+      this.expiration = expiration;
+      this.command = command;
+    }
+
+    public boolean hasExpired() {
+      return Instant.now().isAfter(expiration);
+    }
+
+    public FinalCommandStep<?> getCommand() {
+      return command;
+    }
   }
 }
