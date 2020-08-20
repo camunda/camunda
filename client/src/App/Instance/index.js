@@ -12,20 +12,17 @@ import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 
 import {
   SUBSCRIPTION_TOPIC,
-  TYPE,
   LOADING_STATE,
   POLL_TOPICS,
 } from 'modules/constants';
 
-import {compactObject} from 'modules/utils';
-import {formatDate} from 'modules/utils/date';
 import {withData} from 'modules/DataManager';
 
 import {FlowNodeInstanceLog} from './FlowNodeInstanceLog';
 import {TopPanel} from './TopPanel';
 import BottomPanel from './BottomPanel';
 import {VariablePanel} from './BottomPanel/VariablePanel';
-import {isRunningInstance, storeResponse} from './service';
+import {isRunningInstance} from './service';
 import {statistics} from 'modules/stores/statistics';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
@@ -51,7 +48,6 @@ const Instance = observer(
 
       this.disposer = null;
       this.state = {
-        events: [],
         forceInstanceSpinner: false,
         isPollActive: false,
       };
@@ -59,28 +55,19 @@ const Instance = observer(
       this.subscriptions = {
         LOAD_INSTANCE: ({response, state}) => {
           if (state === LOADING_STATE.LOADED) {
-            const {dataManager} = this.props;
             // kick off all follow-up requests.
-            dataManager.getEvents(response.id);
             singleInstanceDiagram.fetchWorkflowXml(response.workflowId);
-
             flowNodeInstance.setCurrentSelection({
               flowNodeId: null,
               treeRowIds: [response.id],
             });
           }
         },
-        LOAD_EVENTS: (responseData) =>
-          storeResponse(responseData, (response) => {
-            this.setState({events: response});
-          }),
-        CONSTANT_REFRESH: ({response, state}) => {
-          if (state === LOADING_STATE.LOADED) {
-            const {LOAD_EVENTS} = response;
 
+        CONSTANT_REFRESH: ({state}) => {
+          if (state === LOADING_STATE.LOADED) {
             this.setState({
               isPollActive: false,
-              events: LOAD_EVENTS,
             });
           }
         },
@@ -133,7 +120,6 @@ const Instance = observer(
         topic: SUBSCRIPTION_TOPIC.CONSTANT_REFRESH,
         endpoints: [
           {name: SUBSCRIPTION_TOPIC.LOAD_INSTANCE}, // should later be removed and call currentInstance.fetchCurrentInstance(id); instead
-          {name: SUBSCRIPTION_TOPIC.LOAD_EVENTS},
         ],
       };
       statistics.fetchStatistics();
@@ -184,72 +170,6 @@ const Instance = observer(
       flowNodeInstance.setCurrentSelection(newSelection);
     };
 
-    getCurrentMetadata = () => {
-      const {events} = this.state;
-      const {
-        state: {
-          selection: {flowNodeId, treeRowIds},
-        },
-        flowNodeIdToFlowNodeInstanceMap,
-        areMultipleNodesSelected,
-      } = flowNodeInstance;
-
-      const flowNodeInstancesMap = flowNodeIdToFlowNodeInstanceMap.get(
-        flowNodeId
-      );
-
-      // Peter case with more than 1 tree row selected
-      if (areMultipleNodesSelected) {
-        return {
-          isMultiRowPeterCase: true,
-          instancesCount: treeRowIds.length,
-        };
-      }
-
-      // get the last event corresponding to the given flowNodeId (= activityId)
-      const {activityInstanceId, metadata} = events.reduce((acc, event) => {
-        return event.activityInstanceId === treeRowIds[0] ? event : acc;
-      }, null);
-
-      // get corresponding start and end dates
-      const activityInstance = flowNodeInstancesMap.get(activityInstanceId);
-
-      const startDate = formatDate(activityInstance.startDate);
-      const endDate = formatDate(activityInstance.endDate);
-
-      const isMultiInstanceBody =
-        activityInstance.type === TYPE.MULTI_INSTANCE_BODY;
-
-      const parentActivity = flowNodeInstancesMap.get(
-        activityInstance.parentId
-      );
-      const isMultiInstanceChild =
-        parentActivity && parentActivity.type === TYPE.MULTI_INSTANCE_BODY;
-
-      // return a cleaned-up  metadata object
-      return {
-        ...compactObject({
-          isMultiInstanceBody,
-          isMultiInstanceChild,
-          parentId: activityInstance.parentId,
-          isSingleRowPeterCase: flowNodeInstancesMap.size > 1 ? true : null,
-        }),
-        data: Object.entries({
-          activityInstanceId,
-          ...metadata,
-          startDate,
-          endDate,
-        }).reduce((cleanMetadata, [key, value]) => {
-          // ignore other empty values
-          if (!value) {
-            return cleanMetadata;
-          }
-
-          return {...cleanMetadata, [key]: value};
-        }, {}),
-      };
-    };
-
     render() {
       const {instance} = currentInstance.state;
       return (
@@ -262,7 +182,6 @@ const Instance = observer(
             expandedPaneId="instanceExpandedPaneId"
           >
             <TopPanel
-              getCurrentMetadata={this.getCurrentMetadata}
               onInstanceOperation={this.handleInstanceOperation}
               onTreeRowSelection={this.handleTreeRowSelection}
             />

@@ -5,15 +5,14 @@
  */
 
 import {observable, decorate, action, when} from 'mobx';
-import {fetchSequenceFlows} from 'modules/api/instances';
+import {fetchEvents} from 'modules/api/events';
 import {currentInstance} from 'modules/stores/currentInstance';
-import {getProcessedSequenceFlows} from './mappers';
 
 const DEFAULT_STATE = {
   items: [],
 };
 
-class SequenceFlows {
+class Events {
   state = {...DEFAULT_STATE};
   intervalId = null;
 
@@ -21,24 +20,21 @@ class SequenceFlows {
     when(
       () => currentInstance.state.instance?.id !== undefined,
       () => {
-        this.fetchWorkflowSequenceFlows(currentInstance.state.instance.id);
+        this.fetchWorkflowEvents(currentInstance.state.instance.id);
         this.startPolling(currentInstance.state.instance.id);
       }
     );
   }
 
-  fetchWorkflowSequenceFlows = async (instanceId) => {
-    const response = await fetchSequenceFlows(instanceId);
-    const processedSequenceFlows = getProcessedSequenceFlows(response);
-    this.setItems(processedSequenceFlows);
+  fetchWorkflowEvents = async (instanceId) => {
+    this.setItems(await fetchEvents(instanceId));
   };
 
   handlePolling = async (instanceId) => {
-    const response = await fetchSequenceFlows(instanceId);
+    const response = await fetchEvents(instanceId);
 
     if (this.intervalId !== null) {
-      const processedSequenceFlows = getProcessedSequenceFlows(response);
-      this.setItems(processedSequenceFlows);
+      this.setItems(response);
     }
   };
 
@@ -63,10 +59,10 @@ class SequenceFlows {
   };
 }
 
-decorate(SequenceFlows, {
+decorate(Events, {
   state: observable,
   setItems: action,
   reset: action,
 });
 
-export const sequenceFlows = new SequenceFlows();
+export const events = new Events();

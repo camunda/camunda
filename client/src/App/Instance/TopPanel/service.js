@@ -5,6 +5,8 @@
  */
 
 import {STATE, TYPE} from 'modules/constants';
+import {compactObject} from 'modules/utils';
+import {formatDate} from 'modules/utils/date';
 
 export function getSelectedFlowNodeName(selectedFlowNodeId, nodeMetaData) {
   return !selectedFlowNodeId
@@ -69,4 +71,62 @@ export function getMultiInstanceChildren(flowNodeInstancesMap) {
     flowNodeInstancesMap,
     (instance) => instance.type !== TYPE.MULTI_INSTANCE_BODY
   );
+}
+
+export function getCurrentMetadata(
+  events,
+  flowNodeId,
+  treeRowIds,
+  flowNodeIdToFlowNodeInstanceMap,
+  areMultipleNodesSelected
+) {
+  if (areMultipleNodesSelected) {
+    return {
+      isMultiRowPeterCase: true,
+      instancesCount: treeRowIds.length,
+    };
+  }
+
+  const flowNodeInstancesMap = flowNodeIdToFlowNodeInstanceMap.get(flowNodeId);
+
+  // get the last event corresponding to the given flowNodeId (= activityId)
+  const {activityInstanceId, metadata} = events.reduce((acc, event) => {
+    return event.activityInstanceId === treeRowIds[0] ? event : acc;
+  }, null);
+
+  // get corresponding start and end dates
+  const activityInstance = flowNodeInstancesMap.get(activityInstanceId);
+
+  const startDate = formatDate(activityInstance.startDate);
+  const endDate = formatDate(activityInstance.endDate);
+
+  const isMultiInstanceBody =
+    activityInstance.type === TYPE.MULTI_INSTANCE_BODY;
+
+  const parentActivity = flowNodeInstancesMap.get(activityInstance.parentId);
+  const isMultiInstanceChild =
+    parentActivity && parentActivity.type === TYPE.MULTI_INSTANCE_BODY;
+
+  // return a cleaned-up  metadata object
+  return {
+    ...compactObject({
+      isMultiInstanceBody,
+      isMultiInstanceChild,
+      parentId: activityInstance.parentId,
+      isSingleRowPeterCase: flowNodeInstancesMap.size > 1 ? true : null,
+    }),
+    data: Object.entries({
+      activityInstanceId,
+      ...metadata,
+      startDate,
+      endDate,
+    }).reduce((cleanMetadata, [key, value]) => {
+      // ignore other empty values
+      if (!value) {
+        return cleanMetadata;
+      }
+
+      return {...cleanMetadata, [key]: value};
+    }, {}),
+  };
 }

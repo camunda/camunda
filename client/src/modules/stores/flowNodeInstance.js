@@ -100,6 +100,7 @@ class FlowNodeInstance {
 
   stopPolling = () => {
     clearInterval(this.intervalId);
+    this.intervalId = null;
   };
 
   completeInitialLoad = () => {
@@ -109,7 +110,6 @@ class FlowNodeInstance {
   reset = () => {
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
-    this.intervalId = null;
   };
 
   get areMultipleNodesSelected() {

@@ -47,6 +47,7 @@ class Incidents {
 
   stopPolling = () => {
     clearInterval(this.intervalId);
+    this.intervalId = null;
   };
 
   handlePolling = async (id) => {
@@ -69,9 +70,8 @@ class Incidents {
   };
 
   reset = () => {
-    this.state = {...DEFAULT_STATE};
     this.stopPolling();
-    this.intervalId = null;
+    this.state = {...DEFAULT_STATE};
     if (this.disposer !== null) {
       this.disposer();
     }

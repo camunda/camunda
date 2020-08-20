@@ -25,7 +25,6 @@ class Variables {
   reset = () => {
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
-    this.intervalId = null;
   };
 
   clearItems = () => {
@@ -183,6 +182,7 @@ class Variables {
 
   stopPolling = () => {
     clearInterval(this.intervalId);
+    this.intervalId = null;
   };
 }
 

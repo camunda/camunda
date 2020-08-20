@@ -13,7 +13,6 @@ import {
   createRawTreeNode,
   createIncident,
   createEvent,
-  createEvents,
 } from 'modules/testUtils';
 
 const createRawTree = () => {
@@ -217,7 +216,6 @@ export const testData = {
       workflowInstanceCanceled,
       diagramNodes: createDiagramNodes(),
       instanceHistoryTree: createRawTree(),
-      events: createEvents(createRawTree().children),
       incidents: mockIncidents(),
       noIncidents,
     },

@@ -11,8 +11,6 @@ import {DataManager} from './index';
 import * as instancesApi from 'modules/api/instances';
 import * as diagramApi from 'modules/api/diagram';
 
-import {fetchEvents} from 'modules/api/events';
-
 import {
   mockParams,
   MOCK_TOPICS,
@@ -148,20 +146,6 @@ describe('DataManager', () => {
         expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
           instancesApi.fetchWorkflowInstance
         );
-        expect(fetchAndPublishSpy.mock.calls[0][2]).toBe(
-          mockWorkflowInstance.id
-        );
-      });
-    });
-
-    describe('fetch Events', () => {
-      it('should fetch and publish', () => {
-        dataManager.getEvents(mockWorkflowInstance.id);
-
-        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
-          SUBSCRIPTION_TOPIC.LOAD_EVENTS
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(fetchEvents);
         expect(fetchAndPublishSpy.mock.calls[0][2]).toBe(
           mockWorkflowInstance.id
         );

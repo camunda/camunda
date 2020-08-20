@@ -13,8 +13,6 @@ import {
   applyOperation,
 } from 'modules/api/instances';
 
-import {fetchEvents} from 'modules/api/events';
-
 import {fetchBatchOperations} from 'modules/api/batchOperations';
 
 import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
@@ -74,14 +72,6 @@ export class DataManager {
       topic,
       () => apiCall(cachedParams),
       staticContent
-    );
-  };
-
-  getEvents = (instanceId) => {
-    this.fetchAndPublish(
-      SUBSCRIPTION_TOPIC.LOAD_EVENTS,
-      fetchEvents,
-      instanceId
     );
   };
 

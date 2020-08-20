@@ -4,7 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {createSequenceFlows, createIncident} from 'modules/testUtils';
+import {STATE} from 'modules/constants';
+import {
+  createIncident,
+  createRawTreeNode,
+  createSequenceFlows,
+  createEvents,
+} from 'modules/testUtils';
 
 const mockIncidents = {
   count: 1,
@@ -29,12 +35,35 @@ const mockIncidents = {
   ],
 };
 
+export const createRawTree = () => {
+  return {
+    children: [
+      createRawTreeNode({
+        activityId: 'StartEvent1234',
+        type: 'START_EVENT',
+        state: STATE.COMPLETED,
+      }),
+      createRawTreeNode({
+        activityId: 'Service5678',
+        type: 'SERVICE_TASK',
+        state: STATE.COMPLETED,
+      }),
+      createRawTreeNode({
+        activityId: 'EndEvent1234',
+        type: 'End_Event',
+        state: STATE.COMPLETED,
+      }),
+    ],
+  };
+};
+
 const mockSequenceFlows = createSequenceFlows();
 
+const mockEvents = createEvents(createRawTree().children);
+
 const mockProps = {
-  getCurrentMetadata: jest.fn(),
   onInstanceOperation: jest.fn(),
   onTreeRowSelection: jest.fn(),
 };
 
-export {mockIncidents, mockProps, mockSequenceFlows};
+export {mockIncidents, mockProps, mockSequenceFlows, mockEvents};

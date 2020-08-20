@@ -4,17 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import PropTypes from 'prop-types';
 import {
   getSelectedFlowNodeName,
   getFlowNodeStateOverlays,
   getMultiInstanceBodies,
   getMultiInstanceChildren,
+  getCurrentMetadata,
 } from './service';
 
 import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
-
 import Diagram from 'modules/components/Diagram';
 import {IncidentsWrapper} from '../IncidentsWrapper';
 import {EXPAND_STATE} from 'modules/constants';
@@ -26,136 +26,122 @@ import {currentInstance} from 'modules/stores/currentInstance';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 import {sequenceFlows} from 'modules/stores/sequenceFlows';
+import {events} from 'modules/stores/events';
+const TopPanel = observer((props) => {
+  useEffect(() => {
+    events.init();
+    sequenceFlows.init();
 
-const TopPanel = observer(
-  class TopPanel extends React.PureComponent {
-    static propTypes = {
-      children: PropTypes.node,
-      onInstanceOperation: PropTypes.func,
-      expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
-      onTreeRowSelection: PropTypes.func,
-      getCurrentMetadata: PropTypes.func,
-    };
-
-    componentDidMount() {
-      sequenceFlows.init();
-    }
-
-    componentWillUnmount() {
+    return () => {
+      events.reset();
       sequenceFlows.reset();
-    }
-
-    addFlowNodeNames = (incidents) =>
-      incidents.map((incident) => this.addFlowNodeName(incident));
-
-    addFlowNodeName = (object) => {
-      const modifiedObject = {...object};
-      const nodeMetaData = singleInstanceDiagram.getMetaData(
-        modifiedObject.flowNodeId
-      );
-
-      modifiedObject.flowNodeName =
-        (nodeMetaData && nodeMetaData.name) || object.flowNodeId;
-      return modifiedObject;
     };
-    /**
-     * Handles selecting a flow node from the diagram
-     * @param {string} flowNodeId: id of the selected flow node
-     * @param {Object} options: refine, which instances to select
-     */
-    handleFlowNodeSelection = async (
-      flowNodeId,
-      options = {
-        selectMultiInstanceChildrenOnly: false,
-      }
-    ) => {
-      const {flowNodeIdToFlowNodeInstanceMap} = flowNodeInstance;
-      const {instance} = currentInstance.state;
-      let treeRowIds = [instance.id];
-      if (flowNodeId) {
-        const flowNodeInstancesMap = flowNodeIdToFlowNodeInstanceMap.get(
-          flowNodeId
-        );
+  }, []);
 
-        treeRowIds = options.selectMultiInstanceChildrenOnly
-          ? getMultiInstanceChildren(flowNodeInstancesMap)
-          : getMultiInstanceBodies(flowNodeInstancesMap);
-      }
-
-      flowNodeInstance.setCurrentSelection({flowNodeId, treeRowIds});
-    };
-
-    renderContent() {
-      const {onInstanceOperation, ...props} = this.props;
-
-      const {
-        state: {selection},
-        flowNodeIdToFlowNodeInstanceMap,
-      } = flowNodeInstance;
-
-      const {items: processedSequenceFlows} = sequenceFlows.state;
-      const {instance} = currentInstance.state;
-
-      const {
-        nodeMetaDataMap,
-        state: {diagramModel},
-      } = singleInstanceDiagram;
-
-      const selectedFlowNodeId = selection?.flowNodeId;
-      const metaData = singleInstanceDiagram.getMetaData(selectedFlowNodeId);
-
-      return (
-        <>
-          {instance?.state === 'INCIDENT' && nodeMetaDataMap && (
-            <IncidentsWrapper
-              expandState={props.expandState}
-              onIncidentSelection={this.props.onTreeRowSelection}
-            />
-          )}
-          {diagramModel?.definitions && (
-            <Diagram
-              expandState={props.expandState}
-              onFlowNodeSelection={this.handleFlowNodeSelection}
-              selectableFlowNodes={[...flowNodeIdToFlowNodeInstanceMap.keys()]}
-              processedSequenceFlows={processedSequenceFlows}
-              selectedFlowNodeId={selection.flowNodeId}
-              selectedFlowNodeName={getSelectedFlowNodeName(
-                selectedFlowNodeId,
-                metaData
-              )}
-              flowNodeStateOverlays={getFlowNodeStateOverlays(
-                flowNodeIdToFlowNodeInstanceMap
-              )}
-              definitions={diagramModel.definitions}
-              metadata={
-                !selection.flowNodeId ? null : this.props.getCurrentMetadata()
-              }
-            />
-          )}
-        </>
+  /**
+   * Handles selecting a flow node from the diagram
+   * @param {string} flowNodeId: id of the selected flow node
+   * @param {Object} options: refine, which instances to select
+   */
+  const handleFlowNodeSelection = async (
+    flowNodeId,
+    options = {
+      selectMultiInstanceChildrenOnly: false,
+    }
+  ) => {
+    const {flowNodeIdToFlowNodeInstanceMap} = flowNodeInstance;
+    const {instance} = currentInstance.state;
+    let treeRowIds = [instance.id];
+    if (flowNodeId) {
+      const flowNodeInstancesMap = flowNodeIdToFlowNodeInstanceMap.get(
+        flowNodeId
       );
+
+      treeRowIds = options.selectMultiInstanceChildrenOnly
+        ? getMultiInstanceChildren(flowNodeInstancesMap)
+        : getMultiInstanceBodies(flowNodeInstancesMap);
     }
 
-    render() {
-      const {
-        onInstanceOperation,
-        onTreeRowSelection,
-        getCurrentMetadata,
-        ...props
-      } = this.props;
+    flowNodeInstance.setCurrentSelection({flowNodeId, treeRowIds});
+  };
 
-      const {isLoading, isInitialLoadComplete} = singleInstanceDiagram.state;
-      return (
-        <Styled.Pane {...props}>
-          <InstanceHeader onInstanceOperation={onInstanceOperation} />
-          <Styled.SplitPaneBody data-test="diagram-panel-body">
-            {isLoading && <SpinnerSkeleton data-test="spinner" />}
-            {isInitialLoadComplete && this.renderContent()}
-          </Styled.SplitPaneBody>
-        </Styled.Pane>
-      );
-    }
-  }
-);
+  const {onInstanceOperation, onTreeRowSelection, expandState} = props;
+
+  const {
+    state: {selection},
+    flowNodeIdToFlowNodeInstanceMap,
+    areMultipleNodesSelected,
+  } = flowNodeInstance;
+
+  const {items: processedSequenceFlows} = sequenceFlows.state;
+  const {instance} = currentInstance.state;
+
+  const {
+    nodeMetaDataMap,
+    state: {isLoading, isInitialLoadComplete, diagramModel},
+  } = singleInstanceDiagram;
+
+  const selectedFlowNodeId = selection?.flowNodeId;
+  const metaData = singleInstanceDiagram.getMetaData(selectedFlowNodeId);
+
+  const {items: eventList} = events.state;
+
+  return (
+    <Styled.Pane expandState={expandState}>
+      <InstanceHeader onInstanceOperation={onInstanceOperation} />
+      <Styled.SplitPaneBody data-test="diagram-panel-body">
+        {isLoading && <SpinnerSkeleton data-test="spinner" />}
+        {isInitialLoadComplete && (
+          <>
+            {instance?.state === 'INCIDENT' && nodeMetaDataMap && (
+              <IncidentsWrapper
+                expandState={expandState}
+                onIncidentSelection={onTreeRowSelection}
+              />
+            )}
+            {diagramModel?.definitions && (
+              <Diagram
+                expandState={expandState}
+                onFlowNodeSelection={handleFlowNodeSelection}
+                selectableFlowNodes={[
+                  ...flowNodeIdToFlowNodeInstanceMap.keys(),
+                ]}
+                processedSequenceFlows={processedSequenceFlows}
+                selectedFlowNodeId={selection.flowNodeId}
+                selectedFlowNodeName={getSelectedFlowNodeName(
+                  selectedFlowNodeId,
+                  metaData
+                )}
+                flowNodeStateOverlays={getFlowNodeStateOverlays(
+                  flowNodeIdToFlowNodeInstanceMap
+                )}
+                definitions={diagramModel.definitions}
+                metadata={
+                  !selection.flowNodeId
+                    ? null
+                    : getCurrentMetadata(
+                        eventList,
+                        selectedFlowNodeId,
+                        selection?.treeRowIds,
+                        flowNodeIdToFlowNodeInstanceMap,
+                        areMultipleNodesSelected
+                      )
+                }
+              />
+            )}
+          </>
+        )}
+      </Styled.SplitPaneBody>
+    </Styled.Pane>
+  );
+});
+
+TopPanel.propTypes = {
+  incidents: PropTypes.object,
+  children: PropTypes.node,
+  onInstanceOperation: PropTypes.func,
+  expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
+  onTreeRowSelection: PropTypes.func,
+};
 
 export {TopPanel};
