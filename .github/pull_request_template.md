@@ -14,7 +14,7 @@ _Not all items need to be done depending on the issue and the pull request._
 
 Code changes:
 * [ ] The changes are backwards compatibility with previous versions
-* [ ] If it fixes a bug then PRs are created to backport the fix to the last two minor versions
+* [ ] If it fixes a bug then PRs are created to [backport](https://github.com/zeebe-io/zeebe/compare/stable/0.24...develop?expand=1&template=backport_template.md&title=[Backport%200.24]) the fix to the last two minor versions
 
 Testing:
 * [ ] There are unit/integration tests that verify all acceptance criterias of the issue
@@ -24,4 +24,4 @@ Testing:
 
 Documentation: 
 * [ ] The documentation is updated (e.g. BPMN reference, configuration, examples, get-started guides, etc.)
-* [ ] New content is added to the release announcement 
+* [ ] New content is added to the [release announcement](https://drive.google.com/drive/u/0/folders/1DTIeswnEEq-NggJ25rm2BsDjcCQpDape)
