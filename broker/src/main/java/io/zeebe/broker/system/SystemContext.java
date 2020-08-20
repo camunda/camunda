@@ -150,6 +150,5 @@ public final class SystemContext {
 
   private void setStepTimeout(final Duration stepTimeout) {
     this.stepTimeout = stepTimeout;
-    scheduler.setBlockingTasksShutdownTime(stepTimeout);
   }
 }
