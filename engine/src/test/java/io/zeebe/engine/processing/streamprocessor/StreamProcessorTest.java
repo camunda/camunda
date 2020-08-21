@@ -686,8 +686,8 @@ public final class StreamProcessorTest {
 
     @Override
     public void accept(final TypedRecord typedRecord) {
-      getLatch().countDown();
       lastProcessedRecord = typedRecord;
+      getLatch().countDown();
     }
 
     private AwaitableProcessedListener expect(final int expectedCount) {
