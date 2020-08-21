@@ -34,7 +34,7 @@ import {
 } from './styled';
 
 const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
-  const {id: taskId} = useParams();
+  const {id: taskId} = useParams<{id: string}>();
   const {data, loading} = useQuery<
     GetTaskVariables,
     TaskVariablesQueryVariables

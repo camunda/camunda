@@ -32,7 +32,7 @@ import {
   GetCurrentUser,
 } from 'modules/queries/get-current-user';
 const Details: React.FC = () => {
-  const {id} = useParams();
+  const {id} = useParams<{id: string}>();
   const location = useLocation();
   const filter =
     getSearchParam('filter', location.search) ?? FilterValues.AllOpen;

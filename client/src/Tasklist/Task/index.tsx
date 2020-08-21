@@ -38,7 +38,7 @@ import {useLocation} from 'react-router-dom';
 import {FilterValues} from 'modules/constants/filterValues';
 
 const Task: React.FC = () => {
-  const {id} = useParams();
+  const {id} = useParams<{id: string}>();
   const history = useHistory();
   const location = useLocation();
   const filter =

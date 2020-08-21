@@ -36,7 +36,7 @@ const Task: React.FC<Props> = ({
   assignee,
   creationTime,
 }) => {
-  const {id} = useParams();
+  const {id} = useParams<{id: string}>();
 
   return (
     <Link
