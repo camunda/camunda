@@ -73,7 +73,7 @@
   "devDependencies": {
     "@storybook/addons": "^6.0.7",
     "@storybook/preset-create-react-app": "^3.1.4",
-    "@storybook/react": "^6.0.12",
+    "@storybook/react": "^6.0.16",
     "@types/history": "^4.7.7",
     "chromatic": "^5.1.0",
     "eslint-plugin-camunda-licensed": "^0.4.3",
