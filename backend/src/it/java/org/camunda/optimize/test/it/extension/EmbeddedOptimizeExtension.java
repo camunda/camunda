@@ -44,6 +44,7 @@ import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceI
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
 import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.telemetry.TelemetryScheduler;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -450,6 +451,10 @@ public class EmbeddedOptimizeExtension
 
   public CleanupScheduler getCleanupScheduler() {
     return getOptimize().getCleanupService();
+  }
+
+  public TelemetryScheduler getTelemetryScheduler() {
+    return getOptimize().getTelemetryService();
   }
 
   public SyncedIdentityCacheService getSyncedIdentityCacheService() {

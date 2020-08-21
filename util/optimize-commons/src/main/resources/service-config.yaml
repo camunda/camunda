@@ -465,3 +465,7 @@ telemetry:
   # Sets the initial property value of telemetry configuration once when it has never been enabled/disabled before.
   # Telemetry can later be enabled/disabled in the UI by superusers
   initializeTelemetry: false
+  # Interval for telemetry reporting, defaults to every 24 hours.
+  reportingIntervalInHours: 24
+  # Telemetry endpoint to send data to (production environment)
+  telemetryEndpoint: 'https://api.telemetry.camunda.cloud/pings'
