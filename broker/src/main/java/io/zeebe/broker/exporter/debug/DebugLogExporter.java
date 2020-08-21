@@ -71,7 +71,7 @@ public class DebugLogExporter implements Exporter {
   }
 
   @Override
-  public void export(final Record record) {
+  public void export(final Record<?> record) {
     try {
       logger.log("{}", objectMapper.writeValueAsString(record));
     } catch (final JsonProcessingException e) {

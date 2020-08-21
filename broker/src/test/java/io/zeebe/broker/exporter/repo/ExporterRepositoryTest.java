@@ -148,6 +148,6 @@ public final class ExporterRepositoryTest {
     }
 
     @Override
-    public void export(final Record record) {}
+    public void export(final Record<?> record) {}
   }
 }

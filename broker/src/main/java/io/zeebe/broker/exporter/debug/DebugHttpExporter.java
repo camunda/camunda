@@ -31,7 +31,7 @@ public final class DebugHttpExporter implements Exporter {
   }
 
   @Override
-  public void export(final Record record) {
+  public void export(final Record<?> record) {
     try {
       httpServer.add(record);
     } catch (final Exception e) {

@@ -65,7 +65,7 @@ public final class RecordingExporter implements Exporter {
   }
 
   @Override
-  public void export(final Record record) {
+  public void export(final Record<?> record) {
     LOCK.lock();
     try {
       RECORDS.add(record.clone());

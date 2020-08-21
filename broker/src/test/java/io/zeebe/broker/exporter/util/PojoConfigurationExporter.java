@@ -21,13 +21,13 @@ public final class PojoConfigurationExporter implements Exporter {
   }
 
   @Override
-  public void export(final Record record) {}
+  public void export(final Record<?> record) {}
 
   public PojoExporterConfiguration getConfiguration() {
     return configuration;
   }
 
-  public final class PojoExporterConfiguration {
+  public static final class PojoExporterConfiguration {
 
     private String foo = "";
     private int x;
@@ -58,7 +58,7 @@ public final class PojoConfigurationExporter implements Exporter {
     }
   }
 
-  public final class PojoExporterConfigurationPart {
+  public static final class PojoExporterConfigurationPart {
     private String bar;
     private double y;
 
