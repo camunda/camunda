@@ -164,14 +164,16 @@ public class PassiveRole extends InactiveRole {
     // If the snapshot already exists locally, do not overwrite it with a replicated snapshot.
     // Simply reply to the
     // request successfully.
-    final var optLatestSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
-    if (optLatestSnapshot.isPresent()) {
-      if (optLatestSnapshot.get().getIndex() >= request.index()) {
-        abortPendingSnapshots();
+    final var latestIndex =
+        raft.getPersistedSnapshotStore()
+            .getLatestSnapshot()
+            .map(PersistedSnapshot::getIndex)
+            .orElse(Long.MIN_VALUE);
+    if (latestIndex >= request.index()) {
+      abortPendingSnapshots();
 
-        return CompletableFuture.completedFuture(
-            logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
-      }
+      return CompletableFuture.completedFuture(
+          logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
     }
 
     if (!request.complete() && request.nextChunkId() == null) {
@@ -186,7 +188,15 @@ public class PassiveRole extends InactiveRole {
     }
 
     final var snapshotChunk = new SnapshotChunkImpl();
-    snapshotChunk.wrap(new UnsafeBuffer(request.data()), 0, request.data().capacity());
+    final var snapshotChunkBuffer = new UnsafeBuffer(request.data());
+    if (!snapshotChunk.tryWrap(snapshotChunkBuffer)) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(RaftResponse.Status.ERROR)
+                  .withError(RaftError.Type.APPLICATION_ERROR, "Failed to parse request data")
+                  .build()));
+    }
 
     // If there is no pending snapshot, create a new snapshot.
     if (pendingSnapshot == null) {

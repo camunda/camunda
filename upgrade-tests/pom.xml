@@ -59,10 +59,14 @@
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
     </dependency>
-    <dependency>    
+    <dependency>
       <groupId>net.jodah</groupId>
       <artifactId>failsafe</artifactId>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest</artifactId>
     </dependency>
   </dependencies>
 
