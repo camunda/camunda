@@ -37,6 +37,7 @@ import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
@@ -44,7 +45,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -54,7 +54,8 @@ import java.util.stream.StreamSupport;
 import org.junit.rules.TemporaryFolder;
 
 public final class TestStreams {
-  static final Duration SNAPSHOT_INTERVAL = Duration.ofMinutes(1);
+
+  private static final String SNAPSHOT_FOLDER = "snapshot";
   private static final Map<Class<?>, ValueType> VALUE_TYPES = new HashMap<>();
 
   static {
@@ -69,7 +70,7 @@ public final class TestStreams {
   private final Consumer<TypedRecord> mockOnProcessedListener;
   private final Map<String, LogContext> logContextMap = new HashMap<>();
   private final Map<String, ProcessorContext> streamContextMap = new HashMap<>();
-  private StreamProcessor streamProcessor;
+  private boolean snapshotWasTaken = false;
 
   public TestStreams(
       final TemporaryFolder dataDirectory,
@@ -198,20 +199,25 @@ public final class TestStreams {
       final ZeebeDbFactory zeebeDbFactory,
       final TypedRecordProcessorFactory typedRecordProcessorFactory) {
     final SynchronousLogStream stream = getLogStream(log);
-    return buildStreamProcessor(
-        stream, zeebeDbFactory, typedRecordProcessorFactory, SNAPSHOT_INTERVAL);
+    return buildStreamProcessor(stream, zeebeDbFactory, typedRecordProcessorFactory);
   }
 
   private StreamProcessor buildStreamProcessor(
       final SynchronousLogStream stream,
       final ZeebeDbFactory zeebeDbFactory,
-      final TypedRecordProcessorFactory factory,
-      final Duration snapshotInterval) {
+      final TypedRecordProcessorFactory factory) {
     final var storage = createRuntimeFolder(stream);
+    final var snapshot = storage.getParent().resolve(SNAPSHOT_FOLDER);
+
+    final ZeebeDb<?> zeebeDb;
+    if (snapshotWasTaken) {
+      zeebeDb = zeebeDbFactory.createDb(snapshot.toFile());
+    } else {
+      zeebeDb = zeebeDbFactory.createDb(storage.toFile());
+    }
     final String logName = stream.getLogName();
 
-    final var zeebeDb = zeebeDbFactory.createDb(storage.toFile());
-    streamProcessor =
+    final StreamProcessor streamProcessor =
         StreamProcessor.builder()
             .logStream(stream.getAsyncLogStream())
             .zeebeDb(zeebeDb)
@@ -224,11 +230,27 @@ public final class TestStreams {
 
     final LogContext context = logContextMap.get(logName);
     final ProcessorContext processorContext =
-        ProcessorContext.createStreamContext(context, streamProcessor, zeebeDb);
+        ProcessorContext.createStreamContext(context, streamProcessor, zeebeDb, storage, snapshot);
     streamContextMap.put(logName, processorContext);
     closeables.manage(processorContext);
 
     return streamProcessor;
+  }
+
+  public void pauseProcessing(final String streamName) {
+    streamContextMap.get(streamName).streamProcessor.pauseProcessing();
+    LOG.info("Paused processing for stream {}", streamName);
+  }
+
+  public void resumeProcessing(final String streamName) {
+    streamContextMap.get(streamName).streamProcessor.resumeProcessing();
+    LOG.info("Resume processing for stream {}", streamName);
+  }
+
+  public void snapshot(final String streamName) {
+    streamContextMap.get(streamName).snapshot();
+    snapshotWasTaken = true;
+    LOG.info("Snapshot database for stream {}", streamName);
   }
 
   public void closeProcessor(final String streamName) throws Exception {
@@ -255,8 +277,8 @@ public final class TestStreams {
   public static class FluentLogWriter {
 
     protected final RecordMetadata metadata = new RecordMetadata();
-    protected UnpackedObject value;
     protected final LogStreamRecordWriter writer;
+    protected UnpackedObject value;
     protected long key = -1;
     private long sourceRecordPosition = -1;
 
@@ -368,27 +390,41 @@ public final class TestStreams {
   }
 
   private static final class ProcessorContext implements AutoCloseable {
-
     private final LogContext logContext;
     private final ZeebeDb zeebeDb;
-
-    private boolean closed = false;
     private final StreamProcessor streamProcessor;
+    private final Path runtimePath;
+    private final Path snapshotPath;
+    private boolean closed = false;
 
     private ProcessorContext(
-        final LogContext logContext, final StreamProcessor streamProcessor, final ZeebeDb zeebeDb) {
+        final LogContext logContext,
+        final StreamProcessor streamProcessor,
+        final ZeebeDb zeebeDb,
+        final Path runtimePath,
+        final Path snapshotPath) {
       this.logContext = logContext;
       this.streamProcessor = streamProcessor;
       this.zeebeDb = zeebeDb;
+      this.runtimePath = runtimePath;
+      this.snapshotPath = snapshotPath;
     }
 
     public static ProcessorContext createStreamContext(
-        final LogContext logContext, final StreamProcessor streamProcessor, final ZeebeDb zeebeDb) {
-      return new ProcessorContext(logContext, streamProcessor, zeebeDb);
+        final LogContext logContext,
+        final StreamProcessor streamProcessor,
+        final ZeebeDb zeebeDb,
+        final Path runtimePath,
+        final Path snapshotPath) {
+      return new ProcessorContext(logContext, streamProcessor, zeebeDb, runtimePath, snapshotPath);
     }
 
     public SynchronousLogStream getLogStream() {
       return logContext.getLogStream();
+    }
+
+    public void snapshot() {
+      zeebeDb.createSnapshot(snapshotPath.toFile());
     }
 
     @Override
@@ -399,6 +435,9 @@ public final class TestStreams {
       Loggers.IO_LOGGER.debug("Close stream processor");
       streamProcessor.closeAsync().join();
       zeebeDb.close();
+      if (runtimePath.toFile().exists()) {
+        FileUtil.deleteFolder(runtimePath);
+      }
       closed = true;
     }
   }

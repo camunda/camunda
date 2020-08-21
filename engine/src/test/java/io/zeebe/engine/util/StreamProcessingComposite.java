@@ -74,6 +74,18 @@ public class StreamProcessingComposite {
         }));
   }
 
+  public void pauseProcessing(final int partitionId) {
+    streams.pauseProcessing(getLogName(partitionId));
+  }
+
+  public void resumeProcessing(final int partitionId) {
+    streams.resumeProcessing(getLogName(partitionId));
+  }
+
+  public void snapshot(final int partitionId) {
+    streams.snapshot(getLogName(partitionId));
+  }
+
   public void closeStreamProcessor(final int partitionId) {
     try {
       streams.closeProcessor(getLogName(partitionId));
