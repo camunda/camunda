@@ -4,8 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import 'react-app-polyfill/ie11';
-
 import React from 'react';
 import ReactDOM from 'react-dom';
 
