@@ -14,7 +14,7 @@ import {TimeStampLabel} from '../TimeStampLabel';
 import * as Styled from './styled';
 
 const BarComponent = ({node, isSelected}) => {
-  const name = `${node.name}${
+  const name = `${node.name ?? ''}${
     node.type === TYPE.MULTI_INSTANCE_BODY ? ` (Multi Instance)` : ''
   }`;
 
@@ -42,7 +42,7 @@ export const NoWrapBar = BarComponent;
 BarComponent.propTypes = {
   node: PropTypes.shape({
     id: PropTypes.string.isRequired,
-    name: PropTypes.string.isRequired,
+    name: PropTypes.string,
     type: PropTypes.string.isRequired,
     typeDetails: PropTypes.object.isRequired,
     endDate: PropTypes.string,

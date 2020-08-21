@@ -5,15 +5,17 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render, screen} from '@testing-library/react';
 
-import Skeleton from './index';
+import {Skeleton} from './index';
 
-describe('Tree Skeleton', () => {
-  it('should render rows according to properties', () => {
-    const node = mount(<Skeleton rowsToDisplay={10} />);
+describe('<Skeleton />', () => {
+  it('should render the correct amount of rows', () => {
+    const rowCount = 10;
+    render(<Skeleton rowsToDisplay={10} />);
 
-    // x rows
-    expect(node.find('Row')).toHaveLength(10);
+    expect(
+      screen.getAllByTestId('flow-node-instance-log-skeleton-row')
+    ).toHaveLength(rowCount);
   });
 });

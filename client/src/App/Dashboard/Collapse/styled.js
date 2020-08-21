@@ -8,12 +8,14 @@ import styled from 'styled-components';
 
 import BasicExpandButton from 'modules/components/ExpandButton';
 
-export const Collapse = styled.div`
+const Container = styled.div`
   position: relative;
 `;
 
-export const ExpandButton = styled(BasicExpandButton)`
+const ExpandButton = styled(BasicExpandButton)`
   position: absolute;
   top: 14px;
   left: 0;
 `;
+
+export {Container, ExpandButton};

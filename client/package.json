@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "bpmn-js": "^7.3.0",
+    "bpmn-moddle": "^7.0.3",
     "date-fns": "^2.15.0",
     "eslint-plugin-testing-library": "^3.6.0",
     "lodash": "^4.17.20",
@@ -53,6 +54,7 @@
     "jest-junit": "^11.1.0",
     "jest-styled-components": "^7.0.3",
     "lint-staged": "^10.2.11",
+    "msw": "^0.20.5",
     "prettier": "^2.0.5",
     "react-scripts": "3.4.3",
     "react-test-renderer": "^16.13.1"

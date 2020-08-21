@@ -64,13 +64,7 @@ export const SummaryLabel = themed(styled.div`
 `);
 
 export const FocusButton = themed(styled.button`
-  position: absolute;
   background: transparent;
-  left: 1px;
-  top: 1px;
-  height: calc(100% - 2px);
-  width: calc(100% - 5px);
-  z-index: 2;
 
   /* Apply hover style to <Bar/>*/
   &:hover + div > div {
@@ -81,8 +75,4 @@ export const FocusButton = themed(styled.button`
         light: Colors.lightButton05,
       })};
   }
-`);
-
-export const Details = themed(styled.div`
-  display: ${({showChildScope}) => (showChildScope ? 'block' : 'none')};
 `);

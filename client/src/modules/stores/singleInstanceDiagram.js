@@ -22,6 +22,7 @@ class SingleInstanceDiagram {
   fetchWorkflowXml = async (workflowId) => {
     this.startLoading();
     const response = await fetchWorkflowXML(workflowId);
+
     if (response.error) {
       this.handleFailure();
     } else {

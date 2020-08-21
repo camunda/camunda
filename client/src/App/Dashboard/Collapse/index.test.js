@@ -5,35 +5,50 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
-import Collapse from './index';
-import * as Styled from './styled';
+import {render, screen, fireEvent} from '@testing-library/react';
 
-const mockProps = {
-  content: <div data-test="content">content</div>,
-  header: <div data-test="header">header</div>,
-  buttonTitle: 'someTitle',
-};
+import {Collapse} from './index';
 
-describe('Collapse', () => {
-  it('should display the right data', () => {
-    const node = shallow(<Collapse {...mockProps} />);
-    const button = node.find(Styled.ExpandButton);
+describe('<Collapse />', () => {
+  it('should be collapsed by default', () => {
+    const mockContent = 'mock-content';
+    const mockHeader = 'mock-header';
+    const mockButtonTitle = 'button-title';
 
-    expect(node.find('[data-test="header"]')).toExist();
-    expect(node.find('[data-test="content"]')).not.toExist();
-    expect(button).toExist();
-    expect(button.props().title).toEqual(mockProps.buttonTitle);
+    render(
+      <Collapse
+        content={mockContent}
+        header={mockHeader}
+        buttonTitle={mockButtonTitle}
+      />
+    );
+
+    expect(screen.getByText(mockHeader)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {name: mockButtonTitle})
+    ).toBeInTheDocument();
+    expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
   });
 
-  it('should display the content when clicking on the button', () => {
-    const node = shallow(<Collapse {...mockProps} />);
-    const button = node.find(Styled.ExpandButton);
+  it('should uncollapse and collapse', () => {
+    const mockContent = 'mock-content';
+    const mockHeader = 'mock-header';
+    const mockButtonTitle = 'button-title';
 
-    button.simulate('click');
-    expect(node.find('[data-test="content"]')).toExist();
+    render(
+      <Collapse
+        content={mockContent}
+        header={mockHeader}
+        buttonTitle={mockButtonTitle}
+      />
+    );
 
-    button.simulate('click');
-    expect(node.find('[data-test="content"]')).not.toExist();
+    fireEvent.click(screen.getByRole('button', {name: mockButtonTitle}));
+
+    expect(screen.getByText(new RegExp(mockContent))).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', {name: mockButtonTitle}));
+
+    expect(screen.queryByText(new RegExp(mockContent))).not.toBeInTheDocument();
   });
 });

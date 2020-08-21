@@ -6,17 +6,19 @@
 
 import React from 'react';
 
-import * as Styled from './styled';
+import {MultiRow, Container, Circle, Block} from './styled';
 
 export function Row() {
   return (
-    <Styled.Row>
-      <Styled.Circle />
-      <Styled.Block />
-    </Styled.Row>
+    <Container data-test="flow-node-instance-log-skeleton-row">
+      <Circle />
+      <Block />
+    </Container>
   );
 }
 
-export default React.memo(function Skeleton(props) {
-  return <Styled.MultiRow Component={Row} {...props} />;
+const Skeleton = React.memo((props) => {
+  return <MultiRow Component={Row} {...props} />;
 });
+
+export {Skeleton};

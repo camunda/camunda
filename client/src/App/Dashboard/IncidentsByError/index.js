@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import Collapse from '../Collapse';
+import {Collapse} from '../Collapse';
 import {getFilterQueryString} from 'modules/utils/filter';
 import PanelListItem from '../PanelListItem';
 import {

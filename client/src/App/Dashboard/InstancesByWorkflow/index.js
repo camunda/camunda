@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import Collapse from '../Collapse';
+import {Collapse} from '../Collapse';
 import InstancesBar from 'modules/components/InstancesBar';
 import PanelListItem from '../PanelListItem';
 import {instancesByWorkflow} from 'modules/stores/instancesByWorkflow';

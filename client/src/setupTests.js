@@ -11,6 +11,7 @@ import 'jest-styled-components';
 import '@testing-library/jest-dom';
 import {configure} from '@testing-library/dom';
 import MutationObserver from '@sheerun/mutationobserver-shim';
+import {mockServer} from 'modules/mockServer';
 
 // see https://github.com/mobxjs/mobx-react-lite/#observer-batching
 import 'mobx-react-lite/batchingForReactDom';
@@ -52,3 +53,7 @@ window.MutationObserver = MutationObserver;
 configure({
   testIdAttribute: 'data-test',
 });
+
+beforeAll(() => mockServer.listen());
+afterEach(() => mockServer.resetHandlers());
+afterAll(() => mockServer.close());

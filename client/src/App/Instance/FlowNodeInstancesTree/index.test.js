@@ -5,208 +5,126 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render, screen, fireEvent} from '@testing-library/react';
+import {rest} from 'msw';
 
-import {ReactComponent as FoldableRightIcon} from 'modules/components/Icon/right.svg';
-
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
-
-import * as Styled from './styled';
 import {FlowNodeInstancesTree} from './index';
-import Foldable from './Foldable';
-import * as FoldableStyles from './Foldable/styled';
-
-import {testData} from './index.setup';
-import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
-import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
+import {mockServer} from 'modules/mockServer';
 import {currentInstance} from 'modules/stores/currentInstance';
+import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 
-jest.mock('modules/utils/bpmn');
+import {DIAGRAM, CURRENT_INSTANCE, mockNode} from './index.setup';
 
-jest.mock('modules/api/instances', () => ({
-  fetchWorkflowInstance: jest.fn().mockImplementation(() => {
-    return {id: 'instance_id', state: 'ACTIVE'};
-  }),
-}));
-jest.mock('modules/api/diagram', () => ({
-  fetchWorkflowXML: jest.fn().mockImplementation(() => ''),
-}));
-jest.mock(
-  './Bar',
-  () =>
-    function renderMockComponent() {
-      return <div data-test="BarComponent" />;
-    }
-);
+const instanceId = 1;
+const workflowId = 1;
 
-const mockOnSelection = jest.fn();
+describe('<FlowNodeInstancesTree />', () => {
+  beforeEach(async () => {
+    mockServer.use(
+      rest.get(`/api/workflow-instances/${instanceId}`, (_, res, ctx) =>
+        res(ctx.json(CURRENT_INSTANCE))
+      ),
+      rest.get(`/api/workflows/${workflowId}/xml`, (_, res, ctx) =>
+        res(ctx.text(DIAGRAM))
+      )
+    );
 
-const mountNode = (customProps) => {
-  const mountedNode = mount(
-    <ThemeProvider>
-      <FlowNodeInstancesTree
-        node={testData.parentNode}
-        selectedTreeRowIds={[]}
-        onTreeRowSelection={mockOnSelection}
-        getFlowNodeDetails={jest.fn()}
-        treeDepth={1}
-        {...customProps}
-      />
-    </ThemeProvider>
-  );
-  return mountedNode.find(FlowNodeInstancesTree);
-};
-
-describe('FlowNodeInstancesTree', () => {
-  let node;
-  let StartEventNode;
-  let SubProcessNode;
-  let ServiceNode;
-
-  beforeAll(async () => {
-    await singleInstanceDiagram.fetchWorkflowXml(1);
-    await currentInstance.fetchCurrentInstance(1);
+    await Promise.all([
+      currentInstance.fetchCurrentInstance(instanceId),
+      singleInstanceDiagram.fetchWorkflowXml(workflowId),
+    ]);
   });
-  afterAll(() => {
-    singleInstanceDiagram.reset();
+
+  afterEach(() => {
     currentInstance.reset();
-  });
-  beforeEach(() => {
-    node = mountNode();
-    // specific nodes
-    StartEventNode = node
-      .find(`[data-test="tree-node-StartEventId"]`)
-      .find('li');
-    SubProcessNode = node
-      .find(Styled.Li)
-      .find('li')
-      .find(`[data-test="tree-node-SubProcessId"]`);
-
-    ServiceNode = node.find(`[data-test="tree-node-ServiceTaskId"]`).find('li');
-    flowNodeInstance.reset();
+    singleInstanceDiagram.reset();
   });
 
-  it('should show Connection-Line for scoped nodes starting from tree level 2', () => {
-    expect(
-      node
-        .find(Styled.Ul)
-        .find('[showConnectionLine=false]')
-        .find('[data-test="treeDepth:1"]')
-    ).toExist();
+  it('should load the instance history', async () => {
+    render(
+      <FlowNodeInstancesTree
+        treeDepth={1}
+        node={mockNode}
+        onTreeRowSelection={() => {}}
+      />
+    );
 
+    expect(screen.getByText('Multi-Instance Process')).toBeInTheDocument();
+    expect(screen.getByText('Peter Fork')).toBeInTheDocument();
     expect(
-      node
-        .find(Styled.Ul)
-        .find('[showConnectionLine=true]')
-        .find('[data-test="treeDepth:2"]')
-    ).toExist();
+      screen.getByText('Filter-Map Sub Process (Multi Instance)')
+    ).toBeInTheDocument();
   });
 
-  it('should show Connection-Dot for each node starting from tree level 3', () => {
-    expect(
-      node
-        .find(Styled.NodeDetails)
-        .find('[data-test="treeDepth:2"]')
-        .find('[showConnectionDot=true]')
-    ).not.toExist();
+  it('should be able to unfold and unfold subprocesses', async () => {
+    render(
+      <FlowNodeInstancesTree
+        treeDepth={1}
+        node={mockNode}
+        onTreeRowSelection={() => {}}
+      />
+    );
 
     expect(
-      node
-        .find(Styled.NodeDetails)
-        .find('[data-test="treeDepth:3"]')
-        .find('[showConnectionDot=true]')
-    ).toExist();
+      screen.queryByRole('button', {
+        name: 'Unfold Filter-Map Sub Process',
+      })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Unfold Filter-Map Sub Process (Multi Instance)',
+      })
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Fold Filter-Map Sub Process (Multi Instance)',
+      })
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Unfold Filter-Map Sub Process',
+      })
+    );
+
+    expect(
+      screen.getByRole('button', {
+        name: 'Fold Filter-Map Sub Process (Multi Instance)',
+      })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', {
+        name: 'Fold Filter-Map Sub Process',
+      })
+    ).toBeInTheDocument();
+    expect(screen.getByText('Start Filter-Map')).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: 'Fold Filter-Map Sub Process',
+      })
+    );
+
+    expect(screen.queryByText('Start Filter-Map')).not.toBeInTheDocument();
   });
 
-  it('should render a Bar component', () => {
-    const barComponent = StartEventNode.find('[data-test="BarComponent"]');
+  it('should handle clicks on the history', async () => {
+    const mockOnTreeRowSelection = jest.fn();
 
-    //then
-    expect(barComponent).toExist();
-  });
+    render(
+      <FlowNodeInstancesTree
+        treeDepth={1}
+        node={mockNode}
+        onTreeRowSelection={mockOnTreeRowSelection}
+      />
+    );
 
-  describe('FlowNode Instance Selection', () => {
-    beforeEach(() => {
-      flowNodeInstance.setCurrentSelection({
-        treeRowIds: testData.multipleSelectedTreeRowIds,
-      });
-    });
+    fireEvent.click(screen.getByText('Peter Fork'));
 
-    it('should show root element as default selection', () => {
-      //Given
-
-      node = mountNode();
-      //Then
-      const rootNode = node.find(`[data-test="ParentNodeId"]`);
-
-      expect(rootNode.find(`[isSelected=true]`)).toExist();
-    });
-
-    it('should call the OnSelect method from props with node obj of clicked row', () => {
-      //Given
-      node = mountNode();
-      const StartEventNodeButton = node
-        .find(`[data-test="StartEventId"]`)
-        .find(Foldable.Summary)
-        .find(FoldableStyles.FocusButton);
-
-      // When
-      StartEventNodeButton.simulate('click');
-      //Then
-      expect(mockOnSelection).toHaveBeenCalledWith(testData.startEventInstance);
-    });
-  });
-
-  describe('Child Scopes', () => {
-    it('should render a dropdown element if a child scope exists', () => {
-      //given
-      expect(SubProcessNode.find(Foldable.Summary)).toExist();
-      expect(StartEventNode.find(Foldable.Summary)).toExist();
-      //then
-      expect(StartEventNode.find(Foldable.Details)).not.toExist();
-      expect(SubProcessNode.find(Foldable.Details)).toExist();
-    });
-
-    it('should render an folding button, when a child scope exists', () => {
-      expect(StartEventNode.find(FoldableRightIcon)).not.toExist();
-      expect(SubProcessNode.find(FoldableRightIcon)).toExist();
-    });
-
-    it('the parent node should not render a folding button', () => {
-      expect(
-        node
-          .find(Foldable.Summary)
-          .find(`[data-test="tree-node-${testData.parentNode.id}"]`)
-          .find(FoldableRightIcon)
-      ).not.toExist();
-    });
-  });
-
-  describe('icons', () => {
-    it('should render a State Icon', () => {
-      expect(StartEventNode.find(Styled.NodeStateIcon)).toHaveLength(1);
-    });
-
-    it('nodes should receive a indentationMultiplier to position the state Icon correctly', () => {
-      // On Tree level: 1
-      expect(
-        node
-          .find(`[data-test="tree-node-${testData.parentNode.id}"]`)
-          .find(Styled.NodeStateIcon)
-          .find('[indentationMultiplier=1]')
-      ).toExist();
-
-      // On Tree level: 2
-      expect(
-        StartEventNode.find(Styled.NodeStateIcon).find(
-          '[indentationMultiplier=2]'
-        )
-      ).toExist();
-
-      // On Tree level: 3
-      expect(
-        ServiceNode.find(Styled.NodeStateIcon).find('[indentationMultiplier=3]')
-      ).toExist();
-    });
+    expect(mockOnTreeRowSelection).toHaveBeenCalled();
   });
 });

@@ -37,7 +37,7 @@ const selectionStyle = css`
     dark: Colors.darkSelectedOdd,
     light: Colors.lightSelectedOdd,
   })};
-  color: '#fff';
+  color: #fff;
 
   /* Bottom Border */
   &:before {

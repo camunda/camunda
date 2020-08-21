@@ -54,6 +54,7 @@ Foldable.Summary = function Summary({
   onSelection,
   children,
   isLastChild,
+  nodeName,
   ...props
 }) {
   return (
@@ -63,16 +64,18 @@ Foldable.Summary = function Summary({
           onClick={toggleFold}
           isExpanded={!isFolded}
           iconButtonTheme="foldable"
+          aria-label={isFolded ? `Unfold ${nodeName}` : `Fold ${nodeName}`}
         />
       ) : null}
-      <Styled.FocusButton showHoverState={!isSelected} onClick={onSelection} />
-      <Styled.SummaryLabel
-        isSelected={isSelected}
-        showPartialBorder={!isFolded}
-        showFullBorder={isLastChild}
-      >
-        {children}
-      </Styled.SummaryLabel>
+      <Styled.FocusButton showHoverState={!isSelected} onClick={onSelection}>
+        <Styled.SummaryLabel
+          isSelected={isSelected}
+          showPartialBorder={!isFolded}
+          showFullBorder={isLastChild}
+        >
+          {children}
+        </Styled.SummaryLabel>
+      </Styled.FocusButton>
     </Styled.Summary>
   );
 };
@@ -89,16 +92,18 @@ Foldable.Summary.propTypes = {
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node,
   ]),
+  nodeName: PropTypes.string,
 };
 
 Foldable.Summary.defaultProps = {
   isFoldable: true,
 };
 
-Foldable.Details = function Details({isFolded, ...props}) {
-  return <Styled.Details {...props} showChildScope={!isFolded} />;
+Foldable.Details = function Details({isFolded, children}) {
+  return isFolded ? null : <div>{children}</div>;
 };
 
 Foldable.Details.propTypes = {
   isFolded: PropTypes.bool,
+  children: PropTypes.node,
 };

@@ -7,7 +7,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import Skeleton from './Skeleton';
+import {Skeleton} from './Skeleton';
 import EmptyPanel from 'modules/components/EmptyPanel';
 import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
 import {observer} from 'mobx-react';
