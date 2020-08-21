@@ -7,11 +7,12 @@ package org.camunda.optimize.test.util;
 
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
@@ -25,6 +26,11 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByAssignee;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByCandidateGroup;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByFlowNode;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByNone;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByUserTasks;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByAssignee;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByCandidateGroup;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByDuration;
@@ -43,7 +49,7 @@ public class ProcessReportDataBuilderHelper {
   private ProcessViewEntity viewEntity = null;
   private ProcessViewProperty viewProperty = ProcessViewProperty.RAW_DATA;
   private ProcessGroupByType groupByType = ProcessGroupByType.NONE;
-  private DistributedBy distributedBy = DistributedBy.NONE;
+  private DistributedByType distributedByType = DistributedByType.NONE;
   private ProcessVisualization visualization = ProcessVisualization.TABLE;
   private GroupByDateUnit dateInterval;
   private String variableName;
@@ -55,6 +61,7 @@ public class ProcessReportDataBuilderHelper {
 
   public ProcessReportDataDto build() {
     final ProcessGroupByDto<?> groupBy = createGroupBy();
+    final ProcessDistributedByDto<?> distributedBy = createDistributedBy();
     final ProcessViewDto view = new ProcessViewDto(viewEntity, viewProperty);
     if (processPartStart != null && processPartEnd != null) {
       processPart = createProcessPart(processPartStart, processPartEnd);
@@ -98,6 +105,23 @@ public class ProcessReportDataBuilderHelper {
     }
   }
 
+  private ProcessDistributedByDto<?> createDistributedBy() {
+    switch (distributedByType) {
+      case NONE:
+        return createDistributedByNone();
+      case ASSIGNEE:
+        return createDistributedByAssignee();
+      case CANDIDATE_GROUP:
+        return createDistributedByCandidateGroup();
+      case FLOW_NODE:
+        return createDistributedByFlowNode();
+      case USER_TASK:
+        return createDistributedByUserTasks();
+      default:
+        throw new OptimizeRuntimeException("Unsupported distributedBy value:" + distributedByType);
+    }
+  }
+
   public ProcessReportDataBuilderHelper processDefinitionKey(String processDefinitionKey) {
     this.processDefinitionKey = processDefinitionKey;
     return this;
@@ -128,8 +152,8 @@ public class ProcessReportDataBuilderHelper {
     return this;
   }
 
-  public ProcessReportDataBuilderHelper distributedBy(DistributedBy distributedBy) {
-    this.distributedBy = distributedBy;
+  public ProcessReportDataBuilderHelper distributedBy(DistributedByType distributedByType) {
+    this.distributedByType = distributedByType;
     return this;
   }
 

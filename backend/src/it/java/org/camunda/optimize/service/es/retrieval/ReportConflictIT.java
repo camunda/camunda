@@ -16,12 +16,13 @@ import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.AssigneeDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.UserTaskDistributedByDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
@@ -106,7 +107,7 @@ public class ReportConflictIT extends AbstractIT {
       .createReportData()
       .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE_BY_USER_TASK)
       .build();
-    userTaskReport.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+    userTaskReport.getConfiguration().setDistributedBy(new UserTaskDistributedByDto());
     reportUpdate.setData(userTaskReport);
     ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(
       singleReportId,
@@ -197,7 +198,7 @@ public class ReportConflictIT extends AbstractIT {
     // when
     final SingleProcessReportDefinitionDto firstSingleReport =
       (SingleProcessReportDefinitionDto) reportClient.getReportById(firstSingleReportId);
-    firstSingleReport.getData().getConfiguration().setDistributedBy(DistributedBy.ASSIGNEE);
+    firstSingleReport.getData().getConfiguration().setDistributedBy(new AssigneeDistributedByDto());
     ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(
       firstSingleReportId,
       firstSingleReport,
@@ -238,7 +239,8 @@ public class ReportConflictIT extends AbstractIT {
     checkConflictedItems(conflictResponseDto, ConflictedItemType.COMBINED_REPORT, expectedConflictedItemIds);
   }
 
-  @ParameterizedTest(name = "delete single reports fails with conflict if used by combined report when force set to {0}")
+  @ParameterizedTest(name = "delete single reports fails with conflict if used by combined report when force set to " +
+    "{0}")
   @MethodSource("provideForceParameterAsBoolean")
   public void deleteSingleReportsFailsWithConflictIfUsedByCombinedReportWhenForceSet(Boolean force) {
     // given

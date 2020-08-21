@@ -11,7 +11,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
@@ -171,7 +171,7 @@ public class CompositeCommandResult {
         final Double value = distributions.get(0).getValueAsDouble();
         mapData.add(new MapResultEntryDto(group.getKey(), value, group.getLabel()));
       } else {
-        throw new OptimizeRuntimeException(createErrorMessage(ReportMapResultDto.class, DistributedBy.class));
+        throw new OptimizeRuntimeException(createErrorMessage(ReportMapResultDto.class, DistributedByType.class));
       }
     }
     mapData.sort(getSortingComparator(sorting, keyIsOfNumericType));
@@ -189,7 +189,7 @@ public class CompositeCommandResult {
         numberResultDto.setData(value);
         return numberResultDto;
       } else {
-        throw new OptimizeRuntimeException(createErrorMessage(NumberResultDto.class, DistributedBy.class));
+        throw new OptimizeRuntimeException(createErrorMessage(NumberResultDto.class, DistributedByType.class));
       }
     } else {
       throw new OptimizeRuntimeException(createErrorMessage(NumberResultDto.class, GroupByResult.class));
@@ -205,7 +205,7 @@ public class CompositeCommandResult {
       } else {
         throw new OptimizeRuntimeException(createErrorMessage(
           RawDataProcessReportResultDto.class,
-          DistributedBy.class
+          DistributedByType.class
         ));
       }
     } else {
@@ -222,7 +222,7 @@ public class CompositeCommandResult {
       } else {
         throw new OptimizeRuntimeException(createErrorMessage(
           RawDataDecisionReportResultDto.class,
-          DistributedBy.class
+          DistributedByType.class
         ));
       }
     } else {

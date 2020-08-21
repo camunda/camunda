@@ -12,17 +12,19 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_C
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_FLOW_NODE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_NONE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_USER_TASK;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_VARIABLE;
 
-public enum DistributedBy {
+public enum DistributedByType {
   NONE(DISTRIBUTED_BY_NONE),
   USER_TASK(DISTRIBUTED_BY_USER_TASK),
   FLOW_NODE(DISTRIBUTED_BY_FLOW_NODE),
   ASSIGNEE(DISTRIBUTED_BY_ASSIGNEE),
-  CANDIDATE_GROUP(DISTRIBUTED_BY_CANDIDATE_GROUP);
+  CANDIDATE_GROUP(DISTRIBUTED_BY_CANDIDATE_GROUP),
+  VARIABLE(DISTRIBUTED_BY_VARIABLE);
 
   private final String id;
 
-  DistributedBy(final String id) {
+  DistributedByType(final String id) {
     this.id = id;
   }
 

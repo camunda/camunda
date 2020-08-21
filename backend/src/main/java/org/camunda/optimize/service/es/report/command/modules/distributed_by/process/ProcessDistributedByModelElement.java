@@ -8,8 +8,8 @@ package org.camunda.optimize.service.es.report.command.modules.distributed_by.pr
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
@@ -97,6 +97,6 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
 
   protected abstract Map<String, String> extractModelElementNames(DefinitionOptimizeDto def);
 
-  protected abstract DistributedBy getDistributedBy();
+  protected abstract ProcessDistributedByDto getDistributedBy();
 
 }

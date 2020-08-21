@@ -28,7 +28,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_VARIABL
 
 
 /**
- * Abstract class that contains a hidden "type" field to distinguish, which
+ * Abstract class that contains a hidden "type" field to distinguish which
  * group by type the jackson object mapper should transform the object to.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
@@ -43,8 +43,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_VARIABL
   @JsonSubTypes.Type(value = AssigneeGroupByDto.class, name = GROUP_BY_ASSIGNEE),
   @JsonSubTypes.Type(value = CandidateGroupGroupByDto.class, name = GROUP_BY_CANDIDATE_GROUP),
   @JsonSubTypes.Type(value = DurationGroupByDto.class, name = GROUP_BY_DURATION),
-}
-)
+})
 @Data
 public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto> implements Combinable {
 

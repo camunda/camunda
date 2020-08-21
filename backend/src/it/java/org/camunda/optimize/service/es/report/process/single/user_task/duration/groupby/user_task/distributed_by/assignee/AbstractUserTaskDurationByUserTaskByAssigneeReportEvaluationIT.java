@@ -14,7 +14,7 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
@@ -1005,8 +1005,8 @@ public abstract class AbstractUserTaskDurationByUserTaskByAssigneeReportEvaluati
     );
     assertThat(
       "Distributed by should be ASSIGNEE.",
-      resultReportDataDto.getConfiguration().getDistributedBy(),
-      is(DistributedBy.ASSIGNEE)
+      resultReportDataDto.getConfiguration().getDistributedBy().getType(),
+      is(DistributedByType.ASSIGNEE)
     );
   }
 

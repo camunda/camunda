@@ -7,9 +7,18 @@ package org.camunda.optimize.upgrade.main.impl;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.commons.text.StringSubstitutor;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.AssigneeDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.CandidateGroupDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.FlowNodeDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.UserTaskDistributedByDto;
+import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.AlertIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
+import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -45,7 +54,9 @@ public class UpgradeFrom31To32 extends UpgradeProcedure {
       .toVersion(TO_VERSION)
       .addUpgradeStep(migrateAlertEmailRecipientsField())
       .addUpgradeStep(addTableColumnSettingsToReportConfiguration(SINGLE_PROCESS_REPORT_INDEX_NAME))
-      .addUpgradeStep(addTableColumnSettingsToReportConfiguration(SINGLE_DECISION_REPORT_INDEX_NAME));
+      .addUpgradeStep(addTableColumnSettingsToReportConfiguration(SINGLE_DECISION_REPORT_INDEX_NAME))
+      .addUpgradeStep(migrateDistributedByField(new SingleProcessReportIndex()))
+      .addUpgradeStep(migrateDistributedByField(new SingleDecisionReportIndex()));
     return upgradeBuilder.build();
   }
 
@@ -104,6 +115,56 @@ public class UpgradeFrom31To32 extends UpgradeProcedure {
     return new UpdateDataStep(
       reportIndexName,
       QueryBuilders.matchAllQuery(),
+      script,
+      params
+    );
+  }
+
+  private UpgradeStep migrateDistributedByField(final IndexMappingCreator indexMappingCreator) {
+    final String distributeByNoneType = DistributedByType.NONE.toString();
+    final String distributeByUserTaskType = DistributedByType.USER_TASK.toString();
+    final String distributeByFlowNodeType = DistributedByType.FLOW_NODE.toString();
+    final String distributeByAssigneeType = DistributedByType.ASSIGNEE.toString();
+    final String distributeByCandidateGroupType = DistributedByType.CANDIDATE_GROUP.toString();
+
+    final StringSubstitutor substitutor = new StringSubstitutor(
+      ImmutableMap.<String, String>builder()
+        .put("oldDistributeByField", "distributedBy")
+        .put("newDistributeByField", SingleReportConfigurationDto.Fields.distributedBy.name())
+        .put("distributeByNone", distributeByNoneType)
+        .put("distributedByUserTask", distributeByUserTaskType)
+        .put("distributedByFlowNode", distributeByFlowNodeType)
+        .put("distributedByAssignee", distributeByAssigneeType)
+        .put("distributeByCandidateGroup", distributeByCandidateGroupType)
+        .build()
+    );
+    final Map<String, Object> params = ImmutableMap.<String, Object>builder()
+      .put(distributeByNoneType, new NoneDistributedByDto())
+      .put(distributeByUserTaskType, new UserTaskDistributedByDto())
+      .put(distributeByFlowNodeType, new FlowNodeDistributedByDto())
+      .put(distributeByAssigneeType, new AssigneeDistributedByDto())
+      .put(distributeByCandidateGroupType, new CandidateGroupDistributedByDto())
+      .build();
+
+    //@formatter:off
+    final String script = substitutor.replace(
+        "if(ctx._source.data.configuration.${oldDistributeByField} == null" +
+          "|| \"${distributeByNone}\".equals(ctx._source.data.configuration.${oldDistributeByField})) {\n" +
+          "ctx._source.data.configuration.${newDistributeByField} = params.${distributeByNone};\n" +
+        "} else if(\"${distributedByUserTask}\".equals(ctx._source.data.configuration.${oldDistributeByField})){\n" +
+          "ctx._source.data.configuration.${newDistributeByField} = params.${distributedByUserTask};\n" +
+        "} else if(\"${distributedByFlowNode}\".equals(ctx._source.data.configuration.${oldDistributeByField})){\n" +
+          "ctx._source.data.configuration.${newDistributeByField} = params.${distributedByFlowNode};\n" +
+        "} else if(\"${distributedByAssignee}\".equals(ctx._source.data.configuration.${oldDistributeByField})){\n" +
+          "ctx._source.data.configuration.${newDistributeByField} = params.${distributedByAssignee};\n" +
+        "} else if(\"${distributeByCandidateGroup}\".equals(ctx._source.data.configuration.${oldDistributeByField})){\n" +
+          "ctx._source.data.configuration.${newDistributeByField} = params.${distributeByCandidateGroup};\n" +
+        "}\n"
+    );
+    //@formatter:on
+
+    return new UpdateIndexStep(
+      indexMappingCreator,
       script,
       params
     );

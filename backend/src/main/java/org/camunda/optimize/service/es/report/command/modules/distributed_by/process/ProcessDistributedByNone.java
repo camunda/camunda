@@ -5,8 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process;
 
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
@@ -39,6 +39,6 @@ public class ProcessDistributedByNone extends ProcessDistributedByPart {
 
   @Override
   protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.getConfiguration().setDistributedBy(DistributedBy.NONE);
+    dataForCommandKey.getConfiguration().setDistributedBy(new NoneDistributedByDto());
   }
 }

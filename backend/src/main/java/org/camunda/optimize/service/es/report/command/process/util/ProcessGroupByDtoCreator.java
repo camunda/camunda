@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.command.process.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.AssigneeGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.CandidateGroupGroupByDto;
@@ -20,7 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.value
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
-
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessGroupByDtoCreator {
 
   public static StartDateGroupByDto createGroupByStartDateDto(GroupByDateUnit dateInterval) {

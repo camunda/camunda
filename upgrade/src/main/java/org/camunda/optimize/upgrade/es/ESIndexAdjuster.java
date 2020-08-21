@@ -79,7 +79,8 @@ public class ESIndexAdjuster {
     this.reindex(
       sourceIndex,
       destinationIndex,
-      null
+      null,
+      Collections.emptyMap()
     );
   }
 
@@ -105,7 +106,8 @@ public class ESIndexAdjuster {
 
   public void reindex(final String sourceIndexName,
                       final String destinationIndexName,
-                      final String mappingScript) {
+                      final String mappingScript,
+                      final Map<String, Object> parameters) {
     logger.debug(
       "Reindexing from index [{}] to [{}] using the mapping script [{}].",
       sourceIndexName,
@@ -119,7 +121,7 @@ public class ESIndexAdjuster {
       .setRefresh(true);
 
     if (mappingScript != null) {
-      reindexRequest.setScript(new Script(mappingScript));
+      reindexRequest.setScript(createScriptWithParams(mappingScript, parameters));
     }
 
     String taskId;
@@ -257,21 +259,7 @@ public class ESIndexAdjuster {
       UpdateByQueryRequest request = new UpdateByQueryRequest(aliasName);
       request.setRefresh(true);
       request.setQuery(query);
-      request.setScript(new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
-        updateScript,
-        Optional.ofNullable(parameters)
-          // this conversion seems redundant but it's not
-          // in case the values are specific dto objects this ensures they get converted to generic objects
-          // that the elasticsearch client is happy to serialize while it complains on specific DTO's
-          .map(value -> objectMapper.convertValue(
-            value,
-            new TypeReference<Map<String, Object>>() {
-            }
-          ))
-          .orElse(Collections.emptyMap())
-      ));
+      request.setScript(createScriptWithParams(updateScript, parameters));
       getPlainRestClient().updateByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String errorMessage = String.format("Could not update data for indexAlias [%s]!", aliasName);
@@ -421,5 +409,23 @@ public class ESIndexAdjuster {
       logger.error("Could not create settings!", e);
       throw new UpgradeRuntimeException("Could not create index settings");
     }
+  }
+
+  private Script createScriptWithParams(final String scriptString, final Map<String, Object> parameters) {
+    return new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      scriptString,
+      Optional.ofNullable(parameters)
+        // this conversion seems redundant but it's not
+        // in case the values are specific dto objects this ensures they get converted to generic objects
+        // that the elasticsearch client is happy to serialize while it complains on specific DTO's
+        .map(value -> objectMapper.convertValue(
+          value,
+          new TypeReference<Map<String, Object>>() {
+          }
+        ))
+        .orElse(Collections.emptyMap())
+    );
   }
 }
