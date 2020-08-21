@@ -11,6 +11,7 @@ import {t} from 'translation';
 
 export default function PieChartConfig({onChange, report}) {
   const {
+    reportType,
     data: {configuration},
   } = report;
 
@@ -18,6 +19,7 @@ export default function PieChartConfig({onChange, report}) {
     <fieldset>
       <legend>{t('report.config.tooltips.legend')}</legend>
       <RelativeAbsoluteSelection
+        reportType={reportType}
         hideRelative={isDurationReport(report)}
         absolute={configuration.alwaysShowAbsolute}
         relative={configuration.alwaysShowRelative}

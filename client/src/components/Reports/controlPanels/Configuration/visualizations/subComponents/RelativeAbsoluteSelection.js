@@ -9,7 +9,13 @@ import React from 'react';
 import {Switch} from 'components';
 import {t} from 'translation';
 
-export default function RelativeAbsoluteSelection({hideRelative, absolute, relative, onChange}) {
+export default function RelativeAbsoluteSelection({
+  hideRelative,
+  absolute,
+  relative,
+  reportType,
+  onChange,
+}) {
   return (
     <>
       <Switch
@@ -22,7 +28,7 @@ export default function RelativeAbsoluteSelection({hideRelative, absolute, relat
         <Switch
           checked={relative}
           onChange={({target: {checked}}) => onChange('relative', checked)}
-          label={t('report.config.tooltips.showRelative')}
+          label={t('report.config.tooltips.showRelative.' + reportType)}
         />
       )}
     </>

@@ -14,6 +14,7 @@ import {t} from 'translation';
 
 export default function BarChartConfig({onChange, report}) {
   const {
+    reportType,
     combined,
     data: {configuration},
     result,
@@ -35,6 +36,7 @@ export default function BarChartConfig({onChange, report}) {
       <fieldset>
         <legend>{t('report.config.tooltips.legend')}</legend>
         <RelativeAbsoluteSelection
+          reportType={reportType}
           hideRelative={durationReport}
           absolute={configuration.alwaysShowAbsolute}
           relative={configuration.alwaysShowRelative}

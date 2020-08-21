@@ -427,7 +427,10 @@
       },
       "tooltips": {
         "legend": "Tooltips",
-        "showRelative": "Relativen Wert basierend auf der Anzahl der Prozessinstanzen anzeigen",
+        "showRelative": {
+          "process": "Relativen Wert basierend auf der Anzahl der Prozessinstanzen anzeigen",
+          "decision": "Relativen Wert basierend auf der Anzahl der Entscheidungsevaluierungen anzeigen"
+        },
         "showAbsolute": "Absolutwert anzeigen"
       },
       "axisLabels": {

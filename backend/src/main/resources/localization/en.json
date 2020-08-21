@@ -427,7 +427,10 @@
       },
       "tooltips": {
         "legend": "Tooltips",
-        "showRelative": "Show Relative Value based on process instance count",
+        "showRelative": {
+          "process": "Show Relative Value based on process instance count",
+          "decision": "Show Relative Value based on decision evaluation count"
+        },
         "showAbsolute": "Show Absolute Value"
       },
       "axisLabels": {
