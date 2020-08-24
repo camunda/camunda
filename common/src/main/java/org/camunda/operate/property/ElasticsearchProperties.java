@@ -27,6 +27,9 @@ public class ElasticsearchProperties {
 
   private int batchSize = 2000;
 
+  private Integer socketTimeout;
+  private Integer connectTimeout;
+
   private boolean createSchema = true;
 
   private String url;
@@ -132,5 +135,21 @@ public class ElasticsearchProperties {
         throw new OperateRuntimeException("Failed to parse url " + url, e);
       }
     }
+  }
+
+  public Integer getSocketTimeout() {
+    return socketTimeout;
+  }
+
+  public void setSocketTimeout(Integer socketTimeout) {
+    this.socketTimeout = socketTimeout;
+  }
+
+  public Integer getConnectTimeout() {
+    return connectTimeout;
+  }
+
+  public void setConnectTimeout(Integer connectTimeout) {
+    this.connectTimeout = connectTimeout;
   }
 }

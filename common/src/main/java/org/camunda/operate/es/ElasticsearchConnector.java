@@ -17,6 +17,7 @@ import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.RequestConfig.Builder;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.camunda.operate.property.ElasticsearchProperties;
@@ -26,6 +27,7 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,16 +80,32 @@ public class ElasticsearchConnector {
 
   public RestHighLevelClient createEsClient(ElasticsearchProperties elsConfig) {
     logger.debug("Creating Elasticsearch connection...");
-    RestHighLevelClient esClient;
-    esClient = new RestHighLevelClient(RestClient.builder(getHttpHost(elsConfig))
+    final RestClientBuilder restClientBuilder = RestClient.builder(getHttpHost(elsConfig))
         .setHttpClientConfigCallback(
-            httpClientBuilder -> setupAuthentication(httpClientBuilder, elsConfig)));
+            httpClientBuilder -> setupAuthentication(httpClientBuilder, elsConfig));
+    if (elsConfig.getConnectTimeout() != null || elsConfig.getSocketTimeout() != null) {
+      restClientBuilder
+          .setRequestConfigCallback(configCallback -> setTimeouts(configCallback, elsConfig));
+    }
+    RestHighLevelClient esClient = new RestHighLevelClient(restClientBuilder);
     if (!checkHealth(esClient, true)) {
       logger.warn("Elasticsearch cluster is not accessible");
     } else {
       logger.debug("Elasticsearch connection was successfully created.");
     }
     return esClient;
+  }
+
+  private Builder setTimeouts(
+      final Builder builder,
+      final ElasticsearchProperties elsConfig) {
+    if (elsConfig.getSocketTimeout() != null) {
+      builder.setSocketTimeout(elsConfig.getSocketTimeout());
+    }
+    if (elsConfig.getConnectTimeout() != null) {
+      builder.setConnectTimeout(elsConfig.getConnectTimeout());
+    }
+    return builder;
   }
 
   private HttpHost getHttpHost(ElasticsearchProperties elsConfig) {
