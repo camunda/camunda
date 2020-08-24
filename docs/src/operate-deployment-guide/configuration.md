@@ -1,7 +1,7 @@
 # Introduction
 
-Operate is a Spring Boot application. That means all ways to [configure](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config) 
-a Spring Boot application can be applied. By default the configuration for Operate is stored in a YAML file `application.yml`. All Operate related settings are prefixed 
+Operate is a Spring Boot application. That means all ways to [configure](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config)
+a Spring Boot application can be applied. By default the configuration for Operate is stored in a YAML file `application.yml`. All Operate related settings are prefixed
 with `camunda.operate`. The following parts are configurable:
 
  * [Elasticsearch Connection](#elasticsearch)
@@ -13,7 +13,7 @@ with `camunda.operate`. The following parts are configurable:
  * [Monitoring possibilities](#monitoring-operate)
  * [Logging configuration](#logging)
  * [Probes](#probes)
-  
+
 # Configurations
 
 # Elasticsearch
@@ -54,7 +54,7 @@ camunda.operate.zeebe.brokerContactPoint | Broker contact point to zeebe as host
 ## A snippet from application.yml:
 
 ```yaml
-camunda.operate:  
+camunda.operate:
   zeebe:
     # Broker contact point
     brokerContactPoint: localhost:26500
@@ -91,7 +91,7 @@ camunda.operate:
 
 # Operation Executor
 
-Operations are user operations like Cancellation of workflow instance(s) or Updating the variable value. Operations are executed in multi-threaded manner. 
+Operations are user operations like Cancellation of workflow instance(s) or Updating the variable value. Operations are executed in multi-threaded manner.
 
 Name | Description | Default value
 -----|-------------|--------------
@@ -107,7 +107,7 @@ camunda.operate:
 
 # Monitoring Operate
 
-Operate includes [Spring Boot Actuator](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready) inside, that 
+Operate includes [Spring Boot Actuator](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready) inside, that
 provides number of monitoring possibilities, e.g. health check (http://localhost:8080/actuator/health) and metrics (http://localhost:8080/actuator/prometheus) endpoints.
 
 Main Actuator configuration parameters are the following:
@@ -128,8 +128,8 @@ management.metrics.export.prometheus.enabled: false
 
 # Logging
 
-Operate uses Log4j2 framework for logging. In distribution archive as well as inside a Docker image you can find two logging configuration files, 
-that can be further adjusted to your needs. 
+Operate uses Log4j2 framework for logging. In distribution archive as well as inside a Docker image you can find two logging configuration files,
+that can be further adjusted to your needs.
 
 ## Default logging configuration
 
@@ -159,8 +159,8 @@ that can be further adjusted to your needs.
 ```
 ### JSON logging configuration
 
-This one is specifically configured for usage with Stackdriver in Google Cloud 
-environment. The logs will be written in JSON format to make them better searchable in Google Cloud Logging UI.  
+This one is specifically configured for usage with Stackdriver in Google Cloud
+environment. The logs will be written in JSON format to make them better searchable in Google Cloud Logging UI.
 ## Enable Logging configuration
 
 You can enable one of the logging configurations by setting the environment variable ```OPERATE_LOG_APPENDER``` like this:
@@ -180,7 +180,7 @@ The following snippet represents the default Operate configuration, which is shi
 # Operate configuration file
 
 camunda.operate:
-  # Set operate username and password. 
+  # Set operate username and password.
   # If user with <username> does not exists it will be created.
   # Default: demo/demo
   #username:
@@ -223,7 +223,7 @@ Operate provides liveness and readiness probes for using in cloud environment (K
 See also: [Kubernetes configure startup probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
 
 A HTTP GET call to REST endpoint ```/actuator/health```can be used to make a liveness probe.
-To use this call make sure that the management health endpoint is enabled in configuration file (`application.yml`): 
+To use this call make sure that the management health endpoint is enabled in configuration file (`application.yml`):
 
 ```yaml
 management.endpoints.web.exposure.include: health
@@ -256,5 +256,21 @@ livenessProbe:
      initialDelaySeconds: 30
      periodSeconds: 30
 ```
+## Configuration to bind probes and metrics endpoints to dedicated management port
 
+It is also possible to bind **health**, **readiness** and **metrics** endpoints to a dedicated management port and other usage op paths:
 
+### Example for binding to port 8081 and root path:
+```yaml
+ management.server.port: 8081
+ management.endpoints.web:
+    exposure.include: readyz,health,prometheus
+    base-path: /
+    path-mapping:
+        readyz: readyz
+        health: healthz
+        prometheus: healthz
+```
+Now there is access to `<server>:8081/readyz` , `<server>:8081/healthz` and `<server>:8081/healthz`
+
+See also [Spring customizing the management endpoint](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-monitoring)
