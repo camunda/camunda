@@ -10,6 +10,7 @@ package io.zeebe.gateway.impl.job;
 import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
 import io.grpc.stub.StreamObserver;
+import io.zeebe.gateway.EndpointManager;
 import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.impl.broker.BrokerClient;
@@ -33,6 +34,8 @@ public final class LongPollingActivateJobsHandler extends Actor {
 
   private static final String JOBS_AVAILABLE_TOPIC = "jobsAvailable";
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
+  private static final String ERROR_MSG_ACTIVATED_EXHAUSTED =
+      "Expected to activate jobs of type '%s', but no jobs available and at least one broker returned 'RESOURCE_EXHAUSTED'. Please try again later.";
 
   private final ActivateJobsHandler activateJobsHandler;
   private final BrokerClient brokerClient;
@@ -92,7 +95,7 @@ public final class LongPollingActivateJobsHandler extends Actor {
         });
   }
 
-  private InFlightLongPollingActivateJobsRequestsState getJobTypeState(String jobType) {
+  private InFlightLongPollingActivateJobsRequestsState getJobTypeState(final String jobType) {
     return jobTypeState.computeIfAbsent(
         jobType, type -> new InFlightLongPollingActivateJobsRequestsState(type, metrics));
   }
@@ -134,13 +137,14 @@ public final class LongPollingActivateJobsHandler extends Actor {
         actor.submit(
             () -> {
               state.removeActiveRequest(request);
+              final var type = request.getType();
+              final var errorMsg = String.format(ERROR_MSG_ACTIVATED_EXHAUSTED, type);
               request
                   .getResponseObserver()
                   .onError(
-                      new BrokerErrorException(
-                          new BrokerError(
-                              ErrorCode.RESOURCE_EXHAUSTED,
-                              "Some brokers returned resource exhausted")));
+                      EndpointManager.convertThrowable(
+                          new BrokerErrorException(
+                              new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, errorMsg))));
             });
       } else {
         actor.submit(
