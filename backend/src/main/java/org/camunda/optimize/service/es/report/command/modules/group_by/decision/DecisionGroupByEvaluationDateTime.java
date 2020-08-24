@@ -19,8 +19,8 @@ import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
+import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
-import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -86,7 +86,7 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
                              final SearchResponse response,
                              final ExecutionContext<DecisionReportDataDto> context) {
     result.setGroups(processAggregations(response, context));
-    result.setIsComplete(isResultComplete(response));
+    result.setIsComplete(isResultComplete(response.getAggregations(), response.getHits().getTotalHits().value));
     result.setSorting(
       context.getReportConfiguration()
         .getSorting()

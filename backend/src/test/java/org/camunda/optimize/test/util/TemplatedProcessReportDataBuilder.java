@@ -248,6 +248,16 @@ public class TemplatedProcessReportDataBuilder {
           .dateInterval(dateInterval)
           .build();
         break;
+      case FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.FLOW_NODE)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.DURATION)
+          .distributedBy(DistributedBy.NONE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .build();
+        break;
       case FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.FLOW_NODE)

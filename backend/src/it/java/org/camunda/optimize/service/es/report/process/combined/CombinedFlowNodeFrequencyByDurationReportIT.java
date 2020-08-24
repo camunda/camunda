@@ -7,18 +7,18 @@ package org.camunda.optimize.service.es.report.process.combined;
 
 import org.camunda.optimize.test.util.ProcessReportDataType;
 
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_DURATION;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION;
 
-public class CombinedProcessInstanceFrequencyByDurationReportIT extends AbstractCombinedDurationReportIT {
+public class CombinedFlowNodeFrequencyByDurationReportIT extends AbstractCombinedDurationReportIT {
 
   @Override
   protected void startInstanceAndModifyRelevantDurations(final String definitionId, final int durationInMs) {
-    startInstanceAndModifyDuration(definitionId, durationInMs);
+    startProcessInstanceAndModifyActivityDuration(definitionId, durationInMs);
   }
 
   @Override
   protected ProcessReportDataType getReportDataType() {
-    return COUNT_PROC_INST_FREQ_GROUP_BY_DURATION;
+    return FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION;
   }
 
 }

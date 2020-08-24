@@ -155,7 +155,11 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition() {
-    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance(TEST_PROCESS, "anActivityId");
+    return deploySimpleServiceTaskProcessAndGetDefinition(TEST_PROCESS);
+  }
+
+  protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition(String key) {
+    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance(key, "anActivityId");
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
@@ -207,6 +211,12 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     final OffsetDateTime startDate = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime endDate = startDate.plus(durationInMilliseconds, ChronoUnit.MILLIS);
     engineDatabaseExtension.changeProcessInstanceStartAndEndDate(processInstanceDto.getId(), startDate, endDate);
+  }
+
+  protected void startProcessInstanceAndModifyActivityDuration(final String definitionId,
+                                                               final long activityDurationInMs) {
+    final ProcessInstanceEngineDto thirdProcessInstance = engineIntegrationExtension.startProcessInstance(definitionId);
+    engineDatabaseExtension.changeActivityDuration(thirdProcessInstance.getId(), activityDurationInMs);
   }
 
   protected ProcessReportDataDto createReportDataSortedDesc(final String definitionKey,

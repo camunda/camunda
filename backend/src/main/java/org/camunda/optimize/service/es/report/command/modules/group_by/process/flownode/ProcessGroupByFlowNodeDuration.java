@@ -3,17 +3,16 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.modules.group_by.process;
+package org.camunda.optimize.service.es.report.command.modules.group_by.process.flownode;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.DurationGroupByDto;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
-import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.es.report.command.service.DurationAggregationService;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
 import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
@@ -24,6 +23,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -33,21 +33,30 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
-@Component
 @RequiredArgsConstructor
+@Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByDuration extends GroupByPart<ProcessReportDataDto> {
-  private final DurationAggregationService durationAggregationService;
+public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
+
   private final MinMaxStatsService minMaxStatsService;
+  private final DurationAggregationService durationAggregationService;
 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final Script durationScript = getDurationScript();
+    final FlowNodeExecutionState flowNodeExecutionState = context.getReportConfiguration().getFlowNodeExecutionState();
+
     return durationAggregationService
-      .createLimitedGroupByScriptedDurationAggregation(searchSourceBuilder, context, distributedByPart, durationScript)
+      .createLimitedGroupByScriptedEventDurationAggregation(
+        searchSourceBuilder, context, distributedByPart, getDurationScript()
+      )
+      .map(durationAggregation -> createExecutionStateFilteredFlowNodeAggregation(
+        flowNodeExecutionState,
+        durationAggregation
+      ))
       .map(Collections::singletonList)
       .orElse(Collections.emptyList());
   }
@@ -56,18 +65,24 @@ public class ProcessGroupByDuration extends GroupByPart<ProcessReportDataDto> {
   public void addQueryResult(final CompositeCommandResult compositeCommandResult,
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
-    final List<GroupByResult> durationHistogramData = durationAggregationService.mapGroupByDurationResults(
-      response,
-      response.getAggregations(),
-      context,
-      distributedByPart
-    );
-
-    compositeCommandResult.setGroups(durationHistogramData);
     compositeCommandResult.setKeyIsOfNumericType(true);
-    compositeCommandResult.setIsComplete(FilterLimitedAggregationUtil.isResultComplete(
-      response.getAggregations(), response.getHits().getTotalHits().value
-    ));
+    compositeCommandResult.setIsComplete(false);
+    getExecutionStateFilteredFlowNodesAggregation(response)
+      .ifPresent(filteredFlowNodes -> {
+        final List<CompositeCommandResult.GroupByResult> durationHistogramData =
+          durationAggregationService.mapGroupByDurationResults(
+            response,
+            filteredFlowNodes.getAggregations(),
+            context,
+            distributedByPart
+          );
+
+        compositeCommandResult.setGroups(durationHistogramData);
+        compositeCommandResult.setIsComplete(FilterLimitedAggregationUtil.isResultComplete(
+          filteredFlowNodes.getAggregations(),
+          getFlowNodesAggregation(response).map(SingleBucketAggregation::getDocCount).orElse(0L)
+        ));
+      });
   }
 
   @Override
@@ -82,14 +97,16 @@ public class ProcessGroupByDuration extends GroupByPart<ProcessReportDataDto> {
   }
 
   private MinMaxStatDto retrieveMinMaxDurationStats(final QueryBuilder baseQuery) {
-    return minMaxStatsService.getScriptedMinMaxStats(baseQuery, PROCESS_INSTANCE_INDEX_NAME, null, getDurationScript());
+    return minMaxStatsService.getScriptedMinMaxStats(
+      baseQuery, PROCESS_INSTANCE_INDEX_NAME, EVENTS, getDurationScript()
+    );
   }
 
   private Script getDurationScript() {
     return ExecutionStateAggregationUtil.getDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      ProcessInstanceIndex.DURATION,
-      ProcessInstanceIndex.START_DATE
+      EVENTS + "." + ProcessInstanceIndex.ACTIVITY_DURATION,
+      EVENTS + "." + ProcessInstanceIndex.ACTIVITY_START_DATE
     );
   }
 

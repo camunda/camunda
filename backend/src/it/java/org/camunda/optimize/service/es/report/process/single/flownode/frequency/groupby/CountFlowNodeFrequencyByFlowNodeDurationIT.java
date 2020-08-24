@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.processinstance.frequency;
+package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby;
 
 import com.google.common.collect.ImmutableList;
 import org.assertj.core.groups.Tuple;
@@ -44,16 +44,17 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_DURATION;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
-public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends AbstractProcessDefinitionIT {
+public class CountFlowNodeFrequencyByFlowNodeDurationIT extends AbstractProcessDefinitionIT {
 
   @Test
   public void simpleReportEvaluation() {
     // given
+    final int durationInMilliseconds = 1000;
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(processInstanceDto, 1000);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), durationInMilliseconds);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -68,7 +69,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
-    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
 
@@ -77,15 +78,16 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     assertThat(result.getData())
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactly(Tuple.tuple(createDurationBucketKey(1000), 1.0D));
+      // process has three flow nodes
+      .containsExactly(Tuple.tuple(createDurationBucketKey(durationInMilliseconds), 3.0D));
   }
 
   @Test
   public void simpleReportEvaluationById() {
     // given
-    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     final int durationInMilliseconds = 1000;
-    changeProcessInstanceDuration(processInstanceDto, durationInMilliseconds);
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), durationInMilliseconds);
     importAllEngineEntitiesFromScratch();
 
     final String reportId = createAndStoreDefaultReportDefinition(
@@ -101,7 +103,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
-    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.FLOW_NODE);
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.DURATION);
 
@@ -110,28 +112,29 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     assertThat(result.getData())
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactly(Tuple.tuple(createDurationBucketKey(durationInMilliseconds), 1.0D));
+      // process has three flow nodes
+      .containsExactly(Tuple.tuple(createDurationBucketKey(durationInMilliseconds), 3.0D));
   }
 
   @Test
   public void simpleReportEvaluation_noData() {
     // given
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(processInstanceDto, 1000);
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), 1000);
     importAllEngineEntitiesFromScratch();
 
     // when
     final ProcessReportDataDto reportData = createReport(
       processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
     );
-    final List<ProcessFilterDto<?>> durationFilter = ProcessFilterBuilder.filter()
+    final List<ProcessFilterDto<?>> filterYieldingNoResults = ProcessFilterBuilder.filter()
       .duration()
       .operator(GREATER_THAN_EQUALS)
       .unit(DurationFilterUnit.HOURS)
       .value(1L)
       .add()
       .buildList();
-    reportData.setFilter(durationFilter);
+    reportData.setFilter(filterYieldingNoResults);
     final AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
@@ -144,9 +147,9 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   @Test
   public void otherProcessDefinitionsDoNoAffectResult() {
     // given
-    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     final int durationInMilliseconds = 1000;
-    changeProcessInstanceDuration(processInstanceDto, durationInMilliseconds);
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), durationInMilliseconds);
     // create and start another process
     deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
@@ -164,7 +167,8 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     assertThat(result.getData())
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
-      .containsExactly(Tuple.tuple(createDurationBucketKey(durationInMilliseconds), 1.0D));
+      // process has three flow nodes
+      .containsExactly(Tuple.tuple(createDurationBucketKey(durationInMilliseconds), 3.0D));
   }
 
   @Test
@@ -191,9 +195,10 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   @Test
   public void multipleProcessInstances() {
     // given
+    final int durationInMilliseconds = 1000;
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, 1000);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1000);
+    engineDatabaseExtension.changeActivityDuration(firstProcessInstance.getId(), durationInMilliseconds);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), durationInMilliseconds);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -210,21 +215,27 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
       .hasSize(1)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .contains(
-        Tuple.tuple(createDurationBucketKey(1000), 2.0D)
+        // 3 activity instances for each process instance
+        Tuple.tuple(createDurationBucketKey(durationInMilliseconds), 6.0D)
       );
   }
 
   @Test
   public void multipleProcessInstances_runningInstanceDurationIsCalculated() {
     // given
+    final int completedActivityInstanceDurations = 1000;
     final OffsetDateTime startTime = DateCreationFreezer.dateFreezer(OffsetDateTime.now()).freezeDateAndReturn();
     final ProcessInstanceEngineDto completedProcessInstance = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.completeUserTaskWithoutClaim(completedProcessInstance.getId());
-    changeProcessInstanceDuration(completedProcessInstance, 1000);
+    engineDatabaseExtension.changeActivityDuration(
+      completedProcessInstance.getId(),
+      completedActivityInstanceDurations
+    );
 
     final ProcessInstanceEngineDto runningProcessInstance = engineIntegrationExtension
       .startProcessInstance(completedProcessInstance.getDefinitionId());
-    engineDatabaseExtension.changeProcessInstanceStartDate(runningProcessInstance.getId(), startTime);
+    engineDatabaseExtension.changeActivityDuration(runningProcessInstance.getId(), completedActivityInstanceDurations);
+    engineDatabaseExtension.changeActivityInstanceStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -238,13 +249,14 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getIsComplete()).isTrue();
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
     assertThat(resultDto.getData())
       // we expect buckets from 1000ms (finished instance) to 5000ms (running instance in relation to currentTime)
       // in intervals of 100ms (interval us rounded up to nearest power of 10)
       .hasSize(41)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .contains(
-        Tuple.tuple(createDurationBucketKey(1000), 1.0D),
+        Tuple.tuple(createDurationBucketKey(completedActivityInstanceDurations), 4.0D),
         Tuple.tuple(createDurationBucketKey((int) Duration.between(startTime, currentTime).toMillis()), 1.0D)
       );
   }
@@ -253,10 +265,8 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   public void multipleBuckets_singleValueBucket() {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, 1000);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1002);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1070);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1079);
+    engineDatabaseExtension.changeActivityDuration(firstProcessInstance.getId(), 1000);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 1079);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -276,10 +286,8 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
       .isSortedAccordingTo(Comparator.comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey())))
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .contains(
-        Tuple.tuple(createDurationBucketKey(1000), 1.0D),
-        Tuple.tuple(createDurationBucketKey(1002), 1.0D),
-        Tuple.tuple(createDurationBucketKey(1070), 1.0D),
-        Tuple.tuple(createDurationBucketKey(1079), 1.0D)
+        Tuple.tuple(createDurationBucketKey(1000), 3.0D),
+        Tuple.tuple(createDurationBucketKey(1079), 3.0D)
       );
   }
 
@@ -287,8 +295,8 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   public void multipleBuckets_automaticRangeBucketsBaseOf10Start() {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, 1401);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 2004);
+    engineDatabaseExtension.changeActivityDuration(firstProcessInstance.getId(), 1401);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 2004);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -309,8 +317,8 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
       .isSortedAccordingTo(Comparator.comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey())))
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .contains(
-        Tuple.tuple(createDurationBucketKey(1400), 1.0D),
-        Tuple.tuple(createDurationBucketKey(2000), 1.0D)
+        Tuple.tuple(createDurationBucketKey(1400), 3.0D),
+        Tuple.tuple(createDurationBucketKey(2000), 3.0D)
       );
   }
 
@@ -318,9 +326,9 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   public void multipleBuckets_customBuckets() {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, 100);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 200);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 300);
+    engineDatabaseExtension.changeActivityDuration(firstProcessInstance.getId(), 100);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 200);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 300);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -345,9 +353,9 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
       .hasSize(3)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .contains(
-        Tuple.tuple(createDurationBucketKey(10), 1.0D),
-        Tuple.tuple(createDurationBucketKey(110), 1.0D),
-        Tuple.tuple(createDurationBucketKey(210), 1.0D)
+        Tuple.tuple(createDurationBucketKey(10), 3.0D),
+        Tuple.tuple(createDurationBucketKey(110), 3.0D),
+        Tuple.tuple(createDurationBucketKey(210), 3.0D)
       );
   }
 
@@ -370,9 +378,13 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
                                                              final Duration baseDuration) {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, baseDuration.toMillis());
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), baseDuration.multipliedBy(2).toMillis());
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), baseDuration.multipliedBy(3).toMillis());
+    engineDatabaseExtension.changeActivityDuration(firstProcessInstance.getId(), baseDuration.toMillis());
+    startProcessInstanceAndModifyActivityDuration(
+      firstProcessInstance.getDefinitionId(), baseDuration.multipliedBy(2).toMillis()
+    );
+    startProcessInstanceAndModifyActivityDuration(
+      firstProcessInstance.getDefinitionId(), baseDuration.multipliedBy(3).toMillis()
+    );
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -409,9 +421,9 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   public void multipleBuckets_customBuckets_baseLine_biggerThanMax_returnsEmptyResult() {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, 100);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 200);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 300);
+    engineDatabaseExtension.changeActivityDuration(firstProcessInstance.getId(), 100);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 200);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 300);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -438,9 +450,9 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   public void multipleBuckets_customBuckets_tooManyBuckets_returnsLimitedResult() {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, 1);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 2000);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 3000);
+    engineDatabaseExtension.changeActivityDuration(firstProcessInstance.getId(), 1);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 2000);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 3000);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -465,7 +477,7 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
       .hasSize(1000)
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .contains(
-        Tuple.tuple(createDurationBucketKey(1), 1.0D)
+        Tuple.tuple(createDurationBucketKey(1), 3.0D)
       );
   }
 
@@ -473,11 +485,11 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   public void multipleBuckets_defaultSorting() {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, 900);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1000);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1000);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1100);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 2000);
+    engineDatabaseExtension.changeActivityDuration(firstProcessInstance.getId(), 900);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 1000);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 1000);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 1100);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 2000);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -495,10 +507,10 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
       .isSortedAccordingTo(Comparator.comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey())))
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .contains(
-        Tuple.tuple(createDurationBucketKey(900), 1.0D),
-        Tuple.tuple(createDurationBucketKey(1000), 2.0D),
-        Tuple.tuple(createDurationBucketKey(1100), 1.0D),
-        Tuple.tuple(createDurationBucketKey(2000), 1.0D)
+        Tuple.tuple(createDurationBucketKey(900), 3.0D),
+        Tuple.tuple(createDurationBucketKey(1000), 6.0D),
+        Tuple.tuple(createDurationBucketKey(1100), 3.0D),
+        Tuple.tuple(createDurationBucketKey(2000), 3.0D)
       );
   }
 
@@ -506,8 +518,8 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   public void multipleBuckets_customKeySorting() {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, 10);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 11);
+    engineDatabaseExtension.changeActivityDuration(firstProcessInstance.getId(), 10);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 11);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -529,8 +541,8 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
       )
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsSequence(
-        Tuple.tuple(createDurationBucketKey(11), 1.0D),
-        Tuple.tuple(createDurationBucketKey(10), 1.0D)
+        Tuple.tuple(createDurationBucketKey(11), 3.0D),
+        Tuple.tuple(createDurationBucketKey(10), 3.0D)
       );
   }
 
@@ -538,9 +550,9 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   public void multipleBuckets_valueSorting() {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, 10);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 10);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 11);
+    engineDatabaseExtension.changeActivityDuration(firstProcessInstance.getId(), 10);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 10);
+    startProcessInstanceAndModifyActivityDuration(firstProcessInstance.getDefinitionId(), 11);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -559,13 +571,9 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
       .isSortedAccordingTo(Comparator.comparing(MapResultEntryDto::getValue).reversed())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsSequence(
-        Tuple.tuple(createDurationBucketKey(10), 2.0D),
-        Tuple.tuple(createDurationBucketKey(11), 1.0D)
+        Tuple.tuple(createDurationBucketKey(10), 6.0D),
+        Tuple.tuple(createDurationBucketKey(11), 3.0D)
       );
-  }
-
-  private String createDurationBucketKey(final long durationInMs) {
-    return Double.valueOf(durationInMs).toString();
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
@@ -579,8 +587,11 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
       .createReportData()
       .setProcessDefinitionKey(processKey)
       .setProcessDefinitionVersion(definitionVersion)
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
+      .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION)
       .build();
   }
 
+  private String createDurationBucketKey(final long durationInMs) {
+    return Double.valueOf(durationInMs).toString();
+  }
 }
