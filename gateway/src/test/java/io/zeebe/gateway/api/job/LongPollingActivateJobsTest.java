@@ -19,7 +19,6 @@ import static org.mockito.Mockito.verify;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import io.zeebe.gateway.EndpointManager;
 import io.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
@@ -456,8 +455,7 @@ public final class LongPollingActivateJobsTest {
     verify(request.getResponseObserver(), never()).onCompleted();
 
     final StatusRuntimeException statusRuntimeException =
-        EndpointManager.convertThrowable(throwableCaptor.getValue());
-
+        (StatusRuntimeException) throwableCaptor.getValue();
     assertThat(statusRuntimeException.getStatus().getCode()).isEqualTo(Code.RESOURCE_EXHAUSTED);
   }
 
