@@ -219,7 +219,7 @@ public class SingleBrokerDataDeletionTest {
   }
 
   public static class ControllableExporter implements Exporter {
-    static final List<Record> NOT_EXPORTED_RECORDS = new CopyOnWriteArrayList<>();
+    static final List<Record<?>> NOT_EXPORTED_RECORDS = new CopyOnWriteArrayList<>();
     static volatile boolean shouldExport = true;
 
     static final AtomicLong EXPORTED_RECORDS = new AtomicLong(0);
@@ -236,7 +236,7 @@ public class SingleBrokerDataDeletionTest {
     }
 
     @Override
-    public void export(final Record record) {
+    public void export(final Record<?> record) {
       if (shouldExport) {
         controller.updateLastExportedRecordPosition(record.getPosition());
       } else {

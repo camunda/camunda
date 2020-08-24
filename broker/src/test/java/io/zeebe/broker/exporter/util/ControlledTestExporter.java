@@ -16,13 +16,13 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class ControlledTestExporter implements Exporter {
-  private final List<Record> exportedRecords = new ArrayList<>();
+  private final List<Record<?>> exportedRecords = new ArrayList<>();
 
   private boolean shouldAutoUpdatePosition;
   private Consumer<Context> onConfigure;
   private Consumer<Controller> onOpen;
   private Runnable onClose;
-  private Consumer<Record> onExport;
+  private Consumer<Record<?>> onExport;
 
   private Context context;
   private Controller controller;
@@ -47,7 +47,7 @@ public class ControlledTestExporter implements Exporter {
     return this;
   }
 
-  public ControlledTestExporter onExport(final Consumer<Record> callback) {
+  public ControlledTestExporter onExport(final Consumer<Record<?>> callback) {
     onExport = callback;
     return this;
   }
@@ -68,7 +68,7 @@ public class ControlledTestExporter implements Exporter {
     this.controller = controller;
   }
 
-  public List<Record> getExportedRecords() {
+  public List<Record<?>> getExportedRecords() {
     return exportedRecords;
   }
 
@@ -98,8 +98,8 @@ public class ControlledTestExporter implements Exporter {
   }
 
   @Override
-  public void export(final Record record) {
-    final Record copiedRecord = record.clone();
+  public void export(final Record<?> record) {
+    final Record<?> copiedRecord = record.clone();
     if (onExport != null) {
       onExport.accept(copiedRecord);
     }

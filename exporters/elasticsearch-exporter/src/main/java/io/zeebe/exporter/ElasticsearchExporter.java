@@ -75,7 +75,7 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   @Override
-  public void export(final Record record) {
+  public void export(final Record<?> record) {
     if (!indexTemplatesCreated) {
       createIndexTemplates();
     }
@@ -188,7 +188,7 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
-  private class ElasticsearchRecordFilter implements Context.RecordFilter {
+  private static class ElasticsearchRecordFilter implements Context.RecordFilter {
 
     private final ElasticsearchExporterConfiguration configuration;
 
