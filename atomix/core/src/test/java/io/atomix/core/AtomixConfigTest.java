@@ -87,11 +87,6 @@ public class AtomixConfigTest {
     assertEquals("0.0.0.0", messaging.getInterfaces().get(1));
     assertEquals(5000, messaging.getPort().intValue());
     assertEquals(Duration.ofSeconds(10), messaging.getConnectTimeout());
-    assertTrue(messaging.getTlsConfig().isEnabled());
-    assertEquals("keystore.jks", messaging.getTlsConfig().getKeyStore());
-    assertEquals("foo", messaging.getTlsConfig().getKeyStorePassword());
-    assertEquals("truststore.jks", messaging.getTlsConfig().getTrustStore());
-    assertEquals("bar", messaging.getTlsConfig().getTrustStorePassword());
 
     final RaftPartitionGroupConfig groupOne =
         (RaftPartitionGroupConfig) config.getPartitionGroups().get("one");
