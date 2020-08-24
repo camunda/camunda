@@ -19,6 +19,8 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.configuration.CombinedReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
@@ -252,8 +254,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
 
     groupByNumberVar1Data.setVisualization(ProcessVisualization.BAR);
-    groupByNumberVar1Data.getConfiguration().getCustomNumberBucket().setActive(true);
-    groupByNumberVar1Data.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    groupByNumberVar1Data.getConfiguration().getCustomBucket().setActive(true);
+    groupByNumberVar1Data.getConfiguration().getCustomBucket().setBucketSize(5.0);
     ((VariableGroupByValueDto) groupByNumberVar1Data.getGroupBy().getValue()).setName("doubleVar");
     groupByNumberVar1.setData(groupByNumberVar1Data);
 
@@ -268,8 +270,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
 
     groupByNumberVar2Data.setVisualization(ProcessVisualization.BAR);
-    groupByNumberVar2Data.getConfiguration().getCustomNumberBucket().setActive(true);
-    groupByNumberVar2Data.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    groupByNumberVar2Data.getConfiguration().getCustomBucket().setActive(true);
+    groupByNumberVar2Data.getConfiguration().getCustomBucket().setBucketSize(5.0);
     ((VariableGroupByValueDto) groupByNumberVar2Data.getGroupBy().getValue()).setName("doubleVar");
     groupByNumberVar2.setData(groupByNumberVar2Data);
 
@@ -294,12 +296,52 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
     groupByDurationAnotherKey.setData(groupByDurationDataAnotherKey);
 
+    // groupByDuration with same bucketSize
+    final SingleProcessReportDefinitionDto groupByDurationBucketSize = new SingleProcessReportDefinitionDto();
+    final ProcessReportDataDto groupByDurationDataBucketSize = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setVisualization(ProcessVisualization.BAR)
+      .build();
+    groupByDurationDataBucketSize.getConfiguration().setCustomBucket(
+      CustomBucketDto.builder()
+        .active(true)
+        .baseline(10.0D)
+        .baselineUnit(BucketUnit.MILLISECOND)
+        .bucketSize(100.0D)
+        .bucketSizeUnit(BucketUnit.MILLISECOND)
+        .build()
+    );
+    groupByDurationBucketSize.setData(groupByDurationDataBucketSize);
+
+    final SingleProcessReportDefinitionDto groupByDurationBucketSizeAnotherKey = new SingleProcessReportDefinitionDto();
+    final ProcessReportDataDto groupByDurationDataBucketSizeAnotherKey = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
+      .setProcessDefinitionKey("anotherKey")
+      .setProcessDefinitionVersion("1")
+      .setVisualization(ProcessVisualization.BAR)
+      .build();
+    groupByDurationDataBucketSizeAnotherKey.getConfiguration().setCustomBucket(
+      CustomBucketDto.builder()
+        .active(true)
+        .baseline(10.0D)
+        .baselineUnit(BucketUnit.MILLISECOND)
+        .bucketSize(100.0D)
+        .bucketSizeUnit(BucketUnit.MILLISECOND)
+        .build()
+    );
+    groupByDurationBucketSizeAnotherKey.setData(groupByDurationDataBucketSizeAnotherKey);
+
     return Stream.of(
       Arrays.asList(procDefKeyReport, procDefAnotherKeyReport),
       Arrays.asList(byEndDate, procDefKeyReport),
       Arrays.asList(userTaskDuration, flowNodeDuration),
       Arrays.asList(groupByNumberVar1, groupByNumberVar2),
-      Arrays.asList(groupByDuration, groupByDurationAnotherKey)
+      Arrays.asList(groupByDuration, groupByDurationAnotherKey),
+      Arrays.asList(groupByDurationBucketSize, groupByDurationBucketSizeAnotherKey)
     );
   }
 
@@ -368,8 +410,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
 
     groupByNumberVar1Data.setVisualization(ProcessVisualization.BAR);
-    groupByNumberVar1Data.getConfiguration().getCustomNumberBucket().setActive(true);
-    groupByNumberVar1Data.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    groupByNumberVar1Data.getConfiguration().getCustomBucket().setActive(true);
+    groupByNumberVar1Data.getConfiguration().getCustomBucket().setBucketSize(5.0);
     ((VariableGroupByValueDto) groupByNumberVar1Data.getGroupBy().getValue()).setName("doubleVar");
     groupByNumberVar1.setData(groupByNumberVar1Data);
 
@@ -384,16 +426,56 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
 
     groupByNumberVar2Data.setVisualization(ProcessVisualization.BAR);
-    groupByNumberVar1Data.getConfiguration().getCustomNumberBucket().setActive(true);
-    groupByNumberVar2Data.getConfiguration().getCustomNumberBucket().setBucketSize(10.0);
+    groupByNumberVar1Data.getConfiguration().getCustomBucket().setActive(true);
+    groupByNumberVar2Data.getConfiguration().getCustomBucket().setBucketSize(10.0);
     ((VariableGroupByValueDto) groupByNumberVar2Data.getGroupBy().getValue()).setName("doubleVar");
     groupByNumberVar2.setData(groupByNumberVar2Data);
+
+    // groupByDuration with different bucket size
+    final SingleProcessReportDefinitionDto groupByDuration = new SingleProcessReportDefinitionDto();
+    final ProcessReportDataDto groupByDurationData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setVisualization(ProcessVisualization.BAR)
+      .build();
+    groupByDurationData.getConfiguration().setCustomBucket(
+      CustomBucketDto.builder()
+        .active(true)
+        .baseline(10.0D)
+        .baselineUnit(BucketUnit.MILLISECOND)
+        .bucketSize(100.0D)
+        .bucketSizeUnit(BucketUnit.MILLISECOND)
+        .build()
+    );
+    groupByDuration.setData(groupByDurationData);
+
+    final SingleProcessReportDefinitionDto groupByDurationAnotherKey = new SingleProcessReportDefinitionDto();
+    final ProcessReportDataDto groupByDurationDataAnotherKey = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
+      .setProcessDefinitionKey("anotherKey")
+      .setProcessDefinitionVersion("1")
+      .setVisualization(ProcessVisualization.BAR)
+      .build();
+    groupByDurationDataAnotherKey.getConfiguration().setCustomBucket(
+      CustomBucketDto.builder()
+        .active(true)
+        .baseline(10.0D)
+        .baselineUnit(BucketUnit.MILLISECOND)
+        .bucketSize(1000.0D)
+        .bucketSizeUnit(BucketUnit.MILLISECOND)
+        .build()
+    );
+    groupByDurationAnotherKey.setData(groupByDurationDataAnotherKey);
 
     return Stream.of(
       Arrays.asList(pICount_startDateYear_bar, pICount_startDateYear_line),
       Arrays.asList(pICount_byVariable_bar, pICount_startDateYear_bar),
       Arrays.asList(pICount_startDateYear_bar, pIDuration_startDateYear_bar),
-      Arrays.asList(groupByNumberVar1, groupByNumberVar2)
+      Arrays.asList(groupByNumberVar1, groupByNumberVar2),
+      Arrays.asList(groupByDuration, groupByDurationAnotherKey)
     );
   }
 

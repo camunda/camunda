@@ -210,7 +210,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessInstanceEngineDto startInstanceAndModifyDuration(final String definitionId,
-                                                                    final int durationInMilliseconds) {
+                                                                    final long durationInMilliseconds) {
     final ProcessInstanceEngineDto processInstance = engineIntegrationExtension
       .startProcessInstance(definitionId);
     changeProcessInstanceDuration(processInstance, durationInMilliseconds);
@@ -218,7 +218,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected void changeProcessInstanceDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                               final int durationInMilliseconds) {
+                                               final long durationInMilliseconds) {
     final OffsetDateTime startDate = LocalDateUtil.getCurrentDateTime();
     final OffsetDateTime endDate = startDate.plus(durationInMilliseconds, ChronoUnit.MILLIS);
     engineDatabaseExtension.changeProcessInstanceStartAndEndDate(processInstanceDto.getId(), startDate, endDate);

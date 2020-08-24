@@ -49,7 +49,7 @@ public class FilterLimitedAggregationUtil {
   }
 
   public static boolean isResultComplete(final SearchResponse response) {
-    boolean complete = true;
+    boolean complete = response.getHits().getTotalHits().value == 0L;
     final Aggregations aggregations = response.getAggregations();
     if (aggregations != null
       && aggregations.getAsMap().containsKey(FILTER_LIMITED_AGGREGATION)) {

@@ -24,9 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_DURATION;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
 public class CombinedProcessInstanceFrequencyByDurationReportIT extends AbstractProcessDefinitionIT {
 
@@ -59,7 +57,7 @@ public class CombinedProcessInstanceFrequencyByDurationReportIT extends Abstract
       .hasSize(2)
       .allSatisfy(singleReportResult -> {
         assertThat(singleReportResult.getResult().getData())
-          .hasSize(calculateExpectedBucketCount(1000, 10_000))
+          .hasSize(10)
           .extracting(MapResultEntryDto::getKey)
           .first().isEqualTo(createDurationBucketKey(1000));
         assertThat(singleReportResult.getResult().getData())
@@ -97,10 +95,10 @@ public class CombinedProcessInstanceFrequencyByDurationReportIT extends Abstract
       .hasSize(2)
       .allSatisfy(singleReportResult -> {
         assertThat(singleReportResult.getResult().getData())
-          // expecting the range to be from 5000ms to 10000ms as these are the global min/max values
-          .hasSize(calculateExpectedBucketCount(5000, 10_000))
+          // expecting the range to be from 1000ms (nearest lower base 10 to min value) to 10000ms (max value)
+          .hasSize(10)
           .extracting(MapResultEntryDto::getKey)
-          .first().isEqualTo(createDurationBucketKey(5000));
+          .first().isEqualTo(createDurationBucketKey(1000));
         assertThat(singleReportResult.getResult().getData())
           .extracting(MapResultEntryDto::getKey)
           .last().isEqualTo(createDurationBucketKey(10_000));
@@ -136,24 +134,14 @@ public class CombinedProcessInstanceFrequencyByDurationReportIT extends Abstract
       .hasSize(2)
       .allSatisfy(singleReportResult -> {
         assertThat(singleReportResult.getResult().getData())
-          // expecting the range to be from 50_000ms to 100_000ms as these are the global min/max values
-          .hasSize(calculateExpectedBucketCount(50_000, 100_000))
+          // expecting the range to be from 10_000ms (nearest lower base 10 to minimum) to 100_000ms (max value)
+          .hasSize(10)
           .extracting(MapResultEntryDto::getKey)
-          .first().isEqualTo(createDurationBucketKey(50__000));
+          .first().isEqualTo(createDurationBucketKey(10_000));
         assertThat(singleReportResult.getResult().getData())
           .extracting(MapResultEntryDto::getKey)
           .last().isEqualTo(createDurationBucketKey(100_000));
       });
-  }
-
-  private int calculateExpectedBucketCount(final int globalMinimumDuration, final int globalMaximumDuration) {
-    final int distance = globalMaximumDuration - globalMinimumDuration;
-    // this reflects the expected behavior in the ProcessGroupByDuration command to slice the buckets
-    final int expectedBucketInterval = roundUpToNearestPowerOfTen(
-      Math.ceil((double) distance / NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION)
-    ).intValue();
-    // + 1 as the min/max is inclusive
-    return 1 + distance / expectedBucketInterval;
   }
 
   private CombinedReportDefinitionDto createCombinedReport(final String firstReportDefinitionKey,

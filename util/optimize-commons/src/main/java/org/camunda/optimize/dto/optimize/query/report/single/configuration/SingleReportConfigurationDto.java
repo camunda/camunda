@@ -15,7 +15,7 @@ import lombok.NonNull;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomNumberBucketDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
@@ -86,7 +86,7 @@ public class SingleReportConfigurationDto implements Combinable {
   @NonNull
   private GroupByDateUnit groupByDateVariableUnit = GroupByDateUnit.AUTOMATIC;
   @Builder.Default
-  private CustomNumberBucketDto customNumberBucket = new CustomNumberBucketDto();
+  private CustomBucketDto customBucket = CustomBucketDto.builder().build();
   @Builder.Default
   private ReportSortingDto sorting = null;
   @Builder.Default
@@ -127,15 +127,21 @@ public class SingleReportConfigurationDto implements Combinable {
     return Optional.ofNullable(processPart);
   }
 
-  public Optional<Double> getBaselineForNumberVariableReport() {
-    return customNumberBucket.isActive()
-      ? Optional.ofNullable(customNumberBucket.getBaseline())
+  // Just here for backwards-compatibility, to be removed with OPT-4149
+  @Deprecated
+  public CustomBucketDto getCustomNumberBucket() {
+    return customBucket;
+  }
+
+  @Deprecated
+  public void setCustomNumberBucket(final CustomBucketDto customBucketDto) {
+    this.customBucket = customBucketDto;
+  }
+
+  public Optional<Double> getGroupByBaseline() {
+    return customBucket.isActive()
+      ? Optional.ofNullable(customBucket.getBaseline())
       : Optional.empty();
   }
 
-  public Optional<Double> getBucketSizeForNumberVariableReport() {
-    return customNumberBucket.isActive()
-      ? Optional.ofNullable(customNumberBucket.getBucketSize())
-      : Optional.empty();
-  }
 }

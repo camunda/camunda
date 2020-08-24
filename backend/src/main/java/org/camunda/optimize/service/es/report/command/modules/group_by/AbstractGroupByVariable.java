@@ -300,7 +300,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     final Optional<MinMaxStatDto> contextMinMaxStats = context.getCombinedRangeMinMaxStats();
     final Optional<Double> baselineForSingleReport = context.getReportData()
       .getConfiguration()
-      .getBaselineForNumberVariableReport();
+      .getGroupByBaseline();
 
     if (!contextMinMaxStats.isPresent() && baselineForSingleReport.isPresent()) {
       if (baselineForSingleReport.get() > minMaxStats.getMax()) {
@@ -318,8 +318,8 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
                                               final Double baseline,
                                               final MinMaxStatDto minMaxStats) {
     final double maxVariableValue = context.getCombinedRangeMinMaxStats().orElse(minMaxStats).getMax();
-    final boolean customBucketsActive = context.getReportData().getConfiguration().getCustomNumberBucket().isActive();
-    Double unit = context.getReportData().getConfiguration().getCustomNumberBucket().getBucketSize();
+    final boolean customBucketsActive = context.getReportData().getConfiguration().getCustomBucket().isActive();
+    Double unit = context.getReportData().getConfiguration().getCustomBucket().getBucketSize();
     if (!customBucketsActive || unit == null || unit <= 0) {
       // if no valid unit is configured, calculate default automatic unit
       unit =

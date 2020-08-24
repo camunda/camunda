@@ -5,7 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.frequency;
 
+import com.google.common.collect.ImmutableList;
 import org.assertj.core.groups.Tuple;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -23,11 +26,17 @@ import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionI
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -241,13 +250,13 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   }
 
   @Test
-  public void multipleBuckets_eachValueABucket() {
+  public void multipleBuckets_singleValueBucket() {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, 1001);
+    changeProcessInstanceDuration(firstProcessInstance, 1000);
     startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1002);
     startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1070);
-    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1080);
+    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1079);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -267,15 +276,15 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
       .isSortedAccordingTo(Comparator.comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey())))
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .contains(
-        Tuple.tuple(createDurationBucketKey(1001), 1.0D),
+        Tuple.tuple(createDurationBucketKey(1000), 1.0D),
         Tuple.tuple(createDurationBucketKey(1002), 1.0D),
         Tuple.tuple(createDurationBucketKey(1070), 1.0D),
-        Tuple.tuple(createDurationBucketKey(1080), 1.0D)
+        Tuple.tuple(createDurationBucketKey(1079), 1.0D)
       );
   }
 
   @Test
-  public void multipleBuckets_baseOf10Bucketing() {
+  public void multipleBuckets_automaticRangeBucketsBaseOf10Start() {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
     changeProcessInstanceDuration(firstProcessInstance, 1401);
@@ -294,9 +303,9 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
       .isNotNull()
-      // buckets from 1400ms to 2000ms (start and end inclusive)
-      // in intervals of 10ms (nearest power of 10 interval for this range)
-      .hasSize(61)
+      // buckets from 1000ms (nearest lower power of 10 to min value) to 2000ms (start and end inclusive)
+      // in intervals of 100ms (nearest power of 10 interval for this range)
+      .hasSize(11)
       .isSortedAccordingTo(Comparator.comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey())))
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .contains(
@@ -306,10 +315,166 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
   }
 
   @Test
+  public void multipleBuckets_customBuckets() {
+    // given
+    final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
+    changeProcessInstanceDuration(firstProcessInstance, 100);
+    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 200);
+    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 300);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(
+      firstProcessInstance.getProcessDefinitionKey(), firstProcessInstance.getProcessDefinitionVersion()
+    );
+    reportData.getConfiguration().setCustomBucket(
+      CustomBucketDto.builder()
+        .active(true)
+        .baseline(10.0D)
+        .bucketSize(100.0D)
+        .build()
+    );
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getIsComplete()).isTrue();
+    assertThat(resultDto.getData())
+      .isNotNull()
+      .hasSize(3)
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .contains(
+        Tuple.tuple(createDurationBucketKey(10), 1.0D),
+        Tuple.tuple(createDurationBucketKey(110), 1.0D),
+        Tuple.tuple(createDurationBucketKey(210), 1.0D)
+      );
+  }
+
+
+  private static Stream<Arguments> getCustomBucketUnitScenarios() {
+    return Stream.of(
+      Arguments.of(BucketUnit.MILLISECOND, Duration.ofMillis(1)),
+      Arguments.of(BucketUnit.SECOND, Duration.ofSeconds(1)),
+      Arguments.of(BucketUnit.MINUTE, Duration.ofMinutes(1)),
+      Arguments.of(BucketUnit.HOUR, Duration.ofHours(1)),
+      Arguments.of(BucketUnit.DAY, Duration.ofDays(1)),
+      Arguments.of(BucketUnit.WEEK, ChronoUnit.WEEKS.getDuration()),
+      Arguments.of(BucketUnit.MONTH, ChronoUnit.MONTHS.getDuration()),
+      Arguments.of(BucketUnit.YEAR, ChronoUnit.YEARS.getDuration())
+    );
+  }
+
+  @ParameterizedTest
+  @MethodSource("getCustomBucketUnitScenarios")
+  public void multipleBuckets_customBuckets_customBucketUnit(final BucketUnit unit,
+                                                             final Duration baseDuration) {
+    // given
+    final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
+    changeProcessInstanceDuration(firstProcessInstance, baseDuration.toMillis());
+    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), baseDuration.multipliedBy(2).toMillis());
+    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), baseDuration.multipliedBy(3).toMillis());
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(
+      firstProcessInstance.getProcessDefinitionKey(), firstProcessInstance.getProcessDefinitionVersion()
+    );
+    reportData.getConfiguration().setCustomBucket(
+      CustomBucketDto.builder()
+        .active(true)
+        .baseline(1.0D)
+        .baselineUnit(unit)
+        .bucketSize(1.0D)
+        .bucketSizeUnit(unit)
+        .build()
+    );
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getData())
+      .isNotNull()
+      .hasSize(3)
+      .extracting(MapResultEntryDto::getKey)
+      .containsExactlyElementsOf(
+        ImmutableList.of(1, 2, 3).stream()
+          .map(bucketInUnit -> baseDuration.multipliedBy(bucketInUnit).toMillis())
+          .map(this::createDurationBucketKey)
+          .collect(Collectors.toList())
+      );
+  }
+
+  @Test
+  public void multipleBuckets_customBuckets_baseLine_biggerThanMax_returnsEmptyResult() {
+    // given
+    final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
+    changeProcessInstanceDuration(firstProcessInstance, 100);
+    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 200);
+    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 300);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(
+      firstProcessInstance.getProcessDefinitionKey(), firstProcessInstance.getProcessDefinitionVersion()
+    );
+    reportData.getConfiguration().setCustomBucket(
+      CustomBucketDto.builder()
+        .active(true)
+        .baseline(1000.0D)
+        .bucketSize(100.0D)
+        .build()
+    );
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getIsComplete()).isFalse();
+    assertThat(resultDto.getData()).isNotNull().isEmpty();
+  }
+
+  @Test
+  public void multipleBuckets_customBuckets_tooManyBuckets_returnsLimitedResult() {
+    // given
+    final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
+    changeProcessInstanceDuration(firstProcessInstance, 1);
+    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 2000);
+    startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 3000);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(
+      firstProcessInstance.getProcessDefinitionKey(), firstProcessInstance.getProcessDefinitionVersion()
+    );
+    reportData.getConfiguration().setCustomBucket(
+      CustomBucketDto.builder()
+        .active(true)
+        .baseline(0.0D)
+        .bucketSize(1.0D)
+        .build()
+    );
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then
+    final ReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getIsComplete()).isFalse();
+    assertThat(resultDto.getData())
+      .isNotNull()
+      .hasSize(1000)
+      .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
+      .contains(
+        Tuple.tuple(createDurationBucketKey(1), 1.0D)
+      );
+  }
+
+  @Test
   public void multipleBuckets_defaultSorting() {
     // given
     final ProcessInstanceEngineDto firstProcessInstance = deployAndStartSimpleServiceTaskProcess();
-    changeProcessInstanceDuration(firstProcessInstance, 90);
+    changeProcessInstanceDuration(firstProcessInstance, 900);
     startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1000);
     startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1000);
     startInstanceAndModifyDuration(firstProcessInstance.getDefinitionId(), 1100);
@@ -327,12 +492,11 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData())
-      // buckets in 100 steps from 0 to 2k (start and end inclusive, thus 21)
-      .hasSize(21)
+      .hasSize(20)
       .isSortedAccordingTo(Comparator.comparing(byDurationEntry -> Double.valueOf(byDurationEntry.getKey())))
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .contains(
-        Tuple.tuple(createDurationBucketKey(0), 1.0D),
+        Tuple.tuple(createDurationBucketKey(900), 1.0D),
         Tuple.tuple(createDurationBucketKey(1000), 2.0D),
         Tuple.tuple(createDurationBucketKey(1100), 1.0D),
         Tuple.tuple(createDurationBucketKey(2000), 1.0D)
@@ -401,8 +565,8 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
       );
   }
 
-  private String createDurationBucketKey(final int durationInMs) {
-    return durationInMs + ".0";
+  private String createDurationBucketKey(final long durationInMs) {
+    return Double.valueOf(durationInMs).toString();
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
@@ -419,4 +583,5 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
       .build();
   }
+
 }

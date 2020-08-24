@@ -49,6 +49,8 @@ public class ReportConstants {
   public static final String DATE_UNIT_DAY = "day";
   public static final String DATE_UNIT_HOUR = "hour";
   public static final String DATE_UNIT_MINUTE = "minute";
+  public static final String DATE_UNIT_SECOND = "second";
+  public static final String DATE_UNIT_MILLISECOND = "millisecond";
   public static final String DATE_UNIT_AUTOMATIC = "automatic";
 
   // report configuration constants

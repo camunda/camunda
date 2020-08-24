@@ -24,8 +24,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
@@ -55,9 +55,9 @@ import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
@@ -514,9 +514,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    reportData.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData.getConfiguration().getCustomNumberBucket().setBaseline(10.0);
-    reportData.getConfiguration().getCustomNumberBucket().setBucketSize(100.0);
+    reportData.getConfiguration().getCustomBucket().setActive(true);
+    reportData.getConfiguration().getCustomBucket().setBaseline(10.0);
+    reportData.getConfiguration().getCustomBucket().setBucketSize(100.0);
 
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -558,9 +558,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    reportData.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData.getConfiguration().getCustomNumberBucket().setBaseline(30.0);
-    reportData.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    reportData.getConfiguration().getCustomBucket().setActive(true);
+    reportData.getConfiguration().getCustomBucket().setBaseline(30.0);
+    reportData.getConfiguration().getCustomBucket().setBucketSize(5.0);
 
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -600,9 +600,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    reportData1.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData1.getConfiguration().getCustomNumberBucket().setBaseline(5.0);
-    reportData1.getConfiguration().getCustomNumberBucket().setBucketSize(10.0);
+    reportData1.getConfiguration().getCustomBucket().setActive(true);
+    reportData1.getConfiguration().getCustomBucket().setBaseline(5.0);
+    reportData1.getConfiguration().getCustomBucket().setBucketSize(10.0);
 
 
     ProcessReportDataDto reportData2 = TemplatedProcessReportDataBuilder
@@ -615,9 +615,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    reportData2.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData2.getConfiguration().getCustomNumberBucket().setBaseline(10.0);
-    reportData2.getConfiguration().getCustomNumberBucket().setBucketSize(10.0);
+    reportData2.getConfiguration().getCustomBucket().setActive(true);
+    reportData2.getConfiguration().getCustomBucket().setBaseline(10.0);
+    reportData2.getConfiguration().getCustomBucket().setBucketSize(10.0);
 
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
@@ -676,9 +676,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    reportData1.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData1.getConfiguration().getCustomNumberBucket().setBaseline(5.0);
-    reportData1.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    reportData1.getConfiguration().getCustomBucket().setActive(true);
+    reportData1.getConfiguration().getCustomBucket().setBaseline(5.0);
+    reportData1.getConfiguration().getCustomBucket().setBucketSize(5.0);
 
 
     ProcessReportDataDto reportData2 = TemplatedProcessReportDataBuilder
@@ -691,9 +691,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    reportData2.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData2.getConfiguration().getCustomNumberBucket().setBaseline(10.0);
-    reportData2.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    reportData2.getConfiguration().getCustomBucket().setActive(true);
+    reportData2.getConfiguration().getCustomBucket().setBaseline(10.0);
+    reportData2.getConfiguration().getCustomBucket().setBucketSize(5.0);
 
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
@@ -752,9 +752,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    reportData1.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData1.getConfiguration().getCustomNumberBucket().setBaseline(5.0);
-    reportData1.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    reportData1.getConfiguration().getCustomBucket().setActive(true);
+    reportData1.getConfiguration().getCustomBucket().setBaseline(5.0);
+    reportData1.getConfiguration().getCustomBucket().setBucketSize(5.0);
 
 
     ProcessReportDataDto reportData2 = TemplatedProcessReportDataBuilder
@@ -767,9 +767,9 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    reportData2.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData2.getConfiguration().getCustomNumberBucket().setBaseline(10.0);
-    reportData2.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    reportData2.getConfiguration().getCustomBucket().setActive(true);
+    reportData2.getConfiguration().getCustomBucket().setBaseline(10.0);
+    reportData2.getConfiguration().getCustomBucket().setBucketSize(5.0);
 
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
