@@ -42,7 +42,7 @@ const TD = styled.td`
 
 const TR = styled.tr<TRProps>`
   ${({hasNoBorder, theme}) =>
-    !hasNoBorder && `border-bottom: 1px solid ${theme.colors.ui05}`}
+    !hasNoBorder && `border-bottom: 1px solid ${theme.colors.ui05}`};
 `;
 
 export {Table, RowTH, ColumnTH, TR, TD};

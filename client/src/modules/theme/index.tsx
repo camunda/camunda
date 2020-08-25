@@ -9,6 +9,7 @@ const palette = {
   green: '#10d070',
   red: '#ff3d3d',
   orange: '#ffa533',
+  white: '#ffffff',
   ui01: '#f2f3f5',
   ui02: '#f7f8fa',
   ui03: '#b0bac7',

@@ -14,6 +14,7 @@ const Form = styled.form<FormProps>`
   display: grid;
   grid-template-columns: 100%;
   grid-template-rows: ${({hasFooter}) => (hasFooter ? '1fr 62px' : '1fr')};
+  overflow-y: hidden;
 `;
 
 const Footer = styled.div`

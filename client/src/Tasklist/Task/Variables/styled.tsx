@@ -10,12 +10,22 @@ import {ReactComponent as PlusIcon} from 'modules/icons/plus.svg';
 import BasicTextareaAutosize from 'react-textarea-autosize';
 import {Button} from 'modules/components/Button';
 import {IconButton as BaseIconButton} from 'modules/components/IconButton';
-import {RowTH as BaseRowTH} from 'modules/components/Table/styled';
+import {RowTH as BaseRowTH, ColumnTH} from 'modules/components/Table/styled';
+
+const Container = styled.div`
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow-y: hidden;
+`;
 
 const Title = styled.h1`
   font-size: 20px;
   font-weight: 600;
   color: ${({theme}) => theme.colors.ui06};
+`;
+
+const TableContainer = styled.div`
+  overflow-y: auto;
 `;
 
 const Header = styled.div`
@@ -25,9 +35,27 @@ const Header = styled.div`
   margin: 44px 20px 20px 20px;
 `;
 
+const Body = styled.div`
+  display: grid;
+  overflow-y: hidden;
+`;
+
 const RowTH = styled(BaseRowTH)`
   vertical-align: top;
   padding-top: 14px;
+`;
+
+const VariableNameTH = styled(ColumnTH)`
+  position: sticky;
+  top: 0;
+  background-color: ${({theme}) => theme.colors.white};
+  width: 207px;
+`;
+
+const VariableValueTH = styled(ColumnTH)`
+  position: sticky;
+  top: 0;
+  background-color: ${({theme}) => theme.colors.white};
 `;
 
 const NameInputTD = styled.td`
@@ -93,6 +121,7 @@ const InputStyles = css`
 
 const NameInput = styled.input`
   ${InputStyles}
+  width: 189px;
 `;
 
 const EditTextarea = styled(BasicTextareaAutosize)`
@@ -108,10 +137,15 @@ const IconButton = styled(BaseIconButton)`
 `;
 
 export {
+  Container,
+  Body,
   Title,
+  TableContainer,
   EmptyMessage,
   Cross,
   RowTH,
+  VariableNameTH,
+  VariableValueTH,
   EditTextarea,
   NameInputTD,
   ValueInputTD,
