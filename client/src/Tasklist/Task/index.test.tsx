@@ -148,7 +148,7 @@ describe('<Task />', () => {
     });
 
     fireEvent.change(await screen.findByRole('textbox', {name: 'myVar'}), {
-      target: {value: 'newValue'},
+      target: {value: '"newValue"'},
     });
 
     fireEvent.click(await screen.findByRole('button', {name: 'Complete Task'}));
@@ -189,7 +189,7 @@ describe('<Task />', () => {
     fireEvent.change(
       screen.getByRole('textbox', {name: 'new-variables[0].value'}),
       {
-        target: {value: 'newVariableValue'},
+        target: {value: '"newVariableValue"'},
       },
     );
 
@@ -198,5 +198,63 @@ describe('<Task />', () => {
     await waitFor(() => {
       expect(history.location.pathname).toBe('/');
     });
+  });
+
+  it('should disable submit button on form errors for existing variables', async () => {
+    const history = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
+
+    render(<Task />, {
+      wrapper: getWrapper({
+        history,
+        mocks: [
+          mockGetTaskCreated,
+          mockGetTaskClaimed,
+          mockTaskWithVariables,
+          mockGetCurrentUser,
+        ],
+      }),
+    });
+
+    fireEvent.change(await screen.findByRole('textbox', {name: 'myVar'}), {
+      target: {value: '{{ invalid value'},
+    });
+
+    expect(screen.getAllByTestId(/^warning-icon/)).toHaveLength(1);
+    expect(screen.getByTestId('warning-icon-myVar')).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Complete Task'})).toBeDisabled();
+  });
+
+  it('should disable submit button on form errors for new variables', async () => {
+    const history = createMemoryHistory({
+      initialEntries: ['/0'],
+    });
+
+    render(<Task />, {
+      wrapper: getWrapper({
+        history,
+        mocks: [
+          mockGetTaskCreated,
+          mockGetTaskClaimed,
+          mockTaskWithVariables,
+          mockGetCurrentUser,
+        ],
+      }),
+    });
+
+    fireEvent.click(await screen.findByText('Add Variable'));
+    fireEvent.change(
+      screen.getByRole('textbox', {name: 'new-variables[0].value'}),
+      {
+        target: {value: '{{ invalid value'},
+      },
+    );
+
+    expect(screen.getAllByTestId(/^warning-icon/)).toHaveLength(1);
+    expect(
+      screen.getByTestId('warning-icon-new-variables[0].value'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: 'Complete Task'})).toBeDisabled();
   });
 });

@@ -109,7 +109,13 @@ const Task: React.FC = () => {
               <Variables canEdit={canCompleteTask} />
               {canCompleteTask && (
                 <Footer>
-                  <Button type="submit" disabled={form.getState().submitting}>
+                  <Button
+                    type="submit"
+                    disabled={
+                      form.getState().submitting ||
+                      form.getState().hasValidationErrors
+                    }
+                  >
                     Complete Task
                   </Button>
                 </Footer>

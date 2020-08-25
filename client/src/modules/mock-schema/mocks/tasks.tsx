@@ -33,8 +33,8 @@ const tasks: ReadonlyArray<Task> = [
       lastname: 'Mustermann',
     },
     variables: [
-      {name: 'myVar', value: '0001'},
-      {name: 'isCool', value: 'yes'},
+      {name: 'myVar', value: '"0001"'},
+      {name: 'isCool', value: '"yes"'},
     ],
     taskState: TaskStates.Created,
   },

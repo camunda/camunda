@@ -51,7 +51,7 @@ const mockCompleteTask = {
 const mockCompleteTaskWithEditedVariable = {
   request: {
     query: COMPLETE_TASK,
-    variables: {id: '0', variables: [{name: 'myVar', value: 'newValue'}]},
+    variables: {id: '0', variables: [{name: 'myVar', value: '"newValue"'}]},
   },
   result: {
     data: {
@@ -65,7 +65,7 @@ const mockCompleteTaskWithAddedVariable = {
     query: COMPLETE_TASK,
     variables: {
       id: '0',
-      variables: [{name: 'newVariableName', value: 'newVariableValue'}],
+      variables: [{name: 'newVariableName', value: '"newVariableValue"'}],
     },
   },
   result: {

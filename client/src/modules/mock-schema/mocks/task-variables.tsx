@@ -12,8 +12,8 @@ const taskWithVariables: TaskVariables = {
   __typename: 'Task',
   id: '0',
   variables: [
-    {name: 'myVar', value: '0001'},
-    {name: 'isCool', value: 'yes'},
+    {name: 'myVar', value: '"0001"'},
+    {name: 'isCool', value: '"yes"'},
   ],
 };
 

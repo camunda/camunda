@@ -96,6 +96,7 @@ const theme = {
     dropdownMenu: '0 0 2px 0 rgba(0, 0, 0, 0.2)',
     variablesFooter: '0 -1px 2px 0 rgba(0, 0, 0, 0.1)',
     primaryButton: '0 2px 2px 0 rgba(0, 0, 0, 0.35)',
+    invalidInput: `0 0 0 1px ${palette.red}, 0 0 0 4px #ffafaf`,
   },
 } as const;
 

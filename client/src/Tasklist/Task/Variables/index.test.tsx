@@ -52,9 +52,9 @@ describe('<Variables />', () => {
 
     expect(await screen.findByTestId('variables-table')).toBeInTheDocument();
     expect(screen.getByText('myVar')).toBeInTheDocument();
-    expect(screen.getByText('0001')).toBeInTheDocument();
+    expect(screen.getByText('"0001"')).toBeInTheDocument();
     expect(screen.getByText('isCool')).toBeInTheDocument();
-    expect(screen.getByText('yes')).toBeInTheDocument();
+    expect(screen.getByText('"yes"')).toBeInTheDocument();
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
   });
 
@@ -73,11 +73,11 @@ describe('<Variables />', () => {
     render(<Variables canEdit />, {
       wrapper: getWrapper({id: '0', mocks: [mockTaskWithVariables]}),
     });
-    const newVariableValue = 'changedValue';
+    const newVariableValue = '"changedValue"';
 
-    expect(await screen.findByDisplayValue('0001')).toBeInTheDocument();
+    expect(await screen.findByDisplayValue('"0001"')).toBeInTheDocument();
 
-    fireEvent.change(await screen.findByDisplayValue('0001'), {
+    fireEvent.change(await screen.findByDisplayValue('"0001"'), {
       target: {value: newVariableValue},
     });
 

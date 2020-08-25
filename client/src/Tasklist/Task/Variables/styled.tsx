@@ -7,8 +7,9 @@
 import styled, {css} from 'styled-components';
 import {ReactComponent as CrossIcon} from 'modules/icons/cross.svg';
 import {ReactComponent as PlusIcon} from 'modules/icons/plus.svg';
-import BasicTextareaAutosize from 'react-textarea-autosize';
 import {Button} from 'modules/components/Button';
+import {ReactComponent as Warning} from 'modules/icons/warning.svg';
+import BasicTextareaAutosize from 'react-textarea-autosize';
 import {IconButton as BaseIconButton} from 'modules/components/IconButton';
 import {RowTH as BaseRowTH, ColumnTH} from 'modules/components/Table/styled';
 
@@ -71,11 +72,10 @@ const ValueInputTD = styled.td`
   padding-right: 8px;
 `;
 
-const RemoveButtonTD = styled.td`
-  width: 59px;
+const IconTD = styled.td`
+  width: 69px;
   vertical-align: top;
   padding-top: 10px;
-  padding-left: 10px;
 `;
 
 const CreateButton = styled(Button)`
@@ -117,6 +117,18 @@ const InputStyles = css`
     ${({theme}) => theme.colors.input.placeholder};
     font-style: italic;
   }
+
+  outline: none;
+
+  &:focus {
+    box-shadow: ${({theme}) => theme.shadows.fakeOutline};
+  }
+
+  &[aria-invalid='true'] {
+    :focus {
+      box-shadow: ${({theme}) => theme.shadows.invalidInput};
+    }
+  }
 `;
 
 const NameInput = styled.input`
@@ -133,7 +145,19 @@ const EditTextarea = styled(BasicTextareaAutosize)`
 `;
 
 const IconButton = styled(BaseIconButton)`
-  margin-left: 20px;
+  margin-right: 15px;
+  margin-left: 10px;
+`;
+
+const IconContainer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+`;
+
+const WarningIcon = styled(Warning)`
+  width: 16px;
+  margin-bottom: 1px;
 `;
 
 export {
@@ -149,10 +173,12 @@ export {
   EditTextarea,
   NameInputTD,
   ValueInputTD,
-  RemoveButtonTD,
+  IconTD,
   CreateButton,
   Plus,
   Header,
   NameInput,
   IconButton,
+  IconContainer,
+  WarningIcon,
 };

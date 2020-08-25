@@ -9,6 +9,7 @@ import React, {useEffect, useRef} from 'react';
 import {useParams} from 'react-router-dom';
 import {Field, useForm, useField} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
+import {validateJSON, validateNonEmpty} from './validators';
 
 import {
   GET_TASK_VARIABLES,
@@ -30,12 +31,14 @@ import {
   Cross,
   NameInputTD,
   ValueInputTD,
-  RemoveButtonTD,
   VariableNameTH,
   VariableValueTH,
+  IconTD,
+  IconContainer,
   NameInput,
   IconButton,
   RowTH,
+  WarningIcon,
 } from './styled';
 
 const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
@@ -121,17 +124,25 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
                             <Field
                               name={variable.name}
                               initialValue={variable.value}
+                              validate={validateJSON}
                             >
-                              {({input}) => (
+                              {({input, meta}) => (
                                 <EditTextarea
                                   {...input}
                                   id={variable.name}
-                                  required
+                                  aria-invalid={meta.error !== undefined}
                                 />
                               )}
                             </Field>
                           </ValueInputTD>
-                          <RemoveButtonTD />
+                          <IconTD>
+                            {form.getFieldState(variable.name)?.error !==
+                              undefined && (
+                              <WarningIcon
+                                data-testid={`warning-icon-${variable.name}`}
+                              />
+                            )}
+                          </IconTD>
                         </>
                       ) : (
                         <>
@@ -145,45 +156,67 @@ const Variables: React.FC<{canEdit?: boolean}> = ({canEdit}) => {
                 {canEdit && (
                   <FieldArray name="new-variables">
                     {({fields}) =>
-                      fields.map((variable, index) => (
-                        <TR key={variable}>
-                          <NameInputTD>
-                            <Field name={`${variable}.name`}>
-                              {({input}) => (
-                                <NameInput
-                                  {...input}
-                                  placeholder="Variable"
-                                  aria-label={`${variable}.name`}
-                                  required
-                                />
-                              )}
-                            </Field>
-                          </NameInputTD>
-                          <ValueInputTD>
-                            <Field name={`${variable}.value`}>
-                              {({input}) => (
-                                <EditTextarea
-                                  {...input}
-                                  aria-label={`${variable}.value`}
-                                  placeholder="Value"
-                                  required
-                                />
-                              )}
-                            </Field>
-                          </ValueInputTD>
-                          <RemoveButtonTD>
-                            <IconButton
-                              type="button"
-                              aria-label={`Remove new variable ${index}`}
-                              onClick={() => {
-                                fields.remove(index);
-                              }}
-                            >
-                              <Cross />
-                            </IconButton>
-                          </RemoveButtonTD>
-                        </TR>
-                      ))
+                      fields.map((variable, index) => {
+                        const fieldState = form.getFieldState(
+                          `${variable}.value`,
+                        );
+                        return (
+                          <TR key={variable}>
+                            <NameInputTD>
+                              <Field
+                                name={`${variable}.name`}
+                                validate={validateNonEmpty}
+                              >
+                                {({input, meta}) => (
+                                  <NameInput
+                                    {...input}
+                                    placeholder="Variable"
+                                    aria-label={`${variable}.name`}
+                                    aria-invalid={
+                                      meta.error !== undefined && meta.dirty
+                                    }
+                                  />
+                                )}
+                              </Field>
+                            </NameInputTD>
+                            <ValueInputTD>
+                              <Field
+                                name={`${variable}.value`}
+                                validate={validateJSON}
+                              >
+                                {({input, meta}) => (
+                                  <EditTextarea
+                                    {...input}
+                                    aria-label={`${variable}.value`}
+                                    placeholder="Value"
+                                    aria-invalid={
+                                      meta.error !== undefined && meta.dirty
+                                    }
+                                  />
+                                )}
+                              </Field>
+                            </ValueInputTD>
+                            <IconTD>
+                              <IconContainer>
+                                {fieldState?.error && fieldState.dirty && (
+                                  <WarningIcon
+                                    data-testid={`warning-icon-${variable}.value`}
+                                  />
+                                )}
+                                <IconButton
+                                  type="button"
+                                  aria-label={`Remove new variable ${index}`}
+                                  onClick={() => {
+                                    fields.remove(index);
+                                  }}
+                                >
+                                  <Cross />
+                                </IconButton>
+                              </IconContainer>
+                            </IconTD>
+                          </TR>
+                        );
+                      })
                     }
                   </FieldArray>
                 )}
