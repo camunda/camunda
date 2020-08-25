@@ -103,6 +103,7 @@ public final class ZeebePartition extends Actor
   private final ZeebePartitionHealth zeebePartitionHealth;
   private long term;
   private StreamProcessor streamProcessor;
+  private boolean diskSpaceAvailable;
 
   public ZeebePartition(
       final BrokerInfo localBroker,
@@ -145,6 +146,7 @@ public final class ZeebePartition extends Actor
     zeebePartitionHealth = new ZeebePartitionHealth(partitionId);
     healthMetrics = new HealthMetrics(partitionId);
     healthMetrics.setUnhealthy();
+    diskSpaceAvailable = true;
   }
 
   /**
@@ -459,6 +461,9 @@ public final class ZeebePartition extends Actor
         .onComplete(
             (value, processorFail) -> {
               if (processorFail == null) {
+                if (!diskSpaceAvailable) {
+                  streamProcessor.pauseProcessing();
+                }
                 registerHealthComponent(streamProcessor.getName(), streamProcessor);
                 final DataCfg dataCfg = brokerCfg.getData();
                 installSnapshotDirector(streamProcessor, dataCfg)
@@ -754,6 +759,7 @@ public final class ZeebePartition extends Actor
   public void onDiskSpaceNotAvailable() {
     actor.call(
         () -> {
+          diskSpaceAvailable = false;
           if (streamProcessor != null) {
             LOG.warn("Disk space usage is above threshold. Pausing stream processor.");
             streamProcessor.pauseProcessing();
@@ -765,6 +771,7 @@ public final class ZeebePartition extends Actor
   public void onDiskSpaceAvailable() {
     actor.call(
         () -> {
+          diskSpaceAvailable = true;
           if (streamProcessor != null) {
             LOG.info("Disk space usage is below threshold. Resuming stream processor.");
             streamProcessor.resumeProcessing();
