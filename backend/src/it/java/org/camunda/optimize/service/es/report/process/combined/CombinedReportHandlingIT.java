@@ -82,6 +82,7 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_IN
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE;
+import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK;
@@ -470,12 +471,36 @@ public class CombinedReportHandlingIT extends AbstractIT {
     );
     groupByDurationAnotherKey.setData(groupByDurationDataAnotherKey);
 
+    // groupByFlowNodeDuration distributed by flowNode
+    final SingleProcessReportDefinitionDto groupByFlowNodeDurationDistributeByFlowNode =
+      new SingleProcessReportDefinitionDto();
+    final ProcessReportDataDto groupByFlowNodeDurationDistributeByFlowNodeData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE)
+      .setProcessDefinitionKey("key")
+      .setProcessDefinitionVersion("1")
+      .setVisualization(ProcessVisualization.TABLE)
+      .build();
+    groupByFlowNodeDurationDistributeByFlowNode.setData(groupByFlowNodeDurationDistributeByFlowNodeData);
+
+    final SingleProcessReportDefinitionDto groupByFlowNodeDurationDistributeByFlowNodeAnotherKey =
+      new SingleProcessReportDefinitionDto();
+    final ProcessReportDataDto roupByFlowNodeDurationDistributeByFlowNodeAnotherKey = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE)
+      .setProcessDefinitionKey("anotherKey")
+      .setProcessDefinitionVersion("1")
+      .setVisualization(ProcessVisualization.TABLE)
+      .build();
+    groupByFlowNodeDurationDistributeByFlowNodeAnotherKey.setData(roupByFlowNodeDurationDistributeByFlowNodeAnotherKey);
+
     return Stream.of(
       Arrays.asList(pICount_startDateYear_bar, pICount_startDateYear_line),
       Arrays.asList(pICount_byVariable_bar, pICount_startDateYear_bar),
       Arrays.asList(pICount_startDateYear_bar, pIDuration_startDateYear_bar),
       Arrays.asList(groupByNumberVar1, groupByNumberVar2),
-      Arrays.asList(groupByDuration, groupByDurationAnotherKey)
+      Arrays.asList(groupByDuration, groupByDurationAnotherKey),
+      Arrays.asList(groupByFlowNodeDurationDistributeByFlowNode, groupByFlowNodeDurationDistributeByFlowNodeAnotherKey)
     );
   }
 

@@ -117,7 +117,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition() {
-    return deploySimpleOneUserTasksDefinition("aProcess", null);
+    return deploySimpleOneUserTasksDefinition(TEST_PROCESS, null);
   }
 
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key, String tenantId) {
@@ -129,7 +129,12 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String activityId) {
-    return deployAndStartSimpleServiceTaskProcess("aProcess", activityId, null);
+    return deployAndStartSimpleServiceTaskProcess(TEST_PROCESS, activityId, null);
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String key,
+                                                                            String activityId) {
+    return deployAndStartSimpleServiceTaskProcess(key, activityId, null);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String key,
@@ -159,7 +164,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition(String key) {
-    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance(key, "anActivityId");
+    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance(key, TEST_ACTIVITY);
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 

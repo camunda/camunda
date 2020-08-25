@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby;
+package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby.flownode.duration;
 
 import com.google.common.collect.ImmutableList;
 import org.assertj.core.groups.Tuple;
@@ -442,7 +442,7 @@ public class CountFlowNodeFrequencyByFlowNodeDurationIT extends AbstractProcessD
 
     // then
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getIsComplete()).isFalse();
+    assertThat(resultDto.getIsComplete()).isTrue();
     assertThat(resultDto.getData()).isNotNull().isEmpty();
   }
 
