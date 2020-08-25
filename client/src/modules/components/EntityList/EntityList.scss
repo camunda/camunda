@@ -104,6 +104,10 @@
 
       &.sortable > span {
         cursor: pointer;
+
+        &:hover {
+          color: $grey-darken-23;
+        }
       }
 
       &.sorted {
