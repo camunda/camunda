@@ -2,4 +2,15 @@
   .columnSelectionSwitch .label {
     white-space: nowrap;
   }
+
+  .includeNew {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 20px;
+
+    .Labeled .label {
+      align-self: center;
+      margin-bottom: 0;
+    }
+  }
 }
