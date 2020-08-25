@@ -14,7 +14,7 @@ Available Commands:
   cancel      Cancel resource
   complete    Complete a resource
   create      Create resources
-  deploy      Creates new workflow defined by provided BPMN or YAML file as workflowPath
+  deploy      Creates a new workflow for each BPMN or YAML resource provided
   fail        Fail a resource
   generate    Generate documentation
   help        Help about any command

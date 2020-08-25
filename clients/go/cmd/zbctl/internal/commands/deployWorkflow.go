@@ -15,17 +15,35 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"io/ioutil"
 )
 
+var resourceNamesFlag []string
+
 var deployWorkflowCmd = &cobra.Command{
-	Use:     "deploy <workflowPath>",
-	Short:   "Creates new workflow defined by provided BPMN or YAML file as workflowPath",
+	Use:     "deploy <workflowPath>...",
+	Short:   "Creates a new workflow for each BPMN or YAML resource provided",
 	Args:    cobra.MinimumNArgs(1),
 	PreRunE: initClient,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		zbCmd := client.NewDeployWorkflowCommand().AddResourceFile(args[0])
-		for i := 1; i < len(args); i++ {
+		if len(resourceNamesFlag) > len(args) {
+			return fmt.Errorf("there are more resource names (%d) than workflow paths (%d)", len(resourceNamesFlag), len(args))
+		}
+
+		zbCmd := client.NewDeployWorkflowCommand()
+		for i := 0; i < len(resourceNamesFlag); i++ {
+			bytes, err := ioutil.ReadFile(args[i])
+			if err != nil {
+				return err
+			}
+
+			zbCmd.AddResource(bytes, resourceNamesFlag[i], pb.WorkflowRequestObject_FILE)
+		}
+
+		for i := len(resourceNamesFlag); i < len(args); i++ {
 			zbCmd = zbCmd.AddResourceFile(args[i])
 		}
 
@@ -43,4 +61,8 @@ var deployWorkflowCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(deployWorkflowCmd)
+
+	deployWorkflowCmd.Flags().StringSliceVar(&resourceNamesFlag, "resourceNames", nil, "Resource names"+
+		" for the workflows paths passed as arguments. The resource names are matched to workflows by position. If a"+
+		" workflow does not have a matching resource name, the workflow path is used instead")
 }
