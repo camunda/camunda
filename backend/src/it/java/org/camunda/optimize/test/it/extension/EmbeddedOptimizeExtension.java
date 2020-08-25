@@ -19,6 +19,7 @@ import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
@@ -502,6 +503,10 @@ public class EmbeddedOptimizeExtension
 
   public ExternalEventService getEventService() {
     return getApplicationContext().getBean(ExternalEventService.class);
+  }
+
+  public SettingsService getSettingsService() {
+    return getApplicationContext().getBean(SettingsService.class);
   }
 
   public EventTraceStateProcessingScheduler getEventProcessingScheduler() {

@@ -22,6 +22,7 @@ public class UIConfigurationDto {
   private HeaderCustomizationDto header;
   private boolean emailEnabled;
   private boolean sharingEnabled;
+  private boolean metadataTelemetryEnabled;
   private boolean tenantsAvailable;
   private String optimizeVersion;
   private Map<String, WebappsEndpointDto> webappsEndpoints;

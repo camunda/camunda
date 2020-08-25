@@ -13,21 +13,17 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizat
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.metadata.Version;
+import org.camunda.optimize.service.util.configuration.TelemetryConfiguration;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.TextColorType;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
 
 public class UIConfigurationRestServiceIT extends AbstractIT {
   private final String WEBHOOK_1_NAME = "webhook1";
@@ -40,10 +36,10 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
 
     // then
     HeaderCustomizationDto configurationHeader = actualConfiguration.getHeader();
-    assertThat(configurationHeader, notNullValue());
-    assertThat(configurationHeader.getTextColor(), is(TextColorType.DARK));
-    assertThat(configurationHeader.getBackgroundColor(), is("#FFFFFF"));
-    assertThat(configurationHeader.getLogo(), startsWith("data:"));
+    assertThat(configurationHeader).isNotNull();
+    assertThat(configurationHeader.getTextColor()).isEqualTo(TextColorType.DARK);
+    assertThat(configurationHeader.getBackgroundColor()).isEqualTo("#FFFFFF");
+    assertThat(configurationHeader.getLogo()).startsWith("data:");
   }
 
   @Test
@@ -55,7 +51,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    assertThat(response.isSharingEnabled(), is(true));
+    assertThat(response.isSharingEnabled()).isTrue();
   }
 
   @Test
@@ -67,7 +63,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    assertThat(response.isSharingEnabled(), is(false));
+    assertThat(response.isSharingEnabled()).isFalse();
   }
 
   @Test
@@ -77,11 +73,11 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
 
     // then
     Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
-    assertThat(webappsEndpoints.size(), greaterThan(0));
+    assertThat(webappsEndpoints).isNotEmpty();
     WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
-    assertThat(defaultEndpoint, Matchers.notNullValue());
-    assertThat(defaultEndpoint.getEndpoint(), is("http://localhost:8080/camunda"));
-    assertThat(defaultEndpoint.getEngineName(), is(engineIntegrationExtension.getEngineName()));
+    assertThat(defaultEndpoint).isNotNull();
+    assertThat(defaultEndpoint.getEndpoint()).isEqualTo("http://localhost:8080/camunda");
+    assertThat(defaultEndpoint.getEngineName()).isEqualTo(engineIntegrationExtension.getEngineName());
   }
 
   @Test
@@ -95,11 +91,11 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
 
     // then
     Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
-    assertThat(webappsEndpoints.size(), greaterThan(0));
+    assertThat(webappsEndpoints).isNotEmpty();
     WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
-    assertThat(defaultEndpoint, Matchers.notNullValue());
-    assertThat(defaultEndpoint.getEndpoint(), is("foo"));
-    assertThat(defaultEndpoint.getEngineName(), is(engineIntegrationExtension.getEngineName()));
+    assertThat(defaultEndpoint).isNotNull();
+    assertThat(defaultEndpoint.getEndpoint()).isEqualTo("foo");
+    assertThat(defaultEndpoint.getEngineName()).isEqualTo(engineIntegrationExtension.getEngineName());
   }
 
   @Test
@@ -113,10 +109,10 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
 
     // then
     Map<String, WebappsEndpointDto> webappsEndpoints = response.getWebappsEndpoints();
-    assertThat(webappsEndpoints.size(), greaterThan(0));
+    assertThat(webappsEndpoints).isNotEmpty();
     WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
-    assertThat(defaultEndpoint, Matchers.notNullValue());
-    assertThat(defaultEndpoint.getEndpoint().isEmpty(), is(true));
+    assertThat(defaultEndpoint).isNotNull();
+    assertThat(defaultEndpoint.getEndpoint().isEmpty()).isTrue();
   }
 
   @Test
@@ -128,7 +124,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    assertThat(response.isEmailEnabled(), is(true));
+    assertThat(response.isEmailEnabled()).isTrue();
   }
 
   @Test
@@ -140,7 +136,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    assertThat(response.isEmailEnabled(), is(false));
+    assertThat(response.isEmailEnabled()).isFalse();
   }
 
   @Test
@@ -149,7 +145,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    assertThat(response.getOptimizeVersion(), is(Version.RAW_VERSION));
+    assertThat(response.getOptimizeVersion()).isEqualTo(Version.RAW_VERSION);
   }
 
   @Test
@@ -178,7 +174,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    assertThat(response.isTenantsAvailable(), is(true));
+    assertThat(response.isTenantsAvailable()).isTrue();
   }
 
   @Test
@@ -189,7 +185,17 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
-    assertThat(response.isTenantsAvailable(), is(false));
+    assertThat(response.isTenantsAvailable()).isFalse();
+  }
+
+  @Test
+  public void getTelemetryFlag() {
+    // when
+    final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+
+    // then
+    assertThat(response.isMetadataTelemetryEnabled())
+      .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().isMetadataTelemetryEnabled());
   }
 
   private void setWebappsEndpoint(String webappsEndpoint) {

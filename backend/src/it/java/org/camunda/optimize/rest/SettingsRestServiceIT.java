@@ -7,6 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.SettingsDto;
+import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
 import org.camunda.optimize.service.util.configuration.TelemetryConfiguration;
 import org.junit.jupiter.api.Test;
 
