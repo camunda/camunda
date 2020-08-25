@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.impl.worker;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.impl.Loggers;
@@ -45,6 +47,7 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
   private IntConsumer doneCallback;
   private int activatedJobs;
   private BooleanSupplier openSupplier;
+  private StatusRuntimeException statusRuntimeException;
 
   public JobPoller(
       final GatewayStub gatewayStub,
@@ -102,15 +105,30 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
     if (retryPredicate.test(throwable)) {
       poll();
     } else {
-      if (openSupplier.getAsBoolean()) {
-        LOG.warn(
-            "Failed to activated jobs for worker {} and job type {}",
-            requestBuilder.getWorker(),
-            requestBuilder.getType(),
-            throwable);
+      try {
+        if (openSupplier.getAsBoolean()) {
+          logError(throwable);
+        }
+      } finally {
+        pollingDone();
       }
-      pollingDone();
     }
+  }
+
+  private void logError(final Throwable throwable) {
+    if (throwable instanceof StatusRuntimeException) {
+      statusRuntimeException = (StatusRuntimeException) throwable;
+      if (statusRuntimeException.getStatus() == Status.RESOURCE_EXHAUSTED) {
+        // do not log RESOURCE EXHAUSTED exceptions
+        return;
+      }
+    }
+
+    LOG.warn(
+        "Failed to activated jobs for worker {} and job type {}",
+        requestBuilder.getWorker(),
+        requestBuilder.getType(),
+        throwable);
   }
 
   @Override
