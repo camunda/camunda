@@ -7,15 +7,16 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.SettingsDto;
-import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
 import org.camunda.optimize.service.util.configuration.TelemetryConfiguration;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
+import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 
 public class SettingsRestServiceIT extends AbstractIT {
 
@@ -38,6 +39,7 @@ public class SettingsRestServiceIT extends AbstractIT {
   @Test
   public void testCreateSettings() {
     // given
+    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
     final SettingsDto newSettings = SettingsDto.builder().metadataTelemetryEnabled(true).build();
 
     // when
@@ -45,12 +47,16 @@ public class SettingsRestServiceIT extends AbstractIT {
     final SettingsDto settings = getSettings();
 
     // then
-    assertThat(settings).isEqualTo(newSettings);
+    assertThat(settings.isMetadataTelemetryEnabled()).isEqualTo(newSettings.isMetadataTelemetryEnabled());
+    assertThat(settings.getLastModifier()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(settings.getLastModified()).isEqualTo(now);
+    assertThat(settings.isManuallyConfirmed()).isTrue();
   }
 
   @Test
   public void testUpdateExistingSettings() {
     // given
+    final OffsetDateTime now = dateFreezer().freezeDateAndReturn();
     final SettingsDto existingSettings = SettingsDto.builder().metadataTelemetryEnabled(true).build();
     setSettings(existingSettings);
 
@@ -61,7 +67,10 @@ public class SettingsRestServiceIT extends AbstractIT {
     final SettingsDto settings = getSettings();
 
     // then
-    assertThat(settings).isEqualTo(newSettings);
+    assertThat(settings.isMetadataTelemetryEnabled()).isEqualTo(newSettings.isMetadataTelemetryEnabled());
+    assertThat(settings.getLastModifier()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(settings.getLastModified()).isEqualTo(now);
+    assertThat(settings.isManuallyConfirmed()).isTrue();
   }
 
   private void setSettings(final SettingsDto newSettings) {

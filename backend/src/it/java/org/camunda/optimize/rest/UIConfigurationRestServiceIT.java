@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizat
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
 import org.camunda.optimize.service.metadata.Version;
-import org.camunda.optimize.service.util.configuration.TelemetryConfiguration;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
 import org.camunda.optimize.service.util.configuration.ui.TextColorType;
 import org.junit.jupiter.api.Test;
@@ -189,13 +188,15 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
   }
 
   @Test
-  public void getTelemetryFlag() {
+  public void getTelemetryFlags() {
     // when
     final UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
 
     // then
     assertThat(response.isMetadataTelemetryEnabled())
       .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().isMetadataTelemetryEnabled());
+    assertThat(response.isSettingsManuallyConfirmed())
+      .isEqualTo(embeddedOptimizeExtension.getSettingsService().getSettings().isManuallyConfirmed());
   }
 
   private void setWebappsEndpoint(String webappsEndpoint) {

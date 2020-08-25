@@ -53,6 +53,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
 
     final SettingsDto settings = settingService.getSettings();
     uiConfigurationDto.setMetadataTelemetryEnabled(settings.isMetadataTelemetryEnabled());
+    uiConfigurationDto.setSettingsManuallyConfirmed(settings.isManuallyConfirmed());
 
     return uiConfigurationDto;
   }

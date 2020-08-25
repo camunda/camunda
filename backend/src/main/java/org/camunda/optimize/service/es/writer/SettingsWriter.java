@@ -23,6 +23,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.schema.index.SettingsIndex.LAST_MODIFIED;
+import static org.camunda.optimize.service.es.schema.index.SettingsIndex.LAST_MODIFIER;
 import static org.camunda.optimize.service.es.schema.index.SettingsIndex.METADATA_TELEMETRY_ENABLED;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SETTINGS_INDEX_NAME;
@@ -33,7 +35,7 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 @Component
 public class SettingsWriter {
   private static final Set<String> FIELDS_TO_UPDATE = ImmutableSet.of(
-    METADATA_TELEMETRY_ENABLED
+    METADATA_TELEMETRY_ENABLED, LAST_MODIFIED, LAST_MODIFIER
   );
 
   private final OptimizeElasticsearchClient esClient;

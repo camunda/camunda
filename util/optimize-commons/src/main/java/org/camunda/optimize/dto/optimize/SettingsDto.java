@@ -5,12 +5,16 @@
  */
 package org.camunda.optimize.dto.optimize;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
+import org.apache.commons.lang3.StringUtils;
+
+import java.time.OffsetDateTime;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -19,4 +23,12 @@ import lombok.experimental.FieldNameConstants;
 @FieldNameConstants(asEnum = true)
 public class SettingsDto {
   private boolean metadataTelemetryEnabled;
+
+  private String lastModifier;
+  private OffsetDateTime lastModified;
+
+  @JsonIgnore
+  public boolean isManuallyConfirmed() {
+    return !StringUtils.isEmpty(lastModifier);
+  }
 }

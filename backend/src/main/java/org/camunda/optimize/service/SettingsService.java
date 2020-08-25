@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.service.es.reader.SettingsReader;
 import org.camunda.optimize.service.es.writer.SettingsWriter;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
@@ -35,6 +36,8 @@ public class SettingsService {
 
   public void setSettings(final String userId, final SettingsDto settingsDto) {
     validateUserAuthorizedToConfigureSettingsOrFail(userId);
+    settingsDto.setLastModified(LocalDateUtil.getCurrentDateTime());
+    settingsDto.setLastModifier(userId);
     settingsWriter.upsertSettings(settingsDto);
   }
 

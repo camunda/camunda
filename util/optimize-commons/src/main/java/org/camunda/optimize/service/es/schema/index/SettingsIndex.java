@@ -11,6 +11,7 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SETTINGS_INDEX_NAME;
 
 public class SettingsIndex extends DefaultIndexMappingCreator {
@@ -18,6 +19,8 @@ public class SettingsIndex extends DefaultIndexMappingCreator {
   public static final String ID = "1";
 
   public static final String METADATA_TELEMETRY_ENABLED = SettingsDto.Fields.metadataTelemetryEnabled.name();
+  public static final String LAST_MODIFIED = SettingsDto.Fields.lastModified.name();
+  public static final String LAST_MODIFIER = SettingsDto.Fields.lastModifier.name();
 
   @Override
   public String getIndexName() {
@@ -35,6 +38,13 @@ public class SettingsIndex extends DefaultIndexMappingCreator {
     return xContentBuilder
       .startObject(METADATA_TELEMETRY_ENABLED)
         .field("type", "boolean")
+      .endObject()
+      .startObject(LAST_MODIFIED)
+        .field("type", "date")
+          .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(LAST_MODIFIER)
+        .field("type", "keyword")
       .endObject();
     // @formatter:on
   }

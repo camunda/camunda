@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -65,6 +66,14 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
 
   public boolean isSuperUserIdentity(final String userId) {
     return configurationService.getSuperUserIds().contains(userId);
+  }
+
+  public List<AuthorizationType> getUserAuthorizations(final String userId) {
+    List<AuthorizationType> authorizations = new ArrayList<>();
+    if (isSuperUserIdentity(userId)) {
+      authorizations.add(AuthorizationType.TELEMETRY);
+    }
+    return authorizations;
   }
 
   public List<GroupDto> getAllGroupsOfUser(final String userId) {

@@ -22,9 +22,14 @@ public class UIConfigurationDto {
   private HeaderCustomizationDto header;
   private boolean emailEnabled;
   private boolean sharingEnabled;
-  private boolean metadataTelemetryEnabled;
   private boolean tenantsAvailable;
   private String optimizeVersion;
   private Map<String, WebappsEndpointDto> webappsEndpoints;
   private List<String> webhooks;
+
+  // mirrors SettingsDto
+  private boolean metadataTelemetryEnabled;
+
+  // true if settingsDto flags are confirmed by superuser. If false, settings reflect initial config flags only
+  private boolean settingsManuallyConfirmed;
 }
