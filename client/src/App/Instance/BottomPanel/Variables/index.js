@@ -104,7 +104,6 @@ const Variables = observer(function Variables() {
       <>
         <Styled.EditButton
           title="Exit edit mode"
-          data-test="exit-edit-inline-btn"
           onClick={closeEdit}
           size="large"
           iconButtonTheme="default"
@@ -112,7 +111,6 @@ const Variables = observer(function Variables() {
         />
 
         <Styled.EditButton
-          data-test="save-var-inline-btn"
           title="Save variable"
           disabled={
             !value || !isValidJSON(value) || key.includes('"') || isDisabled
@@ -167,7 +165,6 @@ const Variables = observer(function Variables() {
           <Styled.TextInput
             autoFocus
             type="text"
-            data-test="add-key"
             placeholder="Variable"
             value={key}
             onChange={(e) => setKey(e.target.value)}
@@ -175,7 +172,6 @@ const Variables = observer(function Variables() {
         </Styled.EditInputTD>
         <Styled.EditInputTD>
           <Styled.AddTextarea
-            data-test="add-value"
             placeholder="Value"
             hasAutoSize
             minRows={1}
@@ -306,7 +302,6 @@ const Variables = observer(function Variables() {
         <Styled.Button
           title="Add variable"
           size="small"
-          data-test="add-variable-button"
           onClick={() => handleOpenAddVariable()}
           disabled={
             isLoading ||

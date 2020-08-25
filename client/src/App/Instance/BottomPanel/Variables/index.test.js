@@ -146,9 +146,9 @@ describe('Variables', () => {
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
       expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
-      fireEvent.click(screen.getByTestId('add-variable-button'));
+      fireEvent.click(screen.getByRole('button', {name: 'Add variable'}));
       expect(screen.getByTestId('add-key-row')).toBeInTheDocument();
-      fireEvent.click(screen.getByTestId('exit-edit-inline-btn'));
+      fireEvent.click(screen.getByRole('button', {name: 'Exit edit mode'}));
       expect(screen.queryByTestId('add-key-row')).not.toBeInTheDocument();
     });
 
@@ -156,77 +156,89 @@ describe('Variables', () => {
       renderVariables();
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      fireEvent.click(screen.getByTestId('add-variable-button'));
+      fireEvent.click(screen.getByRole('button', {name: 'Add variable'}));
 
-      expect(screen.getByTestId('save-var-inline-btn')).toBeDisabled();
-      fireEvent.change(screen.getByTestId('add-key'), {
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
+      fireEvent.change(screen.getByRole('textbox', {name: /variable/i}), {
         target: {value: 'test'},
       });
-      expect(screen.getByTestId('save-var-inline-btn')).toBeDisabled();
-      fireEvent.change(screen.getByTestId('add-value'), {
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
+      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
         target: {value: 'test'},
       });
-      expect(screen.getByTestId('save-var-inline-btn')).toBeDisabled();
-      fireEvent.change(screen.getByTestId('add-value'), {
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
+      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
         target: {value: '"test"'},
       });
-      expect(screen.getByTestId('save-var-inline-btn')).toBeEnabled();
-      fireEvent.change(screen.getByTestId('add-value'), {
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
+      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
         target: {value: '123'},
       });
-      expect(screen.getByTestId('save-var-inline-btn')).toBeEnabled();
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
 
-      fireEvent.change(screen.getByTestId('add-value'), {
+      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
         target: {value: '{}'},
       });
-      expect(screen.getByTestId('save-var-inline-btn')).toBeEnabled();
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
 
-      fireEvent.change(screen.getByTestId('add-key'), {
+      fireEvent.change(screen.getByRole('textbox', {name: /variable/i}), {
         target: {value: '"test"'},
       });
-      expect(screen.getByTestId('save-var-inline-btn')).toBeDisabled();
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
 
-      fireEvent.change(screen.getByTestId('add-key'), {
+      fireEvent.change(screen.getByRole('textbox', {name: /variable/i}), {
         target: {value: 'test'},
       });
-      expect(screen.getByTestId('save-var-inline-btn')).toBeEnabled();
+      expect(screen.getByRole('button', {name: 'Save variable'})).toBeEnabled();
 
       const invalidJSONObject = "{invalidKey: 'value'}";
 
-      fireEvent.change(screen.getByTestId('add-value'), {
+      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
         target: {value: invalidJSONObject},
       });
-      expect(screen.getByTestId('save-var-inline-btn')).toBeDisabled();
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
 
       // already existing variable
-      fireEvent.change(screen.getByTestId('add-key'), {
+      fireEvent.change(screen.getByRole('textbox', {name: /variable/i}), {
         target: {value: variables.state.items[0].name},
       });
 
-      fireEvent.change(screen.getByTestId('add-value'), {
+      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
         target: {value: variables.state.items[0].value},
       });
 
-      expect(screen.getByTestId('save-var-inline-btn')).toBeDisabled();
+      expect(
+        screen.getByRole('button', {name: 'Save variable'})
+      ).toBeDisabled();
     });
 
     it('should save new variable', async () => {
       renderVariables();
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      fireEvent.click(screen.getByTestId('add-variable-button'));
+      fireEvent.click(screen.getByRole('button', {name: 'Add variable'}));
 
       const newVariableName = 'newVariable';
       const newVariableValue = '1234';
 
-      fireEvent.change(screen.getByTestId('add-key'), {
+      fireEvent.change(screen.getByRole('textbox', {name: /variable/i}), {
         target: {value: newVariableName},
       });
-      fireEvent.change(screen.getByTestId('add-value'), {
+      fireEvent.change(screen.getByRole('textbox', {name: /value/i}), {
         target: {value: newVariableValue},
       });
 
-      fireEvent.click(screen.getByTestId('save-var-inline-btn'));
+      fireEvent.click(screen.getByRole('button', {name: 'Save variable'}));
 
       expect(
         within(screen.getByTestId(newVariableName)).getByTestId(
@@ -304,20 +316,20 @@ describe('Variables', () => {
         withinFirstVariable.queryByTestId('edit-value')
       ).not.toBeInTheDocument();
       expect(
-        withinFirstVariable.queryByTestId('exit-edit-inline-btn')
+        withinFirstVariable.queryByRole('button', {name: 'Exit edit mode'})
       ).not.toBeInTheDocument();
       expect(
-        withinFirstVariable.queryByTestId('save-var-inline-btn')
+        withinFirstVariable.queryByRole('button', {name: 'Save variable'})
       ).not.toBeInTheDocument();
 
       fireEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
 
       expect(withinFirstVariable.getByTestId('edit-value')).toBeInTheDocument();
       expect(
-        withinFirstVariable.getByTestId('exit-edit-inline-btn')
+        withinFirstVariable.getByRole('button', {name: 'Exit edit mode'})
       ).toBeInTheDocument();
       expect(
-        withinFirstVariable.getByTestId('save-var-inline-btn')
+        withinFirstVariable.getByRole('button', {name: 'Save variable'})
       ).toBeInTheDocument();
     });
 
@@ -334,7 +346,7 @@ describe('Variables', () => {
       fireEvent.click(withinFirstVariable.getByTestId('edit-variable-button'));
 
       expect(
-        withinFirstVariable.getByTestId('save-var-inline-btn')
+        withinFirstVariable.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
     });
 
@@ -357,7 +369,7 @@ describe('Variables', () => {
       });
 
       expect(
-        withinFirstVariable.getByTestId('save-var-inline-btn')
+        withinFirstVariable.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
 
       const invalidJSONObject = "{invalidKey: 'value'}";
@@ -367,7 +379,7 @@ describe('Variables', () => {
       });
 
       expect(
-        withinFirstVariable.getByTestId('save-var-inline-btn')
+        withinFirstVariable.getByRole('button', {name: 'Save variable'})
       ).toBeDisabled();
     });
   });
@@ -399,16 +411,16 @@ describe('Variables', () => {
       renderVariables();
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
 
-      fireEvent.click(screen.getByTestId('add-variable-button'));
+      fireEvent.click(screen.getByRole('button', {name: 'Add variable'}));
       expect(screen.getByText('Add Variable')).toBeDisabled();
 
-      fireEvent.click(screen.getByTestId('exit-edit-inline-btn'));
+      fireEvent.click(screen.getByRole('button', {name: 'Exit edit mode'}));
       expect(screen.getByText('Add Variable')).toBeEnabled();
 
       fireEvent.click(screen.getAllByTestId('edit-variable-button')[0]);
       expect(screen.getByText('Add Variable')).toBeDisabled();
 
-      fireEvent.click(screen.getByTestId('exit-edit-inline-btn'));
+      fireEvent.click(screen.getByRole('button', {name: 'Exit edit mode'}));
       expect(screen.getByText('Add Variable')).toBeEnabled();
     });
 
