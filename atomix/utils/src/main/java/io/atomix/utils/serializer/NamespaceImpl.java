@@ -29,6 +29,7 @@ import com.esotericsoftware.kryo.pool.KryoFactory;
 import com.esotericsoftware.kryo.pool.KryoPool;
 import com.esotericsoftware.kryo.serializers.CompatibleFieldSerializer;
 import com.esotericsoftware.kryo.serializers.VersionFieldSerializer;
+import com.esotericsoftware.minlog.Log;
 import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableList;
 import io.atomix.utils.config.ConfigurationException;
@@ -66,13 +67,15 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
   static final String NO_NAME = "(no name)";
 
   private static final Logger LOGGER = getLogger(NamespaceImpl.class);
-  private final KryoPool kryoPool = new KryoPool.Builder(this).softReferences().build();
 
+  static {
+    Log.NONE();
+  }
+
+  private final KryoPool kryoPool = new KryoPool.Builder(this).softReferences().build();
   private final KryoOutputPool kryoOutputPool = new KryoOutputPool();
   private final KryoInputPool kryoInputPool = new KryoInputPool();
-
   private final ImmutableList<RegistrationBlock> registeredBlocks;
-
   private final ClassLoader classLoader;
   private final boolean compatible;
   private final boolean registrationRequired;
@@ -233,6 +236,11 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
     }
   }
 
+  @Override
+  public ImmutableList<RegistrationBlock> getRegisteredBlocks() {
+    return registeredBlocks;
+  }
+
   private String friendlyName() {
     return friendlyName;
   }
@@ -347,11 +355,6 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
   }
 
   @Override
-  public ImmutableList<RegistrationBlock> getRegisteredBlocks() {
-    return registeredBlocks;
-  }
-
-  @Override
   public String toString() {
     if (!friendlyName.equals(NO_NAME)) {
       return MoreObjects.toStringHelper(getClass())
@@ -368,9 +371,9 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
   /** KryoNamespace builder. */
   // @NotThreadSafe
   public static final class Builder {
+    private final List<RegistrationBlock> blocks = new ArrayList<>();
     private int blockHeadId = INITIAL_ID;
     private List<Pair<Class<?>[], Serializer<?>>> types = new ArrayList<>();
-    private final List<RegistrationBlock> blocks = new ArrayList<>();
     private ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
     private boolean registrationRequired = true;
     private boolean compatible = false;
