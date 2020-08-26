@@ -8,7 +8,7 @@ package io.zeebe.tasklist.util;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.Random;
 
@@ -20,7 +20,7 @@ public abstract class DateUtil {
     Instant now = Instant.now();
     now = now.minus((5 + RANDOM.nextInt(10)), ChronoUnit.DAYS);
     now = now.minus(RANDOM.nextInt(60 * 24), ChronoUnit.MINUTES);
-    final Clock clock = Clock.fixed(now, ZoneOffset.UTC);
+    final Clock clock = Clock.fixed(now, ZoneId.systemDefault());
     return OffsetDateTime.now(clock);
   }
 
@@ -37,11 +37,11 @@ public abstract class DateUtil {
     Instant now = Instant.now();
     now = now.minus((1 + RANDOM.nextInt(4)), ChronoUnit.DAYS);
     now = now.minus(RANDOM.nextInt(60 * 24), ChronoUnit.MINUTES);
-    final Clock clock = Clock.fixed(now, ZoneOffset.UTC);
+    final Clock clock = Clock.fixed(now, ZoneId.systemDefault());
     return OffsetDateTime.now(clock);
   }
 
   public static OffsetDateTime toOffsetDateTime(Instant timestamp) {
-    return OffsetDateTime.ofInstant(timestamp, ZoneOffset.UTC);
+    return OffsetDateTime.ofInstant(timestamp, ZoneId.systemDefault());
   }
 }

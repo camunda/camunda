@@ -69,7 +69,7 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     // persist completion and variables
     final TaskEntity completedTask = taskReaderWriter.persistTaskCompletion(taskSearchHit);
     variableReaderWriter.persistTaskVariables(taskId, variables);
-    return TaskDTO.createFrom(completedTask);
+    return TaskDTO.createFrom(completedTask, objectMapper);
   }
 
   private Object extractTypedValue(VariableDTO var) {

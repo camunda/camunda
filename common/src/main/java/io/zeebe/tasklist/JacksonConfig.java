@@ -16,7 +16,6 @@ import io.zeebe.tasklist.property.TasklistProperties;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,9 +28,30 @@ public class JacksonConfig {
 
   @Bean
   public ObjectMapper objectMapper() {
-    final ObjectMapper objectMapper = Jackson2ObjectMapperBuilder.json().build();
-    getObjectMapperConfigurer().accept(objectMapper);
-    return objectMapper;
+    final JavaTimeModule javaTimeModule = new JavaTimeModule();
+    javaTimeModule.addSerializer(
+        OffsetDateTime.class,
+        new ElasticsearchConnector.CustomOffsetDateTimeSerializer(dateTimeFormatter()));
+    javaTimeModule.addDeserializer(
+        OffsetDateTime.class,
+        new ElasticsearchConnector.CustomOffsetDateTimeDeserializer(dateTimeFormatter()));
+    javaTimeModule.addDeserializer(
+        Instant.class, new ElasticsearchConnector.CustomInstantDeserializer());
+
+    //    javaTimeModule.addSerializer(LocalDate.class, new
+    // ElasticsearchConnector.CustomLocalDateSerializer(localDateFormatter()));
+    //    javaTimeModule.addDeserializer(LocalDate.class, new
+    // ElasticsearchConnector.CustomLocalDateDeserializer(localDateFormatter()));
+
+    return Jackson2ObjectMapperBuilder.json()
+        .modules(javaTimeModule, new Jdk8Module())
+        .featuresToDisable(
+            SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+            DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+            DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+            DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
+        .featuresToEnable(JsonParser.Feature.ALLOW_COMMENTS, SerializationFeature.INDENT_OUTPUT)
+        .build();
   }
 
   @Bean
@@ -42,35 +62,5 @@ public class JacksonConfig {
   @Bean
   public DateTimeFormatter localDateFormatter() {
     return DateTimeFormatter.ofPattern(tasklistProperties.getZeebeElasticsearch().getDateFormat());
-  }
-
-  @Bean("tasklistObjectMapperConfigurer")
-  public Consumer<ObjectMapper> getObjectMapperConfigurer() {
-    return (ObjectMapper mapper) -> {
-      final JavaTimeModule javaTimeModule = new JavaTimeModule();
-      javaTimeModule.addSerializer(
-          OffsetDateTime.class,
-          new ElasticsearchConnector.CustomOffsetDateTimeSerializer(dateTimeFormatter()));
-      javaTimeModule.addDeserializer(
-          OffsetDateTime.class,
-          new ElasticsearchConnector.CustomOffsetDateTimeDeserializer(dateTimeFormatter()));
-      javaTimeModule.addDeserializer(
-          Instant.class, new ElasticsearchConnector.CustomInstantDeserializer());
-
-      //    javaTimeModule.addSerializer(LocalDate.class, new
-      // ElasticsearchConnector.CustomLocalDateSerializer(localDateFormatter()));
-      //    javaTimeModule.addDeserializer(LocalDate.class, new
-      // ElasticsearchConnector.CustomLocalDateDeserializer(localDateFormatter()));
-
-      mapper
-          .registerModules(javaTimeModule, new Jdk8Module())
-          .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-          .disable(
-              DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
-              DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-              DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES)
-          .enable(JsonParser.Feature.ALLOW_COMMENTS)
-          .enable(SerializationFeature.INDENT_OUTPUT);
-    };
   }
 }

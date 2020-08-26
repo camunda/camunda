@@ -7,9 +7,9 @@ package io.zeebe.tasklist.webapp.graphql.entity;
 
 import static io.zeebe.tasklist.util.CollectionUtil.map;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.tasklist.entities.TaskEntity;
 import io.zeebe.tasklist.entities.TaskState;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,8 +26,8 @@ public final class TaskDTO {
   /** Fallback value for workflow name. */
   private String bpmnProcessId;
 
-  private OffsetDateTime creationTime;
-  private OffsetDateTime completionTime;
+  private String creationTime;
+  private String completionTime;
   /** Field is used to return user data. */
   private String assigneeUsername;
 
@@ -87,20 +87,20 @@ public final class TaskDTO {
     return this;
   }
 
-  public OffsetDateTime getCreationTime() {
+  public String getCreationTime() {
     return creationTime;
   }
 
-  public TaskDTO setCreationTime(OffsetDateTime creationTime) {
+  public TaskDTO setCreationTime(String creationTime) {
     this.creationTime = creationTime;
     return this;
   }
 
-  public OffsetDateTime getCompletionTime() {
+  public String getCompletionTime() {
     return completionTime;
   }
 
-  public TaskDTO setCompletionTime(OffsetDateTime completionTime) {
+  public TaskDTO setCompletionTime(String completionTime) {
     this.completionTime = completionTime;
     return this;
   }
@@ -123,10 +123,10 @@ public final class TaskDTO {
     return this;
   }
 
-  public static TaskDTO createFrom(TaskEntity taskEntity) {
+  public static TaskDTO createFrom(TaskEntity taskEntity, ObjectMapper objectMapper) {
     return new TaskDTO()
-        .setCompletionTime(taskEntity.getCompletionTime())
-        .setCreationTime(taskEntity.getCreationTime())
+        .setCreationTime(objectMapper.convertValue(taskEntity.getCreationTime(), String.class))
+        .setCompletionTime(objectMapper.convertValue(taskEntity.getCompletionTime(), String.class))
         .setId(taskEntity.getId())
         .setWorkflowInstanceId(taskEntity.getWorkflowInstanceId())
         .setTaskState(taskEntity.getState())
@@ -137,8 +137,8 @@ public final class TaskDTO {
         .setFlowNodeInstanceId(taskEntity.getFlowNodeInstanceId());
   }
 
-  public static List<TaskDTO> createFrom(List<TaskEntity> taskEntities) {
-    return map(taskEntities, t -> createFrom(t));
+  public static List<TaskDTO> createFrom(List<TaskEntity> taskEntities, ObjectMapper objectMapper) {
+    return map(taskEntities, t -> createFrom(t, objectMapper));
   }
 
   @Override

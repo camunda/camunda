@@ -78,7 +78,7 @@ public class TaskReaderWriter {
   public TaskDTO getTaskDTO(String id, List<String> fieldNames) {
     final TaskEntity taskEntity = getTask(id, fieldNames);
 
-    return TaskDTO.createFrom(taskEntity);
+    return TaskDTO.createFrom(taskEntity, objectMapper);
   }
 
   @NotNull
@@ -120,7 +120,7 @@ public class TaskReaderWriter {
     try {
       final List<TaskEntity> taskEntities =
           ElasticsearchUtil.scroll(searchRequest, TaskEntity.class, objectMapper, esClient);
-      return TaskDTO.createFrom(taskEntities);
+      return TaskDTO.createFrom(taskEntities, objectMapper);
     } catch (IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining tasks: %s", e.getMessage());

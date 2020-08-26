@@ -11,13 +11,12 @@ import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
+import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.util.ThreadUtil;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import org.apache.http.HttpHost;
@@ -126,7 +125,11 @@ public class ElasticsearchConnector {
     @Override
     public void serialize(OffsetDateTime value, JsonGenerator gen, SerializerProvider provider)
         throws IOException {
-      gen.writeString(value.format(this.formatter));
+      if (value == null) {
+        gen.writeNull();
+      } else {
+        gen.writeString(value.format(this.formatter));
+      }
     }
   }
 
@@ -142,17 +145,12 @@ public class ElasticsearchConnector {
     public OffsetDateTime deserialize(JsonParser parser, DeserializationContext context)
         throws IOException {
 
-      OffsetDateTime parsedDate;
+      final OffsetDateTime parsedDate;
       try {
         parsedDate = OffsetDateTime.parse(parser.getText(), this.formatter);
       } catch (DateTimeParseException exception) {
-        //
-        parsedDate =
-            ZonedDateTime.parse(
-                    parser.getText(),
-                    DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss")
-                        .withZone(ZoneId.systemDefault()))
-                .toOffsetDateTime();
+        throw new TasklistRuntimeException(
+            "Exception occurred when deserializing date.", exception);
       }
       return parsedDate;
     }
