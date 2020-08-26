@@ -25,11 +25,16 @@ const getURL = ClientFunction(() => window.location.href);
 
 test('load task details when a task is selected', async (t) => {
   const withinExpandedPanel = within(screen.getByTestId('expanded-panel'));
-  const withinDetailsTable = within(screen.getByTestId('details-table'));
 
   await t.click(
     withinExpandedPanel.getAllByText('usertask_to_be_completed').nth(0),
   );
+
+  await t
+    .expect(screen.queryByTestId('details-table').exists)
+    .ok({timeout: 20000});
+
+  const withinDetailsTable = within(screen.getByTestId('details-table'));
 
   await t
     .expect(withinDetailsTable.getByRole('columnheader', {name: 'Name'}).exists)
@@ -70,12 +75,16 @@ test('load task details when a task is selected', async (t) => {
 
 test('claim and unclaim task', async (t) => {
   const withinExpandedPanel = within(screen.getByTestId('expanded-panel'));
-  const withinDetailsTable = within(screen.getByTestId('details-table'));
 
   await t.click(
     withinExpandedPanel.getAllByText('usertask_to_be_completed').nth(0),
   );
 
+  await t
+    .expect(screen.queryByTestId('details-table').exists)
+    .ok({timeout: 20000});
+
+  const withinDetailsTable = within(screen.getByTestId('details-table'));
   await t
     .expect(withinDetailsTable.getByRole('button', {name: 'Claim'}).exists)
     .ok()
@@ -103,9 +112,14 @@ test('claim and unclaim task', async (t) => {
 
 test('complete task', async (t) => {
   const withinExpandedPanel = within(screen.getByTestId('expanded-panel'));
-  const withinDetailsTable = within(screen.getByTestId('details-table'));
 
   await t.click(withinExpandedPanel.getByText('usertask_to_be_completed'));
+
+  await t
+    .expect(screen.queryByTestId('details-table').exists)
+    .ok({timeout: 20000});
+
+  const withinDetailsTable = within(screen.getByTestId('details-table'));
 
   await t
     .expect(
@@ -125,6 +139,10 @@ test('complete task', async (t) => {
     .ok({timeout: 20000});
 
   await t.navigateTo(currentUrl);
+
+  await t
+    .expect(screen.queryByTestId('details-table').exists)
+    .ok({timeout: 20000});
 
   await t
     .expect(
