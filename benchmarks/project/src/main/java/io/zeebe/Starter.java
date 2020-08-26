@@ -19,6 +19,8 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.config.AppCfg;
 import io.zeebe.config.StarterCfg;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
@@ -44,6 +46,7 @@ public class Starter extends App {
     final int rate = starterCfg.getRate();
     final String processId = starterCfg.getProcessId();
     final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(5_000);
+    final int durationLimit = starterCfg.getDurationLimit();
 
     final ZeebeClient client = createZeebeClient();
 
@@ -59,30 +62,39 @@ public class Starter extends App {
     LOG.info("Creating an instance every {}ms", intervalMs);
 
     final String variables = readVariables(starterCfg.getPayloadPath());
+    final LocalDateTime startTime = LocalDateTime.now();
     executorService.scheduleAtFixedRate(
         () -> {
-          try {
-            if (starterCfg.isWithResults()) {
-              requestFutures.put(
-                  client
-                      .newCreateInstanceCommand()
-                      .bpmnProcessId(processId)
-                      .latestVersion()
-                      .variables(variables)
-                      .withResult()
-                      .requestTimeout(starterCfg.getWithResultsTimeout())
-                      .send());
-            } else {
-              requestFutures.put(
-                  client
-                      .newCreateInstanceCommand()
-                      .bpmnProcessId(processId)
-                      .latestVersion()
-                      .variables(variables)
-                      .send());
+          final long duration = ChronoUnit.SECONDS.between(startTime, LocalDateTime.now());
+          if (durationLimit <= 0 || duration < durationLimit) {
+            try {
+              if (starterCfg.isWithResults()) {
+                requestFutures.put(
+                    client
+                        .newCreateInstanceCommand()
+                        .bpmnProcessId(processId)
+                        .latestVersion()
+                        .variables(variables)
+                        .withResult()
+                        .requestTimeout(starterCfg.getWithResultsTimeout())
+                        .send());
+              } else {
+                requestFutures.put(
+                    client
+                        .newCreateInstanceCommand()
+                        .bpmnProcessId(processId)
+                        .latestVersion()
+                        .variables(variables)
+                        .send());
+              }
+            } catch (Exception e) {
+              LOG.error("Error on creating new workflow instance", e);
             }
-          } catch (Exception e) {
-            LOG.error("Error on creating new workflow instance", e);
+          } else {
+            // TODO can one use scheduledFuture.cancel(false) to gracefully
+            // stop the task from being scheduled again and allow the response
+            // checker to receive the responses for everything that was started?
+            System.exit(0);
           }
         },
         0,
