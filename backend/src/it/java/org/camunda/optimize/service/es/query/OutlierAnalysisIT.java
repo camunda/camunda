@@ -43,10 +43,13 @@ public class OutlierAnalysisIT extends AbstractIT {
   // this particular value is obtained from precalculation
   // given the distribution and outlier setup created by #createNormalDistributionAnd3Outliers
   private static final long SAMPLE_OUTLIERS_HIGHER_OUTLIER_BOUND = 30738L;
+  private static final String START_EVENT_ID = "start";
+  private static final String END_EVENT_ID = "end";
 
   @RegisterExtension
   @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @Test
   public void outlierDetectionNormalDistribution() {
@@ -54,7 +57,10 @@ public class OutlierAnalysisIT extends AbstractIT {
     final String testActivity1 = "testActivity1";
     final String testActivity2 = "testActivity2";
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(testActivity1, testActivity2));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(
+        testActivity1,
+        testActivity2
+      ));
 
     outlierDistributionClient.startPIsDistributedByDuration(
       processDefinition,
@@ -110,7 +116,7 @@ public class OutlierAnalysisIT extends AbstractIT {
   }
 
   @Test
-  public void noOutliersFoundTest() {
+  public void noOutliersFoundForFlowNodeTest() {
     // given
     ProcessDefinitionEngineDto processDefinition =
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
@@ -122,18 +128,25 @@ public class OutlierAnalysisIT extends AbstractIT {
       NUMBER_OF_DATAPOINTS,
       FLOW_NODE_ID_TEST
     );
+    // a single higher outlier instance on start and end event but not the FLOW_NODE_ID_TEST activity
+    ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstance.getId(), START_EVENT_ID, 100_000);
+    engineDatabaseExtension.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, NUMBER_OF_DATAPOINTS / 2L);
+    engineDatabaseExtension.changeActivityDuration(processInstance.getId(), END_EVENT_ID, 100_000);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     HashMap<String, FindingsDto> outlierTest = analysisClient.getFlowNodeOutliers(
-      PROCESS_DEFINITION_KEY,
-      Collections.singletonList("1"),
-      Collections.singletonList(null)
+      PROCESS_DEFINITION_KEY, Collections.singletonList("1"), Collections.singletonList(null)
     );
 
     // then
-    assertThat(outlierTest.get(FLOW_NODE_ID_TEST).getOutlierCount()).isEqualTo(0L);
+    assertThat(outlierTest)
+      .hasSize(2)
+      // FLOW_NODE_ID_TEST is not part of the result as there are no outliers
+      .containsOnlyKeys(START_EVENT_ID, END_EVENT_ID);
   }
 
   @Test
@@ -147,7 +160,8 @@ public class OutlierAnalysisIT extends AbstractIT {
       processDefinition, new Gaussian(10. / 2., 15), 5, FLOW_NODE_ID_TEST
     );
     // a single higher outlier instance
-    ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineDatabaseExtension.changeActivityDuration(processInstance.getId(), FLOW_NODE_ID_TEST, 100_000);
 
     importAllEngineEntitiesFromScratch();
@@ -170,20 +184,21 @@ public class OutlierAnalysisIT extends AbstractIT {
 
   @Test
   public void outlierAnalysisWorksEvenIfBucketLimitIsBeingHit() {
-    // given
-    final int bucketLimit = 2;
+    // given the bucket limit is set to something smaller than the amount of flow nodes present
+    final int bucketLimit = 1;
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(bucketLimit);
 
     ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(
-        "testActivity1",
-        "testActivity2"
-      ));
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
     // a couple of normally distributed instances
     outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition, new Gaussian(10. / 2., 15), 5, "testActivity1"
+      processDefinition, new Gaussian(10. / 2., 15), 5, FLOW_NODE_ID_TEST
     );
+    // a single all flow nodes higher outlier instance
+    ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineDatabaseExtension.changeActivityDuration(processInstance.getId(), 100_000);
 
     importAllEngineEntitiesFromScratch();
 
@@ -194,9 +209,8 @@ public class OutlierAnalysisIT extends AbstractIT {
       Collections.singletonList(null)
     );
 
-    // then
-    assertThat(outlierTest.containsKey("testActivity1")).isTrue();
-    assertThat(outlierTest.containsKey("testActivity2")).isTrue();
+    // then still all buckets are there
+    assertThat(outlierTest).hasSize(3);
   }
 
   @Test
@@ -205,13 +219,7 @@ public class OutlierAnalysisIT extends AbstractIT {
     ProcessDefinitionEngineDto processDefinition =
       engineIntegrationExtension.deployProcessAndGetProcessDefinition(getBpmnModelInstance(FLOW_NODE_ID_TEST));
 
-    outlierDistributionClient.startPIsDistributedByDuration(
-      processDefinition,
-      // one data point => no distribution
-      new Gaussian(1, 1),
-      1,
-      FLOW_NODE_ID_TEST
-    );
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
     importAllEngineEntitiesFromScratch();
 
@@ -223,13 +231,7 @@ public class OutlierAnalysisIT extends AbstractIT {
     );
 
     // then
-    final FindingsDto testActivity = outlierTest.get(FLOW_NODE_ID_TEST);
-    assertThat(testActivity.getOutlierCount()).isEqualTo(0L);
-    assertThat(testActivity.getLowerOutlier()).isNotPresent();
-    assertThat(testActivity.getHigherOutlier()).isNotPresent();
-    assertThat(testActivity.getLowerOutlierHeat()).isEqualTo(0.0D);
-    assertThat(testActivity.getHigherOutlierHeat()).isEqualTo(0.0D);
-    assertThat(testActivity.getHeat()).isEqualTo(0.0D);
+    assertThat(outlierTest).isEmpty();
   }
 
   @Test
@@ -237,14 +239,19 @@ public class OutlierAnalysisIT extends AbstractIT {
     // 10 is the default terms limit of elasticearch, this ensures the default does not apply
 
     // given
+    final String[] activityIds = IntStream.range(0, 10).mapToObj(i -> FLOW_NODE_ID_TEST + i).toArray(String[]::new);
     ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
-      getBpmnModelInstance(IntStream.range(0, 10).mapToObj(i -> FLOW_NODE_ID_TEST + i).toArray(String[]::new))
+      getBpmnModelInstance(activityIds)
     );
 
-    // one instance is suffice, we just need data from each activity, having in total >10 activities
-    final ProcessInstanceEngineDto processInstance =
+    // a couple of normally distributed instances
+    outlierDistributionClient.startPIsDistributedByDuration(
+      processDefinition, new Gaussian(10. / 2., 15), 5, activityIds
+    );
+    // a single all flow nodes higher outlier instance
+    ProcessInstanceEngineDto processInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstance.getId(), 1L);
+    engineDatabaseExtension.changeActivityDuration(processInstance.getId(), 100_000);
 
     importAllEngineEntitiesFromScratch();
 
@@ -310,13 +317,13 @@ public class OutlierAnalysisIT extends AbstractIT {
 
     // when
     List<DurationChartEntryDto> durationChart = analysisClient.getDurationChart(
-        PROCESS_DEFINITION_KEY,
-        Collections.singletonList("1"),
-        Collections.singletonList(null),
-        FLOW_NODE_ID_TEST,
-        lowerOutlierBound,
-        higherOutlierBound
-      );
+      PROCESS_DEFINITION_KEY,
+      Collections.singletonList("1"),
+      Collections.singletonList(null),
+      FLOW_NODE_ID_TEST,
+      lowerOutlierBound,
+      higherOutlierBound
+    );
 
     // then
     for (int i = 0; i < durationChart.size() / 2; i++) {
@@ -476,16 +483,15 @@ public class OutlierAnalysisIT extends AbstractIT {
   }
 
 
-
   private BpmnModelInstance getBpmnModelInstance(String... activityId) {
     StartEventBuilder builder = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
       .name("aProcessName")
-      .startEvent("start");
+      .startEvent(START_EVENT_ID);
     for (String activity : activityId) {
       builder.serviceTask(activity)
         .camundaExpression("${true}");
     }
-    return builder.endEvent("end").done();
+    return builder.endEvent(END_EVENT_ID).done();
   }
 
 }

@@ -589,6 +589,7 @@ public class DurationOutliersReader {
 
         return new AbstractMap.SimpleEntry<>(flowNodeId, finding);
       })
+      .filter(entry -> entry.getValue().getOutlierCount() > 0)
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     final long totalOutlierCount = totalLowerOutlierCount.get() + totalHigherOutlierCount.get();

@@ -37,52 +37,41 @@ public class OutlierDistributionClient {
   public void startPIsDistributedByDuration(ProcessDefinitionEngineDto processDefinition,
                                             Gaussian gaussian,
                                             int numberOfDataPoints,
-                                            String firstActivityId) {
-    startPIsDistributedByDuration(processDefinition, gaussian, numberOfDataPoints, firstActivityId, null);
-  }
-
-  public void startPIsDistributedByDuration(ProcessDefinitionEngineDto processDefinition,
-                                            Gaussian gaussian,
-                                            int numberOfDataPoints,
-                                            String firstActivityId,
-                                            String secondActivityId) {
+                                            final String... activityIds) {
     startPIsDistributedByDuration(
-      processDefinition.getId(),
-      gaussian,
-      numberOfDataPoints,
-      firstActivityId,
-      secondActivityId,
-      0L
+      processDefinition.getId(), gaussian, numberOfDataPoints, 0L, activityIds
     );
   }
 
   public void startPIsDistributedByDuration(final String processDefinitionId,
-                                             final Gaussian gaussian,
-                                             final int numberOfDataPoints,
-                                             final String firstActivityId,
-                                             final String secondActivityId,
-                                             final long higherDurationOutlierBoundary) {
+                                            final Gaussian gaussian,
+                                            final int numberOfDataPoints,
+                                            final long higherDurationOutlierBoundary,
+                                            final String... activityIds) {
+    if (activityIds.length == 0) {
+      throw new IllegalArgumentException("At least one activityId is required");
+    }
     for (int i = 0; i <= numberOfDataPoints; i++) {
       for (int x = 0; x <= gaussian.value(i) * 1000; x++) {
         final long firstActivityDuration = i * 1000L;
-        // a more "stretched" distribution on the second activity
-        final long secondActivityDuration = Math.round(firstActivityDuration + Math.exp(i) * 1000);
+        // a more "stretched" distribution on all other activities
+        final long remainingActivitiesDuration = Math.round(firstActivityDuration + Math.exp(i) * 1000);
         ProcessInstanceEngineDto processInstance = engineExtension.startProcessInstance(
           processDefinitionId,
           ImmutableMap.of(
             VARIABLE_1_NAME,
             RANDOM.nextInt(),
             VARIABLE_2_NAME,
-            secondActivityId != null && secondActivityDuration > higherDurationOutlierBoundary ?
+            activityIds.length > 1 && remainingActivitiesDuration > higherDurationOutlierBoundary ?
               VARIABLE_VALUE_OUTLIER : VARIABLE_VALUE_NORMAL
           )
         );
-        engineDatabaseExtension.changeActivityDuration(processInstance.getId(), firstActivityId, firstActivityDuration);
-        engineDatabaseExtension.changeActivityDuration(
-          processInstance.getId(),
-          secondActivityId,
-          secondActivityDuration
-        );
+        engineDatabaseExtension.changeActivityDuration(processInstance.getId(), activityIds[0], firstActivityDuration);
+        for (int activityIndex = 1; activityIndex < activityIds.length; activityIndex++) {
+          engineDatabaseExtension.changeActivityDuration(
+            processInstance.getId(), activityIds[activityIndex], remainingActivitiesDuration
+          );
+        }
       }
     }
   }

@@ -139,7 +139,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
 
     // given
     outlierDistributionClient.startPIsDistributedByDuration(
-      procDefId, new Gaussian(40 / 2., 12), 40, TASK_ID_1, TASK_ID_2, 0L
+      procDefId, new Gaussian(40 / 2., 12), 40, 0L, TASK_ID_1, TASK_ID_2
     );
 
     // when
