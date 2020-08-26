@@ -6,7 +6,7 @@ mvn -v
 
 tmpfile=$(mktemp)
 
-mvn -o -B --fail-never -T$LIMITS_CPU -s ${MAVEN_SETTINGS_XML} verify -pl clients/java -DtestMavenId=3 -Dsurefire.rerunFailingTestsCount=5 | tee ${tmpfile}
+mvn -o -B --fail-never -T$LIMITS_CPU -s ${MAVEN_SETTINGS_XML} verify -pl clients/java -DtestMavenId=3 -Dsurefire.rerunFailingTestsCount=7 | tee ${tmpfile}
 
 status=${PIPESTATUS[0]}
 
