@@ -15,7 +15,8 @@
     "password": "Passwort",
     "btn": "Einloggen",
     "error": "Bei der Anmeldung ist ein Fehler aufgetreten.",
-    "timeout": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um die Aktion abzuschließen."
+    "timeout": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um die Aktion abzuschließen.",
+    "telemetry": "Telemetrie ist"
   },
   "footer": {
     "importing": "wird importiert ...",
@@ -646,6 +647,8 @@
     "disableAll": "Alle deaktivieren",
     "selectAll": "Alle auswählen",
     "deselectAll": "Alle abwählen",
+    "enabled": "aktiviert",
+    "disabled": "deaktiviert",
     "and": "und",
     "off": "Aus",
     "none": "Keiner",

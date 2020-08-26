@@ -15,7 +15,8 @@
     "password": "Password",
     "btn": "Log in",
     "error": "An error occurred. Could not log you in.",
-    "timeout": "Your session timed out. Please log in again to complete the action."
+    "timeout": "Your session timed out. Please log in again to complete the action.",
+    "telemetry": "Telemetry is"
   },
   "footer": {
     "importing": "is importing...",
@@ -646,6 +647,8 @@
     "disableAll": "Disable All",
     "selectAll": "Select All",
     "deselectAll": "Deselect All",
+    "enabled": "enabled",
+    "disabled": "disabled",
     "and": "and",
     "off": "Off",
     "none": "None",
