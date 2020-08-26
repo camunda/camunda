@@ -131,8 +131,9 @@ public class PostMigrationTest {
     final List<EventProcessMappingDto> allEventProcessMappings = eventProcessClient.getAllEventProcessMappings();
     assertEventProcessesArePublished(allEventProcessMappings);
 
-    final Map<String, Long> eventProcessInstanceCounts =
-      retrieveEventProcessInstanceCounts(allEventProcessMappings);
+    refreshAllElasticsearchIndices();
+
+    final Map<String, Long> eventProcessInstanceCounts = retrieveEventProcessInstanceCounts(allEventProcessMappings);
     assertThat(eventProcessInstanceCounts.values())
       .isNotEmpty()
       .allSatisfy(instanceCount -> assertThat(instanceCount).isGreaterThan(0L));
