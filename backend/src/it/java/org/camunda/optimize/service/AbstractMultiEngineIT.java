@@ -35,10 +35,10 @@ import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 public class AbstractMultiEngineIT extends AbstractIT {
   private static final String REST_ENDPOINT = "http://localhost:8080/engine-rest";
   private static final String SECURE_REST_ENDPOINT = "http://localhost:8080/engine-it-plugin/basic-auth";
-  public static final String PROCESS_KEY_1 = "TestProcess1";
-  public static final String PROCESS_KEY_2 = "TestProcess2";
-  public static final String DECISION_KEY_1 = "TestDecision1";
-  public static final String DECISION_KEY_2 = "TestDecision2";
+  protected static final String PROCESS_KEY_1 = "TestProcess1";
+  protected static final String PROCESS_KEY_2 = "TestProcess2";
+  protected static final String DECISION_KEY_1 = "TestDecision1";
+  protected static final String DECISION_KEY_2 = "TestDecision2";
   protected final String SECOND_ENGINE_ALIAS = "secondTestEngine";
 
   @RegisterExtension
@@ -60,6 +60,11 @@ public class AbstractMultiEngineIT extends AbstractIT {
   public void reset() {
     configurationService.getConfiguredEngines().remove(SECOND_ENGINE_ALIAS);
     embeddedOptimizeExtension.reloadConfiguration();
+  }
+
+  @Override
+  public EmbeddedOptimizeExtension getEmbeddedOptimizeExtension() {
+    return embeddedOptimizeExtension;
   }
 
   protected ClientAndServer useAndGetSecondaryEngineMockServer() {
@@ -96,7 +101,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
     deployAndStartDecisionDefinitionForAllEngines(null, null);
   }
 
-  protected void deployAndStartDecisionDefinitionForAllEngines(final String tenantId1, final String tenantId2) {
+  private void deployAndStartDecisionDefinitionForAllEngines(final String tenantId1, final String tenantId2) {
     deployAndStartDecisionDefinitionForAllEngines(tenantId1, tenantId2, DECISION_KEY_1, DECISION_KEY_2);
   }
 
@@ -110,8 +115,8 @@ public class AbstractMultiEngineIT extends AbstractIT {
     deployAndStartProcessDefinitionForAllEngines(null, null);
   }
 
-  protected void deployAndStartProcessDefinitionForAllEngines(final String tenantId1,
-                                                              final String tenantId2) {
+  private void deployAndStartProcessDefinitionForAllEngines(final String tenantId1,
+                                                            final String tenantId2) {
     deployAndStartProcessDefinitionForAllEngines(PROCESS_KEY_1, PROCESS_KEY_2, tenantId1, tenantId2);
   }
 
@@ -177,7 +182,7 @@ public class AbstractMultiEngineIT extends AbstractIT {
     );
   }
 
-  protected void addEngineToConfiguration(String engineName, final boolean importEnabled) {
+  private void addEngineToConfiguration(String engineName, final boolean importEnabled) {
     addEngineToConfiguration(engineName, REST_ENDPOINT, false, "", "", importEnabled);
   }
 
@@ -185,12 +190,12 @@ public class AbstractMultiEngineIT extends AbstractIT {
     addEngineToConfiguration("notExistingEngine", "http://localhost:9999/engine-rest", false, "", "", true);
   }
 
-  protected EngineConfiguration addEngineToConfiguration(final String engineName,
-                                                         final String restEndpoint,
-                                                         final boolean withAuthentication,
-                                                         final String username,
-                                                         final String password,
-                                                         final boolean importEnabled) {
+  private EngineConfiguration addEngineToConfiguration(final String engineName,
+                                                       final String restEndpoint,
+                                                       final boolean withAuthentication,
+                                                       final String username,
+                                                       final String password,
+                                                       final boolean importEnabled) {
     final EngineConfiguration engineConfiguration = EngineConfiguration.builder()
       .name(engineName)
       .rest(restEndpoint)

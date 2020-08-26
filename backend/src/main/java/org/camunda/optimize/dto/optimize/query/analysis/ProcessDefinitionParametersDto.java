@@ -13,9 +13,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
+
 @Data
 public class ProcessDefinitionParametersDto {
-  protected static final List<String> DEFAULT_TENANT_IDS = Collections.singletonList(null);
 
   protected String processDefinitionKey;
   protected List<String> processDefinitionVersions;

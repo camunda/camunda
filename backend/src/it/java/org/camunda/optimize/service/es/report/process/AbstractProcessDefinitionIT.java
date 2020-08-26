@@ -71,7 +71,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected static final String SECOND_USER = "secondUser";
   protected static final String SECOND_USERS_PASSWORD = "secondUserPW";
   protected static final VariableType DEFAULT_VARIABLE_TYPE = VariableType.STRING;
-  public static final String TEST_PROCESS = "aProcess";
+  protected static final String TEST_PROCESS = "aProcess";
 
   protected static final Map<String, VariableType> varNameToTypeMap = new HashMap<>(VariableType.values().length);
 
@@ -160,24 +160,9 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() {
-    // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent("startEvent")
-      .exclusiveGateway("splittingGateway")
-        .name("Should we go to task 1?")
-        .condition("yes", "${goToTask1}")
-        .serviceTask("task1")
-          .camundaExpression("${true}")
-      .exclusiveGateway("mergeGateway")
-        .endEvent("endEvent")
-      .moveToNode("splittingGateway")
-        .condition("no", "${!goToTask1}")
-        .serviceTask("task2")
-          .camundaExpression("${true}")
-        .connectTo("mergeGateway")
-      .done();
-    // @formatter:on
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      BpmnModels.getSimpleGatewayProcess(TEST_PROCESS)
+    );
   }
 
   protected String deployAndStartMultiTenantSimpleServiceTaskProcess(final List<String> deployedTenants) {

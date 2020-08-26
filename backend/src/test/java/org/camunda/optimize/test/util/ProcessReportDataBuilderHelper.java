@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.google.common.collect.Lists.newArrayList;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByAssignee;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByCandidateGroup;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByDuration;
@@ -104,6 +105,11 @@ public class ProcessReportDataBuilderHelper {
 
   public ProcessReportDataBuilderHelper processDefinitionVersions(List<String> processDefinitionVersions) {
     this.processDefinitionVersions = processDefinitionVersions;
+    return this;
+  }
+
+  public ProcessReportDataBuilderHelper processDefinitionVersion(final String processDefinitionVersion) {
+    this.processDefinitionVersions = newArrayList(processDefinitionVersion);
     return this;
   }
 

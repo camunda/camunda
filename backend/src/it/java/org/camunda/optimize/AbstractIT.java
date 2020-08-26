@@ -6,6 +6,7 @@
 package org.camunda.optimize;
 
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.camunda.optimize.test.engine.OutlierDistributionClient;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
@@ -49,7 +50,7 @@ public abstract class AbstractIT {
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
 
   private final Supplier<OptimizeRequestExecutor> optimizeRequestExecutorSupplier =
-    () -> embeddedOptimizeExtension.getRequestExecutor();
+    () -> getEmbeddedOptimizeExtension().getRequestExecutor();
 
   protected ClientAndServer useAndGetElasticsearchMockServer() {
     final ClientAndServer esMockServer = elasticSearchIntegrationTestExtension.useEsMockServer();
@@ -78,8 +79,14 @@ public abstract class AbstractIT {
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
+  protected EmbeddedOptimizeExtension getEmbeddedOptimizeExtension() {
+    return embeddedOptimizeExtension;
+  }
+
   // engine test helpers
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
+  protected OutlierDistributionClient outlierDistributionClient =
+    new OutlierDistributionClient(engineIntegrationExtension);
 
   // optimize test helpers
   protected CollectionClient collectionClient = new CollectionClient(optimizeRequestExecutorSupplier);
@@ -102,4 +109,6 @@ public abstract class AbstractIT {
   protected StatusClient statusClient = new StatusClient(optimizeRequestExecutorSupplier);
   protected LocalizationClient localizationClient = new LocalizationClient(optimizeRequestExecutorSupplier);
   protected IdentityClient identityClient = new IdentityClient(optimizeRequestExecutorSupplier);
+
+
 }

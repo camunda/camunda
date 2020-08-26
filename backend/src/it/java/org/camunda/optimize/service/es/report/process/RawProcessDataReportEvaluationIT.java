@@ -46,6 +46,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.util.BpmnModels.TASK_ID_1;
 
 public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -560,11 +561,10 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .viewProperty(ProcessViewProperty.RAW_DATA)
       .build();
 
-
     List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id("task1")
+      .id(TASK_ID_1)
       .add()
       .buildList();
 

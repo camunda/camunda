@@ -18,6 +18,7 @@ import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -29,11 +30,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 @Slf4j
 public class BranchAnalysisQueryIT extends AbstractIT {
@@ -74,20 +73,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
       performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersionAsString());
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(1L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(1L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(1L));
-    assertThat(task1.getActivityCount(), is(1L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task1.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -104,20 +103,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(1L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(1L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task1.getActivityId(), is(TASK_ID_2));
-    assertThat(task1.getActivitiesReached(), is(1L));
-    assertThat(task1.getActivityCount(), is(1L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task1.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task1.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_3);
-    assertThat(task2.getActivityId(), is(TASK_ID_3));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_3);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -137,20 +136,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
 
     // then analysis shows it is not possible to reach the chosen end from the chosen gateway
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(SUBPROCESS_END_EVENT_ID));
-    assertThat(result.getTotal(), is(1L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(SUBPROCESS_END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(1L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_3);
-    assertThat(task1.getActivityId(), is(TASK_ID_3));
-    assertThat(task1.getActivitiesReached(), is(0L));
-    assertThat(task1.getActivityCount(), is(1L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_3);
+    assertThat(task1.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task1.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_4);
-    assertThat(task2.getActivityId(), is(TASK_ID_4));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_4);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -166,20 +165,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), ALL_VERSIONS);
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(2L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(2L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(2L));
-    assertThat(task1.getActivityCount(), is(2L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(2L);
+    assertThat(task1.getActivityCount()).isEqualTo(2L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -206,20 +205,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(4L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(4L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(4L));
-    assertThat(task1.getActivityCount(), is(4L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(4L);
+    assertThat(task1.getActivityCount()).isEqualTo(4L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -237,15 +236,15 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(2L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(2L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(2L));
-    assertThat(task1.getActivityCount(), is(2L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(2L);
+    assertThat(task1.getActivityCount()).isEqualTo(2L);
 
     // when
     ProcessDefinitionEngineDto processDefinition3 = deploySimpleGatewayProcessDefinition();
@@ -258,15 +257,15 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     result = performBranchAnalysis(processDefinition1.getKey(), LATEST_VERSION);
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(3L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(3L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(3L));
-    assertThat(task1.getActivityCount(), is(3L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(3L);
+    assertThat(task1.getActivityCount()).isEqualTo(3L);
   }
 
   @Test
@@ -283,20 +282,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(1L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(1L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(1L));
-    assertThat(task1.getActivityCount(), is(1L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task1.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -323,20 +322,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(2L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(2L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(2L));
-    assertThat(task1.getActivityCount(), is(2L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(2L);
+    assertThat(task1.getActivityCount()).isEqualTo(2L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -363,20 +362,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     );
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(1L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(1L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(1L));
-    assertThat(task1.getActivityCount(), is(1L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task1.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -392,20 +391,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(3L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(3L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(2L));
-    assertThat(task1.getActivityCount(), is(2L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(2L);
+    assertThat(task1.getActivityCount()).isEqualTo(2L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(1L));
-    assertThat(task2.getActivityCount(), is(1L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task2.getActivityCount()).isEqualTo(1L);
   }
 
   @Test
@@ -420,20 +419,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(1L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(1L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(1L));
-    assertThat(task1.getActivityCount(), is(1L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task1.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(1L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(1L);
   }
 
   @Test
@@ -450,20 +449,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = performBranchAnalysis(processDefinition.getKey(), processDefinition.getVersion());
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(2L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(2L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(2L));
-    assertThat(task1.getActivityCount(), is(2L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(2L);
+    assertThat(task1.getActivityCount()).isEqualTo(2L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -495,20 +494,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
     BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(1L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(1L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(1L));
-    assertThat(task1.getActivityCount(), is(1L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task1.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -533,20 +532,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(0L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(0L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(0L));
-    assertThat(task1.getActivityCount(), is(0L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task1.getActivityCount()).isEqualTo(0L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -569,20 +568,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(1L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(1L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(1L));
-    assertThat(task1.getActivityCount(), is(1L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task1.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -627,20 +626,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(2L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(2L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto gatewayD = result.getFollowingNodes().get(GATEWAY_D);
-    assertThat(gatewayD.getActivityId(), is(GATEWAY_D));
-    assertThat(gatewayD.getActivitiesReached(), is(1L));
-    assertThat(gatewayD.getActivityCount(), is(1L));
+    assertThat(gatewayD.getActivityId()).isEqualTo(GATEWAY_D);
+    assertThat(gatewayD.getActivitiesReached()).isEqualTo(1L);
+    assertThat(gatewayD.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task.getActivityId(), is(TASK_ID_1));
-    assertThat(task.getActivitiesReached(), is(1L));
-    assertThat(task.getActivityCount(), is(1L));
+    assertThat(task.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task.getActivityCount()).isEqualTo(1L);
   }
 
   @Test
@@ -669,20 +668,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(1L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(1L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(1L));
-    assertThat(task1.getActivityCount(), is(1L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task1.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -712,20 +711,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = analysisClient.getProcessDefinitionCorrelation(dto);
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is(END_EVENT_ID));
-    assertThat(result.getTotal(), is(0L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo(END_EVENT_ID);
+    assertThat(result.getTotal()).isEqualTo(0L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get(TASK_ID_1);
-    assertThat(task1.getActivityId(), is(TASK_ID_1));
-    assertThat(task1.getActivitiesReached(), is(0L));
-    assertThat(task1.getActivityCount(), is(0L));
+    assertThat(task1.getActivityId()).isEqualTo(TASK_ID_1);
+    assertThat(task1.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task1.getActivityCount()).isEqualTo(0L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get(TASK_ID_2);
-    assertThat(task2.getActivityId(), is(TASK_ID_2));
-    assertThat(task2.getActivitiesReached(), is(0L));
-    assertThat(task2.getActivityCount(), is(0L));
+    assertThat(task2.getActivityId()).isEqualTo(TASK_ID_2);
+    assertThat(task2.getActivitiesReached()).isEqualTo(0L);
+    assertThat(task2.getActivityCount()).isEqualTo(0L);
   }
 
   @Test
@@ -759,20 +758,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = getBasicBranchAnalysisDto(instanceEngineDto);
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is("endEvent"));
-    assertThat(result.getTotal(), is(2L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo("endEvent");
+    assertThat(result.getTotal()).isEqualTo(2L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get("serviceTask");
-    assertThat(task1.getActivityId(), is("serviceTask"));
-    assertThat(task1.getActivitiesReached(), is(1L));
-    assertThat(task1.getActivityCount(), is(1L));
+    assertThat(task1.getActivityId()).isEqualTo("serviceTask");
+    assertThat(task1.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task1.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get("mergeExclusiveGateway");
-    assertThat(task2.getActivityId(), is("mergeExclusiveGateway"));
-    assertThat(task2.getActivitiesReached(), is(1L));
-    assertThat(task2.getActivityCount(), is(1L));
+    assertThat(task2.getActivityId()).isEqualTo("mergeExclusiveGateway");
+    assertThat(task2.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task2.getActivityCount()).isEqualTo(1L);
   }
 
   @Test
@@ -808,20 +807,20 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = getBasicBranchAnalysisDto(instanceEngineDto);
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is("endEvent"));
-    assertThat(result.getTotal(), is(2L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo("endEvent");
+    assertThat(result.getTotal()).isEqualTo(2L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get("serviceTask");
-    assertThat(task1.getActivityId(), is("serviceTask"));
-    assertThat(task1.getActivitiesReached(), is(1L));
-    assertThat(task1.getActivityCount(), is(1L));
+    assertThat(task1.getActivityId()).isEqualTo("serviceTask");
+    assertThat(task1.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task1.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get("mergingServiceTask");
-    assertThat(task2.getActivityId(), is("mergingServiceTask"));
-    assertThat(task2.getActivitiesReached(), is(1L));
-    assertThat(task2.getActivityCount(), is(1L));
+    assertThat(task2.getActivityId()).isEqualTo("mergingServiceTask");
+    assertThat(task2.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task2.getActivityCount()).isEqualTo(1L);
   }
 
   private BranchAnalysisDto getBasicBranchAnalysisDto(ProcessInstanceEngineDto instanceEngineDto) {
@@ -870,34 +869,34 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     BranchAnalysisDto result = getBasicBranchAnalysisDto(instanceEngineDto);
 
     //then
-    assertThat(result, is(notNullValue()));
-    assertThat(result.getEndEvent(), is("endEvent"));
-    assertThat(result.getTotal(), is(2L));
-    assertThat(result.getFollowingNodes().size(), is(2));
+    assertThat(result).isNotNull();
+    assertThat(result.getEndEvent()).isEqualTo("endEvent");
+    assertThat(result.getTotal()).isEqualTo(2L);
+    assertThat(result.getFollowingNodes()).hasSize(2);
 
     BranchAnalysisOutcomeDto task1 = result.getFollowingNodes().get("serviceTask");
-    assertThat(task1.getActivityId(), is("serviceTask"));
-    assertThat(task1.getActivitiesReached(), is(1L));
-    assertThat(task1.getActivityCount(), is(1L));
+    assertThat(task1.getActivityId()).isEqualTo("serviceTask");
+    assertThat(task1.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task1.getActivityCount()).isEqualTo(1L);
 
     BranchAnalysisOutcomeDto task2 = result.getFollowingNodes().get("endEvent");
-    assertThat(task2.getActivityId(), is("endEvent"));
-    assertThat(task2.getActivitiesReached(), is(1L));
-    assertThat(task2.getActivityCount(), is(1L));
+    assertThat(task2.getActivityId()).isEqualTo("endEvent");
+    assertThat(task2.getActivitiesReached()).isEqualTo(1L);
+    assertThat(task2.getActivityCount()).isEqualTo(1L);
   }
 
   @Test
   public void testValidationExceptionOnNullDto() {
     //when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(null);
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
   public void testValidationExceptionOnNullProcessDefinition() {
     //when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(new BranchAnalysisQueryDto());
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -913,7 +912,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
 
     //when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(request);
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -930,7 +929,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(request);
 
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -946,7 +945,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
     //when
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponse(request);
 
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   private void startBypassProcessAndTakeLongWayWithoutTask(ProcessDefinitionEngineDto processDefinition) {
@@ -1007,23 +1006,7 @@ public class BranchAnalysisQueryIT extends AbstractIT {
   }
 
   private ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition(final String tenantId) {
-    // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(PROCESS_DEFINITION_KEY)
-      .startEvent(START_EVENT_ID)
-      .exclusiveGateway(SPLITTING_GATEWAY_ID)
-        .name("Should we go to task 1?")
-        .condition("yes", "${goToTask1}")
-        .serviceTask(TASK_ID_1)
-        .camundaExpression("${true}")
-      .exclusiveGateway(MERGE_GATEWAY_ID)
-        .endEvent(END_EVENT_ID)
-      .moveToNode(SPLITTING_GATEWAY_ID)
-        .condition("no", "${!goToTask1}")
-        .serviceTask(TASK_ID_2)
-        .camundaExpression("${true}")
-        .connectTo(MERGE_GATEWAY_ID)
-      .done();
-    // @formatter:on
+    BpmnModelInstance modelInstance = BpmnModels.getSimpleGatewayProcess(PROCESS_DEFINITION_KEY);
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance, tenantId);
   }
 

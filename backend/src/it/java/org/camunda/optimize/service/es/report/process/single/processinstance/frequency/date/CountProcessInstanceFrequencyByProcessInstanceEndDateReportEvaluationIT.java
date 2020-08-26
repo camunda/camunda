@@ -21,7 +21,6 @@ import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -49,17 +48,17 @@ public class CountProcessInstanceFrequencyByProcessInstanceEndDateReportEvaluati
 
   @Override
   protected void changeProcessInstanceDate(String processInstanceId,
-                                           final OffsetDateTime newDate) throws SQLException {
+                                           final OffsetDateTime newDate) {
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, newDate);
   }
 
   @Override
-  protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> newIdToDates) throws SQLException {
+  protected void updateProcessInstanceDates(final Map<String, OffsetDateTime> newIdToDates) {
     engineDatabaseExtension.changeProcessInstanceEndDates(newIdToDates);
   }
 
   @Test
-  public void testEmptyBucketsAreReturnedForEndDateFilterPeriod() throws Exception {
+  public void testEmptyBucketsAreReturnedForEndDateFilterPeriod() {
     // given
     final OffsetDateTime endDate = OffsetDateTime.now();
     final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -121,7 +120,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceEndDateReportEvaluati
 
 
   @Test
-  public void evaluateReportWithSeveralRunningAndCompletedProcessInstances() throws SQLException {
+  public void evaluateReportWithSeveralRunningAndCompletedProcessInstances() {
     // given 1 completed + 2 running process instances
     final OffsetDateTime now = OffsetDateTime.now();
 
