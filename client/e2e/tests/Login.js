@@ -9,7 +9,11 @@ import {screen} from '@testing-library/testcafe';
 import {ClientFunction} from 'testcafe';
 const getPathname = ClientFunction(() => window.location.hash);
 
-fixture('Login').page(config.endpoint);
+fixture('Login')
+  .page(config.endpoint)
+  .beforeEach(async (t) => {
+    await t.maximizeWindow();
+  });
 
 test('Log in with invalid user account', async (t) => {
   await t

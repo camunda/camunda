@@ -5,28 +5,25 @@
  */
 
 import {deploy, createInstances} from '../setup-utils';
-import {createOperation} from './api';
 
 async function setup() {
-  await deploy(['./tests/resources/genericProcess.bpmn']);
+  await deploy([
+    './tests/resources/operationsProcess_v_1.bpmn',
+    './tests/resources/operationsProcess_v_2.bpmn',
+  ]);
 
-  const instances = await createInstances('genericProcess', 1, 2);
-  const [, instance] = instances;
+  const instancesToCancel = await createInstances(
+    'operationsProcess_v_1',
+    1,
+    1
+  );
+  const instancesToRetry = await createInstances(
+    'operationsProcess_v_2',
+    1,
+    10
+  );
 
-  await sleep(10000);
-
-  const operations = [
-    await createOperation({
-      id: instance.workflowInstanceKey,
-      operationType: 'CANCEL_WORKFLOW_INSTANCE',
-    }),
-  ];
-
-  return {instances, operations};
-}
-
-async function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return {instancesToCancel, instancesToRetry};
 }
 
 export {setup};

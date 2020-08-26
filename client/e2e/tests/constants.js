@@ -4,6 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Selector} from 'testcafe';
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
 
-export const instancesLink = Selector('[data-test="header-link-instances"]');
+export {DATE_REGEX};

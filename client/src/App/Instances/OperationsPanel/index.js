@@ -56,7 +56,7 @@ function OperationsPanel({
         }
       }}
     >
-      <Styled.OperationsList isLoading={isLoading}>
+      <Styled.OperationsList data-test="operations-list" isLoading={isLoading}>
         {isLoading ? (
           <Skeleton data-test="skeleton" />
         ) : hasBatchOperations(batchOperations) ? (

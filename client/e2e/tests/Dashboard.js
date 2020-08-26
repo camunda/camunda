@@ -18,6 +18,7 @@ fixture('Dashboard')
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
+    await t.maximizeWindow();
     await t.navigateTo('/');
   });
 

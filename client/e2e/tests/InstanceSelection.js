@@ -18,6 +18,7 @@ fixture('Select Instances')
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
+    await t.maximizeWindow();
   });
 
 test('Selection of instances applied/removed on filter selection', async (t) => {

@@ -23,6 +23,7 @@ fixture('Add/Edit Variables')
     } = t.fixtureCtx;
 
     await t.useRole(demoUser);
+    await t.maximizeWindow();
     await t.navigateTo(`${config.endpoint}/#/instances/${instanceId}`);
   });
 
