@@ -122,6 +122,7 @@ export class AlertModal extends React.Component {
     this.props.onConfirm({
       ...this.state,
       threshold: formatters.convertDurationToSingleNumber(this.state.threshold),
+      emails: [...new Set(this.state.emails)],
     });
   };
 
@@ -234,7 +235,7 @@ export class AlertModal extends React.Component {
           {this.isInEditingMode() ? t('alert.edit') : t('alert.createNew')}
         </Modal.Header>
         <Modal.Content>
-          <Form horizontal>
+          <Form horizontal autoComplete="off">
             {!emailNotificationIsEnabled && (
               <MessageBox
                 type="warning"

@@ -109,6 +109,8 @@ export default function MultiEmailInput({emails, onChange, placeholder}) {
         onPaste={handlePaste}
         onInput={resize}
         onChange={(evt) => setValue(evt.target.value)}
+        // https://stackoverflow.com/a/30976223/4016581
+        autoComplete="none"
       />
       <span className="sizer" ref={sizer} />
       {emails.map((email, i) => (

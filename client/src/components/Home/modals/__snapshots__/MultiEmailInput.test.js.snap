@@ -6,6 +6,7 @@ exports[`should match snapshot 1`] = `
   onClick={[Function]}
 >
   <ForwardRef(Input)
+    autoComplete="none"
     disabled={false}
     onBlur={[Function]}
     onChange={[Function]}

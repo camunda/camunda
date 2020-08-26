@@ -556,7 +556,7 @@
       "sendNotification": "Benachrichtigung senden, wenn gelöst",
       "reminder": "Erinnerung senden",
       "reminderFrequency": "jede",
-      "emailThreshold": "Bis zu 20 E-Mails können hinzugefügt werden",
+      "emailThreshold": "Bis zu 20 Empfänger können hinzugefügt werden",
       "invalidEmail": "Ungültige E-Mail hinzugefügt"
     },
     "apply": "Änderungen übernehmen",

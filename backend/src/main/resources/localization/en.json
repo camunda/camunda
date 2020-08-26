@@ -556,7 +556,7 @@
       "sendNotification": "Send notification when resolved",
       "reminder": "Send reminder notification",
       "reminderFrequency": "every",
-      "emailThreshold": "Up to 20 emails can be added",
+      "emailThreshold": "Up to 20 recipients can be added",
       "invalidEmail": "Invalid email added"
     },
     "apply": "Apply Changes",

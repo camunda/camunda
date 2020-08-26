@@ -35,7 +35,7 @@ jest.mock('services', () => {
 const initialAlert = {
   id: '71395',
   name: 'Sample Alert',
-  emails: ['test@camunda.com'],
+  emails: ['test@camunda.com', 'test@camunda.com'],
   reportId: '8',
   thresholdOperator: '<',
   threshold: 37,
@@ -66,7 +66,7 @@ it('should apply the alert property to the state when changing props', () => {
   expect(node.state()).toEqual({
     id: '71395',
     name: 'Sample Alert',
-    emails: ['test@camunda.com'],
+    emails: ['test@camunda.com', 'test@camunda.com'],
     reportId: '8',
     thresholdOperator: '<',
     threshold: '37',
@@ -83,7 +83,7 @@ it('should apply the alert property to the state when changing props', () => {
   });
 });
 
-it('should call the onConfirm method', () => {
+it('should call the onConfirm method and not include duplicate emails', () => {
   const spy = jest.fn();
   const node = shallow(<AlertModal reports={reports} onConfirm={spy} />);
 
@@ -92,6 +92,7 @@ it('should call the onConfirm method', () => {
   node.find('[primary]').simulate('click');
 
   expect(spy).toHaveBeenCalled();
+  expect(spy.mock.calls[0][0].emails).toEqual(['test@camunda.com']);
 });
 
 it('should disable the submit button if the name is empty', () => {
