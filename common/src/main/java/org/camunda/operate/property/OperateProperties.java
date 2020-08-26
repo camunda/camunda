@@ -70,6 +70,9 @@ public class OperateProperties {
   @NestedConfigurationProperty
   private ClusterNodeProperties clusterNode = new ClusterNodeProperties();
 
+  @NestedConfigurationProperty
+  private LdapProperties ldap = new LdapProperties();
+
   public boolean isImporterEnabled() {
     return importerEnabled;
   }
@@ -133,6 +136,10 @@ public class OperateProperties {
   public void setZeebe(ZeebeProperties zeebe) {
     this.zeebe = zeebe;
   }
+
+  public LdapProperties getLdap(){ return ldap; }
+
+  public void setLdap(LdapProperties ldap) {this.ldap = ldap; }
 
   public String getUsername() {
     return username;
