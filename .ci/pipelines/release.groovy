@@ -109,6 +109,7 @@ pipeline {
     string(name: 'BRANCH', defaultValue: 'master', description: 'Branch to build the release from.')
     booleanParam(name: 'PUSH_CHANGES', defaultValue: false, description: 'Should the changes be pushed to remote locations (Nexus).')
     booleanParam(name: 'GITHUB_UPLOAD_RELEASE', defaultValue: false, description: 'Should upload the release to github.')
+    booleanParam(name: 'IS_LATEST', defaultValue: true, description: 'Should tag the docker image with "latest" tag.')
   }
 
   environment {
@@ -162,6 +163,30 @@ pipeline {
       steps {
         container('maven') {
           sh githubRelease
+        }
+      }
+    }
+    stage('Upload Docker Image') {
+      when { expression { return params.PUSH_CHANGES } }
+      environment {
+        IMAGE_NAME = 'camunda/zeebe-tasklist'
+        IMAGE_TAG = "${params.RELEASE_VERSION}"
+        DOCKER_HUB = credentials('camunda-dockerhub')
+        IS_LATEST = "${params.IS_LATEST}"
+      }
+      steps {
+        lock('zeebe-tasklist-dockerimage-snapshot-upload') {
+          container('maven') {
+            configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
+              sh """
+                mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${IMAGE_NAME}:${IMAGE_TAG} -Djib.to.auth.username=${DOCKER_HUB_USR} -Djib.to.auth.password=${DOCKER_HUB_PSW}
+
+                if ${IS_LATEST}; then
+                  mvn -B -s $MAVEN_SETTINGS_XML -pl webapp jib:build -Dimage=${IMAGE_NAME}:latest -Djib.to.auth.username=${DOCKER_HUB_USR} -Djib.to.auth.password=${DOCKER_HUB_PSW}
+                fi
+              """
+            }
+          }
         }
       }
     }
