@@ -461,30 +461,27 @@ pipeline {
           }
           steps {
             container('docker') {
-              configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                sh("""
-                cp \$MAVEN_SETTINGS_XML settings.xml
-                echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
-                echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
+              sh("""
+              echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
+              echo '${REGISTRY_CAMUNDA_CLOUD}' | docker login -u ci-optimize registry.camunda.cloud --password-stdin
 
-                docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
-                  --build-arg SKIP_DOWNLOAD=true \
-                  --build-arg VERSION=${VERSION} \
-                  --build-arg SNAPSHOT=${SNAPSHOT} \
-                  .
+              docker build -t ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} \
+                --build-arg SKIP_DOWNLOAD=true \
+                --build-arg VERSION=${VERSION} \
+                --build-arg SNAPSHOT=${SNAPSHOT} \
+                .
 
-                docker push ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG}
+              docker push ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG}
 
-                if [ "${env.BRANCH_NAME}" = 'master' ]; then
-                  docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} ${PROJECT_DOCKER_IMAGE()}:latest
-                  docker push ${PROJECT_DOCKER_IMAGE()}:latest
+              if [ "${env.BRANCH_NAME}" = 'master' ]; then
+                docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} ${PROJECT_DOCKER_IMAGE()}:latest
+                docker push ${PROJECT_DOCKER_IMAGE()}:latest
 
-                  docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} registry.camunda.cloud/team-optimize/optimize:master
-                  docker push registry.camunda.cloud/team-optimize/optimize:master
-                fi
+                docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} registry.camunda.cloud/team-optimize/optimize:master
+                docker push registry.camunda.cloud/team-optimize/optimize:master
+              fi
               """)
-              }
-              }
+            }
           }
         }
       }

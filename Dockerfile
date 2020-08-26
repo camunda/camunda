@@ -10,7 +10,9 @@ ARG NEXUS_PSW
 
 RUN apk add --no-cache maven tar
 
-COPY settings.xml docker/download.sh /tmp/
+# settings.xml is suffixed with a wildcard as it's optional (it's only needed for SKIP_DOWNLOAD=false)
+# see https://forums.docker.com/t/copy-only-if-file-exist/3781
+COPY settings.xml* docker/download.sh /tmp/
 # release artifacts should always win, thus copied last if present
 COPY distro/target/*-${DISTRO}.tar.gz target/checkout/distro/target/*-${DISTRO}.tar.gz /tmp/
 
@@ -31,10 +33,8 @@ ENV JAVA_OPTS="-Xms512m -Xmx512m -XX:MetaspaceSize=256m -XX:MaxMetaspaceSize=256
 
 EXPOSE 8090 8091
 
-# Downgrading wait-for-it is necessary until this PR is merged
-# https://github.com/vishnubob/wait-for-it/pull/68
-RUN apk add --no-cache bash curl tini openjdk8-jre tzdata && \
-    wget -O /usr/local/bin/wait-for-it.sh "https://raw.githubusercontent.com/vishnubob/wait-for-it/a454892f3c2ebbc22bd15e446415b8fcb7c1cfa4/wait-for-it.sh" && \
+RUN apk add --no-cache bash curl tini openjdk11-jre tzdata && \
+    wget -O /usr/local/bin/wait-for-it.sh "https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh" && \
     chmod +x /usr/local/bin/wait-for-it.sh && \
     addgroup -S optimize && \
     adduser -S -g optimize optimize && \
