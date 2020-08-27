@@ -473,12 +473,12 @@ pipeline {
 
               docker push ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG}
 
+              docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} registry.camunda.cloud/team-optimize/optimize:${env.BRANCH_NAME}
+              docker push registry.camunda.cloud/team-optimize/optimize:${env.BRANCH_NAME}
+
               if [ "${env.BRANCH_NAME}" = 'master' ]; then
                 docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} ${PROJECT_DOCKER_IMAGE()}:latest
                 docker push ${PROJECT_DOCKER_IMAGE()}:latest
-
-                docker tag ${PROJECT_DOCKER_IMAGE()}:${IMAGE_TAG} registry.camunda.cloud/team-optimize/optimize:master
-                docker push registry.camunda.cloud/team-optimize/optimize:master
               fi
               """)
             }
