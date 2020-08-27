@@ -7,9 +7,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import ReportModal from './ReportModal';
-import {Button, Typeahead} from 'components';
+import {Tabs} from 'components';
 import {loadReports} from 'services';
+
+import ReportModal from './ReportModal';
 
 jest.mock('react-router-dom', () => {
   const rest = jest.requireActual('react-router-dom');
@@ -102,7 +103,7 @@ it('should show a loading message while loading available reports', () => {
 it('should contain an Add External Source field', () => {
   const node = shallow(<ReportModal {...props} />);
 
-  expect(node.find(Button).at(1)).toIncludeText('Add External Source');
+  expect(node.find(Tabs.Tab).at(1).prop('title')).toBe('Add External Source');
 });
 
 it('should hide the typeahead when external mode is enabled', () => {

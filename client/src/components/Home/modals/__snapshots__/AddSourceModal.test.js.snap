@@ -11,26 +11,32 @@ exports[`should match snapshot 1`] = `
     Add Source
   </Component>
   <Component>
-    <ButtonGroup>
-      <ForwardRef(Button)
-        active={true}
-        onClick={[Function]}
-      >
-        Definition
-      </ForwardRef(Button)>
-      <ForwardRef(Button)
-        active={false}
-        onClick={[Function]}
-      >
-        Tenant
-      </ForwardRef(Button)>
-    </ButtonGroup>
     <Form>
-      <DefinitionSource
-        definitionsWithTenants={Array []}
+      <Tabs
         onChange={[Function]}
-        setInvalid={[Function]}
-      />
+        value="definition"
+      >
+        <Component
+          title="Definition"
+          value="definition"
+        >
+          <DefinitionSource
+            definitionsWithTenants={Array []}
+            onChange={[Function]}
+            setInvalid={[Function]}
+          />
+        </Component>
+        <Component
+          title="Tenant"
+          value="tenant"
+        >
+          <TenantSource
+            onChange={[Function]}
+            setInvalid={[Function]}
+            tenantsWithDefinitions={Array []}
+          />
+        </Component>
+      </Tabs>
     </Form>
   </Component>
   <Component>

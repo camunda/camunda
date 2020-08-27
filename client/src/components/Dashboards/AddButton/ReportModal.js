@@ -7,16 +7,7 @@
 import React from 'react';
 import {withRouter} from 'react-router-dom';
 
-import {
-  Modal,
-  Button,
-  ButtonGroup,
-  Input,
-  Typeahead,
-  LoadingIndicator,
-  Labeled,
-  Form,
-} from 'components';
+import {Modal, Button, Input, Typeahead, LoadingIndicator, Labeled, Form, Tabs} from 'components';
 import {getCollection, loadReports} from 'services';
 import {t} from 'translation';
 
@@ -79,53 +70,47 @@ export default withRouter(
           <Modal.Header>{t('dashboard.addButton.addReport')}</Modal.Header>
           <Modal.Content>
             <Form>
-              <ButtonGroup>
-                <Button onClick={() => this.setExternal(false)} active={!external}>
-                  {t('dashboard.addButton.selectReport')}
-                </Button>
-                <Button onClick={() => this.setExternal(true)} active={external}>
-                  {t('dashboard.addButton.addExternal')}
-                </Button>
-              </ButtonGroup>
-              {!external && (
-                <Form.Group>
-                  {!loading && (
-                    <Labeled label={t('dashboard.addButton.addReportLabel')}>
-                      <Typeahead
-                        initialValue={selectedReport.id}
-                        disabled={noReports}
-                        placeholder={t('dashboard.addButton.selectReportPlaceholder')}
-                        onChange={this.selectReport}
-                        noValuesMessage={t('dashboard.addButton.noReports')}
-                      >
-                        {availableReports.map(({id, name}) => (
-                          <Typeahead.Option key={id} value={id}>
-                            {name}
-                          </Typeahead.Option>
-                        ))}
-                      </Typeahead>
+              <Tabs value={external} onChange={this.setExternal}>
+                <Tabs.Tab value={false} title={t('dashboard.addButton.selectReport')}>
+                  <Form.Group>
+                    {!loading && (
+                      <Labeled label={t('dashboard.addButton.addReportLabel')}>
+                        <Typeahead
+                          initialValue={selectedReport.id}
+                          disabled={noReports}
+                          placeholder={t('dashboard.addButton.selectReportPlaceholder')}
+                          onChange={this.selectReport}
+                          noValuesMessage={t('dashboard.addButton.noReports')}
+                        >
+                          {availableReports.map(({id, name}) => (
+                            <Typeahead.Option key={id} value={id}>
+                              {name}
+                            </Typeahead.Option>
+                          ))}
+                        </Typeahead>
+                      </Labeled>
+                    )}
+                    {loading && <LoadingIndicator />}
+                  </Form.Group>
+                </Tabs.Tab>
+                <Tabs.Tab value={true} title={t('dashboard.addButton.addExternal')}>
+                  <Form.Group>
+                    <Labeled label={t('dashboard.addButton.externalUrl')}>
+                      <Input
+                        name="externalInput"
+                        className="externalInput"
+                        placeholder="https://www.example.com/widget/embed.html"
+                        value={externalUrl}
+                        onChange={({target: {value}}) =>
+                          this.setState({
+                            externalUrl: value,
+                          })
+                        }
+                      />
                     </Labeled>
-                  )}
-                  {loading && <LoadingIndicator />}
-                </Form.Group>
-              )}
-              {external && (
-                <Form.Group>
-                  <Labeled label={t('dashboard.addButton.externalUrl')}>
-                    <Input
-                      name="externalInput"
-                      className="externalInput"
-                      placeholder="https://www.example.com/widget/embed.html"
-                      value={externalUrl}
-                      onChange={({target: {value}}) =>
-                        this.setState({
-                          externalUrl: value,
-                        })
-                      }
-                    />
-                  </Labeled>
-                </Form.Group>
-              )}
+                  </Form.Group>
+                </Tabs.Tab>
+              </Tabs>
             </Form>
           </Modal.Content>
           <Modal.Actions>

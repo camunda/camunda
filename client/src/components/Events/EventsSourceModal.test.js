@@ -7,9 +7,10 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import EventsSourceModalWithErrorHandling from './EventsSourceModal';
-import {DefinitionSelection, Button} from 'components';
+import {DefinitionSelection, Tabs} from 'components';
 import {loadVariables} from 'services';
+
+import EventsSourceModalWithErrorHandling from './EventsSourceModal';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -150,7 +151,7 @@ it('should add external sources', () => {
   const spy = jest.fn();
   const node = shallow(<EventsSourceModal {...props} onConfirm={spy} />);
 
-  node.find('ButtonGroup').find(Button).at(1).simulate('click');
+  node.find('Tabs').prop('onChange')('external');
 
   node.find('[primary]').simulate('click');
 
@@ -160,7 +161,7 @@ it('should add external sources', () => {
 it('should disable external source if already added', () => {
   const node = shallow(<EventsSourceModal {...props} existingSources={[{type: 'external'}]} />);
 
-  expect(node.find('ButtonGroup').find(Button).at(1)).toBeDisabled();
+  expect(node.find(Tabs.Tab).at(1)).toBeDisabled();
 });
 
 it('should contain a change warning and not contain event scope selection', () => {

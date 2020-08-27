@@ -15,9 +15,9 @@ import {
   Typeahead,
   Form,
   Message,
-  ButtonGroup,
   MessageBox,
   DocsLink,
+  Tabs,
 } from 'components';
 import {t} from 'translation';
 import {withErrorHandling} from 'HOC';
@@ -145,25 +145,12 @@ export default withErrorHandling(
             {this.isEditing() ? t('events.sources.editSource') : t('events.sources.addEvents')}
           </Modal.Header>
           <Modal.Content>
-            {!this.isEditing() && (
-              <ButtonGroup>
-                <Button
-                  active={type === 'camunda'}
-                  onClick={() => this.setState({type: 'camunda'})}
-                >
-                  {t('events.sources.camundaEvents')}
-                </Button>
-                <Button
-                  active={type === 'external'}
-                  onClick={() => this.setState({type: 'external'})}
-                  disabled={externalAlreadyAdded}
-                >
-                  {t('events.sources.externalEvents')}
-                </Button>
-              </ButtonGroup>
-            )}
-            {type === 'camunda' && (
-              <>
+            <Tabs
+              value={type}
+              onChange={(type) => this.setState({type})}
+              showButtons={!this.isEditing()}
+            >
+              <Tabs.Tab value="camunda" title={t('events.sources.camundaEvents')}>
                 <DefinitionSelection
                   type="process"
                   definitionKey={processDefinitionKey}
@@ -265,9 +252,15 @@ export default withErrorHandling(
                     </MessageBox>
                   )}
                 </Form>
-              </>
-            )}
-            {type === 'external' && <ExternalSource empty={!externalExist} />}
+              </Tabs.Tab>
+              <Tabs.Tab
+                value="external"
+                title={t('events.sources.externalEvents')}
+                disabled={externalAlreadyAdded}
+              >
+                <ExternalSource empty={!externalExist} />
+              </Tabs.Tab>
+            </Tabs>
           </Modal.Content>
           <Modal.Actions>
             <Button main className="close" onClick={onClose}>

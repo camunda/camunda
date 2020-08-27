@@ -6,66 +6,49 @@
 
 import React from 'react';
 
-import {Modal, ButtonGroup, Button} from 'components';
-
-import './OutlierDetailsModal.scss';
+import {Modal, Tabs} from 'components';
 import {t} from 'translation';
+
 import DurationChart from './DurationChart';
 import VariablesTable from './VariablesTable';
 import InstancesButton from './InstancesButton';
 
-export default class OutlierDetailsModal extends React.Component {
-  state = {
-    tableView: false,
-  };
+import './OutlierDetailsModal.scss';
 
-  render() {
-    const {tableView} = this.state;
-    const {id, name, higherOutlier, data, totalCount} = this.props.selectedNode;
-    return (
-      <Modal open size="large" onClose={this.props.onClose} className="OutlierDetailsModal">
-        <Modal.Header>{t('analysis.outlier.detailsModal.title', {name})}</Modal.Header>
-        <Modal.Content>
-          <ButtonGroup>
-            <Button onClick={() => this.setState({tableView: false})} active={!tableView}>
-              {t('analysis.outlier.detailsModal.durationChart')}
-            </Button>
-            <Button onClick={() => this.setState({tableView: true})} active={tableView}>
-              {t('analysis.outlier.detailsModal.variablesTable')}
-            </Button>
-          </ButtonGroup>
-          {!tableView && (
-            <>
-              <p className="description">
-                {t(
-                  `analysis.outlier.tooltipText.${
-                    higherOutlier.count === 1 ? 'singular' : 'plural'
-                  }`,
-                  {
-                    count: higherOutlier.count,
-                    percentage: Math.round(higherOutlier.relation * 100),
-                  }
-                )}
-                <InstancesButton
-                  id={id}
-                  name={name}
-                  value={higherOutlier.boundValue}
-                  config={this.props.config}
-                />
-              </p>
-              <DurationChart data={data} />
-            </>
-          )}
-          {tableView && (
-            <>
-              <p className="description">
-                {t('analysis.outlier.totalInstances')}: {totalCount}
-              </p>
-              <VariablesTable config={this.props.config} selectedNode={this.props.selectedNode} />
-            </>
-          )}
-        </Modal.Content>
-      </Modal>
-    );
-  }
+export default function OutlierDetailsModal({selectedNode, onClose, config}) {
+  const {id, name, higherOutlier, data, totalCount} = selectedNode;
+
+  return (
+    <Modal open size="large" onClose={onClose} className="OutlierDetailsModal">
+      <Modal.Header>{t('analysis.outlier.detailsModal.title', {name})}</Modal.Header>
+      <Modal.Content>
+        <Tabs>
+          <Tabs.Tab title={t('analysis.outlier.detailsModal.durationChart')}>
+            <p className="description">
+              {t(
+                `analysis.outlier.tooltipText.${higherOutlier.count === 1 ? 'singular' : 'plural'}`,
+                {
+                  count: higherOutlier.count,
+                  percentage: Math.round(higherOutlier.relation * 100),
+                }
+              )}
+              <InstancesButton
+                id={id}
+                name={name}
+                value={higherOutlier.boundValue}
+                config={config}
+              />
+            </p>
+            <DurationChart data={data} />
+          </Tabs.Tab>
+          <Tabs.Tab title={t('analysis.outlier.detailsModal.variablesTable')}>
+            <p className="description">
+              {t('analysis.outlier.totalInstances')}: {totalCount}
+            </p>
+            <VariablesTable config={config} selectedNode={selectedNode} />
+          </Tabs.Tab>
+        </Tabs>
+      </Modal.Content>
+    </Modal>
+  );
 }

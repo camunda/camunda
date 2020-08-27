@@ -1,0 +1,38 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="Tabs"
+>
+  <ButtonGroup>
+    <ForwardRef(Button)
+      active={true}
+      key="0"
+      onClick={[Function]}
+    >
+      tab1 title
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      active={false}
+      key="1"
+      onClick={[Function]}
+    >
+      tab2 title
+    </ForwardRef(Button)>
+    <ForwardRef(Button)
+      active={false}
+      disabled={true}
+      key="2"
+      onClick={[Function]}
+    >
+      disable title
+    </ForwardRef(Button)>
+  </ButtonGroup>
+  <Component
+    key=".0"
+    title="tab1 title"
+  >
+    Tab1 content
+  </Component>
+</div>
+`;

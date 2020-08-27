@@ -8,7 +8,6 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import OutlierDetailsModal from './OutlierDetailsModal';
-import {Button} from 'components';
 
 jest.mock('chart.js');
 
@@ -25,13 +24,4 @@ it('should render a modal with a button group showing duration chart', () => {
 
   expect(node).toMatchSnapshot();
   expect(node.find('DurationChart')).toExist();
-});
-
-it('show total instance count and Variables table when clicking the variable button in the button group', () => {
-  const node = shallow(<OutlierDetailsModal selectedNode={selectedNode} />);
-
-  node.find(Button).at(1).simulate('click');
-
-  expect(node.find('.description')).toExist();
-  expect(node.find('VariablesTable')).toExist();
 });
