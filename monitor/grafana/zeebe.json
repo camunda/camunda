@@ -54,6 +54,12 @@
     },
     {
       "type": "panel",
+      "id": "stat",
+      "name": "Stat",
+      "version": ""
+    },
+    {
+      "type": "panel",
       "id": "table",
       "name": "Table",
       "version": ""
@@ -77,7 +83,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1597737695016,
+  "iteration": 1598534375933,
   "links": [],
   "panels": [
     {
@@ -999,6 +1005,71 @@
           "valueName": "avg"
         },
         {
+          "cacheTimeout": null,
+          "datasource": "${DS_PROMETHEUS}",
+          "gridPos": {
+            "h": 8,
+            "w": 7,
+            "x": 0,
+            "y": 24
+          },
+          "id": 189,
+          "links": [],
+          "options": {
+            "colorMode": "value",
+            "fieldOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "defaults": {
+                "mappings": [],
+                "max": 100,
+                "min": 0,
+                "nullValueMode": "connected",
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 40
+                    }
+                  ]
+                },
+                "title": "",
+                "unit": "percent"
+              },
+              "overrides": [],
+              "values": false
+            },
+            "graphMode": "area",
+            "justifyMode": "center",
+            "orientation": "vertical"
+          },
+          "pluginVersion": "6.7.1",
+          "targets": [
+            {
+              "expr": "(sum(rate(zeebe_dropped_request_count_total{namespace=~\"$namespace\", partition=~\"$partition\"}[1m])) by (partition) / sum(rate(zeebe_received_request_count_total{namespace=~\"$namespace\", partition=~\"$partition\"}[1m])) by (partition) ) * 100",
+              "interval": "",
+              "legendFormat": "Partition {{partition}}",
+              "refId": "A"
+            },
+            {
+              "expr": "",
+              "interval": "",
+              "legendFormat": "",
+              "refId": "B"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Backpressure Dropping Requests [1m]",
+          "type": "stat"
+        },
+        {
           "aliasColors": {},
           "bars": false,
           "dashLength": 10,
@@ -1008,8 +1079,8 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 12,
-            "x": 0,
+            "w": 8,
+            "x": 7,
             "y": 24
           },
           "hiddenSeries": false,
@@ -1119,8 +1190,8 @@
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
-            "w": 12,
-            "x": 12,
+            "w": 9,
+            "x": 15,
             "y": 24
           },
           "hiddenSeries": false,
@@ -1153,6 +1224,7 @@
             {
               "expr": "sum(rate(zeebe_dropped_request_count_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition)",
               "format": "time_series",
+              "interval": "",
               "intervalFactor": 1,
               "legendFormat": "dropped-{{partition}}",
               "refId": "A"
@@ -1160,6 +1232,7 @@
             {
               "expr": "sum(rate(zeebe_received_request_count_total{namespace=~\"$namespace\",partition=~\"$partition\",pod=~\"$pod\"}[1m])) by (partition)",
               "format": "time_series",
+              "interval": "",
               "intervalFactor": 1,
               "legendFormat": "received-{{partition}}",
               "refId": "B"
@@ -7937,5 +8010,5 @@
   "variables": {
     "list": []
   },
-  "version": 11
+  "version": 12
 }
