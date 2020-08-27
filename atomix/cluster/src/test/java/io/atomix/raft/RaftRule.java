@@ -15,6 +15,7 @@
  */
 package io.atomix.raft;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -30,10 +31,11 @@ import io.atomix.raft.primitive.TestMember;
 import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
+import io.atomix.raft.snapshot.InMemorySnapshot;
 import io.atomix.raft.snapshot.PersistedSnapshot;
 import io.atomix.raft.snapshot.PersistedSnapshotListener;
 import io.atomix.raft.snapshot.PersistedSnapshotStore;
-import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
+import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.zeebe.EntryValidator;
@@ -46,14 +48,11 @@ import io.atomix.storage.journal.JournalReader.Mode;
 import io.atomix.utils.AbstractIdentifier;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.atomix.utils.time.WallClockTimestamp;
 import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -71,7 +70,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
-import org.agrona.IoUtil;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -95,6 +93,9 @@ public final class RaftRule extends ExternalResource {
   private final Map<String, AtomicReference<CountDownLatch>> compactAwaiters = new HashMap<>();
   private long position;
   private EntryValidator entryValidator = new NoopEntryValidator();
+  // Keep a reference to the snapshots to ensure they are persisted across the restarts.
+  private Map<String, AtomicReference<InMemorySnapshot>> snapshots;
+  private Map<String, TestSnapshotStore> snapshotStores;
 
   private RaftRule(final int nodeCount) {
     this.nodeCount = nodeCount;
@@ -129,6 +130,8 @@ public final class RaftRule extends ExternalResource {
     position = 0;
     members = new ArrayList<>();
     memberLog = new ConcurrentHashMap<>();
+    snapshotStores = new HashMap<>();
+    snapshots = new HashMap<>();
     nextId = 0;
     context = new SingleThreadContext("raft-test-messaging-%d");
     protocolFactory = new TestRaftProtocolFactory(context);
@@ -258,6 +261,7 @@ public final class RaftRule extends ExternalResource {
     servers.remove(nodeName).shutdown().get(30, TimeUnit.SECONDS);
     compactAwaiters.remove(nodeName);
     memberLog.remove(nodeName);
+    snapshotStores.remove(nodeName);
   }
 
   private RaftMember getRaftMember(final String memberId) {
@@ -281,10 +285,11 @@ public final class RaftRule extends ExternalResource {
     for (final RaftServer raftServer : servers.values()) {
       if (raftServer.isRunning()) {
         final var raftContext = raftServer.getContext();
-        final var snapshotStore = raftContext.getPersistedSnapshotStore();
+        final var snapshotStore =
+            getSnapshotStore(raftServer.cluster().getMember().memberId().id());
 
         compactAwaiters.get(raftServer.name()).set(new CountDownLatch(1));
-        writeSnapshot(index, raftContext.getTerm(), snapshotStore, size);
+        InMemorySnapshot.newPersistedSnapshot(index, raftContext.getTerm(), size, snapshotStore);
       }
     }
 
@@ -297,6 +302,26 @@ public final class RaftRule extends ExternalResource {
       }
       latchAtomicReference.set(null);
     }
+  }
+
+  private TestSnapshotStore getSnapshotStore(final String memberId) {
+    return snapshotStores.get(memberId);
+  }
+
+  private AtomicReference<InMemorySnapshot> getOrCreatePersistedSnapshot(final String memberId) {
+    return snapshots.computeIfAbsent(memberId, i -> new AtomicReference<>());
+  }
+
+  public void assertallNodesHaveSnapshotWithIndex(final long index) {
+
+    assertThat(
+            servers.values().stream()
+                .map(RaftServer::getContext)
+                .map(RaftContext::getPersistedSnapshotStore)
+                .map(PersistedSnapshotStore::getCurrentSnapshotIndex)
+                .distinct()
+                .collect(Collectors.toList()))
+        .containsExactlyInAnyOrderElementsOf(List.of(index));
   }
 
   public boolean allNodesHaveSnapshotWithIndex(final long index) {
@@ -321,36 +346,6 @@ public final class RaftRule extends ExternalResource {
     final var context = raftServer.getContext();
     final var snapshotStore = context.getPersistedSnapshotStore();
     return snapshotStore.getLatestSnapshot().orElseThrow();
-  }
-
-  private void writeSnapshot(
-      final long index,
-      final long term,
-      final PersistedSnapshotStore persistedSnapshotStore,
-      final int size) {
-
-    final var transientSnapshot =
-        persistedSnapshotStore.newTransientSnapshot(index, term, new WallClockTimestamp());
-    transientSnapshot.take(
-        path -> {
-          IoUtil.ensureDirectoryExists(path.toFile(), "snapshot dir should exist");
-          for (int i = 0; i < size; i++) {
-            final var snapshotFile = path.resolve("snapshot-" + i + ".file");
-            try {
-              Files.write(
-                  snapshotFile,
-                  RandomStringUtils.random(128).getBytes(),
-                  StandardOpenOption.CREATE_NEW,
-                  StandardOpenOption.WRITE);
-            } catch (final IOException e) {
-              e.printStackTrace();
-              return false;
-            }
-          }
-          // do something
-          return true;
-        });
-    transientSnapshot.persist();
   }
 
   public void awaitNewLeader() {
@@ -480,21 +475,13 @@ public final class RaftRule extends ExternalResource {
   public void copySnapshotOffline(final String sourceNode, final String targetNode)
       throws Exception {
     final var snapshotOnNode = getSnapshotOnNode(sourceNode);
-
-    final var memberDirectory = getMemberDirectory(directory, targetNode);
-    final var snapshotStore =
-        new FileBasedSnapshotStoreFactory().createSnapshotStore(memberDirectory.toPath(), "1");
-
-    try (final var snapshotChunkReader = snapshotOnNode.newChunkReader()) {
-      final var receivedSnapshot =
-          snapshotStore.newReceivedSnapshot(snapshotOnNode.getId().getSnapshotIdAsString());
-
-      while (snapshotChunkReader.hasNext()) {
-        final var chunk = snapshotChunkReader.next();
-        receivedSnapshot.apply(chunk);
-      }
-      receivedSnapshot.persist();
+    final var targetSnapshotStore = new TestSnapshotStore(getOrCreatePersistedSnapshot(sourceNode));
+    final var receivedSnapshot =
+        targetSnapshotStore.newReceivedSnapshot(snapshotOnNode.getId().getSnapshotIdAsString());
+    for (final var reader = snapshotOnNode.newChunkReader(); reader.hasNext(); ) {
+      receivedSnapshot.apply(reader.next());
     }
+    receivedSnapshot.persist();
   }
 
   private RaftStorage createStorage(
@@ -510,8 +497,9 @@ public final class RaftRule extends ExternalResource {
             .withMaxSegmentSize(1024 * 10)
             .withFreeDiskSpace(100)
             .withSnapshotStore(
-                new FileBasedSnapshotStoreFactory()
-                    .createSnapshotStore(memberDirectory.toPath(), "1"))
+                snapshotStores.compute(
+                    memberId.id(),
+                    (k, v) -> new TestSnapshotStore(getOrCreatePersistedSnapshot(memberId.id()))))
             .withNamespace(RaftNamespaces.RAFT_STORAGE);
     return configurator.apply(defaults).build();
   }
@@ -598,6 +586,8 @@ public final class RaftRule extends ExternalResource {
 
     final var memberDirectory = getMemberDirectory(directory, member);
     FileUtil.deleteFolder(memberDirectory.toPath());
+    // Clear in memory snapshots
+    snapshots.remove(node);
   }
 
   public PersistedSnapshotStore getPersistedSnapshotStore(final String followerB) {
@@ -664,19 +654,21 @@ public final class RaftRule extends ExternalResource {
     @Override
     public void onNewSnapshot(final PersistedSnapshot persistedSnapshot) {
       final var raftServer = servers.get(memberId.id());
-      final var raftContext = raftServer.getContext();
-      final var serviceManager = raftContext.getLogCompactor();
-      serviceManager.setCompactableIndex(persistedSnapshot.getIndex());
+      if (raftServer != null) {
+        final var raftContext = raftServer.getContext();
+        final var serviceManager = raftContext.getLogCompactor();
+        serviceManager.setCompactableIndex(persistedSnapshot.getIndex());
 
-      raftServer
-          .compact()
-          .whenComplete(
-              (v, t) -> {
-                final var latch = compactAwaiters.get(memberId.id()).get();
-                if (latch != null) {
-                  latch.countDown();
-                }
-              });
+        raftServer
+            .compact()
+            .whenComplete(
+                (v, t) -> {
+                  final var latch = compactAwaiters.get(memberId.id()).get();
+                  if (latch != null) {
+                    latch.countDown();
+                  }
+                });
+      }
     }
   }
 }
