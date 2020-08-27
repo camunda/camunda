@@ -120,6 +120,10 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     return deploySimpleOneUserTasksDefinition(TEST_PROCESS, null);
   }
 
+  protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key) {
+    return deploySimpleOneUserTasksDefinition(key, null);
+  }
+
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key, String tenantId) {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram(key), tenantId);
   }
@@ -221,7 +225,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected void startProcessInstanceAndModifyActivityDuration(final String definitionId,
                                                                final long activityDurationInMs) {
     final ProcessInstanceEngineDto thirdProcessInstance = engineIntegrationExtension.startProcessInstance(definitionId);
-    engineDatabaseExtension.changeActivityDuration(thirdProcessInstance.getId(), activityDurationInMs);
+    engineDatabaseExtension.changeAllActivityDurations(thirdProcessInstance.getId(), activityDurationInMs);
   }
 
   protected ProcessReportDataDto createReportDataSortedDesc(final String definitionKey,
@@ -324,20 +328,12 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
                                              final String userTaskKey,
                                              final Double durationInMs) {
-    try {
-      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, durationInMs.longValue());
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+    engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, durationInMs.longValue());
   }
 
   protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
                                              final Double durationInMs) {
-    try {
-      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), durationInMs.longValue());
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+    engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), durationInMs.longValue());
   }
 
   protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,

@@ -30,16 +30,16 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
 
   protected abstract ProcessReportDataType getReportDataType();
 
-  protected abstract void startInstanceAndModifyRelevantDurations(final String definitionId, final int durationInMs);
+  protected abstract void startInstanceAndModifyRelevantDurations(final String definitionId, final int durationInMillis);
 
   @Test
   public void distinctRangesGetMerged() {
     // given
-    final ProcessDefinitionEngineDto firstDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
+    final ProcessDefinitionEngineDto firstDefinition = deploySimpleOneUserTasksDefinition();
     startInstanceAndModifyRelevantDurations(firstDefinition.getId(), 1000);
     startInstanceAndModifyRelevantDurations(firstDefinition.getId(), 2000);
 
-    final ProcessDefinitionEngineDto secondDefinition = deploySimpleServiceTaskProcessAndGetDefinition("other");
+    final ProcessDefinitionEngineDto secondDefinition = deploySimpleOneUserTasksDefinition("other");
     startInstanceAndModifyRelevantDurations(secondDefinition.getId(), 8000);
     startInstanceAndModifyRelevantDurations(secondDefinition.getId(), 10_000);
 
@@ -73,11 +73,11 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
   @Test
   public void intersectingRangesGetMerged() {
     // given
-    final ProcessDefinitionEngineDto firstDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
+    final ProcessDefinitionEngineDto firstDefinition = deploySimpleOneUserTasksDefinition();
     startInstanceAndModifyRelevantDurations(firstDefinition.getId(), 5000);
     startInstanceAndModifyRelevantDurations(firstDefinition.getId(), 7000);
 
-    final ProcessDefinitionEngineDto secondDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
+    final ProcessDefinitionEngineDto secondDefinition = deploySimpleOneUserTasksDefinition();
     startInstanceAndModifyRelevantDurations(firstDefinition.getId(), 6000);
     startInstanceAndModifyRelevantDurations(firstDefinition.getId(), 10_000);
 
@@ -112,11 +112,11 @@ public abstract class AbstractCombinedDurationReportIT extends AbstractProcessDe
   @Test
   public void inclusiveRangesOuterRangeIsKept() {
     // given
-    final ProcessDefinitionEngineDto firstDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
+    final ProcessDefinitionEngineDto firstDefinition = deploySimpleOneUserTasksDefinition();
     startInstanceAndModifyRelevantDurations(firstDefinition.getId(), 60_000);
     startInstanceAndModifyRelevantDurations(firstDefinition.getId(), 80_000);
 
-    final ProcessDefinitionEngineDto secondDefinition = deploySimpleServiceTaskProcessAndGetDefinition();
+    final ProcessDefinitionEngineDto secondDefinition = deploySimpleOneUserTasksDefinition();
     startInstanceAndModifyRelevantDurations(firstDefinition.getId(), 50_000);
     startInstanceAndModifyRelevantDurations(firstDefinition.getId(), 100_000);
 

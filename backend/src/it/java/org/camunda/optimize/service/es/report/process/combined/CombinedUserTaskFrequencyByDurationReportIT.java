@@ -8,20 +8,20 @@ package org.camunda.optimize.service.es.report.process.combined;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION;
 
-public class CombinedFlowNodeFrequencyByDurationReportIT extends AbstractCombinedDurationReportIT {
+public class CombinedUserTaskFrequencyByDurationReportIT extends AbstractCombinedDurationReportIT {
 
   @Override
   protected void startInstanceAndModifyRelevantDurations(final String definitionId, final int durationInMillis) {
     final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(definitionId);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
-    engineDatabaseExtension.changeAllActivityDurations(processInstance.getId(), durationInMillis);
+    engineDatabaseExtension.changeUserTaskDuration(processInstance.getId(), durationInMillis);
   }
 
   @Override
   protected ProcessReportDataType getReportDataType() {
-    return FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION;
+    return USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION;
   }
 
 }

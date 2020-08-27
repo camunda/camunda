@@ -20,7 +20,6 @@ import org.camunda.optimize.service.es.report.command.modules.distributed_by.Dis
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
 import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
-import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
@@ -44,6 +43,14 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -70,11 +77,7 @@ public class DurationAggregationService {
       context, searchSourceBuilder.query(), PROCESS_INSTANCE_INDEX_NAME, durationCalculationScript
     );
     return createLimitedGroupByScriptedDurationAggregation(
-      context,
-      distributedByPart,
-      durationCalculationScript,
-      minMaxStats,
-      this::createProcessInstanceLimitingFilterQuery
+      context, distributedByPart, durationCalculationScript, minMaxStats, this::createProcessInstanceLimitingFilterQuery
     );
   }
 
@@ -85,18 +88,24 @@ public class DurationAggregationService {
     final Script durationCalculationScript) {
 
     final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
-      context,
-      searchSourceBuilder.query(),
-      PROCESS_INSTANCE_INDEX_NAME,
-      ProcessInstanceIndex.EVENTS,
-      durationCalculationScript
+      context, searchSourceBuilder.query(), PROCESS_INSTANCE_INDEX_NAME, EVENTS, durationCalculationScript
     );
     return createLimitedGroupByScriptedDurationAggregation(
-      context,
-      distributedByPart,
-      durationCalculationScript,
-      minMaxStats,
-      this::createEventLimitingFilterQuery
+      context, distributedByPart, durationCalculationScript, minMaxStats, this::createEventLimitingFilterQuery
+    );
+  }
+
+  public Optional<AggregationBuilder> createLimitedGroupByScriptedUserTaskDurationAggregation(
+    final SearchSourceBuilder searchSourceBuilder,
+    final ExecutionContext<ProcessReportDataDto> context,
+    final DistributedByPart<ProcessReportDataDto> distributedByPart,
+    final Script durationCalculationScript) {
+
+    final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxNumberRangeForNestedScriptedField(
+      context, searchSourceBuilder.query(), PROCESS_INSTANCE_INDEX_NAME, USER_TASKS, durationCalculationScript
+    );
+    return createLimitedGroupByScriptedDurationAggregation(
+      context, distributedByPart, durationCalculationScript, minMaxStats, this::createUserTaskLimitingFilterQuery
     );
   }
 
@@ -203,33 +212,44 @@ public class DurationAggregationService {
     }
   }
 
+  private ScriptQueryBuilder createUserTaskLimitingFilterQuery(final FilterOperator filterOperator,
+                                                               final double filterValueInMillis) {
+    return createLimitingFilterQuery(
+      filterOperator,
+      (long) filterValueInMillis,
+      USER_TASKS + "." + USER_TASK_TOTAL_DURATION,
+      USER_TASKS + "." + USER_TASK_START_DATE
+    );
+  }
+
   private ScriptQueryBuilder createEventLimitingFilterQuery(final FilterOperator filterOperator,
                                                             final double filterValueInMillis) {
-    return QueryBuilders.scriptQuery(
-      ExecutionStateAggregationUtil.getDurationFilterScript(
-        LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-        ProcessInstanceIndex.EVENTS + "." + ProcessInstanceIndex.ACTIVITY_DURATION,
-        ProcessInstanceIndex.EVENTS + "." + ProcessInstanceIndex.ACTIVITY_START_DATE,
-        DurationFilterDataDto.builder()
-          .operator(filterOperator)
-          .unit(FILTER_UNIT)
-          .value((long) filterValueInMillis)
-          .build()
-      )
+    return createLimitingFilterQuery(
+      filterOperator,
+      (long) filterValueInMillis,
+      EVENTS + "." + ACTIVITY_DURATION,
+      EVENTS + "." + ACTIVITY_START_DATE
     );
   }
 
   private ScriptQueryBuilder createProcessInstanceLimitingFilterQuery(final FilterOperator filterOperator,
                                                                       final double filterValueInMillis) {
+    return createLimitingFilterQuery(filterOperator, (long) filterValueInMillis, DURATION, START_DATE);
+  }
+
+  private ScriptQueryBuilder createLimitingFilterQuery(final FilterOperator filterOperator,
+                                                       final long filterValueInMillis,
+                                                       final String durationFieldName,
+                                                       final String referenceDateFieldName) {
     return QueryBuilders.scriptQuery(
       ExecutionStateAggregationUtil.getDurationFilterScript(
         LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-        ProcessInstanceIndex.DURATION,
-        ProcessInstanceIndex.START_DATE,
+        durationFieldName,
+        referenceDateFieldName,
         DurationFilterDataDto.builder()
           .operator(filterOperator)
           .unit(FILTER_UNIT)
-          .value((long) filterValueInMillis)
+          .value(filterValueInMillis)
           .build()
       )
     );

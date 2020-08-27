@@ -36,7 +36,8 @@ public class FlowNodeFrequencyGroupByFlowNodeDurationByFlowNodeCmd extends Proce
   }
 
   @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+  public ReportEvaluationResult<ReportHyperMapResultDto, SingleProcessReportDefinitionDto> evaluate(
+    final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     final ReportHyperMapResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleProcessHyperMapReportResult(evaluate, commandContext.getReportDefinition());
   }

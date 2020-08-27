@@ -21,8 +21,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.TenantService;
@@ -54,7 +54,6 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -964,7 +963,7 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
 
   @SneakyThrows
   private void changeActivityDuration(final ProcessInstanceEngineDto processInstanceDto, final Double durationInMs) {
-    engineDatabaseExtension.changeActivityDuration(processInstanceDto.getId(), durationInMs.longValue());
+    engineDatabaseExtension.changeAllActivityDurations(processInstanceDto.getId(), durationInMs.longValue());
   }
 
   @SneakyThrows

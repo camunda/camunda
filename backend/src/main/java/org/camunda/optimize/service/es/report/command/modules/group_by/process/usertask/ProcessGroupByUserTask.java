@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.modules.group_by.process;
+package org.camunda.optimize.service.es.report.command.modules.group_by.process.usertask;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.DefinitionType;
@@ -13,17 +13,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.UserT
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
-import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.bucket.filter.Filter;
-import org.elasticsearch.search.aggregations.bucket.nested.Nested;
-import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -35,21 +31,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.filter.UserTaskFilterQueryUtil.createUserTaskAggregationFilter;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
-
+public class ProcessGroupByUserTask extends AbstractGroupByUserTask {
   private static final String USER_TASK_ID_TERMS_AGGREGATION = "tasks";
-  private static final String USER_TASKS_AGGREGATION = "userTasks";
-  private static final String FILTERED_USER_TASKS_AGGREGATION = "filteredUserTasks";
 
   private final ConfigurationService configurationService;
   private final DefinitionService definitionService;
@@ -57,53 +47,48 @@ public class ProcessGroupByUserTask extends GroupByPart<ProcessReportDataDto> {
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final NestedAggregationBuilder groupByAssigneeAggregation = nested(USER_TASKS, USER_TASKS_AGGREGATION)
-      .subAggregation(
-        filter(FILTERED_USER_TASKS_AGGREGATION, createUserTaskAggregationFilter(context.getReportData()))
-          .subAggregation(
-            AggregationBuilders
-              .terms(USER_TASK_ID_TERMS_AGGREGATION)
-              .size(configurationService.getEsAggregationBucketLimit())
-              .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID)
-              .subAggregation(distributedByPart.createAggregation(context))
-          )
-      )
-      // sibling aggregation for distributedByPart for retrieval of all keys that
-      // should be present in distributedBy result
-      .subAggregation(distributedByPart.createAggregation(context));
-    return Collections.singletonList(groupByAssigneeAggregation);
+    return Collections.singletonList(createFilteredUserTaskAggregation(
+      context,
+      AggregationBuilders
+        .terms(USER_TASK_ID_TERMS_AGGREGATION)
+        .size(configurationService.getEsAggregationBucketLimit())
+        .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID)
+        .subAggregation(distributedByPart.createAggregation(context))
+    ));
   }
 
+  @Override
   public void addQueryResult(final CompositeCommandResult compositeCommandResult,
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
-    final Aggregations aggregations = response.getAggregations();
-    final Nested userTasks = aggregations.get(USER_TASKS_AGGREGATION);
-    final Filter filteredUserTasks = userTasks.getAggregations().get(FILTERED_USER_TASKS_AGGREGATION);
-    final Terms byTaskIdAggregation = filteredUserTasks.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION);
+    getFilteredUserTaskAggregation(response)
+      .map(filteredFlowNodes -> (Terms) filteredFlowNodes.getAggregations().get(USER_TASK_ID_TERMS_AGGREGATION))
+      .ifPresent(userTasksAggregation -> {
+        getUserTasksAggregation(response)
+          .map(SingleBucketAggregation::getAggregations)
+          .ifPresent(userTaskSubAggregations -> distributedByPart.enrichContextWithAllExpectedDistributedByKeys(
+            context,
+            userTaskSubAggregations
+          ));
 
-    distributedByPart.enrichContextWithAllExpectedDistributedByKeys(
-      context,
-      userTasks.getAggregations()
-    );
+        final Map<String, String> userTaskNames = getUserTaskNames(context.getReportData());
+        List<GroupByResult> groupedData = new ArrayList<>();
+        for (Terms.Bucket b : userTasksAggregation.getBuckets()) {
+          final String userTaskKey = b.getKeyAsString();
+          if (userTaskNames.containsKey(userTaskKey)) {
+            final List<DistributedByResult> singleResult =
+              distributedByPart.retrieveResult(response, b.getAggregations(), context);
+            String label = userTaskNames.get(userTaskKey);
+            groupedData.add(GroupByResult.createGroupByResult(userTaskKey, label, singleResult));
+            userTaskNames.remove(userTaskKey);
+          }
+        }
 
-    final Map<String, String> userTaskNames = getUserTaskNames(context.getReportData());
-    List<GroupByResult> groupedData = new ArrayList<>();
-    for (Terms.Bucket b : byTaskIdAggregation.getBuckets()) {
-      final String userTaskKey = b.getKeyAsString();
-      if (userTaskNames.containsKey(userTaskKey)) {
-        final List<DistributedByResult> singleResult =
-          distributedByPart.retrieveResult(response, b.getAggregations(), context);
-        String label = userTaskNames.get(userTaskKey);
-        groupedData.add(GroupByResult.createGroupByResult(userTaskKey, label, singleResult));
-        userTaskNames.remove(userTaskKey);
-      }
-    }
+        addMissingGroupByResults(userTaskNames, groupedData, context);
 
-    addMissingGroupByResults(userTaskNames, groupedData, context);
-
-    compositeCommandResult.setGroups(groupedData);
-    compositeCommandResult.setIsComplete(byTaskIdAggregation.getSumOfOtherDocCounts() == 0L);
+        compositeCommandResult.setGroups(groupedData);
+        compositeCommandResult.setIsComplete(userTasksAggregation.getSumOfOtherDocCounts() == 0L);
+      });
   }
 
   private void addMissingGroupByResults(final Map<String, String> userTaskNames,

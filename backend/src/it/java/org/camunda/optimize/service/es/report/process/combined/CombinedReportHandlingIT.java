@@ -452,26 +452,27 @@ public class CombinedReportHandlingIT extends AbstractIT {
     );
     groupByDuration.setData(groupByDurationData);
 
-    final SingleProcessReportDefinitionDto groupByDurationAnotherKey = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto groupByDurationDataAnotherKey = TemplatedProcessReportDataBuilder
+    final SingleProcessReportDefinitionDto groupByDurationDifferentBucketSize = new SingleProcessReportDefinitionDto();
+    final ProcessReportDataDto groupByDurationDataDifferentBucketSize = TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
-      .setProcessDefinitionKey("anotherKey")
+      .setProcessDefinitionKey("key")
       .setProcessDefinitionVersion("1")
       .setVisualization(ProcessVisualization.BAR)
       .build();
-    groupByDurationDataAnotherKey.getConfiguration().setCustomBucket(
+    groupByDurationDataDifferentBucketSize.getConfiguration().setCustomBucket(
       CustomBucketDto.builder()
         .active(true)
         .baseline(10.0D)
         .baselineUnit(BucketUnit.MILLISECOND)
-        .bucketSize(1000.0D)
+        .bucketSize(1.0D)
         .bucketSizeUnit(BucketUnit.MILLISECOND)
         .build()
     );
-    groupByDurationAnotherKey.setData(groupByDurationDataAnotherKey);
+    groupByDurationDifferentBucketSize.setData(groupByDurationDataDifferentBucketSize);
 
     // groupByFlowNodeDuration distributed by flowNode
+    // as this report type is not supported at all a single report will just get combined with itself to verify that
     final SingleProcessReportDefinitionDto groupByFlowNodeDurationDistributeByFlowNode =
       new SingleProcessReportDefinitionDto();
     final ProcessReportDataDto groupByFlowNodeDurationDistributeByFlowNodeData = TemplatedProcessReportDataBuilder
@@ -483,24 +484,13 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .build();
     groupByFlowNodeDurationDistributeByFlowNode.setData(groupByFlowNodeDurationDistributeByFlowNodeData);
 
-    final SingleProcessReportDefinitionDto groupByFlowNodeDurationDistributeByFlowNodeAnotherKey =
-      new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto roupByFlowNodeDurationDistributeByFlowNodeAnotherKey = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE)
-      .setProcessDefinitionKey("anotherKey")
-      .setProcessDefinitionVersion("1")
-      .setVisualization(ProcessVisualization.TABLE)
-      .build();
-    groupByFlowNodeDurationDistributeByFlowNodeAnotherKey.setData(roupByFlowNodeDurationDistributeByFlowNodeAnotherKey);
-
     return Stream.of(
       Arrays.asList(pICount_startDateYear_bar, pICount_startDateYear_line),
       Arrays.asList(pICount_byVariable_bar, pICount_startDateYear_bar),
       Arrays.asList(pICount_startDateYear_bar, pIDuration_startDateYear_bar),
       Arrays.asList(groupByNumberVar1, groupByNumberVar2),
-      Arrays.asList(groupByDuration, groupByDurationAnotherKey),
-      Arrays.asList(groupByFlowNodeDurationDistributeByFlowNode, groupByFlowNodeDurationDistributeByFlowNodeAnotherKey)
+      Arrays.asList(groupByDuration, groupByDurationDifferentBucketSize),
+      Arrays.asList(groupByFlowNodeDurationDistributeByFlowNode, groupByFlowNodeDurationDistributeByFlowNode)
     );
   }
 

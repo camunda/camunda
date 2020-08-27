@@ -72,13 +72,13 @@ public class CombinedProcessExportServiceIT extends AbstractIT {
   public void combinedDurationMapReportHasExpectedValue() throws Exception {
     //given
     ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcessWith5FlowNodes();
-    engineDatabaseExtension.changeActivityDuration(processInstance1.getId(), 0);
+    engineDatabaseExtension.changeAllActivityDurations(processInstance1.getId(), 0);
     ProcessInstanceEngineDto processInstance2 = engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram(
       "aProcess",
       START,
       END
     ));
-    engineDatabaseExtension.changeActivityDuration(processInstance2.getId(), 0);
+    engineDatabaseExtension.changeAllActivityDurations(processInstance2.getId(), 0);
     String singleReportId1 = createNewSingleDurationMapReport(processInstance1);
     String singleReportId2 = createNewSingleDurationMapReport(processInstance2);
     String combinedReportId = reportClient.createNewCombinedReport(singleReportId1, singleReportId2);

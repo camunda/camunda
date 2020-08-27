@@ -117,8 +117,8 @@ public class EngineDatabaseExtension implements Extension {
   }
 
   @SneakyThrows
-  public void changeActivityDuration(String processInstanceId,
-                                     long duration) {
+  public void changeAllActivityDurations(String processInstanceId,
+                                         long duration) {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET DURATION_ = ? WHERE " +
       "PROC_INST_ID_ = ?";
@@ -303,8 +303,9 @@ public class EngineDatabaseExtension implements Extension {
     connection.commit();
   }
 
+  @SneakyThrows
   public void changeUserTaskDuration(final String processInstanceId,
-                                     final long duration) throws SQLException {
+                                     final long duration) {
     String sql = "UPDATE ACT_HI_TASKINST " +
       "SET DURATION_ = ? WHERE " +
       "PROC_INST_ID_ = ?";
@@ -315,9 +316,10 @@ public class EngineDatabaseExtension implements Extension {
     connection.commit();
   }
 
+  @SneakyThrows
   public void changeUserTaskDuration(final String processInstanceId,
                                      final String userTaskId,
-                                     final long durationInMs) throws SQLException {
+                                     final long durationInMs) {
     String sql = "UPDATE ACT_HI_TASKINST " +
       "SET DURATION_ = ? WHERE " +
       "PROC_INST_ID_ = ?" +

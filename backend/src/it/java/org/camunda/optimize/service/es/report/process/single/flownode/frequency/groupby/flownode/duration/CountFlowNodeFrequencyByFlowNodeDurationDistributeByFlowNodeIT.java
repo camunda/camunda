@@ -233,14 +233,14 @@ public class CountFlowNodeFrequencyByFlowNodeDurationDistributeByFlowNodeIT exte
     final OffsetDateTime startTime = DateCreationFreezer.dateFreezer(OffsetDateTime.now()).freezeDateAndReturn();
     final ProcessInstanceEngineDto completedProcessInstance = deployAndStartSimpleUserTaskProcess();
     engineIntegrationExtension.completeUserTaskWithoutClaim(completedProcessInstance.getId());
-    engineDatabaseExtension.changeActivityDuration(
+    engineDatabaseExtension.changeAllActivityDurations(
       completedProcessInstance.getId(),
       completedActivityInstanceDurations
     );
 
     final ProcessInstanceEngineDto runningProcessInstance = engineIntegrationExtension
       .startProcessInstance(completedProcessInstance.getDefinitionId());
-    engineDatabaseExtension.changeActivityDuration(runningProcessInstance.getId(), completedActivityInstanceDurations);
+    engineDatabaseExtension.changeAllActivityDurations(runningProcessInstance.getId(), completedActivityInstanceDurations);
     engineDatabaseExtension.changeActivityInstanceStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
     importAllEngineEntitiesFromScratch();
 

@@ -32,7 +32,7 @@ public abstract class AbstractGroupByFlowNode extends GroupByPart<ProcessReportD
 
   protected AggregationBuilder createExecutionStateFilteredFlowNodeAggregation(
     final FlowNodeExecutionState flowNodeExecutionState,
-    final AggregationBuilder subaggregation) {
+    final AggregationBuilder subAggregation) {
 
     return nested(FLOW_NODES_AGGREGATION, EVENTS)
       .subAggregation(
@@ -46,7 +46,7 @@ public abstract class AbstractGroupByFlowNode extends GroupByPart<ProcessReportD
             flowNodeExecutionState,
             EVENTS + "." + ACTIVITY_END_DATE
           )
-        ).subAggregation(subaggregation)
+        ).subAggregation(subAggregation)
       );
   }
 

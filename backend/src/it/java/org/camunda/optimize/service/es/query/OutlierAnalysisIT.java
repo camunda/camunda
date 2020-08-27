@@ -198,7 +198,7 @@ public class OutlierAnalysisIT extends AbstractIT {
     // a single all flow nodes higher outlier instance
     ProcessInstanceEngineDto processInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstance.getId(), 100_000);
+    engineDatabaseExtension.changeAllActivityDurations(processInstance.getId(), 100_000);
 
     importAllEngineEntitiesFromScratch();
 
@@ -251,7 +251,7 @@ public class OutlierAnalysisIT extends AbstractIT {
     // a single all flow nodes higher outlier instance
     ProcessInstanceEngineDto processInstance =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineDatabaseExtension.changeActivityDuration(processInstance.getId(), 100_000);
+    engineDatabaseExtension.changeAllActivityDurations(processInstance.getId(), 100_000);
 
     importAllEngineEntitiesFromScratch();
 

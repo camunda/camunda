@@ -459,7 +459,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
 
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final Double durationInMs) {
-    engineDatabaseExtension.changeActivityDuration(
+    engineDatabaseExtension.changeAllActivityDurations(
       processInstanceDto.getId(),
       durationInMs.longValue()
     );

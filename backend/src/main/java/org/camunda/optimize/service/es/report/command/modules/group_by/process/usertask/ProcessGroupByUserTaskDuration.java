@@ -3,10 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.modules.group_by.process.flownode;
+package org.camunda.optimize.service.es.report.command.modules.group_by.process.usertask;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.DurationGroupByDto;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
@@ -32,15 +31,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_START_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
+public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
 
   private final MinMaxStatsService minMaxStatsService;
   private final DurationAggregationService durationAggregationService;
@@ -48,16 +47,11 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final FlowNodeExecutionState flowNodeExecutionState = context.getReportConfiguration().getFlowNodeExecutionState();
-
     return durationAggregationService
-      .createLimitedGroupByScriptedEventDurationAggregation(
+      .createLimitedGroupByScriptedUserTaskDurationAggregation(
         searchSourceBuilder, context, distributedByPart, getDurationScript()
       )
-      .map(durationAggregation -> createExecutionStateFilteredFlowNodeAggregation(
-        flowNodeExecutionState,
-        durationAggregation
-      ))
+      .map(durationAggregation -> (AggregationBuilder) createFilteredUserTaskAggregation(context, durationAggregation))
       .map(Collections::singletonList)
       .orElse(Collections.emptyList());
   }
@@ -67,20 +61,17 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
     compositeCommandResult.setKeyIsOfNumericType(true);
-    getExecutionStateFilteredFlowNodesAggregation(response)
+    getFilteredUserTaskAggregation(response)
       .ifPresent(filteredFlowNodes -> {
         final List<CompositeCommandResult.GroupByResult> durationHistogramData =
           durationAggregationService.mapGroupByDurationResults(
-            response,
-            filteredFlowNodes.getAggregations(),
-            context,
-            distributedByPart
+            response, filteredFlowNodes.getAggregations(), context, distributedByPart
           );
 
         compositeCommandResult.setGroups(durationHistogramData);
         compositeCommandResult.setIsComplete(FilterLimitedAggregationUtil.isResultComplete(
           filteredFlowNodes.getAggregations(),
-          getFlowNodesAggregation(response).map(SingleBucketAggregation::getDocCount).orElse(0L)
+          getUserTasksAggregation(response).map(SingleBucketAggregation::getDocCount).orElse(0L)
         ));
       });
   }
@@ -98,15 +89,15 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
 
   private MinMaxStatDto retrieveMinMaxDurationStats(final QueryBuilder baseQuery) {
     return minMaxStatsService.getScriptedMinMaxStats(
-      baseQuery, PROCESS_INSTANCE_INDEX_NAME, EVENTS, getDurationScript()
+      baseQuery, PROCESS_INSTANCE_INDEX_NAME, USER_TASKS, getDurationScript()
     );
   }
 
   private Script getDurationScript() {
     return ExecutionStateAggregationUtil.getDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      EVENTS + "." + ACTIVITY_DURATION,
-      EVENTS + "." + ACTIVITY_START_DATE
+      USER_TASKS + "." + USER_TASK_TOTAL_DURATION,
+      USER_TASKS + "." + USER_TASK_START_DATE
     );
   }
 

@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.usertask;
+package org.camunda.optimize.service.es.report.command.process.user_task.frequency.groupby.usertask.duration;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -13,15 +13,14 @@ import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
-import org.camunda.optimize.service.es.report.command.modules.group_by.process.usertask.ProcessGroupByUserTask;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.usertask.ProcessGroupByUserTaskDuration;
 import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountUserTaskFrequency;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.springframework.stereotype.Component;
 
 @Component
-public class UserTaskFrequencyGroupByTaskCmd extends ProcessCmd<ReportMapResultDto> {
-
-  public UserTaskFrequencyGroupByTaskCmd(final ReportCmdExecutionPlanBuilder builder) {
+public class UserTaskFrequencyGroupByUserTaskDurationCmd extends ProcessCmd<ReportMapResultDto> {
+  public UserTaskFrequencyGroupByUserTaskDurationCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
@@ -30,15 +29,21 @@ public class UserTaskFrequencyGroupByTaskCmd extends ProcessCmd<ReportMapResultD
     return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewCountUserTaskFrequency.class)
-      .groupBy(ProcessGroupByUserTask.class)
+      .groupBy(ProcessGroupByUserTaskDuration.class)
       .distributedBy(ProcessDistributedByNone.class)
       .resultAsMap()
       .build();
   }
 
   @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+  public ReportEvaluationResult<ReportMapResultDto, SingleProcessReportDefinitionDto> evaluate(
+    final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
     final ReportMapResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleProcessMapReportResult(evaluate, commandContext.getReportDefinition());
+  }
+
+  @Override
+  public String createCommandKey() {
+    return executionPlan.generateCommandKey();
   }
 }
