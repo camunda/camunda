@@ -19,6 +19,8 @@ import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"io"
 	"log"
 	"sync"
@@ -83,13 +85,14 @@ func (poller *jobPoller) activateJobs() {
 
 	for {
 		response, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
 		if err != nil {
-			log.Println("Failed to activate jobs for worker", poller.request.Worker, err)
+			if err != io.EOF && status.Code(err) != codes.ResourceExhausted {
+				log.Println("Failed to activate jobs for worker", poller.request.Worker, err)
+			}
+
 			break
 		}
+
 		poller.remaining += len(response.Jobs)
 		poller.setJobsRemainingCountMetric(poller.remaining)
 		for _, job := range response.Jobs {
