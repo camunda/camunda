@@ -134,9 +134,13 @@ public class PostMigrationTest {
     refreshAllElasticsearchIndices();
 
     final Map<String, Long> eventProcessInstanceCounts = retrieveEventProcessInstanceCounts(allEventProcessMappings);
-    assertThat(eventProcessInstanceCounts.values())
+    assertThat(eventProcessInstanceCounts.entrySet())
       .isNotEmpty()
-      .allSatisfy(instanceCount -> assertThat(instanceCount).isGreaterThan(0L));
+      .allSatisfy(entry -> {
+        assertThat(entry.getValue())
+          .withFailMessage("Event process with key %s did not contain instances.", entry.getKey())
+          .isGreaterThan(0L);
+      });
   }
 
   @Test
