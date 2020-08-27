@@ -112,8 +112,7 @@ public class SingleReportConfigurationDto implements Combinable {
       return false;
     }
     SingleReportConfigurationDto that = (SingleReportConfigurationDto) o;
-    return DistributedByType.NONE.equals(distributedBy.getType())
-      && DistributedByType.NONE.equals(that.distributedBy.getType());
+    return distributedBy.isCombinable(that.distributedBy);
   }
 
   private boolean isModelElementCommand(ProcessViewDto viewDto) {

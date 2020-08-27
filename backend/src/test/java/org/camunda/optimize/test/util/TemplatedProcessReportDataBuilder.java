@@ -253,7 +253,7 @@ public class TemplatedProcessReportDataBuilder {
           .viewEntity(ProcessViewEntity.FLOW_NODE)
           .viewProperty(ProcessViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.DURATION)
-          .distributedBy(DistributedBy.NONE)
+          .distributedBy(DistributedByType.NONE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();
@@ -263,7 +263,7 @@ public class TemplatedProcessReportDataBuilder {
           .viewEntity(ProcessViewEntity.FLOW_NODE)
           .viewProperty(ProcessViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.DURATION)
-          .distributedBy(DistributedBy.FLOW_NODE)
+          .distributedBy(DistributedByType.FLOW_NODE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .build();

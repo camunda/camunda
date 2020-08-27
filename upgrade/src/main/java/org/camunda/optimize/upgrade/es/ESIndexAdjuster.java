@@ -39,8 +39,6 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +51,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 
 public class ESIndexAdjuster {
 
@@ -121,7 +120,11 @@ public class ESIndexAdjuster {
       .setRefresh(true);
 
     if (mappingScript != null) {
-      reindexRequest.setScript(createScriptWithParams(mappingScript, parameters));
+      reindexRequest.setScript(
+        createDefaultScript(
+          mappingScript,
+          mapParamsForScriptCreation(parameters)
+        ));
     }
 
     String taskId;
@@ -259,7 +262,10 @@ public class ESIndexAdjuster {
       UpdateByQueryRequest request = new UpdateByQueryRequest(aliasName);
       request.setRefresh(true);
       request.setQuery(query);
-      request.setScript(createScriptWithParams(updateScript, parameters));
+      request.setScript(createDefaultScript(
+        updateScript,
+        mapParamsForScriptCreation(parameters)
+      ));
       getPlainRestClient().updateByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
       String errorMessage = String.format("Could not update data for indexAlias [%s]!", aliasName);
@@ -411,21 +417,17 @@ public class ESIndexAdjuster {
     }
   }
 
-  private Script createScriptWithParams(final String scriptString, final Map<String, Object> parameters) {
-    return new Script(
-      ScriptType.INLINE,
-      Script.DEFAULT_SCRIPT_LANG,
-      scriptString,
-      Optional.ofNullable(parameters)
-        // this conversion seems redundant but it's not
-        // in case the values are specific dto objects this ensures they get converted to generic objects
-        // that the elasticsearch client is happy to serialize while it complains on specific DTO's
-        .map(value -> objectMapper.convertValue(
-          value,
-          new TypeReference<Map<String, Object>>() {
-          }
-        ))
-        .orElse(Collections.emptyMap())
-    );
+  private Map<String, Object> mapParamsForScriptCreation(final Map<String, Object> parameters) {
+    return Optional.ofNullable(parameters)
+      // this conversion seems redundant but it's not
+      // in case the values are specific dto objects this ensures they get converted to generic objects
+      // that the elasticsearch client is happy to serialize while it complains on specific DTO's
+      .map(value -> objectMapper.convertValue(
+        value,
+        new TypeReference<Map<String, Object>>() {
+        }
+      ))
+      .orElse(Collections.emptyMap());
   }
+
 }

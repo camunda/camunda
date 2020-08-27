@@ -148,17 +148,18 @@ public class UpgradeFrom31To32 extends UpgradeProcedure {
 
     //@formatter:off
     final String script = substitutor.replace(
-        "if(ctx._source.data.configuration.${oldDistributeByField} == null" +
-          "|| \"${distributeByNone}\".equals(ctx._source.data.configuration.${oldDistributeByField})) {\n" +
-          "ctx._source.data.configuration.${newDistributeByField} = params.${distributeByNone};\n" +
-        "} else if(\"${distributedByUserTask}\".equals(ctx._source.data.configuration.${oldDistributeByField})){\n" +
-          "ctx._source.data.configuration.${newDistributeByField} = params.${distributedByUserTask};\n" +
-        "} else if(\"${distributedByFlowNode}\".equals(ctx._source.data.configuration.${oldDistributeByField})){\n" +
-          "ctx._source.data.configuration.${newDistributeByField} = params.${distributedByFlowNode};\n" +
-        "} else if(\"${distributedByAssignee}\".equals(ctx._source.data.configuration.${oldDistributeByField})){\n" +
-          "ctx._source.data.configuration.${newDistributeByField} = params.${distributedByAssignee};\n" +
-        "} else if(\"${distributeByCandidateGroup}\".equals(ctx._source.data.configuration.${oldDistributeByField})){\n" +
-          "ctx._source.data.configuration.${newDistributeByField} = params.${distributeByCandidateGroup};\n" +
+        "def configuration = ctx._source.data.configuration;" +
+          "if(configuration.${oldDistributeByField} == null" +
+          "|| \"${distributeByNone}\".equals(configuration.${oldDistributeByField})) {\n" +
+          "configuration.${newDistributeByField} = params.${distributeByNone};\n" +
+        "} else if(\"${distributedByUserTask}\".equals(configuration.${oldDistributeByField})){\n" +
+          "configuration.${newDistributeByField} = params.${distributedByUserTask};\n" +
+        "} else if(\"${distributedByFlowNode}\".equals(configuration.${oldDistributeByField})){\n" +
+          "configuration.${newDistributeByField} = params.${distributedByFlowNode};\n" +
+        "} else if(\"${distributedByAssignee}\".equals(configuration.${oldDistributeByField})){\n" +
+          "configuration.${newDistributeByField} = params.${distributedByAssignee};\n" +
+        "} else if(\"${distributeByCandidateGroup}\".equals(configuration.${oldDistributeByField})){\n" +
+          "configuration.${newDistributeByField} = params.${distributeByCandidateGroup};\n" +
         "}\n"
     );
     //@formatter:on

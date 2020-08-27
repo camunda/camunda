@@ -52,6 +52,6 @@ public class ProcessDistributedByDto<VALUE extends ProcessDistributedByValueDto>
   @Override
   public boolean isCombinable(final Object o) {
     return DistributedByType.NONE.equals(type)
-      && DistributedByType.NONE.equals(o);
+      && DistributedByType.NONE.equals(((ProcessDistributedByDto<?>) o).getType());
   }
 }
