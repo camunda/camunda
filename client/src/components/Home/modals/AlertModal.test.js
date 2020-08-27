@@ -11,7 +11,7 @@ import {AlertModal} from './AlertModal';
 
 import ThresholdInput from './ThresholdInput';
 
-import {formatters} from 'services';
+import {formatters, evaluateReport} from 'services';
 import {isEmailEnabled} from 'config';
 
 jest.mock('config', () => ({
@@ -24,6 +24,7 @@ jest.mock('services', () => {
 
   return {
     ...rest,
+    evaluateReport: jest.fn().mockReturnValue({result: {data: 'numberValue'}}),
     formatters: {
       convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
       convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'}),
@@ -58,8 +59,13 @@ const reports = [
   },
 ];
 
+const props = {
+  reports,
+  mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+};
+
 it('should apply the alert property to the state when changing props', () => {
-  const node = shallow(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal {...props} />);
 
   node.setProps({initialAlert});
 
@@ -75,6 +81,7 @@ it('should apply the alert property to the state when changing props', () => {
       unit: 'hours',
     },
     reminder: null,
+    report: {result: {data: 'numberValue'}},
     fixNotification: true,
     invalid: false,
     validEmails: true,
@@ -85,7 +92,7 @@ it('should apply the alert property to the state when changing props', () => {
 
 it('should call the onConfirm method and not include duplicate emails', () => {
   const spy = jest.fn();
-  const node = shallow(<AlertModal reports={reports} onConfirm={spy} />);
+  const node = shallow(<AlertModal {...props} onConfirm={spy} />);
 
   node.setProps({initialAlert});
 
@@ -96,7 +103,7 @@ it('should call the onConfirm method and not include duplicate emails', () => {
 });
 
 it('should disable the submit button if the name is empty', () => {
-  const node = shallow(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal {...props} />);
 
   node.setProps({initialAlert});
   node.setState({name: ''});
@@ -105,7 +112,7 @@ it('should disable the submit button if the name is empty', () => {
 });
 
 it('should disable the submit button if the email is not valid', () => {
-  const node = shallow(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal {...props} />);
 
   node.setProps({initialAlert});
   node.find('MultiEmailInput').prop('onChange')(['this is not a valid email'], false);
@@ -113,7 +120,7 @@ it('should disable the submit button if the email is not valid', () => {
 });
 
 it('should disable the submit button if no report is selected', () => {
-  const node = shallow(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal {...props} />);
 
   node.setProps({initialAlert});
   node.setState({reportId: ''});
@@ -121,7 +128,7 @@ it('should disable the submit button if no report is selected', () => {
 });
 
 it('should disable the submit button if the threshold is not a number', () => {
-  const node = shallow(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal {...props} />);
 
   node.setProps({initialAlert});
   node.setState({threshold: 'five'});
@@ -129,7 +136,7 @@ it('should disable the submit button if the threshold is not a number', () => {
 });
 
 it('should disable the submit button if the check interval is negative', () => {
-  const node = shallow(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal {...props} />);
 
   node.setProps({initialAlert});
   node.setState({
@@ -142,7 +149,7 @@ it('should disable the submit button if the check interval is negative', () => {
 });
 
 it('should enable the submit button if webhook is selected', () => {
-  const node = shallow(<AlertModal reports={reports} webhooks={['testWebhook']} />);
+  const node = shallow(<AlertModal {...props} webhooks={['testWebhook']} />);
 
   node.setProps({initialAlert});
   node.setState({emails: ['']});
@@ -152,7 +159,7 @@ it('should enable the submit button if webhook is selected', () => {
 });
 
 it('should show warning if alert is inactive due to missing webhook', async () => {
-  const node = await shallow(<AlertModal reports={reports} webhooks={[]} />);
+  const node = await shallow(<AlertModal {...props} webhooks={[]} />);
   node.setProps({initialAlert: {...initialAlert, emails: [], webhook: 'nonExistingWebhook'}});
 
   expect(node.find('MessageBox').exists()).toBe(true);
@@ -160,14 +167,14 @@ it('should show warning if alert is inactive due to missing webhook', async () =
 
 it('should show warning that email is not configured', async () => {
   isEmailEnabled.mockReturnValue(false);
-  const node = await shallow(<AlertModal reports={reports} />);
+  const node = await shallow(<AlertModal {...props} />);
 
   expect(node.find('MessageBox').exists()).toBe(true);
 });
 
 it('should not display warning if email is configured', async () => {
   isEmailEnabled.mockReturnValue(true);
-  const node = await shallow(<AlertModal reports={reports} />);
+  const node = await shallow(<AlertModal {...props} />);
   await node.instance().componentDidMount();
   await node.update();
 
@@ -175,7 +182,7 @@ it('should not display warning if email is configured', async () => {
 });
 
 it('should convert a duration threshold when opening', async () => {
-  const node = await shallow(<AlertModal reports={reports} />);
+  const node = await shallow(<AlertModal {...props} />);
 
   await node.instance().componentDidMount();
 
@@ -202,7 +209,7 @@ it('should convert a duration threshold when opening', async () => {
 
 it('should convert a duration threshold when confirming', async () => {
   const spy = jest.fn();
-  const node = await shallow(<AlertModal reports={reports} onConfirm={spy} />);
+  const node = await shallow(<AlertModal {...props} onConfirm={spy} />);
   node.setState({threshold: {value: '723', unit: 'milliseconds'}});
 
   node.instance().confirm();
@@ -212,13 +219,23 @@ it('should convert a duration threshold when confirming', async () => {
 });
 
 it('should contain a threshold input', () => {
-  const node = shallow(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal {...props} />);
 
   expect(node.find(ThresholdInput)).toExist();
 });
 
 it('should pass the selected report as initial value to the typeahead', () => {
-  const node = shallow(<AlertModal reports={reports} initialAlert={initialAlert} />);
+  const node = shallow(<AlertModal {...props} initialAlert={initialAlert} />);
 
   expect(node.find('Typeahead').props().initialValue).toBe(initialAlert.reportId);
+});
+
+it('should display report value', () => {
+  const node = shallow(<AlertModal {...props} />);
+  evaluateReport.mockClear();
+
+  node.find('Typeahead').at(0).prop('onChange')('6');
+
+  expect(evaluateReport).toHaveBeenCalledWith('6');
+  expect(node.find('Message').at(0).dive()).toIncludeText('numberValue');
 });

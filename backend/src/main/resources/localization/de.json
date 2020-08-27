@@ -569,7 +569,8 @@
       "reminder": "Erinnerung senden",
       "reminderFrequency": "jede",
       "emailThreshold": "Bis zu 20 Empfänger können hinzugefügt werden",
-      "invalidEmail": "Ungültige E-Mail hinzugefügt"
+      "invalidEmail": "Ungültige E-Mail hinzugefügt",
+      "value": "Berichtswert: {value}"
     },
     "apply": "Änderungen übernehmen",
     "create": "Alarm erstellen",

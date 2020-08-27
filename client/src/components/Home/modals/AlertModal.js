@@ -19,10 +19,11 @@ import {
   MessageBox,
   Form,
 } from 'components';
-import {formatters, isDurationReport} from 'services';
+import {formatters, isDurationReport, evaluateReport} from 'services';
 import {isEmailEnabled} from 'config';
 import {t} from 'translation';
-import {withDocs} from 'HOC';
+import {withDocs, withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
 
 import ThresholdInput from './ThresholdInput';
 import MultiEmailInput from './MultiEmailInput';
@@ -53,6 +54,7 @@ export class AlertModal extends React.Component {
       inactive: false,
       invalid: false,
       validEmails: true,
+      report: null,
     };
   }
 
@@ -93,7 +95,19 @@ export class AlertModal extends React.Component {
           }
         : null,
     });
+    this.loadReport(alert.reportId);
   }
+
+  loadReport = (id) => {
+    this.props.mightFail(
+      evaluateReport(id),
+      (report) =>
+        this.setState({
+          report,
+        }),
+      showError
+    );
+  };
 
   updateReminder = ({target: {checked}}) => {
     if (checked) {
@@ -203,6 +217,7 @@ export class AlertModal extends React.Component {
       reportId: id,
       threshold: reportType === 'duration' ? {value: currentValue, unit: 'days'} : currentValue,
     });
+    this.loadReport(id);
   };
 
   updateWebhook = (webhook) => {
@@ -224,6 +239,7 @@ export class AlertModal extends React.Component {
       invalid,
       webhook,
       validEmails,
+      report,
     } = this.state;
 
     const {reports, webhooks, onClose} = this.props;
@@ -276,7 +292,13 @@ export class AlertModal extends React.Component {
                   ))}
                 </Typeahead>
               </Labeled>
-              <Message>{t('alert.form.reportInfo')}</Message>
+              <Message>
+                {report
+                  ? t('alert.form.value', {
+                      value: getReportValue(report),
+                    })
+                  : t('alert.form.reportInfo')}
+              </Message>
             </Form.Group>
             <Form.Group>
               <span>{t('alert.form.threshold')}</span>
@@ -434,4 +456,8 @@ export class AlertModal extends React.Component {
   }
 }
 
-export default withDocs(AlertModal);
+function getReportValue(report) {
+  return isDurationReport(report) ? formatters.duration(report.result.data) : report.result.data;
+}
+
+export default withErrorHandling(withDocs(AlertModal));
