@@ -280,6 +280,12 @@
                       <arg value="set -o pipefail; java -cp &quot;${project.build.directory}/generators/${project.previousVersion}/lib/&quot; -jar ${project.build.directory}/generators/${project.previousVersion}/generator-${project.previousVersion}.jar | sed 's/^/[OPTIMIZE DATA GENERATION - PREVIOUS VERSION]: /'" />
                     </exec>
 
+                    <echo message="Index status before upgrade:" />
+                    <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="false">
+                      <arg value="-c" />
+                      <arg value="curl -s 'localhost:${old.optimize.elasticsearch.port}/_cat/indices?v'" />
+                    </exec>
+
                     <echo message="Killing Optimize ${project.previousVersion}..." />
                     <exec executable="/bin/bash">
                       <arg value="-c" />
@@ -390,6 +396,12 @@
                       <arg value="until test $(curl -s -XPOST -H 'Content-Type: application/json' -d '{&quot;query&quot; : {&quot;bool&quot;: {&quot;must_not&quot;: {&quot;exists&quot;: {&quot;field&quot;: &quot;bpmn20Xml&quot;}}}}}' 'http://localhost:${new.optimize.elasticsearch.port}/optimize-process-definition/_count' | jq '.count // 0') -eq 0; do sleep 2; done" />
                     </exec>
                     <echo message="ES is fully populated." />
+
+                    <echo message="Index status after upgrade and startup of Optimize:" />
+                    <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="false">
+                      <arg value="-c" />
+                      <arg value="curl -s 'localhost:${new.optimize.elasticsearch.port}/_cat/indices?v'" />
+                    </exec>
 
                     <echo message="Running post migration tests..." />
                     <exec dir="${project.build.directory}/../../../../" executable="/bin/bash" failonerror="true">
