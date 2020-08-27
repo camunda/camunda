@@ -55,7 +55,7 @@
     "jest-styled-components": "^7.0.3",
     "lint-staged": "^10.2.13",
     "msw": "^0.20.5",
-    "prettier": "^2.0.5",
+    "prettier": "^2.1.1",
     "react-scripts": "3.4.3",
     "react-test-renderer": "^16.13.1"
   },
