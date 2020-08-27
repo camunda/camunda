@@ -41,7 +41,7 @@
       }
     }
 
-    .Header__link {
+    .appLink {
       color: $text-light-active;
 
       &:visited {
@@ -59,7 +59,7 @@
     white-space: nowrap;
   }
 
-  .Header__link {
+  .appLink {
     color: $grey-base-40;
     height: 100%;
     display: flex;
@@ -75,7 +75,12 @@
     }
   }
 
-  .Header__link:visited {
+  .appLink:visited {
     color: $grey-base-40;
+  }
+
+  .userMenu hr {
+    border: none;
+    border-top: 1px solid $silver-darken-80;
   }
 }
