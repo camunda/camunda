@@ -7,13 +7,24 @@
 import {createFlowNodeInstance} from 'modules/testUtils';
 import {TYPE} from 'modules/constants';
 
-const mockNode = createFlowNodeInstance({
+const mockStartNode = createFlowNodeInstance({
   type: 'START_EVENT',
   id: 'someflowNodeIde',
   name: 'Some Name',
-  typeDetails: {elementType: TYPE.EVENT_START, eventType: undefined},
+  typeDetails: {
+    elementType: TYPE.EVENT_START,
+    eventType: undefined,
+  },
 });
 
-export const testData = {
-  mockNode,
-};
+const mockMultiInstanceBody = createFlowNodeInstance({
+  type: 'MULTI_INSTANCE_BODY',
+  id: 'someflowNodeIde',
+  name: 'Some Name',
+  typeDetails: {
+    elementType: TYPE.EVENT_START,
+    eventType: undefined,
+  },
+});
+
+export {mockStartNode, mockMultiInstanceBody};

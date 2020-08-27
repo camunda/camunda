@@ -5,102 +5,107 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {render, screen, fireEvent} from '@testing-library/react';
+import noop from 'lodash/noop';
 
-import Foldable from './index';
-import * as Styled from './styled';
+import {Foldable} from './index';
 
-describe('Foldable', () => {
-  it('should be folded by default', () => {
-    // given
-    const mockOnSelection = jest.fn();
-    const fooDetailsText = 'Foo Details';
-    const fooSummaryText = 'foo summary';
-    const node = shallow(
-      <Foldable isFoldable={true} isFolded={true}>
-        <Foldable.Summary onSelection={mockOnSelection} isSelected={true}>
-          {fooSummaryText}
+describe('<Foldable />', () => {
+  it('should show the unfoldable content', () => {
+    const mockContent = 'mock-content';
+
+    render(
+      <Foldable isFoldable={false} isFolded={false}>
+        <Foldable.Summary
+          onSelection={noop}
+          isSelected={false}
+          isLastChild={false}
+          nodeName="node-name"
+        >
+          {mockContent}
         </Foldable.Summary>
-        <Foldable.Details>{fooDetailsText}</Foldable.Details>
       </Foldable>
     );
 
-    // then
-    expect(node.state('isFolded')).toBe(true);
-
-    // Summmary
-    const SummaryNode = node.find(Foldable.Summary);
-    expect(SummaryNode).toHaveLength(1);
-    expect(SummaryNode.contains(fooSummaryText)).toBe(true);
-
-    // Summary Label
-    const FocusButtonNode = SummaryNode.dive().find(Styled.FocusButton);
-    expect(FocusButtonNode).toHaveLength(1);
-    expect(FocusButtonNode.prop('onClick')).toBe(mockOnSelection);
-
-    // Summary Expand Button
-    const ExpandButtonNode = SummaryNode.dive().find(Styled.ExpandButton);
-    expect(ExpandButtonNode).toHaveLength(1);
-    expect(ExpandButtonNode.prop('onClick')).toBe(node.instance().toggleFold);
-
-    // Details
-    const DetailsNode = node.find(Foldable.Details);
-    expect(DetailsNode).toHaveLength(1);
-    expect(DetailsNode.contains(fooDetailsText)).toBe(true);
-    expect(DetailsNode.prop('isFolded')).toBe(true);
-
-    expect(node).toMatchSnapshot();
+    expect(screen.getByText(mockContent)).toBeInTheDocument();
   });
 
-  it('should not show the folding button when "isFoldable" prop is set "false"', () => {
-    // given
+  it('should handle content click', () => {
+    const mockContent = 'mock-content';
     const mockOnSelection = jest.fn();
-    const fooDetailsText = 'Foo Details';
-    const fooSummaryText = 'foo summary';
-    const node = shallow(
-      <Foldable isFoldable={false} isFolded={true}>
-        <Foldable.Summary onSelection={mockOnSelection} isSelected={true}>
-          {fooSummaryText}
+
+    render(
+      <Foldable isFoldable={false} isFolded={false}>
+        <Foldable.Summary
+          onSelection={mockOnSelection}
+          isSelected={false}
+          isLastChild={false}
+          nodeName="node-name"
+        >
+          {mockContent}
         </Foldable.Summary>
-        <Foldable.Details>{fooDetailsText}</Foldable.Details>
       </Foldable>
     );
 
-    // then
-    const ExpandButtonNode = node
-      .find(Foldable.Summary)
-      .dive()
-      .find(Styled.ExpandButton);
+    fireEvent.click(screen.getByText(mockContent));
 
-    expect(ExpandButtonNode).toHaveLength(0);
+    expect(mockOnSelection).toHaveBeenCalled();
   });
 
-  it('toggleFold should change folded state', () => {
-    // given
-    const fooDetailsText = 'Foo Details';
-    const fooSummaryText = 'foo summary';
-    const node = shallow(
+  it('should unfold the details', () => {
+    const mockContent = 'mock-content';
+    const mockDetails = 'mock-details';
+    const mockNodeName = 'node-name';
+
+    render(
       <Foldable isFoldable={true} isFolded={true}>
-        <Foldable.Summary>{fooSummaryText}</Foldable.Summary>
-        <Foldable.Details>{fooDetailsText}</Foldable.Details>
+        <Foldable.Summary
+          onSelection={noop}
+          isSelected={false}
+          isLastChild={false}
+          nodeName={mockNodeName}
+        >
+          {mockContent}
+        </Foldable.Summary>
+        <Foldable.Details>{mockDetails}</Foldable.Details>
       </Foldable>
     );
 
-    // when
-    node.instance().toggleFold();
-    node.update();
+    expect(screen.getByText(mockContent)).toBeInTheDocument();
+    expect(screen.queryByText(mockDetails)).not.toBeInTheDocument();
 
-    // then
-    expect(node.state('isFolded')).toBe(false);
+    fireEvent.click(
+      screen.getByRole('button', {name: `Unfold ${mockNodeName}`})
+    );
 
-    // Summary
-    const SummaryNode = node.find(Foldable.Summary);
-    expect(SummaryNode.dive().find(Styled.ExpandButton)).toHaveLength(1);
+    expect(screen.getByText(mockContent)).toBeInTheDocument();
+    expect(screen.getByText(mockDetails)).toBeInTheDocument();
 
-    // Details
-    const DetailsNode = node.find(Foldable.Details);
-    expect(DetailsNode.prop('isFolded')).toBe(false);
+    fireEvent.click(screen.getByRole('button', {name: `Fold ${mockNodeName}`}));
 
-    expect(node).toMatchSnapshot();
+    expect(screen.getByText(mockContent)).toBeInTheDocument();
+    expect(screen.queryByText(mockDetails)).not.toBeInTheDocument();
+  });
+
+  it('should handle unfolded details', () => {
+    const mockContent = 'mock-content';
+    const mockDetails = 'mock-details';
+
+    render(
+      <Foldable isFoldable={true} isFolded={false}>
+        <Foldable.Summary
+          onSelection={noop}
+          isSelected={false}
+          isLastChild={false}
+          nodeName="node-name"
+        >
+          {mockContent}
+        </Foldable.Summary>
+        <Foldable.Details>{mockDetails}</Foldable.Details>
+      </Foldable>
+    );
+
+    expect(screen.getByText(mockContent)).toBeInTheDocument();
+    expect(screen.getByText(mockDetails)).toBeInTheDocument();
   });
 });

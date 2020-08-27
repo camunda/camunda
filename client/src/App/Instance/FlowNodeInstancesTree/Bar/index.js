@@ -8,38 +8,30 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {TYPE} from 'modules/constants';
-
 import {TimeStampLabel} from '../TimeStampLabel';
+import {Container, NodeIcon, NodeName} from './styled';
 
-import * as Styled from './styled';
-
-const BarComponent = ({node, isSelected}) => {
-  const name = `${node.name ?? ''}${
-    node.type === TYPE.MULTI_INSTANCE_BODY ? ` (Multi Instance)` : ''
-  }`;
+const Bar = ({node, isSelected}) => {
+  const {typeDetails, type, children, name, endDate} = node;
 
   return (
-    <Styled.Bar showSelectionStyle={isSelected}>
-      <Styled.NodeIcon
-        types={node.typeDetails}
+    <Container showSelectionStyle={isSelected}>
+      <NodeIcon
+        types={typeDetails}
         isSelected={isSelected}
-        data-test={`flowNodeIcon-${node.type}`}
+        data-test={`flow-node-icon-${type}`}
       />
-      <Styled.NodeName
-        isSelected={isSelected}
-        isBold={node.children.length > 0}
-      >
-        {name}
-      </Styled.NodeName>
-      <TimeStampLabel timeStamp={node.endDate} isSelected={isSelected} />
-    </Styled.Bar>
+      <NodeName isSelected={isSelected} isBold={children.length > 0}>
+        {`${name ?? ''}${
+          type === TYPE.MULTI_INSTANCE_BODY ? ` (Multi Instance)` : ''
+        }`}
+      </NodeName>
+      <TimeStampLabel timeStamp={endDate} isSelected={isSelected} />
+    </Container>
   );
 };
 
-export default React.memo(BarComponent);
-export const NoWrapBar = BarComponent;
-
-BarComponent.propTypes = {
+Bar.propTypes = {
   node: PropTypes.shape({
     id: PropTypes.string.isRequired,
     name: PropTypes.string,
@@ -50,3 +42,5 @@ BarComponent.propTypes = {
   }),
   isSelected: PropTypes.bool,
 };
+
+export {Bar};

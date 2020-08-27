@@ -13,7 +13,7 @@ import Button from 'modules/components/Button';
 import {PAGE_TITLE} from 'modules/constants';
 import {clearStateLocally} from 'modules/utils/localStorage';
 
-import Disclaimer from './Disclaimer';
+import {Disclaimer} from './Disclaimer';
 import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './constants';
 import * as Styled from './styled';
 import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';

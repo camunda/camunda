@@ -4,50 +4,47 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Children, cloneElement} from 'react';
+import React, {Children, cloneElement, useState} from 'react';
+import isNil from 'lodash/isNil';
 import PropTypes from 'prop-types';
 
-import * as Styled from './styled';
+import {
+  SummaryContainer,
+  ExpandButton,
+  FocusButton,
+  SummaryLabel,
+} from './styled';
 
-export default class Foldable extends React.Component {
-  static propTypes = {
-    children: PropTypes.oneOfType([
-      PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node,
-    ]),
-    isFoldable: PropTypes.bool,
-    isFolded: PropTypes.bool,
-  };
+const Foldable = ({children, isFoldable, ...props}) => {
+  const [isFolded, setIsFolded] = useState(props.isFolded);
 
-  state = {
-    isFolded: this.props.isFolded,
-    isFoldable: this.props.isFoldable,
-  };
+  return Children.map(children, (child) => {
+    if (!isNil(child)) {
+      return cloneElement(child, {
+        isFoldable: isFoldable,
+        isFolded: isFolded,
+        toggleFold: () => {
+          setIsFolded((isFolded) => !isFolded);
+        },
+      });
+    }
 
-  toggleFold = () => {
-    const {isFolded} = this.state;
-    this.setState({isFolded: !isFolded});
-  };
+    return null;
+  });
+};
 
-  render() {
-    const children = Children.map(
-      this.props.children,
-      (child) =>
-        child &&
-        cloneElement(child, {
-          isFoldable: this.props.isFoldable,
-          isFolded: this.state.isFolded,
-          toggleFold: this.toggleFold,
-        })
-    );
-
-    return <React.Fragment>{children}</React.Fragment>;
-  }
-}
+Foldable.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
+  isFoldable: PropTypes.bool.isRequired,
+  isFolded: PropTypes.bool.isRequired,
+};
 
 Foldable.Summary = function Summary({
   toggleFold,
-  isFoldable,
+  isFoldable = true,
   isFolded,
   indentation = 0,
   isSelected,
@@ -58,25 +55,25 @@ Foldable.Summary = function Summary({
   ...props
 }) {
   return (
-    <Styled.Summary {...props}>
+    <SummaryContainer {...props}>
       {isFoldable ? (
-        <Styled.ExpandButton
+        <ExpandButton
           onClick={toggleFold}
           isExpanded={!isFolded}
           iconButtonTheme="foldable"
           aria-label={isFolded ? `Unfold ${nodeName}` : `Fold ${nodeName}`}
         />
       ) : null}
-      <Styled.FocusButton showHoverState={!isSelected} onClick={onSelection}>
-        <Styled.SummaryLabel
+      <FocusButton showHoverState={!isSelected} onClick={onSelection}>
+        <SummaryLabel
           isSelected={isSelected}
           showPartialBorder={!isFolded}
           showFullBorder={isLastChild}
         >
           {children}
-        </Styled.SummaryLabel>
-      </Styled.FocusButton>
-    </Styled.Summary>
+        </SummaryLabel>
+      </FocusButton>
+    </SummaryContainer>
   );
 };
 
@@ -95,15 +92,13 @@ Foldable.Summary.propTypes = {
   nodeName: PropTypes.string,
 };
 
-Foldable.Summary.defaultProps = {
-  isFoldable: true,
-};
-
 Foldable.Details = function Details({isFolded, children}) {
-  return isFolded ? null : <div>{children}</div>;
+  return isFolded ? null : children;
 };
 
 Foldable.Details.propTypes = {
   isFolded: PropTypes.bool,
   children: PropTypes.node,
 };
+
+export {Foldable};

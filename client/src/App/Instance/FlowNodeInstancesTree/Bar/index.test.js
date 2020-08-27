@@ -5,51 +5,41 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render, screen} from '@testing-library/react';
 
-import {ReactComponent as FlowNodeStartEventIcon} from 'modules/components/Icon/flow-node-event-start.svg';
+import {Bar} from './index';
+import {mockStartNode, mockMultiInstanceBody} from './index.setup';
+import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
 
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
-
-import {NoWrapBar} from './index';
-import {TimeStampLabel} from '../TimeStampLabel';
-
-import {testData} from './index.setup';
-
-jest.mock('../TimeStampLabel', () => {
-  return {
-    TimeStampLabel: function renderMockComponent(props) {
-      return <div />;
-    },
-  };
-});
-
-const renderComponent = () => {
-  const mountedComponent = mount(
-    <ThemeProvider>
-      <NoWrapBar node={testData.mockNode} isSelected={false} />
-    </ThemeProvider>
-  );
-
-  return mountedComponent.find(NoWrapBar);
-};
-
-describe('Bar', () => {
-  let node;
-
-  beforeEach(() => {
-    node = renderComponent();
+describe('<Bar />', () => {
+  afterEach(() => {
+    flowNodeTimeStamp.reset();
   });
 
-  it('should render Node Type Icon', () => {
-    expect(node.find(FlowNodeStartEventIcon)).toExist();
+  it('should show an icon based on node type and the node name', () => {
+    render(<Bar node={mockStartNode} isSelected={false} />);
+
+    expect(
+      screen.getByTestId(`flow-node-icon-${mockStartNode.type}`)
+    ).toBeInTheDocument();
+    expect(screen.getByText(mockStartNode.name)).toBeInTheDocument();
   });
 
-  it('should render NodeName', () => {
-    expect(node.text()).toContain(testData.mockNode.name);
+  it('should show the correct name for multi instance nodes', () => {
+    render(<Bar node={mockMultiInstanceBody} isSelected={false} />);
+
+    expect(
+      screen.getByText(`${mockMultiInstanceBody.name} (Multi Instance)`)
+    ).toBeInTheDocument();
   });
 
-  it('should render Time Stamp Component', () => {
-    expect(node.find(TimeStampLabel)).toExist();
+  it('should toggle the timestamp', () => {
+    render(<Bar node={mockMultiInstanceBody} isSelected={false} />);
+
+    expect(screen.queryByText('12 Dec 2018 00:00:00')).not.toBeInTheDocument();
+
+    flowNodeTimeStamp.toggleTimeStampVisibility();
+
+    expect(screen.getByText('12 Dec 2018 00:00:00')).toBeInTheDocument();
   });
 });

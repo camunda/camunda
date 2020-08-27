@@ -9,28 +9,21 @@ import PropTypes from 'prop-types';
 
 import {formatDate} from 'modules/utils/date';
 
-import * as Styled from './styled';
+import {TimeStamp} from './styled';
 import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
 import {observer} from 'mobx-react';
 
-const TimeStampLabel = observer(
-  class TimeStampLabel extends React.PureComponent {
-    static propTypes = {
-      timeStamp: PropTypes.string,
-      isSelected: PropTypes.bool.isRequired,
-    };
+const TimeStampLabel = observer(({timeStamp, isSelected}) => {
+  const {isTimeStampVisible} = flowNodeTimeStamp.state;
 
-    render() {
-      const {timeStamp, isSelected} = this.props;
-      const {isTimeStampVisible} = flowNodeTimeStamp.state;
+  return isTimeStampVisible && timeStamp ? (
+    <TimeStamp isSelected={isSelected}>{formatDate(timeStamp)}</TimeStamp>
+  ) : null;
+});
 
-      return isTimeStampVisible && timeStamp ? (
-        <Styled.TimeStamp isSelected={isSelected}>
-          {formatDate(timeStamp)}
-        </Styled.TimeStamp>
-      ) : null;
-    }
-  }
-);
+TimeStampLabel.propTypes = {
+  timeStamp: PropTypes.string,
+  isSelected: PropTypes.bool.isRequired,
+};
 
 export {TimeStampLabel};

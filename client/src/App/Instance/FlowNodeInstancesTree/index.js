@@ -9,8 +9,8 @@ import PropTypes from 'prop-types';
 
 import {STATE} from 'modules/constants';
 
-import Bar from './Bar';
-import Foldable from './Foldable';
+import {Bar} from './Bar';
+import {Foldable} from './Foldable';
 import {Li, NodeDetails, NodeStateIcon, Ul} from './styled';
 import {observer} from 'mobx-react';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';

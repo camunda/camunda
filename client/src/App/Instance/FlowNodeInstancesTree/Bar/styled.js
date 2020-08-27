@@ -9,7 +9,7 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 
 import BasicFlowNodeIcon from 'modules/components/FlowNodeIcon';
 
-export const NodeIcon = themed(styled(BasicFlowNodeIcon)`
+const NodeIcon = themed(styled(BasicFlowNodeIcon)`
   color: ${themeStyle({
     dark: '#fff',
     light: Colors.uiLight06,
@@ -51,7 +51,7 @@ const selectionStyle = css`
   }
 `;
 
-export const Bar = themed(styled.div`
+const Container = themed(styled.div`
   display: flex;
   height: 27px;
   font-size: 13px;
@@ -73,7 +73,7 @@ export const Bar = themed(styled.div`
   ${({showSelectionStyle}) => showSelectionStyle && selectionStyle};
 `);
 
-export const NodeName = themed(styled.span`
+const NodeName = themed(styled.span`
   margin-left: 5px;
   padding-left: 5px;
   border-left: 1px solid
@@ -106,3 +106,5 @@ export const NodeName = themed(styled.span`
 
   font-weight: ${({isBold}) => (isBold ? 'bold' : '')};
 `);
+
+export {NodeIcon, Container, NodeName};

@@ -7,21 +7,24 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import * as Styled from './styled';
-export default function Disclaimer(props) {
-  return props.isEnterprise ? null : (
-    <Styled.Disclaimer>
+import {Container, Anchor} from './styled';
+
+function Disclaimer({isEnterprise}) {
+  return isEnterprise ? null : (
+    <Container>
       This Camunda Operate distribution is available under an evaluation license
       that is valid for development (non-production) use only. By continuing
       using this software, you agree to the{' '}
-      <Styled.Anchor href="https://zeebe.io/legal/operate-evaluation-license">
+      <Anchor href="https://zeebe.io/legal/operate-evaluation-license">
         Terms and Conditions
-      </Styled.Anchor>{' '}
+      </Anchor>{' '}
       of the Operate Trial Version.
-    </Styled.Disclaimer>
+    </Container>
   );
 }
 
 Disclaimer.propTypes = {
   isEnterprise: PropTypes.bool,
 };
+
+export {Disclaimer};

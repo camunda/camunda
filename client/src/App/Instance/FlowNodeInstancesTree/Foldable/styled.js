@@ -9,14 +9,14 @@ import styled, {css} from 'styled-components';
 import {themed, themeStyle, Colors} from 'modules/theme';
 import BasicExpandButton from 'modules/components/ExpandButton';
 
-export const ExpandButton = styled(BasicExpandButton)`
+const ExpandButton = styled(BasicExpandButton)`
   position: absolute;
   left: -24px;
   top: 6px;
   z-index: 2;
 `;
 
-export const Summary = themed(styled.div`
+const SummaryContainer = themed(styled.div`
   position: relative;
   height: 27px;
 `);
@@ -48,7 +48,7 @@ const fullBorder = css`
   border-bottom-style: solid;
 `;
 
-export const SummaryLabel = themed(styled.div`
+const SummaryLabel = themed(styled.div`
   position: absolute;
   left: 0;
   top: 0;
@@ -63,7 +63,7 @@ export const SummaryLabel = themed(styled.div`
   ${({showPartialBorder}) => showPartialBorder && partialBorder};
 `);
 
-export const FocusButton = themed(styled.button`
+const FocusButton = themed(styled.button`
   background: transparent;
 
   /* Apply hover style to <Bar/>*/
@@ -76,3 +76,5 @@ export const FocusButton = themed(styled.button`
       })};
   }
 `);
+
+export {ExpandButton, SummaryContainer, SummaryLabel, FocusButton};
