@@ -78,6 +78,9 @@ public class PassiveRole extends InactiveRole {
   @Override
   public CompletableFuture<Void> stop() {
     abortPendingSnapshots();
+    if (snapshotListener != null) {
+      raft.getPersistedSnapshotStore().removeSnapshotListener(snapshotListener);
+    }
     return super.stop();
   }
 
