@@ -16,7 +16,12 @@
 package io.atomix.raft.snapshot;
 
 import io.atomix.utils.time.WallClockTimestamp;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
+import io.zeebe.snapshots.raft.ReceivedSnapshot;
+import io.zeebe.snapshots.raft.SnapshotChunk;
+import io.zeebe.snapshots.raft.SnapshotChunkReader;
 import io.zeebe.util.StringUtil;
+import io.zeebe.util.buffer.BufferUtil;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -24,7 +29,6 @@ import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.slf4j.LoggerFactory;
 
 public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
 
@@ -98,7 +102,7 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
 
       @Override
       public void seek(final ByteBuffer id) {
-        final var chunkId = byteBufferToString(id);
+        final var chunkId = BufferUtil.bufferAsString(new UnsafeBuffer(id));
         iterator = chunks.tailMap(chunkId, true);
       }
 
@@ -123,7 +127,6 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
       @Override
       public SnapshotChunk next() {
         final var nextEntry = iterator.firstEntry();
-        LoggerFactory.getLogger("FINDME").info("Returning next chunk Id = {}", nextEntry.getKey());
         iterator = chunks.tailMap(nextEntry.getKey(), false);
         return new TestSnapshotChunkImpl(
             id, nextEntry.getKey(), StringUtil.getBytes(nextEntry.getValue()), chunks.size());
@@ -145,33 +148,8 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
   }
 
   @Override
-  public SnapshotId getId() {
-    return new SnapshotId() {
-      @Override
-      public long getIndex() {
-        return index;
-      }
-
-      @Override
-      public long getTerm() {
-        return term;
-      }
-
-      @Override
-      public WallClockTimestamp getTimestamp() {
-        return timestamp;
-      }
-
-      @Override
-      public String getSnapshotIdAsString() {
-        return id;
-      }
-    };
-  }
-
-  private String byteBufferToString(final ByteBuffer buf) {
-    final var view = new UnsafeBuffer(buf);
-    return view.getStringWithoutLengthAscii(0, buf.remaining());
+  public String getId() {
+    return id;
   }
 
   @Override
@@ -184,7 +162,7 @@ public class InMemorySnapshot implements PersistedSnapshot, ReceivedSnapshot {
 
   @Override
   public boolean containsChunk(final ByteBuffer chunkId) {
-    return chunks.containsKey(byteBufferToString(chunkId));
+    return chunks.containsKey(BufferUtil.bufferAsString(new UnsafeBuffer(chunkId)));
   }
 
   @Override

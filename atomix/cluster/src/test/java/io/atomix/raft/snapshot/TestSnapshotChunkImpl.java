@@ -15,6 +15,8 @@
  */
 package io.atomix.raft.snapshot;
 
+import io.zeebe.snapshots.raft.SnapshotChunk;
+
 class TestSnapshotChunkImpl implements SnapshotChunk {
 
   final int totalCount;

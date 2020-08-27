@@ -46,6 +46,7 @@
     <module>upgrade-tests</module>
     <module>expression-language</module>
     <module>legacy/toml-config</module>
+    <module>snapshot</module>
   </modules>
 
   <scm>

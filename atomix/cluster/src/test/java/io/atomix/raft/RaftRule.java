@@ -15,7 +15,6 @@
  */
 package io.atomix.raft;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
@@ -32,9 +31,6 @@ import io.atomix.raft.protocol.TestRaftProtocolFactory;
 import io.atomix.raft.protocol.TestRaftServerProtocol;
 import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.snapshot.InMemorySnapshot;
-import io.atomix.raft.snapshot.PersistedSnapshot;
-import io.atomix.raft.snapshot.PersistedSnapshotListener;
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -48,6 +44,9 @@ import io.atomix.storage.journal.JournalReader.Mode;
 import io.atomix.utils.AbstractIdentifier;
 import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
+import io.zeebe.snapshots.raft.PersistedSnapshotListener;
+import io.zeebe.snapshots.raft.PersistedSnapshotStore;
 import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
@@ -312,18 +311,6 @@ public final class RaftRule extends ExternalResource {
     return snapshots.computeIfAbsent(memberId, i -> new AtomicReference<>());
   }
 
-  public void assertallNodesHaveSnapshotWithIndex(final long index) {
-
-    assertThat(
-            servers.values().stream()
-                .map(RaftServer::getContext)
-                .map(RaftContext::getPersistedSnapshotStore)
-                .map(PersistedSnapshotStore::getCurrentSnapshotIndex)
-                .distinct()
-                .collect(Collectors.toList()))
-        .containsExactlyInAnyOrderElementsOf(List.of(index));
-  }
-
   public boolean allNodesHaveSnapshotWithIndex(final long index) {
     return servers.values().stream()
             .map(RaftServer::getContext)
@@ -476,8 +463,7 @@ public final class RaftRule extends ExternalResource {
       throws Exception {
     final var snapshotOnNode = getSnapshotOnNode(sourceNode);
     final var targetSnapshotStore = new TestSnapshotStore(getOrCreatePersistedSnapshot(sourceNode));
-    final var receivedSnapshot =
-        targetSnapshotStore.newReceivedSnapshot(snapshotOnNode.getId().getSnapshotIdAsString());
+    final var receivedSnapshot = targetSnapshotStore.newReceivedSnapshot(snapshotOnNode.getId());
     for (final var reader = snapshotOnNode.newChunkReader(); reader.hasNext(); ) {
       receivedSnapshot.apply(reader.next());
     }

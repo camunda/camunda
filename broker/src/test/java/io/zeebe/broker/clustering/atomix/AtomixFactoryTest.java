@@ -14,6 +14,7 @@ import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.atomix.storage.StorageLevel;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
 import io.zeebe.util.Environment;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,7 +37,8 @@ public final class AtomixFactoryTest {
     brokerConfig.getData().setUseMmap(true);
 
     // when
-    final var atomix = AtomixFactory.fromConfiguration(brokerConfig);
+    final var atomix =
+        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory());
 
     // then
     final var config = getPartitionGroupConfig(atomix);
@@ -50,7 +52,8 @@ public final class AtomixFactoryTest {
     brokerConfig.getData().setUseMmap(false);
 
     // when
-    final var atomix = AtomixFactory.fromConfiguration(brokerConfig);
+    final var atomix =
+        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory());
 
     // then
     final var config = getPartitionGroupConfig(atomix);

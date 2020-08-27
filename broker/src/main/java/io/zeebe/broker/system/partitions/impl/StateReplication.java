@@ -9,11 +9,11 @@ package io.zeebe.broker.system.partitions.impl;
 
 import static io.zeebe.util.sched.Actor.buildActorName;
 
-import io.atomix.raft.snapshot.SnapshotChunk;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.zeebe.broker.system.partitions.SnapshotReplication;
 import io.zeebe.engine.Loggers;
+import io.zeebe.snapshots.raft.SnapshotChunk;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

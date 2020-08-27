@@ -44,7 +44,6 @@ import io.atomix.raft.roles.LeaderRole;
 import io.atomix.raft.roles.PassiveRole;
 import io.atomix.raft.roles.PromotableRole;
 import io.atomix.raft.roles.RaftRole;
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
@@ -58,6 +57,7 @@ import io.atomix.utils.concurrent.ThreadContext;
 import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.Set;
@@ -94,7 +94,7 @@ public class RaftContext implements AutoCloseable {
   private final RaftLog raftLog;
   private final RaftLogWriter logWriter;
   private final RaftLogReader logReader;
-  private final PersistedSnapshotStore persistedSnapshotStore;
+  private final ReceivableSnapshotStore persistedSnapshotStore;
   private final LogCompactor logCompactor;
   private final ThreadContextFactory threadContextFactory;
   private final ThreadContext loadContext;
@@ -856,7 +856,7 @@ public class RaftContext implements AutoCloseable {
    *
    * @return The server snapshot store.
    */
-  public PersistedSnapshotStore getPersistedSnapshotStore() {
+  public ReceivableSnapshotStore getPersistedSnapshotStore() {
     return persistedSnapshotStore;
   }
 

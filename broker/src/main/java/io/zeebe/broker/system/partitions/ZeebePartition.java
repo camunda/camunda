@@ -12,7 +12,6 @@ import static io.zeebe.engine.state.DefaultZeebeDbFactory.DEFAULT_DB_METRIC_EXPO
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.storage.journal.JournalReader.Mode;
 import io.zeebe.broker.Loggers;
@@ -45,6 +44,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.ZeebeIndexMapping;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
+import io.zeebe.snapshots.broker.SnapshotStoreSupplier;
 import io.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.zeebe.util.health.FailureListener;
 import io.zeebe.util.health.HealthMonitor;
@@ -78,6 +78,7 @@ public final class ZeebePartition extends Actor
   private final ExporterRepository exporterRepository = new ExporterRepository();
 
   private final ActorScheduler scheduler;
+  private final SnapshotStoreSupplier snapshotStoreSupplier;
   private final TypedRecordProcessorsFactory typedRecordProcessorsFactory;
   private final CommandApiService commandApiService;
   private final List<PartitionListener> partitionListeners;
@@ -89,7 +90,6 @@ public final class ZeebePartition extends Actor
   private LogStream logStream;
   private Role raftRole;
   private SnapshotReplication stateReplication;
-  private PersistedSnapshotStore persistedSnapshotStore;
   private StateControllerImpl snapshotController;
   private ZeebeDb zeebeDb;
   private final String actorName;
@@ -113,11 +113,13 @@ public final class ZeebePartition extends Actor
       final BrokerCfg brokerCfg,
       final CommandApiService commandApiService,
       final ZeebeIndexMapping zeebeIndexMapping,
+      final SnapshotStoreSupplier snapshotStoreSupplier,
       final TypedRecordProcessorsFactory typedRecordProcessorsFactory) {
     this.localBroker = localBroker;
     this.atomixRaftPartition = atomixRaftPartition;
     this.messagingService = messagingService;
     this.brokerCfg = brokerCfg;
+    this.snapshotStoreSupplier = snapshotStoreSupplier;
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
     this.commandApiService = commandApiService;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
@@ -392,8 +394,6 @@ public final class ZeebePartition extends Actor
   }
 
   private ActorFuture<Void> installStorageServices() {
-    persistedSnapshotStore = atomixRaftPartition.getServer().getPersistedSnapshotStore();
-
     final var controller = createSnapshotController();
     addClosingStep("snapshot controller", this::closeSnapshotController);
     snapshotController = controller;
@@ -401,7 +401,10 @@ public final class ZeebePartition extends Actor
     final LogCompactor logCompactor = new AtomixLogCompactor(atomixRaftPartition.getServer());
     final LogDeletionService deletionService =
         new LogDeletionService(
-            localBroker.getNodeId(), partitionId, logCompactor, persistedSnapshotStore);
+            localBroker.getNodeId(),
+            partitionId,
+            logCompactor,
+            snapshotStoreSupplier.getPersistedSnapshotStore(atomixRaftPartition.name()));
     addClosingStep("deletion service", deletionService);
 
     return scheduler.submitActor(deletionService);
@@ -409,11 +412,15 @@ public final class ZeebePartition extends Actor
 
   private void registerSnapshotListenerForReplication() {
     addClosingStep("snapshot listener for replication", this::removeSnapshotListenerForReplication);
-    persistedSnapshotStore.addSnapshotListener(snapshotController);
+    snapshotStoreSupplier
+        .getPersistedSnapshotStore(atomixRaftPartition.name())
+        .addSnapshotListener(snapshotController);
   }
 
   private ActorFuture<Void> removeSnapshotListenerForReplication() {
-    persistedSnapshotStore.removeSnapshotListener(snapshotController);
+    snapshotStoreSupplier
+        .getPersistedSnapshotStore(atomixRaftPartition.name())
+        .removeSnapshotListener(snapshotController);
     return CompletableActorFuture.completed(null);
   }
 
@@ -429,7 +436,8 @@ public final class ZeebePartition extends Actor
     return new StateControllerImpl(
         partitionId,
         DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
-        persistedSnapshotStore,
+        snapshotStoreSupplier.getConstructableSnapshotStore(atomixRaftPartition.name()),
+        snapshotStoreSupplier.getReceivableSnapshotStore(atomixRaftPartition.name()),
         runtimeDirectory,
         stateReplication,
         new AtomixRecordEntrySupplierImpl(zeebeIndexMapping, reader),
