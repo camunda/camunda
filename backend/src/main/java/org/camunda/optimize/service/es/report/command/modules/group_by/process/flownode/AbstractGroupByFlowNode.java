@@ -16,7 +16,7 @@ import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
+import static org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_TYPE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;

@@ -103,13 +103,13 @@ public class EngineDatabaseExtension implements Extension {
   @SneakyThrows
   public void changeActivityDuration(String processInstanceId,
                                      String activityId,
-                                     long duration) {
+                                     Number durationInMs) {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET DURATION_ = ? WHERE " +
       "PROC_INST_ID_ = ? AND " +
       "ACT_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setLong(1, duration);
+    statement.setLong(1, durationInMs.longValue());
     statement.setString(2, processInstanceId);
     statement.setString(3, activityId);
     statement.executeUpdate();
@@ -118,24 +118,24 @@ public class EngineDatabaseExtension implements Extension {
 
   @SneakyThrows
   public void changeAllActivityDurations(String processInstanceId,
-                                         long duration) {
+                                         Number durationInMs) {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET DURATION_ = ? WHERE " +
       "PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setLong(1, duration);
+    statement.setLong(1, durationInMs.longValue());
     statement.setString(2, processInstanceId);
     statement.executeUpdate();
     connection.commit();
   }
 
   public void changeActivityDurationForProcessDefinition(String processDefinitionId,
-                                                         long duration) throws SQLException {
+                                                         Number durationInMs) throws SQLException {
     String sql = "UPDATE ACT_HI_ACTINST " +
       "SET DURATION_ = ? WHERE " +
       "PROC_DEF_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setLong(1, duration);
+    statement.setLong(1, durationInMs.longValue());
     statement.setString(2, processDefinitionId);
     statement.executeUpdate();
     connection.commit();
@@ -305,12 +305,12 @@ public class EngineDatabaseExtension implements Extension {
 
   @SneakyThrows
   public void changeUserTaskDuration(final String processInstanceId,
-                                     final long duration) {
+                                     final Number durationInMs) {
     String sql = "UPDATE ACT_HI_TASKINST " +
       "SET DURATION_ = ? WHERE " +
       "PROC_INST_ID_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setLong(1, duration);
+    statement.setLong(1, durationInMs.longValue());
     statement.setString(2, processInstanceId);
     statement.executeUpdate();
     connection.commit();
@@ -319,13 +319,13 @@ public class EngineDatabaseExtension implements Extension {
   @SneakyThrows
   public void changeUserTaskDuration(final String processInstanceId,
                                      final String userTaskId,
-                                     final long durationInMs) {
+                                     final Number durationInMs) {
     String sql = "UPDATE ACT_HI_TASKINST " +
       "SET DURATION_ = ? WHERE " +
       "PROC_INST_ID_ = ?" +
       "AND TASK_DEF_KEY_ = ?";
     PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
-    statement.setLong(1, durationInMs);
+    statement.setLong(1, durationInMs.longValue());
     statement.setString(2, processInstanceId);
     statement.setString(3, userTaskId);
     statement.executeUpdate();

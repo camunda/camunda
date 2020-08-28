@@ -964,7 +964,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
   protected void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
                                          final OffsetDateTime now,
                                          final String userTaskKey,
-                                         final long offsetDuration) {
+                                         final long offsetDurationInMs) {
 
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
@@ -973,7 +973,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
           try {
             engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
               historicUserTaskInstanceDto.getId(),
-              now.minus(offsetDuration, ChronoUnit.MILLIS)
+              now.minus(offsetDurationInMs, ChronoUnit.MILLIS)
             );
           } catch (SQLException e) {
             throw new OptimizeIntegrationTestException(e);

@@ -3,8 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.flownode.frequency.groupby.flownode.duration;
+package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.usertask.duration;
 
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -13,33 +14,34 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import java.time.OffsetDateTime;
 
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION;
+import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION;
 
-public class CountFlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFrequencyByModelElementDurationIT {
+public class UserTaskFrequencyByUserTaskIdleDurationReportEvaluationIT
+  extends ModelElementFrequencyByModelElementDurationIT {
   @Override
   protected ProcessInstanceEngineDto startProcessInstanceCompleteTaskAndModifyDuration(
     final String definitionId,
     final Number durationInMillis) {
     final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(definitionId);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
-    engineDatabaseExtension.changeAllActivityDurations(processInstance.getId(), durationInMillis);
+    changeUserTaskIdleDuration(processInstance, durationInMillis);
     return processInstance;
   }
 
   @Override
   protected void changeRunningInstanceReferenceDate(final ProcessInstanceEngineDto runningProcessInstance,
                                                     final OffsetDateTime startTime) {
-    engineDatabaseExtension.changeActivityInstanceStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
+    engineDatabaseExtension.changeUserTaskStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
   }
 
   @Override
   protected ProcessViewEntity getModelElementView() {
-    return ProcessViewEntity.FLOW_NODE;
+    return ProcessViewEntity.USER_TASK;
   }
 
   @Override
   protected int getNumberOfModelElementsPerInstance() {
-    return 3;
+    return 1;
   }
 
   @Override
@@ -48,7 +50,8 @@ public class CountFlowNodeFrequencyByFlowNodeDurationIT extends ModelElementFreq
       .createReportData()
       .setProcessDefinitionKey(processKey)
       .setProcessDefinitionVersion(definitionVersion)
-      .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION)
+      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION)
+      .setUserTaskDurationTime(UserTaskDurationTime.IDLE)
       .build();
   }
 }

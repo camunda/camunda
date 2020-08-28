@@ -14,7 +14,7 @@ import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.service.DurationAggregationService;
-import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
+import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
 import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
@@ -103,7 +103,7 @@ public class ProcessGroupByFlowNodeDuration extends AbstractGroupByFlowNode {
   }
 
   private Script getDurationScript() {
-    return ExecutionStateAggregationUtil.getDurationScript(
+    return AggregationFilterUtil.getDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
       EVENTS + "." + ACTIVITY_DURATION,
       EVENTS + "." + ACTIVITY_START_DATE

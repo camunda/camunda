@@ -16,7 +16,7 @@ import org.camunda.optimize.service.es.report.command.aggregations.MinAggregatio
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.es.report.command.modules.view.process.ProcessViewPart;
-import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
+import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.script.Script;
@@ -48,7 +48,7 @@ public abstract class ProcessViewDuration extends ProcessViewPart {
   }
 
   private Script getScriptedAggregationField(final ProcessReportDataDto reportData) {
-    return ExecutionStateAggregationUtil.getDurationScript(
+    return AggregationFilterUtil.getDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
       getDurationFieldName(reportData),
       getReferenceDateFieldName(reportData)

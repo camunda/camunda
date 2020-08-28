@@ -6,6 +6,8 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.usertask;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.DurationGroupByDto;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
@@ -13,7 +15,7 @@ import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.service.DurationAggregationService;
-import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
+import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
 import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.elasticsearch.action.search.SearchResponse;
@@ -21,7 +23,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.SingleBucketAggregation;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -32,8 +33,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
 @RequiredArgsConstructor
@@ -49,7 +48,7 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
                                                     final ExecutionContext<ProcessReportDataDto> context) {
     return durationAggregationService
       .createLimitedGroupByScriptedUserTaskDurationAggregation(
-        searchSourceBuilder, context, distributedByPart, getDurationScript()
+        searchSourceBuilder, context, distributedByPart, getDurationScript(context.getReportConfiguration())
       )
       .map(durationAggregation -> (AggregationBuilder) createFilteredUserTaskAggregation(context, durationAggregation))
       .map(Collections::singletonList)
@@ -62,16 +61,15 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
                              final ExecutionContext<ProcessReportDataDto> context) {
     compositeCommandResult.setKeyIsOfNumericType(true);
     getFilteredUserTaskAggregation(response)
-      .ifPresent(filteredFlowNodes -> {
+      .ifPresent(userFilteredFlowNodes -> {
         final List<CompositeCommandResult.GroupByResult> durationHistogramData =
           durationAggregationService.mapGroupByDurationResults(
-            response, filteredFlowNodes.getAggregations(), context, distributedByPart
+            response, userFilteredFlowNodes.getAggregations(), context, distributedByPart
           );
 
         compositeCommandResult.setGroups(durationHistogramData);
         compositeCommandResult.setIsComplete(FilterLimitedAggregationUtil.isResultComplete(
-          filteredFlowNodes.getAggregations(),
-          getUserTasksAggregation(response).map(SingleBucketAggregation::getDocCount).orElse(0L)
+          userFilteredFlowNodes.getAggregations(), userFilteredFlowNodes.getDocCount()
         ));
       });
   }
@@ -84,20 +82,22 @@ public class ProcessGroupByUserTaskDuration extends AbstractGroupByUserTask {
   @Override
   public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
                                                 final BoolQueryBuilder baseQuery) {
-    return Optional.of(retrieveMinMaxDurationStats(baseQuery));
+    return Optional.of(retrieveMinMaxDurationStats(baseQuery, context.getReportConfiguration()));
   }
 
-  private MinMaxStatDto retrieveMinMaxDurationStats(final QueryBuilder baseQuery) {
+  private MinMaxStatDto retrieveMinMaxDurationStats(final QueryBuilder baseQuery,
+                                                    final SingleReportConfigurationDto reportConfiguration) {
     return minMaxStatsService.getScriptedMinMaxStats(
-      baseQuery, PROCESS_INSTANCE_INDEX_NAME, USER_TASKS, getDurationScript()
+      baseQuery, PROCESS_INSTANCE_INDEX_NAME, USER_TASKS, getDurationScript(reportConfiguration)
     );
   }
 
-  private Script getDurationScript() {
-    return ExecutionStateAggregationUtil.getDurationScript(
+  private Script getDurationScript(final SingleReportConfigurationDto reportConfiguration) {
+    final UserTaskDurationTime userTaskDurationTime = reportConfiguration.getUserTaskDurationTime();
+    return AggregationFilterUtil.getDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
-      USER_TASKS + "." + USER_TASK_TOTAL_DURATION,
-      USER_TASKS + "." + USER_TASK_START_DATE
+      USER_TASKS + "." + userTaskDurationTime.getDurationFieldName(),
+      USER_TASKS + "." + userTaskDurationTime.getStartDateFieldName()
     );
   }
 

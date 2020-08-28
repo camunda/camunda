@@ -942,7 +942,7 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     return createReport(processDefinitionKey, Collections.singletonList(version));
   }
 
-  private ProcessReportDataDto createReport(final ProcessDefinitionEngineDto processDefinition) {
+  protected ProcessReportDataDto createReport(final ProcessDefinitionEngineDto processDefinition) {
     return createReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 

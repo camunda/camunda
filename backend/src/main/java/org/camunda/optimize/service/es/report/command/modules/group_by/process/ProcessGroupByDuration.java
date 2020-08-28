@@ -15,7 +15,7 @@ import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPa
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import org.camunda.optimize.service.es.report.command.service.DurationAggregationService;
-import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
+import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
 import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -86,7 +86,7 @@ public class ProcessGroupByDuration extends GroupByPart<ProcessReportDataDto> {
   }
 
   private Script getDurationScript() {
-    return ExecutionStateAggregationUtil.getDurationScript(
+    return AggregationFilterUtil.getDurationScript(
       LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
       ProcessInstanceIndex.DURATION,
       ProcessInstanceIndex.START_DATE

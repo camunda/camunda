@@ -22,7 +22,7 @@ import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.cre
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class ExecutionStateAggregationUtil {
+public class AggregationFilterUtil {
 
   public static BoolQueryBuilder addExecutionStateFilter(BoolQueryBuilder boolQueryBuilder,
                                                          FlowNodeExecutionState flowNodeExecutionState,
@@ -76,7 +76,8 @@ public class ExecutionStateAggregationUtil {
         durationFieldName,
         referenceDateFieldName
       )
-        + " return result " + mapFilterOperator(dto.getOperator()) + " params['filterDuration']",
+        + " return (result != null && result " + mapFilterOperator(dto.getOperator()) + " params['filterDuration'])" +
+        " || (" + dto.isIncludeNull() + " && result == null)",
       params
     );
   }

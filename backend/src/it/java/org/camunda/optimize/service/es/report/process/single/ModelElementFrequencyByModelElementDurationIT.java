@@ -25,8 +25,6 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
 import org.camunda.optimize.test.util.DateCreationFreezer;
-import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -50,21 +48,25 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_D
 
 public abstract class ModelElementFrequencyByModelElementDurationIT extends AbstractProcessDefinitionIT {
 
-  protected abstract void startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(final String definitionId,
-                                                                                            final long durationInMillis);
+  protected abstract ProcessInstanceEngineDto startProcessInstanceCompleteTaskAndModifyDuration(
+    final String definitionId,
+    final Number durationInMillis);
 
-  protected abstract ProcessReportDataType getReportDataType();
+  protected abstract void changeRunningInstanceReferenceDate(final ProcessInstanceEngineDto runningProcessInstance,
+                                                             final OffsetDateTime startTime);
 
   protected abstract ProcessViewEntity getModelElementView();
 
   protected abstract int getNumberOfModelElementsPerInstance();
+
+  protected abstract ProcessReportDataDto createReport(final String processKey, final String definitionVersion);
 
   @Test
   public void simpleReportEvaluation() {
     // given
     final int durationInMilliseconds = 1000;
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), durationInMilliseconds);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), durationInMilliseconds);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -96,7 +98,7 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
     // given
     final int durationInMilliseconds = 1000;
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), durationInMilliseconds);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), durationInMilliseconds);
     importAllEngineEntitiesFromScratch();
 
     final String reportId = createAndStoreDefaultReportDefinition(definition.getKey(), definition.getVersionAsString());
@@ -128,7 +130,7 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
   public void simpleReportEvaluation_noData() {
     // given
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 1000);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 1000);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -155,7 +157,7 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
     // given
     final int durationInMilliseconds = 1000;
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), durationInMilliseconds);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), durationInMilliseconds);
     // create and start another process
     deployAndStartSimpleServiceTaskProcess();
     importAllEngineEntitiesFromScratch();
@@ -203,8 +205,8 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
     // given
     final int durationInMilliseconds = 1000;
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), durationInMilliseconds);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), durationInMilliseconds);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), durationInMilliseconds);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), durationInMilliseconds);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -226,22 +228,16 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
   @Test
   public void multipleProcessInstances_runningInstanceDurationIsCalculated() {
     // given
-    final int completedActivityInstanceDurations = 1000;
+    final int completedActivityInstanceDuration = 1000;
     final OffsetDateTime startTime = DateCreationFreezer.dateFreezer(OffsetDateTime.now()).freezeDateAndReturn();
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(
-      definition.getId(),
-      completedActivityInstanceDurations
-    );
-
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), completedActivityInstanceDuration);
     final ProcessInstanceEngineDto runningProcessInstance =
       engineIntegrationExtension.startProcessInstance(definition.getId());
     engineDatabaseExtension.changeAllActivityDurations(
-      runningProcessInstance.getId(),
-      completedActivityInstanceDurations
+      runningProcessInstance.getId(), completedActivityInstanceDuration
     );
-    engineDatabaseExtension.changeActivityInstanceStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
-    engineDatabaseExtension.changeUserTaskStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
+    changeRunningInstanceReferenceDate(runningProcessInstance, startTime);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -270,8 +266,8 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
     final int minDurationInMillis = 1000;
     final int maxDurationInMillis = minDurationInMillis + NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1;
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), minDurationInMillis);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), maxDurationInMillis);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), minDurationInMillis);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), maxDurationInMillis);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -298,8 +294,8 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
   public void multipleBuckets_automaticRangeBucketsBaseOf10Start() {
     // given
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 1401);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 2004);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 1401);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 2004);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -327,9 +323,9 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
   public void multipleBuckets_customBuckets() {
     // given
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 100);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 200);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 300);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 100);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 200);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 300);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -377,12 +373,12 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
                                                              final Duration baseDuration) {
     // given
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), baseDuration.toMillis());
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), baseDuration.toMillis());
+    startProcessInstanceCompleteTaskAndModifyDuration(
       definition.getId(),
       baseDuration.multipliedBy(2).toMillis()
     );
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(
+    startProcessInstanceCompleteTaskAndModifyDuration(
       definition.getId(),
       baseDuration.multipliedBy(3).toMillis()
     );
@@ -420,9 +416,9 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
   public void multipleBuckets_customBuckets_baseLine_biggerThanMax_returnsEmptyResult() {
     // given
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 100);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 200);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 300);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 100);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 200);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 300);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -447,9 +443,9 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
   public void multipleBuckets_customBuckets_tooManyBuckets_returnsLimitedResult() {
     // given
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 1);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 2000);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 3000);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 1);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 2000);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 3000);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -480,11 +476,11 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
   public void multipleBuckets_defaultSorting() {
     // given
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 900);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 1000);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 1000);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 1100);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 2000);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 900);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 1000);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 1000);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 1100);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 2000);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -511,8 +507,8 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
   public void multipleBuckets_customKeySorting() {
     // given
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 10);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 11);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 10);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 11);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -541,9 +537,9 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
   public void multipleBuckets_valueSorting() {
     // given
     final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 10);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 10);
-    startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(definition.getId(), 11);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 10);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 10);
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 11);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -565,30 +561,21 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
       );
   }
 
-  private double getExpectedNumberOfModelElements(final int instanceCount) {
+  protected String createDurationBucketKey(final long durationInMs) {
+    return Double.valueOf(durationInMs).toString();
+  }
+
+  protected double getExpectedNumberOfModelElements(final int instanceCount) {
     return getNumberOfModelElementsPerInstance() * instanceCount;
   }
 
-  private double getExpectedNumberOfModelElements() {
+  protected double getExpectedNumberOfModelElements() {
     return getExpectedNumberOfModelElements(1);
   }
 
-  private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
-                                                       String processDefinitionVersion) {
+  protected String createAndStoreDefaultReportDefinition(String processDefinitionKey,
+                                                         String processDefinitionVersion) {
     final ProcessReportDataDto reportData = createReport(processDefinitionKey, processDefinitionVersion);
     return createNewReport(reportData);
-  }
-
-  private ProcessReportDataDto createReport(final String processKey, final String definitionVersion) {
-    return TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processKey)
-      .setProcessDefinitionVersion(definitionVersion)
-      .setReportDataType(getReportDataType())
-      .build();
-  }
-
-  private String createDurationBucketKey(final long durationInMs) {
-    return Double.valueOf(durationInMs).toString();
   }
 }

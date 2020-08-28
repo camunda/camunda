@@ -5,19 +5,32 @@
  */
 package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.usertask.duration;
 
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.single.ModelElementFrequencyByModelElementDurationIT;
-import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+
+import java.time.OffsetDateTime;
 
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION;
 
-public class UserTaskFrequencyByUserTaskDurationReportEvaluationIT extends ModelElementFrequencyByModelElementDurationIT {
+public class UserTaskFrequencyByUserTaskTotalDurationReportEvaluationIT
+  extends ModelElementFrequencyByModelElementDurationIT {
   @Override
-  protected void startProcessInstanceCompleteUserTaskAndModifyModelElementDuration(final String definitionId, final long durationInMillis) {
+  protected ProcessInstanceEngineDto startProcessInstanceCompleteTaskAndModifyDuration(
+    final String definitionId,
+    final Number durationInMillis) {
     final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(definitionId);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
     engineDatabaseExtension.changeUserTaskDuration(processInstance.getId(), durationInMillis);
+    return processInstance;
+  }
+
+  @Override
+  protected void changeRunningInstanceReferenceDate(final ProcessInstanceEngineDto runningProcessInstance,
+                                                    final OffsetDateTime startTime) {
+    engineDatabaseExtension.changeUserTaskStartDate(runningProcessInstance.getId(), USER_TASK_1, startTime);
   }
 
   @Override
@@ -31,7 +44,13 @@ public class UserTaskFrequencyByUserTaskDurationReportEvaluationIT extends Model
   }
 
   @Override
-  protected ProcessReportDataType getReportDataType() {
-    return USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION;
+  protected ProcessReportDataDto createReport(final String processKey, final String definitionVersion) {
+    return TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processKey)
+      .setProcessDefinitionVersion(definitionVersion)
+      .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION)
+      // UserTaskDurationTime.TOTAL is default and is not set explicitly
+      .build();
   }
 }

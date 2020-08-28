@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.command.service;
 
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
@@ -18,7 +19,7 @@ import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
-import org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil;
+import org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil;
 import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -49,8 +50,6 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
-import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
@@ -105,7 +104,13 @@ public class DurationAggregationService {
       context, searchSourceBuilder.query(), PROCESS_INSTANCE_INDEX_NAME, USER_TASKS, durationCalculationScript
     );
     return createLimitedGroupByScriptedDurationAggregation(
-      context, distributedByPart, durationCalculationScript, minMaxStats, this::createUserTaskLimitingFilterQuery
+      context,
+      distributedByPart,
+      durationCalculationScript,
+      minMaxStats,
+      (filterOperator, filterValueInMillis) -> createUserTaskLimitingFilterQuery(
+        filterOperator, context.getReportConfiguration().getUserTaskDurationTime(), filterValueInMillis
+      )
     );
   }
 
@@ -213,12 +218,15 @@ public class DurationAggregationService {
   }
 
   private ScriptQueryBuilder createUserTaskLimitingFilterQuery(final FilterOperator filterOperator,
+                                                               final UserTaskDurationTime userTaskDurationTime,
                                                                final double filterValueInMillis) {
     return createLimitingFilterQuery(
       filterOperator,
       (long) filterValueInMillis,
-      USER_TASKS + "." + USER_TASK_TOTAL_DURATION,
-      USER_TASKS + "." + USER_TASK_START_DATE
+      USER_TASKS + "." + userTaskDurationTime.getDurationFieldName(),
+      USER_TASKS + "." + userTaskDurationTime.getStartDateFieldName(),
+      // user task duration calculations can be null (e.g. work time if the userTask hasn't been claimed)
+      true
     );
   }
 
@@ -228,21 +236,23 @@ public class DurationAggregationService {
       filterOperator,
       (long) filterValueInMillis,
       EVENTS + "." + ACTIVITY_DURATION,
-      EVENTS + "." + ACTIVITY_START_DATE
+      EVENTS + "." + ACTIVITY_START_DATE,
+      false
     );
   }
 
   private ScriptQueryBuilder createProcessInstanceLimitingFilterQuery(final FilterOperator filterOperator,
                                                                       final double filterValueInMillis) {
-    return createLimitingFilterQuery(filterOperator, (long) filterValueInMillis, DURATION, START_DATE);
+    return createLimitingFilterQuery(filterOperator, (long) filterValueInMillis, DURATION, START_DATE, false);
   }
 
   private ScriptQueryBuilder createLimitingFilterQuery(final FilterOperator filterOperator,
                                                        final long filterValueInMillis,
                                                        final String durationFieldName,
-                                                       final String referenceDateFieldName) {
+                                                       final String referenceDateFieldName,
+                                                       final boolean includeNull) {
     return QueryBuilders.scriptQuery(
-      ExecutionStateAggregationUtil.getDurationFilterScript(
+      AggregationFilterUtil.getDurationFilterScript(
         LocalDateUtil.getCurrentDateTime().toInstant().toEpochMilli(),
         durationFieldName,
         referenceDateFieldName,
@@ -250,6 +260,7 @@ public class DurationAggregationService {
           .operator(filterOperator)
           .unit(FILTER_UNIT)
           .value(filterValueInMillis)
+          .includeNull(includeNull)
           .build()
       )
     );
