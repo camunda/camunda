@@ -74,13 +74,11 @@ public final class ExporterDirector extends Actor {
 
     this.logStream = Objects.requireNonNull(context.getLogStream());
     final int partitionId = logStream.getPartitionId();
-    this.recordExporter = new RecordExporter(containers, partitionId);
+    this.metrics = new ExporterMetrics(partitionId);
+    this.recordExporter = new RecordExporter(metrics, containers, partitionId);
     this.exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
     this.recordWrapStrategy = new EndlessRetryStrategy(actor);
-
     this.zeebeDb = context.getZeebeDb();
-
-    this.metrics = new ExporterMetrics(partitionId);
   }
 
   public ActorFuture<Void> startAsync(final ActorScheduler actorScheduler) {
@@ -314,13 +312,18 @@ public final class ExporterDirector extends Actor {
     private final RecordMetadata rawMetadata = new RecordMetadata();
     private final List<ExporterContainer> containers;
     private final TypedEventImpl typedEvent;
+    private final ExporterMetrics exporterMetrics;
 
     private boolean shouldExport;
     private int exporterIndex;
 
-    RecordExporter(final List<ExporterContainer> containers, final int partitionId) {
+    RecordExporter(
+        final ExporterMetrics exporterMetrics,
+        final List<ExporterContainer> containers,
+        final int partitionId) {
       this.containers = containers;
       typedEvent = new TypedEventImpl(partitionId);
+      this.exporterMetrics = exporterMetrics;
     }
 
     void wrap(final LoggedEvent rawEvent) {
@@ -355,6 +358,7 @@ public final class ExporterDirector extends Actor {
           }
 
           exporterIndex++;
+          exporterMetrics.setLastExportedPosition(container.getId(), typedEvent.getPosition());
         } catch (final Exception ex) {
           container
               .context
@@ -424,6 +428,7 @@ public final class ExporterDirector extends Actor {
       actor.run(
           () -> {
             state.setPosition(getId(), position);
+            metrics.setLastUpdatedExportedPosition(getId(), position);
             this.position = position;
           });
     }
