@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.service.license.LicenseManager;
 import org.elasticsearch.client.RequestOptions;
 import org.springframework.stereotype.Component;
 
@@ -31,6 +32,7 @@ public class TelemetryDataService {
   public static final String INFORMATION_UNAVAILABLE_STRING = "Unknown";
 
   private final ElasticsearchMetadataService elasticsearchMetadataService;
+  private final LicenseManager licenseManager;
   private final OptimizeElasticsearchClient esClient;
 
   public TelemetryDataDto getTelemetryData() {
@@ -51,10 +53,13 @@ public class TelemetryDataService {
 
   private InternalsDto getInternalsData() {
     final List<String> engineInstallationIDs = new ArrayList<>(); // TODO once CAM-12294 is implemented
-    // installation IDs
+    final String licenseKey =
+      Optional.ofNullable(licenseManager.getOptimizeLicense()).orElse(INFORMATION_UNAVAILABLE_STRING);
+
     return InternalsDto.builder()
       .engineInstallationIds(engineInstallationIDs)
       .database(getDatabaseData())
+      .licenseKey(licenseKey)
       .build();
   }
 

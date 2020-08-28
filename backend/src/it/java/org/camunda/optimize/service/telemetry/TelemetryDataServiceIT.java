@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
+import org.camunda.optimize.service.license.LicenseManager;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,8 @@ public class TelemetryDataServiceIT extends AbstractIT {
     // then
     final TelemetryDataDto expectedTelemetry = getExpectedTelemetry(
       elasticSearchIntegrationTestExtension.getEsVersion(),
-      getMetadata().map(MetadataDto::getInstallationId).orElse(INFORMATION_UNAVAILABLE_STRING)
+      getMetadata().map(MetadataDto::getInstallationId).orElse(INFORMATION_UNAVAILABLE_STRING),
+      getLicense()
     );
 
     assertThat(telemetryData).isEqualTo(expectedTelemetry);
@@ -60,7 +62,8 @@ public class TelemetryDataServiceIT extends AbstractIT {
     // then
     final TelemetryDataDto expectedTelemetry = getExpectedTelemetry(
       elasticSearchIntegrationTestExtension.getEsVersion(),
-      INFORMATION_UNAVAILABLE_STRING
+      INFORMATION_UNAVAILABLE_STRING,
+      getLicense()
     );
     assertThat(telemetryData).isEqualTo(expectedTelemetry);
   }
@@ -83,14 +86,39 @@ public class TelemetryDataServiceIT extends AbstractIT {
     // then
     final TelemetryDataDto expectedTelemetry = getExpectedTelemetry(
       INFORMATION_UNAVAILABLE_STRING,
-      getMetadata().map(MetadataDto::getInstallationId).orElse(INFORMATION_UNAVAILABLE_STRING)
+      getMetadata().map(MetadataDto::getInstallationId).orElse(INFORMATION_UNAVAILABLE_STRING),
+      getLicense()
     );
 
     assertThat(telemetryData).isEqualTo(expectedTelemetry);
   }
 
+  @Test
+  public void retrieveTelemetryData_missingLicenseKey() {
+    try {
+      // given
+      removeLicense();
+
+      // when
+      final TelemetryDataDto telemetryData =
+        embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
+
+      // then
+      final TelemetryDataDto expectedTelemetry = getExpectedTelemetry(
+        elasticSearchIntegrationTestExtension.getEsVersion(),
+        getMetadata().map(MetadataDto::getInstallationId).orElse(INFORMATION_UNAVAILABLE_STRING),
+        INFORMATION_UNAVAILABLE_STRING
+      );
+
+      assertThat(telemetryData).isEqualTo(expectedTelemetry);
+    } finally {
+      initOptimizeLicense();
+    }
+  }
+
   private TelemetryDataDto getExpectedTelemetry(final String expectedDatabaseVersion,
-                                                final String expectedInstallationId) {
+                                                final String expectedInstallationId,
+                                                final String expectedLicenseKey) {
     final DatabaseDto databaseDto = DatabaseDto.builder()
       .version(expectedDatabaseVersion)
       .vendor("elasticsearch")
@@ -99,6 +127,7 @@ public class TelemetryDataServiceIT extends AbstractIT {
     final InternalsDto internalsDto = InternalsDto.builder()
       .engineInstallationIds(Lists.newArrayList()) // adjust once engine installation ID retrieval is implemented
       .database(databaseDto)
+      .licenseKey(expectedLicenseKey)
       .build();
 
     final ProductDto productDto = ProductDto.builder()
@@ -123,5 +152,19 @@ public class TelemetryDataServiceIT extends AbstractIT {
   private Optional<MetadataDto> getMetadata() {
     return embeddedOptimizeExtension.getApplicationContext().getBean(ElasticsearchMetadataService.class)
       .readMetadata(embeddedOptimizeExtension.getOptimizeElasticClient());
+  }
+
+  @SneakyThrows
+  private void removeLicense() {
+    embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).setOptimizeLicense(null);
+  }
+
+  @SneakyThrows
+  private void initOptimizeLicense() {
+    embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).init();
+  }
+
+  private String getLicense() {
+    return embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).getOptimizeLicense();
   }
 }

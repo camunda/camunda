@@ -26,4 +26,5 @@ public class InternalsDto implements OptimizeDto {
   private final List<String> engineInstallationIds = new ArrayList<>();
   @NonNull
   private final DatabaseDto database;
+  private final String licenseKey;
 }
