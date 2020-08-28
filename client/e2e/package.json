@@ -11,7 +11,7 @@
     "lodash.memoize": "^4.1.2",
     "node-fetch": "^2.6.0",
     "testcafe": "^1.9.1",
-    "zeebe-node": "^0.23.2"
+    "zeebe-node": "^0.24.0"
   },
   "dependencies": {
     "@testing-library/testcafe": "^4.2.0"
