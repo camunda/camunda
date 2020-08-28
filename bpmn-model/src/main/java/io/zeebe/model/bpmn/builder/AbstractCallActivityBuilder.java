@@ -53,4 +53,11 @@ public class AbstractCallActivityBuilder<B extends AbstractCallActivityBuilder<B
     calledElement.setProcessId(asZeebeExpression(processIdExpression));
     return myself;
   }
+
+  public B zeebePropagateAllChildVariables(final boolean propagateAllChildVariables) {
+    final ZeebeCalledElement calledElement =
+        getCreateSingleExtensionElement(ZeebeCalledElement.class);
+    calledElement.setPropagateAllChildVariablesEnabled(propagateAllChildVariables);
+    return myself;
+  }
 }
