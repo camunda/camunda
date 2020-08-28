@@ -95,22 +95,23 @@ public final class SystemContext {
     }
 
     final var diskUsageCommandWatermark = dataCfg.getDiskUsageCommandWatermark();
-    if (!(diskUsageCommandWatermark > 0 && diskUsageCommandWatermark < 1)) {
+    if (!(diskUsageCommandWatermark > 0 && diskUsageCommandWatermark <= 1)) {
       throw new IllegalArgumentException(
           String.format(
-              "Expected diskUsageCommandWatermark to be in the range (0,1), but found %f",
+              "Expected diskUsageCommandWatermark to be in the range (0,1], but found %f",
               diskUsageCommandWatermark));
     }
 
     final var diskUsageReplicationWatermark = dataCfg.getDiskUsageReplicationWatermark();
-    if (!(diskUsageReplicationWatermark > 0 && diskUsageReplicationWatermark < 1)) {
+    if (!(diskUsageReplicationWatermark > 0 && diskUsageReplicationWatermark <= 1)) {
       throw new IllegalArgumentException(
           String.format(
-              "Expected diskUsageReplicationWatermark to be in the range (0,1), but found %f",
+              "Expected diskUsageReplicationWatermark to be in the range (0,1], but found %f",
               diskUsageReplicationWatermark));
     }
 
-    if (diskUsageCommandWatermark >= diskUsageReplicationWatermark) {
+    if (data.isDiskUsageWatermarkEnabled()
+        && diskUsageCommandWatermark >= diskUsageReplicationWatermark) {
       throw new IllegalArgumentException(
           String.format(
               "diskUsageCommandWatermark (%f) must be less than diskUsageReplicationWatermark (%f)",
