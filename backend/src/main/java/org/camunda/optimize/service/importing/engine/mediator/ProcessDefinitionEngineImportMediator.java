@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.handler.ProcessDefinitionImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
@@ -24,7 +24,7 @@ import java.util.List;
 public class ProcessDefinitionEngineImportMediator
   extends TimestampBasedImportMediator<ProcessDefinitionImportIndexHandler, ProcessDefinitionEngineDto> {
 
-  private ProcessDefinitionFetcher engineEntityFetcher;
+  private final ProcessDefinitionFetcher engineEntityFetcher;
 
 
   public ProcessDefinitionEngineImportMediator(final ProcessDefinitionImportIndexHandler importIndexHandler,

@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.engine.DecisionDefinitionXmlEngineDto;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionDefinitionXmlFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionXmlImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionXmlImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionXmlImportService;
 import org.camunda.optimize.service.importing.page.IdSetBasedImportPage;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -24,7 +24,7 @@ import java.util.List;
 public class DecisionDefinitionXmlEngineImportMediator
   extends ScrollBasedImportMediator<DecisionDefinitionXmlImportIndexHandler, DecisionDefinitionXmlEngineDto> {
 
-  private DecisionDefinitionXmlFetcher engineEntityFetcher;
+  private final DecisionDefinitionXmlFetcher engineEntityFetcher;
 
 
   public DecisionDefinitionXmlEngineImportMediator(final DecisionDefinitionXmlImportIndexHandler importIndexHandler,

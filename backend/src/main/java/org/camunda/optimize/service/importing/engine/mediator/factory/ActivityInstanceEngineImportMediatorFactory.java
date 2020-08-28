@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.CompletedActivityInstanceWriter;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
@@ -24,18 +23,18 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ActivityInstanceEngineImportMediatorFactory extends AbstractImportMediatorFactory {
-  private final CamundaEventImportService camundaEventService;
+  private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
   private final RunningActivityInstanceWriter runningActivityInstanceWriter;
 
-  public ActivityInstanceEngineImportMediatorFactory(final CamundaEventImportService camundaEventService,
+  public ActivityInstanceEngineImportMediatorFactory(final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
                                                      final CompletedActivityInstanceWriter completedActivityInstanceWriter,
                                                      final RunningActivityInstanceWriter runningActivityInstanceWriter,
                                                      final BeanFactory beanFactory,
                                                      final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                      final ConfigurationService configurationService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
-    this.camundaEventService = camundaEventService;
+    this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
   }
@@ -50,7 +49,7 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractImportM
       beanFactory.getBean(CompletedActivityInstanceFetcher.class, engineContext),
       new CompletedActivityInstanceImportService(
         completedActivityInstanceWriter,
-        camundaEventService,
+        camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         elasticsearchImportJobExecutor,
         engineContext
       ),
@@ -69,7 +68,7 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractImportM
       beanFactory.getBean(RunningActivityInstanceFetcher.class, engineContext),
       new RunningActivityInstanceImportService(
         runningActivityInstanceWriter,
-        camundaEventService,
+        camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         elasticsearchImportJobExecutor,
         engineContext
       ),

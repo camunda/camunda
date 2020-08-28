@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.importing.engine.service;
+package org.camunda.optimize.service.importing.engine.service.definition;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +14,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionDefinitionElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionWriter;
+import org.camunda.optimize.service.importing.engine.service.ImportService;
 
 import java.util.List;
 import java.util.stream.Collectors;

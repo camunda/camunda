@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.HistoricDecisionInputInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionOutputInstanceDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.InputInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.OutputInstanceDto;
@@ -27,7 +28,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionInstanceElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,16 +53,11 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     boolean newDataIsAvailable = !engineDtoList.isEmpty();
 
     if (newDataIsAvailable) {
-      try {
-        final List<DecisionInstanceDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(engineDtoList);
+      final List<DecisionInstanceDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(engineDtoList);
 
-        final ElasticsearchImportJob<DecisionInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
-          optimizeDtos, importCompleteCallback);
-        addElasticsearchImportJobToQueue(elasticsearchImportJob);
-      } catch (OptimizeDecisionDefinitionFetchException e) {
-        log.debug("Required Decision Definition not imported yet, skipping current decision instance import cycle.", e);
-        throw new OptimizeRuntimeException(e.getMessage(), e);
-      }
+      final ElasticsearchImportJob<DecisionInstanceDto> elasticsearchImportJob = createElasticsearchImportJob(
+        optimizeDtos, importCompleteCallback);
+      addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }
 
@@ -70,8 +66,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     return elasticsearchImportJobExecutor;
   }
 
-  public DecisionInstanceDto mapEngineEntityToOptimizeEntity(HistoricDecisionInstanceDto engineEntity)
-    throws OptimizeDecisionDefinitionFetchException {
+  public DecisionInstanceDto mapEngineEntityToOptimizeEntity(HistoricDecisionInstanceDto engineEntity) {
     return new DecisionInstanceDto(
       engineEntity.getId(),
       engineEntity.getProcessDefinitionId(),
@@ -100,8 +95,7 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
   }
 
   private List<DecisionInstanceDto> mapEngineEntitiesToOptimizeEntities(List<HistoricDecisionInstanceDto>
-                                                                          engineEntities)
-    throws OptimizeDecisionDefinitionFetchException {
+                                                                          engineEntities) {
     List<DecisionInstanceDto> list = new ArrayList<>();
     for (HistoricDecisionInstanceDto engineEntity : engineEntities) {
       DecisionInstanceDto decisionInstanceDto = mapEngineEntityToOptimizeEntity(engineEntity);
@@ -177,15 +171,13 @@ public class DecisionInstanceImportService implements ImportService<HistoricDeci
     );
   }
 
-  private String resolveDecisionDefinitionVersion(final HistoricDecisionInstanceDto engineEntity)
-    throws OptimizeDecisionDefinitionFetchException {
+  private String resolveDecisionDefinitionVersion(final HistoricDecisionInstanceDto engineEntity) {
     return decisionDefinitionResolverService
-      .getVersionForDecisionDefinitionId(engineEntity.getDecisionDefinitionId())
+      .getDefinition(engineEntity.getDecisionDefinitionId(), engineContext)
+      .map(DecisionDefinitionOptimizeDto::getVersion)
       .orElseThrow(() -> {
-        final String message = String.format(
-          "Couldn't obtain version for decisionDefinitionId [%s]. It hasn't been imported yet",
-          engineEntity.getDecisionDefinitionId()
-        );
+        final String message =
+          "Required Decision Definition couldn't be obtained, skipping current decision instance import cycle.";
         return new OptimizeDecisionDefinitionFetchException(message);
       });
   }

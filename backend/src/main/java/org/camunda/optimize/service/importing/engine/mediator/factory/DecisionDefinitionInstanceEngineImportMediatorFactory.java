@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.DecisionInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.DecisionInstanceEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionResolverService;
+import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
 import org.camunda.optimize.service.importing.engine.service.DecisionInstanceImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

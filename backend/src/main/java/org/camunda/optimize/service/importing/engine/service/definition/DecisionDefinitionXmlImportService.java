@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.importing.engine.service;
+package org.camunda.optimize.service.importing.engine.service.definition;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +16,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.DecisionDefinitionXmlElasticsearchImportJob;
 import org.camunda.optimize.service.es.writer.DecisionDefinitionXmlWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.importing.engine.service.ImportService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -82,20 +82,14 @@ public class DecisionDefinitionXmlImportService implements ImportService<Decisio
   }
 
   private String resolveDecisionDefinitionKey(final DecisionDefinitionXmlEngineDto engineEntity) {
-    try {
-      return decisionDefinitionResolverService
-        .getKeyForDecisionDefinitionId(engineEntity.getId())
-        .orElseThrow(() -> {
-          final String message = String.format(
-            "Couldn't obtain key for decisionDefinitionId [%s]. It hasn't been imported yet",
-            engineEntity.getId()
-          );
-          return new OptimizeDecisionDefinitionFetchException(message);
-        });
-    } catch (OptimizeDecisionDefinitionFetchException e) {
-      log.debug("Required Decision Definition not imported yet, skipping current decision xml import cycle.", e);
-      throw new OptimizeRuntimeException(e.getMessage(), e);
-    }
+    return decisionDefinitionResolverService
+      .getDefinition(engineEntity.getId(), engineContext)
+      .map(DecisionDefinitionOptimizeDto::getKey)
+      .orElseThrow(() -> {
+        final String message =
+          "Required Decision Definition couldn't be obtained, skipping current decision xml import cycle.";
+        return new OptimizeDecisionDefinitionFetchException(message);
+      });
   }
 
 }

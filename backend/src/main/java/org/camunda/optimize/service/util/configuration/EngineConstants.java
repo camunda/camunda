@@ -51,8 +51,10 @@ public class EngineConstants {
   public static final String TENANT_ENDPOINT = "/tenant";
   public static final String VERSION_ENDPOINT = "/version";
   public static final String PROCESS_DEFINITION_ENDPOINT = "/process-definition";
+  public static final String PROCESS_DEFINITION_ENDPOINT_TEMPLATE = "/process-definition/{id}";
   public static final String PROCESS_DEFINITION_XML_ENDPOINT_TEMPLATE = "/process-definition/{id}/xml";
   public static final String DECISION_DEFINITION_ENDPOINT = "/decision-definition";
+  public static final String DECISION_DEFINITION_ENDPOINT_TEMPLATE = "/decision-definition/{id}";
   public static final String DECISION_DEFINITION_XML_ENDPOINT_TEMPLATE = "/decision-definition/{id}/xml";
   public static final String DEPLOYMENT_ENDPOINT_TEMPLATE = "/deployment/{id}";
   public static final String USER_VALIDATION_ENDPOINT = "/identity/verify";

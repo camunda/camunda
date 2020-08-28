@@ -8,6 +8,7 @@ package org.camunda.optimize.service.importing.engine.service;
 import org.camunda.optimize.dto.engine.HistoricDecisionInputInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricDecisionOutputInstanceDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
@@ -17,6 +18,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.DecisionInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
+import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,8 +62,8 @@ public class DecisionInstanceImportServiceTest {
   @BeforeEach
   public void init() {
     when(engineContext.getEngineAlias()).thenReturn("1");
-    when(decisionDefinitionResolverService.getVersionForDecisionDefinitionId(any()))
-      .thenReturn(Optional.of(VERSION_RESULT));
+    when(decisionDefinitionResolverService.getDefinition(any(), any()))
+      .thenReturn(Optional.of(new DecisionDefinitionOptimizeDto("123", "key", VERSION_RESULT, "", "", "", "")));
 
     this.underTest = new DecisionInstanceImportService(
       elasticsearchImportJobExecutor, engineContext, decisionInstanceWriter,

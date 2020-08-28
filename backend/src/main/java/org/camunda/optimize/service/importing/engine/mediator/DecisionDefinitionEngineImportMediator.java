@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.handler.DecisionDefinitionImportIndexHandler;
-import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;

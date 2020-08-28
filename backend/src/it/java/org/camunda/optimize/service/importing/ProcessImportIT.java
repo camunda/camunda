@@ -32,7 +32,6 @@ import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
 import java.io.IOException;
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashMap;
@@ -52,7 +51,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.mockserver.model.HttpRequest.request;
@@ -114,7 +112,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID)).isEqualTo(tenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(ProcessDefinitionIndex.TENANT_ID, tenantId);
   }
 
   @Test
@@ -132,7 +130,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID)).isEqualTo(tenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(ProcessDefinitionIndex.TENANT_ID, tenantId);
   }
 
   @Test
@@ -151,7 +149,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessDefinitionIndex.TENANT_ID)).isEqualTo(expectedTenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(ProcessDefinitionIndex.TENANT_ID, expectedTenantId);
   }
 
   @Test
@@ -202,7 +200,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID)).isEqualTo(tenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(ProcessInstanceIndex.TENANT_ID, tenantId);
   }
 
   @Test
@@ -220,7 +218,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID)).isEqualTo(tenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(ProcessInstanceIndex.TENANT_ID, tenantId);
   }
 
   @Test
@@ -239,7 +237,7 @@ public class ProcessImportIT extends AbstractImportIT {
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
     final SearchHit hit = idsResp.getHits().getHits()[0];
-    assertThat(hit.getSourceAsMap().get(ProcessInstanceIndex.TENANT_ID)).isEqualTo(expectedTenantId);
+    assertThat(hit.getSourceAsMap()).containsEntry(ProcessInstanceIndex.TENANT_ID, expectedTenantId);
   }
 
   @Test
@@ -338,8 +336,8 @@ public class ProcessImportIT extends AbstractImportIT {
     // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
-    assertThat(idsResp.getHits().getAt(0).getSourceAsMap().get(ProcessInstanceIndex.STATE))
-      .isEqualTo(EXTERNALLY_TERMINATED_STATE);
+    assertThat(idsResp.getHits().getAt(0).getSourceAsMap())
+      .containsEntry(ProcessInstanceIndex.STATE, EXTERNALLY_TERMINATED_STATE);
   }
 
   @Test
@@ -510,7 +508,7 @@ public class ProcessImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void doNotSkipProcessInstancesWithSameEndTime() throws Exception {
+  public void doNotSkipProcessInstancesWithSameEndTime() {
     // given
     int originalMaxPageSize = embeddedOptimizeExtension.getConfigurationService()
       .getEngineImportProcessInstanceMaxPageSize();
@@ -560,7 +558,7 @@ public class ProcessImportIT extends AbstractImportIT {
     return countAggregator.getValue();
   }
 
-  private void startTwoProcessInstancesWithSameEndTime() throws SQLException {
+  private void startTwoProcessInstancesWithSameEndTime() {
     OffsetDateTime endTime = OffsetDateTime.now();
     ProcessInstanceEngineDto firstProcInst = deployAndStartSimpleServiceTask();
     ProcessInstanceEngineDto secondProcInst =

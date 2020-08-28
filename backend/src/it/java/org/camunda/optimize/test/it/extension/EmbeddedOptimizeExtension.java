@@ -16,7 +16,6 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SettingsService;
@@ -37,6 +36,7 @@ import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngineImportMediator;
+import org.camunda.optimize.service.importing.engine.mediator.factory.CamundaEventImportServiceFactory;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.importing.engine.service.RunningActivityInstanceImportService;
 import org.camunda.optimize.service.importing.event.EventTraceStateProcessingScheduler;
@@ -214,13 +214,14 @@ public class EmbeddedOptimizeExtension
   @SneakyThrows
   public void importRunningActivityInstance(List<HistoricActivityInstanceEngineDto> activities) {
     RunningActivityInstanceWriter writer = getApplicationContext().getBean(RunningActivityInstanceWriter.class);
-    CamundaEventImportService camundaEventService = getApplicationContext().getBean(CamundaEventImportService.class);
+    CamundaEventImportServiceFactory camundaEventServiceFactory =
+      getApplicationContext().getBean(CamundaEventImportServiceFactory.class);
 
     for (EngineContext configuredEngine : getConfiguredEngines()) {
       RunningActivityInstanceImportService service =
         new RunningActivityInstanceImportService(
           writer,
-          camundaEventService,
+          camundaEventServiceFactory.createCamundaEventService(configuredEngine),
           getElasticsearchImportJobExecutor(),
           configuredEngine
         );

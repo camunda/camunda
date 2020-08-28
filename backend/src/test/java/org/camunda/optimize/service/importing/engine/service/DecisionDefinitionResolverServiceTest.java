@@ -7,7 +7,9 @@ package org.camunda.optimize.service.importing.engine.service;
 
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.reader.DecisionDefinitionReader;
+import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,17 +20,23 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
 public class DecisionDefinitionResolverServiceTest {
 
+  private static final String TEST_KEY = "key";
+
   @Mock
   private DecisionDefinitionReader decisionDefinitionReader;
+
+  @Mock
+  private EngineContext engineContext;
 
   private DecisionDefinitionResolverService underTest;
 
@@ -42,14 +50,18 @@ public class DecisionDefinitionResolverServiceTest {
     // given
     final String id = UUID.randomUUID().toString();
     final String version = "2";
-    mockDecisionDefinitions(id, version);
+    mockDecisionDefinitionsOnReaderLevel(id, version);
 
     //when
-    final Optional<String> versionForDecisionDefinitionId = underTest.getVersionForDecisionDefinitionId(id);
+    final Optional<DecisionDefinitionOptimizeDto> decisionDefinition =
+      underTest.getDefinition(id, engineContext);
 
     //then
-    assertThat(versionForDecisionDefinitionId.isPresent(), is(true));
-    assertThat(versionForDecisionDefinitionId.get(), is(version));
+    assertThat(decisionDefinition).isPresent();
+    assertThat(decisionDefinition)
+      .get()
+      .extracting(DecisionDefinitionOptimizeDto::getVersion)
+      .isEqualTo(version);
     verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
   }
 
@@ -58,39 +70,100 @@ public class DecisionDefinitionResolverServiceTest {
     // given
     final String id = UUID.randomUUID().toString();
     final String version = "1";
-    mockDecisionDefinitions(id, version);
+    mockDecisionDefinitionsOnReaderLevel(id, version);
 
     //when
-    final Optional<String> versionForDecisionDefinitionIdFirstTry = underTest.getVersionForDecisionDefinitionId(id);
-    final Optional<String> versionForDecisionDefinitionIdSecondTry = underTest.getVersionForDecisionDefinitionId(id);
+    final Optional<DecisionDefinitionOptimizeDto> firstDecisionDefinitionTry =
+      underTest.getDefinition(id, engineContext);
+    final Optional<DecisionDefinitionOptimizeDto> secondDecisionDefinitionTry =
+      underTest.getDefinition(id, engineContext);
 
     //then
-    assertThat(versionForDecisionDefinitionIdFirstTry.isPresent(), is(true));
-    assertThat(versionForDecisionDefinitionIdSecondTry.isPresent(), is(true));
-    assertThat(versionForDecisionDefinitionIdFirstTry.get(), is(versionForDecisionDefinitionIdSecondTry.get()));
+    assertThat(firstDecisionDefinitionTry).isPresent();
+    assertThat(secondDecisionDefinitionTry).isPresent();
+    assertThat(firstDecisionDefinitionTry).contains(secondDecisionDefinitionTry.get());
 
     verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
+  }
+
+  @Test
+  public void noCacheOrReaderHit_retrieveFromEngine() {
+    // given
+    final String id = UUID.randomUUID().toString();
+    mockDecisionDefinitionsOnReaderLevel("otherId", "2");
+    mockDecisionDefinitionForEngineContext(id, "1");
+
+    //when
+    final Optional<DecisionDefinitionOptimizeDto> definition =
+      underTest.getDefinition(id, engineContext);
+
+    //then
+    assertThat(definition)
+      .isPresent()
+      .get()
+      .extracting(
+        DecisionDefinitionOptimizeDto::getId,
+        DecisionDefinitionOptimizeDto::getKey,
+        DecisionDefinitionOptimizeDto::getVersion
+      )
+      .containsExactly(id, TEST_KEY, "1");
+    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
+    verify(engineContext, times(1)).fetchDecisionDefinition(id);
+  }
+
+  @Test
+  public void noCacheOrReaderHit_retrieveFromEngineAndAfterwardsFromCache() {
+    // given
+    final String id = UUID.randomUUID().toString();
+    mockDecisionDefinitionsOnReaderLevel("otherId", "2");
+    mockDecisionDefinitionForEngineContext(id, "1");
+
+    //when
+    final Optional<DecisionDefinitionOptimizeDto> firstDecisionDefinitionTry =
+      underTest.getDefinition(id, engineContext);
+
+    //then
+    assertThat(firstDecisionDefinitionTry).isPresent();
+    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
+    verify(engineContext, times(1)).fetchDecisionDefinition(id);
+
+    // when
+    final Optional<DecisionDefinitionOptimizeDto> secondDecisionDefinitionTry =
+      underTest.getDefinition(id, engineContext);
+    verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
+    verify(engineContext, times(1)).fetchDecisionDefinition(id);
+    assertThat(secondDecisionDefinitionTry).isPresent();
+    assertThat(firstDecisionDefinitionTry).contains(secondDecisionDefinitionTry.get());
   }
 
   @Test
   public void testNoMatchingResult() {
     // given
     final String id = UUID.randomUUID().toString();
-    mockDecisionDefinitions("otherId", "1");
+    mockDecisionDefinitionsOnReaderLevel("otherId", "1");
+    when(engineContext.fetchDecisionDefinition(any())).thenReturn(null);
 
     //when
-    final Optional<String> versionResult = underTest.getVersionForDecisionDefinitionId(id);
+    final Optional<DecisionDefinitionOptimizeDto> definition =
+      underTest.getDefinition(id, engineContext);
 
     //then
-    assertThat(versionResult.isPresent(), is(false));
+    assertThat(definition).isNotPresent();
     verify(decisionDefinitionReader, times(1)).getDecisionDefinitions(false, false);
+    verify(engineContext, times(1)).fetchDecisionDefinition(id);
   }
 
-  private void mockDecisionDefinitions(final String id, final String version) {
+  private void mockDecisionDefinitionsOnReaderLevel(final String id, final String version) {
     List<DecisionDefinitionOptimizeDto> mockedDefinitions = Lists.newArrayList(
-      new DecisionDefinitionOptimizeDto(id, "key", version, "aVersionTag", "name", "", "engine", null, null, null)
+      new DecisionDefinitionOptimizeDto(id, TEST_KEY, version, "aVersionTag", "name", "", "engine", null, null, null)
     );
     when(decisionDefinitionReader.getDecisionDefinitions(false, false)).thenReturn(mockedDefinitions);
+  }
+
+  private void mockDecisionDefinitionForEngineContext(final String id, final String version) {
+    DecisionDefinitionOptimizeDto mockedDefinition =
+      new DecisionDefinitionOptimizeDto(id, TEST_KEY, version, "aVersionTag", "name", "", "engine", null, null, null);
+    when(engineContext.fetchDecisionDefinition(any())).thenReturn(mockedDefinition);
   }
 
 }

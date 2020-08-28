@@ -7,7 +7,9 @@ package org.camunda.optimize.service.importing.engine.service;
 
 import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,17 +20,23 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@SuppressWarnings("unchecked")
 @ExtendWith(MockitoExtension.class)
 public class ProcessDefinitionResolverServiceTest {
 
+  private static final String TEST_KEY = "key";
+
   @Mock
   private ProcessDefinitionReader processDefinitionReader;
+
+  @Mock
+  private EngineContext engineContext;
 
   private ProcessDefinitionResolverService underTest;
 
@@ -41,14 +49,18 @@ public class ProcessDefinitionResolverServiceTest {
   public void testResolveDefinitionFromProcessDefinitionReader() {
     // given
     final String id = UUID.randomUUID().toString();
-    mockProcessDefinitions(id);
+    mockProcessDefinitionsOnReaderLevel(id);
 
     //when
-    final Optional<ProcessDefinitionOptimizeDto> processDefinition = underTest.getDefinitionForProcessDefinitionId(id);
+    final Optional<ProcessDefinitionOptimizeDto> decisionDefinition =
+      underTest.getDefinition(id, engineContext);
 
     //then
-    assertThat(processDefinition.isPresent(), is(true));
-    assertThat(processDefinition.get().getId(), is(id));
+    assertThat(decisionDefinition).isPresent();
+    assertThat(decisionDefinition)
+      .get()
+      .extracting(ProcessDefinitionOptimizeDto::getId)
+      .isEqualTo(id);
     verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false);
   }
 
@@ -56,42 +68,99 @@ public class ProcessDefinitionResolverServiceTest {
   public void testProcessDefinitionResultIsCached() {
     // given
     final String id = UUID.randomUUID().toString();
-    mockProcessDefinitions(id);
+    mockProcessDefinitionsOnReaderLevel(id);
 
     //when
-    final Optional<ProcessDefinitionOptimizeDto> processDefinitionIdFirstTry =
-      underTest.getDefinitionForProcessDefinitionId(id);
-    final Optional<ProcessDefinitionOptimizeDto> processDefinitionIdSecondTry =
-      underTest.getDefinitionForProcessDefinitionId(id);
+    final Optional<ProcessDefinitionOptimizeDto> processDefinitionFirstTry =
+      underTest.getDefinition(id, engineContext);
+    final Optional<ProcessDefinitionOptimizeDto> processDefinitionSecondTry =
+      underTest.getDefinition(id, engineContext);
 
     //then
-    assertThat(processDefinitionIdFirstTry.isPresent(), is(true));
-    assertThat(processDefinitionIdSecondTry.isPresent(), is(true));
-    assertThat(processDefinitionIdFirstTry.get().getId(), is(processDefinitionIdSecondTry.get().getId()));
+    assertThat(processDefinitionFirstTry).isPresent();
+    assertThat(processDefinitionSecondTry).isPresent();
+    assertThat(processDefinitionFirstTry.get().getId()).isEqualTo(processDefinitionSecondTry.get().getId());
 
     verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false);
+  }
+
+  @Test
+  public void noCacheOrReaderHit_retrieveFromEngine() {
+    // given
+    final String id = UUID.randomUUID().toString();
+    mockProcessDefinitionsOnReaderLevel("otherId");
+    mockProcessDefinitionForEngineContext(id);
+
+    //when
+    final Optional<ProcessDefinitionOptimizeDto> definition =
+      underTest.getDefinition(id, engineContext);
+
+    //then
+    assertThat(definition)
+      .isPresent()
+      .get()
+      .extracting(
+        ProcessDefinitionOptimizeDto::getId,
+        ProcessDefinitionOptimizeDto::getKey
+      )
+      .containsExactly(id, TEST_KEY);
+    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false);
+    verify(engineContext, times(1)).fetchProcessDefinition(id);
+  }
+
+  @Test
+  public void noCacheOrReaderHit_retrieveFromEngineAndAfterwardsFromCache() {
+    // given
+    final String id = UUID.randomUUID().toString();
+    mockProcessDefinitionsOnReaderLevel("otherId");
+    mockProcessDefinitionForEngineContext(id);
+
+    //when
+    final Optional<ProcessDefinitionOptimizeDto> firstProcessDefinitionTry =
+      underTest.getDefinition(id, engineContext);
+
+    //then
+    assertThat(firstProcessDefinitionTry).isPresent();
+    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false);
+    verify(engineContext, times(1)).fetchProcessDefinition(id);
+
+    // when
+    final Optional<ProcessDefinitionOptimizeDto> secondProcessDefinitionTry =
+      underTest.getDefinition(id, engineContext);
+    verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false);
+    verify(engineContext, times(1)).fetchProcessDefinition(id);
+    assertThat(secondProcessDefinitionTry).isPresent();
+    assertThat(firstProcessDefinitionTry).contains(secondProcessDefinitionTry.get());
   }
 
   @Test
   public void testNoMatchingResult() {
     // given
     final String id = UUID.randomUUID().toString();
-    mockProcessDefinitions("otherId");
+    mockProcessDefinitionsOnReaderLevel("otherId");
+    when(engineContext.fetchProcessDefinition(any())).thenReturn(null);
 
     //when
     final Optional<ProcessDefinitionOptimizeDto> processDefinitionResult =
-      underTest.getDefinitionForProcessDefinitionId(id);
+      underTest.getDefinition(id, engineContext);
 
     //then
-    assertThat(processDefinitionResult.isPresent(), is(false));
+    assertThat(processDefinitionResult).isNotPresent();
     verify(processDefinitionReader, times(1)).getProcessDefinitions(false, false);
+    verify(engineContext, times(1)).fetchProcessDefinition(id);
   }
 
-  private void mockProcessDefinitions(final String id) {
+  private void mockProcessDefinitionsOnReaderLevel(final String id) {
     List<ProcessDefinitionOptimizeDto> mockedDefinitions = Lists.newArrayList(
-      new ProcessDefinitionOptimizeDto(id, "key", "2", "aVersionTag", "name", "", "engine", null, null, null)
+      new ProcessDefinitionOptimizeDto(id, TEST_KEY, "2", "aVersionTag", "name", "", "engine", null, null, null)
     );
     when(processDefinitionReader.getProcessDefinitions(false, false)).thenReturn(mockedDefinitions);
+  }
+
+  private void mockProcessDefinitionForEngineContext(final String id) {
+    ProcessDefinitionOptimizeDto mockedDefinition =
+      new ProcessDefinitionOptimizeDto(id, TEST_KEY, "1", "aVersionTag", "name", "", "engine", null, null, null);
+    when(engineContext.fetchProcessDefinition(any())).thenReturn(mockedDefinition);
   }
 
 }

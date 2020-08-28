@@ -11,8 +11,14 @@ import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.CountDto;
 import org.camunda.optimize.dto.engine.EngineGroupDto;
 import org.camunda.optimize.dto.engine.EngineListUserDto;
+import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.GroupDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.UserDto;
+import org.camunda.optimize.service.exceptions.OptimizeDecisionDefinitionFetchException;
+import org.camunda.optimize.service.exceptions.OptimizeProcessDefinitionFetchException;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 
@@ -28,11 +34,13 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.service.importing.engine.fetcher.EngineEntityFetcher.UTF8;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_ENDPOINT;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_GLOBAL;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_REVOKE;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.DECISION_DEFINITION_ENDPOINT_TEMPLATE;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.GROUP_BY_ID_ENDPOINT_TEMPLATE;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.GROUP_ENDPOINT;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.INDEX_OF_FIRST_RESULT;
@@ -40,6 +48,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstants.MA
 import static org.camunda.optimize.service.util.configuration.EngineConstants.MEMBER;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.MEMBER_OF_GROUP;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
+import static org.camunda.optimize.service.util.configuration.EngineConstants.PROCESS_DEFINITION_ENDPOINT_TEMPLATE;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
@@ -59,11 +68,13 @@ public class EngineContext {
   private static final Set<String> OPTIMIZE_APPLICATION_AUTH_RESOURCE_IDS = ImmutableSet.of(
     ALL_RESOURCES_RESOURCE_ID, OPTIMIZE_APPLICATION_RESOURCE_ID
   );
-  private String engineAlias;
-  private Client engineClient;
-  private ConfigurationService configurationService;
+  private final String engineAlias;
+  private final Client engineClient;
+  private final ConfigurationService configurationService;
 
-  public EngineContext(String engineAlias, Client engineClient, ConfigurationService configurationService) {
+  public EngineContext(final String engineAlias,
+                       final Client engineClient,
+                       final ConfigurationService configurationService) {
     this.engineAlias = engineAlias;
     this.engineClient = engineClient;
     this.configurationService = configurationService;
@@ -146,6 +157,94 @@ public class EngineContext {
     }
     return Optional.ofNullable(engineUserDto)
       .map(this::mapEngineUser);
+  }
+
+  public DecisionDefinitionOptimizeDto fetchDecisionDefinition(final String decisionDefinitionId) {
+    final Response response =
+      engineClient.target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+      .path(DECISION_DEFINITION_ENDPOINT_TEMPLATE)
+      .resolveTemplate("id", decisionDefinitionId)
+      .request(MediaType.APPLICATION_JSON)
+      .acceptEncoding(UTF8)
+      .get();
+
+    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+      final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
+        response.readEntity(DecisionDefinitionEngineDto.class);
+      return mapToOptimizeDecisionDefinition(decisionDefinitionEngineDto);
+    } else if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+      final String message = String.format(
+        "Wasn't able to retrieve decision definition with id [%s] from the engine. It's likely that the definition " +
+          "has been deleted but the historic data for it is still available. Please make sure that there are no " +
+          "remnants of historic decision instances for that definition left! Response from the engine: \n%s",
+        decisionDefinitionId, response.readEntity(String.class));
+      throw new OptimizeDecisionDefinitionFetchException(message);
+    } else {
+      final String message = String.format(
+        "Wasn't able to retrieve decision definition with id [%s] from the engine. Maybe the Optimize user utilized " +
+          "for the import is not authorized or there are some issues with the internet connection? Response from the " +
+          "engine: \n%s",
+        decisionDefinitionId,
+        response.readEntity(String.class)
+      );
+      throw new OptimizeDecisionDefinitionFetchException(message);
+    }
+  }
+
+  private DecisionDefinitionOptimizeDto mapToOptimizeDecisionDefinition(final DecisionDefinitionEngineDto engineDto) {
+    return new DecisionDefinitionOptimizeDto(
+      engineDto.getId(),
+      engineDto.getKey(),
+      engineDto.getVersionAsString(),
+      engineDto.getVersionTag(),
+      engineDto.getName(),
+      this.getEngineAlias(),
+      engineDto.getTenantId().orElseGet(() -> this.getDefaultTenantId().orElse(null))
+    );
+  }
+
+  public ProcessDefinitionOptimizeDto fetchProcessDefinition(final String processDefinitionId) {
+    final Response response =
+      engineClient.target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+        .path(PROCESS_DEFINITION_ENDPOINT_TEMPLATE)
+        .resolveTemplate("id", processDefinitionId)
+        .request(MediaType.APPLICATION_JSON)
+        .acceptEncoding(UTF8)
+        .get();
+
+    if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+      final ProcessDefinitionEngineDto processDefinitionEngineDto =
+        response.readEntity(ProcessDefinitionEngineDto.class);
+      return mapToOptimizeProcessDefinition(processDefinitionEngineDto);
+    } else if (response.getStatus() == Response.Status.NOT_FOUND.getStatusCode()) {
+      final String message = String.format(
+        "Wasn't able to retrieve process definition with id [%s] from the engine. It's likely that the definition " +
+          "has been deleted but the historic data for it is still available. Please make sure that there are no " +
+          "remnants of historic process instances for that definition left! Response from the engine: \n%s",
+        processDefinitionId, response.readEntity(String.class));
+      throw new OptimizeProcessDefinitionFetchException(message);
+    } else {
+      final String message = String.format(
+        "Wasn't able to retrieve process definition with id [%s] from the engine. Maybe the Optimize user utilized " +
+          "for the import is not authorized or there are some issues with the internet connection? Response from the " +
+          "engine: \n%s",
+        processDefinitionId,
+        response.readEntity(String.class)
+      );
+      throw new OptimizeProcessDefinitionFetchException(message);
+    }
+  }
+
+  private ProcessDefinitionOptimizeDto mapToOptimizeProcessDefinition(ProcessDefinitionEngineDto engineEntity) {
+    return new ProcessDefinitionOptimizeDto(
+      engineEntity.getId(),
+      engineEntity.getKey(),
+      engineEntity.getVersionAsString(),
+      engineEntity.getVersionTag(),
+      engineEntity.getName(),
+      this.getEngineAlias(),
+      engineEntity.getTenantId().orElseGet(() -> this.getDefaultTenantId().orElse(null))
+    );
   }
 
   private UserDto mapEngineUser(EngineListUserDto engineUser) {
