@@ -9,12 +9,13 @@ import {
   render,
   screen,
   waitForElementToBeRemoved,
+  fireEvent,
 } from '@testing-library/react';
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
-import InstanceHeader from './index';
+import {InstanceHeader} from './index';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {variables} from 'modules/stores/variables';
 import PropTypes from 'prop-types';
@@ -51,36 +52,33 @@ describe('InstanceHeader', () => {
   afterAll(resetMocks);
 
   it('should show skeleton before instance data is available', async () => {
-    const dataManager = createMockDataManager();
     fetchWorkflowInstance.mockImplementationOnce(
       () => mockInstanceWithActiveOperation
     );
-    render(<InstanceHeader.WrappedComponent dataManager={dataManager} />, {
+    render(<InstanceHeader />, {
       wrapper: Wrapper,
     });
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
-    await currentInstance.fetchCurrentInstance(
-      mockInstanceWithActiveOperation.id
-    );
+    currentInstance.init(mockInstanceWithActiveOperation.id);
 
-    expect(
-      screen.queryByTestId('instance-header-skeleton')
-    ).not.toBeInTheDocument();
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
+    );
   });
 
   it('should render instance data', async () => {
-    const dataManager = createMockDataManager();
     fetchWorkflowInstance.mockImplementationOnce(
       () => mockInstanceWithActiveOperation
     );
-    render(<InstanceHeader.WrappedComponent dataManager={dataManager} />, {
+    render(<InstanceHeader />, {
       wrapper: Wrapper,
     });
 
-    await currentInstance.fetchCurrentInstance(
-      mockInstanceWithActiveOperation.id
+    currentInstance.init(mockInstanceWithActiveOperation.id);
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
     );
     const {instance} = currentInstance.state;
     const workflowName = getWorkflowName(instance);
@@ -99,55 +97,50 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner based on instance having active operations', async () => {
-    const dataManager = createMockDataManager();
     fetchWorkflowInstance
       .mockImplementationOnce(() => mockInstanceWithoutOperations)
       .mockImplementationOnce(() => mockInstanceWithActiveOperation);
-    render(<InstanceHeader.WrappedComponent dataManager={dataManager} />, {
+    render(<InstanceHeader />, {
       wrapper: Wrapper,
     });
 
-    await currentInstance.fetchCurrentInstance(
-      mockInstanceWithoutOperations.id
+    jest.useFakeTimers();
+    currentInstance.init(mockInstanceWithoutOperations.id);
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    await currentInstance.fetchCurrentInstance(
-      mockInstanceWithoutOperations.id
-    );
+    jest.advanceTimersByTime(5000);
 
-    expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
   });
 
   it('should show spinner when operation is applied', async () => {
-    const dataManager = createMockDataManager();
+    createMockDataManager();
     fetchWorkflowInstance.mockImplementationOnce(
       () => mockInstanceWithoutOperations
     );
-    render(<InstanceHeader.WrappedComponent dataManager={dataManager} />, {
+    render(<InstanceHeader />, {
       wrapper: Wrapper,
     });
 
-    await currentInstance.fetchCurrentInstance(
-      mockInstanceWithoutOperations.id
+    currentInstance.init(mockInstanceWithoutOperations.id);
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
     );
-    const {instance} = currentInstance.state;
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    const subscriptions = dataManager.subscriptions();
-
-    dataManager.publish({
-      subscription: subscriptions[`OPERATION_APPLIED_INCIDENT_${instance.id}`],
-      state: 'LOADING',
-    });
+    fireEvent.click(
+      screen.getByRole('button', {name: new RegExp('Cancel Instance')})
+    );
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
 
   it('should show spinner when variables is updated', async () => {
-    const dataManager = createMockDataManager();
     const mockVariable = {
       name: 'key',
       value: 'value',
@@ -158,11 +151,12 @@ describe('InstanceHeader', () => {
     );
     fetchVariables.mockImplementationOnce(() => [mockVariable]);
 
-    render(<InstanceHeader.WrappedComponent dataManager={dataManager} />, {
+    render(<InstanceHeader />, {
       wrapper: Wrapper,
     });
-    await currentInstance.fetchCurrentInstance(
-      mockInstanceWithActiveOperation.id
+    currentInstance.init(mockInstanceWithActiveOperation.id);
+    await waitForElementToBeRemoved(
+      screen.getByTestId('instance-header-skeleton')
     );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();

@@ -4,12 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, computed, when} from 'mobx';
+import {observable, decorate, action, computed, when, autorun} from 'mobx';
 import {fetchVariables, applyOperation} from 'modules/api/instances';
 import {differenceWith, differenceBy} from 'lodash';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {STATE} from 'modules/constants';
+import {isInstanceRunning} from './utils/isInstanceRunning';
 
 const DEFAULT_STATE = {
   items: [],
@@ -21,10 +22,31 @@ const DEFAULT_STATE = {
 class Variables {
   state = {...DEFAULT_STATE};
   intervalId = null;
+  disposer = null;
+
+  init = async (workflowInstanceId) => {
+    when(
+      () => currentInstance.state.instance?.state === STATE.CANCELED,
+      this.removeVariablesWithActiveOperations
+    );
+
+    this.disposer = autorun(() => {
+      if (isInstanceRunning(currentInstance.state.instance)) {
+        if (this.intervalId === null) {
+          this.startPolling(workflowInstanceId);
+        }
+      } else {
+        this.stopPolling();
+      }
+    });
+  };
 
   reset = () => {
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
+    if (this.disposer !== null) {
+      this.disposer();
+    }
   };
 
   clearItems = () => {
@@ -105,7 +127,6 @@ class Variables {
 
   fetchVariables = async (workflowInstanceId) => {
     this.startLoading();
-
     this.handleResponse(
       await fetchVariables({
         instanceId: workflowInstanceId,
@@ -163,21 +184,16 @@ class Variables {
     return !isLoading && isInitialLoadComplete && items.length === 0;
   }
 
-  init = async (workflowInstanceId) => {
-    this.intervalId = setInterval(() => {
-      this.handlePolling(workflowInstanceId);
-    }, 5000);
-
-    when(
-      () => currentInstance.state.instance?.state === STATE.CANCELED,
-      this.removeVariablesWithActiveOperations
-    );
-  };
-
   removeVariablesWithActiveOperations = () => {
     this.state.items = this.state.items.filter(
       ({hasActiveOperation}) => !hasActiveOperation
     );
+  };
+
+  startPolling = async (instanceId) => {
+    this.intervalId = setInterval(() => {
+      this.handlePolling(instanceId);
+    }, 5000);
   };
 
   stopPolling = () => {

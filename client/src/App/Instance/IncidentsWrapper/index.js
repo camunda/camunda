@@ -19,7 +19,7 @@ import {observer} from 'mobx-react';
 import * as Styled from './styled';
 
 const IncidentsWrapper = observer(function IncidentsWrapper(props) {
-  const {onIncidentSelection, expandState} = props;
+  const {expandState} = props;
   const {incidents, flowNodes, errorTypes} = incidentsStore;
 
   const [isOpen, setIsOpen] = useState(false);
@@ -143,10 +143,7 @@ const IncidentsWrapper = observer(function IncidentsWrapper(props) {
               onErrorTypeSelect={handleErrorTypeSelect}
               onClearAll={clearAll}
             />
-            <IncidentsTable
-              incidents={filteredIncidents}
-              onIncidentSelection={onIncidentSelection}
-            />
+            <IncidentsTable incidents={filteredIncidents} />
           </IncidentsOverlay>
         </Styled.Transition>
       </>
@@ -155,7 +152,6 @@ const IncidentsWrapper = observer(function IncidentsWrapper(props) {
 });
 
 IncidentsWrapper.propTypes = {
-  onIncidentSelection: PropTypes.func.isRequired,
   expandState: PropTypes.string.isRequired,
 };
 

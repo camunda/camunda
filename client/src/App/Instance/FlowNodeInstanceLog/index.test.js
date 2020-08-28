@@ -18,7 +18,6 @@ import {
   mockFailedResponseForActivityTree,
   mockSuccessResponseForDiagram,
   mockFailedResponseForDiagram,
-  mockProps,
 } from './index.setup';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {currentInstance} from 'modules/stores/currentInstance';
@@ -41,8 +40,11 @@ jest.mock('modules/api/instances', () => ({
 }));
 
 describe('FlowNodeInstanceLog', () => {
-  beforeAll(async () => {
-    await currentInstance.fetchCurrentInstance(1);
+  beforeAll(() => {
+    currentInstance.init(1);
+  });
+  afterAll(() => {
+    currentInstance.reset();
   });
   afterEach(() => {
     fetchActivityInstancesTree.mockReset();
@@ -57,7 +59,7 @@ describe('FlowNodeInstanceLog', () => {
     );
     fetchWorkflowXML.mockResolvedValueOnce(mockSuccessResponseForDiagram);
 
-    render(<FlowNodeInstanceLog {...mockProps} />);
+    render(<FlowNodeInstanceLog />);
 
     await singleInstanceDiagram.fetchWorkflowXml(1);
     flowNodeInstance.fetchInstanceExecutionHistory(1);
@@ -75,7 +77,7 @@ describe('FlowNodeInstanceLog', () => {
     );
     fetchWorkflowXML.mockResolvedValueOnce(mockSuccessResponseForDiagram);
 
-    render(<FlowNodeInstanceLog {...mockProps} />);
+    render(<FlowNodeInstanceLog />);
 
     await flowNodeInstance.fetchInstanceExecutionHistory(1);
     singleInstanceDiagram.fetchWorkflowXml(1);
@@ -93,7 +95,7 @@ describe('FlowNodeInstanceLog', () => {
     );
     fetchWorkflowXML.mockResolvedValueOnce(mockSuccessResponseForDiagram);
 
-    render(<FlowNodeInstanceLog {...mockProps} />);
+    render(<FlowNodeInstanceLog />);
 
     await singleInstanceDiagram.fetchWorkflowXml(1);
     await flowNodeInstance.fetchInstanceExecutionHistory(1);
@@ -108,7 +110,7 @@ describe('FlowNodeInstanceLog', () => {
     );
     fetchWorkflowXML.mockResolvedValueOnce(mockFailedResponseForDiagram);
 
-    render(<FlowNodeInstanceLog {...mockProps} />);
+    render(<FlowNodeInstanceLog />);
 
     await singleInstanceDiagram.fetchWorkflowXml(1);
     await flowNodeInstance.fetchInstanceExecutionHistory(1);
@@ -123,7 +125,7 @@ describe('FlowNodeInstanceLog', () => {
     );
     fetchWorkflowXML.mockResolvedValueOnce(mockSuccessResponseForDiagram);
 
-    render(<FlowNodeInstanceLog {...mockProps} />);
+    render(<FlowNodeInstanceLog />);
 
     await singleInstanceDiagram.fetchWorkflowXml(1);
     await flowNodeInstance.fetchInstanceExecutionHistory(1);

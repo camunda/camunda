@@ -11,10 +11,6 @@ const treeNode = createRawTreeNode({
   activityId: 'taskD',
   name: 'taskD',
 });
-export const mockProps = {
-  onTreeRowSelection: jest.fn(),
-};
-
 export const mockSuccessResponseForActivityTree = {
   children: [treeNode],
 };

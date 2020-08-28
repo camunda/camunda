@@ -11,6 +11,7 @@ import {rest} from 'msw';
 import {FlowNodeInstancesTree} from './index';
 import {mockServer} from 'modules/mockServer';
 import {currentInstance} from 'modules/stores/currentInstance';
+import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 
 import {DIAGRAM, CURRENT_INSTANCE, mockNode} from './index.setup';
@@ -30,7 +31,7 @@ describe('<FlowNodeInstancesTree />', () => {
     );
 
     await Promise.all([
-      currentInstance.fetchCurrentInstance(instanceId),
+      currentInstance.init(instanceId),
       singleInstanceDiagram.fetchWorkflowXml(workflowId),
     ]);
   });
@@ -38,16 +39,11 @@ describe('<FlowNodeInstancesTree />', () => {
   afterEach(() => {
     currentInstance.reset();
     singleInstanceDiagram.reset();
+    flowNodeInstance.reset();
   });
 
   it('should load the instance history', async () => {
-    render(
-      <FlowNodeInstancesTree
-        treeDepth={1}
-        node={mockNode}
-        onTreeRowSelection={() => {}}
-      />
-    );
+    render(<FlowNodeInstancesTree treeDepth={1} node={mockNode} />);
 
     expect(screen.getByText('Multi-Instance Process')).toBeInTheDocument();
     expect(screen.getByText('Peter Fork')).toBeInTheDocument();
@@ -57,13 +53,7 @@ describe('<FlowNodeInstancesTree />', () => {
   });
 
   it('should be able to unfold and unfold subprocesses', async () => {
-    render(
-      <FlowNodeInstancesTree
-        treeDepth={1}
-        node={mockNode}
-        onTreeRowSelection={() => {}}
-      />
-    );
+    render(<FlowNodeInstancesTree treeDepth={1} node={mockNode} />);
 
     expect(
       screen.queryByRole('button', {
@@ -113,18 +103,15 @@ describe('<FlowNodeInstancesTree />', () => {
   });
 
   it('should handle clicks on the history', async () => {
-    const mockOnTreeRowSelection = jest.fn();
-
-    render(
-      <FlowNodeInstancesTree
-        treeDepth={1}
-        node={mockNode}
-        onTreeRowSelection={mockOnTreeRowSelection}
-      />
-    );
-
+    render(<FlowNodeInstancesTree treeDepth={1} node={mockNode} />);
+    expect(flowNodeInstance.state.selection).toEqual({
+      flowNodeId: null,
+      treeRowIds: [],
+    });
     fireEvent.click(screen.getByText('Peter Fork'));
-
-    expect(mockOnTreeRowSelection).toHaveBeenCalled();
+    expect(flowNodeInstance.state.selection).toEqual({
+      flowNodeId: 'peterFork',
+      treeRowIds: ['2251799813686130'],
+    });
   });
 });

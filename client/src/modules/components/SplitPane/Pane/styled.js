@@ -19,7 +19,6 @@ export const Pane = styled(
     'onAddNewSelection',
     'onAddToSelectionById',
     'onSelectedInstancesUpdate',
-    'onTreeRowSelection',
     'onFlowNodeSelection',
   ])(Panel)
 )`

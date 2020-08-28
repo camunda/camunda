@@ -19,7 +19,7 @@ import Diagram from 'modules/components/Diagram';
 import {IncidentsWrapper} from '../IncidentsWrapper';
 import {EXPAND_STATE} from 'modules/constants';
 
-import InstanceHeader from './InstanceHeader';
+import {InstanceHeader} from './InstanceHeader';
 import * as Styled from './styled';
 import {observer} from 'mobx-react';
 import {currentInstance} from 'modules/stores/currentInstance';
@@ -65,7 +65,7 @@ const TopPanel = observer((props) => {
     flowNodeInstance.setCurrentSelection({flowNodeId, treeRowIds});
   };
 
-  const {onInstanceOperation, onTreeRowSelection, expandState} = props;
+  const {expandState} = props;
 
   const {
     state: {selection},
@@ -85,19 +85,15 @@ const TopPanel = observer((props) => {
   const metaData = singleInstanceDiagram.getMetaData(selectedFlowNodeId);
 
   const {items: eventList} = events.state;
-
   return (
     <Styled.Pane expandState={expandState}>
-      <InstanceHeader onInstanceOperation={onInstanceOperation} />
+      <InstanceHeader />
       <Styled.SplitPaneBody data-test="diagram-panel-body">
         {isLoading && <SpinnerSkeleton data-test="spinner" />}
         {isInitialLoadComplete && (
           <>
             {instance?.state === 'INCIDENT' && nodeMetaDataMap && (
-              <IncidentsWrapper
-                expandState={expandState}
-                onIncidentSelection={onTreeRowSelection}
-              />
+              <IncidentsWrapper expandState={expandState} />
             )}
             {diagramModel?.definitions && (
               <Diagram
@@ -139,9 +135,7 @@ const TopPanel = observer((props) => {
 TopPanel.propTypes = {
   incidents: PropTypes.object,
   children: PropTypes.node,
-  onInstanceOperation: PropTypes.func,
   expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
-  onTreeRowSelection: PropTypes.func,
 };
 
 export {TopPanel};

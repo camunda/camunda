@@ -28,7 +28,7 @@ const nodePropType = PropTypes.shape({
   isLastChild: PropTypes.bool,
 });
 
-function Node({isSelected, node, treeDepth, onTreeRowSelection}) {
+function Node({isSelected, node, treeDepth}) {
   const hasChildren = node.children.length > 0;
 
   return (
@@ -45,7 +45,7 @@ function Node({isSelected, node, treeDepth, onTreeRowSelection}) {
       >
         <Foldable.Summary
           data-test={node.id}
-          onSelection={() => onTreeRowSelection(node)}
+          onSelection={() => flowNodeInstance.changeCurrentSelection(node)}
           isSelected={isSelected}
           isLastChild={node.isLastChild}
           nodeName={`${node.name}${
@@ -69,7 +69,6 @@ function Node({isSelected, node, treeDepth, onTreeRowSelection}) {
                       isLastChild: node.children.length === index + 1,
                     }}
                     treeDepth={treeDepth + 1}
-                    onTreeRowSelection={onTreeRowSelection}
                   />
                 );
               })}
@@ -86,31 +85,17 @@ Node.propTypes = {
   isSelected: PropTypes.bool.isRequired,
   treeDepth: PropTypes.number.isRequired,
   metaData: PropTypes.object,
-  onTreeRowSelection: PropTypes.func.isRequired,
 };
 
-const FlowNodeInstancesTree = observer(
-  ({treeDepth, node, onTreeRowSelection}) => {
-    const {
-      selection: {treeRowIds},
-    } = flowNodeInstance.state;
-    const isSelected = treeRowIds.includes(node.id);
-    const metaData = singleInstanceDiagram.getMetaData(node.activityId);
+const FlowNodeInstancesTree = observer(({treeDepth, node}) => {
+  const {
+    selection: {treeRowIds},
+  } = flowNodeInstance.state;
+  const isSelected = treeRowIds.includes(node.id);
+  const metaData = singleInstanceDiagram.getMetaData(node.activityId);
 
-    return treeDepth === 1 ? (
-      <ul>
-        <Node
-          isSelected={isSelected}
-          node={getNodeWithMetaData(
-            node,
-            metaData,
-            currentInstance.state.instance
-          )}
-          treeDepth={treeDepth}
-          onTreeRowSelection={onTreeRowSelection}
-        />
-      </ul>
-    ) : (
+  return treeDepth === 1 ? (
+    <ul>
       <Node
         isSelected={isSelected}
         node={getNodeWithMetaData(
@@ -119,16 +104,20 @@ const FlowNodeInstancesTree = observer(
           currentInstance.state.instance
         )}
         treeDepth={treeDepth}
-        onTreeRowSelection={onTreeRowSelection}
       />
-    );
-  }
-);
+    </ul>
+  ) : (
+    <Node
+      isSelected={isSelected}
+      node={getNodeWithMetaData(node, metaData, currentInstance.state.instance)}
+      treeDepth={treeDepth}
+    />
+  );
+});
 
 FlowNodeInstancesTree.propTypes = {
   node: nodePropType,
   treeDepth: PropTypes.number.isRequired,
-  onTreeRowSelection: PropTypes.func.isRequired,
 };
 
 export {FlowNodeInstancesTree};

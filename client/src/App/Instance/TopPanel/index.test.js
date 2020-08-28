@@ -18,12 +18,7 @@ import {
 } from '@testing-library/react';
 import {MemoryRouter, Route} from 'react-router-dom';
 
-import {
-  mockProps,
-  mockSequenceFlows,
-  mockEvents,
-  mockIncidents,
-} from './index.setup';
+import {mockSequenceFlows, mockEvents, mockIncidents} from './index.setup';
 import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
@@ -46,9 +41,10 @@ jest.mock('modules/api/diagram', () => ({
 jest.mock('modules/api/events');
 
 jest.mock('./InstanceHeader', () => {
-  /* eslint react/prop-types: 0  */
-  return function InstanceHeader(props) {
-    return <div />;
+  return {
+    InstanceHeader: () => {
+      return <div />;
+    },
   };
 });
 
@@ -94,9 +90,9 @@ describe('TopPanel', () => {
       state: 'ACTIVE',
     });
 
-    render(<TopPanel {...mockProps} />, {wrapper: Wrapper});
+    render(<TopPanel />, {wrapper: Wrapper});
 
-    await currentInstance.fetchCurrentInstance(1);
+    currentInstance.init(1);
     singleInstanceDiagram.fetchWorkflowXml(1);
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('spinner'));
@@ -109,9 +105,9 @@ describe('TopPanel', () => {
     });
 
     fetchWorkflowInstanceIncidents.mockResolvedValueOnce(mockIncidents);
-    render(<TopPanel {...mockProps} />, {wrapper: Wrapper});
+    render(<TopPanel />, {wrapper: Wrapper});
 
-    await currentInstance.fetchCurrentInstance(1);
+    currentInstance.init(1);
     await singleInstanceDiagram.fetchWorkflowXml(1);
     expect(
       await screen.findByText('There is 1 Incident in Instance 1.')

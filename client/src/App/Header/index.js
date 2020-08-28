@@ -46,7 +46,7 @@ const Header = observer(
     }
 
     componentDidMount = () => {
-      statistics.fetchStatistics();
+      statistics.init();
     };
 
     componentDidUpdate = (prevProps) => {

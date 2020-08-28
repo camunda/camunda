@@ -4,10 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, computed} from 'mobx';
+import {observable, decorate, action, computed, when} from 'mobx';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {createNodeMetaDataMap, getSelectableFlowNodes} from './mappers';
+import {currentInstance} from 'modules/stores/currentInstance';
 
 const DEFAULT_STATE = {
   diagramModel: null,
@@ -18,6 +19,15 @@ const DEFAULT_STATE = {
 
 class SingleInstanceDiagram {
   state = {...DEFAULT_STATE};
+
+  init() {
+    when(
+      () => currentInstance.state.instance !== null,
+      () => {
+        this.fetchWorkflowXml(currentInstance.state.instance.workflowId);
+      }
+    );
+  }
 
   fetchWorkflowXml = async (workflowId) => {
     this.startLoading();
@@ -61,7 +71,6 @@ class SingleInstanceDiagram {
 
   get areDiagramDefinitionsAvailable() {
     const {isInitialLoadComplete, isFailed, diagramModel} = this.state;
-
     return isInitialLoadComplete && !isFailed && diagramModel?.definitions;
   }
 

@@ -5,8 +5,6 @@
  */
 
 import React from 'react';
-import PropTypes from 'prop-types';
-
 import {Skeleton} from './Skeleton';
 import EmptyPanel from 'modules/components/EmptyPanel';
 import {FlowNodeInstancesTree} from '../FlowNodeInstancesTree';
@@ -17,10 +15,6 @@ import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 
 const FlowNodeInstanceLog = observer(
   class FlowNodeInstanceLog extends React.Component {
-    static propTypes = {
-      onTreeRowSelection: PropTypes.func,
-    };
-
     constructLabel() {
       let label, type;
 
@@ -48,7 +42,6 @@ const FlowNodeInstanceLog = observer(
         instanceExecutionHistory,
         isInstanceExecutionHistoryAvailable,
       } = flowNodeInstance;
-      const {onTreeRowSelection} = this.props;
 
       const {areDiagramDefinitionsAvailable} = singleInstanceDiagram;
       return (
@@ -60,7 +53,6 @@ const FlowNodeInstanceLog = observer(
                 <FlowNodeInstancesTree
                   node={instanceExecutionHistory}
                   treeDepth={1}
-                  onTreeRowSelection={onTreeRowSelection}
                 />
               </Styled.NodeContainer>
             </Styled.FlowNodeInstanceLog>

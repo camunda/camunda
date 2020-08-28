@@ -4,9 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, computed} from 'mobx';
+import {observable, decorate, action, computed, autorun} from 'mobx';
 import {fetchWorkflowInstance} from 'modules/api/instances';
 import {getWorkflowName} from 'modules/utils/instance';
+import {isInstanceRunning} from './utils/isInstanceRunning';
 
 import {PAGE_TITLE} from 'modules/constants';
 
@@ -16,11 +17,23 @@ const DEFAULT_STATE = {
 
 class CurrentInstance {
   state = {...DEFAULT_STATE};
+  intervalId = null;
+  disposer = null;
 
-  fetchCurrentInstance = async (id) => {
+  async init(id) {
     const workflowInstance = await fetchWorkflowInstance(id);
     this.setCurrentInstance(workflowInstance);
-  };
+
+    this.disposer = autorun(() => {
+      if (isInstanceRunning(this.state.instance)) {
+        if (this.intervalId === null) {
+          this.startPolling(id);
+        }
+      } else {
+        this.stopPolling();
+      }
+    });
+  }
 
   setCurrentInstance = (currentInstance) => {
     this.state = {instance: currentInstance};
@@ -37,8 +50,31 @@ class CurrentInstance {
     );
   }
 
+  handlePolling = async (instanceId) => {
+    const response = await fetchWorkflowInstance(instanceId);
+
+    if (this.intervalId !== null) {
+      this.setCurrentInstance(response);
+    }
+  };
+
+  startPolling = async (instanceId) => {
+    this.intervalId = setInterval(() => {
+      this.handlePolling(instanceId);
+    }, 5000);
+  };
+
+  stopPolling = () => {
+    clearInterval(this.intervalId);
+    this.intervalId = null;
+  };
+
   reset = () => {
+    this.stopPolling();
     this.state = {...DEFAULT_STATE};
+    if (this.disposer !== null) {
+      this.disposer();
+    }
   };
 }
 

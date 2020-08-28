@@ -15,7 +15,7 @@ import Header from './Header';
 import {Login} from './Login';
 import {Dashboard} from './Dashboard';
 import InstancesContainer from './Instances/InstancesContainer';
-import Instance from './Instance';
+import {Instance} from './Instance';
 import GlobalStyles from './GlobalStyles';
 import {DataManagerProvider} from 'modules/DataManager';
 

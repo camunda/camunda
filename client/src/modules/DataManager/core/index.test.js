@@ -16,7 +16,6 @@ import {
   MOCK_TOPICS,
   mockStaticContent,
   customTopic,
-  mockWorkflowInstance,
 } from './index.setup';
 jest.mock('modules/utils/bpmn');
 
@@ -133,22 +132,6 @@ describe('DataManager', () => {
           instancesApi.fetchWorkflowInstancesByIds
         );
         expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual(mockParams);
-      });
-    });
-
-    describe('fetch workflow instance', () => {
-      it('should fetch and publish', () => {
-        dataManager.getWorkflowInstance(mockWorkflowInstance.id);
-
-        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
-          SUBSCRIPTION_TOPIC.LOAD_INSTANCE
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
-          instancesApi.fetchWorkflowInstance
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][2]).toBe(
-          mockWorkflowInstance.id
-        );
       });
     });
   });

@@ -89,6 +89,7 @@ const activities = createActivities(createDiagramNodes());
 const workflowInstanceCompleted = createInstance({
   id: '4294980768',
   state: STATE.COMPLETED,
+  workflowId: 'workflowId',
   activities: [
     ...activities,
     {
@@ -103,6 +104,7 @@ const workflowInstanceCompleted = createInstance({
 const workflowInstanceCanceled = createInstance({
   id: '4294980768',
   state: STATE.CANCELED,
+  workflowId: 'workflowId',
   activities: [
     ...activities,
     {
@@ -118,6 +120,7 @@ const workflowInstanceCanceled = createInstance({
 const workflowInstance = createInstance({
   id: '4294980768',
   state: STATE.ACTIVE,
+  workflowId: 'workflowId',
 });
 
 const workflowInstanceWithIncident = createInstance({

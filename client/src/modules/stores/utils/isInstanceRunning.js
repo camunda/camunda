@@ -6,14 +6,8 @@
 
 import {STATE} from 'modules/constants';
 
-export function isRunningInstance(instance) {
-  return instance.state === STATE.ACTIVE || instance.state === STATE.INCIDENT;
-}
+const isInstanceRunning = (instance) => {
+  return instance?.state === STATE.ACTIVE || instance?.state === STATE.INCIDENT;
+};
 
-// Subscription Handlers;
-
-export function storeResponse({response, state}, callback) {
-  if (state === 'LOADED') {
-    response && callback(response);
-  }
-}
+export {isInstanceRunning};

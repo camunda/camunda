@@ -4,10 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, when} from 'mobx';
+import {observable, decorate, action, when, autorun} from 'mobx';
 import {fetchSequenceFlows} from 'modules/api/instances';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {getProcessedSequenceFlows} from './mappers';
+import {isInstanceRunning} from './utils/isInstanceRunning';
 
 const DEFAULT_STATE = {
   items: [],
@@ -16,15 +17,27 @@ const DEFAULT_STATE = {
 class SequenceFlows {
   state = {...DEFAULT_STATE};
   intervalId = null;
+  disposer = null;
 
   init() {
     when(
       () => currentInstance.state.instance?.id !== undefined,
       () => {
         this.fetchWorkflowSequenceFlows(currentInstance.state.instance.id);
-        this.startPolling(currentInstance.state.instance.id);
       }
     );
+
+    this.disposer = autorun(() => {
+      const {instance} = currentInstance.state;
+
+      if (isInstanceRunning(instance)) {
+        if (this.intervalId === null) {
+          this.startPolling(instance.id);
+        }
+      } else {
+        this.stopPolling();
+      }
+    });
   }
 
   fetchWorkflowSequenceFlows = async (instanceId) => {
@@ -60,6 +73,9 @@ class SequenceFlows {
   reset = () => {
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
+    if (this.disposer !== null) {
+      this.disposer();
+    }
   };
 }
 

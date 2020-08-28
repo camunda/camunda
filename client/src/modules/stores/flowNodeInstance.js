@@ -4,8 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, computed} from 'mobx';
+import {observable, decorate, action, computed, when, autorun} from 'mobx';
 import {constructFlowNodeIdToFlowNodeInstanceMap} from './mappers';
+import {isInstanceRunning} from './utils/isInstanceRunning';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {fetchActivityInstancesTree} from 'modules/api/activityInstances';
 
@@ -23,9 +24,54 @@ const DEFAULT_STATE = {
 class FlowNodeInstance {
   state = {...DEFAULT_STATE};
   intervalId = null;
+  disposer = null;
+
+  init() {
+    when(
+      () => currentInstance.state.instance?.id !== undefined,
+      () => {
+        this.setCurrentSelection({
+          flowNodeId: null,
+          treeRowIds: [currentInstance.state.instance.id],
+        });
+
+        this.fetchInstanceExecutionHistory(currentInstance.state.instance.id);
+      }
+    );
+
+    this.disposer = autorun(() => {
+      const {instance} = currentInstance.state;
+
+      if (isInstanceRunning(instance)) {
+        if (this.intervalId === null) {
+          this.startPolling(instance.id);
+        }
+      } else {
+        this.stopPolling();
+      }
+    });
+  }
 
   setCurrentSelection = (selection) => {
     this.state.selection = selection;
+  };
+
+  changeCurrentSelection = (node) => {
+    const {instance} = currentInstance.state;
+
+    const isRootNode = node.id === instance.id;
+    // get the first flow node id (i.e. activity id) corresponding to the flowNodeId
+    const flowNodeId = isRootNode ? null : node.activityId;
+    const isRowAlreadySelected = this.state.selection.treeRowIds.includes(
+      node.id
+    );
+
+    const newSelection =
+      isRowAlreadySelected && !this.areMultipleNodesSelected
+        ? {flowNodeId: null, treeRowIds: [instance.id]}
+        : {flowNodeId, treeRowIds: [node.id]};
+
+    this.setCurrentSelection(newSelection);
   };
 
   fetchInstanceExecutionHistory = async (id) => {
@@ -110,6 +156,9 @@ class FlowNodeInstance {
   reset = () => {
     this.stopPolling();
     this.state = {...DEFAULT_STATE};
+    if (this.disposer !== null) {
+      this.disposer();
+    }
   };
 
   get areMultipleNodesSelected() {

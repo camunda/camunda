@@ -7,7 +7,6 @@
 import {
   fetchWorkflowInstancesStatistics,
   fetchWorkflowInstancesByIds,
-  fetchWorkflowInstance,
   fetchWorkflowInstances,
   applyBatchOperation,
   applyOperation,
@@ -72,14 +71,6 @@ export class DataManager {
       topic,
       () => apiCall(cachedParams),
       staticContent
-    );
-  };
-
-  getWorkflowInstance = (instanceId) => {
-    this.fetchAndPublish(
-      SUBSCRIPTION_TOPIC.LOAD_INSTANCE,
-      fetchWorkflowInstance,
-      instanceId
     );
   };
 

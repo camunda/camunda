@@ -24,10 +24,7 @@ import {ErrorMessageModal} from './ErrorMessageModal';
 import * as Styled from './styled';
 const {THead, TBody, TH, TR, TD} = Table;
 
-const IncidentsTable = observer(function IncidentsTable({
-  incidents,
-  onIncidentSelection,
-}) {
+const IncidentsTable = observer(function IncidentsTable({incidents}) {
   const [isModalVisibile, setIsModalVisibile] = useState(false);
   const [modalContent, setModalContent] = useState(null);
   const [modalTitle, setModalTitle] = useState(null);
@@ -67,7 +64,7 @@ const IncidentsTable = observer(function IncidentsTable({
       newSelection = {id: flowNodeInstanceId, activityId: flowNodeId};
     }
 
-    onIncidentSelection(newSelection);
+    flowNodeInstance.changeCurrentSelection(newSelection);
   };
 
   const handleSort = (key) => {
@@ -208,7 +205,6 @@ const IncidentsTable = observer(function IncidentsTable({
 
 IncidentsTable.propTypes = {
   incidents: PropTypes.array.isRequired,
-  onIncidentSelection: PropTypes.func.isRequired,
 };
 
 export {IncidentsTable};

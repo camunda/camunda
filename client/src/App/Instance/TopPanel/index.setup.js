@@ -61,9 +61,4 @@ const mockSequenceFlows = createSequenceFlows();
 
 const mockEvents = createEvents(createRawTree().children);
 
-const mockProps = {
-  onInstanceOperation: jest.fn(),
-  onTreeRowSelection: jest.fn(),
-};
-
-export {mockIncidents, mockProps, mockSequenceFlows, mockEvents};
+export {mockIncidents, mockSequenceFlows, mockEvents};

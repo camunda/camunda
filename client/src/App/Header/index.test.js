@@ -15,6 +15,10 @@ import PropTypes from 'prop-types';
 import {render, within, fireEvent, screen} from '@testing-library/react';
 import {location} from './index.setup';
 import {instances} from 'modules/stores/instances';
+import {
+  fetchWorkflowInstance,
+  fetchWorkflowCoreStatistics,
+} from 'modules/api/instances';
 
 // props mocks
 const mockCollapsablePanelProps = {
@@ -22,21 +26,7 @@ const mockCollapsablePanelProps = {
   expandFilters: jest.fn(),
 };
 
-jest.mock('modules/api/instances', () => ({
-  fetchWorkflowCoreStatistics: jest.fn().mockImplementation(() => ({
-    coreStatistics: {
-      running: 821,
-      active: 90,
-      withIncidents: 731,
-    },
-  })),
-  fetchWorkflowInstance: jest.fn().mockImplementation((instanceId) => {
-    if (instanceId === 'first_instance_id')
-      return {id: 'first_instance_id', state: 'ACTIVE'};
-    else if (instanceId === 'second_instance_id')
-      return {id: 'second_instance_id', state: 'ACTIVE'};
-  }),
-}));
+jest.mock('modules/api/instances');
 
 jest.mock('modules/api/header', () => ({
   fetchUser: jest.fn().mockImplementation(() => ({
@@ -68,8 +58,24 @@ describe('Header', () => {
     history: PropTypes.object,
   };
 
+  beforeAll(() => {
+    fetchWorkflowCoreStatistics.mockImplementation(() => ({
+      coreStatistics: {
+        running: 821,
+        active: 90,
+        withIncidents: 731,
+      },
+    }));
+  });
+
   beforeEach(() => {
     currentInstance.reset();
+  });
+  afterEach(() => {
+    fetchWorkflowInstance.mockReset();
+  });
+  afterAll(() => {
+    fetchWorkflowCoreStatistics.mockReset();
   });
 
   it('should render all header links', async () => {
@@ -180,6 +186,11 @@ describe('Header', () => {
   });
 
   it('should render instance details on instance view', async () => {
+    fetchWorkflowInstance.mockImplementationOnce(() => ({
+      id: 'first_instance_id',
+      state: 'ACTIVE',
+    }));
+
     const MOCK_INSTANCE_ID = 'first_instance_id';
 
     const mockProps = {
@@ -189,10 +200,10 @@ describe('Header', () => {
     render(<MockApp {...mockProps} />);
     await waitForComponentToLoad();
 
-    await currentInstance.fetchCurrentInstance(MOCK_INSTANCE_ID);
+    currentInstance.init(MOCK_INSTANCE_ID);
 
     expect(
-      screen.getByText(`Instance ${MOCK_INSTANCE_ID}`)
+      await screen.findByText(`Instance ${MOCK_INSTANCE_ID}`)
     ).toBeInTheDocument();
     expect(screen.getByTestId('instance-detail')).toBeInTheDocument();
     expect(
@@ -206,6 +217,17 @@ describe('Header', () => {
   it('should render instance details on refresh', async () => {
     const MOCK_FIRST_INSTANCE_ID = 'first_instance_id';
     const MOCK_SECOND_INSTANCE_ID = 'second_instance_id';
+
+    fetchWorkflowInstance
+      .mockImplementationOnce(() => ({
+        id: MOCK_FIRST_INSTANCE_ID,
+        state: 'ACTIVE',
+      }))
+      .mockImplementationOnce(() => ({
+        id: MOCK_SECOND_INSTANCE_ID,
+        state: 'ACTIVE',
+      }));
+
     const mockProps = {
       location: location.instance,
       ...mockCollapsablePanelProps,
@@ -213,14 +235,15 @@ describe('Header', () => {
     render(<MockApp {...mockProps} />);
     await waitForComponentToLoad();
 
-    await currentInstance.fetchCurrentInstance(MOCK_FIRST_INSTANCE_ID);
+    jest.useFakeTimers();
+    currentInstance.init(MOCK_FIRST_INSTANCE_ID);
     expect(
-      screen.getByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)
+      await screen.findByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)
     ).toBeInTheDocument();
 
-    await currentInstance.fetchCurrentInstance(MOCK_SECOND_INSTANCE_ID);
+    jest.advanceTimersByTime(5000);
     expect(
-      screen.getByText(`Instance ${MOCK_SECOND_INSTANCE_ID}`)
+      await screen.findByText(`Instance ${MOCK_SECOND_INSTANCE_ID}`)
     ).toBeInTheDocument();
     expect(screen.queryByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)).toBeNull();
   });
