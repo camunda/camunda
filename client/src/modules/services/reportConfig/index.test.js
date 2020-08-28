@@ -42,15 +42,29 @@ describe('process update', () => {
     let changes = config.process.update(
       'groupBy',
       {type: 'assignee'},
-      {report: {data: {view: {entity: 'userTask'}, configuration: {distributedBy: 'assignee'}}}}
+      {
+        report: {
+          data: {
+            view: {entity: 'userTask'},
+            configuration: {distributedBy: {type: 'assignee', value: null}},
+          },
+        },
+      }
     );
 
-    expect(changes.configuration.distributedBy).toEqual({$set: 'none'});
+    expect(changes.configuration.distributedBy).toEqual({$set: {type: 'none', value: null}});
 
     changes = config.process.update(
       'groupBy',
       {type: 'startDate'},
-      {report: {data: {view: {entity: 'userTask'}, configuration: {distributedBy: 'assignee'}}}}
+      {
+        report: {
+          data: {
+            view: {entity: 'userTask'},
+            configuration: {distributedBy: {type: 'assignee', value: null}},
+          },
+        },
+      }
     );
 
     expect(changes.configuration.distributedBy).not.toBeDefined();

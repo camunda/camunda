@@ -37,7 +37,10 @@ export default class Configuration extends React.Component {
         aggregationType: 'avg',
         userTaskDurationTime: 'total',
         flowNodeExecutionState: 'all',
-        distributedBy: 'none',
+        distributedBy: {
+          type: 'none',
+          value: null,
+        },
         precision: null,
         targetValue: {
           active: false,

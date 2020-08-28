@@ -37,7 +37,7 @@ config.process.update = (type, data, props) => {
   }
 
   if (shouldResetDistributedBy(type, data, props.report.data)) {
-    changes.configuration.distributedBy = {$set: 'none'};
+    changes.configuration.distributedBy = {$set: {type: 'none', value: null}};
   }
 
   return changes;
@@ -61,7 +61,7 @@ function shouldResetDistributedBy(type, data, report) {
     if (
       type === 'groupBy' &&
       data.type === 'userTasks' &&
-      report.configuration?.distributedBy === 'userTask'
+      report.configuration?.distributedBy.type === 'userTask'
     ) {
       return true;
     }
@@ -70,7 +70,7 @@ function shouldResetDistributedBy(type, data, report) {
     if (
       type === 'groupBy' &&
       ['assignee', 'candidateGroup'].includes(data.type) &&
-      ['assignee', 'candidateGroup'].includes(report.configuration?.distributedBy)
+      ['assignee', 'candidateGroup'].includes(report.configuration?.distributedBy.type)
     ) {
       return true;
     }

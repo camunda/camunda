@@ -61,7 +61,7 @@
           "active": false,
           "values": {}
         },
-        "distributedBy": "none",
+        "distributedBy": {"type": "none", "value": null},
         "ylabel": "",
         "xlabel": "",
         "processPart": null,
@@ -177,7 +177,7 @@
           "active": false,
           "values": {}
         },
-        "distributedBy": "none",
+        "distributedBy": {"type": "none", "value": null},
         "ylabel": "",
         "xlabel": "",
         "sorting": null

@@ -48,6 +48,7 @@ const singleReportData = {
       bucketSize: '10',
       baseline: '-10',
     },
+    distributedBy: {},
   },
   visualization: 'bar',
 };
@@ -406,7 +407,7 @@ describe('isCompatible', () => {
           },
           result: {
             data: {
-              '1': report1,
+              1: report1,
             },
           },
         }}
@@ -462,7 +463,7 @@ describe('isCompatible', () => {
           },
           result: {
             data: {
-              '1': report1,
+              1: report1,
             },
           },
         }}

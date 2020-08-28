@@ -36,7 +36,7 @@ export default withRouter(
           !report.combined &&
           report.reportType === 'process' &&
           acceptedVisualizations.includes(report.data.visualization) &&
-          report.data.configuration.distributedBy === 'none' &&
+          report.data.configuration.distributedBy.type === 'none' &&
           report.data.view.property !== 'rawData'
       );
 

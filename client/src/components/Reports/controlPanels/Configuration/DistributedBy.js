@@ -20,15 +20,18 @@ export default function DistributedBy({
       <fieldset className="DistributedBy">
         <legend>{t('report.config.userTaskDistributedBy')}</legend>
         <Select
-          value={configuration.distributedBy}
+          value={configuration.distributedBy.type}
           onChange={(value) => {
             if (value !== 'none' && !['line', 'table'].includes(visualization)) {
               onChange(
-                {visualization: {$set: 'bar'}, configuration: {distributedBy: {$set: value}}},
+                {
+                  visualization: {$set: 'bar'},
+                  configuration: {distributedBy: {type: {$set: value}}},
+                },
                 true
               );
             } else {
-              onChange({configuration: {distributedBy: {$set: value}}}, true);
+              onChange({configuration: {distributedBy: {type: {$set: value}}}}, true);
             }
           }}
         >

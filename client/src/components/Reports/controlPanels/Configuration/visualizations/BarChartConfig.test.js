@@ -16,7 +16,7 @@ const configuration = {
   xLabel: '',
   yLabel: '',
   targetValue: {active: false},
-  distributedBy: 'none',
+  distributedBy: {type: 'none', value: null},
 };
 
 const barReport = {
@@ -52,7 +52,7 @@ it('should not display color picker for hyper reports (distributed by userTask/a
         data: {
           ...barReport.data,
           groupBy: {type: 'assignee'},
-          configuration: {...configuration, distributedBy: 'userTask'},
+          configuration: {...configuration, distributedBy: {type: 'userTask', value: null}},
         },
       }}
     />
