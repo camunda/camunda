@@ -49,6 +49,7 @@ public class ConfigurationServiceTest {
   private static final String SECRET = "secret";
   private static final String ACCESS_URL = "accessUrl";
   private static final String CUSTOM_EVENT_BASED_USER_IDS = "[demo,kermit]";
+  private static final String CUSTOM_SUPER_USER_IDS = "[demo, kermit]";
 
   @RegisterExtension
   @Order(1)
@@ -171,6 +172,7 @@ public class ConfigurationServiceTest {
     environmentVariablesExtension.set("SECRET", SECRET);
     environmentVariablesExtension.set("ACCESS_URL", ACCESS_URL);
     environmentVariablesExtension.set("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
+    environmentVariablesExtension.set("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -193,6 +195,7 @@ public class ConfigurationServiceTest {
     System.setProperty("SECRET", SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
     System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
+    System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -226,6 +229,7 @@ public class ConfigurationServiceTest {
     System.setProperty("SECRET", SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
     System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
+    System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -258,6 +262,7 @@ public class ConfigurationServiceTest {
     System.setProperty("SECRET", SECRET);
     System.setProperty("ACCESS_URL", ACCESS_URL);
     System.setProperty("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS", CUSTOM_EVENT_BASED_USER_IDS);
+    System.setProperty("OPTIMIZE_SUPER_USER_IDS", CUSTOM_SUPER_USER_IDS);
     final ConfigurationService underTest = createConfiguration(locations);
 
     // then
@@ -374,6 +379,8 @@ public class ConfigurationServiceTest {
     ));
     assertThat(underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken()).isEqualTo(SECRET);
     assertThat(underTest.getContainerAccessUrl().get()).isEqualTo(ACCESS_URL);
+    assertThat(
+      underTest.getSuperUserIds()).isEqualTo(ImmutableList.of("demo", "kermit"));
   }
 
 }
