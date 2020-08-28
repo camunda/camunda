@@ -387,6 +387,7 @@ public final class ProcessingStateMachine {
                         });
               }
               lastSuccessfulProcessedEventPosition = currentEvent.getPosition();
+              metrics.setLastProcessedPosition(lastSuccessfulProcessedEventPosition);
               lastWrittenEventPosition = writtenEventPosition;
               return true;
             },
