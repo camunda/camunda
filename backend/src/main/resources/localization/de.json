@@ -389,6 +389,7 @@
       }
     },
     "config": {
+      "label": "Konfiguration",
       "buttonTooltip": "Konfigurationsoptionen",
       "reset": "Zurücksetzen auf Standardwerte",
       "showCount": {

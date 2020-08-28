@@ -116,7 +116,11 @@ export default class Configuration extends React.Component {
       <li className="Configuration">
         <Popover
           tooltip={t('report.config.buttonTooltip')}
-          title={<Icon type="settings" />}
+          title={
+            <>
+              <Icon type="settings" /> {t('report.config.label')}
+            </>
+          }
           disabled={!enablePopover}
         >
           <Form className="content" compact>
