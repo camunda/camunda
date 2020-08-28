@@ -223,6 +223,34 @@ public final class CallActivityTest {
   }
 
   @Test
+  public void shouldNotPropagateVariablesToParentIfDisabled() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn", parentWorkflow(c -> c.zeebePropagateAllChildVariables(false)))
+        .deploy();
+
+    final var workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    final var childInstanceKey = getChildInstanceOf(workflowInstanceKey).getWorkflowInstanceKey();
+
+    // when
+    completeJobWith(Map.of("y", 2));
+
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords())
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getName()))
+        .contains(tuple(childInstanceKey, "y"))
+        .doesNotContain(tuple(workflowInstanceKey, "y"));
+  }
+
+  @Test
   public void shouldApplyInputMappings() {
     // given
     ENGINE
@@ -251,7 +279,10 @@ public final class CallActivityTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource("wf-parent.bpmn", parentWorkflow(c -> c.zeebeOutputExpression("x", "y")))
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentWorkflow(
+                c -> c.zeebePropagateAllChildVariables(false).zeebeOutputExpression("x", "y")))
         .deploy();
 
     final var workflowInstanceKey =
@@ -272,6 +303,40 @@ public final class CallActivityTest {
         .extracting(v -> tuple(v.getScopeKey(), v.getName(), v.getValue()))
         .hasSize(2)
         .contains(tuple(callActivityInstanceKey, "x", "2"), tuple(workflowInstanceKey, "y", "2"));
+  }
+
+  @Test
+  public void shouldApplyOutputMappingsIgnoringThePropagateAllProperty() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            "wf-parent.bpmn",
+            parentWorkflow(
+                c -> c.zeebePropagateAllChildVariables(true).zeebeOutputExpression("x", "x")))
+        .deploy();
+
+    final var workflowInstanceKey =
+        ENGINE.workflowInstance().ofBpmnProcessId(PROCESS_ID_PARENT).create();
+
+    // when
+    completeJobWith(Map.of("x", 1, "y", 2));
+
+    // then
+    final long callActivityInstanceKey = getCallActivityInstanceKey(workflowInstanceKey);
+
+    assertThat(
+            RecordingExporter.records()
+                .limitToWorkflowInstance(workflowInstanceKey)
+                .variableRecords()
+                .withWorkflowInstanceKey(workflowInstanceKey))
+        .extracting(Record::getValue)
+        .extracting(v -> tuple(v.getScopeKey(), v.getName(), v.getValue()))
+        .hasSize(3)
+        .contains(
+            tuple(callActivityInstanceKey, "x", "1"),
+            tuple(callActivityInstanceKey, "y", "2"),
+            tuple(workflowInstanceKey, "x", "1"));
   }
 
   @Test

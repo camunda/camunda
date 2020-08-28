@@ -22,4 +22,8 @@ public interface ZeebeCalledElement extends BpmnModelElementInstance {
   String getProcessId();
 
   void setProcessId(String processId);
+
+  boolean isPropagateAllChildVariablesEnabled();
+
+  void setPropagateAllChildVariablesEnabled(boolean propagateAllChildVariablesEnabled);
 }
