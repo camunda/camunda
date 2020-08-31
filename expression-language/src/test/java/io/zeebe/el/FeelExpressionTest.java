@@ -10,6 +10,7 @@ package io.zeebe.el;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.Test;
 
@@ -127,6 +128,33 @@ public class FeelExpressionTest {
 
     assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
     assertThat(evaluationResult.getString()).isEqualTo("FOO");
+  }
+
+  @Test
+  public void accessListElement() {
+    final var context = Map.of("x", asMsgPack("[\"a\",\"b\"]"));
+    final var evaluationResult = evaluateExpression("x[1]", context::get);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
+    assertThat(evaluationResult.getString()).isEqualTo("a");
+  }
+
+  @Test
+  public void accessPropertyOfListElement() {
+    final var context = Map.of("x", asMsgPack("[{\"y\":\"a\"},{\"y\":\"b\"}]"));
+    final var evaluationResult = evaluateExpression("x[2].y", context::get);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.STRING);
+    assertThat(evaluationResult.getString()).isEqualTo("b");
+  }
+
+  @Test
+  public void listProjection() {
+    final var context = Map.of("x", asMsgPack("[{\"y\":1},{\"y\":2}]"));
+    final var evaluationResult = evaluateExpression("x.y", context::get);
+
+    assertThat(evaluationResult.getType()).isEqualTo(ResultType.ARRAY);
+    assertThat(evaluationResult.getList()).isEqualTo(List.of(asMsgPack("1"), asMsgPack("2")));
   }
 
   private EvaluationResult evaluateExpression(
