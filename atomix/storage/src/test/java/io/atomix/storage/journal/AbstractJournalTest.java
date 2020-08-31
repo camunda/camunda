@@ -16,6 +16,7 @@
  */
 package io.atomix.storage.journal;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -53,6 +54,7 @@ public abstract class AbstractJournalTest {
   protected static final TestEntry ENTRY = new TestEntry(32);
   private static final Namespace NAMESPACE =
       Namespace.builder().register(TestEntry.class).register(byte[].class).build();
+  private static final int MAX_ENTRY_SIZE = 48;
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -90,8 +92,8 @@ public abstract class AbstractJournalTest {
         .withDirectory(folder)
         .withNamespace(NAMESPACE)
         .withStorageLevel(storageLevel())
-        .withMaxSegmentSize(maxSegmentSize)
-        .withMaxEntrySize(48)
+        .withMaxSegmentSize(maxSegmentSize * 2)
+        .withMaxEntrySize(MAX_ENTRY_SIZE)
         .withJournalIndexFactory(() -> index)
         .build();
   }
@@ -157,6 +159,25 @@ public abstract class AbstractJournalTest {
 
     // then
     journal.close();
+  }
+
+  @Test
+  public void shouldReadWriteEntryWithMaxMessageSize() {
+    // given
+    final JournalWriter<TestEntry> writer = journal.writer();
+    final JournalReader<TestEntry> reader = journal.openReader(1);
+    final var testEntry = new TestEntry(MAX_ENTRY_SIZE - 4);
+
+    // when
+    final var entryIndexed = writer.append(testEntry);
+
+    // then
+    assertEquals(2, writer.getNextIndex());
+    assertEquals(1, entryIndexed.index());
+
+    assertThat(reader.hasNext()).isTrue();
+    final var nextEntry = reader.next();
+    assertThat(nextEntry).isEqualTo(entryIndexed);
   }
 
   @Test
