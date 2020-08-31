@@ -103,6 +103,12 @@
 
       <dependency>
         <groupId>io.springfox</groupId>
+        <artifactId>springfox-boot-starter</artifactId>
+        <version>${version.swagger}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.springfox</groupId>
         <artifactId>springfox-swagger2</artifactId>
         <version>${version.swagger}</version>
       </dependency>
