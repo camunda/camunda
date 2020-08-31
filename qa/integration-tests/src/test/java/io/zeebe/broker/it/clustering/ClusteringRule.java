@@ -114,6 +114,7 @@ public final class ClusteringRule extends ExternalResource {
   private Gateway gateway;
   private CountDownLatch partitionLatch;
   private final Map<Integer, Leader> partitionLeader;
+  private final Map<Integer, SpringBrokerBridge> springBrokerBridge;
 
   public ClusteringRule() {
     this(3);
@@ -161,6 +162,7 @@ public final class ClusteringRule extends ExternalResource {
     brokerCfgs = new HashMap<>();
     partitionLeader = new ConcurrentHashMap<>();
     logstreams = new ConcurrentHashMap<>();
+    springBrokerBridge = new HashMap<>();
     partitionIds =
         IntStream.range(START_PARTITION_ID, START_PARTITION_ID + partitionCount)
             .boxed()
@@ -258,11 +260,25 @@ public final class ClusteringRule extends ExternalResource {
     final BrokerCfg brokerCfg = getBrokerCfg(nodeId);
     final Broker broker =
         new Broker(
-            brokerCfg, brokerBase.getAbsolutePath(), controlledClock, new SpringBrokerBridge());
+            brokerCfg,
+            brokerBase.getAbsolutePath(),
+            controlledClock,
+            getSpringBrokerBridge(nodeId));
 
     broker.addPartitionListener(new LeaderListener(partitionLatch, nodeId));
     new Thread(broker::start).start();
     return broker;
+  }
+
+  private SpringBrokerBridge getSpringBrokerBridge(final int nodeId) {
+    return springBrokerBridge.computeIfAbsent(nodeId, n -> new SpringBrokerBridge());
+  }
+
+  public boolean isBrokerHealthy(final int nodeId) {
+    return getSpringBrokerBridge(nodeId)
+        .getBrokerHealthCheckService()
+        .orElseThrow()
+        .isBrokerHealthy();
   }
 
   public BrokerCfg getBrokerCfg(final int nodeId) {
