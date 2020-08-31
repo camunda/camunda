@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
+import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -65,6 +66,7 @@ public class LeaderRoleTest {
     when(context.getName()).thenReturn("leader");
     when(context.getElectionTimeout()).thenReturn(Duration.ofMillis(100));
     when(context.getHeartbeatInterval()).thenReturn(Duration.ofMillis(100));
+    when(context.getReplicationMetrics()).thenReturn(mock(RaftReplicationMetrics.class));
 
     final SingleThreadContext threadContext = new SingleThreadContext("leader");
     when(context.getThreadContext()).thenReturn(threadContext);

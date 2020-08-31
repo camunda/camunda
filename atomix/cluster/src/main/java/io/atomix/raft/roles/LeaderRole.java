@@ -629,6 +629,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     try {
       final Indexed<E> indexedEntry = raft.getLogWriter().append(entry);
+      raft.getReplicationMetrics().setAppendIndex(indexedEntry.index());
       log.trace("Appended {}", indexedEntry);
       resultingFuture = CompletableFuture.completedFuture(indexedEntry);
     } catch (final StorageException.TooLarge e) {

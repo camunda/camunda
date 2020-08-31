@@ -705,6 +705,7 @@ public class PassiveRole extends InactiveRole {
     try {
       final Indexed<RaftLogEntry> indexed = writer.append(entry);
       log.trace("Appended {}", indexed);
+      raft.getReplicationMetrics().setAppendIndex(indexed.index());
     } catch (final StorageException.TooLarge e) {
       log.warn(
           "Entry size exceeds maximum allowed bytes. Ensure Raft storage configuration is consistent on all nodes!");
