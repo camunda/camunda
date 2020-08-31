@@ -37,7 +37,7 @@
     <version.javax.json>1.1.4</version.javax.json>
     <version.micrometer>1.5.4</version.micrometer>
     <version.mockito>3.4.6</version.mockito>
-    <version.assertj-core>3.17.0</version.assertj-core>
+    <version.assertj-core>3.17.1</version.assertj-core>
     <version.jackson>2.11.0</version.jackson>
 
     <version.node>v13.13.0</version.node>
