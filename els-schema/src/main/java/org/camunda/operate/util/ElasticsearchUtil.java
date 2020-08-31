@@ -7,24 +7,29 @@ package org.camunda.operate.util;
 
 import static org.camunda.operate.util.CollectionUtil.map;
 import static org.camunda.operate.util.CollectionUtil.throwAwayNullElements;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
-import org.camunda.operate.schema.templates.TemplateDescriptor;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.schema.templates.TemplateDescriptor;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -34,23 +39,24 @@ import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.tasks.GetTaskRequest;
+import org.elasticsearch.client.tasks.GetTaskResponse;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.Aggregations;
+import org.elasticsearch.tasks.RawTaskStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public abstract class ElasticsearchUtil {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchUtil.class);
-  
+
   public static final String ZEEBE_INDEX_DELIMITER = "_";
   public static final String ES_INDEX_TYPE = "_doc";
   public static final int SCROLL_KEEP_ALIVE_MS = 60000;
@@ -59,9 +65,72 @@ public abstract class ElasticsearchUtil {
   public static final int QUERY_MAX_SIZE = 10000;
   public static final int TOPHITS_AGG_SIZE = 100;
   public static final int UPDATE_RETRY_COUNT = 3;
+  public static final String TASKS_INDEX_NAME = ".tasks";
 
   public static final Function<SearchHit,Long> searchHitIdToLong = (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit,String> searchHitIdToString = SearchHit::getId;
+
+  public static long reindex(final ReindexRequest reindexRequest, String sourceIndexName,
+      RestHighLevelClient esClient)
+      throws IOException {
+    final String taskId = esClient
+        .submitReindexTask(reindexRequest, RequestOptions.DEFAULT).getTask();
+    logger.debug("Reindexing started for index {}. Task id: {}", sourceIndexName, taskId);
+    //wait till task is completed
+    return waitAndCheckTaskResult(taskId, sourceIndexName, "reindex", esClient);
+  }
+
+  public static long waitAndCheckTaskResult(String taskId, String sourceIndexName, String operation,
+      RestHighLevelClient esClient)
+      throws IOException {
+    try {
+      //extract nodeId and taskId
+      final String[] taskIdParts = taskId.split(":");
+      String nodeId = taskIdParts[0];
+      long smallTaskId = Long.parseLong(taskIdParts[1]);
+
+      //wait till task is completed
+      boolean finished = false;
+      RawTaskStatus status = null;
+      while (!finished) {
+        final GetTaskRequest getTaskRequest = new GetTaskRequest(nodeId, smallTaskId);
+        final Optional<GetTaskResponse> getTaskResponseOptional = esClient.tasks()
+            .get(getTaskRequest, RequestOptions.DEFAULT);
+        if (getTaskResponseOptional.isEmpty()) {
+          throw new OperateRuntimeException("Task was not found: " + taskId);
+        } else if (!getTaskResponseOptional.get().isCompleted()) {
+          //retry
+          sleepFor(2000);
+        } else {
+          final GetTaskResponse getTaskResponse = getTaskResponseOptional.get();
+          status = (RawTaskStatus) getTaskResponse.getTaskInfo().getStatus();
+
+          finished = true;
+        }
+      }
+
+      //parse and check task status
+      final Map<String, Object> statusMap = status.toMap();
+      final long total = (Integer) statusMap.get("total");
+      final long created = (Integer) statusMap.get("created");
+      final long updated = (Integer) statusMap.get("updated");
+      final long deleted = (Integer) statusMap.get("deleted");
+      if (created + updated + deleted < total) {
+        //there were some failures
+        final String errorMsg = String.format(
+            "Failures occurred when performing operation %s on source index %s. Check Elasticsearch logs.",
+            operation, sourceIndexName);
+        throw new OperateRuntimeException(errorMsg);
+      }
+      logger.debug("Operation {} succeeded on source index {}.", operation, sourceIndexName);
+      return total;
+
+    } finally {
+      //remove task
+      DeleteRequest deleteRequest = new DeleteRequest(TASKS_INDEX_NAME, ES_INDEX_TYPE, taskId);
+      esClient.delete(deleteRequest, RequestOptions.DEFAULT);
+    }
+  }
 
   public enum QueryType {
     ONLY_ARCHIVE,

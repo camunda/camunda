@@ -188,6 +188,10 @@ public class ElasticsearchTestRule extends TestWatcher {
     }
   }
 
+  public void processAllRecordsAndWait(Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments) {
+    processRecordsAndWaitFor(recordsReaderHolder.getActiveRecordsReaders(), maxWaitingRounds, predicate, null, arguments);
+  }
+
   public void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments) {
     processRecordsAndWaitFor(recordsReaderHolder.getActiveRecordsReaders(), predicate, null, arguments);
   }
@@ -200,9 +204,15 @@ public class ElasticsearchTestRule extends TestWatcher {
     processRecordsAndWaitFor(getRecordsReaders(importValueType), predicate, null, arguments);
   }
 
-  public void processRecordsAndWaitFor(Collection<RecordsReader> readers,Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+  public void processRecordsAndWaitFor(Collection<RecordsReader> readers,
+      Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
+    processRecordsAndWaitFor(readers, 50, predicate, supplier, arguments);
+  }
+
+  public void processRecordsAndWaitFor(Collection<RecordsReader> readers, Integer maxWaitingRounds,
+      Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments) {
     long shouldImportCount = 0;
-    int waitingRound = 0, maxRounds = 50;
+    int waitingRound = 0, maxRounds = maxWaitingRounds;
     boolean found = predicate.test(arguments);
     long start = System.currentTimeMillis();
     while (!found && waitingRound < maxRounds) {

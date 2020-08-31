@@ -13,6 +13,7 @@ import java.util.Optional;
 
 import static org.camunda.operate.util.CollectionUtil.*;
 import org.camunda.operate.exceptions.OperateRuntimeException;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.ingest.DeletePipelineRequest;
 import org.elasticsearch.action.ingest.PutPipelineRequest;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
@@ -21,7 +22,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.bytes.ByteBufferReference;
 import org.elasticsearch.common.bytes.BytesReference;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
@@ -82,22 +82,17 @@ public class ReindexPlan implements Plan {
       reindexRequest.setScript(script);
     }
 
-    BulkByScrollResponse response;
     try {
-      response = esClient.reindex(reindexRequest, RequestOptions.DEFAULT);
+      ElasticsearchUtil.reindex(reindexRequest, srcIndex, esClient);
     } catch (Exception e) {
-      throw new OperateRuntimeException(String.format("Reindex from %s to %s failed: ", srcIndex, dstIndex), e);
-    }finally {
+      throw new OperateRuntimeException(
+          String.format("Reindex from %s to %s failed: ", srcIndex, dstIndex), e);
+    } finally {
       if (pipelineName.isPresent()) {
         deletePipeline(esClient, pipelineName.get());
       }
     }
-      
-    if(response.getBulkFailures().isEmpty()) {
-       logger.info("Reindexed {} documents from {} to {}", response.getStatus().getSuccessfullyProcessed(), srcIndex, dstIndex);
-    }else {
-       throw new OperateRuntimeException(String.format("Reindex from %s to %s : %s failures", srcIndex, dstIndex, response.getBulkFailures().size()));
-    }
+
   }
 
   private boolean deletePipeline(final RestHighLevelClient esClient,final String pipelineName) {

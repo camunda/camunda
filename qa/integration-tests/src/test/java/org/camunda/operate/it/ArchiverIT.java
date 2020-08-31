@@ -15,6 +15,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.archiver.Archiver;
 import org.camunda.operate.archiver.BatchOperationArchiverJob;
@@ -39,6 +41,7 @@ import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -48,6 +51,7 @@ import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.BeanFactory;
@@ -272,6 +276,45 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     assertInstancesInCorrectIndex(count2, ids2, null);
   }
 
+  /**
+   * This test takes long time to run, but can be unignored to test archiving of one big workflow instance locally.
+   * Related with OPE-1071.
+   * @throws ArchiverException
+   * @throws IOException
+   */
+  @Test
+  @Ignore
+  public void testArchivingBigInstance() throws ArchiverException, IOException {
+    brokerRule.getClock().pinCurrentTime();
+    final Instant currentTime = brokerRule.getClock().getCurrentTime();
+
+    //having
+    //deploy process
+    final Instant endDate = currentTime.minus(4, ChronoUnit.DAYS);
+    brokerRule.getClock().setCurrentTime(endDate);
+    final Long workflowId = deployWorkflow("sequential-noop.bpmn");
+    elasticsearchTestRule.processAllRecordsAndWait(workflowIsDeployedCheck, workflowId);
+    String processId = "sequential-noop";
+
+    //start instance with 3000 of vars in loop
+    String payload =
+        "{\"items\": [" + IntStream.range(1, 3000).boxed().map(Object::toString).collect(
+            Collectors.joining(",")) + "]}";
+    final long workflowInstanceKey = ZeebeTestUtil
+        .startWorkflowInstance(zeebeClient, processId, payload);
+    //wait till it's finished
+    elasticsearchTestRule.processAllRecordsAndWait(400, workflowInstanceIsCompletedCheck, workflowInstanceKey);
+
+    brokerRule.getClock().setCurrentTime(currentTime);
+
+    //when
+    assertThat(archiverJob.archiveNextBatch()).isEqualTo(1);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+
+    //then
+    assertInstancesInCorrectIndex(1, Arrays.asList(workflowInstanceKey), endDate, true);
+  }
+
   private void deployProcessWithOneActivity(String processId, String activityId) {
     BpmnModelInstance workflow = Bpmn.createExecutableProcess(processId)
       .startEvent("start")
@@ -304,10 +347,14 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
   }
 
   private void assertInstancesInCorrectIndex(int instancesCount, List<Long> ids, Instant endDate) throws IOException {
+    assertInstancesInCorrectIndex(instancesCount, ids, endDate, false);
+  }
+
+  private void assertInstancesInCorrectIndex(int instancesCount, List<Long> ids, Instant endDate, boolean ignoreAbsentIndex) throws IOException {
     assertWorkflowInstanceIndex(instancesCount, ids, endDate);
     for (WorkflowInstanceDependant template : workflowInstanceDependantTemplates) {
       if (! (template instanceof IncidentTemplate || template instanceof SequenceFlowTemplate)) {
-        assertDependentIndex(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, ids, endDate);
+        assertDependentIndex(template.getMainIndexName(), WorkflowInstanceDependant.WORKFLOW_INSTANCE_KEY, ids, endDate, ignoreAbsentIndex);
       }
     }
   }
@@ -341,20 +388,28 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
 
 
 
-  private void assertDependentIndex(String mainIndexName, String idFieldName, List<Long> ids, Instant endDate) throws IOException {
+  private void assertDependentIndex(String mainIndexName, String idFieldName, List<Long> ids, Instant endDate, boolean ignoreAbsentIndex) throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
       destinationIndexName = archiver.getDestinationIndexName(mainIndexName, dateTimeFormatter.format(endDate));
     } else {
       destinationIndexName = archiver.getDestinationIndexName(mainIndexName, "");
     }
-    final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
-    final SearchRequest request = new SearchRequest(destinationIndexName)
-      .source(new SearchSourceBuilder()
-        .query(q)
-        .size(100));
-    final List<Long> idsFromEls = ElasticsearchUtil.scrollFieldToList(request, idFieldName, esClient);
-    assertThat(idsFromEls).as(mainIndexName).isSubsetOf(ids);
+    try {
+      final TermsQueryBuilder q = termsQuery(idFieldName, CollectionUtil.toSafeArrayOfStrings(ids));
+      final SearchRequest request = new SearchRequest(destinationIndexName)
+          .source(new SearchSourceBuilder()
+              .query(q)
+              .size(100));
+      final List<Long> idsFromEls = ElasticsearchUtil
+          .scrollFieldToList(request, idFieldName, esClient);
+      assertThat(idsFromEls).as(mainIndexName).isSubsetOf(ids);
+    } catch (ElasticsearchStatusException ex) {
+      if (!ex.getMessage().contains("index_not_found_exception") || !ignoreAbsentIndex) {
+        throw ex;
+      }
+      //else ignore
+    }
   }
 
   private void finishInstances(int count, Instant currentTime, String taskId) {
