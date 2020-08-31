@@ -21,7 +21,9 @@ public final class Listener implements AppendListener {
   }
 
   @Override
-  public void onWrite(final long address) {}
+  public void onWrite(final long address) {
+    appender.notifyWritePosition(highestPosition);
+  }
 
   @Override
   public void onWriteError(final Throwable error) {
