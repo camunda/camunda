@@ -26,7 +26,7 @@ public final class DataCfg implements ConfigurationEntry {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
   private static final DataSize DEFAULT_DATA_SIZE = DataSize.ofMegabytes(512);
-  private static final boolean DEFAULT_DISK_USAGE_WATERMARK_ENABLED = true;
+  private static final boolean DEFAULT_DISK_USAGE_MONITORING_ENABLED = true;
   private static final double DEFAULT_DISK_USAGE_REPLICATION_WATERMARK = 0.99;
   private static final double DEFAULT_DISK_USAGE_COMMAND_WATERMARK = 0.97;
   private static final Duration DEFAULT_DISK_USAGE_MONITORING_DELAY = Duration.ofSeconds(1);
@@ -42,7 +42,7 @@ public final class DataCfg implements ConfigurationEntry {
   private int logIndexDensity = 100;
 
   private boolean useMmap = false;
-  private boolean diskUsageWatermarkEnabled = DEFAULT_DISK_USAGE_WATERMARK_ENABLED;
+  private boolean diskUsageMonitoringEnabled = DEFAULT_DISK_USAGE_MONITORING_ENABLED;
   private double diskUsageReplicationWatermark = DEFAULT_DISK_USAGE_REPLICATION_WATERMARK;
   private double diskUsageCommandWatermark = DEFAULT_DISK_USAGE_COMMAND_WATERMARK;
   private Duration diskUsageMonitoringInterval = DEFAULT_DISK_USAGE_MONITORING_DELAY;
@@ -50,7 +50,7 @@ public final class DataCfg implements ConfigurationEntry {
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
     directories.replaceAll(d -> ConfigurationUtil.toAbsolutePath(d, brokerBase));
-    if (!diskUsageWatermarkEnabled) {
+    if (!diskUsageMonitoringEnabled) {
       LOG.info(
           "Disk usage watermarks are disabled, setting all watermarks to {}",
           DISABLED_DISK_USAGE_WATERMARK);
@@ -107,12 +107,12 @@ public final class DataCfg implements ConfigurationEntry {
     return useMmap() ? StorageLevel.MAPPED : StorageLevel.DISK;
   }
 
-  public boolean isDiskUsageWatermarkEnabled() {
-    return diskUsageWatermarkEnabled;
+  public boolean isDiskUsageMonitoringEnabled() {
+    return diskUsageMonitoringEnabled;
   }
 
-  public void setDiskUsageWatermarkEnabled(final boolean diskUsageWatermarkEnabled) {
-    this.diskUsageWatermarkEnabled = diskUsageWatermarkEnabled;
+  public void setDiskUsageMonitoringEnabled(final boolean diskUsageMonitoringEnabled) {
+    this.diskUsageMonitoringEnabled = diskUsageMonitoringEnabled;
   }
 
   public double getDiskUsageCommandWatermark() {
@@ -162,8 +162,8 @@ public final class DataCfg implements ConfigurationEntry {
         + logIndexDensity
         + ", useMmap="
         + useMmap
-        + ", diskUsageWatermarkEnabled="
-        + diskUsageWatermarkEnabled
+        + ", diskUsageMonitoringEnabled="
+        + diskUsageMonitoringEnabled
         + ", diskUsageReplicationWatermark="
         + diskUsageReplicationWatermark
         + ", diskUsageCommandWatermark="

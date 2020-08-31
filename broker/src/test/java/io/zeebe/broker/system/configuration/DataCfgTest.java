@@ -74,13 +74,13 @@ public class DataCfgTest {
     final DataCfg dataCfg = new DataCfg();
     dataCfg.setDiskUsageCommandWatermark(0.1);
     dataCfg.setDiskUsageReplicationWatermark(0.2);
-    dataCfg.setDiskUsageWatermarkEnabled(false);
+    dataCfg.setDiskUsageMonitoringEnabled(false);
 
     // when
     dataCfg.init(new BrokerCfg(), "/base");
 
     // then
-    assertThat(dataCfg.isDiskUsageWatermarkEnabled()).isEqualTo(false);
+    assertThat(dataCfg.isDiskUsageMonitoringEnabled()).isEqualTo(false);
     assertThat(dataCfg.getDiskUsageCommandWatermark()).isEqualTo(1.0);
     assertThat(dataCfg.getDiskUsageReplicationWatermark()).isEqualTo(1.0);
   }

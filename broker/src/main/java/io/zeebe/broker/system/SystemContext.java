@@ -23,6 +23,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 
 public final class SystemContext {
+
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final String BROKER_ID_LOG_PROPERTY = "broker-id";
   private static final String NODE_ID_ERROR_MSG =
@@ -110,7 +111,7 @@ public final class SystemContext {
               diskUsageReplicationWatermark));
     }
 
-    if (data.isDiskUsageWatermarkEnabled()
+    if (data.isDiskUsageMonitoringEnabled()
         && diskUsageCommandWatermark >= diskUsageReplicationWatermark) {
       throw new IllegalArgumentException(
           String.format(
