@@ -24,8 +24,9 @@ jest.mock('services', () => {
 
   return {
     ...rest,
-    evaluateReport: jest.fn().mockReturnValue({result: {data: 'numberValue'}}),
+    evaluateReport: jest.fn().mockReturnValue({id: '6', result: {data: 123}}),
     formatters: {
+      ...rest.formatters,
       convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
       convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'}),
     },
@@ -69,25 +70,7 @@ it('should apply the alert property to the state when changing props', () => {
 
   node.setProps({initialAlert});
 
-  expect(node.state()).toEqual({
-    id: '71395',
-    name: 'Sample Alert',
-    emails: ['test@camunda.com', 'test@camunda.com'],
-    reportId: '8',
-    thresholdOperator: '<',
-    threshold: '37',
-    checkInterval: {
-      value: '1',
-      unit: 'hours',
-    },
-    reminder: null,
-    report: {result: {data: 'numberValue'}},
-    fixNotification: true,
-    invalid: false,
-    validEmails: true,
-    webhook: null,
-    inactive: null,
-  });
+  expect(node.state()).toMatchSnapshot();
 });
 
 it('should call the onConfirm method and not include duplicate emails', () => {
@@ -237,5 +220,5 @@ it('should display report value', () => {
   node.find('Typeahead').at(0).prop('onChange')('6');
 
   expect(evaluateReport).toHaveBeenCalledWith('6');
-  expect(node.find('Message').at(0).dive()).toIncludeText('numberValue');
+  expect(node.find('Message').at(0).dive()).toIncludeText('123');
 });

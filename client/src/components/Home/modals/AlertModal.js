@@ -295,7 +295,7 @@ export class AlertModal extends React.Component {
               <Message>
                 {report
                   ? t('alert.form.value', {
-                      value: getReportValue(report),
+                      value: reportId === report.id ? getReportValue(report) : '...',
                     })
                   : t('alert.form.reportInfo')}
               </Message>
@@ -457,7 +457,8 @@ export class AlertModal extends React.Component {
 }
 
 function getReportValue(report) {
-  return isDurationReport(report) ? formatters.duration(report.result.data) : report.result.data;
+  const reportType = isDurationReport(report) ? 'duration' : 'frequency';
+  return formatters[reportType](report.result.data);
 }
 
 export default withErrorHandling(withDocs(AlertModal));
