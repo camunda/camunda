@@ -15,14 +15,14 @@ import org.camunda.feel.context.{CustomContext, VariableProvider}
 
 class MessagePackContext(
                           reader: MsgPackReader,
-                          offset: Int,
+                          bufferOffset: Int,
                           size: Int
                         ) extends CustomContext {
 
   private val valueOffsets: Map[String, (Int, Int)] = readValueOffsets(reader, size)
-  private val length = reader.getOffset - offset
+  private val length = reader.getOffset - bufferOffset
 
-  val messagePackMap: DirectBuffer = cloneBuffer(reader.getBuffer, offset, length)
+  val messagePackMap: DirectBuffer = cloneBuffer(reader.getBuffer, bufferOffset, length)
 
   override val variableProvider: VariableProvider = new MessagePackMapVariableProvider(messagePackMap)
 
@@ -58,7 +58,7 @@ class MessagePackContext(
       reader.skipValue()
       val valueLength = reader.getOffset - valueOffset
 
-      key -> (valueOffset, valueLength)
+      key -> (valueOffset - bufferOffset, valueLength)
     }
 
     offsets.toMap
