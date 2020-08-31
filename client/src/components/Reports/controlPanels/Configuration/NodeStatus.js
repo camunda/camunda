@@ -15,10 +15,14 @@ export default function NodeStatus({
   },
   onChange,
 }) {
-  if (
-    (groupBy?.type.includes('Date') && view?.entity === 'userTask') ||
-    ['userTasks', 'flowNodes', 'assignee', 'candidateGroup'].includes(groupBy?.type)
-  ) {
+  const isUserTaskDateReport = groupBy?.type.includes('Date') && view?.entity === 'userTask';
+  const isFlowNodeDurationReport =
+    groupBy?.type === 'duration' && ['userTask', 'flowNode'].includes(view?.entity);
+  const hasAllowedGroupby = ['userTasks', 'flowNodes', 'assignee', 'candidateGroup'].includes(
+    groupBy?.type
+  );
+
+  if (isUserTaskDateReport || isFlowNodeDurationReport || hasAllowedGroupby) {
     return (
       <fieldset className="NodeStatus">
         <legend>{t('report.config.nodeStatus.legend')}</legend>

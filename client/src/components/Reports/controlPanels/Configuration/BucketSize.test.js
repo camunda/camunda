@@ -5,19 +5,22 @@
  */
 
 import React from 'react';
+import update from 'immutability-helper';
 import {shallow} from 'enzyme';
-import {Input, LabeledInput} from 'components';
+import {Input, LabeledInput, Select} from 'components';
 
-import NumVariableBucket from './NumVariableBucket';
+import BucketSize from './BucketSize';
 
 const report = {
   data: {
     groupBy: {type: 'variable', value: {type: 'Integer'}},
     configuration: {
-      customNumberBucket: {
+      customBucket: {
         active: false,
         bucketSize: '10',
+        bucketSizeUnit: 'minute',
         baseline: '0',
+        baselineUnit: 'minute',
       },
     },
   },
@@ -27,7 +30,7 @@ jest.mock('debounce', () => jest.fn((fn) => fn));
 
 it('should render nothing if the current variable is not a number', () => {
   const node = shallow(
-    <NumVariableBucket
+    <BucketSize
       report={{data: {...report.data, groupBy: {type: 'variable', value: {type: 'Date'}}}}}
     />
   );
@@ -36,7 +39,7 @@ it('should render nothing if the current variable is not a number', () => {
 });
 
 it('should render bucket options', () => {
-  const node = shallow(<NumVariableBucket report={report} />);
+  const node = shallow(<BucketSize report={report} />);
 
   expect(node).toMatchSnapshot();
 });
@@ -44,17 +47,17 @@ it('should render bucket options', () => {
 it('should active the bucket size when enabling the switch', () => {
   const spy = jest.fn();
 
-  const node = shallow(<NumVariableBucket report={report} onChange={spy} />);
+  const node = shallow(<BucketSize report={report} onChange={spy} />);
 
   node.find('Switch').prop('onChange')({target: {checked: true}});
 
-  expect(spy).toHaveBeenCalledWith({customNumberBucket: {active: {$set: true}}}, true);
+  expect(spy).toHaveBeenCalledWith({customBucket: {active: {$set: true}}}, true);
 });
 
 it('should reevaluate the report when changing the size or baseline to a valid value', () => {
   const spy = jest.fn();
 
-  const node = shallow(<NumVariableBucket report={report} onChange={spy} />);
+  const node = shallow(<BucketSize report={report} onChange={spy} />);
 
   node.find(Input).prop('onChange')({target: {value: '-50'}});
   expect(spy).not.toHaveBeenCalled();
@@ -62,5 +65,13 @@ it('should reevaluate the report when changing the size or baseline to a valid v
 
   node.find(LabeledInput).prop('onChange')({target: {value: '-1'}});
 
-  expect(spy).toHaveBeenCalledWith({customNumberBucket: {baseline: {$set: '-1'}}}, true);
+  expect(spy).toHaveBeenCalledWith({customBucket: {baseline: {$set: '-1'}}}, true);
+});
+
+it('should include a unit selection when report is grouped by duration', () => {
+  const durationReport = update(report, {data: {groupBy: {$set: {type: 'duration'}}}});
+
+  const node = shallow(<BucketSize report={durationReport} />);
+
+  expect(node.find(Select)).toExist();
 });

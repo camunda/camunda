@@ -23,28 +23,26 @@ export const view = [
   },
   {
     key: 'fn',
-    group: 'fn',
     options: [
       {
         key: 'fn_count',
-
+        group: 'fn_count',
         data: {property: 'frequency', entity: 'flowNode'},
       },
-      {key: 'fn_duration', data: {property: 'duration', entity: 'flowNode'}},
+      {key: 'fn_duration', group: 'fn_duration', data: {property: 'duration', entity: 'flowNode'}},
     ],
   },
   {
     key: 'userTask',
-    group: 'userTask',
     options: [
       {
         key: 'userTask_count',
-
+        group: 'userTask_count',
         data: {property: 'frequency', entity: 'userTask'},
       },
       {
         key: 'userTask_duration',
-
+        group: 'userTask_duration',
         data: {property: 'duration', entity: 'userTask'},
       },
     ],
@@ -56,6 +54,7 @@ export const groupBy = [
   {key: 'none', group: 'none', data: {type: 'none', value: null}},
   {key: 'flowNodes', group: 'fn', data: {type: 'flowNodes', value: null}},
   {key: 'userTasks', group: 'task', data: {type: 'userTasks', value: null}},
+  {key: 'duration', group: 'duration', data: {type: 'duration', value: null}},
   {
     key: 'startDate',
     group: 'date',
@@ -94,7 +93,6 @@ export const groupBy = [
     options: [
       {
         key: 'endDate_automatic',
-
         data: {type: 'endDate', value: {unit: 'automatic'}},
       },
       {key: 'endDate_year', data: {type: 'endDate', value: {unit: 'year'}}},
@@ -136,15 +134,27 @@ export const combinations = {
     date: ['table', 'chart'],
     runningDate: ['table', 'chart'],
     variable: ['table', 'chart'],
+    duration: ['table', 'chart'],
   },
-  fn: {
+  fn_duration: {
     fn: ['table', 'chart', 'heat'],
     date: ['table', 'chart'],
   },
-  userTask: {
+  fn_count: {
+    fn: ['table', 'chart', 'heat'],
+    date: ['table', 'chart'],
+    duration: ['table', 'chart'],
+  },
+  userTask_duration: {
     task: ['table', 'chart', 'heat'],
     date: ['table', 'chart'],
     user: ['table', 'chart'],
+  },
+  userTask_count: {
+    task: ['table', 'chart', 'heat'],
+    date: ['table', 'chart'],
+    user: ['table', 'chart'],
+    duration: ['table', 'chart'],
   },
   variable: {
     none: ['number'],

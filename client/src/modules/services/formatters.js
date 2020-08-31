@@ -185,6 +185,7 @@ export function objectifyResult(result) {
 
 export function formatReportResult(data, result) {
   const groupBy = data.groupBy;
+
   let unit;
   if (groupBy.value && groupBy.type.includes('Date')) {
     unit = determineUnit(groupBy.value.unit, result);

@@ -43,7 +43,7 @@ const singleReportData = {
   },
   configuration: {
     groupByDateVariableUnit: 'day',
-    customNumberBucket: {
+    customBucket: {
       active: true,
       bucketSize: '10',
       baseline: '-10',
@@ -291,7 +291,7 @@ describe('isCompatible', () => {
       data: {
         ...reportsList[3].data,
         configuration: {
-          customNumberBucket: {
+          customBucket: {
             active: true,
             bucketSize: '5',
             baseline: '0',

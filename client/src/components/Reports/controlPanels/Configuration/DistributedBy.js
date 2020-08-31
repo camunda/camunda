@@ -51,7 +51,10 @@ function canDistributeData(view, groupBy) {
   if (view.entity === 'userTask') {
     return true;
   }
-  if (view.entity === 'flowNode' && (groupBy.type === 'startDate' || groupBy.type === 'endDate')) {
+  if (
+    view.entity === 'flowNode' &&
+    (groupBy.type === 'startDate' || groupBy.type === 'endDate' || groupBy.type === 'duration')
+  ) {
     return true;
   }
 }
@@ -81,7 +84,7 @@ function getOptionsFor(view, groupBy) {
   }
 
   if (view === 'flowNode') {
-    if (groupBy === 'startDate' || groupBy === 'endDate') {
+    if (['startDate', 'endDate', 'duration'].includes(groupBy)) {
       options.push(
         <Select.Option key="flowNode" value="flowNode">
           {t('report.view.fn')}

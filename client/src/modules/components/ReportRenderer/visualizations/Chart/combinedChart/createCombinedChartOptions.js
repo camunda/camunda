@@ -4,10 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import {isDurationReport, formatters} from 'services';
+
 import {generateLegendLabels} from './service';
 import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service';
 import {createBarOptions} from '../defaultChart/createDefaultChartOptions';
-import {isDurationReport} from 'services';
 
 export default function createCombinedChartOptions({report, targetValue, theme, formatter}) {
   const {
@@ -25,6 +26,30 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
     ? configuration.alwaysShowAbsolute
     : configuration.alwaysShowAbsolute || configuration.alwaysShowRelative;
 
+  const groupedByDurationMaxValue =
+    groupBy?.type === 'duration' && findMaxDurationAcrossReports(result, 'label');
+
+  const tooltipCallbacks = {
+    label: (tooltipItem, data) => {
+      return formatTooltip(
+        tooltipItem,
+        data,
+        configuration,
+        formatter,
+        result.instanceCount,
+        isDuration
+      );
+    },
+    labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),
+  };
+
+  if (isPersistedTooltips) {
+    tooltipCallbacks.title = () => '';
+  } else if (groupedByDurationMaxValue) {
+    tooltipCallbacks.title = (data, {labels}) =>
+      data.length && formatters.duration(labels[data[0].index]);
+  }
+
   return {
     ...createBarOptions({
       targetValue,
@@ -34,6 +59,7 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
       isDark,
       isPersistedTooltips,
       autoSkip: canBeInterpolated(groupBy),
+      groupedByDurationMaxValue,
     }),
     legend: {
       display: true,
@@ -54,25 +80,12 @@ export default function createCombinedChartOptions({report, targetValue, theme, 
         xAlign: 'center',
         displayColors: false,
       }),
-      callbacks: {
-        ...(isPersistedTooltips && {title: () => ''}),
-        label: (tooltipItem, data) => {
-          return formatTooltip(
-            tooltipItem,
-            data,
-            configuration,
-            formatter,
-            result.instanceCount,
-            isDuration
-          );
-        },
-        labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),
-      },
+      callbacks: tooltipCallbacks,
     },
   };
 }
 
-function findMaxDurationAcrossReports(result) {
+function findMaxDurationAcrossReports(result, durationKey = 'value') {
   const reportsMaxDurations = Object.values(result.data).map((report) => {
     if (typeof report.result.data === 'number') {
       return report.result.data;
@@ -80,7 +93,7 @@ function findMaxDurationAcrossReports(result) {
     if (report.result.data === null) {
       return 0;
     }
-    return Math.max(...Object.values(report.result.data).map(({value}) => value));
+    return Math.max(...Object.values(report.result.data).map((entry) => entry[durationKey]));
   });
 
   return Math.max(...reportsMaxDurations);

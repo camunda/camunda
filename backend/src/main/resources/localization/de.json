@@ -267,6 +267,7 @@
       "none": "Keiner",
       "flowNodes": "Prozessknoten",
       "userTasks": "Benutzeraufgaben",
+      "duration": "Dauer",
       "startDate": "Startdatum",
       "runningDate": "Ausführungsdatum",
       "automatic": "Automatisch",

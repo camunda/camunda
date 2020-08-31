@@ -4,9 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import processDefaultData from './processDefaultData';
+import update from 'immutability-helper';
 
 import {formatters} from 'services';
+
+import processDefaultData from './processDefaultData';
+
 const {getRelativeValue} = formatters;
 
 jest.mock('services', () => ({
@@ -15,9 +18,10 @@ jest.mock('services', () => ({
     getRelativeValue: jest.fn(),
     formatReportResult: jest.fn().mockReturnValue([
       {key: 'a', value: 1, label: 'a name'},
-      {key: 'b', value: 2},
-      {key: 'c', value: 3},
+      {key: 'b', value: 2, label: 'b'},
+      {key: 'c', value: 3, label: 'c'},
     ]),
+    duration: (a) => 'Duration: ' + a,
   },
 }));
 
@@ -71,6 +75,18 @@ it('should format data according to the provided formatter', async () => {
     ['a name', 2],
     ['b', 4],
     ['c', 6],
+  ]);
+});
+
+it('should format the label when the report is grouped by duration', () => {
+  const newProps = {
+    ...props,
+    report: update(report, {data: {groupBy: {$set: {type: 'duration'}}}}),
+  };
+  expect(processDefaultData(newProps).body).toEqual([
+    ['Duration: a name', 1],
+    ['Duration: b', 2],
+    ['Duration: c', 3],
   ]);
 });
 

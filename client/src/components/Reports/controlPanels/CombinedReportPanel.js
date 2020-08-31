@@ -168,9 +168,9 @@ export default withRouter(
           );
         } else if (
           ['Integer', 'Double', 'Short', 'Long'].includes(groupBy.value?.type) &&
-          configuration?.customNumberBucket.active
+          configuration?.customBucket.active
         ) {
-          return equal(configuration.customNumberBucket, data.configuration.customNumberBucket);
+          return equal(configuration.customBucket, data.configuration.customBucket);
         }
       }
       return true;

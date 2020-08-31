@@ -9,7 +9,7 @@ import {formatTooltip, getTooltipLabelColor, canBeInterpolated} from '../service
 import {isDurationReport, formatters} from 'services';
 import {getColorFor, createColors, determineBarColor} from '../colorsUtils';
 
-const {createDurationFormattingOptions} = formatters;
+const {createDurationFormattingOptions, duration} = formatters;
 
 export default function createDefaultChartOptions({report, targetValue, theme, formatter}) {
   const {
@@ -24,6 +24,9 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
     ? configuration.alwaysShowAbsolute
     : configuration.alwaysShowAbsolute || configuration.alwaysShowRelative;
 
+  const groupedByDurationMaxValue =
+    groupBy?.type === 'duration' && Math.max(...result.data.map(({label}) => +label));
+
   let options;
   switch (visualization) {
     case 'pie':
@@ -36,6 +39,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         configuration,
         stacked: false,
         maxDuration: maxValue,
+        groupedByDurationMaxValue,
         isDark,
         isPersistedTooltips,
         autoSkip: canBeInterpolated(groupBy, configuration.xml, decisionDefinitionKey),
@@ -43,6 +47,56 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
       break;
     default:
       options = {};
+  }
+
+  const tooltipCallbacks = {
+    label: (tooltipItem, data) => {
+      return formatTooltip(
+        tooltipItem,
+        data,
+        configuration,
+        formatter,
+        result.instanceCount,
+        isDuration
+      );
+    },
+    labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),
+  };
+
+  if (isPersistedTooltips) {
+    tooltipCallbacks.title = () => '';
+  } else if (groupedByDurationMaxValue) {
+    tooltipCallbacks.title = (data, {labels}) => data.length && duration(labels[data[0].index]);
+  }
+
+  if (visualization === 'pie' && !isPersistedTooltips && !groupedByDurationMaxValue) {
+    tooltipCallbacks.beforeLabel = ({index}, {labels}) => labels[index];
+  }
+
+  if (visualization === 'pie' && groupedByDurationMaxValue) {
+    options.legend.labels.generateLabels = (chart) => {
+      // we need to adjust the generate labels function to convert milliseconds to nicely formatted duration strings
+      // taken and adjusted from https://github.com/chartjs/Chart.js/blob/2.9/src/controllers/controller.doughnut.js#L48-L66
+      const data = chart.data;
+      if (data.labels.length && data.datasets.length) {
+        return data.labels.map(function (label, i) {
+          const meta = chart.getDatasetMeta(0);
+          const style = meta.controller.getStyle(i);
+
+          return {
+            text: duration(label),
+            fillStyle: style.backgroundColor,
+            strokeStyle: style.borderColor,
+            lineWidth: style.borderWidth,
+            hidden: isNaN(data.datasets[0].data[i]) || meta.data[i].hidden,
+
+            // Extra data used for toggling the correct item
+            index: i,
+          };
+        });
+      }
+      return [];
+    };
   }
 
   return {
@@ -58,24 +112,7 @@ export default function createDefaultChartOptions({report, targetValue, theme, f
         xAlign: 'center',
         displayColors: false,
       }),
-      callbacks: {
-        ...(isPersistedTooltips && {title: () => ''}),
-        // if pie chart then manually append labels to tooltips
-        ...(visualization === 'pie' &&
-          !isPersistedTooltips && {beforeLabel: ({index}, {labels}) => labels[index]}),
-
-        label: (tooltipItem, data) => {
-          return formatTooltip(
-            tooltipItem,
-            data,
-            configuration,
-            formatter,
-            result.instanceCount,
-            isDuration
-          );
-        },
-        labelColor: (tooltipItem, chart) => getTooltipLabelColor(tooltipItem, chart, visualization),
-      },
+      callbacks: tooltipCallbacks,
     },
   };
 }
@@ -88,6 +125,7 @@ export function createBarOptions({
   isDark,
   autoSkip,
   isPersistedTooltips,
+  groupedByDurationMaxValue = false,
 }) {
   const targetLine = targetValue && getFormattedTargetValue(targetValue);
 
@@ -127,6 +165,9 @@ export function createBarOptions({
           ticks: {
             fontColor: getColorFor('label', isDark),
             autoSkip,
+            ...(groupedByDurationMaxValue
+              ? createDurationFormattingOptions(false, groupedByDurationMaxValue)
+              : {}),
           },
           stacked,
         },

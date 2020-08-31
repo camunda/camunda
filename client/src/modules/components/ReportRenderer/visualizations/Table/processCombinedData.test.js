@@ -28,6 +28,7 @@ const singleReport = {
   reportType: 'process',
   data: {
     view: {property: 'frequency'},
+    groupBy: {type: 'none'},
   },
 };
 

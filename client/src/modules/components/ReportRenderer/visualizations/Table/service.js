@@ -12,7 +12,7 @@ const {
   getLabelFor,
 } = reportConfig.process;
 
-const {formatReportResult, getRelativeValue} = formatters;
+const {formatReportResult, getRelativeValue, duration} = formatters;
 
 export function getFormattedLabels(
   reportsLabels,
@@ -37,17 +37,18 @@ export function getFormattedLabels(
   );
 }
 
-export function getBodyRows(
+export function getBodyRows({
   unitedResults,
   allKeys,
   formatter,
   displayRelativeValue,
   instanceCount,
   displayAbsoluteValue,
-  flowNodeNames = {}
-) {
+  flowNodeNames = {},
+  groupedByDuration,
+}) {
   const rows = allKeys.map((key, idx) => {
-    const row = [flowNodeNames[key] || key];
+    const row = [groupedByDuration ? duration(key) : flowNodeNames[key] || key];
     unitedResults.forEach((result, i) => {
       const value = result[idx].value;
       if (displayAbsoluteValue) {

@@ -1,0 +1,40 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render bucket options 1`] = `
+<fieldset
+  className="BucketSize"
+>
+  <legend>
+    <Switch
+      checked={false}
+      label="Bucket Size"
+      onChange={[Function]}
+    />
+  </legend>
+  <div
+    className="inputGroup"
+  >
+    <ForwardRef(Input)
+      defaultValue="10"
+      disabled={true}
+      isInvalid={false}
+      onBlur={[Function]}
+      onChange={[Function]}
+    />
+  </div>
+  <div
+    className="inputGroup"
+  >
+    <ForwardRef(LabeledInput)
+      defaultValue="0"
+      disabled={true}
+      isInvalid={false}
+      label="Baseline"
+      onBlur={[Function]}
+      onChange={[Function]}
+    />
+  </div>
+</fieldset>
+`;
+
+exports[`should render nothing if the current variable is not a number 1`] = `""`;

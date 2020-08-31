@@ -1,0 +1,16 @@
+.BucketSize {
+  .inputGroup {
+    display: flex;
+    align-items: flex-end;
+
+    > .Input,
+    > .LabeledInput {
+      flex: 1 0;
+      width: 100%;
+    }
+
+    > .Select {
+      flex: 0 0 150px;
+    }
+  }
+}

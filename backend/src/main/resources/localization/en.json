@@ -267,6 +267,7 @@
       "none": "None",
       "flowNodes": "Flow Nodes",
       "userTasks": "User Tasks",
+      "duration": "Duration",
       "startDate": "Start Date",
       "runningDate": "Running Date",
       "automatic": "Automatic",

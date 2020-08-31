@@ -16,7 +16,7 @@ export default function processCombinedData({formatter, report}) {
   const {
     configuration: {hideAbsoluteValue, hideRelativeValue},
   } = report.data;
-  const {view} = Object.values(report.result.data)[0].data;
+  const {view, groupBy} = Object.values(report.result.data)[0].data;
 
   const displayRelativeValue = view.property === 'frequency' && !hideRelativeValue;
   const displayAbsoluteValue = !hideAbsoluteValue;
@@ -46,15 +46,16 @@ export default function processCombinedData({formatter, report}) {
   const unitedResults = uniteResults(combinedResult, allKeys);
 
   // convert hashtables into a table rows array
-  const rows = getBodyRows(
+  const rows = getBodyRows({
     unitedResults,
     allKeys,
     formatter,
     displayRelativeValue,
     instanceCount,
     displayAbsoluteValue,
-    flowNodeNames
-  );
+    flowNodeNames,
+    groupedByDuration: groupBy.type === 'duration',
+  });
 
   return {
     head: [keysLabel, ...formattedLabels],

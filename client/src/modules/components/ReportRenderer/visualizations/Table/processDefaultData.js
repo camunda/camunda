@@ -7,7 +7,7 @@
 import {reportConfig, formatters, isDurationReport} from 'services';
 import {t} from 'translation';
 
-const {formatReportResult, getRelativeValue} = formatters;
+const {formatReportResult, getRelativeValue, duration} = formatters;
 
 export default function processDefaultData({formatter = (v) => v, report}) {
   const {data, result, reportType} = report;
@@ -36,11 +36,13 @@ export default function processDefaultData({formatter = (v) => v, report}) {
     labels.length = 1;
   }
 
+  const groupedByDuration = groupBy.type === 'duration';
+
   // normal two-dimensional data
   return {
     head: [...labels, ...(displayRelativeValue ? [t('report.table.relativeFrequency')] : [])],
     body: formattedResult.map(({label, key, value}) => [
-      label || key,
+      groupedByDuration ? duration(label) : label || key,
       ...(displayAbsoluteValue ? [formatter(value)] : []),
       ...(displayRelativeValue ? [getRelativeValue(value, instanceCount)] : []),
     ]),

@@ -30,8 +30,8 @@ jest.mock('services', () => {
 
 it('should apply flow node names to the body rows', () => {
   expect(
-    getBodyRows(
-      [
+    getBodyRows({
+      unitedResults: [
         [
           {key: 'a', value: 1},
           {key: 'b', value: 2},
@@ -41,16 +41,17 @@ it('should apply flow node names to the body rows', () => {
           {key: 'b', value: 0},
         ],
       ],
-      ['a', 'b'],
-      (v) => v,
-      false,
-      [100, 100],
-      true,
-      {
+      allKeys: ['a', 'b'],
+      formatter: (v) => v,
+      displayRelativeValue: false,
+      instanceCount: [100, 100],
+      displayAbsoluteValue: true,
+      flowNodeNames: {
         a: 'Flownode A',
         b: 'Flownode B',
-      }
-    )
+      },
+      groupedByDuration: false,
+    })
   ).toEqual([
     ['Flownode A', 1, ''],
     ['Flownode B', 2, 0],
@@ -59,8 +60,8 @@ it('should apply flow node names to the body rows', () => {
 
 it('should return correctly formatted body rows', () => {
   expect(
-    getBodyRows(
-      [
+    getBodyRows({
+      unitedResults: [
         [
           {key: 'a', value: 1},
           {key: 'b', value: 2},
@@ -70,12 +71,13 @@ it('should return correctly formatted body rows', () => {
           {key: 'b', value: 0},
         ],
       ],
-      ['a', 'b'],
-      (v) => v,
-      false,
-      [100, 100],
-      true
-    )
+      allKeys: ['a', 'b'],
+      formatter: (v) => v,
+      displayRelativeValue: false,
+      instanceCount: [100, 100],
+      displayAbsoluteValue: true,
+      groupedByDuration: false,
+    })
   ).toEqual([
     ['a', 1, ''],
     ['b', 2, 0],
@@ -84,8 +86,8 @@ it('should return correctly formatted body rows', () => {
 
 it('should hide absolute values when sepcified from body rows', () => {
   expect(
-    getBodyRows(
-      [
+    getBodyRows({
+      unitedResults: [
         [
           {key: 'a', value: 1},
           {key: 'b', value: 2},
@@ -95,12 +97,13 @@ it('should hide absolute values when sepcified from body rows', () => {
           {key: 'b', value: 1},
         ],
       ],
-      ['a', 'b'],
-      (v) => v,
-      false,
-      [100, 100],
-      false
-    )
+      allKeys: ['a', 'b'],
+      formatter: (v) => v,
+      displayRelativeValue: false,
+      instanceCount: [100, 100],
+      displayAbsoluteValue: false,
+      groupedByDuration: false,
+    })
   ).toEqual([['a'], ['b']]);
 });
 
