@@ -1,0 +1,6 @@
+zeebe:
+  broker:
+    backpressure:
+      algorithm: fixed
+      fixed:
+        limit: 13

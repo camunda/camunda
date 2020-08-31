@@ -284,7 +284,7 @@
       # useWindowed: true
 
       # The algorithm configures which algorithm to use for the backpressure.
-      # It should be one of vegas, aimd, fixedLimit, gradient, or gradient2.
+      # It should be one of vegas, aimd, fixed, gradient, or gradient2.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_ALGORITHM
       # algorithm: "vegas"
 
@@ -310,8 +310,8 @@
         # backoffRatio: 0.9
 
       # Configure the parameters for "fixed" algorithm
-      # fixedLimit:
-        # Set a fixed limit. This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_FIXEDLIMIT_LIMIT
+      # fixed:
+        # Set a fixed limit. This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_FIXED_LIMIT
         # limit: 20
 
       # Configure the parameters for "vegas" algorithm

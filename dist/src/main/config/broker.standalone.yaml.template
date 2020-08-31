@@ -324,9 +324,9 @@
       # useWindowed: true
 
       # The algorithm configures which algorithm to use for the backpressure.
-      # It should be one of vegas, aimd, fixedLimit, gradient, or gradient2.
+      # It should be one of vegas, aimd, fixed, gradient, or gradient2.
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_ALGORITHM
-      # algorithm: "vegas"
+      # algorithm: "fixed"
 
       # Configure the parameters for "aimd" algorithm.
       # AIMD increases the limit for every successful response and decrease the limit for every request timeout.
@@ -350,9 +350,9 @@
         # backoffRatio: 0.9
 
       # Configure the parameters for "fixed" algorithm
-      # fixedLimit:
-        # Set a fixed limit. This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_FIXEDLIMIT_LIMIT
-        # limit: 20
+      # fixed:
+        # Set a fixed limit. This setting can also be overridden using the environment variable ZEEBE_BROKER_BACKPRESSURE_FIXED_LIMIT
+        # limit: 10
 
       # Configure the parameters for "vegas" algorithm
       # Vegas is an adaptive limit algorithm based on TCP Vegas congestion control algorithm.
