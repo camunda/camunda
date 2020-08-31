@@ -502,7 +502,7 @@ public class TemplatedProcessReportDataBuilder {
           .viewEntity(ProcessViewEntity.USER_TASK)
           .viewProperty(ProcessViewProperty.FREQUENCY)
           .groupByType(ProcessGroupByType.DURATION)
-          .distributedBy(DistributedBy.NONE)
+          .distributedBy(DistributedByType.NONE)
           .visualization(ProcessVisualization.TABLE)
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
