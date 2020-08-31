@@ -50,7 +50,7 @@ public class SwappedBuffer extends AbstractBuffer {
         initialCapacity,
         maxCapacity,
         referenceManager);
-    this.root = buffer instanceof SwappedBuffer ? ((SwappedBuffer) buffer).root : buffer;
+    root = buffer instanceof SwappedBuffer ? ((SwappedBuffer) buffer).root : buffer;
     root.acquire();
   }
 

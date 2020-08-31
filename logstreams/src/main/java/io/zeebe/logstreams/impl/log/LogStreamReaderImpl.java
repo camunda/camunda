@@ -38,7 +38,7 @@ public final class LogStreamReaderImpl implements LogStreamReader {
   private int bufferOffset;
 
   public LogStreamReaderImpl(final LogStorage logStorage) {
-    this.storageReader = logStorage.newReader();
+    storageReader = logStorage.newReader();
     invalidateBufferAndOffsets();
     seek(FIRST_POSITION);
   }
@@ -203,7 +203,7 @@ public final class LogStreamReaderImpl implements LogStreamReader {
       state = IteratorState.NOT_ENOUGH_DATA;
       return false;
     } else {
-      this.nextLogStorageReadAddress = result;
+      nextLogStorageReadAddress = result;
       return true;
     }
   }

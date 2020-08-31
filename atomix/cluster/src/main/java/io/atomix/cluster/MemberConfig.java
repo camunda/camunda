@@ -208,7 +208,7 @@ public class MemberConfig extends NodeConfig {
    * @return the member configuration
    */
   public MemberConfig setProperty(final String key, final String value) {
-    this.properties.put(key, value);
+    properties.put(key, value);
     return this;
   }
 }

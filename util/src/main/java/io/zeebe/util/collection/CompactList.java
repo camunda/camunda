@@ -79,7 +79,7 @@ public final class CompactList implements Iterable<MutableDirectBuffer>, Closeab
     framedElementLength = framedLength(elementMaxLength);
 
     iterator = new CompactListIterator(this);
-    this.allocatedBuffer = null;
+    allocatedBuffer = null;
   }
 
   /**

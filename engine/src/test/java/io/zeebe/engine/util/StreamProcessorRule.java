@@ -231,7 +231,7 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public void snapshot() {
-    final var partitionId = this.startPartitionId;
+    final var partitionId = startPartitionId;
     streamProcessingComposite.snapshot(partitionId);
   }
 

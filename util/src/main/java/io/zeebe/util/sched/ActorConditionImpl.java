@@ -21,8 +21,8 @@ public final class ActorConditionImpl implements ActorCondition, ActorSubscripti
   public ActorConditionImpl(final String conditionName, final ActorJob job) {
     this.conditionName = conditionName;
     this.job = job;
-    this.task = job.getTask();
-    this.triggerCount = new AtomicLong(0);
+    task = job.getTask();
+    triggerCount = new AtomicLong(0);
   }
 
   @Override

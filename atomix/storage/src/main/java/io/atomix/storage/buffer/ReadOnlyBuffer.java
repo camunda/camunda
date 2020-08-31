@@ -30,7 +30,7 @@ public class ReadOnlyBuffer extends AbstractBuffer {
 
   public ReadOnlyBuffer(final Buffer buffer, final ReferenceManager<Buffer> referenceManager) {
     super(buffer.bytes(), referenceManager);
-    this.root = buffer;
+    root = buffer;
   }
 
   @Override

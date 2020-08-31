@@ -65,7 +65,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     this.exporterPositionSupplier = exporterPositionSupplier;
     this.entrySupplier = entrySupplier;
     this.replication = replication;
-    this.metrics = new SnapshotReplicationMetrics(Integer.toString(partitionId));
+    metrics = new SnapshotReplicationMetrics(Integer.toString(partitionId));
   }
 
   @Override
@@ -313,7 +313,7 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
         metrics.incrementCount();
       }
       this.startTimestamp = startTimestamp;
-      this.chunkCount = 0L;
+      chunkCount = 0L;
       this.receivedSnapshot = receivedSnapshot;
     }
 

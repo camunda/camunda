@@ -79,11 +79,11 @@ final class BrokerRequestManager extends Actor {
   }
 
   <T> CompletableFuture<BrokerResponse<T>> sendRequestWithRetry(final BrokerRequest<T> request) {
-    return sendRequestWithRetry(request, this.requestTimeout);
+    return sendRequestWithRetry(request, requestTimeout);
   }
 
   <T> CompletableFuture<BrokerResponse<T>> sendRequest(final BrokerRequest<T> request) {
-    return sendRequest(request, this.requestTimeout);
+    return sendRequest(request, requestTimeout);
   }
 
   <T> CompletableFuture<BrokerResponse<T>> sendRequest(

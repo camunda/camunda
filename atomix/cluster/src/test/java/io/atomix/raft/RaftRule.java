@@ -610,11 +610,11 @@ public final class RaftRule extends ExternalResource {
     private final CountDownLatch latch = new CountDownLatch(1);
 
     public CommitAwaiter(final long index) {
-      this.awaitedIndex = index;
+      awaitedIndex = index;
     }
 
     public boolean reachedCommit(final long currentIndex) {
-      if (this.awaitedIndex <= currentIndex) {
+      if (awaitedIndex <= currentIndex) {
         latch.countDown();
         return true;
       }

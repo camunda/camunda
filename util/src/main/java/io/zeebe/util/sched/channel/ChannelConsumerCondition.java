@@ -36,13 +36,13 @@ public final class ChannelConsumerCondition
 
   public ChannelConsumerCondition(final ActorJob job, final ConsumableChannel channel) {
     this.job = job;
-    this.task = job.getTask();
+    task = job.getTask();
     this.channel = channel;
   }
 
   @Override
   public boolean poll() {
-    final long polledCount = this.triggerCount;
+    final long polledCount = triggerCount;
     final boolean hasAvailable = channel.hasAvailable();
     return polledCount > processedTiggersCount || hasAvailable;
   }
@@ -59,7 +59,7 @@ public final class ChannelConsumerCondition
 
   @Override
   public void onJobCompleted() {
-    this.processedTiggersCount++;
+    processedTiggersCount++;
   }
 
   @Override

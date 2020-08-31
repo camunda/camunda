@@ -71,17 +71,17 @@ public final class JobWorkerBuilderImpl
     this.executorService = executorService;
     this.closeables = closeables;
 
-    this.timeout = configuration.getDefaultJobTimeout().toMillis();
-    this.workerName = configuration.getDefaultJobWorkerName();
-    this.maxJobsActive = configuration.getDefaultJobWorkerMaxJobsActive();
-    this.pollInterval = configuration.getDefaultJobPollInterval();
-    this.requestTimeout = configuration.getDefaultRequestTimeout();
+    timeout = configuration.getDefaultJobTimeout().toMillis();
+    workerName = configuration.getDefaultJobWorkerName();
+    maxJobsActive = configuration.getDefaultJobWorkerMaxJobsActive();
+    pollInterval = configuration.getDefaultJobPollInterval();
+    requestTimeout = configuration.getDefaultRequestTimeout();
     this.retryPredicate = retryPredicate;
   }
 
   @Override
   public JobWorkerBuilderStep2 jobType(final String type) {
-    this.jobType = type;
+    jobType = type;
     return this;
   }
 

@@ -36,7 +36,7 @@ public final class SubscriptionApiCommandMessageHandlerService extends Actor
   public SubscriptionApiCommandMessageHandlerService(
       final BrokerInfo localBroker, final Atomix atomix) {
     this.atomix = atomix;
-    this.actorName = buildActorName(localBroker.getNodeId(), "SubscriptionApi");
+    actorName = buildActorName(localBroker.getNodeId(), "SubscriptionApi");
   }
 
   @Override

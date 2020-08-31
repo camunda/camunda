@@ -59,7 +59,7 @@ final class CommandApiRequestHandler implements RequestHandler {
   private boolean isDiskSpaceAvailable = true;
 
   CommandApiRequestHandler() {
-    this.metrics = new BackpressureMetrics();
+    metrics = new BackpressureMetrics();
     initEventTypeMap();
   }
 
@@ -216,13 +216,13 @@ final class CommandApiRequestHandler implements RequestHandler {
   void onDiskSpaceNotAvailable() {
     cmdQueue.add(
         () -> {
-          this.isDiskSpaceAvailable = false;
+          isDiskSpaceAvailable = false;
           LOG.debug("Broker is out of disk space. All client requests will be rejected");
         });
   }
 
   void onDiskSpaceAvailable() {
-    cmdQueue.add(() -> this.isDiskSpaceAvailable = true);
+    cmdQueue.add(() -> isDiskSpaceAvailable = true);
   }
 
   @Override

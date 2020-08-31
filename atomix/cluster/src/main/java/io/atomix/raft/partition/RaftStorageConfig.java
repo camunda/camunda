@@ -75,7 +75,7 @@ public class RaftStorageConfig {
    * @return the Raft partition group configuration
    */
   public RaftStorageConfig setLevel(final StorageLevel storageLevel) {
-    this.level = checkNotNull(storageLevel);
+    level = checkNotNull(storageLevel);
     return this;
   }
 
@@ -177,7 +177,7 @@ public class RaftStorageConfig {
    * @return free disk buffer
    */
   public long getFreeDiskSpace() {
-    return this.freeDiskSpace;
+    return freeDiskSpace;
   }
 
   /**

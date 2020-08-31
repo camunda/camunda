@@ -15,9 +15,9 @@ public final class POJOArray extends UnpackedObject {
   protected final ArrayProperty<MinimalPOJO> simpleArrayProp;
 
   public POJOArray() {
-    this.simpleArrayProp = new ArrayProperty<>("simpleArray", new MinimalPOJO());
+    simpleArrayProp = new ArrayProperty<>("simpleArray", new MinimalPOJO());
 
-    this.declareProperty(simpleArrayProp);
+    declareProperty(simpleArrayProp);
   }
 
   public ValueArray<MinimalPOJO> simpleArray() {

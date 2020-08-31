@@ -53,8 +53,8 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
       final JobPoller jobPoller) {
 
     this.maxJobsActive = maxJobsActive;
-    this.activationThreshold = Math.round(maxJobsActive * 0.3f);
-    this.remainingJobs = new AtomicInteger(0);
+    activationThreshold = Math.round(maxJobsActive * 0.3f);
+    remainingJobs = new AtomicInteger(0);
 
     this.executor = executor;
     this.jobRunnableFactory = jobRunnableFactory;

@@ -34,7 +34,7 @@ public final class IncidentRecord extends UnifiedRecordValue
   private final LongProperty variableScopeKeyProp = new LongProperty("variableScopeKey", -1L);
 
   public IncidentRecord() {
-    this.declareProperty(errorTypeProp)
+    declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(workflowKeyProp)
@@ -110,7 +110,7 @@ public final class IncidentRecord extends UnifiedRecordValue
   }
 
   public IncidentRecord setWorkflowKey(final long workflowKey) {
-    this.workflowKeyProp.setValue(workflowKey);
+    workflowKeyProp.setValue(workflowKey);
     return this;
   }
 
@@ -120,7 +120,7 @@ public final class IncidentRecord extends UnifiedRecordValue
   }
 
   public IncidentRecord setElementId(final DirectBuffer elementId) {
-    this.elementIdProp.setValue(elementId, 0, elementId.capacity());
+    elementIdProp.setValue(elementId, 0, elementId.capacity());
     return this;
   }
 
@@ -129,7 +129,7 @@ public final class IncidentRecord extends UnifiedRecordValue
   }
 
   public IncidentRecord setElementInstanceKey(final long elementInstanceKey) {
-    this.elementInstanceKeyProp.setValue(elementInstanceKey);
+    elementInstanceKeyProp.setValue(elementInstanceKey);
     return this;
   }
 
@@ -142,27 +142,27 @@ public final class IncidentRecord extends UnifiedRecordValue
   }
 
   public IncidentRecord setVariableScopeKey(final long variableScopeKey) {
-    this.variableScopeKeyProp.setValue(variableScopeKey);
+    variableScopeKeyProp.setValue(variableScopeKey);
     return this;
   }
 
   public IncidentRecord setJobKey(final long jobKey) {
-    this.jobKeyProp.setValue(jobKey);
+    jobKeyProp.setValue(jobKey);
     return this;
   }
 
   public IncidentRecord setErrorMessage(final DirectBuffer errorMessage) {
-    this.errorMessageProp.setValue(errorMessage);
+    errorMessageProp.setValue(errorMessage);
     return this;
   }
 
   public IncidentRecord setErrorMessage(final String errorMessage) {
-    this.errorMessageProp.setValue(errorMessage);
+    errorMessageProp.setValue(errorMessage);
     return this;
   }
 
   public IncidentRecord setErrorType(final ErrorType errorType) {
-    this.errorTypeProp.setValue(errorType);
+    errorTypeProp.setValue(errorType);
     return this;
   }
 
@@ -171,7 +171,7 @@ public final class IncidentRecord extends UnifiedRecordValue
   }
 
   public IncidentRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    workflowInstanceKeyProp.setValue(workflowInstanceKey);
     return this;
   }
 }

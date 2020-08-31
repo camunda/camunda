@@ -72,9 +72,9 @@ public class ElasticsearchClient {
       final List<String> bulkRequest) {
     this.configuration = configuration;
     this.log = log;
-    this.client = createClient();
+    client = createClient();
     this.bulkRequest = bulkRequest;
-    this.formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
+    formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
   }
 
   public void close() throws IOException {

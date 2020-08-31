@@ -31,9 +31,9 @@ public class TestAppender implements AppendListener {
   private final BlockingQueue<Throwable> errors;
 
   public TestAppender() {
-    this.written = new LinkedBlockingQueue<>();
-    this.committed = new LinkedBlockingQueue<>();
-    this.errors = new LinkedBlockingQueue<>();
+    written = new LinkedBlockingQueue<>();
+    committed = new LinkedBlockingQueue<>();
+    errors = new LinkedBlockingQueue<>();
   }
 
   @Override

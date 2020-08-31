@@ -33,7 +33,7 @@ public final class ShortReadInputStream extends InputStream {
     this.bytesToRead = bytesToRead;
     this.throwException = throwException;
 
-    this.readCount = 0;
+    readCount = 0;
   }
 
   @Override

@@ -143,7 +143,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public void setVersion(final DirectBuffer buffer, final int offset, final int length) {
-    this.version.wrap(buffer, offset, length);
+    version.wrap(buffer, offset, length);
   }
 
   public Map<DirectBuffer, DirectBuffer> getAddresses() {
@@ -151,7 +151,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
   }
 
   public BrokerInfo addAddress(final DirectBuffer apiName, final DirectBuffer address) {
-    this.addresses.put(apiName, address);
+    addresses.put(apiName, address);
     return this;
   }
 
@@ -223,20 +223,20 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
       final byte[] addressBytes = new byte[addressLength];
       addressesDecoder.getAddress(addressBytes, 0, addressLength);
 
-      this.addAddress(new UnsafeBuffer(apiNameBytes), new UnsafeBuffer(addressBytes));
+      addAddress(new UnsafeBuffer(apiNameBytes), new UnsafeBuffer(addressBytes));
     }
 
     final PartitionRolesDecoder partitionRolesDecoder = bodyDecoder.partitionRoles();
     while (partitionRolesDecoder.hasNext()) {
       partitionRolesDecoder.next();
-      this.addPartitionRole(partitionRolesDecoder.partitionId(), partitionRolesDecoder.role());
+      addPartitionRole(partitionRolesDecoder.partitionId(), partitionRolesDecoder.role());
     }
 
     final PartitionLeaderTermsDecoder partitionLeaderTermsDecoder =
         bodyDecoder.partitionLeaderTerms();
     while (partitionLeaderTermsDecoder.hasNext()) {
       partitionLeaderTermsDecoder.next();
-      this.partitionLeaderTerms.put(
+      partitionLeaderTerms.put(
           partitionLeaderTermsDecoder.partitionId(), partitionLeaderTermsDecoder.term());
     }
 

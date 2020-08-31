@@ -33,7 +33,7 @@ public class AtomixPartitionMessagingService implements PartitionMessagingServic
       final Collection<MemberId> members) {
     this.communicationService = communicationService;
     this.clusterMembershipService = clusterMembershipService;
-    this.otherMembers = getOtherMemberIds(clusterMembershipService, members);
+    otherMembers = getOtherMemberIds(clusterMembershipService, members);
   }
 
   @Override

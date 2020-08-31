@@ -20,7 +20,7 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
   public JobThrowErrorProcessor(final JobState state) {
     this.state = state;
-    this.defaultProcessor =
+    defaultProcessor =
         new DefaultJobCommandProcessor<>("throw an error for", this.state, this::acceptCommand);
   }
 

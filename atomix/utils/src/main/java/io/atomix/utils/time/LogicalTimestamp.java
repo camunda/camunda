@@ -51,7 +51,7 @@ public class LogicalTimestamp implements Timestamp {
    * @return sequence value
    */
   public long value() {
-    return this.value;
+    return value;
   }
 
   /**
@@ -68,7 +68,7 @@ public class LogicalTimestamp implements Timestamp {
     Preconditions.checkArgument(o instanceof LogicalTimestamp, "Must be LogicalTimestamp", o);
     final LogicalTimestamp that = (LogicalTimestamp) o;
 
-    return ComparisonChain.start().compare(this.value, that.value).result();
+    return ComparisonChain.start().compare(value, that.value).result();
   }
 
   @Override
@@ -85,7 +85,7 @@ public class LogicalTimestamp implements Timestamp {
       return false;
     }
     final LogicalTimestamp that = (LogicalTimestamp) obj;
-    return Objects.equals(this.value, that.value);
+    return Objects.equals(value, that.value);
   }
 
   @Override

@@ -18,7 +18,7 @@ public final class WorkStealingGroup {
 
   public WorkStealingGroup(final int numOfThreads) {
     this.numOfThreads = numOfThreads;
-    this.taskQueues = new ActorTaskQueue[numOfThreads];
+    taskQueues = new ActorTaskQueue[numOfThreads];
     for (int i = 0; i < numOfThreads; i++) {
       taskQueues[i] = new ActorTaskQueue();
     }

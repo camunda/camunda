@@ -61,7 +61,7 @@ public class LoggerContext {
     private boolean omitNullValues = false;
 
     public Builder(final String name) {
-      this.identityStringHelper = MoreObjects.toStringHelper(name);
+      identityStringHelper = MoreObjects.toStringHelper(name);
     }
 
     /** Initializes the arguments string helper. */
@@ -78,7 +78,7 @@ public class LoggerContext {
      */
     @CanIgnoreReturnValue
     public Builder omitNullValues() {
-      this.omitNullValues = true;
+      omitNullValues = true;
       return this;
     }
 

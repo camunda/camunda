@@ -17,7 +17,7 @@ public class GradientCfg {
   private double rttTolerance = 2.0;
 
   public int getMinLimit() {
-    return this.minLimit;
+    return minLimit;
   }
 
   public void setMinLimit(final int minLimit) {
@@ -26,7 +26,7 @@ public class GradientCfg {
   }
 
   public int getInitialLimit() {
-    return this.initialLimit;
+    return initialLimit;
   }
 
   public void setInitialLimit(final int initialLimit) {

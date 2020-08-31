@@ -20,8 +20,7 @@ public final class FailProcessor implements CommandProcessor<JobRecord> {
 
   public FailProcessor(final JobState state) {
     this.state = state;
-    this.defaultProcessor =
-        new DefaultJobCommandProcessor<>("fail", this.state, this::acceptCommand);
+    defaultProcessor = new DefaultJobCommandProcessor<>("fail", this.state, this::acceptCommand);
   }
 
   @Override

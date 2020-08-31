@@ -52,7 +52,7 @@ public final class TopologyManagerImpl extends Actor
       localBroker.setVersion(version);
     }
 
-    this.actorName = buildActorName(localBroker.getNodeId(), "TopologyManager");
+    actorName = buildActorName(localBroker.getNodeId(), "TopologyManager");
   }
 
   @Override

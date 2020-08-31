@@ -35,11 +35,11 @@ public class MetricsExporter implements Exporter {
   private Controller controller;
 
   public MetricsExporter() {
-    this.executionLatencyMetrics = new ExecutionLatencyMetrics();
-    this.jobKeyToCreationTimeMap = new Long2LongHashMap(-1);
-    this.workflowInstanceKeyToCreationTimeMap = new Long2LongHashMap(-1);
-    this.creationTimeToJobKeyNavigableMap = new TreeMap<>();
-    this.creationTimeToWorkflowInstanceKeyNavigableMap = new TreeMap<>();
+    executionLatencyMetrics = new ExecutionLatencyMetrics();
+    jobKeyToCreationTimeMap = new Long2LongHashMap(-1);
+    workflowInstanceKeyToCreationTimeMap = new Long2LongHashMap(-1);
+    creationTimeToJobKeyNavigableMap = new TreeMap<>();
+    creationTimeToWorkflowInstanceKeyNavigableMap = new TreeMap<>();
   }
 
   @Override

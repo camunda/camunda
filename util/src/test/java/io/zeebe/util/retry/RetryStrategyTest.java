@@ -44,7 +44,7 @@ public final class RetryStrategyTest {
   @Before
   public void setUp() {
     final ControllableActor actor = new ControllableActor();
-    this.actorControl = actor.getActor();
+    actorControl = actor.getActor();
 
     try {
       final Constructor<RetryStrategy> constructor =

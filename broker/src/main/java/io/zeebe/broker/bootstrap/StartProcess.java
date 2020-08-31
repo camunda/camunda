@@ -21,8 +21,8 @@ public final class StartProcess {
 
   public StartProcess(final String name) {
     this.name = name;
-    this.startSteps = new ArrayList<>();
-    this.closeProcess = new CloseProcess(name);
+    startSteps = new ArrayList<>();
+    closeProcess = new CloseProcess(name);
   }
 
   public void addStep(final String name, final CheckedRunnable runnable) {

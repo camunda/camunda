@@ -33,11 +33,11 @@ public final class CreateWorkflowInstanceWithResultResponseImpl implements Workf
       final ZeebeObjectMapper objectMapper,
       final GatewayOuterClass.CreateWorkflowInstanceWithResultResponse response) {
     this.objectMapper = objectMapper;
-    this.workflowKey = response.getWorkflowKey();
-    this.bpmnProcessId = response.getBpmnProcessId();
-    this.version = response.getVersion();
-    this.workflowInstanceKey = response.getWorkflowInstanceKey();
-    this.variables = response.getVariables();
+    workflowKey = response.getWorkflowKey();
+    bpmnProcessId = response.getBpmnProcessId();
+    version = response.getVersion();
+    workflowInstanceKey = response.getWorkflowInstanceKey();
+    variables = response.getVariables();
   }
 
   @Override

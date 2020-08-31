@@ -134,7 +134,7 @@ public class DefaultClusterEventServiceTest {
   @Test
   public void shouldBroadcast() throws InterruptedException {
     // given
-    this.membersDiscovered = new CountDownLatch(6);
+    membersDiscovered = new CountDownLatch(6);
     final Collection<Node> bootstrapLocations = buildBootstrapNodes(3);
     final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
     final ClusterEventService eventService2 = buildServices(2, bootstrapLocations);
@@ -198,7 +198,7 @@ public class DefaultClusterEventServiceTest {
   @Test
   public void shouldSubscribeMultipleTopics() throws InterruptedException {
     // given
-    this.membersDiscovered = new CountDownLatch(4);
+    membersDiscovered = new CountDownLatch(4);
     final Collection<Node> bootstrapLocations = buildBootstrapNodes(2);
     final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
     final ClusterEventService eventService2 = buildServices(2, bootstrapLocations);
@@ -248,7 +248,7 @@ public class DefaultClusterEventServiceTest {
   public void shouldBroadcastToMultipleLocalSubscriptionsForSameTopic()
       throws InterruptedException {
     // given
-    this.membersDiscovered = new CountDownLatch(0);
+    membersDiscovered = new CountDownLatch(0);
     final Collection<Node> bootstrapLocations = buildBootstrapNodes(1);
     final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
 
@@ -293,7 +293,7 @@ public class DefaultClusterEventServiceTest {
   @Test
   public void shouldNotCloseOtherSubscriptions() throws InterruptedException {
     // given
-    this.membersDiscovered = new CountDownLatch(0);
+    membersDiscovered = new CountDownLatch(0);
     final Collection<Node> bootstrapLocations = buildBootstrapNodes(1);
     final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
 
@@ -332,7 +332,7 @@ public class DefaultClusterEventServiceTest {
   @Test
   public void shouldBroadcastAfterRestart() throws InterruptedException {
     // given
-    this.membersDiscovered = new CountDownLatch(4);
+    membersDiscovered = new CountDownLatch(4);
     final Collection<Node> bootstrapLocations = buildBootstrapNodes(2);
     final ClusterEventService eventService1 = buildServices(1, bootstrapLocations);
     final ClusterEventService eventService2 = buildServices(2, bootstrapLocations);

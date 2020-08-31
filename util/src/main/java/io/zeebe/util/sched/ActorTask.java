@@ -62,8 +62,8 @@ public class ActorTask {
     this.actorExecutor = actorExecutor;
     this.actorThreadGroup = actorThreadGroup;
     // reset previous state to allow re-scheduling
-    this.closeFuture.close();
-    this.closeFuture.setAwaitingResult();
+    closeFuture.close();
+    closeFuture.setAwaitingResult();
 
     jobClosingTaskFuture.close();
     jobClosingTaskFuture.setAwaitingResult();
@@ -74,9 +74,9 @@ public class ActorTask {
     jobStartingTaskFuture.close();
     jobStartingTaskFuture.setAwaitingResult();
 
-    this.submittedJobs = new ManyToOneConcurrentLinkedQueue<>();
-    this.fastLaneJobs = new ArrayDeque<>();
-    this.lifecyclePhase = ActorLifecyclePhase.STARTING;
+    submittedJobs = new ManyToOneConcurrentLinkedQueue<>();
+    fastLaneJobs = new ArrayDeque<>();
+    lifecyclePhase = ActorLifecyclePhase.STARTING;
 
     // create initial job to invoke on start callback
     final ActorJob j = new ActorJob();
@@ -268,7 +268,7 @@ public class ActorTask {
 
   public void requestClose() {
     if (lifecyclePhase == ActorLifecyclePhase.STARTED) {
-      this.lifecyclePhase = ActorLifecyclePhase.CLOSE_REQUESTED;
+      lifecyclePhase = ActorLifecyclePhase.CLOSE_REQUESTED;
 
       discardNextJobs();
 
@@ -334,7 +334,7 @@ public class ActorTask {
     // take copy of subscriptions list: once we set the state to WAITING, the task could be woken up
     // by another
     // thread. That thread could modify the subscriptions array.
-    final List<ActorSubscription> subscriptionsRef = new ArrayList<>(this.subscriptions);
+    final List<ActorSubscription> subscriptionsRef = new ArrayList<>(subscriptions);
 
     // first set state to waiting
     schedulingState.set(TaskSchedulingState.WAITING);

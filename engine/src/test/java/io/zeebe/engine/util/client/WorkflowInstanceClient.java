@@ -48,7 +48,7 @@ public final class WorkflowInstanceClient {
     public WorkflowInstanceCreationClient(
         final StreamProcessorRule environmentRule, final String bpmnProcessId) {
       this.environmentRule = environmentRule;
-      this.workflowInstanceCreationRecord = new WorkflowInstanceCreationRecord();
+      workflowInstanceCreationRecord = new WorkflowInstanceCreationRecord();
       workflowInstanceCreationRecord.setBpmnProcessId(bpmnProcessId);
     }
 

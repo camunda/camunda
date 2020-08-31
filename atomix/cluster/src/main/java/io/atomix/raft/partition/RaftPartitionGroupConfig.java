@@ -152,7 +152,7 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
    * @return the entry validator
    */
   public EntryValidator getEntryValidator() {
-    return this.entryValidator;
+    return entryValidator;
   }
 
   /**

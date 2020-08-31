@@ -25,8 +25,8 @@ public final class LogStreamWriterRule extends ExternalResource {
 
   @Override
   protected void before() {
-    this.logStream = logStreamRule.getLogStream();
-    this.logStreamWriter = logStream.newLogStreamRecordWriter();
+    logStream = logStreamRule.getLogStream();
+    logStreamWriter = logStream.newLogStreamRecordWriter();
   }
 
   @Override

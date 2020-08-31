@@ -46,8 +46,8 @@ public class MultiValuedTimestamp<T extends Comparable<T>, U extends Comparable<
   // Default constructor for serialization
   @SuppressWarnings("unused")
   private MultiValuedTimestamp() {
-    this.value1 = null;
-    this.value2 = null;
+    value1 = null;
+    value2 = null;
   }
 
   @Override
@@ -57,8 +57,8 @@ public class MultiValuedTimestamp<T extends Comparable<T>, U extends Comparable<
     final MultiValuedTimestamp that = (MultiValuedTimestamp) o;
 
     return ComparisonChain.start()
-        .compare(this.value1, that.value1)
-        .compare(this.value2, that.value2)
+        .compare(value1, that.value1)
+        .compare(value2, that.value2)
         .result();
   }
 
@@ -76,7 +76,7 @@ public class MultiValuedTimestamp<T extends Comparable<T>, U extends Comparable<
       return false;
     }
     final MultiValuedTimestamp that = (MultiValuedTimestamp) obj;
-    return Objects.equals(this.value1, that.value1) && Objects.equals(this.value2, that.value2);
+    return Objects.equals(value1, that.value1) && Objects.equals(value2, that.value2);
   }
 
   @Override

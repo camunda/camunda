@@ -126,7 +126,7 @@ public class RaftPartition implements Partition {
   /** Opens the partition. */
   CompletableFuture<Partition> open(
       final PartitionMetadata metadata, final PartitionManagementService managementService) {
-    this.partitionMetadata = metadata;
+    partitionMetadata = metadata;
     if (partitionMetadata
         .members()
         .contains(managementService.getMembershipService().getLocalMember().id())) {

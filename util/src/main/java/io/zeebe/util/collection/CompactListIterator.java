@@ -18,7 +18,7 @@ public final class CompactListIterator implements Iterator<MutableDirectBuffer> 
 
   public CompactListIterator(final CompactList values) {
     this.values = values;
-    this.current = new UnsafeBuffer(new byte[values.maxElementDataLength()]);
+    current = new UnsafeBuffer(new byte[values.maxElementDataLength()]);
 
     reset();
   }

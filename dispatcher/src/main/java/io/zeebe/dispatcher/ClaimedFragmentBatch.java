@@ -63,7 +63,7 @@ public class ClaimedFragmentBatch {
     buffer.wrap(underlyingBuffer, fragmentOffset, fragmentLength);
 
     this.partitionId = partitionId;
-    this.partitionOffset = fragmentOffset;
+    partitionOffset = fragmentOffset;
 
     currentOffset = 0;
     nextOffset = 0;

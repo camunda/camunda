@@ -179,31 +179,31 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder brokerContactPoint(final String contactPoint) {
-    this.brokerContactPoint = contactPoint;
+    brokerContactPoint = contactPoint;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultJobWorkerMaxJobsActive(final int maxJobsActive) {
-    this.jobWorkerMaxJobsActive = maxJobsActive;
+    jobWorkerMaxJobsActive = maxJobsActive;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder numJobWorkerExecutionThreads(final int numSubscriptionThreads) {
-    this.numJobWorkerExecutionThreads = numSubscriptionThreads;
+    numJobWorkerExecutionThreads = numSubscriptionThreads;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultJobWorkerName(final String workerName) {
-    this.defaultJobWorkerName = workerName;
+    defaultJobWorkerName = workerName;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultJobTimeout(final Duration timeout) {
-    this.defaultJobTimeout = timeout;
+    defaultJobTimeout = timeout;
     return this;
   }
 
@@ -215,19 +215,19 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
   @Override
   public ZeebeClientBuilder defaultMessageTimeToLive(final Duration timeToLive) {
-    this.defaultMessageTimeToLive = timeToLive;
+    defaultMessageTimeToLive = timeToLive;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder defaultRequestTimeout(final Duration requestTimeout) {
-    this.defaultRequestTimeout = requestTimeout;
+    defaultRequestTimeout = requestTimeout;
     return this;
   }
 
   @Override
   public ZeebeClientBuilder usePlaintext() {
-    this.usePlaintextConnection = true;
+    usePlaintextConnection = true;
     return this;
   }
 

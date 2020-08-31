@@ -43,9 +43,9 @@ public final class StubBrokerRule extends ExternalResource {
   private ServerTransport serverTransport;
 
   public StubBrokerRule() {
-    this.nodeId = 0;
-    this.socketAddress = SocketUtil.getNextAddress();
-    this.partitionCount = 1;
+    nodeId = 0;
+    socketAddress = SocketUtil.getNextAddress();
+    partitionCount = 1;
   }
 
   @Override

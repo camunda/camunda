@@ -59,7 +59,7 @@ public final class LongPollingActivateJobsHandler extends Actor implements Activ
       final long probeTimeoutMillis,
       final int failedAttemptThreshold) {
     this.brokerClient = brokerClient;
-    this.activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
+    activateJobsHandler = new RoundRobinActivateJobsHandler(brokerClient);
     this.longPollingTimeout = Duration.ofMillis(longPollingTimeout);
     this.probeTimeoutMillis = probeTimeoutMillis;
     this.failedAttemptThreshold = failedAttemptThreshold;

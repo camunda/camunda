@@ -65,9 +65,9 @@ public final class FileBasedSnapshotStore implements PersistedSnapshotStore {
     this.snapshotsDirectory = snapshotsDirectory;
     this.pendingDirectory = pendingDirectory;
     this.snapshotMetrics = snapshotMetrics;
-    this.receivingSnapshotStartCount = new AtomicLong();
+    receivingSnapshotStartCount = new AtomicLong();
 
-    this.listeners = new CopyOnWriteArraySet<>();
+    listeners = new CopyOnWriteArraySet<>();
 
     // load previous snapshots
     currentPersistedSnapshotRef = new AtomicReference<>(loadLatestSnapshot(snapshotsDirectory));

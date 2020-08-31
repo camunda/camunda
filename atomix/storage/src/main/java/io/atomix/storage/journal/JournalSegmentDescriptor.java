@@ -90,13 +90,13 @@ public final class JournalSegmentDescriptor {
   /** @throws NullPointerException if {@code buffer} is null */
   public JournalSegmentDescriptor(final ByteBuffer buffer) {
     this.buffer = buffer;
-    this.version = buffer.getInt();
-    this.id = buffer.getLong();
-    this.index = buffer.getLong();
-    this.maxSegmentSize = buffer.getInt();
-    this.maxEntries = buffer.getInt();
-    this.updated = buffer.getLong();
-    this.locked = buffer.get() == 1;
+    version = buffer.getInt();
+    id = buffer.getLong();
+    index = buffer.getLong();
+    maxSegmentSize = buffer.getInt();
+    maxEntries = buffer.getInt();
+    updated = buffer.getLong();
+    locked = buffer.get() == 1;
   }
 
   /**
@@ -191,7 +191,7 @@ public final class JournalSegmentDescriptor {
   public void update(final long timestamp) {
     if (!locked) {
       buffer.putLong(UPDATED_POSITION, timestamp);
-      this.updated = timestamp;
+      updated = timestamp;
     }
   }
 

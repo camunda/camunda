@@ -25,6 +25,6 @@ public interface MetadataFilter {
 
   default MetadataFilter and(final MetadataFilter other) {
     Objects.requireNonNull(other);
-    return (e) -> this.applies(e) && other.applies(e);
+    return (e) -> applies(e) && other.applies(e);
   }
 }

@@ -346,9 +346,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
         () ->
             recoverFuture.onComplete(
                 (v, t) -> {
-                  if (this.shouldProcess) {
+                  if (shouldProcess) {
                     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
-                    this.shouldProcess = false;
+                    shouldProcess = false;
                     phase = Phase.PAUSED;
                     LOG.debug("Paused processing for partition {}", partitionId);
                   }
@@ -360,9 +360,9 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
         () ->
             recoverFuture.onComplete(
                 (v, t) -> {
-                  if (!this.shouldProcess) {
+                  if (!shouldProcess) {
                     lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
-                    this.shouldProcess = true;
+                    shouldProcess = true;
                     phase = Phase.PROCESSING;
                     actor.submit(processingStateMachine::readNextEvent);
                     LOG.debug("Resumed processing for partition {}", partitionId);

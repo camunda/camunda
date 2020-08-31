@@ -174,7 +174,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public Broker getBroker() {
-    return this.broker;
+    return broker;
   }
 
   public ControlledActorClock getClock() {

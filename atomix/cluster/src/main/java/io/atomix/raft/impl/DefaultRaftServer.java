@@ -52,7 +52,7 @@ public class DefaultRaftServer implements RaftServer {
 
   public DefaultRaftServer(final RaftContext context) {
     this.context = checkNotNull(context, "context cannot be null");
-    this.log =
+    log =
         ContextualLoggerFactory.getLogger(
             getClass(),
             LoggerContext.builder(RaftServer.class).addValue(context.getName()).build());

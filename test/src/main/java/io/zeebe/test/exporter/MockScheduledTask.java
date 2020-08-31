@@ -22,7 +22,7 @@ public class MockScheduledTask implements Runnable {
   MockScheduledTask(final Duration delay, final Runnable task) {
     this.delay = delay;
     this.task = task;
-    this.executed = false;
+    executed = false;
   }
 
   public Duration getDelay() {

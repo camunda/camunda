@@ -13,7 +13,7 @@ public class AtomicPosition {
   private final AtomicLong position;
 
   public AtomicPosition() {
-    this.position = new AtomicLong(0);
+    position = new AtomicLong(0);
   }
 
   public void reset() {

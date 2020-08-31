@@ -120,7 +120,7 @@ public final class RaftMemberContext {
    * @param succeeded Whether the last append to the member succeeded.
    */
   private void appendSucceeded(final boolean succeeded) {
-    this.appendSucceeded = succeeded;
+    appendSucceeded = succeeded;
   }
 
   /** Flags the last append to the member is failed. */

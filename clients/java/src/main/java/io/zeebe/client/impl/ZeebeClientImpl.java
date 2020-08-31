@@ -97,17 +97,17 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final GatewayStub gatewayStub,
       final ScheduledExecutorService executorService) {
     this.config = config;
-    this.objectMapper = new ZeebeObjectMapper();
+    objectMapper = new ZeebeObjectMapper();
     this.channel = channel;
-    this.asyncStub = gatewayStub;
+    asyncStub = gatewayStub;
     this.executorService = executorService;
 
     if (config.getCredentialsProvider() != null) {
-      this.credentialsProvider = config.getCredentialsProvider();
+      credentialsProvider = config.getCredentialsProvider();
     } else {
-      this.credentialsProvider = new NoopCredentialsProvider();
+      credentialsProvider = new NoopCredentialsProvider();
     }
-    this.jobClient = newJobClient();
+    jobClient = newJobClient();
   }
 
   public static ManagedChannel buildChannel(final ZeebeClientConfiguration config) {
@@ -189,7 +189,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public ZeebeClientConfiguration getConfiguration() {
-    return this.config;
+    return config;
   }
 
   @Override

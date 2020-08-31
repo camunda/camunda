@@ -30,11 +30,11 @@ public class ActorControl {
 
   public ActorControl(final Actor actor) {
     this.actor = actor;
-    this.task = new ActorTask(actor);
+    task = new ActorTask(actor);
   }
 
   private ActorControl(final ActorTask task) {
-    this.actor = task.actor;
+    actor = task.actor;
     this.task = task;
   }
 
@@ -190,7 +190,7 @@ public class ActorControl {
     final ActorTask currentTask = currentActorRunner.getCurrentTask();
 
     final ActorJob job;
-    if (currentTask == this.task) {
+    if (currentTask == task) {
       job = currentActorRunner.newJob();
     } else {
       job = new ActorJob();
@@ -201,7 +201,7 @@ public class ActorControl {
     job.onJobAddedToTask(task);
     task.submit(job);
 
-    if (currentTask == this.task) {
+    if (currentTask == task) {
       yield();
     }
   }
@@ -255,7 +255,7 @@ public class ActorControl {
     final ActorLifecyclePhase lifecyclePhase = task.getLifecyclePhase();
     if (lifecyclePhase != ActorLifecyclePhase.CLOSE_REQUESTED
         && lifecyclePhase != ActorLifecyclePhase.CLOSED) {
-      this.submitContinuationJob(
+      submitContinuationJob(
           future,
           callback,
           (job) -> new ActorFutureSubscription(future, job, lifecyclePhase.getValue()));
@@ -280,7 +280,7 @@ public class ActorControl {
 
     final ActorLifecyclePhase lifecyclePhase = task.getLifecyclePhase();
     if (lifecyclePhase != ActorLifecyclePhase.CLOSED) {
-      this.submitContinuationJob(
+      submitContinuationJob(
           future,
           callback,
           (job) ->
@@ -353,7 +353,7 @@ public class ActorControl {
   private void scheduleRunnable(final Runnable runnable, final boolean autocompleting) {
     final ActorThread currentActorThread = ActorThread.current();
 
-    if (currentActorThread != null && currentActorThread.getCurrentTask() == this.task) {
+    if (currentActorThread != null && currentActorThread.getCurrentTask() == task) {
       final ActorJob newJob = currentActorThread.newJob();
       newJob.setRunnable(runnable);
       newJob.setAutoCompleting(autocompleting);

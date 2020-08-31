@@ -111,7 +111,7 @@ public final class DeploymentClient {
   }
 
   public DeploymentClient expectRejection() {
-    this.expectation = REJECTION_EXPECTATION;
+    expectation = REJECTION_EXPECTATION;
     return this;
   }
 

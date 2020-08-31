@@ -40,10 +40,10 @@ public class Interval implements TemporalAmount {
   public Interval(final Period period, final Duration duration) {
     this.period = period;
     this.duration = duration;
-    this.units = new ArrayList<>();
+    units = new ArrayList<>();
 
-    this.units.addAll(period.getUnits());
-    this.units.addAll(duration.getUnits());
+    units.addAll(period.getUnits());
+    units.addAll(duration.getUnits());
   }
 
   public Interval(final Duration duration) {

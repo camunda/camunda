@@ -37,7 +37,7 @@ public class LogBufferPartition {
     metadataBuffer.verifyAlignment();
     this.dataBuffer = dataBuffer;
     this.metadataBuffer = metadataBuffer;
-    this.partitionSize = dataBuffer.capacity();
+    partitionSize = dataBuffer.capacity();
     this.rawBufferOffset = rawBufferOffset;
     dataBuffer.setMemory(0, partitionSize, (byte) 0);
   }

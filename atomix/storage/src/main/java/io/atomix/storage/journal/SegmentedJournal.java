@@ -91,9 +91,9 @@ public class SegmentedJournal<E> implements Journal<E> {
         journalIndexFactory == null
             ? () -> new SparseJournalIndex(DEFAULT_INDEX_DENSITY)
             : journalIndexFactory;
-    this.minFreeDiskSpace = minFreeSpace;
+    minFreeDiskSpace = minFreeSpace;
     open();
-    this.writer = openWriter();
+    writer = openWriter();
   }
 
   /**
@@ -700,7 +700,7 @@ public class SegmentedJournal<E> implements Journal<E> {
    * @param index The index up to which to commit entries.
    */
   void setCommitIndex(final long index) {
-    this.commitIndex = index;
+    commitIndex = index;
   }
 
   /** Raft log builder. */

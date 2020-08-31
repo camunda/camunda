@@ -42,7 +42,7 @@ public class Version implements Timestamp {
    * @return the version
    */
   public long value() {
-    return this.version;
+    return version;
   }
 
   @Override
@@ -50,7 +50,7 @@ public class Version implements Timestamp {
     checkArgument(o instanceof Version, "Must be LockVersion", o);
     final Version that = (Version) o;
 
-    return ComparisonChain.start().compare(this.version, that.version).result();
+    return ComparisonChain.start().compare(version, that.version).result();
   }
 
   @Override
@@ -67,7 +67,7 @@ public class Version implements Timestamp {
       return false;
     }
     final Version that = (Version) obj;
-    return Objects.equals(this.version, that.version);
+    return Objects.equals(version, that.version);
   }
 
   @Override

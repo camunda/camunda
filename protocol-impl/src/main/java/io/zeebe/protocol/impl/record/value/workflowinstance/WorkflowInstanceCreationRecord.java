@@ -37,7 +37,7 @@ public final class WorkflowInstanceCreationRecord extends UnifiedRecordValue
       new ArrayProperty<>("fetchVariables", new StringValue());
 
   public WorkflowInstanceCreationRecord() {
-    this.declareProperty(bpmnProcessIdProperty)
+    declareProperty(bpmnProcessIdProperty)
         .declareProperty(workflowKeyProperty)
         .declareProperty(workflowInstanceKeyProperty)
         .declareProperty(versionProperty)
@@ -60,22 +60,22 @@ public final class WorkflowInstanceCreationRecord extends UnifiedRecordValue
   }
 
   public WorkflowInstanceCreationRecord setWorkflowKey(final long key) {
-    this.workflowKeyProperty.setValue(key);
+    workflowKeyProperty.setValue(key);
     return this;
   }
 
   public WorkflowInstanceCreationRecord setVersion(final int version) {
-    this.versionProperty.setValue(version);
+    versionProperty.setValue(version);
     return this;
   }
 
   public WorkflowInstanceCreationRecord setBpmnProcessId(final String bpmnProcessId) {
-    this.bpmnProcessIdProperty.setValue(bpmnProcessId);
+    bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
 
   public WorkflowInstanceCreationRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    this.bpmnProcessIdProperty.setValue(bpmnProcessId);
+    bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
 
@@ -85,7 +85,7 @@ public final class WorkflowInstanceCreationRecord extends UnifiedRecordValue
   }
 
   public WorkflowInstanceCreationRecord setWorkflowInstanceKey(final long instanceKey) {
-    this.workflowInstanceKeyProperty.setValue(instanceKey);
+    workflowInstanceKeyProperty.setValue(instanceKey);
     return this;
   }
 

@@ -43,7 +43,7 @@ public final class ExecuteCommandRequest implements ClientRequest {
   public ExecuteCommandRequest(
       final ClientTransport output, final String targetAddress, final MsgPackHelper msgPackHelper) {
     this.output = output;
-    this.target = targetAddress;
+    target = targetAddress;
     this.msgPackHelper = msgPackHelper;
   }
 
@@ -68,13 +68,13 @@ public final class ExecuteCommandRequest implements ClientRequest {
   }
 
   public ExecuteCommandRequest command(final Map<String, Object> command) {
-    this.encodedCmd = msgPackHelper.encodeAsMsgPack(command);
+    encodedCmd = msgPackHelper.encodeAsMsgPack(command);
     return this;
   }
 
   public ExecuteCommandRequest command(final BufferWriter command) {
     final int commandLength = command.getLength();
-    this.encodedCmd = new byte[commandLength];
+    encodedCmd = new byte[commandLength];
     command.write(new UnsafeBuffer(encodedCmd), 0);
 
     return this;

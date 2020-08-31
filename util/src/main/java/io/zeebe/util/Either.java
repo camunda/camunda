@@ -200,7 +200,7 @@ public interface Either<L, R> {
 
     @Override
     public R get() {
-      return this.value;
+      return value;
     }
 
     @Override
@@ -210,7 +210,7 @@ public interface Either<L, R> {
 
     @Override
     public <T> Either<L, T> map(final Function<? super R, ? extends T> right) {
-      return Either.right(right.apply(this.value));
+      return Either.right(right.apply(value));
     }
 
     @Override
@@ -220,12 +220,12 @@ public interface Either<L, R> {
     }
 
     public <T> Either<L, T> flatMap(final Function<? super R, ? extends Either<L, T>> right) {
-      return right.apply(this.value);
+      return right.apply(value);
     }
 
     @Override
     public void ifRight(final Consumer<R> right) {
-      right.accept(this.value);
+      right.accept(value);
     }
 
     @Override
@@ -235,7 +235,7 @@ public interface Either<L, R> {
 
     @Override
     public void ifRightOrLeft(final Consumer<R> rightAction, final Consumer<L> leftAction) {
-      rightAction.accept(this.value);
+      rightAction.accept(value);
     }
 
     @Override
@@ -293,7 +293,7 @@ public interface Either<L, R> {
 
     @Override
     public L getLeft() {
-      return this.value;
+      return value;
     }
 
     @Override
@@ -304,7 +304,7 @@ public interface Either<L, R> {
 
     @Override
     public <T> Either<T, R> mapLeft(final Function<? super L, ? extends T> left) {
-      return Either.left(left.apply(this.value));
+      return Either.left(left.apply(value));
     }
 
     @SuppressWarnings("unchecked")
@@ -319,12 +319,12 @@ public interface Either<L, R> {
 
     @Override
     public void ifLeft(final Consumer<L> action) {
-      action.accept(this.value);
+      action.accept(value);
     }
 
     @Override
     public void ifRightOrLeft(final Consumer<R> rightAction, final Consumer<L> leftAction) {
-      leftAction.accept(this.value);
+      leftAction.accept(value);
     }
 
     @Override

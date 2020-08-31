@@ -25,7 +25,7 @@ public final class EndlessRetryStrategy implements RetryStrategy {
 
   public EndlessRetryStrategy(final ActorControl actor) {
     this.actor = actor;
-    this.retryMechanism = new ActorRetryMechanism(actor);
+    retryMechanism = new ActorRetryMechanism(actor);
   }
 
   @Override

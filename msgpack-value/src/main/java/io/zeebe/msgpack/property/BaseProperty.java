@@ -33,19 +33,19 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     Objects.requireNonNull(keyString);
     Objects.requireNonNull(value);
 
-    this.key = new StringValue(keyString);
+    key = new StringValue(keyString);
     this.value = value;
     this.defaultValue = defaultValue;
   }
 
   public void set() {
-    this.isSet = true;
+    isSet = true;
   }
 
   @Override
   public void reset() {
-    this.isSet = false;
-    this.value.reset();
+    isSet = false;
+    value.reset();
   }
 
   public boolean hasValue() {

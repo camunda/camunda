@@ -23,7 +23,7 @@ public final class CloseProcess implements AutoCloseable {
 
   CloseProcess(final String name) {
     this.name = name;
-    this.closeableSteps = new ArrayList<>();
+    closeableSteps = new ArrayList<>();
   }
 
   void addCloser(final String name, final AutoCloseable closingFunction) {

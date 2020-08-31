@@ -32,14 +32,14 @@ public final class BrokerInfoImpl implements BrokerInfo {
   private final List<PartitionInfo> partitions;
 
   public BrokerInfoImpl(final GatewayOuterClass.BrokerInfo broker) {
-    this.nodeId = broker.getNodeId();
-    this.host = broker.getHost();
-    this.port = broker.getPort();
-    this.version = broker.getVersion();
+    nodeId = broker.getNodeId();
+    host = broker.getHost();
+    port = broker.getPort();
+    version = broker.getVersion();
 
-    this.partitions = new ArrayList<>();
+    partitions = new ArrayList<>();
     for (final GatewayOuterClass.Partition partition : broker.getPartitionsList()) {
-      this.partitions.add(new PartitionInfoImpl(partition));
+      partitions.add(new PartitionInfoImpl(partition));
     }
   }
 
@@ -50,27 +50,27 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
   @Override
   public String getHost() {
-    return this.host;
+    return host;
   }
 
   @Override
   public int getPort() {
-    return this.port;
+    return port;
   }
 
   @Override
   public String getAddress() {
-    return String.format("%s:%d", this.host, this.port);
+    return String.format("%s:%d", host, port);
   }
 
   @Override
   public String getVersion() {
-    return this.version;
+    return version;
   }
 
   @Override
   public List<PartitionInfo> getPartitions() {
-    return this.partitions;
+    return partitions;
   }
 
   @Override
@@ -96,12 +96,12 @@ public final class BrokerInfoImpl implements BrokerInfo {
     private final PartitionBrokerRole role;
 
     PartitionInfoImpl(final GatewayOuterClass.Partition partition) {
-      this.partitionId = partition.getPartitionId();
+      partitionId = partition.getPartitionId();
 
       if (partition.getRole() == GatewayOuterClass.Partition.PartitionBrokerRole.LEADER) {
-        this.role = PartitionBrokerRole.LEADER;
+        role = PartitionBrokerRole.LEADER;
       } else if (partition.getRole() == GatewayOuterClass.Partition.PartitionBrokerRole.FOLLOWER) {
-        this.role = PartitionBrokerRole.FOLLOWER;
+        role = PartitionBrokerRole.FOLLOWER;
       } else {
         throw new RuntimeException(
             String.format(
@@ -112,17 +112,17 @@ public final class BrokerInfoImpl implements BrokerInfo {
 
     @Override
     public int getPartitionId() {
-      return this.partitionId;
+      return partitionId;
     }
 
     @Override
     public PartitionBrokerRole getRole() {
-      return this.role;
+      return role;
     }
 
     @Override
     public boolean isLeader() {
-      return this.role == PartitionBrokerRole.LEADER;
+      return role == PartitionBrokerRole.LEADER;
     }
 
     @Override

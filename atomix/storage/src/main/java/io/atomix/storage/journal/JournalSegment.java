@@ -62,9 +62,9 @@ public class JournalSegment<E> implements AutoCloseable {
     this.descriptor = descriptor;
     this.storageLevel = storageLevel;
     this.maxEntrySize = maxEntrySize;
-    this.index = journalIndex;
+    index = journalIndex;
     this.namespace = namespace;
-    this.writer =
+    writer =
         new MappableJournalSegmentWriter<>(
             openChannel(file.file()), this, maxEntrySize, index, namespace);
   }

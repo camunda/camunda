@@ -52,7 +52,7 @@ public class PartitionId extends AbstractIdentifier<Integer> implements Comparab
 
   @Override
   public int compareTo(final PartitionId that) {
-    return Integer.compare(this.identifier, that.identifier);
+    return Integer.compare(identifier, that.identifier);
   }
 
   /**

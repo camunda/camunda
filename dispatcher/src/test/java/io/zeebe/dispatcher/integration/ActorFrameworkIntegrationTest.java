@@ -74,7 +74,7 @@ public final class ActorFrameworkIntegrationTest {
       actor.runOnCompletion(
           future,
           (s, t) -> {
-            this.subscription = s;
+            subscription = s;
             actor.consume(subscription, this::consume);
           });
     }
@@ -117,7 +117,7 @@ public final class ActorFrameworkIntegrationTest {
       actor.runOnCompletion(
           future,
           (s, t) -> {
-            this.subscription = s;
+            subscription = s;
             actor.consume(subscription, this::consume);
           });
     }

@@ -28,7 +28,7 @@ public class ControlledTestExporter implements Exporter {
   private Controller controller;
 
   public ControlledTestExporter shouldAutoUpdatePosition(final boolean shouldAutoUpdate) {
-    this.shouldAutoUpdatePosition = shouldAutoUpdate;
+    shouldAutoUpdatePosition = shouldAutoUpdate;
     return this;
   }
 

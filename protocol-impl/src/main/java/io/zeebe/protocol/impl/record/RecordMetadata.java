@@ -145,13 +145,13 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata valueType(final ValueType eventType) {
-    this.valueType = eventType;
+    valueType = eventType;
     return this;
   }
 
   public RecordMetadata intent(final Intent intent) {
     this.intent = intent;
-    this.intentValue = intent.value();
+    intentValue = intent.value();
     return this;
   }
 
@@ -184,7 +184,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata rejectionReason(final DirectBuffer buffer) {
-    this.rejectionReason.wrap(buffer);
+    rejectionReason.wrap(buffer);
     return this;
   }
 

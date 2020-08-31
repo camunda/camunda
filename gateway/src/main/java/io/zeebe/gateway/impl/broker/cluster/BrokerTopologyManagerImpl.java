@@ -30,7 +30,7 @@ public final class BrokerTopologyManagerImpl extends Actor
 
   public BrokerTopologyManagerImpl(final Supplier<Set<Member>> membersSupplier) {
     this.membersSupplier = membersSupplier;
-    this.topology = new AtomicReference<>(null);
+    topology = new AtomicReference<>(null);
   }
 
   /** @return the current known cluster state or null if the topology was not fetched yet */

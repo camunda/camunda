@@ -167,7 +167,7 @@ public abstract class ConfigurationResponse extends AbstractRaftResponse {
     @SuppressWarnings("unchecked")
     public T withTime(final long time) {
       checkArgument(time > 0, "time must be positive");
-      this.timestamp = time;
+      timestamp = time;
       return (T) this;
     }
 

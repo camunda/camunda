@@ -282,7 +282,7 @@ public class TransientSnapshotTest {
     final var time = WallClockTimestamp.from(123);
     final var oldTransientSnapshot = persistedSnapshotStore.newTransientSnapshot(index, term, time);
     oldTransientSnapshot.take(this::takeSnapshot);
-    final var oldTransientSnapshotPath = this.lastTransientSnapshotPath;
+    final var oldTransientSnapshotPath = lastTransientSnapshotPath;
 
     // when
     final var newSnapshot = persistedSnapshotStore.newTransientSnapshot(index + 1, term, time);
@@ -304,7 +304,7 @@ public class TransientSnapshotTest {
     final var newTransientSnapshot =
         persistedSnapshotStore.newTransientSnapshot(index + 1, term, time);
     newTransientSnapshot.take(this::takeSnapshot);
-    final var oldTransientSnapshotPath = this.lastTransientSnapshotPath;
+    final var oldTransientSnapshotPath = lastTransientSnapshotPath;
 
     // when
     final var oldSnapshot = persistedSnapshotStore.newTransientSnapshot(index, term, time);
@@ -403,7 +403,7 @@ public class TransientSnapshotTest {
   }
 
   private boolean takeSnapshot(final Path path) {
-    this.lastTransientSnapshotPath = path;
+    lastTransientSnapshotPath = path;
     try {
       FileUtil.ensureDirectoryExists(path);
       Files.write(

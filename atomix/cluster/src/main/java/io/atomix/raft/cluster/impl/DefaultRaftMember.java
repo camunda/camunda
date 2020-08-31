@@ -47,7 +47,7 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
 
   public DefaultRaftMember(final MemberId id, final Type type, final Instant updated) {
     this.id = checkNotNull(id, "id cannot be null");
-    this.hash = Hashing.murmur3_32().hashUnencodedChars(id.id()).asInt();
+    hash = Hashing.murmur3_32().hashUnencodedChars(id.id()).asInt();
     setTypeInternal(checkNotNull(type, "type cannot be null"));
     this.updated = checkNotNull(updated, "updated cannot be null");
   }
@@ -136,7 +136,7 @@ public final class DefaultRaftMember implements RaftMember, AutoCloseable {
     if (this.type != type) {
       setTypeInternal(checkNotNull(type, "type cannot be null"));
       if (time.isAfter(updated)) {
-        this.updated = checkNotNull(time, "time cannot be null");
+        updated = checkNotNull(time, "time cannot be null");
       }
       typeChangeListeners.forEach(l -> l.accept(type));
     }

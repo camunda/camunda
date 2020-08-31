@@ -28,7 +28,7 @@ public final class DeploymentRecord extends UnifiedRecordValue implements Deploy
       new ArrayProperty<>(WORKFLOWS, new Workflow());
 
   public DeploymentRecord() {
-    this.declareProperty(resourcesProp).declareProperty(workflowsProp);
+    declareProperty(resourcesProp).declareProperty(workflowsProp);
   }
 
   public ValueArray<Workflow> workflows() {

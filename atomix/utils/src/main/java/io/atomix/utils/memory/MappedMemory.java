@@ -43,7 +43,7 @@ public class MappedMemory implements Memory {
   public MappedMemory(final MappedByteBuffer buffer, final MappedMemoryAllocator allocator) {
     this.buffer = buffer;
     this.allocator = allocator;
-    this.size = buffer.capacity();
+    size = buffer.capacity();
   }
 
   /**

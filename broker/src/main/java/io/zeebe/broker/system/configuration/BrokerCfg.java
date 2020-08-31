@@ -97,7 +97,7 @@ public final class BrokerCfg {
   }
 
   public void setData(final DataCfg logs) {
-    this.data = logs;
+    data = logs;
   }
 
   public Map<String, ExporterCfg> getExporters() {

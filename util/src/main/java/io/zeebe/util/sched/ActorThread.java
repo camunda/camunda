@@ -69,11 +69,11 @@ public class ActorThread extends Thread implements Consumer<Runnable> {
       final ActorClock clock,
       final ActorTimerQueue timerQueue) {
     setName(name);
-    this.state = ActorThreadState.NEW;
-    this.threadId = id;
+    state = ActorThreadState.NEW;
+    threadId = id;
     this.clock = clock != null ? clock : new DefaultActorClock();
-    this.timerJobQueue = timerQueue != null ? timerQueue : new ActorTimerQueue(this.clock);
-    this.actorThreadGroup = threadGroup;
+    timerJobQueue = timerQueue != null ? timerQueue : new ActorTimerQueue(this.clock);
+    actorThreadGroup = threadGroup;
     this.taskScheduler = taskScheduler;
   }
 

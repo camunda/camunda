@@ -20,7 +20,7 @@ public final class MapBuilder<T> {
   public MapBuilder(final T returnValue, final Consumer<Map<String, Object>> mapCallback) {
     this.returnValue = returnValue;
     this.mapCallback = mapCallback;
-    this.map = new HashMap<>();
+    map = new HashMap<>();
   }
 
   public MapBuilder<T> putAll(final Map<String, Object> map) {
@@ -29,7 +29,7 @@ public final class MapBuilder<T> {
   }
 
   public MapBuilder<T> put(final String key, final Object value) {
-    this.map.put(key, value);
+    map.put(key, value);
     return this;
   }
 

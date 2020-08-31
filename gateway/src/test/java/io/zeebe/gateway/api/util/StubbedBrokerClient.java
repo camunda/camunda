@@ -107,7 +107,7 @@ public final class StubbedBrokerClient implements BrokerClient {
   @Override
   public void subscribeJobAvailableNotification(
       final String topic, final Consumer<String> handler) {
-    this.jobsAvailableHandler = handler;
+    jobsAvailableHandler = handler;
   }
 
   public <RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
