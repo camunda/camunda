@@ -22,6 +22,8 @@ import org.elasticsearch.cluster.health.ClusterIndexHealth;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 import static org.camunda.operate.util.CollectionUtil.map;
@@ -29,8 +31,8 @@ import static org.camunda.operate.util.CollectionUtil.map;
 // Note: Possible checks for
 // TODO: Importer is running
 // TODO: Archiver is running
-@Component
-public class Probes {
+@Component("elsIndicesCheck")
+public class Probes implements HealthIndicator {
 
   public static final Long FIFTY_SECONDS = 50 * 1000L;
   
@@ -77,4 +79,18 @@ public class Probes {
     }
   }
 
+  @Override
+  public Health health() {
+    logger.info("ELS indices check is called");
+    if (isLive(FIFTY_SECONDS)) {
+      return Health.up().build();
+    } else {
+      return Health.down().build();
+    }
+  }
+
+  @Override
+  public Health getHealth(final boolean includeDetails) {
+    return health();
+  }
 }

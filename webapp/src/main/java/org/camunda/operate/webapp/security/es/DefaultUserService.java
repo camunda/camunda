@@ -7,8 +7,7 @@ package org.camunda.operate.webapp.security.es;
 
 import org.camunda.operate.webapp.rest.dto.UserDto;
 import org.camunda.operate.webapp.security.AbstractUserService;
-import org.camunda.operate.webapp.security.ldap.LDAPWebSecurityConfig;
-import org.camunda.operate.webapp.security.sso.SSOWebSecurityConfig;
+import org.camunda.operate.webapp.security.OperateURIs;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContext;
@@ -16,7 +15,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!" + LDAPWebSecurityConfig.LDAP_AUTH_PROFILE+" & ! "+ SSOWebSecurityConfig.SSO_AUTH_PROFILE)
+@Profile("!" + OperateURIs.LDAP_AUTH_PROFILE + " & ! " + OperateURIs.SSO_AUTH_PROFILE)
 public class DefaultUserService extends AbstractUserService {
 
   @Override

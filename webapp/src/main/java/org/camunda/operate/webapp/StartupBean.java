@@ -44,7 +44,7 @@ public class StartupBean {
   
   @Autowired
   private OperateProperties operateProperties;
-
+  
   @PostConstruct
   public void initApplication() {
     logger.info("Operate Version: " + operateProperties.getSchemaVersion());

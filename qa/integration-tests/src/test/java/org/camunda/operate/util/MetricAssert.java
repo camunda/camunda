@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import org.camunda.operate.webapp.security.OperateURIs;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -19,24 +20,23 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 public class MetricAssert {
-  
-  public static final String ENDPOINT = "/actuator/prometheus";
-  
-  public static void assertThatMetricsAreDisabledFrom(MockMvc mockMvc) {
-    MockHttpServletRequestBuilder request = get(ENDPOINT);
-    try {
-      mockMvc.perform(request)
-          .andExpect(status().is(404));
-    } catch (Exception e) {
-      throw new RuntimeException("Exception while asserting:" + e.getMessage(), e);
-    }
-  }
+
+//  public static void assertThatMetricsAreDisabledFrom(MockMvc mockMvc) {
+//    MockHttpServletRequestBuilder request = get(ENDPOINT);
+//    try {
+//      mockMvc.perform(request)
+//          .andExpect(status().is(404));
+//    } catch (Exception e) {
+//      throw new RuntimeException("Exception while asserting:" + e.getMessage(), e);
+//    }
+//  }
   
   public static void assertThatMetricsFrom(MockMvc mockMvc, Matcher<? super String> matcher) {
-    MockHttpServletRequestBuilder request = get(ENDPOINT);
+    MockHttpServletRequestBuilder request = get("/actuator/prometheus");
     try {
-      mockMvc.perform(request).andExpect(status().isOk())
-        .andExpect(content().string(matcher));
+      mockMvc.perform(request)
+          .andExpect(status().isOk())
+          .andExpect(content().string(matcher));
     } catch (Exception e) {
       throw new RuntimeException("Exception while asserting:" + e.getMessage(), e);
     }

@@ -5,14 +5,12 @@
  */
 package org.camunda.operate.webapp.security.sso;
 
-import static org.camunda.operate.webapp.rest.ClientConfigRestService.CLIENT_CONFIG_RESOURCE;
+import static org.camunda.operate.webapp.security.OperateURIs.*;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.camunda.operate.webapp.rest.HealthCheckRestService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,40 +25,14 @@ import org.springframework.stereotype.Component;
 
 import com.auth0.AuthenticationController;
 
-@Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
+@Profile(SSO_AUTH_PROFILE)
 @Configuration
 @EnableWebSecurity
 @Component("webSecurityConfig")
 public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
-  
-  public static final String ROOT = "/";
-  private static final String API = "/api/**";
-  public static final String SSO_AUTH_PROFILE = "sso-auth";
-  public static final String LOGIN_RESOURCE = "/api/login";
-  public static final String LOGOUT_RESOURCE = "/api/logout";
-  public static final String CALLBACK_URI = "/sso-callback";
-  public static final String NO_PERMISSION = "/noPermission";
 
-  public static final String ACTUATOR_ENDPOINTS = "/actuator/**";
-
-  private static final String[] AUTH_WHITELIST = {
-      // -- swagger ui
-      "/swagger-resources",
-      "/swagger-resources/**",
-      "/swagger-ui.html",
-      "/documentation",
-      "/webjars/**",
-      "/error",
-      NO_PERMISSION,
-      LOGOUT_RESOURCE,
-      ACTUATOR_ENDPOINTS,
-      HealthCheckRestService.HEALTH_CHECK_URL,
-      LOGIN_RESOURCE,
-      CLIENT_CONFIG_RESOURCE
-   };
-  
   public static final String REQUESTED_URL = "requestedUrl";
 
   /**
@@ -110,7 +82,7 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
   private String nameKey = "name";
 
   @Bean
-  public AuthenticationController authenticationController() throws UnsupportedEncodingException {
+  public AuthenticationController authenticationController() {
     return AuthenticationController.newBuilder(domain, clientId, clientSecret).build();
   }
 
@@ -126,7 +98,7 @@ public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
   }
   
   protected void authenticationEntry(HttpServletRequest req,HttpServletResponse res, AuthenticationException ex) throws IOException {
-    String requestedUrl = req.getRequestURI().toString();
+    String requestedUrl = req.getRequestURI();
     if(req.getQueryString()!=null && !req.getQueryString().isEmpty()) {
       requestedUrl = requestedUrl+"?"+req.getQueryString();
     }

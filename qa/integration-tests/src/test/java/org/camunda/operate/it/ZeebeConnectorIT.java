@@ -5,11 +5,12 @@
  */
 package org.camunda.operate.it;
 
+import java.util.List;
 import org.assertj.core.api.Assertions;
+import org.camunda.operate.rest.HealthCheckTest.AddManagementPropertiesInitializer;
 import org.camunda.operate.util.TestApplication;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.EmbeddedZeebeConfigurer;
-import org.camunda.operate.webapp.rest.HealthCheckRestService;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.OperateZeebeRule;
@@ -24,12 +25,15 @@ import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @SpringBootTest(
     classes = { TestApplication.class},
     properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
         OperateProperties.PREFIX + ".zeebe.brokerContactPoint = localhost:55500"})
+@ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 public class ZeebeConnectorIT extends OperateIntegrationTest {
 
   @Rule
@@ -72,11 +76,11 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
 
     //then 1
     //application context must be successfully started
-    getRequest(HealthCheckRestService.HEALTH_CHECK_URL);
+    getRequest("/health/liveness");
     //import is working fine
     zeebeImporter.performOneRoundOfImport();
     //partition list is empty
-    Assertions.assertThat(partitionHolder.getPartitionIds()).isEmpty();
+    Assertions.assertThat(getPartitionIds()).isEmpty();
 
     //when 2
     //Zeebe is started
@@ -86,8 +90,13 @@ public class ZeebeConnectorIT extends OperateIntegrationTest {
     //data import is working
     zeebeImporter.performOneRoundOfImport();
     //partition list is not empty
-    Assertions.assertThat(partitionHolder.getPartitionIds()).isNotEmpty();
+    Assertions.assertThat(getPartitionIds()).isNotEmpty();
 
+  }
+
+  private List<Integer> getPartitionIds() {
+    return (List<Integer>) ReflectionTestUtils
+        .getField(partitionHolder, "partitionIds");
   }
 
   private void startZeebe() {
