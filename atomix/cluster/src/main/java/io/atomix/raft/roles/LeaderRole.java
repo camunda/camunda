@@ -72,7 +72,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   public LeaderRole(final RaftContext context) {
     super(context);
-    this.appender = new LeaderAppender(this);
+    appender = new LeaderAppender(this);
   }
 
   @Override

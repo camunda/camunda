@@ -154,15 +154,15 @@ public class Atomix extends AtomixCluster {
       final ManagedUnicastService unicastService,
       final ManagedBroadcastService broadcastService) {
     super(config.getClusterConfig(), VERSION, messagingService, unicastService, broadcastService);
-    this.executorService =
+    executorService =
         Executors.newScheduledThreadPool(
             Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 8), 4),
             Threads.namedThreads("atomix-primitive-%d", LOGGER));
     new CoreSerializationService(
         config.isTypeRegistrationRequired(), config.isCompatibleSerialization());
-    this.partitions =
+    partitions =
         buildPartitionService(config, getMembershipService(), getCommunicationService(), registry);
-    this.enableShutdownHook = config.isEnableShutdownHook();
+    enableShutdownHook = config.isEnableShutdownHook();
   }
 
   /**

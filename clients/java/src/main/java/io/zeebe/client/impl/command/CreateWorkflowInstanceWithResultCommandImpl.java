@@ -53,7 +53,7 @@ public final class CreateWorkflowInstanceWithResultCommandImpl
       final Duration requestTimeout) {
     this.objectMapper = objectMapper;
     this.asyncStub = asyncStub;
-    this.createWorkflowInstanceRequestBuilder = builder;
+    createWorkflowInstanceRequestBuilder = builder;
     this.retryPredicate = retryPredicate;
     this.requestTimeout = requestTimeout;
     this.builder = CreateWorkflowInstanceWithResultRequest.newBuilder();
@@ -62,7 +62,7 @@ public final class CreateWorkflowInstanceWithResultCommandImpl
   @Override
   public FinalCommandStep<WorkflowInstanceResult> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
-    this.builder.setRequestTimeout(requestTimeout.toMillis());
+    builder.setRequestTimeout(requestTimeout.toMillis());
     return this;
   }
 

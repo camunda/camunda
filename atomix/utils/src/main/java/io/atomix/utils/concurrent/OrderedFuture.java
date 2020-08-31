@@ -358,7 +358,7 @@ public class OrderedFuture<T> extends CompletableFuture<T> {
     synchronized (orderedFutures) {
       this.result = result;
       this.error = error;
-      this.complete = true;
+      complete = true;
       if (error == null) {
         for (final CompletableFuture<T> future : orderedFutures) {
           future.complete(result);

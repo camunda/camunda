@@ -29,12 +29,12 @@ public final class LogCompactor {
 
   public LogCompactor(final RaftContext raft) {
     this.raft = raft;
-    this.reader = raft.getLog().openReader(1, RaftLogReader.Mode.COMMITS);
+    reader = raft.getLog().openReader(1, RaftLogReader.Mode.COMMITS);
 
-    this.logger =
+    logger =
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(getClass()).addValue(raft.getName()).build());
-    this.metrics = new RaftServiceMetrics(raft.getName());
+    metrics = new RaftServiceMetrics(raft.getName());
   }
 
   public ThreadContext executor() {
@@ -74,7 +74,7 @@ public final class LogCompactor {
   }
 
   public void setCompactableIndex(final long index) {
-    this.compactableIndex = index;
+    compactableIndex = index;
   }
 
   private void compact(final long index, final CompletableFuture<Void> future) {

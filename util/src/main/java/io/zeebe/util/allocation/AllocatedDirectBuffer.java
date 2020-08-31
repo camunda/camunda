@@ -16,7 +16,7 @@ public final class AllocatedDirectBuffer extends AllocatedBuffer {
   public AllocatedDirectBuffer(
       final ByteBuffer buffer, final Consumer<AllocatedDirectBuffer> onClose) {
     super(buffer);
-    this.onCloseCallback = onClose;
+    onCloseCallback = onClose;
   }
 
   @Override

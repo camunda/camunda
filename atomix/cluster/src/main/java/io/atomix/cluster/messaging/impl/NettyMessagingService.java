@@ -104,12 +104,12 @@ public class NettyMessagingService implements ManagedMessagingService {
       final Address address,
       final MessagingConfig config,
       final ProtocolVersion protocolVersion) {
-    this.preamble = cluster.hashCode();
-    this.returnAddress = address;
+    preamble = cluster.hashCode();
+    returnAddress = address;
     this.config = config;
     this.protocolVersion = protocolVersion;
-    this.openFutures = new CopyOnWriteArrayList<>();
-    this.channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
+    openFutures = new CopyOnWriteArrayList<>();
+    channelPool = new ChannelPool(this::openChannel, config.getConnectionPoolSize());
   }
 
   @Override

@@ -24,6 +24,6 @@ public class TemporaryVariables extends UnpackedObject implements DbValue {
   }
 
   public void set(final DirectBuffer value) {
-    this.valueProp.setValue(value);
+    valueProp.setValue(value);
   }
 }

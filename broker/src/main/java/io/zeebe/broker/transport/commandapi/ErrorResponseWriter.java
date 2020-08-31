@@ -58,7 +58,7 @@ public final class ErrorResponseWriter implements BufferWriter {
 
   public <T> ErrorResponseWriter unsupportedMessage(
       final String actualType, final T... expectedTypes) {
-    return this.errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
+    return errorCode(ErrorCode.UNSUPPORTED_MESSAGE)
         .errorMessage(
             String.format(UNSUPPORTED_MESSAGE_FORMAT, Arrays.toString(expectedTypes), actualType));
   }
@@ -147,7 +147,7 @@ public final class ErrorResponseWriter implements BufferWriter {
   }
 
   public void tryWriteResponseOrLogFailure(final int streamId, final long requestId) {
-    tryWriteResponseOrLogFailure(this.output, streamId, requestId);
+    tryWriteResponseOrLogFailure(output, streamId, requestId);
   }
 
   public void tryWriteResponse(
@@ -165,7 +165,7 @@ public final class ErrorResponseWriter implements BufferWriter {
   }
 
   public void tryWriteResponse(final int streamId, final long requestId) {
-    tryWriteResponse(this.output, streamId, requestId);
+    tryWriteResponse(output, streamId, requestId);
   }
 
   @Override

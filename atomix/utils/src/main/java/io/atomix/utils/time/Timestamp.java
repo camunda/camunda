@@ -39,7 +39,7 @@ public interface Timestamp extends Comparable<Timestamp> {
    * @return true if this instance is newer
    */
   default boolean isNewerThan(final Timestamp other) {
-    return this.compareTo(Preconditions.checkNotNull(other)) > 0;
+    return compareTo(Preconditions.checkNotNull(other)) > 0;
   }
 
   /**
@@ -49,6 +49,6 @@ public interface Timestamp extends Comparable<Timestamp> {
    * @return true if this instance is older
    */
   default boolean isOlderThan(final Timestamp other) {
-    return this.compareTo(Preconditions.checkNotNull(other)) < 0;
+    return compareTo(Preconditions.checkNotNull(other)) < 0;
   }
 }

@@ -19,7 +19,7 @@ public final class IntegerValue extends BaseValue {
   }
 
   public IntegerValue(final int initialValue) {
-    this.value = initialValue;
+    value = initialValue;
   }
 
   public int getValue() {
@@ -27,7 +27,7 @@ public final class IntegerValue extends BaseValue {
   }
 
   public void setValue(final int val) {
-    this.value = val;
+    value = val;
   }
 
   @Override

@@ -28,7 +28,7 @@ public final class TimerRecord extends UnifiedRecordValue
   private final LongProperty workflowKeyProp = new LongProperty("workflowKey");
 
   public TimerRecord() {
-    this.declareProperty(elementInstanceKeyProp)
+    declareProperty(elementInstanceKeyProp)
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(dueDateProp)
         .declareProperty(targetElementId)
@@ -46,7 +46,7 @@ public final class TimerRecord extends UnifiedRecordValue
   }
 
   public TimerRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    workflowInstanceKeyProp.setValue(workflowInstanceKey);
     return this;
   }
 
@@ -76,7 +76,7 @@ public final class TimerRecord extends UnifiedRecordValue
   }
 
   public TimerRecord setRepetitions(final int repetitions) {
-    this.repetitionsProp.setValue(repetitions);
+    repetitionsProp.setValue(repetitions);
     return this;
   }
 
@@ -86,7 +86,7 @@ public final class TimerRecord extends UnifiedRecordValue
   }
 
   public TimerRecord setDueDate(final long dueDate) {
-    this.dueDateProp.setValue(dueDate);
+    dueDateProp.setValue(dueDate);
     return this;
   }
 
@@ -96,7 +96,7 @@ public final class TimerRecord extends UnifiedRecordValue
   }
 
   public TimerRecord setWorkflowKey(final long workflowKey) {
-    this.workflowKeyProp.setValue(workflowKey);
+    workflowKeyProp.setValue(workflowKey);
     return this;
   }
 }

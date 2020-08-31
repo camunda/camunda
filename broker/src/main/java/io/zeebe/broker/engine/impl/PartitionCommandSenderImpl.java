@@ -27,7 +27,7 @@ public final class PartitionCommandSenderImpl implements PartitionCommandSender 
   public PartitionCommandSenderImpl(
       final Atomix atomix, final TopologyManager topologyManager, final ActorControl actor) {
     this.atomix = atomix;
-    this.partitionListener = new TopologyPartitionListenerImpl(actor);
+    partitionListener = new TopologyPartitionListenerImpl(actor);
     topologyManager.addTopologyPartitionListener(partitionListener);
   }
 

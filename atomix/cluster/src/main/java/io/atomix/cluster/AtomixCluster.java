@@ -146,14 +146,14 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
     this.unicastService = unicastService != null ? unicastService : buildUnicastService(config);
     this.broadcastService =
         broadcastService != null ? broadcastService : buildBroadcastService(config);
-    this.discoveryProvider = buildLocationProvider(config);
-    this.membershipProtocol = buildMembershipProtocol(config);
-    this.membershipService =
+    discoveryProvider = buildLocationProvider(config);
+    membershipProtocol = buildMembershipProtocol(config);
+    membershipService =
         buildClusterMembershipService(config, this, discoveryProvider, membershipProtocol, version);
-    this.communicationService =
+    communicationService =
         buildClusterMessagingService(
             getMembershipService(), getMessagingService(), getUnicastService());
-    this.eventService = buildClusterEventService(getMembershipService(), getMessagingService());
+    eventService = buildClusterEventService(getMembershipService(), getMessagingService());
   }
 
   private static String[] withDefaultResources(final String config) {

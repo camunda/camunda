@@ -15,10 +15,10 @@ public class BrokerResponse<T> {
   private final long key;
 
   protected BrokerResponse() {
-    this.isResponse = false;
-    this.response = null;
-    this.partitionId = -1;
-    this.key = -1;
+    isResponse = false;
+    response = null;
+    partitionId = -1;
+    key = -1;
   }
 
   public BrokerResponse(final T response) {
@@ -26,7 +26,7 @@ public class BrokerResponse<T> {
   }
 
   public BrokerResponse(final T response, final int partitionId, final long key) {
-    this.isResponse = true;
+    isResponse = true;
     this.response = response;
     this.partitionId = partitionId;
     this.key = key;

@@ -26,7 +26,7 @@ public class AbstractEmbeddedSubProcessBuilder<
 
   @SuppressWarnings("unchecked")
   protected AbstractEmbeddedSubProcessBuilder(final E subProcessBuilder, final Class<?> selfType) {
-    this.myself = (B) selfType.cast(this);
+    myself = (B) selfType.cast(this);
     this.subProcessBuilder = subProcessBuilder;
   }
 }

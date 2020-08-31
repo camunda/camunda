@@ -39,8 +39,8 @@ public final class LeaderManagementRequestHandler extends Actor
 
   public LeaderManagementRequestHandler(final BrokerInfo localBroker, final Atomix atomix) {
     this.atomix = atomix;
-    this.actorName = buildActorName(localBroker.getNodeId(), "ManagementRequestHandler");
-    this.outOfDiskSpaceError = new ErrorResponse();
+    actorName = buildActorName(localBroker.getNodeId(), "ManagementRequestHandler");
+    outOfDiskSpaceError = new ErrorResponse();
     outOfDiskSpaceError
         .setErrorCode(ErrorCode.RESOURCE_EXHAUSTED)
         .setErrorData(

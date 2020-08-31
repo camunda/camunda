@@ -37,7 +37,7 @@ public final class BackOffRetryStrategy implements RetryStrategy {
   public ActorFuture<Boolean> runWithRetry(
       final OperationToRetry callable, final BooleanSupplier terminateCondition) {
     currentFuture = new CompletableActorFuture<>();
-    this.currentTerminateCondition = terminateCondition;
+    currentTerminateCondition = terminateCondition;
     currentCallable = callable;
     backOffDuration = Duration.ofSeconds(1);
 

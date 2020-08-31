@@ -36,7 +36,7 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
   protected RaftLog(final SegmentedJournal<RaftLogEntry> journal) {
     super(journal);
     this.journal = journal;
-    this.writer = new RaftLogWriter(journal.writer());
+    writer = new RaftLogWriter(journal.writer());
   }
 
   /**
@@ -110,7 +110,7 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
    * @param index The index up to which to commit entries.
    */
   void setCommitIndex(final long index) {
-    this.commitIndex = index;
+    commitIndex = index;
   }
 
   /** Raft log builder. */

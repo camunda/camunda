@@ -112,7 +112,7 @@ public final class ZeebeClientTest extends ClientTest {
   @Test
   public void shouldCaCertificateWithEnvVar() {
     // given
-    final String certPath = this.getClass().getClassLoader().getResource("ca.cert.pem").getPath();
+    final String certPath = getClass().getClassLoader().getResource("ca.cert.pem").getPath();
     Environment.system().put(CA_CERTIFICATE_VAR, certPath);
     final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
 

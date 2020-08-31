@@ -273,7 +273,7 @@ public class NettyBroadcastService implements ManagedBroadcastService {
      * @return the broadcast service builder
      */
     public Builder withLocalAddress(final Address address) {
-      this.localAddress = checkNotNull(address);
+      localAddress = checkNotNull(address);
       return this;
     }
 
@@ -284,7 +284,7 @@ public class NettyBroadcastService implements ManagedBroadcastService {
      * @return the broadcast service builder
      */
     public Builder withGroupAddress(final Address address) {
-      this.groupAddress = checkNotNull(address);
+      groupAddress = checkNotNull(address);
       return this;
     }
 

@@ -60,7 +60,7 @@ public class Dispatcher extends Actor {
     this.logAppender = logAppender;
     this.publisherLimit = publisherLimit;
     this.publisherPosition = publisherPosition;
-    this.recordPosition = initialPosition;
+    recordPosition = initialPosition;
     this.name = name;
 
     this.logWindowLength = logWindowLength;

@@ -64,11 +64,11 @@ public class LogStorageAppender extends Actor implements HealthMonitorable {
       final LongConsumer commitPositionListener) {
     appenderMetrics = new AppenderMetrics(Integer.toString(partitionId));
     this.commitPositionListener = commitPositionListener;
-    this.env = new Environment();
+    env = new Environment();
     this.name = name;
     this.logStorage = logStorage;
     this.writeBufferSubscription = writeBufferSubscription;
-    this.maxAppendBlockSize = maxBlockSize;
+    maxAppendBlockSize = maxBlockSize;
     appendBackpressureMetrics = new AppendBackpressureMetrics(partitionId);
 
     final boolean isBackpressureEnabled =

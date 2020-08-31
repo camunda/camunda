@@ -420,7 +420,7 @@ public final class Broker implements AutoCloseable {
   }
 
   public DiskSpaceUsageMonitor getDiskSpaceUsageMonitor() {
-    return this.diskSpaceUsageMonitor;
+    return diskSpaceUsageMonitor;
   }
 
   public SystemContext getBrokerContext() {

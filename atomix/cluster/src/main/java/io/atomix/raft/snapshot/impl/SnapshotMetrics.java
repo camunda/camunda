@@ -65,7 +65,7 @@ public final class SnapshotMetrics {
   private final String partitionId;
 
   public SnapshotMetrics(final String partitionName) {
-    this.partitionId = partitionName;
+    partitionId = partitionName;
   }
 
   void incrementSnapshotCount() {

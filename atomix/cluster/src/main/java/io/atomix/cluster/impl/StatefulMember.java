@@ -32,7 +32,7 @@ public class StatefulMember extends Member {
 
   public StatefulMember(final MemberId id, final Address address) {
     super(id, address);
-    this.version = null;
+    version = null;
     timestamp.set(0);
   }
 

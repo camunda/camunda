@@ -20,7 +20,7 @@ public class HealthMetrics {
   private final String partitionIdLabel;
 
   public HealthMetrics(final int partitionId) {
-    this.partitionIdLabel = String.valueOf(partitionId);
+    partitionIdLabel = String.valueOf(partitionId);
   }
 
   public void setHealthy() {

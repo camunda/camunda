@@ -38,11 +38,11 @@ public final class PartitionAwareRequestLimiter {
   private final Function<Integer, RequestLimiter<Intent>> limiterSupplier;
 
   private PartitionAwareRequestLimiter() {
-    this.limiterSupplier = i -> new NoopRequestLimiter<>();
+    limiterSupplier = i -> new NoopRequestLimiter<>();
   }
 
   private PartitionAwareRequestLimiter(final Supplier<Limit> limitSupplier) {
-    this.limiterSupplier = i -> CommandRateLimiter.builder().limit(limitSupplier.get()).build(i);
+    limiterSupplier = i -> CommandRateLimiter.builder().limit(limitSupplier.get()).build(i);
   }
 
   public static PartitionAwareRequestLimiter newNoopLimiter() {

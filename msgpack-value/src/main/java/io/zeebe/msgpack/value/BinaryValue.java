@@ -38,15 +38,15 @@ public class BinaryValue extends BaseValue {
 
   public void wrap(final DirectBuffer buff, final int offset, final int length) {
     if (length == 0) {
-      this.data.wrap(0, 0);
+      data.wrap(0, 0);
     } else {
-      this.data.wrap(buff, offset, length);
+      data.wrap(buff, offset, length);
     }
     this.length = length;
   }
 
   public void wrap(final StringValue decodedKey) {
-    this.wrap(decodedKey.getValue());
+    wrap(decodedKey.getValue());
   }
 
   public DirectBuffer getValue() {
@@ -76,7 +76,7 @@ public class BinaryValue extends BaseValue {
 
     reader.skipBytes(stringLength);
 
-    this.wrap(buffer, offset, stringLength);
+    wrap(buffer, offset, stringLength);
   }
 
   @Override

@@ -33,7 +33,7 @@ public final class ZeebeObjectMapper extends ObjectMapper {
       new TypeReference<Map<String, String>>() {};
 
   public ZeebeObjectMapper() {
-    this.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   }
 
   public <T> T fromJson(final String json, final Class<T> typeClass) {

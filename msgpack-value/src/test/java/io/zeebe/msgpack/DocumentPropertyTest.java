@@ -225,7 +225,7 @@ public final class DocumentPropertyTest {
     private final DocumentProperty documentProperty = new DocumentProperty("documentProp");
 
     Document() {
-      this.declareProperty(documentProperty);
+      declareProperty(documentProperty);
     }
 
     public DirectBuffer getDocument() {

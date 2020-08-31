@@ -55,8 +55,8 @@ public final class SystemContext {
     final var cluster = brokerCfg.getCluster();
     final String brokerId = String.format("Broker-%d", cluster.getNodeId());
 
-    this.diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
-    this.scheduler = initScheduler(clock, brokerId);
+    diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
+    scheduler = initScheduler(clock, brokerId);
     setStepTimeout(stepTimeout);
   }
 

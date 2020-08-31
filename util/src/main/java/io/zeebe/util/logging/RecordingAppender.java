@@ -38,7 +38,7 @@ public final class RecordingAppender implements Appender {
    */
   public RecordingAppender(final Appender delegate) {
     this.delegate = delegate;
-    this.appendedEvents = new ArrayList<>();
+    appendedEvents = new ArrayList<>();
   }
 
   /** Construct a RecordingAppender using a NullAppender as underlying appender. */

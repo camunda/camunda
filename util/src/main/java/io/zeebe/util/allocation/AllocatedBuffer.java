@@ -16,8 +16,8 @@ public abstract class AllocatedBuffer implements CloseableSilently {
   private volatile boolean closed;
 
   public AllocatedBuffer(final ByteBuffer buffer) {
-    this.rawBuffer = buffer;
-    this.closed = false;
+    rawBuffer = buffer;
+    closed = false;
   }
 
   public ByteBuffer getRawBuffer() {

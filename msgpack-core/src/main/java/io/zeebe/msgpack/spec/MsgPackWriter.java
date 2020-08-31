@@ -129,14 +129,14 @@ public final class MsgPackWriter {
   }
 
   public MsgPackWriter writeRaw(final DirectBuffer buff, final int offset, final int length) {
-    this.buffer.putBytes(this.offset, buff, offset, length);
+    buffer.putBytes(this.offset, buff, offset, length);
     this.offset += length;
 
     return this;
   }
 
   public MsgPackWriter writeString(final DirectBuffer bytes) {
-    return this.writeString(bytes, 0, bytes.capacity());
+    return writeString(bytes, 0, bytes.capacity());
   }
 
   public MsgPackWriter writeString(final DirectBuffer buff, final int offset, final int length) {

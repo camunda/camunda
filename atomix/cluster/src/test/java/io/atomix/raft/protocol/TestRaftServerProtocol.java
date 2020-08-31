@@ -120,100 +120,100 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   @Override
   public void registerJoinHandler(
       final Function<JoinRequest, CompletableFuture<JoinResponse>> handler) {
-    this.joinHandler = handler;
+    joinHandler = handler;
   }
 
   @Override
   public void unregisterJoinHandler() {
-    this.joinHandler = null;
+    joinHandler = null;
   }
 
   @Override
   public void registerLeaveHandler(
       final Function<LeaveRequest, CompletableFuture<LeaveResponse>> handler) {
-    this.leaveHandler = handler;
+    leaveHandler = handler;
   }
 
   @Override
   public void unregisterLeaveHandler() {
-    this.leaveHandler = null;
+    leaveHandler = null;
   }
 
   @Override
   public void registerTransferHandler(
       final Function<TransferRequest, CompletableFuture<TransferResponse>> handler) {
-    this.transferHandler = handler;
+    transferHandler = handler;
   }
 
   @Override
   public void unregisterTransferHandler() {
-    this.transferHandler = null;
+    transferHandler = null;
   }
 
   @Override
   public void registerConfigureHandler(
       final Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> handler) {
-    this.configureHandler = handler;
+    configureHandler = handler;
   }
 
   @Override
   public void unregisterConfigureHandler() {
-    this.configureHandler = null;
+    configureHandler = null;
   }
 
   @Override
   public void registerReconfigureHandler(
       final Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> handler) {
-    this.reconfigureHandler = handler;
+    reconfigureHandler = handler;
   }
 
   @Override
   public void unregisterReconfigureHandler() {
-    this.reconfigureHandler = null;
+    reconfigureHandler = null;
   }
 
   @Override
   public void registerInstallHandler(
       final Function<InstallRequest, CompletableFuture<InstallResponse>> handler) {
-    this.installHandler = handler;
+    installHandler = handler;
   }
 
   @Override
   public void unregisterInstallHandler() {
-    this.installHandler = null;
+    installHandler = null;
   }
 
   @Override
   public void registerPollHandler(
       final Function<PollRequest, CompletableFuture<PollResponse>> handler) {
-    this.pollHandler = handler;
+    pollHandler = handler;
   }
 
   @Override
   public void unregisterPollHandler() {
-    this.pollHandler = null;
+    pollHandler = null;
   }
 
   @Override
   public void registerVoteHandler(
       final Function<VoteRequest, CompletableFuture<VoteResponse>> handler) {
-    this.voteHandler = handler;
+    voteHandler = handler;
   }
 
   @Override
   public void unregisterVoteHandler() {
-    this.voteHandler = null;
+    voteHandler = null;
   }
 
   @Override
   public void registerAppendHandler(
       final Function<AppendRequest, CompletableFuture<AppendResponse>> handler) {
-    this.appendHandler = handler;
+    appendHandler = handler;
   }
 
   @Override
   public void unregisterAppendHandler() {
-    this.appendHandler = null;
+    appendHandler = null;
   }
 
   private CompletableFuture<TestRaftServerProtocol> getServer(final MemberId memberId) {

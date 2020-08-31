@@ -176,7 +176,7 @@ public final class AtomixLogStorageRule extends ExternalResource
   }
 
   public void setWriteErrorListener(final Consumer<Throwable> errorListener) {
-    this.writeErrorListener = errorListener;
+    writeErrorListener = errorListener;
   }
 
   public void open() {

@@ -98,7 +98,7 @@ public final class RaftStorage {
     this.freeDiskSpace = freeDiskSpace;
     this.flushOnCommit = flushOnCommit;
     this.retainStaleSnapshots = retainStaleSnapshots;
-    this.statistics = storageStatistics;
+    statistics = storageStatistics;
     this.persistedSnapshotStore = persistedSnapshotStore;
     this.journalIndexFactory = journalIndexFactory;
     directory.mkdirs();

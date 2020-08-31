@@ -58,7 +58,7 @@ public final class ZeebeClientCredentials {
 
   @JsonSetter("expires_in")
   public void setExpiresIn(final String expiresIn) {
-    this.expiry = ZonedDateTime.now().plusSeconds(Long.parseLong(expiresIn));
+    expiry = ZonedDateTime.now().plusSeconds(Long.parseLong(expiresIn));
   }
 
   @JsonGetter("expiry")
@@ -78,7 +78,7 @@ public final class ZeebeClientCredentials {
 
   @Override
   public boolean equals(final Object o) {
-    if (o == null || !o.getClass().equals(this.getClass())) {
+    if (o == null || !o.getClass().equals(getClass())) {
       return false;
     }
 

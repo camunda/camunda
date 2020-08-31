@@ -24,7 +24,7 @@ public final class IntegerProperty extends BaseProperty<IntegerValue> {
 
   public void setValue(final int value) {
     this.value.setValue(value);
-    this.isSet = true;
+    isSet = true;
   }
 
   public int decrement() {

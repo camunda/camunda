@@ -25,7 +25,7 @@ public class ExecutableMessage extends AbstractFlowElement {
   }
 
   public void setCorrelationKeyExpression(final Expression correlationKey) {
-    this.correlationKeyExpression = correlationKey;
+    correlationKeyExpression = correlationKey;
   }
 
   public Expression getMessageNameExpression() {
@@ -33,7 +33,7 @@ public class ExecutableMessage extends AbstractFlowElement {
   }
 
   public void setMessageNameExpression(final Expression messageName) {
-    this.messageNameExpression = messageName;
+    messageNameExpression = messageName;
   }
 
   /**

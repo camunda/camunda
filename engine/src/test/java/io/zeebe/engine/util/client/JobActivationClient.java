@@ -53,7 +53,7 @@ public final class JobActivationClient {
   public JobActivationClient(final StreamProcessorRule environmentRule) {
     this.environmentRule = environmentRule;
 
-    this.jobBatchRecord = new JobBatchRecord();
+    jobBatchRecord = new JobBatchRecord();
     jobBatchRecord
         .setTimeout(DEFAULT_TIMEOUT)
         .setWorker(DEFAULT_WORKER)

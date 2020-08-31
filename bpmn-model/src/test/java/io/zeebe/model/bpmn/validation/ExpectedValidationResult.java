@@ -50,7 +50,7 @@ public class ExpectedValidationResult {
     boolean match = true;
     final ModelElementInstance element = result.getElement();
 
-    if (this.expectedElementId != null) {
+    if (expectedElementId != null) {
       if (element instanceof BaseElement) {
         if (!((BaseElement) element).getId().equals(expectedElementId)) {
           match = false;
@@ -60,8 +60,7 @@ public class ExpectedValidationResult {
       }
     }
 
-    if (this.expectedElementType != null
-        && !expectedElementType.isAssignableFrom(element.getClass())) {
+    if (expectedElementType != null && !expectedElementType.isAssignableFrom(element.getClass())) {
       match = false;
     }
 

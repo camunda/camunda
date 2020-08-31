@@ -120,9 +120,9 @@ public class HeartbeatMembershipProtocol
   public CompletableFuture<Void> join(
       final BootstrapService bootstrap, final NodeDiscoveryService discovery, final Member member) {
     if (started.compareAndSet(false, true)) {
-      this.bootstrapService = bootstrap;
-      this.discoveryService = discovery;
-      this.localMember =
+      bootstrapService = bootstrap;
+      discoveryService = discovery;
+      localMember =
           new GossipMember(
               member.id(),
               member.address(),
@@ -378,8 +378,8 @@ public class HeartbeatMembershipProtocol
 
     GossipMember(final MemberId id, final Address address) {
       super(id, address);
-      this.version = null;
-      this.timestamp = 0;
+      version = null;
+      timestamp = 0;
     }
 
     GossipMember(

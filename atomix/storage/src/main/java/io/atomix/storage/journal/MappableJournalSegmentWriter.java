@@ -44,7 +44,7 @@ class MappableJournalSegmentWriter<E> implements JournalWriter<E> {
     this.maxEntrySize = maxEntrySize;
     this.index = index;
     this.namespace = namespace;
-    this.writer =
+    writer =
         new FileChannelJournalSegmentWriter<>(channel, segment, maxEntrySize, index, namespace);
   }
 

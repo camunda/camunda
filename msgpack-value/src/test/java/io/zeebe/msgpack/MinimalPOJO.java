@@ -14,7 +14,7 @@ public final class MinimalPOJO extends UnpackedObject {
   private final LongProperty longProp = new LongProperty("longProp");
 
   public MinimalPOJO() {
-    this.declareProperty(longProp);
+    declareProperty(longProp);
   }
 
   public long getLongProp() {
@@ -22,6 +22,6 @@ public final class MinimalPOJO extends UnpackedObject {
   }
 
   public void setLongProp(final long value) {
-    this.longProp.setValue(value);
+    longProp.setValue(value);
   }
 }

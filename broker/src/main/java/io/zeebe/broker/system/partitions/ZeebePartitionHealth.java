@@ -21,7 +21,7 @@ class ZeebePartitionHealth implements HealthMonitorable {
   private FailureListener failureListener;
 
   public ZeebePartitionHealth(final int partitionId) {
-    this.name = "ZeebePartition-" + partitionId;
+    name = "ZeebePartition-" + partitionId;
   }
 
   @Override

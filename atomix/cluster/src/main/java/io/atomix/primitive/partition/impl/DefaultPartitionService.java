@@ -50,8 +50,8 @@ public class DefaultPartitionService implements ManagedPartitionService {
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService messagingService,
       final Collection<ManagedPartitionGroup> groups) {
-    this.clusterMembershipService = membershipService;
-    this.communicationService = messagingService;
+    clusterMembershipService = membershipService;
+    communicationService = messagingService;
     groups.forEach(group -> this.groups.put(group.name(), group));
   }
 
@@ -72,7 +72,7 @@ public class DefaultPartitionService implements ManagedPartitionService {
   public CompletableFuture<PartitionService> start() {
     if (started.compareAndSet(false, true)) {
 
-      this.partitionManagementService =
+      partitionManagementService =
           new DefaultPartitionManagementService(clusterMembershipService, communicationService);
 
       return Futures.allOf(
@@ -81,7 +81,7 @@ public class DefaultPartitionService implements ManagedPartitionService {
                   .collect(Collectors.toList()))
           .thenApply(
               v -> {
-                LOGGER.debug("Started {}", this.getClass());
+                LOGGER.debug("Started {}", getClass());
                 started.set(true);
                 return this;
               });

@@ -20,7 +20,7 @@ public class LivenessDiskSpaceHealthIndicatorProperties {
   private DataSize threshold = DataSize.ofMegabytes(1);
 
   public File getPath() {
-    return this.path;
+    return path;
   }
 
   public void setPath(File path) {
@@ -30,7 +30,7 @@ public class LivenessDiskSpaceHealthIndicatorProperties {
   }
 
   public DataSize getThreshold() {
-    return this.threshold;
+    return threshold;
   }
 
   public void setThreshold(DataSize threshold) {

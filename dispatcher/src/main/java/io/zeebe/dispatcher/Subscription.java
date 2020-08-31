@@ -60,10 +60,10 @@ public class Subscription implements ConsumableChannel {
     this.name = name;
     this.limit = limit;
     this.logBuffer = logBuffer;
-    this.dataConsumed = onConsumption;
+    dataConsumed = onConsumption;
 
     // required so that a subscription can freely modify position and limit of the raw buffer
-    this.rawDispatcherBufferView = logBuffer.createRawBufferView();
+    rawDispatcherBufferView = logBuffer.createRawBufferView();
   }
 
   public long getPosition() {

@@ -65,10 +65,10 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
     this.segment = segment;
     this.maxEntrySize = maxEntrySize;
     this.index = index;
-    this.memory = ByteBuffer.allocate((maxEntrySize + Integer.BYTES + Integer.BYTES) * 2);
+    memory = ByteBuffer.allocate((maxEntrySize + Integer.BYTES + Integer.BYTES) * 2);
     memory.limit(0);
     this.namespace = namespace;
-    this.firstIndex = segment.index();
+    firstIndex = segment.index();
     reset(0);
   }
 
@@ -140,7 +140,7 @@ class FileChannelJournalSegmentWriter<E> implements JournalWriter<E> {
 
       // Update the last entry with the correct index/term/length.
       final Indexed<E> indexedEntry = new Indexed<>(index, entry, length);
-      this.lastEntry = indexedEntry;
+      lastEntry = indexedEntry;
       this.index.index(lastEntry, (int) position);
       return (Indexed<T>) indexedEntry;
     } catch (final IOException e) {

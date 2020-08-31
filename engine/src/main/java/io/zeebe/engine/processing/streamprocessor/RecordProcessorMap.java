@@ -23,11 +23,11 @@ public final class RecordProcessorMap {
 
   public <R extends Enum<R>, S extends Enum<S>> RecordProcessorMap() {
     final int recordTypeCardinality = RecordType.class.getEnumConstants().length;
-    this.valueTypeCardinality = ValueType.class.getEnumConstants().length;
-    this.intentCardinality = Intent.maxCardinality();
+    valueTypeCardinality = ValueType.class.getEnumConstants().length;
+    intentCardinality = Intent.maxCardinality();
 
     final int cardinality = recordTypeCardinality * valueTypeCardinality * intentCardinality;
-    this.elements = new TypedRecordProcessor[cardinality];
+    elements = new TypedRecordProcessor[cardinality];
   }
 
   public TypedRecordProcessor get(final RecordType key1, final ValueType key2, final int key3) {

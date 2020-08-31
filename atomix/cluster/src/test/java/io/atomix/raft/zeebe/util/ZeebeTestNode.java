@@ -56,8 +56,8 @@ public class ZeebeTestNode {
     final String textualId = String.valueOf(id);
 
     this.directory = directory;
-    this.node = Node.builder().withId(textualId).withHost(HOST).withPort(BASE_PORT + id).build();
-    this.member = Member.member(MemberId.from(textualId), node.address());
+    node = Node.builder().withId(textualId).withHost(HOST).withPort(BASE_PORT + id).build();
+    member = Member.member(MemberId.from(textualId), node.address());
   }
 
   public RaftPartitionServer getPartitionServer(final int id) {

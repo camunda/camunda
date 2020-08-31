@@ -61,8 +61,8 @@ public class PassiveRole extends InactiveRole {
   public PassiveRole(final RaftContext context) {
     super(context);
 
-    this.snapshotReplicationMetrics = new SnapshotReplicationMetrics(context.getName());
-    this.snapshotReplicationMetrics.setCount(0);
+    snapshotReplicationMetrics = new SnapshotReplicationMetrics(context.getName());
+    snapshotReplicationMetrics.setCount(0);
   }
 
   @Override

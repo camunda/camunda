@@ -378,6 +378,6 @@ public final class DbCompositeKeyColumnFamilyTest {
     this.secondKey.wrapLong(secondKey);
 
     this.value.wrapString(value);
-    columnFamily.put(this.compositeKey, this.value);
+    columnFamily.put(compositeKey, this.value);
   }
 }

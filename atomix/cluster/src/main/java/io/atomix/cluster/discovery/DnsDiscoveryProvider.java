@@ -65,8 +65,8 @@ public class DnsDiscoveryProvider
 
   DnsDiscoveryProvider(final DnsDiscoveryConfig config) {
     this.config = checkNotNull(config, "config cannot be null");
-    this.service = checkNotNull(config.getService(), "service cannot be null");
-    this.resolutionInterval =
+    service = checkNotNull(config.getService(), "service cannot be null");
+    resolutionInterval =
         checkNotNull(config.getResolutionInterval(), "resolutionInterval cannot be null");
   }
 

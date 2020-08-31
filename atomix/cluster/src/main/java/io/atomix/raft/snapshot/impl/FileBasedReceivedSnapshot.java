@@ -58,8 +58,8 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
     this.metadata = metadata;
     this.snapshotStore = snapshotStore;
     this.directory = directory;
-    this.expectedSnapshotChecksum = Long.MIN_VALUE;
-    this.expectedTotalCount = Integer.MIN_VALUE;
+    expectedSnapshotChecksum = Long.MIN_VALUE;
+    expectedTotalCount = Integer.MIN_VALUE;
   }
 
   @Override
@@ -142,7 +142,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private boolean isSnapshotChecksumInvalid(final long currentSnapshotChecksum) {
     if (expectedSnapshotChecksum == Long.MIN_VALUE) {
-      this.expectedSnapshotChecksum = currentSnapshotChecksum;
+      expectedSnapshotChecksum = currentSnapshotChecksum;
     }
 
     if (expectedSnapshotChecksum != currentSnapshotChecksum) {
@@ -157,7 +157,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
 
   private boolean isTotalCountInvalid(final int currentTotalCount) {
     if (expectedTotalCount == Integer.MIN_VALUE) {
-      this.expectedTotalCount = currentTotalCount;
+      expectedTotalCount = currentTotalCount;
     }
 
     if (expectedTotalCount != currentTotalCount) {

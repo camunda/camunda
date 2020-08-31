@@ -21,7 +21,7 @@ public class MemoryHealthIndicatorProperties {
   private double threshold = getDefaultThreshold();
 
   public double getThreshold() {
-    return this.threshold;
+    return threshold;
   }
 
   public void setThreshold(double threshold) {

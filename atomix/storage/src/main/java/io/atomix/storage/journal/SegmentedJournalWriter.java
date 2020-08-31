@@ -29,9 +29,9 @@ public class SegmentedJournalWriter<E> implements JournalWriter<E> {
   public SegmentedJournalWriter(final SegmentedJournal<E> journal) {
     this.journal = journal;
     journalMetrics = journal.getJournalMetrics();
-    this.currentSegment = journal.getLastSegment();
+    currentSegment = journal.getLastSegment();
     currentSegment.acquire();
-    this.currentWriter = currentSegment.writer();
+    currentWriter = currentSegment.writer();
   }
 
   @Override

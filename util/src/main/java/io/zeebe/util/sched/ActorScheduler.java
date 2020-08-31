@@ -128,7 +128,7 @@ public final class ActorScheduler {
     }
 
     public ActorSchedulerBuilder setCpuBoundActorThreadCount(final int actorThreadCount) {
-      this.cpuBoundThreadsCount = actorThreadCount;
+      cpuBoundThreadsCount = actorThreadCount;
       return this;
     }
 
@@ -137,7 +137,7 @@ public final class ActorScheduler {
     }
 
     public ActorSchedulerBuilder setIoBoundActorThreadCount(final int ioBoundActorsThreadCount) {
-      this.ioBoundThreadsCount = ioBoundActorsThreadCount;
+      ioBoundThreadsCount = ioBoundActorsThreadCount;
       return this;
     }
 

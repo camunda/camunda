@@ -41,7 +41,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private final BooleanProperty truncatedProp = new BooleanProperty("truncated", false);
 
   public JobBatchRecord() {
-    this.declareProperty(typeProp)
+    declareProperty(typeProp)
         .declareProperty(workerProp)
         .declareProperty(timeoutProp)
         .declareProperty(maxJobsToActivateProp)
@@ -141,22 +141,22 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   }
 
   public JobBatchRecord setWorker(final DirectBuffer worker) {
-    this.workerProp.setValue(worker);
+    workerProp.setValue(worker);
     return this;
   }
 
   public JobBatchRecord setWorker(final String worker) {
-    this.workerProp.setValue(worker);
+    workerProp.setValue(worker);
     return this;
   }
 
   public JobBatchRecord setType(final DirectBuffer buf) {
-    this.typeProp.setValue(buf);
+    typeProp.setValue(buf);
     return this;
   }
 
   public JobBatchRecord setType(final String type) {
-    this.typeProp.setValue(type);
+    typeProp.setValue(type);
     return this;
   }
 

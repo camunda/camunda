@@ -41,7 +41,7 @@ public abstract class AbstractRole implements RaftRole {
 
   protected AbstractRole(final RaftContext raft) {
     this.raft = raft;
-    this.log =
+    log =
         ContextualLoggerFactory.getLogger(
             getClass(),
             LoggerContext.builder(RaftServer.class)

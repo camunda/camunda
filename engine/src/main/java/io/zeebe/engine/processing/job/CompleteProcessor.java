@@ -20,7 +20,7 @@ public final class CompleteProcessor implements CommandProcessor<JobRecord> {
 
   public CompleteProcessor(final JobState state) {
     this.state = state;
-    this.defaultProcessor =
+    defaultProcessor =
         new DefaultJobCommandProcessor<>("complete", this.state, this::acceptCommand);
   }
 

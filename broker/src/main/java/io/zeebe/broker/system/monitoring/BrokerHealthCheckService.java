@@ -96,8 +96,8 @@ public final class BrokerHealthCheckService extends Actor implements PartitionLi
 
   public BrokerHealthCheckService(final BrokerInfo localBroker, final Atomix atomix) {
     this.atomix = atomix;
-    this.actorName = buildActorName(localBroker.getNodeId(), "HealthCheckService");
-    this.healthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
+    actorName = buildActorName(localBroker.getNodeId(), "HealthCheckService");
+    healthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
     initializePartitionInstallStatus();
     initializePartitionHealthStatus();
   }

@@ -60,10 +60,10 @@ abstract class AbstractAppender implements AutoCloseable {
 
   AbstractAppender(final RaftContext raft) {
     this.raft = checkNotNull(raft, "context cannot be null");
-    this.log =
+    log =
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(RaftServer.class).addValue(raft.getName()).build());
-    this.metrics = new LeaderMetrics(raft.getName());
+    metrics = new LeaderMetrics(raft.getName());
   }
 
   /**

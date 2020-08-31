@@ -38,7 +38,7 @@ public final class Address {
     this.host = host;
     this.port = port;
     if (address != null) {
-      this.type = address instanceof Inet6Address ? Type.IPV6 : Type.IPV4;
+      type = address instanceof Inet6Address ? Type.IPV6 : Type.IPV4;
       socketAddress = new InetSocketAddress(address, port);
     } else {
       socketAddress = new InetSocketAddress(host, port);
@@ -226,7 +226,7 @@ public final class Address {
       return false;
     }
     final Address that = (Address) obj;
-    return this.host.equals(that.host) && this.port == that.port;
+    return host.equals(that.host) && port == that.port;
   }
 
   @Override

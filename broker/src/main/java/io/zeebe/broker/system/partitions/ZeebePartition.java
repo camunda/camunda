@@ -121,9 +121,9 @@ public final class ZeebePartition extends Actor
     this.typedRecordProcessorsFactory = typedRecordProcessorsFactory;
     this.commandApiService = commandApiService;
     this.partitionListeners = Collections.unmodifiableList(partitionListeners);
-    this.partitionId = atomixRaftPartition.id().id();
-    this.scheduler = actorScheduler;
-    this.maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
+    partitionId = atomixRaftPartition.id().id();
+    scheduler = actorScheduler;
+    maxFragmentSize = (int) brokerCfg.getNetwork().getMaxMessageSizeInBytes();
     this.zeebeIndexMapping = zeebeIndexMapping;
 
     final var exporterEntries = brokerCfg.getExporters().entrySet();
@@ -139,7 +139,7 @@ public final class ZeebePartition extends Actor
       }
     }
 
-    this.actorName = buildActorName(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
+    actorName = buildActorName(localBroker.getNodeId(), "ZeebePartition-" + partitionId);
     criticalComponentsHealthMonitor = new CriticalComponentsHealthMonitor(actor, LOG);
     raftPartitionHealth = new RaftPartitionHealth(atomixRaftPartition, actor, this::onRaftFailed);
     zeebePartitionHealth = new ZeebePartitionHealth(partitionId);

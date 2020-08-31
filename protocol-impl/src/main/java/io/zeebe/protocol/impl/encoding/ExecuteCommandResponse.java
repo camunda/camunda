@@ -117,7 +117,7 @@ public final class ExecuteCommandResponse implements BufferReader, BufferWriter 
 
   public ExecuteCommandResponse setValue(
       final DirectBuffer buffer, final int offset, final int length) {
-    this.value.wrap(buffer, offset, length);
+    value.wrap(buffer, offset, length);
     return this;
   }
 
@@ -127,7 +127,7 @@ public final class ExecuteCommandResponse implements BufferReader, BufferWriter 
 
   public ExecuteCommandResponse setRejectionReason(
       final DirectBuffer buffer, final int offset, final int length) {
-    this.rejectionReason.wrap(buffer, offset, length);
+    rejectionReason.wrap(buffer, offset, length);
     return this;
   }
 

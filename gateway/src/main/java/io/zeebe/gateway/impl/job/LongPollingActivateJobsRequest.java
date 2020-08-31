@@ -61,7 +61,7 @@ public final class LongPollingActivateJobsRequest {
     }
     this.jobType = jobType;
     this.worker = worker;
-    this.maxJobsToActivate = maxJobstoActivate;
+    maxJobsToActivate = maxJobstoActivate;
     this.longPollingTimeout =
         longPollingTimeout == 0 ? null : Duration.ofMillis(longPollingTimeout);
   }
@@ -78,11 +78,11 @@ public final class LongPollingActivateJobsRequest {
     } catch (final Exception e) {
       LOG.warn("Failed to complete {}", request, e);
     }
-    this.isCompleted = true;
+    isCompleted = true;
   }
 
   public boolean isCompleted() {
-    return this.isCompleted;
+    return isCompleted;
   }
 
   public void onResponse(final ActivateJobsResponse grpcResponse) {
@@ -97,7 +97,7 @@ public final class LongPollingActivateJobsRequest {
 
   public void timeout() {
     complete();
-    this.isTimedOut = true;
+    isTimedOut = true;
   }
 
   public boolean isCanceled() {
@@ -140,7 +140,7 @@ public final class LongPollingActivateJobsRequest {
     if (longPollingTimeout == null) {
       return defaultTimeout;
     }
-    return this.longPollingTimeout;
+    return longPollingTimeout;
   }
 
   public boolean isLongPollingDisabled() {

@@ -67,7 +67,7 @@ public abstract class AbstractJournalTest {
     this.maxSegmentSize = maxSegmentSize;
     this.cacheSize = cacheSize;
     final int entryLength = (NAMESPACE.serialize(ENTRY).length + 8);
-    this.entriesPerSegment = (maxSegmentSize - 64) / entryLength;
+    entriesPerSegment = (maxSegmentSize - 64) / entryLength;
   }
 
   protected abstract StorageLevel storageLevel();

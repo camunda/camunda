@@ -25,8 +25,8 @@ public class ListLogStorage implements LogStorage {
   private LongConsumer positionListener;
 
   public ListLogStorage() {
-    this.entries = new CopyOnWriteArrayList<>();
-    this.positionIndexMapping = new ConcurrentSkipListMap<>();
+    entries = new CopyOnWriteArrayList<>();
+    positionIndexMapping = new ConcurrentSkipListMap<>();
   }
 
   public void setPositionListener(final LongConsumer positionListener) {

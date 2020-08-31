@@ -57,14 +57,14 @@ public final class CompletableActorFuture<V> implements ActorFuture<V>, BiConsum
 
   private CompletableActorFuture(final V value) {
     this.value = value;
-    this.state = COMPLETED;
+    state = COMPLETED;
   }
 
   private CompletableActorFuture(final Throwable throwable) {
     ensureValidThrowable(throwable);
-    this.failure = throwable.getMessage();
-    this.failureCause = throwable;
-    this.state = COMPLETED_EXCEPTIONALLY;
+    failure = throwable.getMessage();
+    failureCause = throwable;
+    state = COMPLETED_EXCEPTIONALLY;
   }
 
   private void ensureValidThrowable(final Throwable throwable) {
@@ -152,7 +152,7 @@ public final class CompletableActorFuture<V> implements ActorFuture<V>, BiConsum
   public void complete(final V value) {
     if (UNSAFE.compareAndSwapInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
       this.value = value;
-      this.state = COMPLETED;
+      state = COMPLETED;
       notifyBlockedTasks();
     } else {
       final String err =
@@ -172,8 +172,8 @@ public final class CompletableActorFuture<V> implements ActorFuture<V>, BiConsum
 
     if (UNSAFE.compareAndSwapInt(this, STATE_OFFSET, AWAITING_RESULT, COMPLETING)) {
       this.failure = failure;
-      this.failureCause = throwable;
-      this.state = COMPLETED_EXCEPTIONALLY;
+      failureCause = throwable;
+      state = COMPLETED_EXCEPTIONALLY;
       notifyBlockedTasks();
     } else {
       final String err =
@@ -282,9 +282,9 @@ public final class CompletableActorFuture<V> implements ActorFuture<V>, BiConsum
     }
 
     if (otherFuture.isCompletedExceptionally()) {
-      this.completeExceptionally(otherFuture.failureCause);
+      completeExceptionally(otherFuture.failureCause);
     } else {
-      this.complete(otherFuture.value);
+      complete(otherFuture.value);
     }
   }
 

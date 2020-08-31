@@ -54,17 +54,17 @@ public final class FileBasedSnapshotChunkReader implements SnapshotChunkReader {
 
   FileBasedSnapshotChunkReader(final Path directory) throws IOException {
     this.directory = directory;
-    this.chunks = collectChunks(directory);
-    this.totalCount = chunks.size();
-    this.chunksView = this.chunks;
-    this.chunkIdView = new CharSequenceView();
+    chunks = collectChunks(directory);
+    totalCount = chunks.size();
+    chunksView = chunks;
+    chunkIdView = new CharSequenceView();
 
     try (final var fileStream = Files.list(directory).sorted()) {
-      this.snapshotChecksum =
+      snapshotChecksum =
           ChecksumUtil.createCombinedChecksum(fileStream.collect(Collectors.toList()));
     }
 
-    this.snapshotID = directory.getFileName().toString();
+    snapshotID = directory.getFileName().toString();
   }
 
   private NavigableSet<CharSequence> collectChunks(final Path directory) throws IOException {

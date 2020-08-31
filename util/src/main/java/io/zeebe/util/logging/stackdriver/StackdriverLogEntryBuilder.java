@@ -36,8 +36,8 @@ public final class StackdriverLogEntryBuilder {
   private String thread;
 
   StackdriverLogEntryBuilder() {
-    this.service = new ServiceContext();
-    this.context = new HashMap<>();
+    service = new ServiceContext();
+    context = new HashMap<>();
   }
 
   public StackdriverLogEntryBuilder withLevel(final Level level) {
@@ -61,7 +61,7 @@ public final class StackdriverLogEntryBuilder {
       case OFF:
       case ALL:
       default:
-        this.severity = Severity.DEFAULT;
+        severity = Severity.DEFAULT;
         break;
     }
 
@@ -84,17 +84,17 @@ public final class StackdriverLogEntryBuilder {
   }
 
   public StackdriverLogEntryBuilder withServiceName(final String serviceName) {
-    this.service.setService(serviceName);
+    service.setService(serviceName);
     return this;
   }
 
   public StackdriverLogEntryBuilder withServiceVersion(final String serviceVersion) {
-    this.service.setVersion(serviceVersion);
+    service.setVersion(serviceVersion);
     return this;
   }
 
   public StackdriverLogEntryBuilder withContextEntry(final String key, final Object value) {
-    this.context.put(key, value);
+    context.put(key, value);
     return this;
   }
 
@@ -123,7 +123,7 @@ public final class StackdriverLogEntryBuilder {
   }
 
   public StackdriverLogEntryBuilder withThreadName(final String threadName) {
-    this.thread = threadName;
+    thread = threadName;
     return withContextEntry("threadName", threadName);
   }
 

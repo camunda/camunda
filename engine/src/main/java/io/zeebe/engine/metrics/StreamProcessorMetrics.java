@@ -50,7 +50,7 @@ public final class StreamProcessorMetrics {
   private final String partitionIdLabel;
 
   public StreamProcessorMetrics(final int partitionId) {
-    this.partitionIdLabel = String.valueOf(partitionId);
+    partitionIdLabel = String.valueOf(partitionId);
   }
 
   private void event(final String action) {

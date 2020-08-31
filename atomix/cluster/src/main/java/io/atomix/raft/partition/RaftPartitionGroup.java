@@ -78,22 +78,22 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
         ContextualLoggerFactory.getLogger(
             RaftPartitionGroup.class,
             LoggerContext.builder(RaftPartitionGroup.class).addValue(config.getName()).build());
-    this.name = config.getName();
+    name = config.getName();
     this.config = config;
-    this.partitionSize = config.getPartitionSize();
+    partitionSize = config.getPartitionSize();
 
     final int threadPoolSize =
         Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 16), 4);
-    this.threadContextFactory =
+    threadContextFactory =
         new BlockingAwareThreadPoolContextFactory(
             "raft-partition-group-" + name + "-%d", threadPoolSize, log);
-    this.snapshotSubject = "raft-partition-group-" + name + "-snapshot";
+    snapshotSubject = "raft-partition-group-" + name + "-snapshot";
 
     buildPartitions(config, threadContextFactory)
         .forEach(
             p -> {
-              this.partitions.put(p.id(), p);
-              this.sortedPartitionIds.add(p.id());
+              partitions.put(p.id(), p);
+              sortedPartitionIds.add(p.id());
             });
     Collections.sort(sortedPartitionIds);
   }
@@ -188,7 +188,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
 
     // We expect to bootstrap partitions where leadership is equally distributed.
     // First member of a PartitionMetadata is the bootstrap leader
-    this.metadata = buildPartitions();
+    metadata = buildPartitions();
     // +------------------+----+----+----+---+
     // | Partition \ Node | 0  | 1  | 2  | 3 |
     // +------------------+----+----+----+---+
@@ -199,7 +199,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     // |                5 | L  | F  | F  |   |
     // +------------------+----+----+----+---+
 
-    this.communicationService = managementService.getMessagingService();
+    communicationService = managementService.getMessagingService();
     communicationService.<Void, Void>subscribe(snapshotSubject, m -> handleSnapshot());
     final List<CompletableFuture<Partition>> futures =
         metadata.stream()

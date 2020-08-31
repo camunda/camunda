@@ -65,7 +65,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
 
   public ExecuteCommandRequest setKey(final long key) {
     this.key = key;
-    this.partitionId = Protocol.decodePartitionId(key);
+    partitionId = Protocol.decodePartitionId(key);
 
     return this;
   }
@@ -94,7 +94,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
 
   public ExecuteCommandRequest setValue(
       final DirectBuffer buffer, final int offset, final int length) {
-    this.value.wrap(buffer, offset, length);
+    value.wrap(buffer, offset, length);
     return this;
   }
 

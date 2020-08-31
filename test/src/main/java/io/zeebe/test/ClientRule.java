@@ -24,7 +24,7 @@ public class ClientRule extends ExternalResource {
   }
 
   public ClientRule(final Supplier<Properties> propertiesProvider) {
-    this.properties = propertiesProvider;
+    properties = propertiesProvider;
   }
 
   public ZeebeClient getClient() {

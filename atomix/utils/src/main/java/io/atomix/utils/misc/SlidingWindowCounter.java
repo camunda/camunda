@@ -57,14 +57,14 @@ public final class SlidingWindowCounter {
     checkArgument(windowSlots > 0, "Window size must be a positive integer");
 
     this.windowSlots = windowSlots;
-    this.headSlot = 0;
+    headSlot = 0;
 
     // Initialize each item in the list to an AtomicLong of 0
-    this.counters =
+    counters =
         Collections.nCopies(windowSlots, 0).stream()
             .map(AtomicLong::new)
             .collect(Collectors.toCollection(ArrayList::new));
-    this.schedule =
+    schedule =
         context.schedule(0, SLIDE_WINDOW_PERIOD_SECONDS, TimeUnit.SECONDS, this::advanceHead);
   }
 

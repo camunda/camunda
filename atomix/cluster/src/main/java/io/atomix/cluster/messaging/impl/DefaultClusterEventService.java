@@ -84,7 +84,7 @@ public class DefaultClusterEventService
       final ClusterMembershipService membershipService, final MessagingService messagingService) {
     this.membershipService = membershipService;
     this.messagingService = messagingService;
-    this.localMemberId = membershipService.getLocalMember().id();
+    localMemberId = membershipService.getLocalMember().id();
   }
 
   @Override

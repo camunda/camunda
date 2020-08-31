@@ -123,8 +123,8 @@ public class NodeConfig implements Config {
    */
   @Deprecated
   public NodeConfig setAddress(final Address address) {
-    this.host = address.host();
-    this.port = address.port();
+    host = address.host();
+    port = address.port();
     return this;
   }
 }

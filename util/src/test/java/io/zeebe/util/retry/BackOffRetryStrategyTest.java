@@ -35,7 +35,7 @@ public final class BackOffRetryStrategyTest {
   @Before
   public void setUp() {
     final ControllableActor actor = new ControllableActor();
-    this.actorControl = actor.getActor();
+    actorControl = actor.getActor();
     retryStrategy = new BackOffRetryStrategy(actorControl, Duration.ofSeconds(10));
 
     schedulerRule.submitActor(actor);

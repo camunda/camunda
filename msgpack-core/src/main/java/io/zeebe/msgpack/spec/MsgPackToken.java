@@ -59,7 +59,7 @@ public final class MsgPackToken {
     if (length == 0) {
       valueBuffer.wrap(0, 0);
     } else if (offset + length <= buffer.capacity()) {
-      this.valueBuffer.wrap(buffer, offset, length);
+      valueBuffer.wrap(buffer, offset, length);
     } else {
       final int result = offset + length;
       throw new MsgpackReaderException(
@@ -70,15 +70,15 @@ public final class MsgPackToken {
   }
 
   public void setValue(final double value) {
-    this.floatValue = value;
+    floatValue = value;
   }
 
   public void setValue(final long value) {
-    this.integerValue = value;
+    integerValue = value;
   }
 
   public void setValue(final boolean value) {
-    this.booleanValue = value;
+    booleanValue = value;
   }
 
   public void setMapHeader(final int size) {

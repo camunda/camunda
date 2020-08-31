@@ -25,6 +25,6 @@ public class PackedProperty extends BaseProperty<PackedValue> {
 
   public void setValue(final DirectBuffer buffer, final int offset, final int length) {
     value.wrap(buffer, offset, length);
-    this.isSet = true;
+    isSet = true;
   }
 }

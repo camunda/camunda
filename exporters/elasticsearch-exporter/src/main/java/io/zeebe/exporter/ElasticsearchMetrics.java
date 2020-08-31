@@ -40,7 +40,7 @@ public class ElasticsearchMetrics {
   private final String partitionIdLabel;
 
   public ElasticsearchMetrics(final int partitionId) {
-    this.partitionIdLabel = String.valueOf(partitionId);
+    partitionIdLabel = String.valueOf(partitionId);
   }
 
   public Histogram.Timer measureFlushDuration() {

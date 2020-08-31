@@ -53,7 +53,7 @@ class FileChannelJournalSegmentReader<E> implements JournalReader<E> {
     this.maxEntrySize = maxEntrySize;
     this.index = index;
     this.namespace = namespace;
-    this.memory = ByteBuffer.allocate((maxEntrySize + Integer.BYTES + Integer.BYTES) * 2);
+    memory = ByteBuffer.allocate((maxEntrySize + Integer.BYTES + Integer.BYTES) * 2);
     this.segment = segment;
     reset();
   }

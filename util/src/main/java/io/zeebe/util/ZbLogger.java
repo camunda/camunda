@@ -49,16 +49,16 @@ public class ZbLogger implements Logger {
     this.logger = logger;
     this.loggerFqcn = loggerFqcn;
 
-    this.isTraceEnabled = logger.isTraceEnabled();
-    this.isDebugEnabled = logger.isDebugEnabled();
-    this.isInfoEnabled = logger.isInfoEnabled();
-    this.isWarnEnabled = logger.isWarnEnabled();
-    this.isErrorEnabled = logger.isErrorEnabled();
+    isTraceEnabled = logger.isTraceEnabled();
+    isDebugEnabled = logger.isDebugEnabled();
+    isInfoEnabled = logger.isInfoEnabled();
+    isWarnEnabled = logger.isWarnEnabled();
+    isErrorEnabled = logger.isErrorEnabled();
 
     if (logger instanceof LocationAwareLogger) {
-      this.locationAwareLogger = (LocationAwareLogger) logger;
+      locationAwareLogger = (LocationAwareLogger) logger;
     } else {
-      this.locationAwareLogger = null;
+      locationAwareLogger = null;
     }
   }
 

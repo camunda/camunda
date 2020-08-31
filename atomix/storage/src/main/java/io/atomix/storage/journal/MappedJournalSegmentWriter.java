@@ -61,13 +61,13 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
       final int maxEntrySize,
       final JournalIndex index,
       final Namespace namespace) {
-    this.mappedBuffer = buffer;
+    mappedBuffer = buffer;
     this.buffer = buffer.slice();
     this.segment = segment;
     this.maxEntrySize = maxEntrySize;
     this.index = index;
     this.namespace = namespace;
-    this.firstIndex = segment.index();
+    firstIndex = segment.index();
     reset(0);
   }
 
@@ -147,7 +147,7 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
 
     // Update the last entry with the correct index/term/length.
     final Indexed<E> indexedEntry = new Indexed<>(index, entry, length);
-    this.lastEntry = indexedEntry;
+    lastEntry = indexedEntry;
     this.index.index(lastEntry, position);
     return (Indexed<T>) indexedEntry;
   }

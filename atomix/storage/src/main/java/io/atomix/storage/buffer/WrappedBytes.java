@@ -33,7 +33,7 @@ public class WrappedBytes extends AbstractBytes {
       throw new NullPointerException("bytes cannot be null");
     }
     this.bytes = bytes;
-    this.root = bytes instanceof WrappedBytes ? ((WrappedBytes) bytes).root : bytes;
+    root = bytes instanceof WrappedBytes ? ((WrappedBytes) bytes).root : bytes;
   }
 
   /** Returns the root bytes. */

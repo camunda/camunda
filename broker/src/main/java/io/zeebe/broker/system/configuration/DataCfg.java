@@ -105,7 +105,7 @@ public final class DataCfg implements ConfigurationEntry {
   }
 
   public double getDiskUsageReplicationWatermark() {
-    return this.diskUsageReplicationWatermark;
+    return diskUsageReplicationWatermark;
   }
 
   public void setDiskUsageReplicationWatermark(final double diskUsageReplicationWatermark) {

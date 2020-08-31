@@ -29,7 +29,7 @@ public class ExecutableEventBasedGateway extends ExecutableFlowNode
 
   public void setEvents(final List<ExecutableCatchEvent> events) {
     this.events = events;
-    this.eventIds = new ArrayList<>(events.size());
+    eventIds = new ArrayList<>(events.size());
 
     for (final ExecutableCatchEvent event : events) {
       eventIds.add(event.getId());

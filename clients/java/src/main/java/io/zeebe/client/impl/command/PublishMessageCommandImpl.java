@@ -48,8 +48,8 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
     super(objectMapper);
     this.asyncStub = asyncStub;
     this.retryPredicate = retryPredicate;
-    this.builder = PublishMessageRequest.newBuilder();
-    this.requestTimeout = configuration.getDefaultRequestTimeout();
+    builder = PublishMessageRequest.newBuilder();
+    requestTimeout = configuration.getDefaultRequestTimeout();
     builder.setTimeToLive(configuration.getDefaultMessageTimeToLive().toMillis());
   }
 

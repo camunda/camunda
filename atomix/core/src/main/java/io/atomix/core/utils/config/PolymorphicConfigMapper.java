@@ -55,7 +55,7 @@ public class PolymorphicConfigMapper extends ConfigMapper {
       final Collection<PolymorphicTypeMapper> mappers) {
     super(classLoader);
     this.registry = checkNotNull(registry);
-    this.polymorphicTypes = mappers;
+    polymorphicTypes = mappers;
   }
 
   @Override

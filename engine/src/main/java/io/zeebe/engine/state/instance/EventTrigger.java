@@ -25,9 +25,7 @@ public final class EventTrigger extends UnpackedObject implements DbValue {
   private final LongProperty eventKeyProp = new LongProperty("eventKey");
 
   public EventTrigger() {
-    this.declareProperty(elementIdProp)
-        .declareProperty(variablesProp)
-        .declareProperty(eventKeyProp);
+    declareProperty(elementIdProp).declareProperty(variablesProp).declareProperty(eventKeyProp);
   }
 
   // Copies over the previous event
@@ -37,7 +35,7 @@ public final class EventTrigger extends UnpackedObject implements DbValue {
     final int length = other.getLength();
     final MutableDirectBuffer buffer = new UnsafeBuffer(new byte[length]);
     other.write(buffer, 0);
-    this.wrap(buffer, 0, length);
+    wrap(buffer, 0, length);
   }
 
   public DirectBuffer getElementId() {
@@ -45,7 +43,7 @@ public final class EventTrigger extends UnpackedObject implements DbValue {
   }
 
   public EventTrigger setElementId(final DirectBuffer elementId) {
-    this.elementIdProp.setValue(elementId);
+    elementIdProp.setValue(elementId);
     return this;
   }
 
@@ -54,7 +52,7 @@ public final class EventTrigger extends UnpackedObject implements DbValue {
   }
 
   public EventTrigger setVariables(final DirectBuffer variables) {
-    this.variablesProp.setValue(variables);
+    variablesProp.setValue(variables);
     return this;
   }
 
@@ -63,7 +61,7 @@ public final class EventTrigger extends UnpackedObject implements DbValue {
   }
 
   public EventTrigger setEventKey(final long eventKey) {
-    this.eventKeyProp.setValue(eventKey);
+    eventKeyProp.setValue(eventKey);
     return this;
   }
 

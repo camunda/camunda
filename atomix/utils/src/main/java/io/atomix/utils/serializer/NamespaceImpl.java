@@ -93,7 +93,7 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
       final boolean registrationRequired,
       final boolean compatible,
       final String friendlyName) {
-    this.registeredBlocks = ImmutableList.copyOf(registeredTypes);
+    registeredBlocks = ImmutableList.copyOf(registeredTypes);
     this.registrationRequired = registrationRequired;
     this.classLoader = classLoader;
     this.compatible = compatible;
@@ -352,7 +352,7 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
      */
     public NamespaceImpl build(final String friendlyName) {
       if (!types.isEmpty()) {
-        blocks.add(new RegistrationBlock(this.blockHeadId, types));
+        blocks.add(new RegistrationBlock(blockHeadId, types));
       }
       return new NamespaceImpl(blocks, classLoader, registrationRequired, compatible, friendlyName)
           .populate(1);
@@ -379,10 +379,10 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
                 new RuntimeException());
           }
         }
-        blocks.add(new RegistrationBlock(this.blockHeadId, types));
+        blocks.add(new RegistrationBlock(blockHeadId, types));
         types = new ArrayList<>();
       }
-      this.blockHeadId = id;
+      blockHeadId = id;
       return this;
     }
 
@@ -444,7 +444,7 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
         return this;
       }
       for (final RegistrationBlock block : ns.registeredBlocks) {
-        this.register(block);
+        register(block);
       }
       return this;
     }
@@ -519,7 +519,7 @@ public class NamespaceImpl implements Namespace, KryoFactory, KryoPool {
 
       if (obj instanceof RegistrationBlock) {
         final RegistrationBlock that = (RegistrationBlock) obj;
-        return Objects.equals(this.types, that.types);
+        return Objects.equals(types, that.types);
       }
       return false;
     }

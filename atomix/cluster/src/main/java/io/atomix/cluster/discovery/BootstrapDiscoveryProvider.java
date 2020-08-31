@@ -70,7 +70,7 @@ public class BootstrapDiscoveryProvider
 
   BootstrapDiscoveryProvider(final BootstrapDiscoveryConfig config) {
     this.config = checkNotNull(config);
-    this.bootstrapNodes =
+    bootstrapNodes =
         ImmutableSet.copyOf(config.getNodes().stream().map(Node::new).collect(Collectors.toList()));
   }
 

@@ -43,7 +43,7 @@ class MappableJournalSegmentReader<E> implements JournalReader<E> {
     this.maxEntrySize = maxEntrySize;
     this.index = index;
     this.namespace = namespace;
-    this.reader =
+    reader =
         new FileChannelJournalSegmentReader<>(channel, segment, maxEntrySize, index, namespace);
   }
 

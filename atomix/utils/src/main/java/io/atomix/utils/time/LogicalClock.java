@@ -52,7 +52,7 @@ public class LogicalClock implements Clock<LogicalTimestamp> {
    */
   public LogicalTimestamp update(final LogicalTimestamp timestamp) {
     if (timestamp.value() > currentTimestamp.value()) {
-      this.currentTimestamp = timestamp;
+      currentTimestamp = timestamp;
     }
     return currentTimestamp;
   }

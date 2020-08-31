@@ -69,7 +69,7 @@ public final class WorkflowInstanceVariableTypeTest {
         ENGINE_RULE
             .workflowInstance()
             .ofBpmnProcessId(PROCESS_ID)
-            .withVariables(this.variables)
+            .withVariables(variables)
             .create();
 
     // then

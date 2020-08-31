@@ -41,7 +41,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
 
   public RoundRobinActivateJobsHandler(final BrokerClient brokerClient) {
     this.brokerClient = brokerClient;
-    this.topologyManager = brokerClient.getTopologyManager();
+    topologyManager = brokerClient.getTopologyManager();
   }
 
   @Override

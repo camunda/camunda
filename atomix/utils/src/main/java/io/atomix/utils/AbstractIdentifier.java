@@ -27,7 +27,7 @@ public class AbstractIdentifier<T extends Comparable<T>> implements Identifier<T
 
   /** Constructor for serialization. */
   protected AbstractIdentifier() {
-    this.identifier = null;
+    identifier = null;
   }
 
   /**
@@ -36,7 +36,7 @@ public class AbstractIdentifier<T extends Comparable<T>> implements Identifier<T
    * @param value the backing value
    */
   protected AbstractIdentifier(final T value) {
-    this.identifier = checkNotNull(value, "Identifier cannot be null.");
+    identifier = checkNotNull(value, "Identifier cannot be null.");
   }
 
   /**
@@ -71,7 +71,7 @@ public class AbstractIdentifier<T extends Comparable<T>> implements Identifier<T
     }
     if (obj instanceof AbstractIdentifier) {
       final AbstractIdentifier that = (AbstractIdentifier) obj;
-      return this.getClass() == that.getClass() && Objects.equals(this.identifier, that.identifier);
+      return getClass() == that.getClass() && Objects.equals(identifier, that.identifier);
     }
     return false;
   }
