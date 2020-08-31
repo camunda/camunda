@@ -23,6 +23,7 @@ import:
   elasticsearchJobExecutorThreadCount: 1
   currentTimeBackoffMilliseconds: 0
 es:
+  scrollTimeoutInSeconds: 5
   settings:
     index:
       prefix: ${indexPrefix:optimize}
