@@ -15,7 +15,7 @@ public final class BackpressureCfg implements ConfigurationEntry {
   private boolean useWindowed = true;
   private LimitAlgorithm algorithm = LimitAlgorithm.VEGAS;
   private final AIMDCfg aimd = new AIMDCfg();
-  private final FixedLimitCfg fixedLimit = new FixedLimitCfg();
+  private final FixedCfg fixed = new FixedCfg();
   private final VegasCfg vegas = new VegasCfg();
   private final GradientCfg gradient = new GradientCfg();
   private final Gradient2Cfg gradient2 = new Gradient2Cfg();
@@ -49,8 +49,8 @@ public final class BackpressureCfg implements ConfigurationEntry {
     return aimd;
   }
 
-  public FixedLimitCfg getFixedLimit() {
-    return fixedLimit;
+  public FixedCfg getFixed() {
+    return fixed;
   }
 
   public VegasCfg getVegas() {
@@ -78,7 +78,7 @@ public final class BackpressureCfg implements ConfigurationEntry {
         + ", aimd="
         + aimd
         + ", fixedLimit="
-        + fixedLimit
+        + fixed
         + ", vegas="
         + vegas
         + ", gradient="
