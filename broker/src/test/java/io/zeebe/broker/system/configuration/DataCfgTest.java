@@ -67,4 +67,21 @@ public class DataCfgTest {
     final var actual = sutDataCfg.getAtomixStorageLevel();
     assertThat(actual).isEqualTo(StorageLevel.DISK);
   }
+
+  @Test
+  public void shouldSetWatermarksTo1IfDisabled() {
+    // given
+    final DataCfg dataCfg = new DataCfg();
+    dataCfg.setDiskUsageCommandWatermark(0.1);
+    dataCfg.setDiskUsageReplicationWatermark(0.2);
+    dataCfg.setDiskUsageMonitoringEnabled(false);
+
+    // when
+    dataCfg.init(new BrokerCfg(), "/base");
+
+    // then
+    assertThat(dataCfg.isDiskUsageMonitoringEnabled()).isEqualTo(false);
+    assertThat(dataCfg.getDiskUsageCommandWatermark()).isEqualTo(1.0);
+    assertThat(dataCfg.getDiskUsageReplicationWatermark()).isEqualTo(1.0);
+  }
 }

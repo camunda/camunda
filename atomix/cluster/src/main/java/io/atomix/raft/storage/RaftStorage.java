@@ -535,7 +535,7 @@ public final class RaftStorage {
      * @return the Raft log builder
      */
     public Builder withFreeDiskSpace(final long freeDiskSpace) {
-      checkArgument(freeDiskSpace > 0, "freeDiskSpace must be positive");
+      checkArgument(freeDiskSpace >= 0, "freeDiskSpace must be positive");
       this.freeDiskSpace = freeDiskSpace;
       return this;
     }

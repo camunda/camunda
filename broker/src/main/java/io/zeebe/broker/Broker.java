@@ -297,9 +297,14 @@ public final class Broker implements AutoCloseable {
 
   private AutoCloseable diskSpaceMonitorStep(final DataCfg data) {
     diskSpaceUsageMonitor = new DiskSpaceUsageMonitor(data);
-    scheduleActor(diskSpaceUsageMonitor);
-    diskSpaceUsageListeners.forEach(l -> diskSpaceUsageMonitor.addDiskUsageListener(l));
-    return () -> diskSpaceUsageMonitor.close();
+    if (data.isDiskUsageMonitoringEnabled()) {
+      scheduleActor(diskSpaceUsageMonitor);
+      diskSpaceUsageListeners.forEach(l -> diskSpaceUsageMonitor.addDiskUsageListener(l));
+      return () -> diskSpaceUsageMonitor.close();
+    } else {
+      LOG.info("Skipping start of disk space usage monitor, as it is disabled by configuration");
+      return () -> {};
+    }
   }
 
   private AutoCloseable managementRequestStep(final BrokerInfo localBroker) {

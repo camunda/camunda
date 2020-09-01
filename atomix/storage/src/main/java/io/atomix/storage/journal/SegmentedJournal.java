@@ -832,7 +832,7 @@ public class SegmentedJournal<E> implements Journal<E> {
      * @throws IllegalArgumentException if the {@code freeDiskSpace} is not positive
      */
     public Builder<E> withFreeDiskSpace(final long freeDiskSpace) {
-      checkArgument(freeDiskSpace > 0, "minFreeDiskSpace must be positive");
+      checkArgument(freeDiskSpace >= 0, "minFreeDiskSpace must be positive");
       this.freeDiskSpace = freeDiskSpace;
       return this;
     }
