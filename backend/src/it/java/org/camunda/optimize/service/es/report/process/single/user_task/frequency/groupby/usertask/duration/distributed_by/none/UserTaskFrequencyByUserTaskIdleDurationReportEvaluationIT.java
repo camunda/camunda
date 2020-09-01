@@ -3,8 +3,9 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.usertask.duration;
+package org.camunda.optimize.service.es.report.process.single.user_task.frequency.groupby.usertask.duration.distributed_by.none;
 
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -15,7 +16,7 @@ import java.time.OffsetDateTime;
 
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION;
 
-public class UserTaskFrequencyByUserTaskTotalDurationReportEvaluationIT
+public class UserTaskFrequencyByUserTaskIdleDurationReportEvaluationIT
   extends ModelElementFrequencyByModelElementDurationIT {
   @Override
   protected ProcessInstanceEngineDto startProcessInstanceCompleteTaskAndModifyDuration(
@@ -23,7 +24,7 @@ public class UserTaskFrequencyByUserTaskTotalDurationReportEvaluationIT
     final Number durationInMillis) {
     final ProcessInstanceEngineDto processInstance = engineIntegrationExtension.startProcessInstance(definitionId);
     engineIntegrationExtension.finishAllRunningUserTasks(processInstance.getId());
-    engineDatabaseExtension.changeUserTaskDuration(processInstance.getId(), durationInMillis);
+    changeUserTaskIdleDuration(processInstance, durationInMillis);
     return processInstance;
   }
 
@@ -50,7 +51,7 @@ public class UserTaskFrequencyByUserTaskTotalDurationReportEvaluationIT
       .setProcessDefinitionKey(processKey)
       .setProcessDefinitionVersion(definitionVersion)
       .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION)
-      // UserTaskDurationTime.TOTAL is default and is not set explicitly
+      .setUserTaskDurationTime(UserTaskDurationTime.IDLE)
       .build();
   }
 }

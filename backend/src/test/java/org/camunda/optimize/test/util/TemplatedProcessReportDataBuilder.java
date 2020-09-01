@@ -508,6 +508,17 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .build();
         break;
+      case USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_DURATION_BY_USER_TASK:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.USER_TASK)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.DURATION)
+          .distributedBy(DistributedByType.USER_TASK)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .build();
+        break;
       case USER_TASK_DURATION_GROUP_BY_USER_TASK:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.USER_TASK)

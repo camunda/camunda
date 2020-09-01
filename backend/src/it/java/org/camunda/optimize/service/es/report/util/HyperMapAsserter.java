@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -156,6 +157,11 @@ public class HyperMapAsserter {
     public GroupByAdder(HyperMapAsserter asserter, String groupByKey) {
       this.asserter = asserter;
       this.groupByKey = groupByKey;
+    }
+
+    public GroupByAdder distributedByContains(Collection<MapResultEntryDto> entries) {
+      distributedByEntry.addAll(entries);
+      return this;
     }
 
     public GroupByAdder distributedByContains(String distributedByKey, Double result) {
