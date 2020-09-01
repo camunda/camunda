@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.telemetry;
 
-import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
@@ -23,7 +22,9 @@ import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
+import org.mockserver.verify.VerificationTimes;
 
+import java.util.ArrayList;
 import java.util.Optional;
 
 import static javax.ws.rs.HttpMethod.GET;
@@ -34,6 +35,7 @@ import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDI
 import static org.mockserver.model.HttpRequest.request;
 
 public class TelemetryDataServiceIT extends AbstractIT {
+
   @Test
   public void retrieveTelemetryData() {
     // when
@@ -41,12 +43,14 @@ public class TelemetryDataServiceIT extends AbstractIT {
       embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
 
     // then
-    final TelemetryDataDto expectedTelemetry = getExpectedTelemetry(
+    final Optional<MetadataDto> metadata = getMetadata();
+    assertThat(metadata).isPresent();
+
+    final TelemetryDataDto expectedTelemetry = createExpectedTelemetry(
       elasticSearchIntegrationTestExtension.getEsVersion(),
-      getMetadata().map(MetadataDto::getInstallationId).orElse(INFORMATION_UNAVAILABLE_STRING),
+      metadata.get().getInstallationId(),
       getLicense()
     );
-
     assertThat(telemetryData).isEqualTo(expectedTelemetry);
   }
 
@@ -60,7 +64,8 @@ public class TelemetryDataServiceIT extends AbstractIT {
       embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
 
     // then
-    final TelemetryDataDto expectedTelemetry = getExpectedTelemetry(
+    assertThat(getMetadata()).isNotPresent();
+    final TelemetryDataDto expectedTelemetry = createExpectedTelemetry(
       elasticSearchIntegrationTestExtension.getEsVersion(),
       INFORMATION_UNAVAILABLE_STRING,
       getLicense()
@@ -69,7 +74,7 @@ public class TelemetryDataServiceIT extends AbstractIT {
   }
 
   @Test
-  public void retrieveTelemetryData_elasticsearchDown_doesNotFail() {
+  public void retrieveTelemetryData_elasticsearchVersionRequestFails_returnsUnavailableString() {
     // given
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest requestMatcher = request()
@@ -84,12 +89,41 @@ public class TelemetryDataServiceIT extends AbstractIT {
       embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
 
     // then
-    final TelemetryDataDto expectedTelemetry = getExpectedTelemetry(
+    final Optional<MetadataDto> metadata = getMetadata();
+    assertThat(metadata).isPresent();
+
+    final TelemetryDataDto expectedTelemetry = createExpectedTelemetry(
       INFORMATION_UNAVAILABLE_STRING,
-      getMetadata().map(MetadataDto::getInstallationId).orElse(INFORMATION_UNAVAILABLE_STRING),
+      metadata.get().getInstallationId(),
       getLicense()
     );
 
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
+    assertThat(telemetryData).isEqualTo(expectedTelemetry);
+  }
+
+  @Test
+  public void retrieveTelemetryData_elasticsearchMetadataRequestFails_returnsUnavailableString() {
+    // given
+    final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
+    final HttpRequest requestMatcher = request()
+      .withPath("/.*-" + METADATA_INDEX_NAME + "/_search");
+    esMockServer
+      .when(requestMatcher, Times.once())
+      .error(HttpError.error().withDropConnection(true));
+
+    // when
+    final TelemetryDataDto telemetryData =
+      embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
+
+    // then
+    final TelemetryDataDto expectedTelemetry = createExpectedTelemetry(
+      elasticSearchIntegrationTestExtension.getEsVersion(),
+      INFORMATION_UNAVAILABLE_STRING,
+      getLicense()
+    );
+
+    esMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(telemetryData).isEqualTo(expectedTelemetry);
   }
 
@@ -104,9 +138,11 @@ public class TelemetryDataServiceIT extends AbstractIT {
         embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
 
       // then
-      final TelemetryDataDto expectedTelemetry = getExpectedTelemetry(
+      final Optional<MetadataDto> metadata = getMetadata();
+      assertThat(metadata).isPresent();
+      final TelemetryDataDto expectedTelemetry = createExpectedTelemetry(
         elasticSearchIntegrationTestExtension.getEsVersion(),
-        getMetadata().map(MetadataDto::getInstallationId).orElse(INFORMATION_UNAVAILABLE_STRING),
+        metadata.get().getInstallationId(),
         INFORMATION_UNAVAILABLE_STRING
       );
 
@@ -116,16 +152,16 @@ public class TelemetryDataServiceIT extends AbstractIT {
     }
   }
 
-  private TelemetryDataDto getExpectedTelemetry(final String expectedDatabaseVersion,
-                                                final String expectedInstallationId,
-                                                final String expectedLicenseKey) {
+  private TelemetryDataDto createExpectedTelemetry(final String expectedDatabaseVersion,
+                                                   final String expectedInstallationId,
+                                                   final String expectedLicenseKey) {
     final DatabaseDto databaseDto = DatabaseDto.builder()
       .version(expectedDatabaseVersion)
       .vendor("elasticsearch")
       .build();
 
     final InternalsDto internalsDto = InternalsDto.builder()
-      .engineInstallationIds(Lists.newArrayList()) // adjust once engine installation ID retrieval is implemented
+      .engineInstallationIds(new ArrayList<>()) // adjust once engine installation ID retrieval is implemented
       .database(databaseDto)
       .licenseKey(expectedLicenseKey)
       .build();
@@ -167,4 +203,5 @@ public class TelemetryDataServiceIT extends AbstractIT {
   private String getLicense() {
     return embeddedOptimizeExtension.getApplicationContext().getBean(LicenseManager.class).getOptimizeLicense();
   }
+
 }

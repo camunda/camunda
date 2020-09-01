@@ -100,7 +100,7 @@ public class ElasticsearchMetadataService {
       }
     } catch (IOException | ElasticsearchException e) {
       log.info(
-        "Was not able to retrieve metaData index, schema might not have been initialized yet if this is the first " +
+        "Was not able to retrieve metadata index, schema might not have been initialized yet if this is the first " +
           "startup!"
       );
     }

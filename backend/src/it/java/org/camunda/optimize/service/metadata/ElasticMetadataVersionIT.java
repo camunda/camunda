@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 public class ElasticMetadataVersionIT extends AbstractIT {
+
   private static final String SCHEMA_VERSION = "testVersion";
   private static final String INSTALLATION_ID = "testId";
 

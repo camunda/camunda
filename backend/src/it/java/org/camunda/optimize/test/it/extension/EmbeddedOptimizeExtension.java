@@ -26,6 +26,7 @@ import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
@@ -349,6 +350,7 @@ public class EmbeddedOptimizeExtension
 
   public void startOptimize() throws Exception {
     getOptimize().start();
+    getElasticsearchMetadataService().initMetadataIfMissing(getOptimizeElasticClient());
     getAlertService().init();
     getElasticsearchImportJobExecutor().startExecutingImportJobs();
   }
@@ -518,6 +520,10 @@ public class EmbeddedOptimizeExtension
 
   public OptimizeElasticsearchClient getOptimizeElasticClient() {
     return getApplicationContext().getBean(OptimizeElasticsearchClient.class);
+  }
+
+  private ElasticsearchMetadataService getElasticsearchMetadataService() {
+    return getApplicationContext().getBean(ElasticsearchMetadataService.class);
   }
 
   private boolean isResetImportOnStart() {
