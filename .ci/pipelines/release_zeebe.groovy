@@ -122,9 +122,11 @@ spec:
             when { expression { return params.PUSH_CHANGES } }
             steps {
                 container('maven') {
-                    sh '.ci/scripts/release/github-release.sh'
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        sh '.ci/scripts/release/github-release.sh'
+                    }
                 }
-    
+
                 container('golang') {
                     sh '.ci/scripts/release/post-github.sh'
                 }
@@ -157,8 +159,8 @@ spec:
     post {
         failure {
             slackSend(
-              channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
-              message: "Release job build ${currentBuild.absoluteUrl} failed!")
+                    channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+                    message: "Release job build ${currentBuild.absoluteUrl} failed!")
         }
     }
 }
