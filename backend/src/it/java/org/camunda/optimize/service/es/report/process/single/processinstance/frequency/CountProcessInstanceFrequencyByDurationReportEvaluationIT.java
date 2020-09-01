@@ -7,6 +7,7 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.fr
 
 import com.google.common.collect.ImmutableList;
 import org.assertj.core.groups.Tuple;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationFilterUnit;
@@ -247,6 +248,32 @@ public class CountProcessInstanceFrequencyByDurationReportEvaluationIT extends A
         Tuple.tuple(createDurationBucketKey(1000), 1.0D),
         Tuple.tuple(createDurationBucketKey((int) Duration.between(startTime, currentTime).toMillis()), 1.0D)
       );
+  }
+
+  @Test
+  public void multipleProcessInstances_withoutTimeFreeze_runningInstanceMaxIsInTheResult() {
+    // given running instance that makes up the max duration and no time freezing applied
+    final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
+    // running instance starts first so it has the highest duration
+    engineIntegrationExtension.startProcessInstance(definition.getId());
+    final ProcessInstanceEngineDto completedProcessInstance =
+      engineIntegrationExtension.startProcessInstance(definition.getId());
+    engineIntegrationExtension.completeUserTaskWithoutClaim(completedProcessInstance.getId());
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then the result should be complete even though the duration increased
+    final ReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getIsComplete()).isTrue();
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
+    assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(resultDto.getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1.0, 1.0);
   }
 
   @Test

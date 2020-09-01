@@ -161,34 +161,39 @@ public class DurationAggregationService {
     }
 
     final double intervalInMillis = getIntervalInMillis(minValueInMillis, maxValueInMillis, customBucketDto);
-    final double limitedMaxBoundInMillis = limitMaxBound(minValueInMillis, maxValueInMillis, intervalInMillis);
+    final Optional<Double> limitedMaxBoundInMillis = limitMaxBound(
+      minValueInMillis, maxValueInMillis, intervalInMillis
+    );
 
     final BoolQueryBuilder limitingFilter = QueryBuilders.boolQuery()
-      .filter(limitingFilterCreator.apply(FilterOperator.GREATER_THAN_EQUALS, minValueInMillis))
-      .filter(limitingFilterCreator.apply(FilterOperator.LESS_THAN_EQUALS, limitedMaxBoundInMillis));
+      .filter(limitingFilterCreator.apply(FilterOperator.GREATER_THAN_EQUALS, minValueInMillis));
+    limitedMaxBoundInMillis.ifPresent(limitedMax -> {
+      limitingFilter.filter(limitingFilterCreator.apply(FilterOperator.LESS_THAN_EQUALS, limitedMax));
+    });
+
 
     final HistogramAggregationBuilder histogramAggregation = AggregationBuilders
       .histogram(DURATION_HISTOGRAM_AGGREGATION)
       .interval(intervalInMillis)
       .offset(minValueInMillis)
       .script(durationCalculationScript)
-      .extendedBounds(minValueInMillis, limitedMaxBoundInMillis)
+      .extendedBounds(minValueInMillis, limitedMaxBoundInMillis.orElse(maxValueInMillis))
       .subAggregation(distributedByPart.createAggregation(context));
 
     return Optional.of(wrapWithFilterLimitedParentAggregation(limitingFilter, histogramAggregation));
   }
 
-  private double limitMaxBound(final double minValue,
-                               final double maxValue,
-                               final double interval) {
+  private Optional<Double> limitMaxBound(final double minValue,
+                                         final double maxValue,
+                                         final double interval) {
     final double distance = maxValue - minValue;
-    double limitedMaxBound = maxValue;
+    Double limitedMaxBound = null;
     if (distance / interval > getAggregationBucketLimit()) {
       // -1 as the bound is inclusive
       limitedMaxBound = minValue + interval * getAggregationBucketLimit() - 1;
     }
 
-    return limitedMaxBound;
+    return Optional.ofNullable(limitedMaxBound);
   }
 
   private double getIntervalInMillis(final double minValueInMillis,

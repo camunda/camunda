@@ -261,6 +261,30 @@ public abstract class ModelElementFrequencyByModelElementDurationIT extends Abst
   }
 
   @Test
+  public void multipleProcessInstances_withoutTimeFreeze_runningInstanceMaxIsInTheResult() {
+    // given running instance that makes up the max duration and no time freezing applied
+    final ProcessDefinitionEngineDto definition = deploySimpleOneUserTasksDefinition();
+    // running instance starts first so it has the highest duration
+    engineIntegrationExtension.startProcessInstance(definition.getId());
+    startProcessInstanceCompleteTaskAndModifyDuration(definition.getId(), 1L);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(definition.getKey(), definition.getVersionAsString());
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then the result should be complete even though the duration increased
+    final ReportMapResultDto resultDto = evaluationResponse.getResult();
+    assertThat(resultDto.getIsComplete()).isTrue();
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
+    assertThat(resultDto.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(resultDto.getData())
+      .extracting(MapResultEntryDto::getValue)
+      .contains(1.0, 1.0);
+  }
+
+  @Test
   public void multipleBuckets_singleValueBucket() {
     // given
     final int minDurationInMillis = 1000;
