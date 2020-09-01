@@ -20,8 +20,8 @@ import org.springframework.util.unit.DataSize;
 public final class DataCfg implements ConfigurationEntry {
   public static final String DEFAULT_DIRECTORY = "data";
   private static final DataSize DEFAULT_DATA_SIZE = DataSize.ofMegabytes(512);
-  private static final double DEFAULT_DISK_USAGE_REPLICATION_WATERMARK = 0.9;
-  private static final double DEFAULT_DISK_USAGE_COMMAND_WATERMARK = 0.8;
+  private static final double DEFAULT_DISK_USAGE_REPLICATION_WATERMARK = 0.99;
+  private static final double DEFAULT_DISK_USAGE_COMMAND_WATERMARK = 0.97;
   private static final Duration DEFAULT_DISK_USAGE_MONITORING_DELAY = Duration.ofSeconds(1);
 
   // Hint: do not use Collections.singletonList as this does not support replaceAll

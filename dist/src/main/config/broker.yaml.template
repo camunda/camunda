@@ -139,14 +139,14 @@
       # The value is specified as a percentage of the total disk space.
       # The value should be in the range (0, 1).
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
-      # diskUsageCommandWatermark = 0.8
+      # diskUsageCommandWatermark = 0.97
 
       # When the disk usage is above this value, this broker will stop writing replicated events it receives from other brokers.
       # The value is specified as a percentage of the total disk space.
       # The value should be in the range (0, 1).
       # It is recommended that diskUsageReplicationWatermark > diskUsageCommandWatermark
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
-      # diskUsageReplicationWatermark = 0.9
+      # diskUsageReplicationWatermark = 0.99
 
       # Sets the interval at which the disk usage is monitored
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DISKUSAGEMONITORINGINTERVAL
