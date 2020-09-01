@@ -10,15 +10,17 @@ package io.zeebe.broker.system.partitions.impl;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.atomix.raft.snapshot.PersistedSnapshot;
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
-import io.atomix.raft.snapshot.TransientSnapshot;
-import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.storage.journal.Indexed;
 import io.zeebe.db.impl.DefaultColumnFamily;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
 import io.zeebe.logstreams.util.RocksDBWrapper;
+import io.zeebe.snapshots.broker.ConstructableSnapshotStore;
+import io.zeebe.snapshots.broker.impl.FileBasedSnapshotMetadata;
+import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
+import io.zeebe.snapshots.raft.PersistableSnapshot;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
+import io.zeebe.snapshots.raft.TransientSnapshot;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.io.File;
 import java.io.IOException;
@@ -39,18 +41,22 @@ public final class StateControllerImplTest {
 
   private final MutableLong exporterPosition = new MutableLong(Long.MAX_VALUE);
   private StateControllerImpl snapshotController;
-  private PersistedSnapshotStore store;
+  private ConstructableSnapshotStore store;
 
   @Before
   public void setup() throws IOException {
     final var rootDirectory = tempFolderRule.newFolder("state").toPath();
-    store = new FileBasedSnapshotStoreFactory().createSnapshotStore(rootDirectory, "1");
+
+    final var factory = new FileBasedSnapshotStoreFactory();
+    factory.createReceivableSnapshotStore(rootDirectory, "1");
+    store = factory.getConstructableSnapshotStore("1");
 
     snapshotController =
         new StateControllerImpl(
             1,
             ZeebeRocksDbFactory.newFactory(DefaultColumnFamily.class),
             store,
+            factory.getReceivableSnapshotStore("1"),
             rootDirectory.resolve("runtime"),
             new NoneSnapshotReplication(),
             l ->
@@ -141,6 +147,61 @@ public final class StateControllerImplTest {
 
     // then
     assertThat(wrapper.getInt(key)).isEqualTo(value);
+  }
+
+  @Test
+  public void shouldTakeSnapshotWhenExporterPositionNotChanged() {
+    // given
+    final var snapshotPosition = 2;
+    exporterPosition.set(snapshotPosition - 1);
+    snapshotController.openDb();
+    final var firstSnapshot =
+        snapshotController
+            .takeTransientSnapshot(snapshotPosition)
+            .map(PersistableSnapshot::persist)
+            .orElseThrow();
+
+    // when
+    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition + 1);
+    final var snapshot = tmpSnapshot.map(TransientSnapshot::persist).orElseThrow();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(firstSnapshot.getCompactionBound());
+    assertThat(snapshot.getId()).isNotEqualTo(firstSnapshot.getId());
+    final var newSnapshotId = FileBasedSnapshotMetadata.ofFileName(snapshot.getId()).orElseThrow();
+    final var firstSnapshotId =
+        FileBasedSnapshotMetadata.ofFileName(firstSnapshot.getId()).orElseThrow();
+    assertThat(firstSnapshotId.compareTo(newSnapshotId)).isEqualTo(-1);
+  }
+
+  @Test
+  public void shouldTakeSnapshotWhenProcessorPositionNotChanged() {
+    // given
+    final var snapshotPosition = 2;
+    exporterPosition.set(snapshotPosition);
+    snapshotController.openDb();
+    final var firstSnapshot =
+        snapshotController
+            .takeTransientSnapshot(snapshotPosition)
+            .map(PersistableSnapshot::persist)
+            .orElseThrow();
+
+    // when
+    exporterPosition.set(snapshotPosition + 1);
+    final var tmpSnapshot = snapshotController.takeTransientSnapshot(snapshotPosition);
+    final var snapshot = tmpSnapshot.map(TransientSnapshot::persist).orElseThrow();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(firstSnapshot.getCompactionBound());
+    assertThat(snapshot.getId()).isNotEqualTo(firstSnapshot.getId());
+    final var newSnapshotId = FileBasedSnapshotMetadata.ofFileName(snapshot.getId()).orElseThrow();
+    final var firstSnapshotId =
+        FileBasedSnapshotMetadata.ofFileName(firstSnapshot.getId()).orElseThrow();
+    assertThat(firstSnapshotId.compareTo(newSnapshotId)).isEqualTo(-1);
   }
 
   @Test

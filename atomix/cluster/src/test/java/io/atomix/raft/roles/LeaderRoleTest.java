@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
@@ -39,6 +38,7 @@ import io.atomix.raft.zeebe.util.TestAppender;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.SingleThreadContext;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -79,7 +79,7 @@ public class LeaderRoleTest {
             });
     when(context.getLogWriter()).thenReturn(writer);
 
-    final PersistedSnapshotStore persistedSnapshotStore = mock(PersistedSnapshotStore.class);
+    final ReceivableSnapshotStore persistedSnapshotStore = mock(ReceivableSnapshotStore.class);
     when(context.getPersistedSnapshotStore()).thenReturn(persistedSnapshotStore);
     when(context.getEntryValidator()).thenReturn((a, b) -> ValidationResult.success());
 

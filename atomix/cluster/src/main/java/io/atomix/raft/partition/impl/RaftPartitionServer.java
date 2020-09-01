@@ -31,7 +31,6 @@ import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import io.atomix.raft.partition.RaftStorageConfig;
 import io.atomix.raft.roles.RaftRole;
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
@@ -42,6 +41,8 @@ import io.atomix.utils.Managed;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.serializer.Serializer;
+import io.zeebe.snapshots.raft.PersistedSnapshotStore;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -72,7 +73,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
   private final Set<Runnable> deferredFailureListeners = new CopyOnWriteArraySet<>();
 
   private RaftServer server;
-  private PersistedSnapshotStore persistedSnapshotStore;
+  private ReceivableSnapshotStore persistedSnapshotStore;
   private final Supplier<JournalIndex> journalIndexFactory;
 
   public RaftPartitionServer(
@@ -164,7 +165,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         config
             .getStorageConfig()
             .getPersistedSnapshotStoreFactory()
-            .createSnapshotStore(partition.dataDirectory().toPath(), partition.name());
+            .createReceivableSnapshotStore(partition.dataDirectory().toPath(), partition.name());
 
     return RaftServer.builder(localMemberId)
         .withName(partition.name())

@@ -10,7 +10,6 @@ package io.zeebe.logstreams.util;
 import static org.mockito.Mockito.spy;
 
 import io.atomix.raft.partition.impl.RaftNamespaces;
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.RaftLogReader;
@@ -51,13 +50,12 @@ public final class AtomixLogStorageRule extends ExternalResource
   private ZeebeIndexAdapter indexMapping;
   private RaftStorage raftStorage;
   private RaftLog raftLog;
-  private PersistedSnapshotStore persistedSnapshotStore;
   private MetaStore metaStore;
 
   private AtomixLogStorage storage;
   private LongConsumer positionListener;
   private Consumer<Throwable> writeErrorListener;
-  private EntryValidator entryValidator;
+  private final EntryValidator entryValidator;
 
   public AtomixLogStorageRule(final TemporaryFolder temporaryFolder) {
     this(temporaryFolder, 0);
@@ -201,7 +199,6 @@ public final class AtomixLogStorageRule extends ExternalResource
             .withJournalIndexFactory(() -> indexMapping)
             .build();
     raftLog = raftStorage.openLog();
-    persistedSnapshotStore = raftStorage.getPersistedSnapshotStore();
     metaStore = raftStorage.openMetaStore();
 
     storage = spy(new AtomixLogStorage(indexMapping, this, this));
@@ -210,8 +207,6 @@ public final class AtomixLogStorageRule extends ExternalResource
   public void close() {
     Optional.ofNullable(raftLog).ifPresent(RaftLog::close);
     raftLog = null;
-    Optional.ofNullable(persistedSnapshotStore).ifPresent(PersistedSnapshotStore::close);
-    persistedSnapshotStore = null;
     Optional.ofNullable(metaStore).ifPresent(MetaStore::close);
     metaStore = null;
     Optional.ofNullable(storage).ifPresent(AtomixLogStorage::close);
@@ -236,10 +231,6 @@ public final class AtomixLogStorageRule extends ExternalResource
 
   public RaftLog getRaftLog() {
     return raftLog;
-  }
-
-  public PersistedSnapshotStore getPersistedSnapshotStore() {
-    return persistedSnapshotStore;
   }
 
   public MetaStore getMetaStore() {

@@ -29,6 +29,7 @@ import io.atomix.primitive.partition.impl.DefaultPartitionService;
 import io.atomix.raft.partition.RaftPartition;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.impl.RaftPartitionServer;
+import io.atomix.raft.snapshot.TestSnapshotStore;
 import io.atomix.storage.StorageLevel;
 import java.io.File;
 import java.util.Collection;
@@ -36,6 +37,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public class ZeebeTestNode {
@@ -119,7 +121,9 @@ public class ZeebeTestNode {
         .withFlushOnCommit()
         .withStorageLevel(StorageLevel.DISK)
         .withSegmentSize(1024L)
-        .withMaxEntrySize(512);
+        .withMaxEntrySize(512)
+        .withSnapshotStoreFactory(
+            (path, partition) -> new TestSnapshotStore(new AtomicReference<>()));
   }
 
   public Member getMember() {

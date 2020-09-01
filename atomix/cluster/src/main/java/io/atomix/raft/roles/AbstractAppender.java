@@ -31,15 +31,15 @@ import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
-import io.atomix.raft.snapshot.PersistedSnapshot;
-import io.atomix.raft.snapshot.SnapshotChunk;
-import io.atomix.raft.snapshot.SnapshotChunkReader;
 import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
+import io.zeebe.snapshots.raft.SnapshotChunk;
+import io.zeebe.snapshots.raft.SnapshotChunkReader;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -503,6 +503,8 @@ abstract class AbstractAppender implements AutoCloseable {
           persistedSnapshot.getId(),
           member.getMember().memberId(),
           e);
+      // If snapshot was deleted, a new reader should be created with the new snapshot
+      member.setNextSnapshotIndex(0);
       return Optional.empty();
     }
   }

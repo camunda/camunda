@@ -20,8 +20,6 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import io.atomix.raft.snapshot.PersistedSnapshotStore;
-import io.atomix.raft.snapshot.impl.FileBasedSnapshotStoreFactory;
 import io.atomix.raft.storage.log.RaftLog;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.MetaStore;
@@ -34,6 +32,8 @@ import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.storage.statistics.StorageStatistics;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Serializer;
+import io.zeebe.snapshots.raft.PersistedSnapshotStore;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -71,7 +71,7 @@ public final class RaftStorage {
   private final boolean flushOnCommit;
   private final boolean retainStaleSnapshots;
   private final StorageStatistics statistics;
-  private final PersistedSnapshotStore persistedSnapshotStore;
+  private final ReceivableSnapshotStore persistedSnapshotStore;
   private final Supplier<JournalIndex> journalIndexFactory;
 
   private RaftStorage(
@@ -86,7 +86,7 @@ public final class RaftStorage {
       final boolean flushOnCommit,
       final boolean retainStaleSnapshots,
       final StorageStatistics storageStatistics,
-      final PersistedSnapshotStore persistedSnapshotStore,
+      final ReceivableSnapshotStore persistedSnapshotStore,
       final Supplier<JournalIndex> journalIndexFactory) {
     this.prefix = prefix;
     this.storageLevel = storageLevel;
@@ -263,7 +263,7 @@ public final class RaftStorage {
    *
    * @return The snapshot store.
    */
-  public PersistedSnapshotStore getPersistedSnapshotStore() {
+  public ReceivableSnapshotStore getPersistedSnapshotStore() {
     return persistedSnapshotStore;
   }
 
@@ -392,7 +392,7 @@ public final class RaftStorage {
     private boolean flushOnCommit = DEFAULT_FLUSH_ON_COMMIT;
     private boolean retainStaleSnapshots = DEFAULT_RETAIN_STALE_SNAPSHOTS;
     private StorageStatistics storageStatistics;
-    private PersistedSnapshotStore persistedSnapshotStore;
+    private ReceivableSnapshotStore persistedSnapshotStore;
     private Supplier<JournalIndex> journalIndexFactory;
 
     private Builder() {}
@@ -619,7 +619,7 @@ public final class RaftStorage {
      * @param persistedSnapshotStore the snapshot store for this Raft
      * @return the storage builder
      */
-    public Builder withSnapshotStore(final PersistedSnapshotStore persistedSnapshotStore) {
+    public Builder withSnapshotStore(final ReceivableSnapshotStore persistedSnapshotStore) {
       this.persistedSnapshotStore = persistedSnapshotStore;
       return this;
     }
@@ -631,11 +631,6 @@ public final class RaftStorage {
      */
     @Override
     public RaftStorage build() {
-      if (persistedSnapshotStore == null) {
-        persistedSnapshotStore =
-            new FileBasedSnapshotStoreFactory().createSnapshotStore(directory.toPath(), prefix);
-      }
-
       return new RaftStorage(
           prefix,
           storageLevel,

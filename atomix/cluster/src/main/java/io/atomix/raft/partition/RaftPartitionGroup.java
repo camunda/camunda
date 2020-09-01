@@ -32,7 +32,6 @@ import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.atomix.raft.snapshot.PersistedSnapshotStoreFactory;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.storage.StorageLevel;
 import io.atomix.utils.concurrent.BlockingAwareThreadPoolContextFactory;
@@ -43,6 +42,7 @@ import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.memory.MemorySize;
 import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -479,7 +479,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      * @return the Raft partition group builder
      */
     public Builder withSnapshotStoreFactory(
-        final PersistedSnapshotStoreFactory persistedSnapshotStoreFactory) {
+        final ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory) {
       config.getStorageConfig().setPersistedSnapshotStoreFactory(persistedSnapshotStoreFactory);
       return this;
     }

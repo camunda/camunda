@@ -188,8 +188,6 @@ public class RaftFailOverTest {
 
     assertThat(snapshot.getIndex()).isEqualTo(leaderSnapshot.getIndex()).isEqualTo(snapshotIndex);
     assertThat(snapshot.getTerm()).isEqualTo(snapshot.getTerm());
-    assertThat(snapshot.getPath().toFile().list())
-        .containsExactlyInAnyOrder(leaderSnapshot.getPath().toFile().list());
   }
 
   @Test
@@ -269,7 +267,6 @@ public class RaftFailOverTest {
     // when another data loss happens
     raftRule.shutdownServer(follower);
     raftRule.triggerDataLossOnNode(follower);
-    assertThat(firstSnapshot.getPath()).doesNotExist();
     raftRule.bootstrapNode(follower);
 
     // then snapshot is replicated again
@@ -280,7 +277,6 @@ public class RaftFailOverTest {
     assertThat(newSnapshot.getTerm()).isEqualTo(leaderSnapshot.getTerm());
     assertThat(newSnapshot.getId()).isEqualTo(leaderSnapshot.getId());
     assertThat(newSnapshot).isEqualTo(firstSnapshot);
-    assertThat(newSnapshot.getPath()).exists();
   }
 
   @Test
