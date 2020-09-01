@@ -9,6 +9,7 @@ requests, to allow the operations team to free more disk space and the broker to
 
 Zeebe can be configured with the following settings for the disk usage watermarks:
 
+* **zeebe.broker.data.diskUsageMonitoringEnabled**: configure if disk usage should be monitored (default: true)
 * **zeebe.broker.data.diskUsageReplicationWatermark**: the fraction of used disk space before the replication is paused (default: 0.99)
 * **zeebe.broker.data.diskUsageCommandWatermark**: the fraction of used disk space before new user commands are rejected (default: 0.97), this has to be less then `diskUsageReplicationWatermark`
 * **zeebe.broker.data.diskUsageMonitoringInterval**: the interval in which the disk space usage is checked (default 1 second)
