@@ -135,15 +135,23 @@
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_SNAPSHOTPERIOD.
       # snapshotPeriod: 15m
 
+      # Configure whether to monitor disk usage to prevent out of disk space issues.
+      # If set to false the broker might run out of disk space and end in a non recoverable state.
+      # If set to true the disk space will be monitored and the broker will reject commands and pause replication
+      # if the thresholds of diskUsageCommandWatermark and diskUsageReplicationWatermark are reached.
+      #
+      # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DISKUSAGEMONITORINGENABLED
+      # diskUsageMonitoringEnabled = true
+
       # When the disk usage is above this value all client commands will be rejected.
       # The value is specified as a percentage of the total disk space.
-      # The value should be in the range (0, 1).
+      # The value should be in the range (0, 1].
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK
       # diskUsageCommandWatermark = 0.97
 
       # When the disk usage is above this value, this broker will stop writing replicated events it receives from other brokers.
       # The value is specified as a percentage of the total disk space.
-      # The value should be in the range (0, 1).
+      # The value should be in the range (0, 1].
       # It is recommended that diskUsageReplicationWatermark > diskUsageCommandWatermark
       # This setting can also be overridden using the environment variable ZEEBE_BROKER_DATA_DISKUSAGEREPLICATIONWATERMARK
       # diskUsageReplicationWatermark = 0.99
