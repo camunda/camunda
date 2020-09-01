@@ -10,9 +10,6 @@ import React from 'react';
 import {render} from 'react-dom';
 import {App} from './App';
 
-// see https://github.com/mobxjs/mobx-react-lite/#observer-batching
-import 'mobx-react-lite/batchingForReactDom';
-
 render(
   <React.StrictMode>
     <App />
