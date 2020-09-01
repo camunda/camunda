@@ -83,7 +83,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1598608874627,
+  "iteration": 1598954942581,
   "links": [],
   "panels": [
     {
@@ -2087,7 +2087,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 13
+            "y": 3
           },
           "hideTimeOverride": false,
           "id": 12,
@@ -2145,7 +2145,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 13
+            "y": 3
           },
           "hideTimeOverride": false,
           "id": 13,
@@ -2208,7 +2208,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 18
+            "y": 8
           },
           "hiddenSeries": false,
           "id": 2,
@@ -2305,7 +2305,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 18
+            "y": 8
           },
           "hiddenSeries": false,
           "id": 3,
@@ -2402,7 +2402,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 24
+            "y": 14
           },
           "hiddenSeries": false,
           "id": 4,
@@ -2499,7 +2499,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 24
+            "y": 14
           },
           "hiddenSeries": false,
           "id": 5,
@@ -2596,7 +2596,7 @@
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 30
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 15,
@@ -2700,7 +2700,7 @@
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 30
+            "y": 20
           },
           "hiddenSeries": false,
           "id": 18,
@@ -5459,7 +5459,7 @@
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 9
+            "y": 10
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5523,7 +5523,7 @@
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 9
+            "y": 10
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5582,7 +5582,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 15
+            "y": 16
           },
           "hiddenSeries": false,
           "id": 79,
@@ -5674,7 +5674,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 15
+            "y": 16
           },
           "hiddenSeries": false,
           "id": 114,
@@ -5767,7 +5767,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 22
+            "y": 23
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5831,7 +5831,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 22
+            "y": 23
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5896,7 +5896,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 29
+            "y": 30
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -5956,7 +5956,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 29
+            "y": 30
           },
           "hiddenSeries": false,
           "id": 72,
@@ -6050,7 +6050,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 37
+            "y": 38
           },
           "hiddenSeries": false,
           "id": 95,
@@ -6151,7 +6151,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 37
+            "y": 38
           },
           "hiddenSeries": false,
           "id": 180,
@@ -6228,6 +6228,580 @@
             "align": false,
             "alignLevel": null
           }
+        },
+        {
+          "columns": [
+            {
+              "$$hashKey": "object:8801",
+              "text": "Current",
+              "value": "current"
+            }
+          ],
+          "datasource": "$DS_PROMETHEUS",
+          "fontSize": "100%",
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 0,
+            "y": 46
+          },
+          "id": 205,
+          "maxPerRow": 6,
+          "pageSize": null,
+          "pluginVersion": "6.7.1",
+          "repeat": "partition",
+          "repeatDirection": "h",
+          "scopedVars": {
+            "partition": {
+              "selected": false,
+              "text": "1",
+              "value": "1"
+            }
+          },
+          "showHeader": true,
+          "sort": {
+            "col": 0,
+            "desc": true
+          },
+          "styles": [
+            {
+              "$$hashKey": "object:440",
+              "alias": "Time",
+              "align": "auto",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "date"
+            },
+            {
+              "$$hashKey": "object:441",
+              "alias": "Commit index",
+              "align": "right",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "decimals": 2,
+              "mappingType": 1,
+              "pattern": "Current",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "atomix_partition_raft_commit_index{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "{{pod}} p{{partition}} ",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Commit Index",
+          "transform": "timeseries_aggregations",
+          "type": "table"
+        },
+        {
+          "columns": [
+            {
+              "$$hashKey": "object:8801",
+              "text": "Current",
+              "value": "current"
+            }
+          ],
+          "datasource": "$DS_PROMETHEUS",
+          "fontSize": "100%",
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 8,
+            "y": 46
+          },
+          "id": 218,
+          "maxPerRow": 6,
+          "pageSize": null,
+          "pluginVersion": "6.7.1",
+          "repeat": null,
+          "repeatDirection": "h",
+          "repeatIteration": 1598954942580,
+          "repeatPanelId": 205,
+          "scopedVars": {
+            "partition": {
+              "selected": false,
+              "text": "2",
+              "value": "2"
+            }
+          },
+          "showHeader": true,
+          "sort": {
+            "col": 0,
+            "desc": true
+          },
+          "styles": [
+            {
+              "$$hashKey": "object:440",
+              "alias": "Time",
+              "align": "auto",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "date"
+            },
+            {
+              "$$hashKey": "object:441",
+              "alias": "Commit index",
+              "align": "right",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "decimals": 2,
+              "mappingType": 1,
+              "pattern": "Current",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "atomix_partition_raft_commit_index{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "{{pod}} p{{partition}} ",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Commit Index",
+          "transform": "timeseries_aggregations",
+          "type": "table"
+        },
+        {
+          "columns": [
+            {
+              "$$hashKey": "object:8801",
+              "text": "Current",
+              "value": "current"
+            }
+          ],
+          "datasource": "$DS_PROMETHEUS",
+          "fontSize": "100%",
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 16,
+            "y": 46
+          },
+          "id": 219,
+          "maxPerRow": 6,
+          "pageSize": null,
+          "pluginVersion": "6.7.1",
+          "repeat": null,
+          "repeatDirection": "h",
+          "repeatIteration": 1598954942580,
+          "repeatPanelId": 205,
+          "scopedVars": {
+            "partition": {
+              "selected": false,
+              "text": "3",
+              "value": "3"
+            }
+          },
+          "showHeader": true,
+          "sort": {
+            "col": 0,
+            "desc": true
+          },
+          "styles": [
+            {
+              "$$hashKey": "object:440",
+              "alias": "Time",
+              "align": "auto",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "date"
+            },
+            {
+              "$$hashKey": "object:441",
+              "alias": "Commit index",
+              "align": "right",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "decimals": 2,
+              "mappingType": 1,
+              "pattern": "Current",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "atomix_partition_raft_commit_index{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "{{pod}} p{{partition}} ",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Commit Index",
+          "transform": "timeseries_aggregations",
+          "type": "table"
+        },
+        {
+          "columns": [
+            {
+              "$$hashKey": "object:2675",
+              "text": "Current",
+              "value": "current"
+            }
+          ],
+          "datasource": "$DS_PROMETHEUS",
+          "fontSize": "100%",
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 0,
+            "y": 51
+          },
+          "id": 209,
+          "maxPerRow": 6,
+          "pageSize": null,
+          "pluginVersion": "6.7.1",
+          "repeat": "partition",
+          "repeatDirection": "h",
+          "scopedVars": {
+            "partition": {
+              "selected": false,
+              "text": "1",
+              "value": "1"
+            }
+          },
+          "showHeader": true,
+          "sort": {
+            "col": 0,
+            "desc": true
+          },
+          "styles": [
+            {
+              "$$hashKey": "object:440",
+              "alias": "Time",
+              "align": "auto",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "date"
+            },
+            {
+              "$$hashKey": "object:441",
+              "alias": "Last appended index",
+              "align": "right",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "decimals": 2,
+              "mappingType": 1,
+              "pattern": "Current",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "atomix_partition_raft_append_index{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "{{pod}}-p{{partition}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Index of last appended entry",
+          "transform": "timeseries_aggregations",
+          "type": "table"
+        },
+        {
+          "columns": [
+            {
+              "$$hashKey": "object:2675",
+              "text": "Current",
+              "value": "current"
+            }
+          ],
+          "datasource": "$DS_PROMETHEUS",
+          "fontSize": "100%",
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 8,
+            "y": 51
+          },
+          "id": 220,
+          "maxPerRow": 6,
+          "pageSize": null,
+          "pluginVersion": "6.7.1",
+          "repeat": null,
+          "repeatDirection": "h",
+          "repeatIteration": 1598954942580,
+          "repeatPanelId": 209,
+          "scopedVars": {
+            "partition": {
+              "selected": false,
+              "text": "2",
+              "value": "2"
+            }
+          },
+          "showHeader": true,
+          "sort": {
+            "col": 0,
+            "desc": true
+          },
+          "styles": [
+            {
+              "$$hashKey": "object:440",
+              "alias": "Time",
+              "align": "auto",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "date"
+            },
+            {
+              "$$hashKey": "object:441",
+              "alias": "Last appended index",
+              "align": "right",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "decimals": 2,
+              "mappingType": 1,
+              "pattern": "Current",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "atomix_partition_raft_append_index{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "{{pod}}-p{{partition}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Index of last appended entry",
+          "transform": "timeseries_aggregations",
+          "type": "table"
+        },
+        {
+          "columns": [
+            {
+              "$$hashKey": "object:2675",
+              "text": "Current",
+              "value": "current"
+            }
+          ],
+          "datasource": "$DS_PROMETHEUS",
+          "fontSize": "100%",
+          "gridPos": {
+            "h": 5,
+            "w": 8,
+            "x": 16,
+            "y": 51
+          },
+          "id": 221,
+          "maxPerRow": 6,
+          "pageSize": null,
+          "pluginVersion": "6.7.1",
+          "repeat": null,
+          "repeatDirection": "h",
+          "repeatIteration": 1598954942580,
+          "repeatPanelId": 209,
+          "scopedVars": {
+            "partition": {
+              "selected": false,
+              "text": "3",
+              "value": "3"
+            }
+          },
+          "showHeader": true,
+          "sort": {
+            "col": 0,
+            "desc": true
+          },
+          "styles": [
+            {
+              "$$hashKey": "object:440",
+              "alias": "Time",
+              "align": "auto",
+              "dateFormat": "YYYY-MM-DD HH:mm:ss",
+              "pattern": "Time",
+              "type": "date"
+            },
+            {
+              "$$hashKey": "object:441",
+              "alias": "Last appended index",
+              "align": "right",
+              "colorMode": null,
+              "colors": [
+                "rgba(245, 54, 54, 0.9)",
+                "rgba(237, 129, 40, 0.89)",
+                "rgba(50, 172, 45, 0.97)"
+              ],
+              "decimals": 2,
+              "mappingType": 1,
+              "pattern": "Current",
+              "thresholds": [],
+              "type": "string",
+              "unit": "short"
+            }
+          ],
+          "targets": [
+            {
+              "expr": "atomix_partition_raft_append_index{namespace=~\"$namespace\", pod=~\"$pod\", partition=~\"$partition\"}",
+              "format": "time_series",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "{{pod}}-p{{partition}}",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Index of last appended entry",
+          "transform": "timeseries_aggregations",
+          "type": "table"
+        },
+        {
+          "datasource": "$DS_PROMETHEUS",
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 0,
+            "y": 56
+          },
+          "id": 215,
+          "options": {
+            "fieldOptions": {
+              "calcs": [
+                "mean"
+              ],
+              "defaults": {
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 300
+                    }
+                  ]
+                }
+              },
+              "overrides": [],
+              "values": false
+            },
+            "orientation": "auto",
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "6.7.1",
+          "targets": [
+            {
+              "expr": "max(atomix_partition_raft_append_index{namespace=~\"$namespace\",partition=~\"$partition\"}) by (partition, namespace) - max(atomix_partition_raft_commit_index{namespace=~\"$namespace\",partition=~\"$partition\"}) by (partition, namespace)",
+              "interval": "",
+              "legendFormat": "Partition {{partition}} ({{namespace}})",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Number of records appended on the leader but not committed",
+          "type": "gauge"
+        },
+        {
+          "datasource": "$DS_PROMETHEUS",
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 56
+          },
+          "id": 217,
+          "options": {
+            "fieldOptions": {
+              "calcs": [
+                "last"
+              ],
+              "defaults": {
+                "mappings": [],
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1000
+                    }
+                  ]
+                }
+              },
+              "overrides": [],
+              "values": false
+            },
+            "orientation": "auto",
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "pluginVersion": "6.7.1",
+          "repeat": null,
+          "repeatDirection": "h",
+          "targets": [
+            {
+              "expr": "max(atomix_partition_raft_commit_index{namespace=~\"$namespace\",partition=~\"$partition\"}) by (partition, namespace) - min(atomix_partition_raft_commit_index{namespace=~\"$namespace\",partition=~\"$partition\"}) by (partition, namespace)",
+              "interval": "",
+              "legendFormat": "Partition {{partition}} ({{namespace}})",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Number of records by which the slowest follower is lagging behind",
+          "type": "gauge"
         }
       ],
       "title": "Atomix",
@@ -8591,5 +9165,5 @@
   "variables": {
     "list": []
   },
-  "version": 12
+  "version": 14
 }
