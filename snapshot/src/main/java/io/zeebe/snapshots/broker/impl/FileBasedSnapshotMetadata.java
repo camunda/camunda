@@ -122,34 +122,37 @@ public final class FileBasedSnapshotMetadata implements SnapshotId {
 
   @Override
   public int hashCode() {
-    return Objects.hash(getIndex(), getTerm(), getTimestamp());
+    return Objects.hash(index, term, processedPosition, exporterPosition);
   }
 
   @Override
-  public boolean equals(final Object other) {
-    if (this == other) {
+  public boolean equals(final Object o) {
+    if (this == o) {
       return true;
     }
-
-    if (other == null || getClass() != other.getClass()) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
-
-    final FileBasedSnapshotMetadata that = (FileBasedSnapshotMetadata) other;
-    return getIndex() == that.getIndex()
-        && getTerm() == that.getTerm()
-        && Objects.equals(getTimestamp(), that.getTimestamp());
+    final FileBasedSnapshotMetadata that = (FileBasedSnapshotMetadata) o;
+    return index == that.index
+        && term == that.term
+        && processedPosition == that.processedPosition
+        && exporterPosition == that.exporterPosition;
   }
 
   @Override
   public String toString() {
-    return "DbSnapshotMetadata{"
+    return "FileBasedSnapshotMetadata{"
         + "index="
         + index
         + ", term="
         + term
         + ", timestamp="
         + timestamp
+        + ", processedPosition="
+        + processedPosition
+        + ", exporterPosition="
+        + exporterPosition
         + '}';
   }
 }
