@@ -100,6 +100,6 @@ public final class ZeebeRuntimeValidators {
                 ExpressionVerification::isOptional)
             .build(expressionLanguage),
         // ----------------------------------------
-        new ProcessTimerStartEventExpressionValidator(expressionLanguage, expressionProcessor));
+        new TimerCatchEventExpressionValidator(expressionLanguage, expressionProcessor));
   }
 }

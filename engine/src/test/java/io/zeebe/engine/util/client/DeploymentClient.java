@@ -20,6 +20,8 @@ import io.zeebe.protocol.record.intent.DeploymentIntent;
 import io.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.zeebe.protocol.record.value.deployment.ResourceType;
 import io.zeebe.test.util.record.RecordingExporter;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
@@ -89,11 +91,27 @@ public final class DeploymentClient {
     return withXmlResource("process.xml", modelInstance);
   }
 
+  public DeploymentClient withXmlClasspathResource(final String classpathResource) {
+    try {
+      final var outputStream = new ByteArrayOutputStream();
+      final var resourceAsStream = getClass().getResourceAsStream(classpathResource);
+      resourceAsStream.transferTo(outputStream);
+
+      return withXmlResource(outputStream.toByteArray(), classpathResource);
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public DeploymentClient withXmlResource(final byte[] resourceBytes) {
+    return withXmlResource(resourceBytes, "process.xml");
+  }
+
+  public DeploymentClient withXmlResource(final byte[] resourceBytes, final String resourceName) {
     deploymentRecord
         .resources()
         .add()
-        .setResourceName(wrapString("process.xml"))
+        .setResourceName(wrapString(resourceName))
         .setResource(wrapArray(resourceBytes))
         .setResourceType(ResourceType.BPMN_XML);
     return this;
