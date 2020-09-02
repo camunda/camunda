@@ -8,7 +8,7 @@ It has two profile for its execution, static and base data.
 
 # General Requirements
 
-* the machine the test is run on needs to have `jq` and `nc` (netcat) installed
+* the machine the test is run on needs to have `jq`, `nc` (netcat) & `cmp` (diffutils) installed
 
 # Camunda Optimize Upgrade Performance - static data
 

@@ -13,13 +13,10 @@
 
   <properties>
     <skip.tests>true</skip.tests>
-    <!-- default amount with a fresh engine -->
-    <upgrade.expected.activityInstance.count>21</upgrade.expected.activityInstance.count>
-    <!-- default 30 minutes -->
-    <upgrade.timeout.seconds>1800</upgrade.timeout.seconds>
     <old.optimize.elasticsearch.port>9250</old.optimize.elasticsearch.port>
     <new.optimize.elasticsearch.port>9200</new.optimize.elasticsearch.port>
-    <elasticsearch.snapshot.path>/usr/share/elasticsearch/essnapshots</elasticsearch.snapshot.path>
+    <elasticsearch.snapshot.path>/tmp</elasticsearch.snapshot.path>
+    <elasticsearch.index.settings.filter>index.analysis.*,index.number_of_shards,index.number_of_replicas,index.max_ngram_diff,index.mapping.*,index.refresh_interval</elasticsearch.index.settings.filter>
   </properties>
 
   <build>
@@ -69,7 +66,7 @@
               </target>
             </configuration>
           </execution>
-          <!-- 2. Starting CamBPM, old  and new ES through docker-compose -->
+          <!-- 2. Starting CamBPM, old and new ES through docker-compose -->
           <execution>
             <id>start-old-new-ES-and-CamBpm</id>
             <goals>
@@ -136,7 +133,81 @@
               </target>
             </configuration>
           </execution>
-          <!-- 4. import the data to ElasticSearch from previous Optimize version -->
+          <!-- 4. Starting new Optimize version to obtain expected schema -->
+          <execution>
+            <id>start-new-optimize-version-to-obtain-expected-schema</id>
+            <goals>
+              <goal>run</goal>
+            </goals>
+            <phase>pre-integration-test</phase>
+            <configuration>
+              <skip>${skip.tests}</skip>
+              <target name="Obtain expected new schema">
+                <!-- ensure elasticsearch is clean -->
+                <echo message="Making sure that ElasticSearch is clean by wiping all data for new ES..." />
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -XDELETE localhost:${new.optimize.elasticsearch.port}/_all" />
+                </exec>
+                <echo message="Successfully wiped all data from new ES!" />
+
+                <echo message="Removing the default environment-config so we can overwrite the ES port..." />
+                <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash">
+                  <arg value="-c" />
+                  <arg value="rm ./environment/environment-config.yaml" />
+                </exec>
+
+                <echo message="Starting Optimize ${project.version}..." />
+                <exec dir="${project.build.directory}/${project.version}/" executable="${project.build.directory}/${project.version}/optimize-startup.sh" spawn="true">
+                  <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${new.optimize.elasticsearch.port}" />
+                </exec>
+
+                <echo message="Waiting for Optimize be up and running..." />
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="until test &quot;$(curl -s -f 'http://localhost:8090/api/status' | jq '.connectionStatus.connectedToElasticsearch')&quot; = &quot;true&quot;; do sleep 1; done" />
+                </exec>
+                <echo message="Optimize is up!" />
+
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f -X POST localhost:${new.optimize.elasticsearch.port}/_refresh" />
+                </exec>
+
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize*/_settings/${elasticsearch.index.settings.filter} | jq -S . &gt; expected_es_settings.json" />
+                </exec>
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize*/_mappings | jq -S . &gt; expected_es_mappings.json" />
+                </exec>
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize*/_alias | jq -S . &gt; expected_es_aliases.json" />
+                </exec>
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/_template/optimize* | jq -S . &gt; expected_es_templates.json" />
+                </exec>
+
+                <echo message="Killing New Optimize ${project.previousVersion}..." />
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="pkill -f org.camunda.optimize.Main" />
+                </exec>
+                <echo message="Killed New Optimize." />
+
+                <echo message="Cleaning up the new ES instance..." />
+                <exec executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f -XDELETE localhost:${new.optimize.elasticsearch.port}/_all" />
+                </exec>
+                <echo message="Successfully wiped all data from new ES!" />
+              </target>
+            </configuration>
+          </execution>
+          <!-- 5. import the data to ElasticSearch from previous Optimize version -->
           <execution>
             <id>import-data-to-previous-Optimize</id>
             <goals>
@@ -172,20 +243,19 @@
                 <exec dir="${project.build.directory}/${project.previousVersion}/" executable="${project.build.directory}/${project.previousVersion}/optimize-startup.sh" spawn="true">
                   <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${old.optimize.elasticsearch.port}" />
                 </exec>
-                <echo message="Optimize ${project.previousVersion} has benn started." />
+                <echo message="Optimize ${project.previousVersion} has been started." />
 
-                <echo message="Waiting for Optimize to fully booted up..." />
+                <echo message="Waiting for Optimize be up and running..." />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="until $(nc -zv localhost 8090); do sleep 2; done" />
+                  <arg value="until test &quot;$(curl -s -f 'http://localhost:8090/api/status' | jq '.connectionStatus.connectedToElasticsearch')&quot; = &quot;true&quot;; do sleep 1; done" />
                 </exec>
-                <echo message="Optimize has benn booted up." />
+                <echo message="Optimize is up!" />
 
                 <echo message="Waiting for Optimize Import to finish..." />
-                <sleep seconds="5" />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="until test $(curl 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;') = &quot;false&quot;; do sleep 2; done" />
+                  <arg value="until test &quot;$(curl -s -f 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;')&quot; = &quot;false&quot;; do sleep 2; done" />
                 </exec>
                 <echo message="Import has been finished." />
 
@@ -244,11 +314,11 @@
                   <arg value="-c" />
                   <arg value="pkill -f org.camunda.optimize.Main" />
                 </exec>
-                <echo message="Killed Optmize." />
+                <echo message="Killed Optimize." />
               </target>
             </configuration>
           </execution>
-          <!-- 5. Copy the data from the old ES to the new ES instance -->
+          <!-- 6. Copy the data from the old ES to the new ES instance -->
           <execution>
             <id>copy-data</id>
             <goals>
@@ -295,7 +365,7 @@
               </target>
             </configuration>
           </execution>
-          <!-- 6. Perform migration -->
+          <!-- 7. Perform migration -->
           <execution>
             <id>run-migration</id>
             <goals>
@@ -306,7 +376,7 @@
               <skip>${skip.tests}</skip>
               <target name="perform migration">
                 <echo message="Removing the default environment-config so we can overwrite the ES port..." />
-                <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash">
+                <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash" failonerror="false">
                   <arg value="-c" />
                   <arg value="rm ./environment/environment-config.yaml" />
                 </exec>
@@ -316,41 +386,65 @@
                   <arg value="set -o pipefail; ./upgrade/upgrade.sh --skip-warning | sed 's/^/[OPTIMIZE MIGRATION SCRIPT ${project.version}]: /'" />
                   <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${new.optimize.elasticsearch.port}" />
                 </exec>
-                  <echo message="Starting Optimize ${project.version}..." />
+
+                <echo message="Starting Optimize ${project.version}..." />
                 <exec dir="${project.build.directory}/${project.version}/" executable="${project.build.directory}/${project.version}/optimize-startup.sh" spawn="true">
                   <env key="OPTIMIZE_ELASTICSEARCH_HTTP_PORT" value="${new.optimize.elasticsearch.port}" />
                 </exec>
-                <echo message="Waiting for Optimize to start..." />
+
+                <echo message="Waiting for Optimize be up and running..." />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="until $(nc -zv localhost 8090); do sleep 2; done" />
+                  <arg value="until test &quot;$(curl -s -f 'http://localhost:8090/api/status' | jq '.connectionStatus.connectedToElasticsearch')&quot; = &quot;true&quot;; do sleep 1; done" />
                 </exec>
+                <echo message="Optimize is up!" />
 
                 <echo message="Waiting for Optimize Import to finish..." />
-                <sleep seconds="5" />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="until test $(curl 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;') = &quot;false&quot;; do sleep 2; done" />
+                  <arg value="until test &quot;$(curl -s -f 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;')&quot; = &quot;false&quot;; do sleep 2; done" />
                 </exec>
 
-                <echo message="Authenticating on optimize api..." />
-                <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash" failonerror="true">
-                  <arg value="-c" />
-                  <arg value="curl -s -w &quot;%{http_code}&quot; -f -H 'Content-Type: application/json' -XPOST localhost:8090/api/authentication --data-binary '{&quot;username&quot;:&quot;demo&quot;, &quot;password&quot;:&quot;demo&quot;}' -c authCookie -o authResponse" />
-                </exec>
-
-                <echo message="Reading all reports from optimize api..." />
-                <exec dir="${project.build.directory}/${project.version}" executable="/bin/bash" failonerror="true">
-                  <arg value="-c" />
-                  <arg value="curl -s -o /dev/null -w &quot;%{http_code}&quot; -f http://localhost:8090/api/report?orderBy=lastModified -b authCookie" />
-                </exec>
-
-                <!--assert document counts are the same as before the migration-->
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="curl -s -f -X POST localhost:${new.optimize.elasticsearch.port}/_refresh" />
                 </exec>
 
+                <!-- assert schema is as expected -->
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize*/_settings/${elasticsearch.index.settings.filter} | jq -S . &gt; es_settings.json" />
+                </exec>
+                <exec dir="${project.build.directory}"  executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="echo Comparing ES settings after upgrade with expected settings; cmp expected_es_settings.json es_settings.json" />
+                </exec>
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize*/_mappings | jq -S . &gt; es_mappings.json" />
+                </exec>
+                <exec dir="${project.build.directory}"  executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="echo Comparing ES mappings after upgrade with expected mappings; cmp expected_es_mappings.json es_mappings.json" />
+                </exec>
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize*/_alias | jq -S . &gt; es_aliases.json" />
+                </exec>
+                <exec dir="${project.build.directory}"  executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="echo Comparing ES aliases after upgrade with expected aliases; cmp expected_es_aliases.json es_aliases.json" />
+                </exec>
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/_template/optimize* | jq -S . &gt; es_templates.json" />
+                </exec>
+                <exec dir="${project.build.directory}"  executable="/bin/bash" failonerror="true">
+                  <arg value="-c" />
+                  <arg value="echo Comparing ES templates after upgrade with expected templates; cmp expected_es_templates.json es_templates.json" />
+                </exec>
+
+                <!--assert document counts are the same as before the migration-->
                 <exec outputproperty="post_migration_pi_count" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize-process-instance/_count | jq .count" />
@@ -414,10 +508,11 @@
                   <arg value="-c" />
                   <arg value="pkill -f org.camunda.optimize.Main" />
                 </exec>
+                <echo message="Killed Optimize." />
               </target>
             </configuration>
           </execution>
-          <!-- 7. Cleanup: stop all docker containers -->
+          <!-- 8. Cleanup: stop all docker containers -->
           <execution>
             <id>cleanup</id>
             <goals>
@@ -444,19 +539,6 @@
             </configuration>
           </execution>
         </executions>
-        <dependencies>
-          <dependency>
-            <groupId>ant-contrib</groupId>
-            <artifactId>ant-contrib</artifactId>
-            <version>1.0b3</version>
-            <exclusions>
-              <exclusion>
-                <groupId>ant</groupId>
-                <artifactId>ant</artifactId>
-              </exclusion>
-            </exclusions>
-          </dependency>
-        </dependencies>
       </plugin>
     </plugins>
   </build>
@@ -473,8 +555,6 @@
       <id>static-data-upgrade-es-schema-tests</id>
       <properties>
         <skip.tests>false</skip.tests>
-        <!-- amount from the 2 million process instance sample data -->
-        <upgrade.expected.activityInstance.count>21932786</upgrade.expected.activityInstance.count>
       </properties>
     </profile>
   </profiles>

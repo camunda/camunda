@@ -377,7 +377,10 @@ pipeline {
           }
           post {
             always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+              junit testResults: 'upgrade/target/failsafe-reports/**/*.xml', keepLongStdio: true
+            }
+            failure {
+              archiveArtifacts artifacts: 'qa/upgrade-es-schema-tests/target/*.json'
             }
           }
         }
@@ -546,7 +549,7 @@ void integrationTestSteps(String engineVersion = 'latest') {
 
 void migrationTestSteps() {
   container('maven') {
-    sh ("""apt-get update && apt-get install -y jq netcat""")
+    sh ("""apt-get update && apt-get install -y jq netcat diffutils""")
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend -am -Pengine-latest,it")
     runMaven("install -Dskip.docker -DskipTests -f upgrade")
     runMaven("install -Dskip.docker -DskipTests -f qa")
