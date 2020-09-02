@@ -253,9 +253,10 @@
                 <echo message="Optimize is up!" />
 
                 <echo message="Waiting for Optimize Import to finish..." />
+                <sleep seconds="5" />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="until test &quot;$(curl -s -f 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;')&quot; = &quot;false&quot;; do sleep 2; done" />
+                  <arg value="until test &quot;$(curl -s -f 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;')&quot; = &quot;false&quot;; do sleep 1; done" />
                 </exec>
                 <echo message="Import has been finished." />
 
@@ -400,10 +401,12 @@
                 <echo message="Optimize is up!" />
 
                 <echo message="Waiting for Optimize Import to finish..." />
+                <sleep seconds="5" />
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
-                  <arg value="until test &quot;$(curl -s -f 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;')&quot; = &quot;false&quot;; do sleep 2; done" />
+                  <arg value="until test &quot;$(curl -s -f 'http://localhost:8090/api/status' | jq '.isImporting.&quot;camunda-bpm&quot;')&quot; = &quot;false&quot;; do sleep 1; done" />
                 </exec>
+                <echo message="Import has been finished." />
 
                 <exec executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
