@@ -123,9 +123,6 @@ public final class FileBasedSnapshot implements PersistedSnapshot {
 
   @Override
   public String toString() {
-    return "FileBasedSnapshot{" +
-        "directory=" + directory +
-        ", metadata=" + metadata +
-        '}';
+    return "FileBasedSnapshot{" + "directory=" + directory + ", metadata=" + metadata + '}';
   }
 }
