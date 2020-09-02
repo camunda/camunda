@@ -19,8 +19,8 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.elasticsearch.client.RestClient;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,38 +31,35 @@ public class DiskSpaceRecoveryITTest {
   static ZeebeBrokerContainer zeebeBroker;
   private static final Logger LOG = LoggerFactory.getLogger(DiskSpaceRecoveryITTest.class);
   private static final String VOLUME_NAME = "data-DiskSpaceRecoveryITTest";
-  private static String containerIPAddress;
-  private static Integer apiPort;
   private static ElasticsearchContainer elastic;
+  private static String elasticHostUrl;
   private ZeebeClient client;
 
-  @BeforeClass
-  public static void setUpClass() {
-    final var elasticHostInternal = "http://elastic:9200";
-    zeebeBroker = createZeebe(elasticHostInternal);
+  @Before
+  public void setUp() {
+    elasticHostUrl = "http://elastic:9200";
+    zeebeBroker = new ZeebeBrokerContainer("current-test");
+    configureZeebe(zeebeBroker, elasticHostUrl);
     final var network = zeebeBroker.getNetwork();
     elastic = createElastic(network);
-    zeebeBroker.start();
-
-    apiPort = zeebeBroker.getMappedPort(26500);
-    containerIPAddress = zeebeBroker.getContainerIpAddress();
   }
 
-  private static ZeebeBrokerContainer createZeebe(final String elasticHost) {
-    zeebeBroker =
-        new ZeebeBrokerContainer("current-test")
-            .withEnv(
-                "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-                "io.zeebe.exporter.ElasticsearchExporter")
-            .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", elasticHost)
-            .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
-            .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
-            .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
-            .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "1MB")
-            .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "1MB")
-            .withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.5")
-            .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
-            .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_MESSAGE", "true");
+  private static ZeebeBrokerContainer configureZeebe(
+      final ZeebeBrokerContainer zeebeBroker, final String elasticHost) {
+
+    zeebeBroker
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
+            "io.zeebe.exporter.ElasticsearchExporter")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", elasticHost)
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
+        .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
+        .withEnv("ZEEBE_BROKER_DATA_LOGSEGMENTSIZE", "1MB")
+        .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "1MB")
+        .withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.5")
+        .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_MESSAGE", "true");
 
     zeebeBroker
         .getDockerClient()
@@ -91,8 +88,8 @@ public class DiskSpaceRecoveryITTest {
     return container;
   }
 
-  @AfterClass
-  public static void tearDownClass() {
+  @After
+  public void tearDown() {
     zeebeBroker.stop();
     zeebeBroker.getDockerClient().removeVolumeCmd(VOLUME_NAME).exec();
     elastic.stop();
@@ -101,11 +98,8 @@ public class DiskSpaceRecoveryITTest {
   @Test
   public void shouldRecoverAfterOutOfDiskSpaceWhenExporterStarts() {
     // given
-    client =
-        ZeebeClient.newClientBuilder()
-            .brokerContactPoint(containerIPAddress + ":" + apiPort)
-            .usePlaintext()
-            .build();
+    zeebeBroker.start();
+    client = createClient();
 
     // when
     LOG.info("Wait until broker is out of disk space");
@@ -125,6 +119,30 @@ public class DiskSpaceRecoveryITTest {
         .pollInterval(Duration.ofSeconds(10))
         .timeout(Duration.ofMinutes(3))
         .untilAsserted(() -> assertThatCode(this::publishMessage).doesNotThrowAnyException());
+  }
+
+  private ZeebeClient createClient() {
+    final var apiPort = zeebeBroker.getMappedPort(26500);
+    final var containerIPAddress = zeebeBroker.getContainerIpAddress();
+    return ZeebeClient.newClientBuilder()
+        .brokerContactPoint(containerIPAddress + ":" + apiPort)
+        .usePlaintext()
+        .build();
+  }
+
+  @Test
+  public void shouldNotProcessWhenOutOfDiskSpaceOnStart() {
+    // given
+    zeebeBroker.withEnv("ZEEBE_BROKER_DATA_DISKUSAGECOMMANDWATERMARK", "0.0001");
+
+    // when
+    zeebeBroker.start();
+    client = createClient();
+
+    // then
+    assertThatThrownBy(this::publishMessage)
+        .hasRootCauseMessage(
+            "RESOURCE_EXHAUSTED: Cannot accept requests for partition 1. Broker is out of disk space");
   }
 
   private void publishMessage() {
