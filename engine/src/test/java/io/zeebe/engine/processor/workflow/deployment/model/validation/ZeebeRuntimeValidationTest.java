@@ -17,8 +17,6 @@ import io.zeebe.engine.processor.workflow.ExpressionProcessor.VariablesLookup;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
-import io.zeebe.model.bpmn.instance.StartEvent;
-import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeCalledElement;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeLoopCharacteristics;
@@ -45,8 +43,6 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public final class ZeebeRuntimeValidationTest {
 
-  public static final String INVALID_TIMER_START_EVENT_EXPRESSION_MESSAGE =
-      "Expected a valid timer expression for start event, but encountered the following error: ";
   private static final String INVALID_EXPRESSION = "?!";
   private static final String INVALID_EXPRESSION_MESSAGE =
       "failed to parse expression '?!': [1.2] failure: end of input expected\n"
@@ -62,7 +58,6 @@ public final class ZeebeRuntimeValidationTest {
   private static final String INVALID_PATH_EXPRESSION = "a ? b";
   private static final String INVALID_PATH_EXPRESSION_MESSAGE =
       "Expected path expression 'a ? b' but doesn't match the pattern '[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*'.";
-  private static final String VALID_TIMER_DURATION_EXPRESSION = "\"PT1H\"";
   public BpmnModelInstance modelInstance;
 
   @Parameter(0)
@@ -313,27 +308,28 @@ public final class ZeebeRuntimeValidationTest {
         Arrays.asList(expect(ZeebeCalledElement.class, INVALID_EXPRESSION_MESSAGE))
       },
       {
-        // timer start event expression is not supported
+        /* invalid variable input mapping */
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .timerWithCycleExpression(INVALID_EXPRESSION)
+            .serviceTask(
+                "task", task -> task.zeebeJobType("test").zeebeInputExpression("x", "null"))
             .done(),
         Arrays.asList(
-            expect(TimerEventDefinition.class, INVALID_EXPRESSION_MESSAGE),
             expect(
-                StartEvent.class,
-                INVALID_TIMER_START_EVENT_EXPRESSION_MESSAGE + INVALID_EXPRESSION_MESSAGE))
+                ZeebeInput.class,
+                "Expected path expression 'null' but is one of the reserved words (null, true, false, function, if, then, else, for, between, instance, of)."))
       },
       {
-        // valid timer start event expression does not evaluate to correct timer type
+        /* invalid variable output mapping */
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .timerWithCycleExpression(VALID_TIMER_DURATION_EXPRESSION)
+            .serviceTask(
+                "task", task -> task.zeebeJobType("test").zeebeOutputExpression("x", "true"))
             .done(),
         Arrays.asList(
             expect(
-                StartEvent.class,
-                INVALID_TIMER_START_EVENT_EXPRESSION_MESSAGE + "Repetition spec must start with R"))
+                ZeebeOutput.class,
+                "Expected path expression 'true' but is one of the reserved words (null, true, false, function, if, then, else, for, between, instance, of)."))
       },
     };
   }

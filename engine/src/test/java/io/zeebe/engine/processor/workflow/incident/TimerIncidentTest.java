@@ -127,9 +127,9 @@ public final class TimerIncidentTest {
         .hasElementId(elementInstance.getValue().getElementId())
         .hasErrorType(ErrorType.EXTRACT_VALUE_ERROR)
         .hasErrorMessage(
-            "Expected result of the expression '"
+            "Invalid duration format 'not_a_duration_expression' for expression '"
                 + DURATION_VARIABLE
-                + "' to be parsed to a duration, but was 'not_a_duration_expression'");
+                + "'");
   }
 
   @Test
