@@ -4,11 +4,10 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useRef} from 'react';
 
 import {MessageBox, Button, Input, Labeled} from 'components';
 import {t} from 'translation';
-import {isMetadataTelemetryEnabled} from 'config';
 
 import {login} from './service';
 import {ReactComponent as Logo} from './logo.svg';
@@ -20,13 +19,8 @@ export default function Login({onLogin}) {
   const [password, setPassword] = useState('');
   const [waitingForServer, setWaitingForServer] = useState(false);
   const [error, setError] = useState(null);
-  const [telemetryEnabled, setTelemetryEnabled] = useState(null);
 
   const passwordField = useRef(null);
-
-  useEffect(() => {
-    isMetadataTelemetryEnabled().then(setTelemetryEnabled);
-  }, []);
 
   const usernameLabel = t('login.username');
   const passwordLabel = t('login.password');
@@ -88,12 +82,7 @@ export default function Login({onLogin}) {
       <Button main primary type="submit" onClick={submit} disabled={waitingForServer}>
         {t('login.btn')}
       </Button>
-      {typeof telemetryEnabled === 'boolean' && (
-        <div className="telemetryNotice">
-          {t('login.telemetry')} <b>{t(telemetryEnabled ? 'common.enabled' : 'common.disabled')}</b>
-          .
-        </div>
-      )}
+      <div className="privacyNotice" dangerouslySetInnerHTML={{__html: t('login.telemetry')}} />
     </form>
   );
 }
