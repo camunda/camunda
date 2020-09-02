@@ -137,7 +137,28 @@ With this configuration Operate provides endpoints:
 
 ```<server>:8081/health/readiness``` Readiness probe
 
+## Versions before 0.25.0
+
+In versions before 0.25.0 management points look differently, therefore we recommend to reconfigure for next versions.
+
+Operate **enabled by default** a **management compatibility mode**. Previous used probe and metric endpoints are then still available.
+The management compatibility mode provides these endpoints and maps it to current endpoints:
+
+````yaml
+camunda.operate.management.compatiblity.enabled: true
+````
+
+|Name|Before 0.25.0| Current|
+|----|-------------|--------|
+|Readiness|:8080/api/check|:8081/health/readiness|
+|Liveness|:8080/actuator/health|:8081/health/liveness|
+|Metrics|:8080/actuator/prometheus|:8081/metrics|
+Please take care of these and consider disable the mode if you configure the management ports and path yourself.
+
+Future version might remove the management compatibility mode.
+
 # Logging
+These endpoin
 
 Operate uses Log4j2 framework for logging. In distribution archive as well as inside a Docker image you can find two logging configuration files,
 that can be further adjusted to your needs.
