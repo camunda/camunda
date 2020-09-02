@@ -58,7 +58,7 @@ class MessagePackValueMapper extends CustomValueMapper {
       case MsgPackType.MAP => {
         val context = new MessagePackContext(
           reader = reader,
-          offset = offset,
+          bufferOffset = offset,
           size = token.getSize
         )
 
