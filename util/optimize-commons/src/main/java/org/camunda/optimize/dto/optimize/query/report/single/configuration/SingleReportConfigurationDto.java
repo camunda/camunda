@@ -128,17 +128,6 @@ public class SingleReportConfigurationDto implements Combinable {
     return Optional.ofNullable(processPart);
   }
 
-  // Just here for backwards-compatibility, to be removed with OPT-4149
-  @Deprecated
-  public CustomBucketDto getCustomNumberBucket() {
-    return customBucket;
-  }
-
-  @Deprecated
-  public void setCustomNumberBucket(final CustomBucketDto customBucketDto) {
-    this.customBucket = customBucketDto;
-  }
-
   public Optional<Double> getGroupByBaseline() {
     return customBucket.isActive()
       ? Optional.ofNullable(customBucket.getBaseline())
