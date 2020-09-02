@@ -32,6 +32,7 @@ import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftClusterContext;
 import io.atomix.raft.impl.zeebe.LogCompactor;
+import io.atomix.raft.metrics.RaftReplicationMetrics;
 import io.atomix.raft.metrics.RaftRoleMetrics;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftServerProtocol;
@@ -90,6 +91,7 @@ public class RaftContext implements AutoCloseable {
   private final Set<RaftCommitListener> commitListeners = new CopyOnWriteArraySet<>();
   private final Set<Runnable> failureListeners = new CopyOnWriteArraySet<>();
   private final RaftRoleMetrics raftRoleMetrics;
+  private final RaftReplicationMetrics replicationMetrics;
   private final MetaStore meta;
   private final RaftLog raftLog;
   private final RaftLogWriter logWriter;
@@ -168,6 +170,8 @@ public class RaftContext implements AutoCloseable {
     registerHandlers(protocol);
 
     raftRoleMetrics = new RaftRoleMetrics(name);
+    replicationMetrics = new RaftReplicationMetrics(name);
+    replicationMetrics.setAppendIndex(logWriter.getLastIndex());
     started = true;
   }
 
@@ -357,6 +361,7 @@ public class RaftContext implements AutoCloseable {
         state = State.READY;
         stateChangeListeners.forEach(l -> l.accept(state));
       }
+      replicationMetrics.setCommitIndex(commitIndex);
     }
     return previousCommitIndex;
   }
@@ -953,6 +958,10 @@ public class RaftContext implements AutoCloseable {
 
   public boolean isRunning() {
     return started;
+  }
+
+  public RaftReplicationMetrics getReplicationMetrics() {
+    return replicationMetrics;
   }
 
   /** Raft server state. */
