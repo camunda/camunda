@@ -117,6 +117,9 @@ export default withErrorHandling(
                 ? await loadProcessDefinitionXml(key, versions[0], tenantIds[0])
                 : null,
           },
+          distributedBy: {
+            $set: {type: 'none', value: null},
+          },
         },
         filter: {
           $set: filter.filter(

@@ -16,7 +16,7 @@ import './BucketSize.scss';
 export default function BucketSize({
   report: {
     data: {
-      configuration: {customBucket},
+      configuration: {customBucket, distributedBy},
       groupBy,
     },
   },
@@ -38,8 +38,11 @@ export default function BucketSize({
     groupBy?.type === 'variable' &&
     ['Integer', 'Double', 'Short', 'Long'].includes(groupBy.value?.type);
   const isGroupedByDuration = groupBy?.type === 'duration';
+  const isDistributedByVariable =
+    distributedBy?.type === 'variable' &&
+    ['Integer', 'Double', 'Short', 'Long'].includes(distributedBy.value.type);
 
-  if (isBucketableVariableReport || isGroupedByDuration) {
+  if (isBucketableVariableReport || isGroupedByDuration || isDistributedByVariable) {
     const {active, bucketSize, baseline, bucketSizeUnit, baselineUnit} = customBucket;
     const flush = () => applyChanges.flush();
 

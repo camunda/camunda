@@ -797,3 +797,26 @@ test('group by duration', async (t) => {
   await t.expect(e.reportRenderer.textContent).notContains('Invoice processed');
   await t.expect(e.reportRenderer.textContent).contains('User Task: Count');
 });
+
+test('distribute by variable', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'Start Date', 'Month');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.click(e.configurationButton);
+  await t.click(e.distributedBySelect);
+  await t.click(e.configurationOption('Variable'));
+  await t.click(e.submenuOption('approved'));
+  await t.click(e.distributedBySelect);
+  await t.click(e.configurationOption('Variable'));
+  await t.click(e.submenuOption('invoiceCategory'));
+  await u.selectVisualization(t, 'Table');
+
+  await t.expect(e.reportRenderer.textContent).contains('Misc');
+
+  await u.selectView(t, 'Flow Node', 'Count');
+
+  await t.expect(e.reportRenderer.textContent).notContains('Misc');
+});

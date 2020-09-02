@@ -92,6 +92,18 @@ function shouldResetDistributedBy(type, data, report) {
     }
   }
 
+  if (report.view?.entity === 'processInstance') {
+    // process instance reports: reset when changing from start/end date to any other grouping
+    if (type === 'groupBy' && data.type !== 'startDate' && data.type !== 'endDate') {
+      return true;
+    }
+
+    // process instance reports: reset when changing view to anything else
+    if (type === 'view' && data.entity !== 'processInstance') {
+      return true;
+    }
+  }
+
   return false;
 }
 

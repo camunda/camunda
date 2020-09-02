@@ -15,6 +15,10 @@ const report = {
   data: {
     groupBy: {type: 'variable', value: {type: 'Integer'}},
     configuration: {
+      distributedBy: {
+        type: 'none',
+        value: null,
+      },
       customBucket: {
         active: false,
         bucketSize: '10',
@@ -74,4 +78,19 @@ it('should include a unit selection when report is grouped by duration', () => {
   const node = shallow(<BucketSize report={durationReport} />);
 
   expect(node.find(Select)).toExist();
+});
+
+it('should include a unit selection when report is distributed by number variable', () => {
+  const distributedByVariableReport = {
+    data: {
+      groupBy: {type: 'startDate'},
+      configuration: {
+        distributedBy: {type: 'variable', value: {type: 'Double'}},
+        customBucket: report.data.configuration.customBucket,
+      },
+    },
+  };
+  const node = shallow(<BucketSize report={distributedByVariableReport} />);
+
+  expect(node.find('.BucketSize')).toExist();
 });

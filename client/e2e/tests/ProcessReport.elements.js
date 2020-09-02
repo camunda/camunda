@@ -108,3 +108,4 @@ export const modalDiagram = Selector('.DiagramModal .BPMNDiagram');
 export const closeModalButton = Selector('.Modal .Button').withText('Close');
 export const bucketSizeSwitch = Selector('.BucketSize .Switch');
 export const bucketSizeUnitSelect = Selector('.BucketSize .Select').nth(0);
+export const submenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);

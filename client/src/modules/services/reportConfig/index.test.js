@@ -111,5 +111,37 @@ describe('process update', () => {
     );
 
     expect(changes.configuration.distributedBy).not.toBeDefined();
+
+    changes = config.process.update(
+      'groupBy',
+      {type: 'runningDate'},
+      {
+        report: {
+          data: {
+            view: {entity: 'processInstance'},
+            configuration: {distributedBy: {type: 'variable', value: {}}},
+          },
+        },
+      }
+    );
+
+    expect(changes.configuration.distributedBy).toEqual({$set: {type: 'none', value: null}});
+  });
+
+  it('should keep distributed by compatible when changing view', () => {
+    const changes = config.process.update(
+      'view',
+      {entity: 'flowNode'},
+      {
+        report: {
+          data: {
+            view: {entity: 'processInstance'},
+            configuration: {distributedBy: {type: 'variable', value: {}}},
+          },
+        },
+      }
+    );
+
+    expect(changes.configuration.distributedBy).toEqual({$set: {type: 'none', value: null}});
   });
 });

@@ -4,44 +4,92 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 
 import {Select} from 'components';
 import {t} from 'translation';
+import {withErrorHandling} from 'HOC';
+import {showError} from 'notifications';
+import {loadVariables} from 'services';
 
-export default function DistributedBy({
+export function DistributedBy({
   report: {
-    data: {configuration, view, groupBy, visualization},
+    data: {
+      processDefinitionKey,
+      processDefinitionVersions,
+      tenantIds,
+      configuration,
+      view,
+      groupBy,
+      visualization,
+    },
   },
   onChange,
+  mightFail,
 }) {
+  const [variables, setVariables] = useState([]);
+
+  useEffect(() => {
+    if (isInstanceDateReport(view, groupBy)) {
+      mightFail(
+        loadVariables({processDefinitionKey, processDefinitionVersions, tenantIds}),
+        setVariables,
+        showError
+      );
+    }
+  }, [
+    view,
+    groupBy,
+    mightFail,
+    processDefinitionKey,
+    processDefinitionVersions,
+    tenantIds,
+    setVariables,
+  ]);
+
   if (canDistributeData(view, groupBy)) {
     return (
       <fieldset className="DistributedBy">
         <legend>{t('report.config.userTaskDistributedBy')}</legend>
         <Select
-          value={configuration.distributedBy.type}
-          onChange={(value) => {
-            if (value !== 'none' && !['line', 'table'].includes(visualization)) {
-              onChange(
-                {
-                  visualization: {$set: 'bar'},
-                  configuration: {distributedBy: {type: {$set: value}}},
-                },
-                true
-              );
-            } else {
-              onChange({configuration: {distributedBy: {type: {$set: value}}}}, true);
+          key={variables.length}
+          onOpen={() => {
+            const popover = document.querySelector('.Popover__dialog.scrollable');
+            if (popover && isInstanceDateReport(view, groupBy)) {
+              popover.style.overflow = 'visible';
+              popover.style.height = 'auto';
             }
+          }}
+          value={getValue(configuration)}
+          onChange={(value) => {
+            const change = {configuration: {distributedBy: {$set: {type: value, value: null}}}};
+
+            if (isInstanceDateReport(view, groupBy) && value !== 'none') {
+              const variable = variables.find(({name}) => name === value);
+              change.configuration.distributedBy.$set = {type: 'variable', value: variable};
+            }
+
+            if (value !== 'none' && !['line', 'table'].includes(visualization)) {
+              change.visualization = {$set: 'bar'};
+            }
+
+            onChange(change, true);
           }}
         >
           <Select.Option value="none">{t('common.nothing')}</Select.Option>
-          {getOptionsFor(view.entity, groupBy.type)}
+          {getOptionsFor(view.entity, groupBy.type, variables)}
         </Select>
       </fieldset>
     );
   }
   return null;
+}
+
+function getValue(configuration) {
+  if (configuration.distributedBy.type === 'variable') {
+    return configuration.distributedBy.value.name;
+  }
+  return configuration.distributedBy.type;
 }
 
 function canDistributeData(view, groupBy) {
@@ -57,9 +105,13 @@ function canDistributeData(view, groupBy) {
   ) {
     return true;
   }
+
+  if (isInstanceDateReport(view, groupBy)) {
+    return true;
+  }
 }
 
-function getOptionsFor(view, groupBy) {
+function getOptionsFor(view, groupBy, variables) {
   const options = [];
 
   if (view === 'userTask') {
@@ -93,5 +145,30 @@ function getOptionsFor(view, groupBy) {
     }
   }
 
+  if (view === 'processInstance') {
+    if (groupBy === 'startDate' || groupBy === 'endDate') {
+      options.push(
+        <Select.Submenu key="variable" label="Variable">
+          {variables.map(({name}, idx) => {
+            return (
+              <Select.Option key={idx} value={name}>
+                {name}
+              </Select.Option>
+            );
+          })}
+        </Select.Submenu>
+      );
+    }
+  }
+
   return options;
 }
+
+function isInstanceDateReport(view, groupBy) {
+  return (
+    view?.entity === 'processInstance' &&
+    (groupBy.type === 'startDate' || groupBy.type === 'endDate')
+  );
+}
+
+export default withErrorHandling(DistributedBy);
