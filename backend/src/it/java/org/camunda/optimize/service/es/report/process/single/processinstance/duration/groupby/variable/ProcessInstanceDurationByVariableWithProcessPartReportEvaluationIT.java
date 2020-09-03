@@ -1098,7 +1098,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
-    assertThat(resultReportDataDto.getDefinitionVersions().contains(processInstanceDto.getProcessDefinitionVersion()));
+    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
 
     final ReportMapResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getData()).isNotNull();

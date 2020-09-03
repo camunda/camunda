@@ -218,8 +218,7 @@ public class ProcessInstanceDurationByProcessInstanceEndDateReportEvaluationIT
 
     final List<MapResultEntryDto> resultData = result.getData();
 
-    assertThat(resultData).isNotNull();
-    assertThat(resultData).hasSize(1);
+    assertThat(resultData).isNotNull().hasSize(1);
 
     ZonedDateTime startOfToday = truncateToStartOfUnit(now, ChronoUnit.DAYS);
     assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));

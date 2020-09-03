@@ -338,7 +338,7 @@ public class DateHistogramBucketLimiterUtil {
       dateFilters.stream()
         .filter(RollingDateFilterDataDto.class::isInstance)
         .map(filterDto -> limitRollingDateFilterToMaxBucketsForUnit(
-          groupByUnit, (RollingDateFilterDataDto) filterDto, bucketLimit, timezone
+          groupByUnit, (RollingDateFilterDataDto) filterDto, bucketLimit
         )),
       dateFilters.stream()
         .filter(RelativeDateFilterDataDto.class::isInstance)
@@ -419,8 +419,7 @@ public class DateHistogramBucketLimiterUtil {
 
   static RollingDateFilterDataDto limitRollingDateFilterToMaxBucketsForUnit(final ChronoUnit groupByUnit,
                                                                             final RollingDateFilterDataDto dateFilter,
-                                                                            final int bucketLimit,
-                                                                            final ZoneId timezone) {
+                                                                            final int bucketLimit) {
     final RollingDateFilterStartDto startDto = dateFilter.getStart();
     if (startDto.getUnit() == DateFilterUnit.QUARTERS) {
       throw new OptimizeValidationException(String.format(

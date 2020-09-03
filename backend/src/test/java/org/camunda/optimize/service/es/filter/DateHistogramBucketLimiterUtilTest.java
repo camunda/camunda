@@ -96,7 +96,7 @@ public class DateHistogramBucketLimiterUtilTest {
     final RollingDateFilterDataDto dateFilterDataDto = createRollingDateFilter(unit, startAmountToSubtract);
 
     final RollingDateFilterDataDto limitRollingDateFilter = DateHistogramBucketLimiterUtil
-      .limitRollingDateFilterToMaxBucketsForUnit(unit, dateFilterDataDto, limit.intValue(), ZoneId.systemDefault());
+      .limitRollingDateFilterToMaxBucketsForUnit(unit, dateFilterDataDto, limit.intValue());
 
     assertThat(limitRollingDateFilter.getStart())
       .extracting(RollingDateFilterStartDto::getUnit, RollingDateFilterStartDto::getValue)

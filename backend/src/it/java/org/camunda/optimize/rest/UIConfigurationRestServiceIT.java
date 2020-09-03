@@ -111,7 +111,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     assertThat(webappsEndpoints).isNotEmpty();
     WebappsEndpointDto defaultEndpoint = webappsEndpoints.get(DEFAULT_ENGINE_ALIAS);
     assertThat(defaultEndpoint).isNotNull();
-    assertThat(defaultEndpoint.getEndpoint().isEmpty()).isTrue();
+    assertThat(defaultEndpoint.getEndpoint()).isEmpty();
   }
 
   @Test
