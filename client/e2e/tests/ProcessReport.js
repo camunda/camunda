@@ -763,3 +763,37 @@ test('show raw data and process model', async (t) => {
   await t.click(e.modalButton('View Process Model'));
   await t.expect(e.modalDiagram.visible).ok();
 });
+
+test('group by duration', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'Duration');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.expect(e.reportChart.visible).ok();
+
+  await t.click(e.configurationButton);
+  await t.click(e.bucketSizeSwitch);
+  await t.click(e.bucketSizeUnitSelect);
+  await t.click(e.configurationOption('days'));
+  await t.click(e.configurationButton);
+
+  await t.expect(e.reportChart.visible).ok();
+
+  await u.selectView(t, 'Flow Node', 'Count');
+
+  await t.expect(e.reportChart.visible).ok();
+
+  await t.click(e.configurationButton);
+  await t.click(e.distributedBySelect);
+  await t.click(e.configurationOption('Flow Node'));
+  await u.selectVisualization(t, 'Table');
+
+  await t.expect(e.reportRenderer.textContent).contains('Invoice\nprocessed');
+
+  await u.selectView(t, 'User Task', 'Count');
+
+  await t.expect(e.reportRenderer.textContent).notContains('Invoice processed');
+  await t.expect(e.reportRenderer.textContent).contains('User Task: Count');
+});
