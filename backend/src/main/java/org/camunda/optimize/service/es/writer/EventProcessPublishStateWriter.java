@@ -32,6 +32,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_PUBLISH_STATE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -127,7 +128,7 @@ public class EventProcessPublishStateWriter {
       "Flagging event process publish state with processEventMappingId [{}] as deleted.",
       eventProcessMappingId
     );
-    final Script updateScript = ElasticsearchWriterUtil.createDefaultScript(
+    final Script updateScript = createDefaultScriptWithPrimitiveParams(
       ElasticsearchWriterUtil.createUpdateFieldsScript(
         ImmutableSet.of(IndexableEventProcessPublishStateDto.Fields.deleted)
       ),
@@ -153,7 +154,7 @@ public class EventProcessPublishStateWriter {
       eventProcessMappingId,
       publishStateIdToExclude
     );
-    final Script updateScript = ElasticsearchWriterUtil.createDefaultScript(
+    final Script updateScript = createDefaultScriptWithPrimitiveParams(
       ElasticsearchWriterUtil.createUpdateFieldsScript(
         ImmutableSet.of(IndexableEventProcessPublishStateDto.Fields.deleted)
       ),

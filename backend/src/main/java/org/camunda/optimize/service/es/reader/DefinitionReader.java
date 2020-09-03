@@ -23,6 +23,7 @@ import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -51,7 +52,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -410,8 +410,7 @@ public class DefinitionReader {
     log.debug("Fetching latest [{}] definition for key [{}]", type, key);
 
     Script script = createDefaultScript(
-      "Integer.parseInt(doc['" + resolveVersionFieldFromType(type) + "'].value)",
-      Collections.emptyMap()
+      "Integer.parseInt(doc['" + resolveVersionFieldFromType(type) + "'].value)"
     );
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(termQuery(resolveDefinitionKeyFieldFromType(type), key))

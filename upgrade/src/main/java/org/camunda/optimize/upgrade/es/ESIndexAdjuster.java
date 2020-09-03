@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.upgrade.es;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import org.apache.http.client.methods.HttpGet;
@@ -14,6 +13,7 @@ import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -46,12 +46,10 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.IndexSettingsBuilder.buildDynamicSettings;
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
 
 public class ESIndexAdjuster {
 
@@ -121,9 +119,10 @@ public class ESIndexAdjuster {
 
     if (mappingScript != null) {
       reindexRequest.setScript(
-        createDefaultScript(
+        ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams(
           mappingScript,
-          mapParamsForScriptCreation(parameters)
+          parameters,
+          objectMapper
         ));
     }
 
@@ -262,9 +261,10 @@ public class ESIndexAdjuster {
       UpdateByQueryRequest request = new UpdateByQueryRequest(aliasName);
       request.setRefresh(true);
       request.setQuery(query);
-      request.setScript(createDefaultScript(
+      request.setScript(ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams(
         updateScript,
-        mapParamsForScriptCreation(parameters)
+        parameters,
+        objectMapper
       ));
       getPlainRestClient().updateByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -415,19 +415,6 @@ public class ESIndexAdjuster {
       logger.error("Could not create settings!", e);
       throw new UpgradeRuntimeException("Could not create index settings");
     }
-  }
-
-  private Map<String, Object> mapParamsForScriptCreation(final Map<String, Object> parameters) {
-    return Optional.ofNullable(parameters)
-      // this conversion seems redundant but it's not
-      // in case the values are specific dto objects this ensures they get converted to generic objects
-      // that the elasticsearch client is happy to serialize while it complains on specific DTO's
-      .map(value -> objectMapper.convertValue(
-        value,
-        new TypeReference<Map<String, Object>>() {
-        }
-      ))
-      .orElse(Collections.emptyMap());
   }
 
 }

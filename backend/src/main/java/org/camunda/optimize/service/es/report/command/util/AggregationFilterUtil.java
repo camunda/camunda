@@ -18,7 +18,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -47,7 +47,7 @@ public class AggregationFilterUtil {
                                          final String referenceDateFieldName) {
     final Map<String, Object> params = new HashMap<>();
 
-    return createDefaultScript(
+    return createDefaultScriptWithPrimitiveParams(
       getDurationCalculationScriptPart(
         params,
         currRequestDateInMs,
@@ -69,7 +69,7 @@ public class AggregationFilterUtil {
     final long durationInMillis = getFilterDuration(dto);
     params.put("filterDuration", durationInMillis);
 
-    return createDefaultScript(
+    return createDefaultScriptWithPrimitiveParams(
       getDurationCalculationScriptPart(
         params,
         currRequestDateInMs,

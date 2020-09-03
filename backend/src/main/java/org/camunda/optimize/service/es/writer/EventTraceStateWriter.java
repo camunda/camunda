@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex.EVENT_TRACE;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 
 @AllArgsConstructor
@@ -79,14 +80,10 @@ public class EventTraceStateWriter {
     }
   }
 
-  private Script createUpdateScript(final EventTraceStateDto eventTraceStateDto) throws JsonProcessingException {
+  private Script createUpdateScript(final EventTraceStateDto eventTraceStateDto) {
     final Map<String, Object> params = new HashMap<>();
-    List jsonMap = objectMapper.readValue(
-      objectMapper.writeValueAsString(eventTraceStateDto.getEventTrace()),
-      List.class
-    );
-    params.put(EVENT_TRACE, jsonMap);
-    return ElasticsearchWriterUtil.createDefaultScript(updateScript(), params);
+    params.put(EVENT_TRACE, eventTraceStateDto.getEventTrace());
+    return createDefaultScriptWithSpecificDtoParams(updateScript(), params, objectMapper);
   }
 
   private String updateScript() {

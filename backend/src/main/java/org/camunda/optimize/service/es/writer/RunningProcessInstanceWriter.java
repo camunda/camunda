@@ -30,7 +30,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.START_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.TENANT_ID;
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
@@ -123,7 +123,7 @@ public class RunningProcessInstanceWriter extends AbstractProcessInstanceWriter 
 
   private Script createUpdateStateScript(final String newState) {
     final ImmutableMap<String, Object> scriptParameters = createUpdateStateScriptParamsMap(newState);
-    return createDefaultScript(createInlineUpdateScript(), scriptParameters);
+    return createDefaultScriptWithPrimitiveParams(createInlineUpdateScript(), scriptParameters);
   }
 
   private String createInlineUpdateScript() {

@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_ID;
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -138,15 +138,14 @@ public class EventProcessInstanceWriter {
   private void addImportProcessInstanceRequest(final BulkRequest bulkRequest,
                                                final EventProcessInstanceDto eventProcessInstanceDto) {
     final Map<String, Object> params = new HashMap<>();
-    params.put(
-      "processInstance",
-      // @formatter:off
-      objectMapper.convertValue(eventProcessInstanceDto, new TypeReference<Map>() {})
-      // @formatter:on
-    );
+    params.put("processInstance", eventProcessInstanceDto);
     params.put("gatewayLookup", gatewayLookup);
     params.put("dateFormatPattern", OPTIMIZE_DATE_FORMAT);
-    final Script updateScript = createDefaultScript(createUpdateInlineUpdateScript(), params);
+    final Script updateScript = createDefaultScriptWithSpecificDtoParams(
+      createUpdateInlineUpdateScript(),
+      params,
+      objectMapper
+    );
 
     final String newEntryIfAbsent;
     try {
