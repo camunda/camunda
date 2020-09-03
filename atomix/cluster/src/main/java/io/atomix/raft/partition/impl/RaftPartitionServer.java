@@ -16,8 +16,6 @@
  */
 package io.atomix.raft.partition.impl;
 
-import static org.slf4j.LoggerFactory.getLogger;
-
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
@@ -40,6 +38,8 @@ import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.utils.Managed;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.ThreadContextFactory;
+import io.atomix.utils.logging.ContextualLoggerFactory;
+import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.serializer.Serializer;
 import io.zeebe.snapshots.raft.PersistedSnapshotStore;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
@@ -60,7 +60,7 @@ import org.slf4j.Logger;
 /** {@link Partition} server. */
 public class RaftPartitionServer implements Managed<RaftPartitionServer> {
 
-  private final Logger log = getLogger(getClass());
+  private final Logger log;
 
   private final MemberId localMemberId;
   private final RaftPartition partition;
@@ -91,6 +91,10 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
     this.clusterCommunicator = clusterCommunicator;
     this.threadContextFactory = threadContextFactory;
     this.journalIndexFactory = journalIndexFactory;
+    log =
+        ContextualLoggerFactory.getLogger(
+            getClass(),
+            LoggerContext.builder(RaftPartitionServer.class).addValue(partition.name()).build());
   }
 
   @Override
@@ -126,7 +130,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
                 final long startDuration = endTime - startTime;
                 raftStartupMetrics.observeBootstrapDuration(endTime - bootstrapStartTime);
                 raftStartupMetrics.observeStartupDuration(startDuration);
-                log.debug(
+                log.info(
                     "Successfully started server for partition {} in {}ms",
                     partition.id(),
                     startDuration);
@@ -278,8 +282,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         .whenComplete(
             (r, e) -> {
               if (e == null) {
-                log.debug(
-                    "Successfully joined partition {} ({})", partition.id(), partition.name());
+                log.info("Successfully joined partition {} ({})", partition.id(), partition.name());
               } else {
                 log.warn("Failed to join partition {} ({})", partition.id(), partition.name(), e);
               }

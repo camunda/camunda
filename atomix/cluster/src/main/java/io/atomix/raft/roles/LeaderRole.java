@@ -20,6 +20,7 @@ import com.google.common.base.Throwables;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException;
+import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
@@ -676,7 +677,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     if (!isRunning()) {
       appendListener.onWriteError(
-          new IllegalStateException("LeaderRole is closed and cannot be used as appender"));
+          new NoLeader("LeaderRole is closed and cannot be used as appender"));
       return;
     }
 

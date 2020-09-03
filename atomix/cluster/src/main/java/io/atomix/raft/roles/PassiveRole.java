@@ -217,6 +217,7 @@ public class PassiveRole extends InactiveRole {
 
       pendingSnapshot =
           raft.getPersistedSnapshotStore().newReceivedSnapshot(snapshotChunk.getSnapshotId());
+      log.info("Started receiving new snapshot {} from {}", pendingSnapshot, request.leader());
       pendingSnapshotStartTimestamp = System.currentTimeMillis();
       snapshotReplicationMetrics.incrementCount();
     } else {
@@ -262,10 +263,10 @@ public class PassiveRole extends InactiveRole {
     // snapshot offset.
     if (request.complete()) {
       final long elapsed = System.currentTimeMillis() - pendingSnapshotStartTimestamp;
-
       log.debug("Committing snapshot {}", pendingSnapshot);
       try {
-        pendingSnapshot.persist();
+        final var snapshot = pendingSnapshot.persist();
+        log.info("Committed snapshot {}", snapshot);
       } catch (final Exception e) {
         log.error("Failed to commit pending snapshot {}, rolling back", pendingSnapshot, e);
         abortPendingSnapshots();
@@ -400,7 +401,7 @@ public class PassiveRole extends InactiveRole {
 
   private void abortPendingSnapshots() {
     if (pendingSnapshot != null) {
-      log.debug("Rolling back snapshot {}", pendingSnapshot);
+      log.info("Rolling back snapshot {}", pendingSnapshot);
       try {
         pendingSnapshot.abort();
       } catch (final Exception e) {

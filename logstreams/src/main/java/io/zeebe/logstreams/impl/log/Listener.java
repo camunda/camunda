@@ -7,6 +7,7 @@
  */
 package io.zeebe.logstreams.impl.log;
 
+import io.atomix.raft.RaftException.NoLeader;
 import io.zeebe.logstreams.spi.LogStorage.AppendListener;
 import java.util.NoSuchElementException;
 
@@ -27,13 +28,17 @@ public final class Listener implements AppendListener {
 
   @Override
   public void onWriteError(final Throwable error) {
-    LogStorageAppender.LOG.error(
-        "Failed to append block with last event position {}.", highestPosition, error);
-    if (error instanceof NoSuchElementException) {
+    if (error instanceof NoSuchElementException || error instanceof NoLeader) {
       // Not a failure. It is probably during transition to follower.
+      LogStorageAppender.LOG.debug(
+          "Failed to append block with last event position {}. This can happen during a leader change.",
+          highestPosition,
+          error);
       return;
     }
 
+    LogStorageAppender.LOG.error(
+        "Failed to append block with last event position {}.", highestPosition, error);
     appender.runOnFailure(error);
   }
 
