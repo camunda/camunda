@@ -81,7 +81,7 @@ public class Probes implements HealthIndicator {
 
   @Override
   public Health health() {
-    logger.info("ELS indices check is called");
+    logger.debug("ELS indices check is called");
     if (isLive(FIFTY_SECONDS)) {
       return Health.up().build();
     } else {

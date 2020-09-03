@@ -31,6 +31,7 @@ public final class OperateURIs {
   ;
 
    public static final String[] AUTH_WHITELIST = {
+       "/api/check", // backward compatibility
        "/swagger-resources",
        "/swagger-resources/**",
        "/swagger-ui.html",
