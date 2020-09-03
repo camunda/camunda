@@ -128,7 +128,7 @@ To work on an issue, follow the following steps:
 
 ## Commit Message Guidelines
 
-Commit messages use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format with scope. 
+Commit messages use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/#summary) format with scope.
 
 Examples:
 
@@ -187,10 +187,9 @@ this document should help you get started.
 
 ## Code of Conduct
 
-This project adheres to the Contributor Covenant [Code of
-Conduct](/CODE_OF_CONDUCT.md). By participating, you are expected to uphold
-this code. Please report unacceptable behavior to
-code-of-conduct@zeebe.io.
+This project adheres to the [Camunda Code of Conduct](https://camunda.com/events/code-conduct/).
+By participating, you are expected to uphold this code. Please [report](https://camunda.com/events/code-conduct/reporting-violations/)
+unacceptable behavior as soon as possible.
 
 [issues]: https://github.com/zeebe-io/zeebe/issues
 [forum]: https://forum.zeebe.io/

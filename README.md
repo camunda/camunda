@@ -1,26 +1,26 @@
-# Zeebe.io - Workflow Engine for Microservices Orchestration 
+# Zeebe.io - Workflow Engine for Microservices Orchestration
 
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-distribution/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-distribution)
 
-Zeebe provides visibility into and control over business processes that span multiple microservices. 
+Zeebe provides visibility into and control over business processes that span multiple microservices.
 
 **Why Zeebe?**
 
 * Define workflows visually in BPMN 2.0
-* Choose your programming language 
+* Choose your programming language
 * Deploy with Docker and Kubernetes
 * Build workflows that react to messages from Kafka and other message queues
 * Scale horizontally to handle very high throughput
 * Fault tolerance (no relational database required)
 * Export workflow data for monitoring and analysis
-* Engage with an active community 
+* Engage with an active community
 
 [Learn more at zeebe.io](https://zeebe.io)
 
 ## Status
 
-Starting with Zeebe 0.20.0, the "developer preview" label was removed from Zeebe and the first production-ready version was released  . 
+Starting with Zeebe 0.20.0, the "developer preview" label was removed from Zeebe and the first production-ready version was released  .
 
 To learn more about what we're currently working on, please visit the [roadmap](https://zeebe.io/roadmap).
 
@@ -50,10 +50,9 @@ Read the [Contributions Guide](/CONTRIBUTING.md)
 
 ## Code of Conduct
 
-This project adheres to the Contributor Covenant [Code of
-Conduct](/CODE_OF_CONDUCT.md). By participating, you are expected to uphold
-this code. Please report unacceptable behavior to
-code-of-conduct@zeebe.io.
+This project adheres to the [Camunda Code of Conduct](https://camunda.com/events/code-conduct/).
+By participating, you are expected to uphold this code. Please [report](https://camunda.com/events/code-conduct/reporting-violations/)
+unacceptable behavior as soon as possible.
 
 ## License
 

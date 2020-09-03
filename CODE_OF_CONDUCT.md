@@ -1,73 +1,47 @@
-# Contributor Covenant Code of Conduct
+# [Community Code of Conduct](https://camunda.com/events/code-conduct/)
 
-## Our Pledge
+Our awesome community is what makes us who we are. We’re extremely proud that our community members come from all around the world and from various
+backgrounds. We want to provide each and every one of you with a consistently great experience, so we created this Community Code of Conduct. We want to
+ensure that mutual support will always be guaranteed and that we create an environment in which we can grow together.
 
-In the interest of fostering an open and welcoming environment, we as
-contributors and maintainers pledge to making participation in our project and
-our community a harassment-free experience for everyone, regardless of age, body
-size, disability, ethnicity, gender identity and expression, level of experience,
-nationality, personal appearance, race, religion, or sexual identity and
-orientation.
-
-## Our Standards
-
-Examples of behavior that contributes to creating a positive environment
-include:
-
-* Using welcoming and inclusive language
-* Being respectful of differing viewpoints and experiences
-* Gracefully accepting constructive criticism
-* Focusing on what is best for the community
-* Showing empathy towards other community members
-
-Examples of unacceptable behavior by participants include:
-
-* The use of sexualized language or imagery and unwelcome sexual attention or
-  advances
-* Trolling, insulting/derogatory comments, and personal or political attacks
-* Public or private harassment
-* Publishing others' private information, such as a physical or electronic
-  address, without explicit permission
-* Other conduct which could reasonably be considered inappropriate in a
-  professional setting
-
-## Our Responsibilities
-
-Project maintainers are responsible for clarifying the standards of acceptable
-behavior and are expected to take appropriate and fair corrective action in
-response to any instances of unacceptable behavior.
-
-Project maintainers have the right and responsibility to remove, edit, or
-reject comments, commits, code, wiki edits, issues, and other contributions
-that are not aligned to this Code of Conduct, or to ban temporarily or
-permanently any contributor for other behaviors that they deem inappropriate,
-threatening, offensive, or harmful.
 
 ## Scope
 
-This Code of Conduct applies both within project spaces and in public spaces
-when an individual is representing the project or its community. Examples of
-representing a project or community include using an official project e-mail
-address, posting via an official social media account, or acting as an appointed
-representative at an online or offline event. Representation of a project may be
-further defined and clarified by project maintainers.
+We expect all members of the Camunda community, including administrators, users, facilitators, and vendors to abide by this Code of Conduct at all times.
 
-## Enforcement
+The Camunda Code of Conduct applies to all Camunda events. This includes official Camunda events, such as CamundaCon, Camunda Process Automation Forums, Camunda meetups, trainings, workshops, and unofficial Camunda events.
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported by contacting the project team at code-of-conduct@zeebe.io. All
-complaints will be reviewed and investigated and will result in a response that
-is deemed necessary and appropriate to the circumstances. The project team is
-obligated to maintain confidentiality with regard to the reporter of an incident.
-Further details of specific enforcement policies may be posted separately.
+The Camunda Community Code of Conduct also applies to any Camunda online space. This includes Slack workspaces, discussion forums, websites, code repositories, mailing lists and more. The Camunda Community Code of Conduct also applies to private correspondence between community members through our online spaces.
 
-Project maintainers who do not follow or enforce the Code of Conduct in good
-faith may face temporary or permanent repercussions as determined by other
-members of the project's leadership.
+We trust all of our community members will help to create a safe and welcoming environment for everyone.
 
-## Attribution
 
-This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 1.4,
-available at https://www.contributor-covenant.org/version/1/4/code-of-conduct.html
+## Our Standards
 
-[homepage]: https://www.contributor-covenant.org
+We are dedicated to providing a harassment-free community space for everyone, regardless of gender, gender identity and expression, sexual orientation, disability, physical appearance, body size, ethnicity, age, physical appearance, religion or similar personal characteristics.
+
+We do not tolerate harassment of other Camunda users in any form, whether publicly or privately. Harassment includes, but is not limited to: harmful or prejudicial verbal or written comments, inappropriate use of nudity, sexual images, and/or sexually explicit language in public spaces; threats of physical or non-physical harm; deliberate intimidation, stalking or following; harassing photography or recording; sustained disruption of talks or other events; inappropriate physical contact; and unwelcome sexual attention.
+
+In addition, any spamming, trolling, flaming, baiting, or other attention-stealing behaviour is not welcome, and will not be tolerated.
+
+## Community Guidelines
+
+We have put together a few guidelines that we ask community members to adhere to. By being explicit about them, we want to ensure that the Camunda community continues to be a supportive place for everyone:
+
+* **Mutual respect:** No matter if you are an administrator, user, facilitator or vendor – please beware of inappropriate behavior and wording at any time. Camunda stands for open communication, respectful interaction and transparency – please keep that in mind, as we strive for an inspiring environment where every single member and participant feels welcome.
+* **Effective communication:** “To effectively communicate, we must realize that we are all different in the way we perceive the world and use this understanding as a guide to our communication with others” (Tony Robbins). By listening to understand rather than to respond, we will create a highly productive environment where all community members, no matter what language or background, will be able to communicate effectively.
+* **Mindfulness:** Please be mindful of the space, as well as people and their actions around you. We always co-create and every single action can have a major impact on the event or even the community. To create this safe, supportive and highly productive space we need to work together and hold each other accountable.
+* **Request and provide support:** Our online as well as offline platforms are meant to support exchange and mutual help. Please be open with your requests and questions as there is a good chance not only you, but the whole community can benefit from starting the conversation. In return, please be open to share your knowledge and experience to be an active member of the community.
+* **No tolerance for harassment:** We do not tolerate harassment of other Camunda community members in any form, whether publicly or privately. See above (our standards) for further specification of types of harassment.
+
+## Reporting Violations
+
+Harassment and other code of conduct violations reduce the value of our community for everyone. We want you to be happy when engaging with the broader Camunda community .
+
+If someone makes you or anyone else feel unsafe or unwelcome, [report it as soon as possible](https://camunda.com/events/code-conduct/reporting-violations/), to help us make the community a better place Please include as much detail as possible in your report as it is easier for us to address issues when we have more context.
+
+## Violations to the Community Code of Conduct
+
+Harassment and unacceptable behavior from any community member, including employees, sponsors, customers, partners, event organizers, or others with decision-making authority, will not be tolerated.
+
+Anyone asked to stop unacceptable behavior is expected to comply immediately. If a community member engages in unacceptable behavior, the Camunda administrators may take any action they deem appropriate, up to and including a temporary or permanent ban from the community without warning and without refund in the case of a paid event or service.
