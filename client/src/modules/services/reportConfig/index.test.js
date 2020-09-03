@@ -38,6 +38,49 @@ describe('process update', () => {
     expect(changes.configuration.aggregationType).toEqual({$set: 'avg'});
   });
 
+  it('should set a correct sorting', () => {
+    const rawData = config.process.update(
+      '',
+      {},
+      {
+        report: {
+          reportType: 'decision',
+          data: {visualization: 'table', view: {property: 'rawData'}},
+        },
+      }
+    );
+
+    expect(rawData.configuration.sorting).toEqual({
+      $set: {by: 'evaluationDateTime', order: 'desc'},
+    });
+
+    const userTaskReport = config.process.update(
+      '',
+      {},
+      {
+        report: {
+          reportType: 'process',
+          data: {visualization: 'table', groupBy: {type: 'userTasks'}},
+        },
+      }
+    );
+
+    expect(userTaskReport.configuration.sorting).toEqual({$set: {by: 'label', order: 'asc'}});
+
+    const otherChanges = config.process.update(
+      '',
+      {},
+      {
+        report: {
+          reportType: 'process',
+          data: {visualization: 'table', groupBy: {type: 'variable', value: {type: 'String'}}},
+        },
+      }
+    );
+
+    expect(otherChanges.configuration.sorting).toEqual({$set: {by: 'key', order: 'asc'}});
+  });
+
   it('should keep distributed by compatible when changing group by', () => {
     let changes = config.process.update(
       'groupBy',

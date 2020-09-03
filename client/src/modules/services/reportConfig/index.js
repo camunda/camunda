@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import update from 'immutability-helper';
+
 import {default as reportConfig} from './reportConfig';
 import * as decisionOptions from './decision';
 import * as processOptions from './process';
@@ -18,7 +20,7 @@ config.process.update = (type, data, props) => {
   const changes = processUpdate(type, data, props);
 
   changes.configuration = changes.configuration || {};
-  changes.configuration.sorting = {$set: null};
+  changes.configuration.sorting = {$set: getDefaultSorting(update(props.report, {data: changes}))};
 
   if (type === 'view') {
     changes.configuration.heatmapTargetValue = {$set: {active: false, values: {}}};
@@ -39,6 +41,15 @@ config.process.update = (type, data, props) => {
   if (shouldResetDistributedBy(type, data, props.report.data)) {
     changes.configuration.distributedBy = {$set: {type: 'none', value: null}};
   }
+
+  return changes;
+};
+
+const decisionUpdate = config.decision.update;
+config.decision.update = (type, data, props) => {
+  const changes = decisionUpdate(type, data, props);
+  changes.configuration = changes.configuration || {};
+  changes.configuration.sorting = {$set: getDefaultSorting(update(props.report, {data: changes}))};
 
   return changes;
 };
@@ -82,6 +93,30 @@ function shouldResetDistributedBy(type, data, report) {
   }
 
   return false;
+}
+
+function getDefaultSorting({reportType, data: {view, groupBy, visualization}}) {
+  if (visualization !== 'table') {
+    return null;
+  }
+
+  if (view?.property === 'rawData') {
+    const by = reportType === 'process' ? 'startDate' : 'evaluationDateTime';
+    return {by, order: 'desc'};
+  }
+
+  if (['flowNodes', 'userTasks'].includes(groupBy?.type)) {
+    return {by: 'label', order: 'asc'};
+  }
+
+  if (groupBy?.type.toLowerCase().includes('variable')) {
+    // Descending for Date and Boolean
+    // Ascending for Integer, Double, Long, Date
+    const order = ['Date', 'Boolean'].includes(groupBy.value.type) ? 'desc' : 'asc';
+    return {by: 'key', order};
+  }
+
+  return {by: 'key', order: 'desc'};
 }
 
 export default config;
