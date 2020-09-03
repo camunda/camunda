@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.cluster.ClusterMembershipService;
+import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.storage.log.RaftLogReader;
@@ -370,7 +371,7 @@ public class LeaderRoleTest {
     verify(context, timeout(1000)).transition(Role.FOLLOWER);
     verify(writer, timeout(1000)).append(any(RaftLogEntry.class));
 
-    assertTrue(catchedError.get() instanceof IllegalStateException);
+    assertTrue(catchedError.get() instanceof NoLeader);
     assertEquals(
         "LeaderRole is closed and cannot be used as appender", catchedError.get().getMessage());
   }

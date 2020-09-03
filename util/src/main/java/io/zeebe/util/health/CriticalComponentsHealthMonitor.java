@@ -139,7 +139,7 @@ public class CriticalComponentsHealthMonitor implements HealthMonitor {
     }
 
     private void onComponentRecovered() {
-      log.debug("{} recovered, marking it as healthy", componentName);
+      log.info("{} recovered, marking it as healthy", componentName);
       componentHealth.computeIfPresent(componentName, (k, v) -> HealthStatus.HEALTHY);
       calculateHealth();
     }
