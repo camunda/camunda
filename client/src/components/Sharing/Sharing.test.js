@@ -9,7 +9,7 @@ import {shallow} from 'enzyme';
 
 import {Button, ReportRenderer, InstanceCount} from 'components';
 
-import Sharing from './Sharing';
+import {Sharing} from './Sharing';
 import {evaluateEntity} from './service';
 
 jest.mock('./service', () => {
@@ -25,6 +25,7 @@ const props = {
       id: 123,
     },
   },
+  location: {search: ''},
 };
 
 it('should render without crashing', () => {
@@ -123,6 +124,27 @@ it('should have dashboard if everything is fine', () => {
   });
 
   expect(node.find('DashboardRenderer')).toExist();
+});
+
+it('should include filters on a dashboard', () => {
+  props.match.params.type = 'dashboard';
+  const node = shallow(
+    <Sharing
+      {...props}
+      location={{
+        search: '?filter=%5B%7B%22type%22%3A%22runningInstancesOnly%22%2C%22data%22%3Anull%7D%5D',
+      }}
+    />
+  );
+
+  node.setState({
+    loading: false,
+    evaluationResult: {reportShares: 'foo'},
+  });
+
+  expect(node.find('DashboardRenderer').prop('filter')).toEqual([
+    {data: null, type: 'runningInstancesOnly'},
+  ]);
 });
 
 it('should retrieve dashboard for the given id', () => {

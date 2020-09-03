@@ -1,52 +1,32 @@
 .ShareEntity {
-  width: 300px;
+  width: 420px;
 
-  .enable {
-    border-bottom: 1px solid lightgray;
-    padding: 0;
-    margin: 0;
-    display: flex;
-    justify-content: space-between;
-    flex-direction: row;
-    padding: 10px 0;
-    align-items: center;
-  }
-
-  .enableText {
-    vertical-align: middle;
-    font-weight: bold;
-  }
-
-  .clipboard {
-    width: 100%;
-    padding-top: 25px;
-
-    .icon {
-      width: 125px;
-      height: 100px;
-      position: relative;
-      top: 50px;
-      margin-right: 13px;
-      display: inline-block;
-      background-repeat: no-repeat;
-    }
+  .Switch {
+    margin-bottom: 25px;
 
     .label {
-      color: #626262;
+      font-size: 16px;
       font-weight: bold;
-      margin-bottom: 15px;
-      display: inline-block;
-    }
-
-    .labelDescription {
-      color: #626262;
-      font-size: 0.8125em;
-      padding-bottom: 5px;
-      display: block;
+      margin-top: -1px;
     }
   }
 
-  .linkAreaDisabled {
-    opacity: 0.5;
+  > .linkText {
+    width: 100%;
+    margin-bottom: 10px;
+  }
+
+  .includeFilters {
+    padding-bottom: 10px;
+    font-size: 14px;
+  }
+
+  .clipboardButtons {
+    margin-top: 10px;
+    text-align: right;
+
+    .CopyToClipboard {
+      margin-left: 10px;
+    }
   }
 }

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {get} from 'request';
+import {get, post} from 'request';
 
 export async function evaluateEntity(id, type, params = {}) {
   let response;
@@ -19,10 +19,11 @@ export async function evaluateEntity(id, type, params = {}) {
 }
 
 export function createLoadReportCallback(dashboardShareId) {
-  return async (reportId) => {
+  return async (reportId, filter) => {
     try {
-      const response = await get(
-        `api/share/dashboard/${dashboardShareId}/report/${reportId}/evaluate`
+      const response = await post(
+        `api/share/dashboard/${dashboardShareId}/report/${reportId}/evaluate`,
+        {filter}
       );
       return await response.json();
     } catch (error) {

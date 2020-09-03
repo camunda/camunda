@@ -19,11 +19,11 @@ import {
   ReportDetails,
   InstanceCount,
 } from 'components';
-import {Link} from 'react-router-dom';
+import {Link, withRouter} from 'react-router-dom';
 import {evaluateEntity, createLoadReportCallback} from './service';
 import {t} from 'translation';
 
-export default class Sharing extends React.Component {
+export class Sharing extends React.Component {
   constructor(props) {
     super(props);
 
@@ -62,10 +62,14 @@ export default class Sharing extends React.Component {
         />
       );
     } else {
+      const params = new URLSearchParams(this.props.location.search);
+      const filter = params.get('filter');
+
       return (
         <DashboardRenderer
           loadReport={createLoadReportCallback(this.getId())}
           reports={this.state.evaluationResult.reports}
+          filter={filter && JSON.parse(filter)}
           disableNameLink
         />
       );
@@ -122,3 +126,5 @@ export default class Sharing extends React.Component {
     );
   }
 }
+
+export default withRouter(Sharing);

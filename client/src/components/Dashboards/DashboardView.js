@@ -158,6 +158,7 @@ export function DashboardView(props) {
                       shareEntity={shareDashboard}
                       revokeEntitySharing={revokeDashboardSharing}
                       getSharedEntity={getSharedDashboard}
+                      filter={filter}
                     />
                   </Popover>
                 </React.Fragment>

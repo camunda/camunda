@@ -777,20 +777,11 @@
       "buttonTitle": "Teilen",
       "disabled": "Teilen ist per Konfiguration deaktiviert",
       "popoverTitle": "Teilen aktivieren",
-      "link": {
-        "title": "Link",
-        "description": {
-          "report": "Verwenden Sie die folgende URL, um den Bericht für Personen freizugeben, die kein Camunda Optimize-Konto haben:",
-          "dashboard": "Verwenden Sie die folgende URL, um das Dashboard für Personen freizugeben, die kein Camunda Optimize-Konto haben:"
-        }
-      },
-      "embed": {
-        "title": "Einbetten",
-        "description": {
-          "report": "Verwenden Sie den folgenden HTML-Code, um den Bericht in Blogs und Webseiten einzubetten:",
-          "dashboard": "Verwenden Sie den folgenden HTML-Code, um das Dashboard in Blogs und Webseiten einzubetten:"
-        }
-      },
+      "notification": "Link in die Zwischenablage kopiert",
+      "inputPlaceholder": "Aktivieren Sie Teilen, um den Link zu erzeugen",
+      "filtersLabel": "Mit aktuellen Filtern teilen",
+      "copyLabel": "Link kopieren",
+      "embedLabel": "Link einbetten",
       "openInOptimize": "In Optimize Öffnen"
     },
     "filter": {

@@ -777,20 +777,11 @@
       "buttonTitle": "Share",
       "disabled": "Sharing is disabled per configuration",
       "popoverTitle": "Enable sharing",
-      "link": {
-        "title": "Link",
-        "description": {
-          "report": "Use the following URL to share the report with people who don't have a Camunda Optimize account:",
-          "dashboard": "Use the following URL to share the dashboard with people who don't have a Camunda Optimize account:"
-        }
-      },
-      "embed": {
-        "title": "Embed",
-        "description": {
-          "report": "Use the following HTML code to embed the report into blogs and web pages:",
-          "dashboard": "Use the following HTML code to embed the dashboard into blogs and web pages:"
-        }
-      },
+      "notification": "Link copied to clipboard",
+      "inputPlaceholder": "Enable sharing to create link",
+      "filtersLabel": "Share with current filters applied",
+      "copyLabel": "Copy Link",
+      "embedLabel": "Embed Link",
       "openInOptimize": "Open in Optimize"
     },
     "filter": {
