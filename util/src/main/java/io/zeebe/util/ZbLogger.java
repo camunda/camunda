@@ -14,9 +14,7 @@ import org.slf4j.event.Level;
 import org.slf4j.spi.LocationAwareLogger;
 
 /**
- * Delegating Logger implementation which guards all invocations with static checks for the log
- * level. Allows the JVM to remove log statements which are not needed with the current log level.
- * Removes the possibility to dynamically change the log level.
+ * Delegating Logger implementation for wrapping a LocationAwareLogger
  *
  * <p>If given a {@link LocationAwareLogger} delegate, it will properly calculate the caller
  * location.
@@ -27,11 +25,6 @@ public class ZbLogger implements Logger {
   private final Logger logger;
   private final String loggerFqcn;
   private final LocationAwareLogger locationAwareLogger;
-  private final boolean isTraceEnabled;
-  private final boolean isDebugEnabled;
-  private final boolean isInfoEnabled;
-  private final boolean isWarnEnabled;
-  private final boolean isErrorEnabled;
 
   public ZbLogger(final Class<?> clazz) {
     this(LoggerFactory.getLogger(clazz));
@@ -49,12 +42,6 @@ public class ZbLogger implements Logger {
     this.logger = logger;
     this.loggerFqcn = loggerFqcn;
 
-    isTraceEnabled = logger.isTraceEnabled();
-    isDebugEnabled = logger.isDebugEnabled();
-    isInfoEnabled = logger.isInfoEnabled();
-    isWarnEnabled = logger.isWarnEnabled();
-    isErrorEnabled = logger.isErrorEnabled();
-
     if (logger instanceof LocationAwareLogger) {
       locationAwareLogger = (LocationAwareLogger) logger;
     } else {
@@ -69,12 +56,12 @@ public class ZbLogger implements Logger {
 
   @Override
   public boolean isTraceEnabled() {
-    return isTraceEnabled;
+    return logger.isTraceEnabled();
   }
 
   @Override
   public void trace(final String msg) {
-    if (isTraceEnabled) {
+    if (isTraceEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.TRACE.toInt(), msg, null);
       } else {
@@ -85,7 +72,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void trace(final String format, final Object arg) {
-    if (isTraceEnabled) {
+    if (isTraceEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.TRACE.toInt(), format, null, arg);
       } else {
@@ -96,7 +83,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void trace(final String format, final Object arg1, final Object arg2) {
-    if (isTraceEnabled) {
+    if (isTraceEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.TRACE.toInt(), format, null, arg1, arg2);
       } else {
@@ -107,7 +94,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void trace(final String format, final Object... arguments) {
-    if (isTraceEnabled) {
+    if (isTraceEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.TRACE.toInt(), format, null, arguments);
       } else {
@@ -118,7 +105,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void trace(final String msg, final Throwable t) {
-    if (isTraceEnabled) {
+    if (isTraceEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.TRACE.toInt(), msg, t);
       } else {
@@ -129,12 +116,12 @@ public class ZbLogger implements Logger {
 
   @Override
   public boolean isTraceEnabled(final Marker marker) {
-    return isTraceEnabled;
+    return logger.isTraceEnabled(marker);
   }
 
   @Override
   public void trace(final Marker marker, final String msg) {
-    if (isTraceEnabled) {
+    if (isTraceEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.TRACE.toInt(), msg, null);
       } else {
@@ -145,7 +132,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void trace(final Marker marker, final String format, final Object arg) {
-    if (isTraceEnabled) {
+    if (isTraceEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.TRACE.toInt(), format, null, arg);
       } else {
@@ -157,7 +144,7 @@ public class ZbLogger implements Logger {
   @Override
   public void trace(
       final Marker marker, final String format, final Object arg1, final Object arg2) {
-    if (isTraceEnabled) {
+    if (isTraceEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.TRACE.toInt(), format, null, arg1, arg2);
       } else {
@@ -168,7 +155,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void trace(final Marker marker, final String format, final Object... argArray) {
-    if (isTraceEnabled) {
+    if (isTraceEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.TRACE.toInt(), format, null, argArray);
       } else {
@@ -179,7 +166,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void trace(final Marker marker, final String msg, final Throwable t) {
-    if (isTraceEnabled) {
+    if (isTraceEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.TRACE.toInt(), msg, t);
       } else {
@@ -190,12 +177,12 @@ public class ZbLogger implements Logger {
 
   @Override
   public boolean isDebugEnabled() {
-    return isDebugEnabled;
+    return logger.isDebugEnabled();
   }
 
   @Override
   public void debug(final String msg) {
-    if (isDebugEnabled) {
+    if (isDebugEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.DEBUG.toInt(), msg, null);
       } else {
@@ -206,7 +193,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void debug(final String format, final Object arg) {
-    if (isDebugEnabled) {
+    if (isDebugEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.DEBUG.toInt(), format, null, arg);
       } else {
@@ -217,7 +204,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void debug(final String format, final Object arg1, final Object arg2) {
-    if (isDebugEnabled) {
+    if (isDebugEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.DEBUG.toInt(), format, null, arg1, arg2);
       } else {
@@ -228,7 +215,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void debug(final String format, final Object... arguments) {
-    if (isDebugEnabled) {
+    if (isDebugEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.DEBUG.toInt(), format, null, arguments);
       } else {
@@ -239,7 +226,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void debug(final String msg, final Throwable t) {
-    if (isDebugEnabled) {
+    if (isDebugEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.DEBUG.toInt(), msg, t);
       } else {
@@ -250,12 +237,12 @@ public class ZbLogger implements Logger {
 
   @Override
   public boolean isDebugEnabled(final Marker marker) {
-    return isDebugEnabled;
+    return logger.isDebugEnabled(marker);
   }
 
   @Override
   public void debug(final Marker marker, final String msg) {
-    if (isDebugEnabled) {
+    if (isDebugEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.DEBUG.toInt(), msg, null);
       } else {
@@ -266,7 +253,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void debug(final Marker marker, final String format, final Object arg) {
-    if (isDebugEnabled) {
+    if (isDebugEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.DEBUG.toInt(), format, null, arg);
       } else {
@@ -278,7 +265,7 @@ public class ZbLogger implements Logger {
   @Override
   public void debug(
       final Marker marker, final String format, final Object arg1, final Object arg2) {
-    if (isDebugEnabled) {
+    if (isDebugEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.DEBUG.toInt(), format, null, arg1, arg2);
       } else {
@@ -289,7 +276,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void debug(final Marker marker, final String format, final Object... arguments) {
-    if (isDebugEnabled) {
+    if (isDebugEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.DEBUG.toInt(), format, null, arguments);
       } else {
@@ -300,7 +287,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void debug(final Marker marker, final String msg, final Throwable t) {
-    if (isDebugEnabled) {
+    if (isDebugEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.DEBUG.toInt(), msg, t);
       } else {
@@ -311,12 +298,12 @@ public class ZbLogger implements Logger {
 
   @Override
   public boolean isInfoEnabled() {
-    return isInfoEnabled;
+    return logger.isInfoEnabled();
   }
 
   @Override
   public void info(final String msg) {
-    if (isInfoEnabled) {
+    if (isInfoEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.INFO.toInt(), msg, null);
       } else {
@@ -327,7 +314,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void info(final String format, final Object arg) {
-    if (isInfoEnabled) {
+    if (isInfoEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.INFO.toInt(), format, null, arg);
       } else {
@@ -338,7 +325,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void info(final String format, final Object arg1, final Object arg2) {
-    if (isInfoEnabled) {
+    if (isInfoEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.INFO.toInt(), format, null, arg1, arg2);
       } else {
@@ -349,7 +336,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void info(final String format, final Object... arguments) {
-    if (isInfoEnabled) {
+    if (isInfoEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.INFO.toInt(), format, null, arguments);
       } else {
@@ -360,7 +347,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void info(final String msg, final Throwable t) {
-    if (isInfoEnabled) {
+    if (isInfoEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.INFO.toInt(), msg, t);
       } else {
@@ -371,12 +358,12 @@ public class ZbLogger implements Logger {
 
   @Override
   public boolean isInfoEnabled(final Marker marker) {
-    return isInfoEnabled;
+    return logger.isInfoEnabled(marker);
   }
 
   @Override
   public void info(final Marker marker, final String msg) {
-    if (isInfoEnabled) {
+    if (isInfoEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.INFO.toInt(), msg, null);
       } else {
@@ -387,7 +374,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void info(final Marker marker, final String format, final Object arg) {
-    if (isInfoEnabled) {
+    if (isInfoEnabled()) {
       if (locationAwareLogger != null) {
         log(marker, Level.INFO.toInt(), format, null, arg);
       } else {
@@ -398,7 +385,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void info(final Marker marker, final String format, final Object arg1, final Object arg2) {
-    if (isInfoEnabled) {
+    if (isInfoEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.INFO.toInt(), format, null, arg1, arg2);
       } else {
@@ -409,7 +396,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void info(final Marker marker, final String format, final Object... arguments) {
-    if (isInfoEnabled) {
+    if (isInfoEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.INFO.toInt(), format, null, arguments);
       } else {
@@ -420,7 +407,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void info(final Marker marker, final String msg, final Throwable t) {
-    if (isInfoEnabled) {
+    if (isInfoEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.INFO.toInt(), msg, t);
       } else {
@@ -431,12 +418,12 @@ public class ZbLogger implements Logger {
 
   @Override
   public boolean isWarnEnabled() {
-    return isWarnEnabled;
+    return logger.isWarnEnabled();
   }
 
   @Override
   public void warn(final String msg) {
-    if (isWarnEnabled) {
+    if (isWarnEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.WARN.toInt(), msg, null);
       } else {
@@ -447,7 +434,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void warn(final String format, final Object arg) {
-    if (isWarnEnabled) {
+    if (isWarnEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.WARN.toInt(), format, null, arg);
       } else {
@@ -458,7 +445,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void warn(final String format, final Object... arguments) {
-    if (isWarnEnabled) {
+    if (isWarnEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.WARN.toInt(), format, null, arguments);
       } else {
@@ -469,7 +456,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void warn(final String format, final Object arg1, final Object arg2) {
-    if (isWarnEnabled) {
+    if (isWarnEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.WARN.toInt(), format, null, arg1, arg2);
       } else {
@@ -480,7 +467,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void warn(final String msg, final Throwable t) {
-    if (isWarnEnabled) {
+    if (isWarnEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.WARN.toInt(), msg, t);
       } else {
@@ -491,12 +478,12 @@ public class ZbLogger implements Logger {
 
   @Override
   public boolean isWarnEnabled(final Marker marker) {
-    return isWarnEnabled;
+    return logger.isWarnEnabled(marker);
   }
 
   @Override
   public void warn(final Marker marker, final String msg) {
-    if (isWarnEnabled) {
+    if (isWarnEnabled()) {
       if (locationAwareLogger != null) {
         log(marker, Level.WARN.toInt(), msg, null);
       } else {
@@ -507,7 +494,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void warn(final Marker marker, final String format, final Object arg) {
-    if (isWarnEnabled) {
+    if (isWarnEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.WARN.toInt(), format, null, arg);
       } else {
@@ -518,7 +505,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void warn(final Marker marker, final String format, final Object arg1, final Object arg2) {
-    if (isWarnEnabled) {
+    if (isWarnEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.WARN.toInt(), format, null, arg1, arg2);
       } else {
@@ -529,7 +516,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void warn(final Marker marker, final String format, final Object... arguments) {
-    if (isWarnEnabled) {
+    if (isWarnEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.WARN.toInt(), format, null, arguments);
       } else {
@@ -540,7 +527,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void warn(final Marker marker, final String msg, final Throwable t) {
-    if (isWarnEnabled) {
+    if (isWarnEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.WARN.toInt(), msg, t);
       } else {
@@ -551,12 +538,12 @@ public class ZbLogger implements Logger {
 
   @Override
   public boolean isErrorEnabled() {
-    return isErrorEnabled;
+    return logger.isErrorEnabled();
   }
 
   @Override
   public void error(final String msg) {
-    if (isErrorEnabled) {
+    if (isErrorEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.ERROR.toInt(), msg, null);
       } else {
@@ -567,7 +554,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void error(final String format, final Object arg) {
-    if (isErrorEnabled) {
+    if (isErrorEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.ERROR.toInt(), format, null, arg);
       } else {
@@ -578,7 +565,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void error(final String format, final Object arg1, final Object arg2) {
-    if (isErrorEnabled) {
+    if (isErrorEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.ERROR.toInt(), format, null, arg1, arg2);
       } else {
@@ -589,7 +576,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void error(final String format, final Object... arguments) {
-    if (isErrorEnabled) {
+    if (isErrorEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.ERROR.toInt(), format, null, arguments);
       } else {
@@ -600,7 +587,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void error(final String msg, final Throwable t) {
-    if (isErrorEnabled) {
+    if (isErrorEnabled()) {
       if (locationAwareLogger != null) {
         log(null, Level.ERROR.toInt(), msg, t);
       } else {
@@ -611,12 +598,12 @@ public class ZbLogger implements Logger {
 
   @Override
   public boolean isErrorEnabled(final Marker marker) {
-    return isErrorEnabled;
+    return logger.isErrorEnabled(marker);
   }
 
   @Override
   public void error(final Marker marker, final String msg) {
-    if (isErrorEnabled) {
+    if (isErrorEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.ERROR.toInt(), msg, null);
       } else {
@@ -627,7 +614,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void error(final Marker marker, final String format, final Object arg) {
-    if (isErrorEnabled) {
+    if (isErrorEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.ERROR.toInt(), format, null, arg);
       } else {
@@ -639,7 +626,7 @@ public class ZbLogger implements Logger {
   @Override
   public void error(
       final Marker marker, final String format, final Object arg1, final Object arg2) {
-    if (isErrorEnabled) {
+    if (isErrorEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.ERROR.toInt(), format, null, arg1, arg2);
       } else {
@@ -650,7 +637,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void error(final Marker marker, final String format, final Object... arguments) {
-    if (isErrorEnabled) {
+    if (isErrorEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.ERROR.toInt(), format, null, arguments);
       } else {
@@ -661,7 +648,7 @@ public class ZbLogger implements Logger {
 
   @Override
   public void error(final Marker marker, final String msg, final Throwable t) {
-    if (isErrorEnabled) {
+    if (isErrorEnabled(marker)) {
       if (locationAwareLogger != null) {
         log(marker, Level.ERROR.toInt(), msg, t);
       } else {
