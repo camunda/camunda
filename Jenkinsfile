@@ -324,30 +324,8 @@ pipeline {
         }
       }
     }
-    stage('Unit tests and static analysis') {
-       parallel {
-        stage('SonarQube') {
-          environment {
-            SONARCLOUD_TOKEN = credentials('sonarcloud-token')
-            GITHUB_TOKEN     = credentials('camunda-jenkins-github')
-          }
-          steps {
-            container('maven') {
-              configFileProvider([configFile(
-                fileId: 'maven-nexus-settings-local-repo',
-                variable: 'MAVEN_SETTINGS_XML'
-              )]) {
-                sh '''
-                  apt-get update && apt-get install -qq git
-                  # This step is needed to fetch repo branches so SonarQube can diff them.
-                  # It's used to scan and report only differences instead whole branch.
-                  git config url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
-                  .ci/scripts/sonarqube-mvn.sh
-                '''
-              }
-            }
-          }
-        }
+    stage('Unit tests') {
+      parallel {
         stage('Backend') {
           steps {
             container('maven') {
@@ -377,12 +355,46 @@ pipeline {
         }
       }
     }
-    stage('Integration and Migration tests') {
+    stage('Integration and migration tests, and static analysis') {
       environment {
-        CAM_REGISTRY = credentials('repository-camunda-cloud')
+        CAM_REGISTRY     = credentials('repository-camunda-cloud')
+        SONARCLOUD_TOKEN = credentials('sonarcloud-token')
+        GITHUB_TOKEN     = credentials('camunda-jenkins-github')
       }
       failFast false
       parallel {
+        stage('SonarQube - Java') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-static-analysis_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              // SonarCloud will deprecate JDK 8 in October 2020, thus JDK 11 is used here.
+              yaml basePodSpec(1, 3, 'maven:3.6.3-jdk-11-slim')
+            }
+          }
+          steps {
+            container('maven') {
+              configFileProvider([configFile(
+                fileId: 'maven-nexus-settings-local-repo',
+                variable: 'MAVEN_SETTINGS_XML'
+              )]) {
+                // SonarQube requires compiled classes of .java files before run the analysis.
+                // The module qa/upgrade-optimize-data/generator has an issue with maven-compiler-plugin,
+                // so it has been ignored for now.
+                runMaven('compile -pl !qa/upgrade-optimize-data/generator -Dskip.fe.build -T\$LIMITS_CPU')
+                sh '''
+                  apt-get update && apt-get install -qq git
+                  # This step is needed to fetch repo branches so SonarQube can diff them.
+                  # It's used to scan and report only differences instead whole branch.
+                  # TODO: Remove git config manipulation when project switched to SSH checkout.
+                  git config url."https://${GITHUB_TOKEN}@github.com/".insteadOf "https://github.com/"
+                  .ci/scripts/sonarqube-mvn.sh
+                '''
+              }
+            }
+          }
+        }
         stage('Migration') {
           agent {
             kubernetes {
