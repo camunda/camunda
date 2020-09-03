@@ -33,7 +33,7 @@ An expression is written in **FEEL** (Friendly Enough Expression Language). FEEL
 * Simple syntax designed for business professionals and developers
 * Three-valued logic (true, false, null)
 
-Zeebe integrates the [Feel-Scala](https://github.com/camunda/feel-scala) engine to evaluate FEEL expressions. The following sections cover common use cases in Zeebe. A complete list of supported expressions can be found in the project's [documentation](https://camunda.github.io/feel-scala/1.11/).
+Zeebe integrates the [Feel-Scala](https://github.com/camunda/feel-scala) engine (version `1.11.x`) to evaluate FEEL expressions. The following sections cover common use cases in Zeebe. A complete list of supported expressions can be found in the project's [documentation](https://camunda.github.io/feel-scala/1.11/).
 
 ### Access Variables
 
