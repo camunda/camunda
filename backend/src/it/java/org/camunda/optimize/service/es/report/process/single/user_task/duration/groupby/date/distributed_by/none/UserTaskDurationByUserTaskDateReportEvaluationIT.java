@@ -143,7 +143,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
   }
 
   @Test
-  public void resultIsSortedInDescendingOrder() {
+  public void resultIsSortedInAscendingOrder() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -173,7 +173,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     assertThat(result.getData())
       .hasSize(4)
       .extracting(MapResultEntryDto::getKey)
-      .isSortedAccordingTo(Comparator.comparing(String::toString).reversed());
+      .isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
@@ -199,7 +199,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -208,7 +208,7 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     assertThat(result.getData())
       .hasSize(4)
       .extracting(MapResultEntryDto::getKey)
-      .isSortedAccordingTo(Comparator.comparing(String::toString));
+      .isSortedAccordingTo(Comparator.comparing(String::toString).reversed());
   }
 
   @Test
@@ -489,8 +489,8 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(100.);
-    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(200.);
+    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(200.);
+    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(100.);
   }
 
   @Test
@@ -528,8 +528,8 @@ public abstract class UserTaskDurationByUserTaskDateReportEvaluationIT
                  .filter(Objects::nonNull)
                  .mapToInt(Double::intValue)
                  .sum()).isEqualTo(800);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(500.);
-    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(100.);
+    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(100.);
+    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(500.);
   }
 
   @Test

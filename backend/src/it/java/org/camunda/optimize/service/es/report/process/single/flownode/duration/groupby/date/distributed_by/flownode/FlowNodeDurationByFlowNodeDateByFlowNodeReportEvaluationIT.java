@@ -94,8 +94,8 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains(START_EVENT, expectedDuration, START_EVENT)
         .distributedByContains(END_EVENT, expectedDuration, END_EVENT)
+        .distributedByContains(START_EVENT, expectedDuration, START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -129,8 +129,8 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains(START_EVENT, expectedDuration, START_EVENT)
         .distributedByContains(END_EVENT, expectedDuration, END_EVENT)
+        .distributedByContains(START_EVENT, expectedDuration, START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -171,18 +171,18 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
         .groupByContains(groupedByDayDateAsString(today))
-          .distributedByContains(START_EVENT, calculateExpectedValueGivenDurations(10., 20.).get(aggType), START_EVENT)
           .distributedByContains(END_EVENT, null, END_EVENT)
+          .distributedByContains(START_EVENT, calculateExpectedValueGivenDurations(10., 20.).get(aggType), START_EVENT)
         .groupByContains(groupedByDayDateAsString(today.minusDays(1)))
-          .distributedByContains(START_EVENT, null, START_EVENT)
           .distributedByContains(END_EVENT, calculateExpectedValueGivenDurations(10., 20.).get(aggType), END_EVENT)
+          .distributedByContains(START_EVENT, null, START_EVENT)
         .doAssert(result);
       // @formatter:on
     });
   }
 
   @Test
-  public void resultIsSortedInDescendingOrder() {
+  public void resultIsSortedInAscendingOrder() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
@@ -212,17 +212,17 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(START_EVENT, null, START_EVENT)
         .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(START_EVENT, 10., START_EVENT)
         .distributedByContains(END_EVENT, null, END_EVENT)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(START_EVENT, 10., START_EVENT)
         .distributedByContains(END_EVENT, null, END_EVENT)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(START_EVENT, null, START_EVENT)
         .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -250,7 +250,7 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
@@ -259,17 +259,17 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(END_EVENT, 10., END_EVENT)
         .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(END_EVENT, null, END_EVENT)
         .distributedByContains(START_EVENT, 10., START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(END_EVENT, null, END_EVENT)
         .distributedByContains(START_EVENT, 10., START_EVENT)
+        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(END_EVENT, 10., END_EVENT)
         .distributedByContains(START_EVENT, null, START_EVENT)
+        .distributedByContains(END_EVENT, 10., END_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -363,11 +363,11 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(START_EVENT, null, START_EVENT)
         .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(START_EVENT, 10., START_EVENT)
         .distributedByContains(END_EVENT, null, END_EVENT)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -403,11 +403,11 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(START_EVENT, 15., START_EVENT)
         .distributedByContains(END_EVENT, null, END_EVENT)
+        .distributedByContains(START_EVENT, 15., START_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(START_EVENT, null, START_EVENT)
         .distributedByContains(END_EVENT, 15., END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -436,14 +436,14 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
+        .distributedByContains(END_EVENT, null, END_EVENT)
         .distributedByContains(START_EVENT, 10., START_EVENT)
-        .distributedByContains(END_EVENT, null, END_EVENT)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(START_EVENT, null, START_EVENT)
         .distributedByContains(END_EVENT, null, END_EVENT)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
         .distributedByContains(START_EVENT, null, START_EVENT)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
         .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(START_EVENT, null, START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -480,14 +480,14 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(groupingCount)
       .processInstanceCountWithoutFilters(groupingCount)
       .groupByContains(groupedByDateAsString(referenceDate.minus(0, groupByUnitAsChrono), groupByUnitAsChrono))
-      .distributedByContains(START_EVENT, 10., START_EVENT)
-      .distributedByContains(END_EVENT, 10., END_EVENT);
+      .distributedByContains(END_EVENT, 10., END_EVENT)
+      .distributedByContains(START_EVENT, 10., START_EVENT);
 
     for (int i = 1; i < groupingCount; i++) {
       groupByAdder = groupByAdder
         .groupByContains(groupedByDateAsString(referenceDate.minus(i, groupByUnitAsChrono), groupByUnitAsChrono))
-        .distributedByContains(START_EVENT, 10., START_EVENT)
-        .distributedByContains(END_EVENT, 10., END_EVENT);
+        .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(START_EVENT, 10., START_EVENT);
     }
     groupByAdder.doAssert(result);
   }
@@ -522,8 +522,8 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(START_EVENT, 10., START_EVENT)
         .distributedByContains(END_EVENT, 10., END_EVENT)
+        .distributedByContains(START_EVENT, 10., START_EVENT)
       .doAssert(result);
     // @formatter:on
   }
@@ -556,9 +556,9 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
-      .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
-      .distributedByContains(START_EVENT, 10., START_EVENT)
       .distributedByContains(END_EVENT, 10., END_EVENT)
+      .distributedByContains(START_EVENT, 10., START_EVENT)
+      .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -668,10 +668,10 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
-        .distributedByContains(START_EVENT, 15., START_EVENT)
         .distributedByContains(END_EVENT, 15., END_EVENT)
+        .distributedByContains(START_EVENT, 15., START_EVENT)
+        .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -708,10 +708,10 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
-        .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
-        .distributedByContains(START_EVENT, 15., START_EVENT)
         .distributedByContains(END_EVENT, 15., END_EVENT)
+        .distributedByContains(START_EVENT, 15., START_EVENT)
+        .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -745,9 +745,9 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
-        .distributedByContains(START_EVENT, 15., START_EVENT)
         .distributedByContains(END_EVENT, 15., END_EVENT)
+        .distributedByContains(START_EVENT, 15., START_EVENT)
+        .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -784,9 +784,9 @@ public abstract class FlowNodeDurationByFlowNodeDateByFlowNodeReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-      .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
-      .distributedByContains(START_EVENT, 15., START_EVENT)
       .distributedByContains(END_EVENT, 15., END_EVENT)
+      .distributedByContains(START_EVENT, 15., START_EVENT)
+      .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }

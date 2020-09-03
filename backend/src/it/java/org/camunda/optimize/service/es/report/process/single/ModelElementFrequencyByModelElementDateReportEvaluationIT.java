@@ -126,7 +126,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
   }
 
   @Test
-  public void resultIsSortedInDescendingOrder() {
+  public void resultIsSortedInAscendingOrder() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployTwoModelElementDefinition();
@@ -153,7 +153,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     assertThat(result.getData())
       .hasSize(4)
       .extracting(MapResultEntryDto::getKey)
-      .isSortedAccordingTo(Comparator.comparing(String::toString).reversed());
+      .isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
@@ -175,7 +175,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
@@ -184,7 +184,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     assertThat(result.getData())
       .hasSize(4)
       .extracting(MapResultEntryDto::getKey)
-      .isSortedAccordingTo(Comparator.comparing(String::toString));
+      .isSortedAccordingTo(Comparator.comparing(String::toString).reversed());
   }
 
   @Test
@@ -526,8 +526,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(4.);
-    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(2.);
+    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(2.);
+    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(4.);
   }
 
   @ParameterizedTest
@@ -559,9 +559,11 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(groupingCount);
     final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, groupByUnitAsChrono);
+    // startDate is groupingCount - 1 in the past from final start of unit
+    ZonedDateTime startDate = finalStartOfUnit.minus(groupingCount - 1, groupByUnitAsChrono);
     IntStream.range(0, groupingCount)
       .forEach(i -> {
-        final String expectedDateString = localDateTimeToString(finalStartOfUnit.minus((i), groupByUnitAsChrono));
+        final String expectedDateString = localDateTimeToString(startDate.plus((i), groupByUnitAsChrono));
         assertThat(resultData.get(i).getKey()).isEqualTo(expectedDateString);
         assertThat(resultData.get(i).getValue()).isEqualTo((long) 2);
       });
@@ -576,8 +578,8 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
       final List<MapResultEntryDto> resultData = result.getResult().getData();
       assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-      assertThat(resultData).last().extracting(MapResultEntryDto::getKey).isEqualTo(localDateTimeToString(startRange));
-      assertIsInRangeOfLastInterval(resultData.get(0).getKey(), startRange, endRange);
+      assertThat(resultData).first().extracting(MapResultEntryDto::getKey).isEqualTo(localDateTimeToString(startRange));
+      assertIsInRangeOfLastInterval(resultData.get(resultData.size() - 1).getKey(), startRange, endRange);
     }
   }
 

@@ -69,6 +69,7 @@ public abstract class ModelElementFrequencyByModelElementDateByModelElementRepor
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     ProcessInstanceEngineDto processInstanceDto3 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
     Map<String, OffsetDateTime> updates = new HashMap<>();
     OffsetDateTime startOfToday = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
     updates.put(processInstanceDto1.getId(), startOfToday);

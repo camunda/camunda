@@ -53,11 +53,6 @@ import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
   extends AbstractProcessDefinitionIT {
 
-  protected static final String START_EVENT = "startEvent";
-  protected static final String END_EVENT = "endEvent";
-  protected static final String USER_TASK_1 = "userTask1";
-  protected static final String USER_TASK_2 = "userTask2";
-
   @Test
   public void reportEvaluationForOneProcess() {
     // given
@@ -203,10 +198,12 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     // then
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(groupingCount);
+    // startDate is groupingCount - 1 in the past from now
+    OffsetDateTime startDate = now.minus(groupingCount - 1, groupByUnitAsChrono);
     IntStream.range(0, groupingCount)
       .forEach(i -> {
         final String expectedDateString =
-          groupedByDateAsString(now.minus((i), groupByUnitAsChrono), groupByUnitAsChrono);
+          groupedByDateAsString(startDate.plus(i, groupByUnitAsChrono), groupByUnitAsChrono);
         assertThat(resultData.get(i).getKey()).isEqualTo(expectedDateString);
         assertThat(resultData.get(i).getValue()).isEqualTo((long) 10);
       });
@@ -365,8 +362,8 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
     for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
       final List<MapResultEntryDto> resultData = result.getResult().getData();
       assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
-      assertThat(resultData).last().extracting(MapResultEntryDto::getKey).isEqualTo(localDateTimeToString(startRange));
-      assertIsInRangeOfLastInterval(resultData.get(0).getKey(), startRange, endRange);
+      assertThat(resultData).first().extracting(MapResultEntryDto::getKey).isEqualTo(localDateTimeToString(startRange));
+      assertIsInRangeOfLastInterval(resultData.get(resultData.size() - 1).getKey(), startRange, endRange);
     }
   }
 

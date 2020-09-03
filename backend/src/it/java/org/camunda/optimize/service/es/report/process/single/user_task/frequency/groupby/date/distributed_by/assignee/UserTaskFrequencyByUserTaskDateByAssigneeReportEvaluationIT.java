@@ -115,7 +115,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
   }
 
   @Test
-  public void resultIsSortedInDescendingOrder() {
+  public void resultIsSortedInAscendingOrder() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -145,17 +145,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_USER, 1.)
         .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_USER, 1.)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_USER, null)
         .distributedByContains(DEFAULT_USERNAME, 1.)
+        .distributedByContains(SECOND_USER, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(SECOND_USER, null)
         .distributedByContains(DEFAULT_USERNAME, 1.)
+        .distributedByContains(SECOND_USER, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(SECOND_USER, 1.)
         .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_USER, 1.)
       .doAssert(result);
     // @formatter:on
   }
@@ -183,7 +183,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
@@ -192,17 +192,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(DEFAULT_USERNAME, null)
         .distributedByContains(SECOND_USER, 1.)
+        .distributedByContains(DEFAULT_USERNAME, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(DEFAULT_USERNAME, 1.)
         .distributedByContains(SECOND_USER, null)
+        .distributedByContains(DEFAULT_USERNAME, 1.)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(DEFAULT_USERNAME, 1.)
         .distributedByContains(SECOND_USER, null)
+        .distributedByContains(DEFAULT_USERNAME, 1.)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(DEFAULT_USERNAME, null)
         .distributedByContains(SECOND_USER, 1.)
+        .distributedByContains(DEFAULT_USERNAME, null)
       .doAssert(result);
     // @formatter:on
   }
@@ -292,11 +292,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_USER, 1.)
         .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_USER, 1.)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_USER, null)
         .distributedByContains(DEFAULT_USERNAME, 1.)
+        .distributedByContains(SECOND_USER, null)
       .doAssert(result);
     // @formatter:on
   }
@@ -332,11 +332,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_USER, null)
         .distributedByContains(DEFAULT_USERNAME, 2.)
+        .distributedByContains(SECOND_USER, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_USER, 2.)
         .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_USER, 2.)
       .doAssert(result);
     // @formatter:on
   }
@@ -365,14 +365,14 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_USER, null)
         .distributedByContains(DEFAULT_USERNAME, 1.)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
         .distributedByContains(SECOND_USER, null)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
         .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_USER, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(SECOND_USER, 1.)
         .distributedByContains(DEFAULT_USERNAME, null)
+        .distributedByContains(SECOND_USER, 1.)
       .doAssert(result);
     // @formatter:on
   }
@@ -732,8 +732,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(SECOND_USER, 1.)
         .distributedByContains(DEFAULT_USERNAME, 2.)
+        .distributedByContains(SECOND_USER, 1.)
       .doAssert(result);
     // @formatter:on
   }

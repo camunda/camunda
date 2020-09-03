@@ -38,13 +38,6 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 public abstract class ModelElementDurationByModelElementDateByModelElementReportEvaluationIT
   extends AbstractProcessDefinitionIT {
 
-  protected static final String START_EVENT = "startEvent";
-  protected static final String END_EVENT = "endEvent";
-  protected static final String USER_TASK_1 = "userTask1";
-  protected static final String USER_TASK_2 = "userTask2";
-  protected static final String USER_TASK_1_NAME = "userTask1Name";
-  protected static final String USER_TASK_2_NAME = "userTask2Name";
-
   @Test
   public void reportEvaluationSingleBucketFilteredBySingleTenant() {
     // given

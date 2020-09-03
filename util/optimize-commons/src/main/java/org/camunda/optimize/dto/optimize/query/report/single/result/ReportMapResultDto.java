@@ -36,9 +36,7 @@ public class ReportMapResultDto implements LimitedResultDto, DecisionReportResul
     return ResultType.MAP;
   }
 
-  public void sortResultData(
-    final ReportSortingDto sorting,
-    final boolean keyIsOfNumericType) {
+  public void sortResultData(final ReportSortingDto sorting, final boolean keyIsOfNumericType) {
 
     final String sortBy = sorting.getBy().orElse(ReportSortingDto.SORT_BY_KEY);
     final SortOrder sortOrder = sorting.getOrder().orElse(SortOrder.DESC);
@@ -47,7 +45,7 @@ public class ReportMapResultDto implements LimitedResultDto, DecisionReportResul
     switch (sortBy) {
       default:
       case ReportSortingDto.SORT_BY_KEY:
-        valueToSortByExtractor = keyIsOfNumericType?
+        valueToSortByExtractor = keyIsOfNumericType ?
           entry -> Double.valueOf(entry.getKey()) : entry -> entry.getKey().toLowerCase();
         break;
       case ReportSortingDto.SORT_BY_VALUE:

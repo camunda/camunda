@@ -187,18 +187,18 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
         .groupByContains(groupedByDayDateAsString(today))
-          .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
           .distributedByContains(USER_TASK_1, calculateExpectedValueGivenDurations(10., 20.).get(aggType), USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .groupByContains(groupedByDayDateAsString(today.minusDays(1)))
-          .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(10., 20.).get(aggType), USER_TASK_2_NAME)
           .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+          .distributedByContains(USER_TASK_2, calculateExpectedValueGivenDurations(10., 20.).get(aggType), USER_TASK_2_NAME)
         .doAssert(result);
       // @formatter:on
     });
   }
 
   @Test
-  public void resultIsSortedInDescendingOrder() {
+  public void resultIsSortedInAscendingOrder() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -232,17 +232,17 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -274,7 +274,7 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
@@ -283,17 +283,17 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
         .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
+        .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -393,11 +393,11 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -437,11 +437,11 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(USER_TASK_2, 15., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 15., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -472,14 +472,14 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 10., USER_TASK_1_NAME)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
         .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, null, USER_TASK_2_NAME)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, null, USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 10., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -833,8 +833,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -871,8 +871,8 @@ public abstract class UserTaskDurationByUserTaskDateByUserTaskReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-        .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
         .distributedByContains(USER_TASK_1, 15., USER_TASK_1_NAME)
+        .distributedByContains(USER_TASK_2, 20., USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }

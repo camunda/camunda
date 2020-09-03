@@ -143,7 +143,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
     result.setSorting(
       context.getReportConfiguration()
         .getSorting()
-        .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.DESC))
+        .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC))
     );
   }
 
