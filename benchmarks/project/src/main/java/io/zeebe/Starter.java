@@ -23,10 +23,13 @@ import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,10 +66,14 @@ public class Starter extends App {
 
     final String variables = readVariables(starterCfg.getPayloadPath());
     final LocalDateTime startTime = LocalDateTime.now();
-    executorService.scheduleAtFixedRate(
+
+    final Supplier<Boolean> shouldContinue = createContinuationCondition(starterCfg);
+
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
+
+    final ScheduledFuture scheduledTask = executorService.scheduleAtFixedRate(
         () -> {
-          final long duration = ChronoUnit.SECONDS.between(startTime, LocalDateTime.now());
-          if (durationLimit <= 0 || duration < durationLimit) {
+          if (shouldContinue.get()) {
             try {
               if (starterCfg.isWithResults()) {
                 requestFutures.put(
@@ -91,10 +98,7 @@ public class Starter extends App {
               LOG.error("Error on creating new workflow instance", e);
             }
           } else {
-            // TODO can one use scheduledFuture.cancel(false) to gracefully
-            // stop the task from being scheduled again and allow the response
-            // checker to receive the responses for everything that was started?
-            System.exit(0);
+            countDownLatch.countDown();
           }
         },
         0,
@@ -108,16 +112,37 @@ public class Starter extends App {
         .addShutdownHook(
             new Thread(
                 () -> {
-                  executorService.shutdown();
-                  try {
-                    executorService.awaitTermination(60, TimeUnit.SECONDS);
-                  } catch (InterruptedException e) {
-                    e.printStackTrace();
+                  if (!executorService.isShutdown()) {
+                    executorService.shutdown();
+                    try {
+                      executorService.awaitTermination(60, TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                      LOG.error("Error during shutfown", e);
+                    }
                   }
-                  client.close();
-                  responseChecker.close();
+                  if (responseChecker.isAlive()) {
+                    responseChecker.close();
+                  }
+
+                  stopMonitoringServer();
                 }));
+
+    //wait for starter to finish
+    try {
+      countDownLatch.await();
+    } catch (InterruptedException e) {
+      LOG.error("Error occurred waiting for countdown latch", e);
+    }
+
+    LOG.info("Starter finished");
+
+    scheduledTask.cancel(true);
+    executorService.shutdown();
+    responseChecker.close();
+    stopMonitoringServer();
   }
+
+
 
   private ZeebeClient createZeebeClient() {
     final ZeebeClientBuilder builder =
@@ -149,6 +174,21 @@ public class Starter extends App {
       }
     }
   }
+
+  private Supplier<Boolean> createContinuationCondition(StarterCfg starterCfg) {
+    final int durationLimit = starterCfg.getDurationLimit();
+
+    if (durationLimit > 0) {
+      // if there is a duration limit
+      final LocalDateTime endTime = LocalDateTime.now().plus(durationLimit, ChronoUnit.SECONDS);
+      // continue until time is up
+      return () -> LocalDateTime.now().isBefore(endTime);
+    } else {
+      // otherwise continue forever
+      return () -> true;
+    }
+  }
+
 
   public static void main(String[] args) {
     createApp(Starter::new);
