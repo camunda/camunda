@@ -1,5 +1,18 @@
 @import 'shared-styles/shared-styles.scss';
 
+.dark .Switch {
+  .Switch__Slider--round {
+    background-color: #c7c7c7;
+  }
+  input:checked + .Switch__Slider--round {
+    background-color: $blue;
+  }
+
+  &.disabled {
+    opacity: 0.6;
+  }
+}
+
 /* The switch - the box around the slider */
 .Switch {
   position: relative;

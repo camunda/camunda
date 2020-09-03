@@ -1,5 +1,11 @@
 @import 'shared-styles/shared-styles.scss';
 
+.dark .Dropdown {
+  .menu {
+    background-color: $grey-darken-33;
+  }
+}
+
 .Dropdown {
   display: inline-block;
   position: relative;
@@ -35,11 +41,10 @@
     position: absolute;
     margin: 3px 0;
     background-color: white;
-    border: 1px solid #bbb;
-    padding: 0;
+    padding: 5px 0;
     border-radius: 3px;
     z-index: var(--z-popup);
-    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.2);
     visibility: hidden;
     opacity: 0;
     display: flex;
