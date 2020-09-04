@@ -13,9 +13,6 @@ import {configure} from '@testing-library/dom';
 import MutationObserver from '@sheerun/mutationobserver-shim';
 import {mockServer} from 'modules/mockServer';
 
-// see https://github.com/mobxjs/mobx-react-lite/#observer-batching
-import 'mobx-react-lite/batchingForReactDom';
-
 // configure enzyme
 Enzyme.configure({adapter: new Adapter()});
 

@@ -86,9 +86,9 @@ export const ModalContent = themed(styled(Panel)`
 
   border: 1px solid
     ${themeStyle({
-      dark: Colors.uiDark06,
-      light: Colors.uiLight05,
-    })};
+    dark: Colors.uiDark06,
+    light: Colors.uiLight05,
+  })};
   border-radius: 3px;
   box-shadow: 0 2px 2px 0
     ${themeStyle({
