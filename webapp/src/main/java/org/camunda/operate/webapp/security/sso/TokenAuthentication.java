@@ -10,7 +10,11 @@ import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROT
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
+import com.auth0.jwt.exceptions.JWTDecodeException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
@@ -18,7 +22,6 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Component;
 
-import com.auth0.IdentityVerificationException;
 import com.auth0.Tokens;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.Claim;
@@ -28,12 +31,20 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class TokenAuthentication extends AbstractAuthenticationToken {
- 
+
+  protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+
   private DecodedJWT jwt;
   private boolean authenticated = false;
 
   @Autowired
   private SSOWebSecurityConfig config;
+
+  private final Predicate<Map> idEqualsOrganization = new Predicate<>() {
+    @Override public boolean test(Map orgs) {
+      return orgs.containsKey("id") && orgs.get("id").equals(config.getOrganization());
+    }
+  };
 
   public TokenAuthentication() {
     super(null);
@@ -67,15 +78,37 @@ public class TokenAuthentication extends AbstractAuthenticationToken {
     return authenticated && !hasExpired();
   }
   
-  public void authenticate(Tokens tokens) throws IdentityVerificationException {    
+  public void authenticate(Tokens tokens) {
     jwt = JWT.decode(tokens.getIdToken());
     Claim claim = jwt.getClaim(config.getClaimName());
-    List<String> claims = claim.asList(String.class);
-    if (claims != null) {
-      authenticated = claims.contains(config.getOrganization());
+    tryAuthenticateAsListOfStrings(claim);
+    if( !authenticated ){
+      tryAuthenticateAsListOfMaps(claim);
     }
     if (!authenticated) {
       throw new InsufficientAuthenticationException("No permission for operate - check your organization id");
+    }
+  }
+
+  private void tryAuthenticateAsListOfMaps(Claim claim) {
+    try {
+      List<Map> claims = claim.asList(Map.class);
+      if (claims != null) {
+        authenticated = claims.stream().anyMatch(idEqualsOrganization);
+      }
+    } catch (JWTDecodeException e) {
+      logger.debug("Read organization claim as list of maps failed.",e);
+    }
+  }
+
+  private void tryAuthenticateAsListOfStrings(Claim claim) {
+    try {
+      List<String> claims = claim.asList(String.class);
+      if (claims != null) {
+        authenticated = claims.contains(config.getOrganization());
+      }
+    } catch (JWTDecodeException e) {
+      logger.debug("Read organization claim as list of strings failed.",e);
     }
   }
 
