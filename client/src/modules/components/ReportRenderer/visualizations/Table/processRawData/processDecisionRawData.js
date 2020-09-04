@@ -64,7 +64,7 @@ export default function processDecisionRawData(
     return [...propertyValues, ...inputVariableValues, ...outputVariableValues];
   });
 
-  const head = instanceProps.map((key) => t('report.table.rawData.' + key));
+  const head = instanceProps.map((key) => ({id: key, label: t('report.table.rawData.' + key)}));
 
   if (inputVariables.length > 0) {
     head.push({

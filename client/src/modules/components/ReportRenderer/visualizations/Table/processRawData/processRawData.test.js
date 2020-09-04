@@ -45,14 +45,14 @@ const result = {
 
 it('should transform data to table compatible format', () => {
   expect(processRawData({report: {data, result}})).toEqual({
-    head: [
-      'Process Instance Id',
-      'Process Definition Id',
-      {label: 'Variables', columns: ['var1', 'var2']},
-    ],
     body: [
       ['foo', 'bar', '12', ''],
       ['xyz', 'abc', '', 'true'],
+    ],
+    head: [
+      {id: 'processInstanceId', label: 'Process Instance Id'},
+      {id: 'processDefinitionId', label: 'Process Definition Id'},
+      {columns: ['var1', 'var2'], label: 'Variables'},
     ],
   });
 });
@@ -69,7 +69,7 @@ it('should not include columns that are hidden', () => {
   };
   expect(processRawData({report: {data, result}})).toEqual({
     body: [['foo'], ['xyz']],
-    head: ['Process Instance Id'],
+    head: [{id: 'processInstanceId', label: 'Process Instance Id'}],
   });
 });
 
@@ -84,7 +84,11 @@ it('should exclude variable columns using the variable prefix', () => {
     },
   };
   expect(processRawData({report: {data, result}})).toEqual({
-    head: ['Process Instance Id', 'Process Definition Id', {label: 'Variables', columns: ['var2']}],
+    head: [
+      {id: 'processInstanceId', label: 'Process Instance Id'},
+      {id: 'processDefinitionId', label: 'Process Definition Id'},
+      {label: 'Variables', columns: ['var2']},
+    ],
     body: [
       ['foo', 'bar', ''],
       ['xyz', 'abc', 'true'],
