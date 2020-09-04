@@ -6,6 +6,8 @@
 package org.camunda.operate;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.camunda.operate.data.DataGenerator;
 import org.slf4j.Logger;
@@ -42,6 +44,8 @@ public class Application {
     if(!isOneAuthProfileActive(args)) {
       springApplication.setAdditionalProfiles("auth");
     }
+    setDefaultProperties(springApplication);
+
     springApplication.run(args);
   }
   
@@ -51,7 +55,25 @@ public class Application {
     String profilesFromProperties = String.format("%s", System.getProperty("spring.profiles.active"));
     return profilesFromArgs.contains("auth") || profilesFromEnv.contains("auth") || profilesFromProperties.contains("auth");
   }
-  
+
+  private static void setDefaultProperties(final SpringApplication springApplication) {
+    final Map<String, Object> propsMap = new HashMap<>();
+    propsMap.putAll(getManagementProperties());
+    springApplication.setDefaultProperties(propsMap);
+  }
+
+  public static Map<String, Object> getManagementProperties() {
+    return Map.of(
+        //disable default health indicators: https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-health-indicators
+        "management.health.defaults.enabled", "false",
+
+        //enable health check and metrics endpoints
+        "management.endpoints.web.exposure.include", "health,prometheus"
+
+        //enable Kubernetes health groups: https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-kubernetes-probes
+        //"management.health.probes.enabled", "true",
+    );
+  }
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
   public DataGenerator stubDataGenerator() {
