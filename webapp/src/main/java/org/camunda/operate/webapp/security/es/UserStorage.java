@@ -12,7 +12,7 @@ import org.camunda.operate.webapp.es.reader.AbstractReader;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.schema.indices.UserIndex;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
-import org.camunda.operate.webapp.security.OperateURIs;
+import org.camunda.operate.webapp.security.sso.SSOWebSecurityConfig;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -31,7 +31,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 
 
 @Component
-@Profile("!" + OperateURIs.LDAP_AUTH_PROFILE + " & ! " + OperateURIs.SSO_AUTH_PROFILE)
+@Profile("!" + SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 @DependsOn("schemaManager")
 public class UserStorage extends AbstractReader {
 
@@ -57,6 +57,7 @@ public class UserStorage extends AbstractReader {
         }
       } catch (IOException e) {
         final String message = String.format("Exception occurred, while obtaining the user: %s", e.getMessage());
+        logger.error(message, e);
         throw new OperateRuntimeException(message, e);
       }
   }

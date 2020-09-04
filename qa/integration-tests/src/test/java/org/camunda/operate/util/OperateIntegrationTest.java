@@ -64,10 +64,10 @@ public abstract class OperateIntegrationTest {
   }
   
   protected MvcResult getRequest(String requestUrl) throws Exception {
-    MockHttpServletRequestBuilder request = get(requestUrl).accept(mockMvcTestRule.getContentType());
+    MockHttpServletRequestBuilder request = get(requestUrl);
     MvcResult mvcResult = mockMvc.perform(request)
       .andExpect(status().isOk())
-      .andExpect(content().contentTypeCompatibleWith(mockMvcTestRule.getContentType()))
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
       .andReturn();
     
     return mvcResult;

@@ -11,7 +11,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import org.camunda.operate.webapp.security.OperateURIs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.context.annotation.Scope;
@@ -25,7 +24,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
-@Profile(OperateURIs.SSO_AUTH_PROFILE)
+@Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class TokenAuthentication extends AbstractAuthenticationToken {

@@ -13,10 +13,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.ldap.userdetails.LdapUserDetails;
 import org.springframework.stereotype.Component;
 
-import static org.camunda.operate.webapp.security.OperateURIs.LDAP_AUTH_PROFILE;
-
 @Component
-@Profile(LDAP_AUTH_PROFILE)
+@Profile(LDAPWebSecurityConfig.LDAP_AUTH_PROFILE)
 public class LDAPUserService extends AbstractUserService {
 
   @Override

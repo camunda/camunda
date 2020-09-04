@@ -20,9 +20,7 @@ import java.util.Map;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.webapp.es.reader.Probes;
 import org.camunda.operate.webapp.rest.AuthenticationRestService;
-import static org.camunda.operate.webapp.security.OperateURIs.*;
-
-import org.camunda.operate.webapp.security.OperateURIs;
+import org.camunda.operate.webapp.rest.HealthCheckRestService;
 import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,13 +47,7 @@ import com.auth0.Tokens;
 @RunWith(SpringRunner.class)
 @SpringBootTest(
   classes = {
-      TestApplicationWithNoBeans.class,
-      SSOWebSecurityConfig.class,
-      SSOController.class,
-      TokenAuthentication.class,
-      SSOUserService.class,
-      AuthenticationRestService.class,
-      OperateURIs.class
+      TestApplicationWithNoBeans.class, SSOWebSecurityConfig.class, SSOController.class, TokenAuthentication.class, SSOUserService.class, AuthenticationRestService.class,HealthCheckRestService.class
   },
   properties = {
       "camunda.operate.auth0.clientId=1",
@@ -67,7 +59,7 @@ import com.auth0.Tokens;
   },
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
-@ActiveProfiles(SSO_AUTH_PROFILE)
+@ActiveProfiles("sso-auth")
 public class AuthenticationTest {
 
   @LocalServerPort
@@ -86,7 +78,7 @@ public class AuthenticationTest {
   Probes probes;
   
   @Before
-  public void setUp() {
+  public void setUp() throws Throwable{
     // mock building authorizeUrl
     AuthorizeUrl mockedAuthorizedUrl = mock(AuthorizeUrl.class);
     given(authenticationController.buildAuthorizeUrl(isNotNull(), isNotNull(), isNotNull())).willReturn(mockedAuthorizedUrl);
@@ -100,16 +92,16 @@ public class AuthenticationTest {
   @Test
   public void testLoginSuccess() throws Exception { 
     // Step 1 try to access document root
-    ResponseEntity<String> response = get(ROOT);
+    ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
     HttpEntity<?> cookies = httpEntityWithCookie(response);
     
-    assertThatRequestIsRedirectedTo(response,urlFor(LOGIN_RESOURCE));
+    assertThatRequestIsRedirectedTo(response,urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
 
     // Step 2 Get Login provider url
-    response = get(LOGIN_RESOURCE,cookies);
+    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE,cookies);   
     assertThat(redirectLocationIn(response)).contains(
         ssoConfig.getDomain(),
-        CALLBACK_URI,
+        SSOWebSecurityConfig.CALLBACK_URI,
         ssoConfig.getClientId(),
         ssoConfig.getBackendDomain()
     );
@@ -117,10 +109,10 @@ public class AuthenticationTest {
     // mock building tokens
     given(authenticationController.handle(isNotNull(), isNotNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
     
-    response = get(CALLBACK_URI,cookies);
-    assertThatRequestIsRedirectedTo(response, urlFor(ROOT));
+    response = get(SSOWebSecurityConfig.CALLBACK_URI,cookies);
+    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.ROOT));
     
-    response = get(ROOT,cookies);
+    response = get(SSOWebSecurityConfig.ROOT,cookies);
     // Check if access to url possible
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
@@ -128,80 +120,80 @@ public class AuthenticationTest {
   @Test
   public void testLoginFailedWithNoPermissions() throws Exception { 
     // Step 1 try to access document root
-    ResponseEntity<String> response = get(ROOT);
+    ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
     HttpEntity<?> cookies = httpEntityWithCookie(response);
     
-    assertThatRequestIsRedirectedTo(response,urlFor(LOGIN_RESOURCE));
+    assertThatRequestIsRedirectedTo(response,urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
     
     // Step 2 Get Login provider url
-    response = get(LOGIN_RESOURCE,cookies);
+    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE,cookies);   
     assertThat(redirectLocationIn(response)).contains(
         ssoConfig.getDomain(),
-        CALLBACK_URI,
+        SSOWebSecurityConfig.CALLBACK_URI,
         ssoConfig.getClientId(),
         ssoConfig.getBackendDomain()
     );
     // Step 3 Call back uri with invalid userdata  
     given(authenticationController.handle(isNotNull(), isNotNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), "wrong-organization"));
     
-    response = get(CALLBACK_URI,cookies);
+    response = get(SSOWebSecurityConfig.CALLBACK_URI,cookies);
     assertThat(redirectLocationIn(response)).contains(
         ssoConfig.getDomain(),
         "logout",
         ssoConfig.getClientId(),
-        NO_PERMISSION
+        SSOWebSecurityConfig.NO_PERMISSION
     );
     
-    response = get(ROOT,cookies);
+    response = get(SSOWebSecurityConfig.ROOT,cookies);
     // Check that access to url is not possible
-    assertThatRequestIsRedirectedTo(response,urlFor(LOGIN_RESOURCE));
+    assertThatRequestIsRedirectedTo(response,urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
   }
   
   @Test
   public void testLoginFailedWithOtherException() throws Exception { 
     // Step 1 try to access document root
-    ResponseEntity<String> response = get(ROOT);
+    ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
     HttpEntity<?> cookies = httpEntityWithCookie(response);
     
-    assertThatRequestIsRedirectedTo(response,urlFor(LOGIN_RESOURCE));
+    assertThatRequestIsRedirectedTo(response,urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
     
     // Step 2 Get Login provider url
-    response = get(LOGIN_RESOURCE,cookies);
+    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE,cookies);   
     assertThat(redirectLocationIn(response)).contains(
         ssoConfig.getDomain(),
-        CALLBACK_URI,
+        SSOWebSecurityConfig.CALLBACK_URI,
         ssoConfig.getClientId(),
         ssoConfig.getBackendDomain()
     );
     // Step 3 Call back uri, but there is an IdentityVerificationException.
     doThrow(IdentityVerificationException.class).when(authenticationController).handle(any(), any());
     
-    response = get(CALLBACK_URI,cookies);
-    assertThatRequestIsRedirectedTo(response, urlFor(NO_PERMISSION));
+    response = get(SSOWebSecurityConfig.CALLBACK_URI,cookies);
+    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.NO_PERMISSION));
   }
   
   @Test
   public void testLogout() throws Throwable {
     // Step 1 Login
-    ResponseEntity<String> response = get(ROOT);
+    ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
     HttpEntity<?> cookies = httpEntityWithCookie(response);
-    response = get(LOGIN_RESOURCE,cookies);
+    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE,cookies);    
     given(authenticationController.handle(isNotNull(), isNotNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
-    response = get(CALLBACK_URI,cookies);
-    response = get(ROOT,cookies);
+    response = get(SSOWebSecurityConfig.CALLBACK_URI,cookies);
+    response = get(SSOWebSecurityConfig.ROOT,cookies);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     // Step 2 logout
-    response = get(LOGOUT_RESOURCE, cookies);
+    response = get(SSOWebSecurityConfig.LOGOUT_RESOURCE, cookies);   
     assertThat(redirectLocationIn(response)).contains(
         ssoConfig.getDomain(),
         "logout",
         ssoConfig.getClientId(),
-        urlFor(ROOT)
+        urlFor(SSOWebSecurityConfig.ROOT)
     );
     // Redirected to Login 
-    response = get(ROOT);
-    assertThatRequestIsRedirectedTo(response,urlFor(LOGIN_RESOURCE));
+    response = get(SSOWebSecurityConfig.ROOT);
+    assertThatRequestIsRedirectedTo(response,urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
   }
   
   @Test
@@ -209,24 +201,24 @@ public class AuthenticationTest {
     // Step 1 try to access user info
     String userInfoUrl = AuthenticationRestService.AUTHENTICATION_URL+"/user";
     ResponseEntity<String> response = get(userInfoUrl);
-    assertThatRequestIsRedirectedTo(response,urlFor(LOGIN_RESOURCE));
+    assertThatRequestIsRedirectedTo(response,urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
     
     // Save cookie for further requests
     HttpEntity<?> httpEntity = httpEntityWithCookie(response);
     
     // Step 2 Get Login provider url
-    response = get(LOGIN_RESOURCE,httpEntity);
+    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE,httpEntity);   
     
     assertThat(redirectLocationIn(response)).contains(
         ssoConfig.getDomain(),
-        CALLBACK_URI,
+        SSOWebSecurityConfig.CALLBACK_URI,
         ssoConfig.getClientId(),
         ssoConfig.getBackendDomain()
     );
     // Step 3 Call back uri
     given(authenticationController.handle(isNotNull(), isNotNull())).willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
     
-    response = get(CALLBACK_URI,httpEntity);
+    response = get(SSOWebSecurityConfig.CALLBACK_URI,httpEntity);
     assertThatRequestIsRedirectedTo(response, urlFor(userInfoUrl));
     response = get(userInfoUrl,httpEntity);
     assertThat(response.getBody()).contains("\"lastname\":\"operate-testuser\"");
@@ -241,11 +233,17 @@ public class AuthenticationTest {
   
   @Test
   public void testAccessNoPermission() {
-    ResponseEntity<String> response = get(NO_PERMISSION);
+    ResponseEntity<String> response = get(SSOWebSecurityConfig.NO_PERMISSION);   
     assertThat(response.getBody()).contains("No permission for Operate");
   }
-
-  protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
+  
+  @Test
+  public void testAPICheckWithoutLogin() {
+    ResponseEntity<String> response = get(HealthCheckRestService.HEALTH_CHECK_URL);   
+    assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+  }
+  
+  protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response,String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
   }

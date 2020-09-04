@@ -7,10 +7,7 @@ package org.camunda.operate;
 
 import java.util.Arrays;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.camunda.operate.data.DataGenerator;
-import org.camunda.operate.webapp.security.OperateURIs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -29,58 +26,25 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
         @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.webapp\\..*"),
         @ComponentScan.Filter(type= FilterType.REGEX,pattern="org\\.camunda\\.operate\\.archiver\\..*")
     },
-    //use fully qualified names as bean name, as we have classes with same names for different versions of importer
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @EnableAutoConfiguration
 public class Application {
 
   private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
-  public static void main(String[] args) {
+  public static void main(String[] args) throws Exception {
 
     //To ensure that debug logging performed using java.util.logging is routed into Log4j 2
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
     final SpringApplication springApplication = new SpringApplication(Application.class);
+    //use fully qualified names as bean name, as we have classes with same names for different versions of importer
     springApplication.setAddCommandLineProperties(true);
-
     if(!isOneAuthProfileActive(args)) {
-      springApplication.setAdditionalProfiles(OperateURIs.AUTH_PROFILE);
+      springApplication.setAdditionalProfiles("auth");
     }
-
-    setDefaultProperties(springApplication);
-
     springApplication.run(args);
   }
-
-  private static void setDefaultProperties(final SpringApplication springApplication) {
-    final Map<String, Object> propsMap = new HashMap<>();
-    propsMap.putAll(getManagementProperties());
-    springApplication.setDefaultProperties(propsMap);
-  }
-
-  public static Map<String, Object> getManagementProperties() {
-    return Map.of(
-        //disable default health indicators: https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-health-indicators
-        "management.health.defaults.enabled", "false",
-
-        //enable health check and metrics endpoints
-        "management.endpoints.web.exposure.include", "health,prometheus",
-
-        //enable Kubernetes health groups: https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-kubernetes-probes
-        "management.health.probes.enabled", "true",
-
-        //add custom check to standard readiness check
-        "management.endpoint.health.group.readiness.include", "readinessState,elsIndicesCheck",
-
-        //define 8081 as management port
-        "management.server.port", "8081",
-
-        //configure endpoints
-        "management.endpoints.web.base-path", "/",
-        "management.endpoints.web.path-mapping.prometheus", "metrics"
-    );
-  }
-
+  
   protected static boolean isOneAuthProfileActive(String[] args) {
     String profilesFromEnv = String.format("%s", System.getenv("SPRING_PROFILES_ACTIVE"));
     String profilesFromArgs = String.join(",",Arrays.asList(args));

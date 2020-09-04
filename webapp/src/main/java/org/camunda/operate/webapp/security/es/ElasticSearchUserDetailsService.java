@@ -5,12 +5,12 @@
  */
 package org.camunda.operate.webapp.security.es;
 
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.webapp.rest.exception.NotFoundException;
-import org.camunda.operate.webapp.security.OperateURIs;
+import org.camunda.operate.webapp.security.sso.SSOWebSecurityConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +25,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
-@Profile("!" + OperateURIs.LDAP_AUTH_PROFILE + " & ! " + OperateURIs.SSO_AUTH_PROFILE)
+@Profile("!" + SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 public class ElasticSearchUserDetailsService implements UserDetailsService {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticSearchUserDetailsService.class);
@@ -72,7 +72,7 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
   }
   
   @Override
-  public User loadUserByUsername(String username) {
+  public User loadUserByUsername(String username) throws UsernameNotFoundException {
     try {
       UserEntity userEntity = userStorage.getByName(username);
       return new User(userEntity.getUsername(), userEntity.getPassword(), toAuthorities(userEntity.getRole()))
@@ -84,7 +84,7 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
   }
 
   private Collection<? extends GrantedAuthority> toAuthorities(String role) {
-    return List.of(new SimpleGrantedAuthority("ROLE_" + role));
+    return Arrays.asList(new SimpleGrantedAuthority("ROLE_" + role));
   }
   
   private boolean userExists(String username) {

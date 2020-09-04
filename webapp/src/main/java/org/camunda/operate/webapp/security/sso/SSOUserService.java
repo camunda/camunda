@@ -8,7 +8,6 @@ package org.camunda.operate.webapp.security.sso;
 import java.util.Map;
 import org.camunda.operate.webapp.rest.dto.UserDto;
 import org.camunda.operate.webapp.security.AbstractUserService;
-import org.camunda.operate.webapp.security.OperateURIs;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.core.context.SecurityContext;
@@ -17,7 +16,7 @@ import org.springframework.stereotype.Component;
 import com.auth0.jwt.interfaces.Claim;
 
 @Component
-@Profile(OperateURIs.SSO_AUTH_PROFILE)
+@Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 public class SSOUserService extends AbstractUserService {
 
   private static final String EMPTY = "";

@@ -8,23 +8,30 @@ package org.camunda.operate.rest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
 import static org.camunda.operate.webapp.rest.AuthenticationRestService.USER_ENDPOINT;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.COOKIE_JSESSIONID;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.LOGIN_RESOURCE;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.LOGOUT_RESOURCE;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.X_CSRF_HEADER;
+import static org.camunda.operate.webapp.security.WebSecurityConfig.X_CSRF_TOKEN;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
-import static org.camunda.operate.webapp.security.OperateURIs.*;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import org.camunda.operate.entities.UserEntity;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.util.MetricAssert;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.camunda.operate.webapp.rest.AuthenticationRestService;
 import org.camunda.operate.webapp.rest.dto.UserDto;
 import org.camunda.operate.webapp.security.WebSecurityConfig;
 import org.camunda.operate.webapp.security.es.DefaultUserService;
 import org.camunda.operate.webapp.security.es.ElasticSearchUserDetailsService;
+import org.camunda.operate.webapp.security.es.User;
 import org.camunda.operate.webapp.security.es.UserStorage;
 import org.junit.Before;
 import org.junit.Test;
@@ -38,6 +45,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -52,17 +62,11 @@ import org.springframework.util.MultiValueMap;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {
-      TestApplicationWithNoBeans.class,
-      OperateProperties.class,
-      WebSecurityConfig.class,
-      DefaultUserService.class,
-      AuthenticationRestService.class,
-      ElasticSearchUserDetailsService.class
-  },
+  classes = { TestApplicationWithNoBeans.class, OperateProperties.class, WebSecurityConfig.class, DefaultUserService.class, AuthenticationRestService.class,
+      ElasticSearchUserDetailsService.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
-@ActiveProfiles({ AUTH_PROFILE, "test"})
+@ActiveProfiles({"auth", "test"})
 public class AuthenticationTest {
 
   private static final String SET_COOKIE_HEADER = "Set-Cookie";
@@ -178,7 +182,7 @@ public class AuthenticationTest {
     assertThat(response.getStatusCodeValue()).isEqualTo(200);
     assertThat(response.getBody()).contains("actuator/info");
     
-    ResponseEntity<String> prometheusResponse = testRestTemplate.getForEntity("/actuator/prometheus",String.class);
+    ResponseEntity<String> prometheusResponse = testRestTemplate.getForEntity(MetricAssert.ENDPOINT,String.class);
     assertThat(prometheusResponse.getStatusCodeValue()).isEqualTo(200);
     assertThat(prometheusResponse.getBody()).contains("# TYPE system_cpu_usage gauge");
   }

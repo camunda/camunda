@@ -10,7 +10,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-import static org.camunda.operate.webapp.security.OperateURIs.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
@@ -27,7 +26,7 @@ import com.auth0.AuthenticationController;
 import com.auth0.Tokens;
 
 @Controller
-@Profile(SSO_AUTH_PROFILE)
+@Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
 public class SSOController {
 
   protected final Logger logger = LoggerFactory.getLogger(this.getClass());
@@ -46,9 +45,9 @@ public class SSOController {
    * @param req
    * @return a redirect command to auth0 authorize url 
    */
-  @RequestMapping(value = LOGIN_RESOURCE, method = { RequestMethod.GET, RequestMethod.POST })
+  @RequestMapping(value = SSOWebSecurityConfig.LOGIN_RESOURCE, method = { RequestMethod.GET, RequestMethod.POST })
   public String login(final HttpServletRequest req,final HttpServletResponse res) {
-    String authorizeUrl = authenticationController.buildAuthorizeUrl(req, res, getRedirectURI(req, CALLBACK_URI))
+    String authorizeUrl = authenticationController.buildAuthorizeUrl(req, res, getRedirectURI(req, SSOWebSecurityConfig.CALLBACK_URI))
         .withAudience(String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
         .withScope("openid profile email") // which info we request
         .build();
@@ -65,7 +64,7 @@ public class SSOController {
    * @throws ServletException
    * @throws IOException
    */
-  @RequestMapping(value = CALLBACK_URI, method = RequestMethod.GET)
+  @RequestMapping(value = SSOWebSecurityConfig.CALLBACK_URI, method = RequestMethod.GET)
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res) throws ServletException, IOException {
     logger.debug("Called back by auth0.");
     try {
@@ -77,7 +76,7 @@ public class SSOController {
       if(originalRequestUrl != null) {
         res.sendRedirect(originalRequestUrl.toString());
       }else {
-        res.sendRedirect(ROOT);
+        res.sendRedirect(SSOWebSecurityConfig.ROOT);
       }
     } catch (InsufficientAuthenticationException iae) {
       logoutAndRedirectToNoPermissionPage(req, res);
@@ -90,7 +89,7 @@ public class SSOController {
    * Is called when there was an in authentication or authorization
    * @return
    */
-  @RequestMapping(value = NO_PERMISSION)
+  @RequestMapping(value = SSOWebSecurityConfig.NO_PERMISSION)
   @ResponseBody
   public String noPermissions() {
     return "No permission for Operate - Please check your operate configuration or cloud configuration.";
@@ -102,23 +101,23 @@ public class SSOController {
    * @param res
    * @throws IOException
    */
-  @RequestMapping(value = LOGOUT_RESOURCE)
+  @RequestMapping(value = SSOWebSecurityConfig.LOGOUT_RESOURCE)
   public void logout(HttpServletRequest req, HttpServletResponse res) throws IOException {
     logger.debug("logout user");
     cleanup(req);
-    logoutFromAuth0(res, getRedirectURI(req, ROOT));
+    logoutFromAuth0(res, getRedirectURI(req, SSOWebSecurityConfig.ROOT));
   }
 
   protected void clearContextAndRedirectToNoPermission(HttpServletRequest req,HttpServletResponse res, Throwable t) throws IOException {
     logger.error("Error in authentication callback: ", t);
     cleanup(req);
-    res.sendRedirect(NO_PERMISSION);
+    res.sendRedirect(SSOWebSecurityConfig.NO_PERMISSION);
   }
 
   protected void logoutAndRedirectToNoPermissionPage(HttpServletRequest req, HttpServletResponse res) throws IOException {
     logger.error("User is authenticated but there are no permissions. Show noPermission message");
     cleanup(req);
-    logoutFromAuth0(res, getRedirectURI(req, NO_PERMISSION));
+    logoutFromAuth0(res, getRedirectURI(req, SSOWebSecurityConfig.NO_PERMISSION));
   }
   
   protected void cleanup(HttpServletRequest req) {

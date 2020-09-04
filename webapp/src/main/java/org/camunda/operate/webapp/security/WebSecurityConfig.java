@@ -6,9 +6,9 @@
 package org.camunda.operate.webapp.security;
 
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static org.camunda.operate.webapp.rest.ClientConfigRestService.CLIENT_CONFIG_RESOURCE;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
-import static org.camunda.operate.webapp.security.OperateURIs.*;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -20,6 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.webapp.rest.HealthCheckRestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -37,12 +38,21 @@ import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-@Profile(AUTH_PROFILE)
+@Profile("auth")
 @EnableWebSecurity
 @Configuration
 @Component("webSecurityConfig")
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
+  private static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
+  public static final String X_CSRF_PARAM = "X-CSRF-PARAM";
+  public static final String X_CSRF_HEADER = "X-CSRF-HEADER";
+  public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
+  public static final String COOKIE_JSESSIONID = "JSESSIONID";
+  public static final String LOGIN_RESOURCE = "/api/login";
+  public static final String LOGOUT_RESOURCE = "/api/logout";
+  public static final String ACTUATOR_ENDPOINTS = "/actuator/**";
+  
   // Used to store the CSRF Token in a cookie.
   private final CookieCsrfTokenRepository cookieCSRFTokenRepository = new CookieCsrfTokenRepository();
   
@@ -51,6 +61,18 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   @Autowired
   private UserDetailsService userDetailsService;
+  
+  private static final String[] AUTH_WHITELIST = {
+    // -- swagger ui
+    "/swagger-resources",
+    "/swagger-resources/**",
+    "/swagger-ui.html",
+    "/documentation",
+    "/webjars/**",
+    HealthCheckRestService.HEALTH_CHECK_URL,
+    ACTUATOR_ENDPOINTS,
+    CLIENT_CONFIG_RESOURCE
+  };  
 
   @Override
   public void configure(HttpSecurity http) throws Exception {
@@ -66,7 +88,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     http
       .authorizeRequests()
         .antMatchers(AUTH_WHITELIST).permitAll()
-        .antMatchers(API).authenticated()
+        .antMatchers("/api/**").authenticated()
       .and()
         .formLogin()
           .loginProcessingUrl(LOGIN_RESOURCE)
@@ -137,7 +159,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   protected boolean shouldAddCSRF(HttpServletRequest request) {
     final Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     String path = request.getRequestURI();
-    return auth!=null && auth.isAuthenticated() && (path==null || !path.contains("logout"));
+    if(auth!=null && auth.isAuthenticated() && (path==null || !path.contains("logout"))) {
+      return true;
+    }
+    return false;
   }
 
   private void successHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
