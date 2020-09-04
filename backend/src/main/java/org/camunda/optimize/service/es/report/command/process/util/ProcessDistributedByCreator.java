@@ -12,6 +12,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.distributed
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.FlowNodeDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.UserTaskDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.VariableDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.VariableDistributedByValueDto;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProcessDistributedByCreator {
@@ -34,5 +37,14 @@ public class ProcessDistributedByCreator {
 
   public static UserTaskDistributedByDto createDistributedByUserTasks() {
     return new UserTaskDistributedByDto();
+  }
+
+  public static VariableDistributedByDto createDistributedByVariable(String variableName, VariableType variableType) {
+    VariableDistributedByValueDto distributedByValueDto = new VariableDistributedByValueDto();
+    distributedByValueDto.setName(variableName);
+    distributedByValueDto.setType(variableType);
+    VariableDistributedByDto distributedByDto = new VariableDistributedByDto();
+    distributedByDto.setValue(distributedByValueDto);
+    return distributedByDto;
   }
 }

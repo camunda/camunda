@@ -142,6 +142,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .setReportDataType(reportType)
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
+      .setVariableName("someVariable")
+      .setVariableType(VariableType.STRING)
       .build();
 
     // when
@@ -181,6 +183,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .setReportDataType(reportType)
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
+      .setVariableName("someVariable")
+      .setVariableType(VariableType.STRING)
       .build();
 
     // when
@@ -268,6 +272,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .setReportDataType(reportType)
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
+      .setVariableName("someVariable")
+      .setVariableType(VariableType.STRING)
       .build();
 
     // when
@@ -308,7 +314,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
   @ParameterizedTest
   @MethodSource("allProcessVariableReports")
-  public void adjustReportEvaluationResultToTimezone_groupByDateVariable(final ProcessReportDataType reportType) {
+  public void adjustReportEvaluationResultToTimezone_groupOrDistributedByDateVariable(final ProcessReportDataType reportType) {
     // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     Map<String, Object> variables = ImmutableMap.of("dateVar", now);
@@ -317,6 +323,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setGroupByDateVariableUnit(GroupByDateUnit.HOUR)
+      .setDateInterval(GroupByDateUnit.HOUR)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(reportType)

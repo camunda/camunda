@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.date;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
@@ -97,6 +98,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
       .build();
 
     return dateAggregationService.createProcessInstanceDateAggregation(dateAggContext)
+      .map(agg -> addSiblingAggregationIfRequired(context, agg))
       .map(Collections::singletonList)
       .orElse(Collections.emptyList());
   }
@@ -134,12 +136,18 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
         unwrappedLimitedAggregations.get(),
         context.getTimezone()
       );
+      // enrich context with complete set of distributed by keys
+      distributedByPart.enrichContextWithAllExpectedDistributedByKeys(
+        context,
+        unwrappedLimitedAggregations.get()
+      );
     } else {
       keyToAggregationMap = dateAggregationService.mapRangeAggregationsToKeyAggregationMap(
         aggregations,
         context.getTimezone()
       );
     }
+
     return mapKeyToAggMapToGroupByResults(keyToAggregationMap, response, context);
   }
 
@@ -163,6 +171,20 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
 
   private GroupByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
     return ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();
+  }
+
+  private DistributedByType getDistributedByType(final ProcessReportDataDto processReportDataDto) {
+    return processReportDataDto.getConfiguration().getDistributedBy().getType();
+  }
+
+  private AggregationBuilder addSiblingAggregationIfRequired(final ExecutionContext<ProcessReportDataDto> context,
+                                                             final AggregationBuilder aggregationBuilder) {
+    // add sibling distributedBy aggregation to enrich context with all distributed by keys,
+    // required for variable distribution
+    if (DistributedByType.VARIABLE.equals(getDistributedByType(context.getReportData()))) {
+      aggregationBuilder.subAggregation(distributedByPart.createAggregation(context));
+    }
+    return aggregationBuilder;
   }
 
 }

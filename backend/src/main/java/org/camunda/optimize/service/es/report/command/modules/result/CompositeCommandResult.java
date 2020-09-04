@@ -101,6 +101,12 @@ public class CompositeCommandResult {
       return new DistributedByResult(key, null, new ViewResult());
     }
 
+    public static DistributedByResult createResultWithZeroValue(String key) {
+      ViewResult viewResult = new ViewResult();
+      viewResult.setNumber(0.0);
+      return new DistributedByResult(key, null, viewResult);
+    }
+
     public static DistributedByResult createResultWithEmptyValue(String key, String label) {
       return new DistributedByResult(key, label, new ViewResult());
     }

@@ -31,6 +31,7 @@ import static org.camunda.optimize.service.es.report.command.process.util.Proces
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByFlowNode;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByNone;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByUserTasks;
+import static org.camunda.optimize.service.es.report.command.process.util.ProcessDistributedByCreator.createDistributedByVariable;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByAssignee;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByCandidateGroup;
 import static org.camunda.optimize.service.es.report.command.process.util.ProcessGroupByDtoCreator.createGroupByDuration;
@@ -117,6 +118,8 @@ public class ProcessReportDataBuilderHelper {
         return createDistributedByFlowNode();
       case USER_TASK:
         return createDistributedByUserTasks();
+      case VARIABLE:
+        return createDistributedByVariable(variableName, variableType);
       default:
         throw new OptimizeRuntimeException("Unsupported distributedBy value:" + distributedByType);
     }
@@ -152,7 +155,7 @@ public class ProcessReportDataBuilderHelper {
     return this;
   }
 
-  public ProcessReportDataBuilderHelper distributedBy(DistributedByType distributedByType) {
+  public ProcessReportDataBuilderHelper distributedByType(DistributedByType distributedByType) {
     this.distributedByType = distributedByType;
     return this;
   }

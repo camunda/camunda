@@ -96,7 +96,7 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonIgnore
   public String createCommandKey(ProcessViewDto viewDto) {
     final List<String> configsToConsiderForCommand = new ArrayList<>();
-    if (isModelElementCommand(viewDto)) {
+    if (isModelElementCommand(viewDto) || isInstanceCommand(viewDto)) {
       configsToConsiderForCommand.add(this.distributedBy.getType().getId());
     }
     getProcessPart().ifPresent(processPartDto -> configsToConsiderForCommand.add(processPartDto.createCommandKey()));
@@ -118,6 +118,12 @@ public class SingleReportConfigurationDto implements Combinable {
   private boolean isModelElementCommand(ProcessViewDto viewDto) {
     return nonNull(viewDto) && nonNull(viewDto.getEntity()) &&
       (ProcessViewEntity.USER_TASK.equals(viewDto.getEntity()) || ProcessViewEntity.FLOW_NODE.equals(viewDto.getEntity()));
+  }
+
+  private boolean isInstanceCommand(ProcessViewDto viewDto) {
+    return nonNull(viewDto)
+      && nonNull(viewDto.getEntity())
+      && ProcessViewEntity.PROCESS_INSTANCE.equals(viewDto.getEntity());
   }
 
   public Optional<ReportSortingDto> getSorting() {

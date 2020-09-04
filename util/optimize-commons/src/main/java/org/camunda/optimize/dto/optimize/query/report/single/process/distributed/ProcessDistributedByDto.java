@@ -19,6 +19,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_C
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_FLOW_NODE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_NONE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_USER_TASK;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_VARIABLE;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish which
@@ -30,7 +31,8 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_U
   @JsonSubTypes.Type(value = UserTaskDistributedByDto.class, name = DISTRIBUTED_BY_USER_TASK),
   @JsonSubTypes.Type(value = FlowNodeDistributedByDto.class, name = DISTRIBUTED_BY_FLOW_NODE),
   @JsonSubTypes.Type(value = AssigneeDistributedByDto.class, name = DISTRIBUTED_BY_ASSIGNEE),
-  @JsonSubTypes.Type(value = CandidateGroupDistributedByDto.class, name = DISTRIBUTED_BY_CANDIDATE_GROUP)
+  @JsonSubTypes.Type(value = CandidateGroupDistributedByDto.class, name = DISTRIBUTED_BY_CANDIDATE_GROUP),
+  @JsonSubTypes.Type(value = VariableDistributedByDto.class, name = DISTRIBUTED_BY_VARIABLE)
 })
 @Data
 public class ProcessDistributedByDto<VALUE extends ProcessDistributedByValueDto> implements Combinable {

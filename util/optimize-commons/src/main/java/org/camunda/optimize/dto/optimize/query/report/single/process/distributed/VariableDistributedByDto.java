@@ -8,9 +8,19 @@ package org.camunda.optimize.dto.optimize.query.report.single.process.distribute
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.VariableDistributedByValueDto;
 
+import java.util.Optional;
+
 public class VariableDistributedByDto extends ProcessDistributedByDto<VariableDistributedByValueDto> {
 
   public VariableDistributedByDto() {
     this.type = DistributedByType.VARIABLE;
+  }
+
+  @Override
+  public String toString() {
+    return super.toString() +
+      Optional.ofNullable(this.getValue())
+        .map(valueDto -> "_" + this.getValue().getName() + "_" + getValue().getType())
+        .orElse("");
   }
 }

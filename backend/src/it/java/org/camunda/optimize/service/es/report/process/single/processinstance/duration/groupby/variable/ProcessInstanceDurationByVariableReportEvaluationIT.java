@@ -144,11 +144,11 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .build();
 
-    createNewReport(reportData);
+    final String reportId = createNewReport(reportData);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
-      reportData);
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReportById(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -175,7 +175,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void testCustomOrderOnResultKeyIsApplied() {
+  public void customOrderOnResultKeyIsApplied() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
@@ -211,7 +211,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void testCustomOrderOnResultValueIsApplied() {
+  public void customOrderOnResultValueIsApplied() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
