@@ -6,6 +6,10 @@ env-up:
 	&& mvn -pl webapp jib:dockerBuild \
 	&& docker-compose up -d elasticsearch zeebe zeebe-tasklist
 
+.PHONY: operate-up
+operate-up:
+	docker-compose up -d operate
+
 .PHONY: env-down
 env-down:
 	docker-compose down -v \

@@ -52,6 +52,14 @@ In this case you can run the following command in the root of the project:
 make env-up
 ```
 
+To run Operate using the same data set use following command:
+
+```sh
+make operate-up
+```
+
+Operate UI will be available on port 8088 (http://localhost:8088).
+
 You can then destroy the environment by pressing Ctrl+C and running:
 
 ```sh

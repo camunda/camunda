@@ -1,0 +1,13 @@
+springfox.documentation.swagger.v2.path: /documentation
+camunda.operate:
+  elasticsearch:
+    clusterName: elasticsearch
+    host: elasticsearch
+    port: 9200
+  zeebe:
+    brokerContactPoint: zeebe:26500
+  zeebeElasticsearch:
+    clusterName: elasticsearch
+    host: elasticsearch
+    port: 9200
+    prefix: zeebe-record
