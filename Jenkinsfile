@@ -364,6 +364,11 @@ pipeline {
       failFast false
       parallel {
         stage('SonarQube - Java') {
+          when {
+            not {
+              branch 'master'
+            }
+          }
           agent {
             kubernetes {
               cloud 'optimize-ci'
