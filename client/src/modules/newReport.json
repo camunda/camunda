@@ -65,7 +65,14 @@
         "ylabel": "",
         "xlabel": "",
         "processPart": null,
-        "sorting": null
+        "sorting": null,
+        "customBucket": {
+          "active": false,
+          "bucketSize": "10",
+          "bucketSizeUnit": "minute",
+          "baseline": "0",
+          "baselineUnit": "minute"
+        }
       },
       "processDefinitionKey": null,
       "processDefinitionVersions": null,
