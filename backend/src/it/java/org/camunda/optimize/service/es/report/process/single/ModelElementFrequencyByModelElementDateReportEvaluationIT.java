@@ -481,6 +481,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isEmpty();
   }
@@ -501,6 +502,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Double::intValue).sum()).isEqualTo(6);
@@ -524,6 +526,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(2.);

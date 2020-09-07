@@ -1129,9 +1129,11 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       dateVarName,
       VariableType.DATE
     );
-    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
+    List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     // the bucket span covers the earliest and the latest date variable value
@@ -1161,9 +1163,11 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
       dateVarName,
       VariableType.DATE
     );
-    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
+    List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }

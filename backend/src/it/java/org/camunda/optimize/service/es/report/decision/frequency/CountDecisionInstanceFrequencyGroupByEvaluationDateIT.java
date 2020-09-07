@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.decision.frequency;
 
 import com.google.common.collect.Lists;
+import org.assertj.core.api.Assertions;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -17,8 +18,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Ro
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -476,6 +477,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     ).getResult();
 
     // then
+    Assertions.assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
     assertThat(resultData.get(0).getValue(), is(2.));

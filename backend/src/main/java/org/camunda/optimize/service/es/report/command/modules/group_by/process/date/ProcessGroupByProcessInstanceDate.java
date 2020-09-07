@@ -37,7 +37,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -113,7 +112,9 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
     result.setGroups(processAggregations(response, response.getAggregations(), context));
-    result.setIsComplete(isResultComplete(response.getAggregations(), response.getHits().getTotalHits().value));
+    result.setIsComplete(dateAggregationService.isResultComplete(
+      response.getAggregations(), response.getHits().getTotalHits().value
+    ));
     result.setSorting(
       context.getReportConfiguration()
         .getSorting()
