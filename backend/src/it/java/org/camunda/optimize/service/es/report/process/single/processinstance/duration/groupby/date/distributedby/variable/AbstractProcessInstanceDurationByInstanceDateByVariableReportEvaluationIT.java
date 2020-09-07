@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.date.distributedby.variable;
+package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.date.distributedby.variable;
 
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
@@ -41,21 +41,20 @@ import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
-public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableReportEvaluationIT
+public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableReportEvaluationIT
   extends AbstractProcessDefinitionIT {
 
   protected abstract ProcessReportDataType getTestReportDataType();
 
   protected abstract ProcessGroupByType getGroupByType();
 
-  protected abstract void changeProcessInstanceDate(final String processInstanceId,
-                                                    final OffsetDateTime newDate);
-
   @Test
   public void simpleReportEvaluation() {
     // given
-    ProcessInstanceEngineDto procInstance =
+    final OffsetDateTime startDate = dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto procInstance =
       deployAndStartSimpleProcess(Collections.singletonMap("stringVar", "a string"));
+    adjustProcessInstanceDatesAndDuration(procInstance.getId(), startDate, 0, 1L);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -64,12 +63,12 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
       reportClient.evaluateHyperMapReport(reportData);
 
     // then
-    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(procInstance.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(procInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy()
       .getValue()).getUnit()).isEqualTo(GroupByDateUnit.DAY);
@@ -77,23 +76,24 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
                  .getDistributedBy()
                  .getType()).isEqualTo(DistributedByType.VARIABLE);
 
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
-    ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
-      .doAssert(result);
+      .groupByContains(localDateTimeToString(startOfReferenceDate))
+        .distributedByContains("a string", 1000.)
+      .doAssert(evaluationResponse.getResult());
     // @formatter:on
   }
 
   @Test
   public void simpleReportEvaluationById() {
     // given
-    ProcessInstanceEngineDto procInstance =
+    final OffsetDateTime startDate = dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto procInstance =
       deployAndStartSimpleProcess(Collections.singletonMap("stringVar", "a string"));
+    adjustProcessInstanceDatesAndDuration(procInstance.getId(), startDate, 0, 1L);
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -103,27 +103,27 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
       reportClient.evaluateHyperMapReportById(reportId);
 
     // then
-    ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
+    final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(procInstance.getProcessDefinitionKey());
     assertThat(resultReportDataDto.getDefinitionVersions()).contains(procInstance.getProcessDefinitionVersion());
     assertThat(resultReportDataDto.getView()).isNotNull();
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
-    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
-    assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit())
-      .isEqualTo(GroupByDateUnit.DAY);
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy().getType())
-      .isEqualTo(DistributedByType.VARIABLE);
+    assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy()
+      .getValue()).getUnit()).isEqualTo(GroupByDateUnit.DAY);
+    assertThat(resultReportDataDto.getConfiguration()
+                 .getDistributedBy()
+                 .getType()).isEqualTo(DistributedByType.VARIABLE);
 
-    final ReportHyperMapResultDto result = evaluationResponse.getResult();
-    ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
-      .doAssert(result);
+      .groupByContains(localDateTimeToString(startOfReferenceDate))
+        .distributedByContains("a string", 1000.)
+      .doAssert(evaluationResponse.getResult());
     // @formatter:on
   }
 
@@ -133,48 +133,44 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
     final ProcessInstanceEngineDto procInstance1 =
       deployAndStartSimpleProcess(Collections.singletonMap("stringVar", "a string"));
-    changeProcessInstanceDate(procInstance1.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance1.getId(), referenceDate, 0, 1L);
 
     final ProcessInstanceEngineDto procInstance2 =
       engineIntegrationExtension.startProcessInstance(
         procInstance1.getDefinitionId(),
         Collections.singletonMap("stringVar", "another string")
       );
-    changeProcessInstanceDate(procInstance2.getId(), referenceDate.minusDays(1));
+    adjustProcessInstanceDatesAndDuration(procInstance2.getId(), referenceDate, 1, 2L);
 
     final ProcessInstanceEngineDto procInstance3 =
       engineIntegrationExtension.startProcessInstance(
         procInstance1.getDefinitionId(),
-        Collections.singletonMap("stringVar", "this is also a string")
+        Collections.singletonMap("stringVar", "a string")
       );
-    changeProcessInstanceDate(procInstance3.getId(), referenceDate.minusDays(2));
+    adjustProcessInstanceDatesAndDuration(procInstance3.getId(), referenceDate, 2, 3L);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
+    final ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
-    final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
-        .distributedByContains("another string", 0.0)
-        .distributedByContains("this is also a string", 0.0)
-      .groupByContains(localDateTimeToString(startOfToday.minusDays(1)))
-        .distributedByContains("a string", 0.0)
-        .distributedByContains("another string", 1.0)
-        .distributedByContains("this is also a string", 0.0)
-      .groupByContains(localDateTimeToString(startOfToday.minusDays(2)))
-        .distributedByContains("a string", 0.0)
-        .distributedByContains("another string", 0.0)
-        .distributedByContains("this is also a string", 1.0)
+      .groupByContains(localDateTimeToString(startOfReferenceDate.plusDays(2)))
+        .distributedByContains("a string", 3000.)
+        .distributedByContains("another string", null)
+      .groupByContains(localDateTimeToString(startOfReferenceDate.plusDays(1)))
+        .distributedByContains("a string", null)
+        .distributedByContains("another string", 2000.)
+      .groupByContains(localDateTimeToString(startOfReferenceDate))
+        .distributedByContains("a string", 1000.)
+        .distributedByContains("another string", null)
       .doAssert(result);
     // @formatter:on
   }
@@ -185,50 +181,68 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
     final ProcessInstanceEngineDto procInstance1 =
       deployAndStartSimpleProcess(Collections.singletonMap("stringVar", "a string"));
-    changeProcessInstanceDate(procInstance1.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance1.getId(), referenceDate, 0, 1L);
 
     final ProcessInstanceEngineDto procInstance2 =
       engineIntegrationExtension.startProcessInstance(
         procInstance1.getDefinitionId(),
         Collections.singletonMap("stringVar", "another string")
       );
-    changeProcessInstanceDate(procInstance2.getId(), referenceDate.minusDays(1));
+    adjustProcessInstanceDatesAndDuration(procInstance2.getId(), referenceDate, 0, 2L);
 
     final ProcessInstanceEngineDto procInstance3 =
       engineIntegrationExtension.startProcessInstance(
         procInstance1.getDefinitionId(),
         Collections.singletonMap("stringVar", "this is also a string")
       );
-    changeProcessInstanceDate(procInstance3.getId(), referenceDate.minusDays(1));
-    final ProcessInstanceEngineDto procInstance4 =
-      engineIntegrationExtension.startProcessInstance(
-        procInstance1.getDefinitionId(),
-        Collections.singletonMap("stringVar", "this is also a string")
-      );
-    changeProcessInstanceDate(procInstance4.getId(), referenceDate.minusDays(1));
+    adjustProcessInstanceDatesAndDuration(procInstance3.getId(), referenceDate, 0, 3L);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.DESC));
-    final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    final ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
-      .processInstanceCount(4L)
-      .processInstanceCountWithoutFilters(4L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
-        .distributedByContains("another string", 0.0)
-        .distributedByContains("this is also a string", 0.0)
-      .groupByContains(localDateTimeToString(startOfToday.minusDays(1)))
-        .distributedByContains("this is also a string", 2.0)
-        .distributedByContains("another string", 1.0)
-        .distributedByContains("a string", 0.0)
+      .processInstanceCount(3L)
+      .processInstanceCountWithoutFilters(3L)
+      .groupByContains(localDateTimeToString(startOfReferenceDate))
+        .distributedByContains("a string", 1000.)
+        .distributedByContains("another string", 2000.)
+        .distributedByContains("this is also a string", 3000.)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  @Test
+  public void otherProcessDefinitionsDoNoAffectResult() {
+    // given
+    final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto procInstance1 =
+      deployAndStartSimpleProcess(Collections.singletonMap("stringVar", "a string"));
+    adjustProcessInstanceDatesAndDuration(procInstance1.getId(), referenceDate, 0, 1L);
+
+    final ProcessInstanceEngineDto procInstance2 =
+      deployAndStartSimpleProcess(Collections.singletonMap("stringVar", "another string"));
+    adjustProcessInstanceDatesAndDuration(procInstance2.getId(), referenceDate, 0, 2L);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(1L)
+      .processInstanceCountWithoutFilters(1L)
+      .groupByContains(localDateTimeToString(startOfReferenceDate))
+        .distributedByContains("a string", 1000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -236,47 +250,35 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
   @Test
   public void multipleBuckets_resultLimitedByConfig_stringVariable() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
     final ProcessInstanceEngineDto procInstance1 =
       deployAndStartSimpleProcess(Collections.singletonMap("stringVar", "a string"));
-    changeProcessInstanceDate(procInstance1.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance1.getId(), referenceDate, 0, 1L);
 
     final ProcessInstanceEngineDto procInstance2 =
       engineIntegrationExtension.startProcessInstance(
         procInstance1.getDefinitionId(),
         Collections.singletonMap("stringVar", "another string")
       );
-    changeProcessInstanceDate(procInstance2.getId(), referenceDate.minusDays(1));
-
-    final ProcessInstanceEngineDto procInstance3 =
-      engineIntegrationExtension.startProcessInstance(
-        procInstance1.getDefinitionId(),
-        Collections.singletonMap("stringVar", "this is also a string")
-      );
-    changeProcessInstanceDate(procInstance3.getId(), referenceDate.minusDays(2));
+    adjustProcessInstanceDatesAndDuration(procInstance2.getId(), referenceDate, 1, 2L);
 
     importAllEngineEntitiesFromScratch();
 
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
+
     // when
-    ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
-    final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    final ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
-      .processInstanceCount(3L)
-      .processInstanceCountWithoutFilters(3L)
       .isComplete(false)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
-        .distributedByContains("another string", 0.0)
-      .groupByContains(localDateTimeToString(startOfToday.minusDays(1)))
-        .distributedByContains("a string", 0.0)
-        .distributedByContains("another string", 1.0)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .groupByContains(localDateTimeToString(startOfReferenceDate.plusDays(1)))
+        .distributedByContains("another string", 2000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -284,46 +286,35 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
   @Test
   public void multipleBuckets_resultLimitedByConfig_boolVariable() {
     // given
-    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(2);
-
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
     final ProcessInstanceEngineDto procInstance1 =
       deployAndStartSimpleProcess(Collections.singletonMap("boolVar", true));
-    changeProcessInstanceDate(procInstance1.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance1.getId(), referenceDate, 0, 1L);
 
     final ProcessInstanceEngineDto procInstance2 =
       engineIntegrationExtension.startProcessInstance(
         procInstance1.getDefinitionId(),
         Collections.singletonMap("boolVar", false)
       );
-    changeProcessInstanceDate(procInstance2.getId(), referenceDate.minusDays(1));
-
-    final ProcessInstanceEngineDto procInstance3 =
-      engineIntegrationExtension.startProcessInstance(
-        procInstance1.getDefinitionId(),
-        Collections.singletonMap("boolVar", true)
-      );
-    changeProcessInstanceDate(procInstance3.getId(), referenceDate.minusDays(2));
+    adjustProcessInstanceDatesAndDuration(procInstance2.getId(), referenceDate, 1, 2L);
 
     importAllEngineEntitiesFromScratch();
 
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
+
     // when
-    ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.BOOLEAN, "boolVar");
-    final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    final ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.BOOLEAN, "boolVar");
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
+    // @formatter:off
     HyperMapAsserter.asserter()
-      .processInstanceCount(3L)
-      .processInstanceCountWithoutFilters(3L)
       .isComplete(false)
-      .groupByContains(localDateTimeToString(startOfToday))
-      .distributedByContains("false", 0.0)
-      .distributedByContains("true", 1.0)
-      .groupByContains(localDateTimeToString(startOfToday.minusDays(1)))
-      .distributedByContains("false", 1.0)
-      .distributedByContains("true", 0.0)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .groupByContains(localDateTimeToString(startOfReferenceDate.plusDays(1)))
+        .distributedByContains("false", 2000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -334,31 +325,30 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
     final ProcessInstanceEngineDto procInstance1 =
       deployAndStartSimpleProcess(Collections.singletonMap("stringVar", "a string"));
-    changeProcessInstanceDate(procInstance1.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance1.getId(), referenceDate, 0, 1L);
 
     final ProcessInstanceEngineDto procInstance2 =
       engineIntegrationExtension.startProcessInstance(
         procInstance1.getDefinitionId(),
         Collections.singletonMap("stringVar", 1.0)
       );
-    changeProcessInstanceDate(procInstance2.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance2.getId(), referenceDate, 0, 2L);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
-    final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    final ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
-        .distributedByContains(MISSING_VARIABLE_KEY, 1.0)
+      .groupByContains(localDateTimeToString(startOfReferenceDate))
+        .distributedByContains("a string", 1000.)
+        .distributedByContains(MISSING_VARIABLE_KEY, 2000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -371,22 +361,21 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     variables.put("stringVar1", "a string");
     variables.put("stringVar2", "another string");
     final ProcessInstanceEngineDto procInstance = deployAndStartSimpleProcess(variables);
-    changeProcessInstanceDate(procInstance.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance.getId(), referenceDate, 0, 1L);
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReportData(procInstance, VariableType.STRING, "stringVar1");
-    final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
+      .groupByContains(localDateTimeToString(startOfReferenceDate))
+        .distributedByContains("a string", 1000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -395,23 +384,22 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
   public void dateVariable_returnsEmptyResult() {
     // given a report with a date variable (not yet supported)
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
-    final ProcessInstanceEngineDto procInstance1 =
+    final ProcessInstanceEngineDto procInstance =
       deployAndStartSimpleProcess(Collections.singletonMap("dateVar", referenceDate));
-    changeProcessInstanceDate(procInstance1.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance.getId(), referenceDate, 0, 1L);
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.DATE, "dateVar");
-    final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    ProcessReportDataDto reportData = createReportData(procInstance, VariableType.DATE, "dateVar");
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then there are no distributed by results
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfToday))
+        .groupByContains(localDateTimeToString(startOfReferenceDate))
       .doAssert(result);
     // @formatter:on
 
@@ -421,23 +409,22 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
   public void numberVariable_returnsEmptyResult() {
     // given a report with a number variable (not yet supported)
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
-    final ProcessInstanceEngineDto procInstance1 =
+    final ProcessInstanceEngineDto procInstance =
       deployAndStartSimpleProcess(Collections.singletonMap("numberVar", 1.0));
-    changeProcessInstanceDate(procInstance1.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance.getId(), referenceDate, 0, 1L);
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.DOUBLE, "numberVar");
-    final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    ProcessReportDataDto reportData = createReportData(procInstance, VariableType.DOUBLE, "numberVar");
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then an empty result is returned
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-      .groupByContains(localDateTimeToString(startOfToday))
+      .groupByContains(localDateTimeToString(startOfReferenceDate))
       .doAssert(result);
     // @formatter:on
   }
@@ -448,40 +435,39 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
     final ProcessInstanceEngineDto procInstance1 =
       deployAndStartSimpleProcess(Collections.singletonMap("stringVar", "a string"));
-    changeProcessInstanceDate(procInstance1.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance1.getId(), referenceDate, 0, 1L);
 
     // and 4 instances without "stringVar"
     final ProcessInstanceEngineDto procInstance2 =
       engineIntegrationExtension.startProcessInstance(procInstance1.getDefinitionId());
-    changeProcessInstanceDate(procInstance2.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance2.getId(), referenceDate, 0, 2L);
 
     final ProcessInstanceEngineDto procInstance3 =
       engineIntegrationExtension.startProcessInstance(
         procInstance1.getDefinitionId(),
         Collections.singletonMap("stringVar", null)
       );
-    changeProcessInstanceDate(procInstance3.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance3.getId(), referenceDate, 0, 2L);
 
     final ProcessInstanceEngineDto procInstance4 =
       engineIntegrationExtension.startProcessInstance(
         procInstance1.getDefinitionId(),
         Collections.singletonMap("stringVar", new EngineVariableValue(null, VariableType.STRING.getId()))
       );
-    changeProcessInstanceDate(procInstance4.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance4.getId(), referenceDate, 0, 2L);
 
     final ProcessInstanceEngineDto procInstance5 =
       engineIntegrationExtension.startProcessInstance(
         procInstance1.getDefinitionId(),
         Collections.singletonMap("anotherVar", "another string")
       );
-    changeProcessInstanceDate(procInstance5.getId(), referenceDate);
+    adjustProcessInstanceDatesAndDuration(procInstance5.getId(), referenceDate, 0, 2L);
 
     importAllEngineEntitiesFromScratch();
 
     // when
     ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.STRING, "stringVar");
-    final String reportId = createNewReport(reportData);
-    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
     final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
@@ -490,8 +476,8 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
       .processInstanceCount(5L)
       .processInstanceCountWithoutFilters(5L)
       .groupByContains(localDateTimeToString(startOfToday))
-        .distributedByContains("a string", 1.0)
-        .distributedByContains(MISSING_VARIABLE_KEY, 4.0)
+        .distributedByContains("a string", 1000.)
+        .distributedByContains(MISSING_VARIABLE_KEY, 2000.)
       .doAssert(result);
     // @formatter:on
   }
@@ -499,19 +485,20 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
   private ProcessReportDataDto createReportData(final ProcessInstanceEngineDto processInstanceDto,
                                                 final VariableType variableType,
                                                 final String variableName) {
-    return TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
+    return TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(getTestReportDataType())
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(getTestReportDataType())
-      .setVariableType(variableType)
+      .setDateInterval(GroupByDateUnit.DAY)
       .setVariableName(variableName)
+      .setVariableType(variableType)
       .build();
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcess(Map<String, Object> variables) {
-    ProcessDefinitionEngineDto processDefinition =
-      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleServiceTaskProcess());
+    ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
     ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     processInstanceEngineDto.setProcessDefinitionKey(processDefinition.getKey());
@@ -519,4 +506,17 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     return processInstanceEngineDto;
   }
 
+  private void adjustProcessInstanceDatesAndDuration(final String processInstanceId,
+                                                     final OffsetDateTime referenceDate,
+                                                     final long daysToShift,
+                                                     final Long durationInSec) {
+    final OffsetDateTime shiftedEndDate = referenceDate.plusDays(daysToShift);
+    if (durationInSec != null) {
+      engineDatabaseExtension.changeProcessInstanceStartDate(
+        processInstanceId,
+        shiftedEndDate.minusSeconds(durationInSec)
+      );
+    }
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedEndDate);
+  }
 }

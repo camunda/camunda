@@ -72,10 +72,19 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
   protected abstract ProcessGroupByType getGroupByType();
 
-  protected abstract void adjustProcessInstanceDates(String processInstanceId,
-                                                     OffsetDateTime refDate,
-                                                     long daysToShift,
-                                                     Long durationInSec);
+  protected void adjustProcessInstanceDates(String processInstanceId,
+                                            OffsetDateTime refDate,
+                                            long daysToShift,
+                                            Long durationInSec) {
+    OffsetDateTime shiftedEndDate = refDate.plusDays(daysToShift);
+    if (durationInSec != null) {
+      engineDatabaseExtension.changeProcessInstanceStartDate(
+        processInstanceId,
+        shiftedEndDate.minusSeconds(durationInSec)
+      );
+    }
+    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedEndDate);
+  }
 
   protected ProcessDefinitionEngineDto deployTwoRunningAndOneCompletedUserTaskProcesses(
     final OffsetDateTime now) {
@@ -247,7 +256,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
   }
 
   @Test
-  public void testCustomOrderOnResultKeyIsApplied() {
+  public void customOrderOnResultKeyIsApplied() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     final ProcessInstanceEngineDto processInstanceDto1 = deployAndStartSimpleServiceTaskProcess();
@@ -289,7 +298,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
   }
 
   @Test
-  public void testCustomOrderOnResultValueIsApplied() {
+  public void customOrderOnResultValueIsApplied() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     final ProcessInstanceEngineDto instance1 = deployAndStartSimpleServiceTaskProcess();

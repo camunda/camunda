@@ -90,6 +90,20 @@ public class TemplatedProcessReportDataBuilder {
           .dateInterval(dateInterval)
           .build();
         break;
+      case PROC_INST_DUR_GROUP_BY_START_DATE_BY_VARIABLE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedByType(DistributedByType.VARIABLE)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .variableName(variableName)
+          .variableType(variableType)
+          .build();
+        break;
       case PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
@@ -112,6 +126,20 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionKey(processDefinitionKey)
           .processDefinitionVersions(processDefinitionVersions)
           .dateInterval(dateInterval)
+          .build();
+        break;
+      case PROC_INST_DUR_GROUP_BY_END_DATE_BY_VARIABLE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .distributedByType(DistributedByType.VARIABLE)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .dateInterval(dateInterval)
+          .variableName(variableName)
+          .variableType(variableType)
           .build();
         break;
       case PROC_INST_DUR_GROUP_BY_END_DATE_WITH_PART:

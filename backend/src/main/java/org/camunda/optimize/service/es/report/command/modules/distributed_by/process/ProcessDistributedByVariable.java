@@ -37,7 +37,11 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
+import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_DURATION_PROPERTY;
+import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_FREQUENCY_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
+import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createResultWithEmptyValue;
+import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createResultWithZeroValue;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.createFilterForUndefinedOrNullQueryBuilder;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.getNestedVariableNameField;
@@ -194,9 +198,22 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
     context.getAllDistributedByKeys().stream()
       .filter(key -> distributedByResults.stream()
         .noneMatch(distributedByResult -> distributedByResult.getKey().equals(key)))
-      .map(CompositeCommandResult.DistributedByResult::createResultWithZeroValue)
+      .map(key -> createEmptyDistributedBy(key, context))
       .forEach(distributedByResults::add);
   }
+
+  private CompositeCommandResult.DistributedByResult createEmptyDistributedBy(
+    final String distributedByKey,
+    final ExecutionContext<ProcessReportDataDto> context) {
+    switch (context.getReportData().getView().getProperty().toString()) {
+      case VIEW_DURATION_PROPERTY:
+        return createResultWithEmptyValue(distributedByKey);
+      case VIEW_FREQUENCY_PROPERTY:
+      default:
+        return createResultWithZeroValue(distributedByKey);
+    }
+  }
+
 
   private AggregationBuilder createUndefinedOrNullVariableAggregation(final ExecutionContext<ProcessReportDataDto> context) {
     return filter(

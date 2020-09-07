@@ -44,21 +44,6 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
     return ProcessGroupByType.END_DATE;
   }
 
-  @Override
-  protected void adjustProcessInstanceDates(String processInstanceId,
-                                            OffsetDateTime refDate,
-                                            long daysToShift,
-                                            Long durationInSec) {
-    OffsetDateTime shiftedEndDate = refDate.plusDays(daysToShift);
-    if (durationInSec != null) {
-      engineDatabaseExtension.changeProcessInstanceStartDate(
-        processInstanceId,
-        shiftedEndDate.minusSeconds(durationInSec)
-      );
-    }
-    engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceId, shiftedEndDate);
-  }
-
   @Test
   public void processInstancesEndedAtSameIntervalAreGroupedTogether() {
     // given
