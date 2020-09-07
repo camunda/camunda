@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "lodash.memoize": "^4.1.2",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "testcafe": "^1.9.2",
     "zeebe-node": "^0.24.0"
   },
