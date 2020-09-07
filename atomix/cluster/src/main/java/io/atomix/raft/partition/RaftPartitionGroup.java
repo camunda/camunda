@@ -42,9 +42,7 @@ import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.memory.MemorySize;
-import io.atomix.utils.serializer.FallbackNamespace;
 import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.NamespaceImpl;
 import io.atomix.utils.serializer.Namespaces;
 import java.io.File;
 import java.time.Duration;
@@ -280,13 +278,13 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
 
     @Override
     public Namespace namespace() {
-      return new FallbackNamespace(
-          new NamespaceImpl.Builder()
-              .nextId(Namespaces.BEGIN_USER_CUSTOM_ID + 100)
-              .register(RaftPartitionGroupConfig.class)
-              .register(RaftStorageConfig.class)
-              .register(RaftCompactionConfig.class)
-              .register(StorageLevel.class));
+      return Namespace.builder()
+          .nextId(Namespaces.BEGIN_USER_CUSTOM_ID + 100)
+          .register(RaftPartitionGroupConfig.class)
+          .register(RaftStorageConfig.class)
+          .register(RaftCompactionConfig.class)
+          .register(StorageLevel.class)
+          .build();
     }
 
     @Override

@@ -26,7 +26,6 @@ import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.JournalReader.Mode;
 import io.atomix.storage.journal.index.SparseJournalIndex;
 import io.atomix.utils.serializer.Namespace;
-import io.atomix.utils.serializer.NamespaceImpl;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -53,7 +52,7 @@ public abstract class AbstractJournalTest {
 
   protected static final TestEntry ENTRY = new TestEntry(32);
   private static final Namespace NAMESPACE =
-      new NamespaceImpl.Builder().register(TestEntry.class).register(byte[].class).build();
+      Namespace.builder().register(TestEntry.class).register(byte[].class).build();
 
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 

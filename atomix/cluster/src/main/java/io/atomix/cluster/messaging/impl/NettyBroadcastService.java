@@ -25,8 +25,7 @@ import io.atomix.cluster.messaging.BroadcastService;
 import io.atomix.cluster.messaging.ManagedBroadcastService;
 import io.atomix.utils.AtomixRuntimeException;
 import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.FallbackNamespace;
-import io.atomix.utils.serializer.NamespaceImpl;
+import io.atomix.utils.serializer.Namespace;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
 import io.netty.bootstrap.Bootstrap;
@@ -58,12 +57,11 @@ public class NettyBroadcastService implements ManagedBroadcastService {
 
   private static final Serializer SERIALIZER =
       Serializer.using(
-          new FallbackNamespace(
-              new NamespaceImpl.Builder()
-                  .register(Namespaces.BASIC)
-                  .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-                  .register(Message.class)));
-
+          Namespace.builder()
+              .register(Namespaces.BASIC)
+              .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
+              .register(Message.class)
+              .build());
   private final Logger log = LoggerFactory.getLogger(getClass());
   private final boolean enabled;
   private final InetSocketAddress localAddress;
