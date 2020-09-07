@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.date.distributedby.none;
 
+import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -77,6 +78,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
+    Assertions.assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
     assertThat(resultData.get(0).getValue(), is(1.));

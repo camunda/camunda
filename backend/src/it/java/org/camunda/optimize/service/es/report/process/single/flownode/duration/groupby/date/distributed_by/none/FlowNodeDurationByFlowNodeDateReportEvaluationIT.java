@@ -370,6 +370,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(200.);
@@ -410,6 +411,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertThat(resultData.stream()

@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.variable;
 
 import lombok.SneakyThrows;
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -1253,9 +1254,11 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
+    List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     // buckets span across all variable values (buckets are in descending order, so the first bucket is based on the
@@ -1290,9 +1293,11 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .build();
-    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    Assertions.assertThat(result.getIsComplete()).isTrue();
+    List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }

@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.date.distributedby.none;
 
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -460,6 +461,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    Assertions.assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
     assertThat(

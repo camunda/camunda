@@ -418,7 +418,7 @@
                   <arg value="-c" />
                   <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize*/_settings/${elasticsearch.index.settings.filter} | jq -S . &gt; es_settings.json" />
                 </exec>
-                <exec dir="${project.build.directory}"  executable="/bin/bash" failonerror="true">
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="echo Comparing ES settings after upgrade with expected settings; cmp expected_es_settings.json es_settings.json" />
                 </exec>
@@ -426,7 +426,7 @@
                   <arg value="-c" />
                   <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize*/_mappings | jq -S . &gt; es_mappings.json" />
                 </exec>
-                <exec dir="${project.build.directory}"  executable="/bin/bash" failonerror="true">
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="echo Comparing ES mappings after upgrade with expected mappings; cmp expected_es_mappings.json es_mappings.json" />
                 </exec>
@@ -434,7 +434,7 @@
                   <arg value="-c" />
                   <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/optimize*/_alias | jq -S . &gt; es_aliases.json" />
                 </exec>
-                <exec dir="${project.build.directory}"  executable="/bin/bash" failonerror="true">
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="echo Comparing ES aliases after upgrade with expected aliases; cmp expected_es_aliases.json es_aliases.json" />
                 </exec>
@@ -442,7 +442,7 @@
                   <arg value="-c" />
                   <arg value="curl -s -f localhost:${new.optimize.elasticsearch.port}/_template/optimize* | jq -S . &gt; es_templates.json" />
                 </exec>
-                <exec dir="${project.build.directory}"  executable="/bin/bash" failonerror="true">
+                <exec dir="${project.build.directory}" executable="/bin/bash" failonerror="true">
                   <arg value="-c" />
                   <arg value="echo Comparing ES templates after upgrade with expected templates; cmp expected_es_templates.json es_templates.json" />
                 </exec>

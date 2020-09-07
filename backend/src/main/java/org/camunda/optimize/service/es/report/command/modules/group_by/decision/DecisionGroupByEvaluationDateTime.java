@@ -35,7 +35,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex.EVALUATION_DATE_TIME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
@@ -86,7 +85,9 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
                              final SearchResponse response,
                              final ExecutionContext<DecisionReportDataDto> context) {
     result.setGroups(processAggregations(response, context));
-    result.setIsComplete(isResultComplete(response.getAggregations(), response.getHits().getTotalHits().value));
+    result.setIsComplete(dateAggregationService.isResultComplete(
+      response.getAggregations(), response.getHits().getTotalHits().value
+    ));
     result.setSorting(
       context.getReportConfiguration()
         .getSorting()

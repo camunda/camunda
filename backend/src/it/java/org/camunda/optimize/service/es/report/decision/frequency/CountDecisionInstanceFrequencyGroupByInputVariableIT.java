@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
+import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
@@ -794,11 +795,13 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
-    ).getResult().getData();
+    ).getResult();
 
     // then
+    Assertions.assertThat(result.getIsComplete()).isTrue();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 
@@ -828,11 +831,13 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     );
 
     // when
-    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByInputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
       definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
-    ).getResult().getData();
+    ).getResult();
 
     // then
+    Assertions.assertThat(result.getIsComplete()).isTrue();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }
