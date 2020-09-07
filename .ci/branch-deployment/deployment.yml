@@ -1,10 +1,11 @@
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: @BRANCH@-zeebe-tasklist-camunda-cloud
+  name: '@BRANCH@-zeebe-tasklist-camunda-cloud'
   labels:
-    app: @BRANCH@-zeebe-tasklist-camunda-cloud
-    branch: @BRANCH@
+    app: '@BRANCH@-zeebe-tasklist-camunda-cloud'
+    branch: '@BRANCH@'
     changed: "@CHANGED@"
 spec:
   replicas: 1
@@ -14,12 +15,12 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: @BRANCH@-zeebe-tasklist-camunda-cloud
+      app: '@BRANCH@-zeebe-tasklist-camunda-cloud'
   template:
     metadata:
       labels:
-        app: @BRANCH@-zeebe-tasklist-camunda-cloud
-        branch: @BRANCH@
+        app: '@BRANCH@-zeebe-tasklist-camunda-cloud'
+        branch: '@BRANCH@'
         changed: "@CHANGED@"
     spec:
       nodeSelector:
@@ -27,7 +28,7 @@ spec:
       volumes:
       - name: configuration
         configMap:
-          name: @BRANCH@-zeebe-tasklist-camunda-cloud
+          name: '@BRANCH@-zeebe-tasklist-camunda-cloud'
           defaultMode: 0744
       initContainers:
       - name: init-sysctl
@@ -70,9 +71,45 @@ spec:
             cpu: 0.5
             memory: 512Mi
         volumeMounts:
-          - name: configuration
-            mountPath: /config/application.yml
-            subPath: application.yml
+        - name: configuration
+          mountPath: /config/application.yml
+          subPath: application.yml
+      - name: operate
+        image: camunda/operate:0.24.2
+        #imagePullPolicy: Always   #this must be uncommented when snapshot is used
+        env:
+        - name: JAVA_OPTS
+          value: |
+            -XX:MaxRAMFraction=1
+        - name: SERVER_PORT
+          value: '8081'
+        ports:
+        - containerPort: 8081
+          name: operate-http
+        tty: true
+        livenessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          httpGet:
+            path: /
+            port: operate-http
+        readinessProbe:
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          httpGet:
+            path: /
+            port: operate-http
+        resources:
+          limits:
+            cpu: 1
+            memory: 1Gi
+          requests:
+            cpu: 500m
+            memory: 512Mi
+        volumeMounts:
+        - name: configuration
+          mountPath: /config/application.yml
+          subPath: operate-application.yml
       - name: elasticsearch
         image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.9
         env:
@@ -89,7 +126,7 @@ spec:
         securityContext:
           capabilities:
             add:
-              - IPC_LOCK
+            - IPC_LOCK
         ports:
         - containerPort: 9200
           name: es-http
@@ -120,18 +157,18 @@ spec:
         command: ["/bin/sh"]
         args: ["-c", "sleep 20 && tini -s /usr/local/bin/startup.sh"]
         env:
-          - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
-            value: io.zeebe.exporter.ElasticsearchExporter
-          - name: ZEEBE_HOST
-            value: 0.0.0.0
-          - name: JAVA_TOOL_OPTIONS
-            value: |
-              -Xms512m
-              -Xmx512m
+        - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
+          value: io.zeebe.exporter.ElasticsearchExporter
+        - name: ZEEBE_HOST
+          value: 0.0.0.0
+        - name: JAVA_TOOL_OPTIONS
+          value: |
+            -Xms512m
+            -Xmx512m
         ports:
-          - containerPort: 26500
-            name: zeebe-gateway
-            protocol: TCP
+        - containerPort: 26500
+          name: zeebe-gateway
+          protocol: TCP
         resources:
           limits:
             cpu: 1

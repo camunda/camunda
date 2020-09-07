@@ -1,10 +1,11 @@
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: @BRANCH@-zeebe-tasklist-camunda-cloud
+  name: '@BRANCH@-zeebe-tasklist-camunda-cloud'
   labels:
-    app: @BRANCH@-zeebe-tasklist-camunda-cloud
-    branch: @BRANCH@
+    app: '@BRANCH@-zeebe-tasklist-camunda-cloud'
+    branch: '@BRANCH@'
 data:
   application.yml: |
     springfox.documentation.swagger.v2.path: /documentation
@@ -16,7 +17,6 @@ data:
         dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
       zeebe:
         brokerContactPoint: localhost:26500
-        worker: zeebe-tasklist
       zeebeElasticsearch:
         clusterName: elasticsearch
         host: localhost
@@ -26,4 +26,25 @@ data:
       level:
         ROOT: INFO
         io.zeebe.tasklist: INFO
+    management.endpoints.web.exposure.include: health,info,conditions,configprops,env,prometheus
+
+  operate-application.yml: |
+    springfox.documentation.swagger.v2.path: /documentation
+    camunda.operate:
+      elasticsearch:
+        clusterName: elasticsearch
+        host: localhost
+        port: 9200
+        dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+      zeebe:
+        brokerContactPoint: localhost:26500
+      zeebeElasticsearch:
+        clusterName: elasticsearch
+        host: localhost
+        port: 9200
+        prefix: zeebe-record
+    logging:
+      level:
+        ROOT: INFO
+        org.camunda.operate: INFO
     management.endpoints.web.exposure.include: health,info,conditions,configprops,env,prometheus
