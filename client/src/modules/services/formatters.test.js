@@ -203,6 +203,7 @@ const exampleDurationReport = {
     data: [
       {key: '2015-03-25T12:00:00Z', label: '2015-03-25T12:00:00Z', value: 2},
       {key: '2015-03-26T12:00:00Z', label: '2015-03-26T12:00:00Z', value: 3},
+      {key: 'missing', label: 'null/undefined', value: 5},
     ],
   },
 };
@@ -227,6 +228,7 @@ it('should adjust dates to units', () => {
   expect(formatedResult).toEqual([
     {key: '2015-03-25T12:00:00Z', label: '2015-03-25', value: 2},
     {key: '2015-03-26T12:00:00Z', label: '2015-03-26', value: 3},
+    {key: 'missing', label: 'null/undefined', value: 5},
   ]);
 });
 
