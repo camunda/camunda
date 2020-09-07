@@ -89,7 +89,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstants.AL
 import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_APPLICATION;
-import static org.camunda.optimize.test.it.extension.MockServerFactory.MOCKSERVER_HOST;
+import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
@@ -199,7 +199,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
 
   private static ClientAndServer initMockServer() {
     log.debug("Setting up Engine MockServer on port {}", IntegrationTestConfigurationUtil.getEngineMockServerPort());
-    return MockServerFactory.createProxyMockServer(
+    return MockServerUtil.createProxyMockServer(
       IntegrationTestConfigurationUtil.getEngineHost(),
       Integer.parseInt(IntegrationTestConfigurationUtil.getEnginePort()),
       IntegrationTestConfigurationUtil.getEngineMockServerPort()

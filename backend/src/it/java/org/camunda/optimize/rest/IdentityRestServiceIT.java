@@ -22,11 +22,14 @@ import org.camunda.optimize.rest.providers.GenericExceptionMapper;
 import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.test.it.extension.ErrorResponseMock;
+import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.model.HttpResponse;
@@ -50,7 +53,6 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockserver.model.HttpRequest.request;
-
 
 public class IdentityRestServiceIT extends AbstractIT {
 
@@ -227,8 +229,9 @@ public class IdentityRestServiceIT extends AbstractIT {
   }
 
   @ParameterizedTest
-  @MethodSource("identities")
-  public void getIdentityById_notPresentInCache_engineFetchFail(final IdentityWithMetadataDto expectedIdentity) {
+  @MethodSource("identitiesAndAuthorizationResponse")
+  public void getIdentityById_notPresentInCache_engineFetchFail(final IdentityWithMetadataDto expectedIdentity,
+                                                                final ErrorResponseMock mockedResp) {
     // given
     final HttpRequest engineFetchRequestMatcher;
     switch (expectedIdentity.getType()) {
@@ -254,8 +257,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
-    engineMockServer.when(engineFetchRequestMatcher)
-      .error(HttpError.error().withDropConnection(true));
+    mockedResp.mock(engineFetchRequestMatcher, Times.unlimited(), engineMockServer);
 
     // when
     final Response response = embeddedOptimizeExtension.getRequestExecutor()
@@ -263,14 +265,15 @@ public class IdentityRestServiceIT extends AbstractIT {
       .execute();
 
     // then
-    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    assertThat(Response.Status.fromStatusCode(response.getStatus()).getFamily())
+      .isNotEqualTo(Response.Status.Family.SUCCESSFUL);
     engineMockServer.verify(engineFetchRequestMatcher);
   }
 
   @ParameterizedTest
   @MethodSource("identitiesAndAuthorizationResponse")
   public void noRolesCleanupOnIdentitySyncFailWithError(final IdentityWithMetadataDto expectedIdentity,
-                                                        final BiConsumer<HttpRequest, ClientAndServer> mockedAuthResp) {
+                                                        final ErrorResponseMock mockedResp) {
     // given
     SyncedIdentityCacheService syncedIdentityCacheService = embeddedOptimizeExtension.getSyncedIdentityCacheService();
 
@@ -303,7 +306,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
-    mockedAuthResp.accept(engineAuthorizationsRequest, engineMockServer);
+    mockedResp.mock(engineAuthorizationsRequest, Times.unlimited(), engineMockServer);
 
     // when
     assertThrows(Exception.class, syncedIdentityCacheService::synchronizeIdentities);
@@ -315,8 +318,9 @@ public class IdentityRestServiceIT extends AbstractIT {
     engineMockServer.verify(engineAuthorizationsRequest);
   }
 
-  @Test
-  public void syncRetryBackoff() throws InterruptedException {
+  @ParameterizedTest
+  @MethodSource("engineErrors")
+  public void syncRetryBackoff(final ErrorResponseMock mockedResp) throws InterruptedException {
     // given
     SyncedIdentityCacheService syncedIdentityCacheService = embeddedOptimizeExtension.getSyncedIdentityCacheService();
 
@@ -332,8 +336,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     ClientAndServer engineMockServer = useAndGetEngineMockServer();
 
-    engineMockServer.when(engineAuthorizationsRequest)
-      .error(HttpError.error().withResponseBytes(new byte[10]));
+    mockedResp.mock(engineAuthorizationsRequest, Times.unlimited(), engineMockServer);
 
     final ScheduledExecutorService identitySyncThread = Executors.newSingleThreadScheduledExecutor();
 
@@ -516,22 +519,12 @@ public class IdentityRestServiceIT extends AbstractIT {
   }
 
   private static Stream<Arguments> identitiesAndAuthorizationResponse() {
-    return identities()
-      .flatMap(identity -> Stream.of(
-        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
-          mockServer.when(request).error(HttpError.error().withResponseBytes(new byte[10]))),
-        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
-          mockServer.when(request)
-            .respond(HttpResponse.response().withStatusCode(Response.Status.NOT_FOUND.getStatusCode()))),
-        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
-          mockServer.when(request)
-            .respond(HttpResponse.response().withStatusCode(Response.Status.FORBIDDEN.getStatusCode()))),
-        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
-          mockServer.when(request)
-            .respond(HttpResponse.response().withStatusCode(Response.Status.UNAUTHORIZED.getStatusCode()))),
-        Arguments.of(identity, (BiConsumer<HttpRequest, ClientAndServer>) (request, mockServer) ->
-          mockServer.when(request)
-            .respond(HttpResponse.response().withStatusCode(Response.Status.BAD_REQUEST.getStatusCode())))
-      ));
+    return identities().flatMap(identity -> MockServerUtil.engineMockedErrorResponses()
+      .map(errorResponse -> Arguments.of(identity, errorResponse)));
   }
+
+  private static Stream<ErrorResponseMock> engineErrors() {
+    return MockServerUtil.engineMockedErrorResponses();
+  }
+
 }

@@ -9,6 +9,8 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
+import org.camunda.optimize.test.it.extension.ErrorResponseMock;
+import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
@@ -19,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
@@ -87,6 +90,11 @@ public abstract class AbstractImportIT extends AbstractIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariable");
     return engineIntegrationExtension.deployAndStartProcessWithVariables(BpmnModels.getSingleUserTaskDiagram(), variables);
+  }
+
+  @SuppressWarnings("unused")
+  protected static Stream<ErrorResponseMock> engineErrors() {
+    return MockServerUtil.engineMockedErrorResponses();
   }
 
 }

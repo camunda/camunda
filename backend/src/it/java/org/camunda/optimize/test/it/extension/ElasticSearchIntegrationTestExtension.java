@@ -190,7 +190,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     log.debug("Setting up ES MockServer on port {}", IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
     final ElasticsearchConnectionNodeConfiguration esConfig = getEsConfigForConfigurationService(
       IntegrationTestConfigurationUtil.createItConfigurationService());
-    return MockServerFactory.createProxyMockServer(
+    return MockServerUtil.createProxyMockServer(
       esConfig.getHost(),
       esConfig.getHttpPort(),
       IntegrationTestConfigurationUtil.getElasticsearchMockServerPort()
@@ -205,7 +205,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
       final ConfigurationService configurationService = createConfigurationService();
       final ElasticsearchConnectionNodeConfiguration esConfig =
         getEsConfigForConfigurationService(configurationService);
-      esConfig.setHost(MockServerFactory.MOCKSERVER_HOST);
+      esConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
       esConfig.setHttpPort(mockServerClient.getLocalPort());
       createClientAndAddToCache(MOCKSERVER_CLIENT_KEY, configurationService);
     }

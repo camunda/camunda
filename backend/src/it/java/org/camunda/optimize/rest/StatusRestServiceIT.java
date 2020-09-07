@@ -8,12 +8,17 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.service.util.configuration.EngineConstants;
+import org.camunda.optimize.test.it.extension.ErrorResponseMock;
+import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
-import org.mockserver.model.HttpResponse;
+import org.mockserver.model.HttpRequest;
 
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -63,18 +68,19 @@ public class StatusRestServiceIT extends AbstractIT {
     assertThat(isImportingMap.get(DEFAULT_ENGINE_ALIAS)).isFalse();
   }
 
-  @Test
-  public void connectionStatusFalseWhenVersionEndpointFails() {
+  private static Stream<ErrorResponseMock> engineErrors() {
+    return MockServerUtil.engineMockedErrorResponses();
+  }
+
+  @ParameterizedTest
+  @MethodSource("engineErrors")
+  public void connectionStatusFalseWhenVersionEndpointFails(ErrorResponseMock mockedResponse) {
     // given
     final ClientAndServer esMockServer = useAndGetEngineMockServer();
-    esMockServer
-      .when(
-        request()
-          .withPath(".*" + EngineConstants.VERSION_ENDPOINT)
-          .withMethod(GET),
-        Times.once()
-      )
-      .respond(new HttpResponse().withStatusCode(500));
+    final HttpRequest request = request()
+      .withPath(".*" + EngineConstants.VERSION_ENDPOINT)
+      .withMethod(GET);
+    mockedResponse.mock(request, Times.once(), esMockServer);
 
     // when
     final StatusWithProgressDto status = statusClient.getImportStatus();
@@ -84,4 +90,5 @@ public class StatusRestServiceIT extends AbstractIT {
     assertThat(connectionStatusMap).isNotNull();
     assertThat(connectionStatusMap.get(DEFAULT_ENGINE_ALIAS)).isFalse();
   }
+
 }

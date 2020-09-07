@@ -12,12 +12,16 @@ import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
+import org.camunda.optimize.test.it.extension.ErrorResponseMock;
+import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
@@ -29,6 +33,7 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
@@ -359,16 +364,18 @@ public class DecisionImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionInstanceMaxPageSize(originalMaxPageSize);
   }
 
-  @Test
-  public void definitionImportWorksEvenIfDeploymentRequestFails() {
+  @ParameterizedTest
+  @MethodSource("engineErrors")
+  public void definitionImportWorksEvenIfDeploymentRequestFails(ErrorResponseMock mockedResp) {
     // given
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
     final HttpRequest requestMatcher = request()
       .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
       .withMethod(GET);
-    engineMockServer
-      .when(requestMatcher, Times.exactly(1))
-      .error(HttpError.error().withDropConnection(true));
+    mockedResp.mock(requestMatcher, Times.once(), engineMockServer);
+//    engineMockServer
+//      .when(requestMatcher, Times.exactly(1))
+//      .error(HttpError.error().withDropConnection(true));
 
     // when
     engineIntegrationExtension.deployAndStartDecisionDefinition();

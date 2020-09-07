@@ -11,12 +11,15 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.test.it.extension.ErrorResponseMock;
+import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.test.util.VariableTestUtil;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
+import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpRequest;
-import org.mockserver.model.HttpResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -45,7 +48,7 @@ public class ImportIT extends AbstractImportIT {
   private static final String USER_TASK_1 = "userTask1";
   private static final String USER_TASK_2 = "userTask2";
 
-  private static Stream<String> getEndpoints() {
+  private static Stream<Arguments> getEndpointsAndErrorResponses() {
     return Stream.of(
       DECISION_DEFINITION_ENDPOINT,
       PROCESS_DEFINITION_ENDPOINT,
@@ -55,13 +58,15 @@ public class ImportIT extends AbstractImportIT {
       IDENTITY_LINK_LOG_ENDPOINT,
       VARIABLE_UPDATE_ENDPOINT,
       USER_OPERATION_LOG_ENDPOINT
-    );
+    ).flatMap(endpoint -> engineErrors()
+      .map(mockResp -> Arguments.of(endpoint, mockResp)));
   }
 
   @SneakyThrows
   @ParameterizedTest
-  @MethodSource("getEndpoints")
-  public void importWorksDespiteTemporaryFetchingFailures(String endpoint) {
+  @MethodSource("getEndpointsAndErrorResponses")
+  public void importWorksDespiteTemporaryFetchingFailures(String endpoint,
+                                                          ErrorResponseMock mockResp) {
     // given "one of everything"
     engineIntegrationExtension.createTenant("someTenantId", "someTenantName");
     engineIntegrationExtension.deployDecisionDefinition();
@@ -78,9 +83,8 @@ public class ImportIT extends AbstractImportIT {
       .withPath(".*" + endpoint)
       .withMethod(GET);
     final ClientAndServer esMockServer = useAndGetEngineMockServer();
-    esMockServer
-      .when(importFetcherEndpointMatcher)
-      .respond(new HttpResponse().withStatusCode(500));
+
+    mockResp.mock(importFetcherEndpointMatcher, Times.unlimited(), esMockServer);
 
     // make sure fetching endpoint is called during import
     embeddedOptimizeExtension.startContinuousImportScheduling();

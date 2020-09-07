@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRespo
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -25,9 +26,10 @@ import org.elasticsearch.search.aggregations.metrics.ValueCount;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockserver.integration.ClientAndServer;
 import org.mockserver.matchers.Times;
-import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
@@ -401,7 +403,8 @@ public class ProcessImportIT extends AbstractImportIT {
     ProcessVariableNameRequestDto variableRequestDto = new ProcessVariableNameRequestDto();
     variableRequestDto.setProcessDefinitionKey(firstProcInst.getProcessDefinitionKey());
     variableRequestDto.setProcessDefinitionVersion(firstProcInst.getProcessDefinitionVersion());
-    List<ProcessVariableNameResponseDto> variablesResponseDtos = variablesClient.getProcessVariableNames(variableRequestDto);
+    List<ProcessVariableNameResponseDto> variablesResponseDtos = variablesClient.getProcessVariableNames(
+      variableRequestDto);
 
     assertThat(variablesResponseDtos).hasSize(3);
   }
@@ -486,16 +489,15 @@ public class ProcessImportIT extends AbstractImportIT {
     assertThat(getImportedActivityCount()).isEqualTo(3L);
   }
 
-  @Test
-  public void definitionImportWorksEvenIfDeploymentRequestFails() {
+  @ParameterizedTest
+  @MethodSource("engineErrors")
+  public void definitionImportWorksEvenIfDeploymentRequestFails(ErrorResponseMock errorResponseMock) {
     // given
     final ClientAndServer engineMockServer = useAndGetEngineMockServer();
     final HttpRequest requestMatcher = request()
       .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
       .withMethod(GET);
-    engineMockServer
-      .when(requestMatcher, Times.exactly(1))
-      .error(HttpError.error().withDropConnection(true));
+    errorResponseMock.mock(requestMatcher, Times.once(), engineMockServer);
 
     // when
     deployAndStartSimpleServiceTask();

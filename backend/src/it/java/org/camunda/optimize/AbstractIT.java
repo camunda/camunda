@@ -34,7 +34,7 @@ import org.mockserver.integration.ClientAndServer;
 
 import java.util.function.Supplier;
 
-import static org.camunda.optimize.test.it.extension.MockServerFactory.MOCKSERVER_HOST;
+import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
 
 public abstract class AbstractIT {
 
