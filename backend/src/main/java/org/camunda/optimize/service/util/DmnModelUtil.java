@@ -5,8 +5,9 @@
  */
 package org.camunda.optimize.service.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
-import lombok.experimental.UtilityClass;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
@@ -28,7 +29,7 @@ import java.util.Optional;
 import java.util.function.Function;
 
 @Slf4j
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DmnModelUtil {
 
   public static DmnModelInstance parseDmnModel(final String dmn10Xml) {

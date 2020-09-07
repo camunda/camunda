@@ -10,6 +10,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
+import java.util.Collections;
 import java.util.List;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
@@ -36,6 +37,7 @@ public class ReportConstants {
   public static final String GROUP_BY_VARIABLE_TYPE = "variable";
   public static final String GROUP_BY_ASSIGNEE = "assignee";
   public static final String GROUP_BY_CANDIDATE_GROUP = "candidateGroup";
+  public static final String GROUP_BY_DURATION = "duration";
 
   public static final String GROUP_BY_EVALUATION_DATE_TYPE = "evaluationDateTime";
   public static final String GROUP_BY_INPUT_VARIABLE_TYPE = "inputVariable";
@@ -48,6 +50,8 @@ public class ReportConstants {
   public static final String DATE_UNIT_DAY = "day";
   public static final String DATE_UNIT_HOUR = "hour";
   public static final String DATE_UNIT_MINUTE = "minute";
+  public static final String DATE_UNIT_SECOND = "second";
+  public static final String DATE_UNIT_MILLISECOND = "millisecond";
   public static final String DATE_UNIT_AUTOMATIC = "automatic";
 
   // report configuration constants
@@ -69,8 +73,10 @@ public class ReportConstants {
 
   public static final String DISTRIBUTED_BY_NONE = "none";
   public static final String DISTRIBUTED_BY_USER_TASK = "userTask";
+  public static final String DISTRIBUTED_BY_FLOW_NODE = "flowNode";
   public static final String DISTRIBUTED_BY_ASSIGNEE = "assignee";
   public static final String DISTRIBUTED_BY_CANDIDATE_GROUP = "candidateGroup";
+  public static final String DISTRIBUTED_BY_VARIABLE = "variable";
 
   public static final String RUNNING_FLOWNODE_EXECUTION_STATE = "running";
   public static final String COMPLETED_FLOWNODE_EXECUTION_STATE = "completed";
@@ -88,10 +94,15 @@ public class ReportConstants {
   public static final String ALL_VERSIONS = "ALL";
   public static final String LATEST_VERSION = "LATEST";
 
+  // tenants
+  public static final List<String> DEFAULT_TENANT_IDS = Collections.singletonList(null);
+
+  // date filter
   public static final String FIXED_DATE_FILTER = "fixed";
   public static final String RELATIVE_DATE_FILTER = "relative";
   public static final String ROLLING_DATE_FILTER = "rolling";
 
+  // result types
   public static final String RAW_RESULT_TYPE = "raw";
   public static final String NUMBER_RESULT_TYPE = "number";
   public static final String MAP_RESULT_TYPE = "map";

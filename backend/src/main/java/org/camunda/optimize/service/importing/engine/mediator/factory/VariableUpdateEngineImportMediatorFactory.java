@@ -7,7 +7,6 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import org.camunda.optimize.plugin.VariableImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.variable.ProcessVariableUpdateWriter;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.VariableUpdateInstanceFetcher;
@@ -21,18 +20,18 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class VariableUpdateEngineImportMediatorFactory extends AbstractImportMediatorFactory {
-  private final CamundaEventImportService camundaEventService;
+  private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final ProcessVariableUpdateWriter variableWriter;
   private final VariableImportAdapterProvider variableImportAdapterProvider;
 
   public VariableUpdateEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                    final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                    final ConfigurationService configurationService,
-                                                   final CamundaEventImportService camundaEventService,
+                                                   final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
                                                    final ProcessVariableUpdateWriter variableWriter,
                                                    final VariableImportAdapterProvider variableImportAdapterProvider) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
-    this.camundaEventService = camundaEventService;
+    this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.variableWriter = variableWriter;
     this.variableImportAdapterProvider = variableImportAdapterProvider;
   }
@@ -47,7 +46,7 @@ public class VariableUpdateEngineImportMediatorFactory extends AbstractImportMed
       beanFactory.getBean(VariableUpdateInstanceFetcher.class, engineContext),
       new VariableUpdateInstanceImportService(
         variableWriter,
-        camundaEventService,
+        camundaEventImportServiceFactory.createCamundaEventService(engineContext),
         variableImportAdapterProvider,
         elasticsearchImportJobExecutor,
         engineContext

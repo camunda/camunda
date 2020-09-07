@@ -15,7 +15,7 @@ import VisibleNodesFilter from './VisibleNodesFilter';
 import NodeStatus from './NodeStatus';
 import DistributedBy from './DistributedBy';
 import DateVariableUnit from './DateVariableUnit';
-import NumVariableBucket from './NumVariableBucket';
+import BucketSize from './BucketSize';
 import {t} from 'translation';
 
 import './Configuration.scss';
@@ -37,7 +37,10 @@ export default class Configuration extends React.Component {
         aggregationType: 'avg',
         userTaskDurationTime: 'total',
         flowNodeExecutionState: 'all',
-        distributedBy: 'none',
+        distributedBy: {
+          type: 'none',
+          value: null,
+        },
         precision: null,
         targetValue: {
           active: false,
@@ -85,10 +88,12 @@ export default class Configuration extends React.Component {
           keys: [],
         },
         groupByDateVariableUnit: 'automatic',
-        customNumberBucket: {
+        customBucket: {
           active: false,
           bucketSize: '10',
+          bucketSizeUnit: 'minute',
           baseline: '0',
+          baselineUnit: 'minute',
         },
       }),
       true
@@ -116,7 +121,11 @@ export default class Configuration extends React.Component {
       <li className="Configuration">
         <Popover
           tooltip={t('report.config.buttonTooltip')}
-          title={<Icon type="settings" />}
+          title={
+            <>
+              <Icon type="settings" /> {t('report.config.label')}
+            </>
+          }
           disabled={!enablePopover}
         >
           <Form className="content" compact>
@@ -128,7 +137,7 @@ export default class Configuration extends React.Component {
               />
             )}
             <DateVariableUnit report={report} onChange={this.updateConfiguration} />
-            <NumVariableBucket report={report} onChange={this.updateConfiguration} />
+            <BucketSize report={report} onChange={this.updateConfiguration} />
             <AggregationType report={report} onChange={this.updateConfiguration} />
             <UserTaskDurationTime report={report} onChange={this.updateConfiguration} />
             {Component && <Component report={report} onChange={this.updateConfiguration} />}
@@ -136,7 +145,7 @@ export default class Configuration extends React.Component {
             <NodeStatus report={report} onChange={this.updateConfiguration} />
             <VisibleNodesFilter report={report} onChange={this.updateConfiguration} />
           </Form>
-          <Button main className="resetButton" onClick={this.resetToDefaults}>
+          <Button className="resetButton" onClick={this.resetToDefaults}>
             {t('report.config.reset')}
           </Button>
         </Popover>

@@ -5,7 +5,8 @@
  */
 package org.camunda.optimize.service.util;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
@@ -17,7 +18,7 @@ import java.time.temporal.TemporalUnit;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit.QUARTERS;
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DateFilterUtil {
 
   public static OffsetDateTime getStartOfCurrentInterval(OffsetDateTime now, DateFilterUnit dateFilterUnit) {

@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable;
-import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
+import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;

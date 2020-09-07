@@ -1,0 +1,498 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
+ * under one or more contributor license agreements. Licensed under a commercial license.
+ * You may not use this file except in compliance with the commercial license.
+ */
+package org.camunda.optimize.service.es.report.process.single.flownode.duration.groupby.date.distributed_by.none;
+
+import com.google.common.collect.ImmutableList;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.process.single.ModelElementDurationByModelElementDateReportEvaluationIT;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
+import org.junit.jupiter.api.Test;
+
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
+import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.getAggregationTypesAsListWithoutSum;
+import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
+import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
+import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
+import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+
+public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
+  extends ModelElementDurationByModelElementDateReportEvaluationIT {
+
+  @Test
+  public void evaluateReportForMultipleEventsWithAllAggregationTypes() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
+    final OffsetDateTime today = OffsetDateTime.now();
+
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    changeModelElementDate(processInstanceDto1, START_EVENT, today);
+    changeModelElementDate(processInstanceDto1, END_EVENT, today.minusDays(1));
+    changeDuration(processInstanceDto1, START_EVENT, 10.);
+    changeDuration(processInstanceDto1, END_EVENT, 10.);
+
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    changeModelElementDate(processInstanceDto2, START_EVENT, today);
+    changeModelElementDate(processInstanceDto2, END_EVENT, today.minusDays(1));
+    changeDuration(processInstanceDto2, START_EVENT, 20.);
+    changeDuration(processInstanceDto2, END_EVENT, 20.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    final Map<AggregationType, ReportMapResultDto> results =
+      evaluateMapReportForAllAggTypes(reportData);
+
+    // then
+    getAggregationTypesAsListWithoutSum().forEach((AggregationType aggType) -> {
+      ReportMapResultDto result = results.get(aggType);
+      assertThat(result.getData()).isNotNull();
+
+      assertThat(result.getEntryForKey(groupedByDayDateAsString(today)))
+        .get()
+        .extracting(MapResultEntryDto::getValue)
+        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(aggType));
+    });
+  }
+
+  @Test
+  public void reportEvaluationForSeveralProcessesWithAllAggregationTypes() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition1 = deployStartEndDefinition();
+    final OffsetDateTime today = OffsetDateTime.now();
+
+    final ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    changeModelElementDate(processInstanceDto1, START_EVENT, today);
+    changeModelElementDate(processInstanceDto1, END_EVENT, today.minusDays(1));
+    changeDuration(processInstanceDto1, START_EVENT, 10.);
+    changeDuration(processInstanceDto1, END_EVENT, 10.);
+
+    final ProcessDefinitionEngineDto processDefinition2 = deployStartEndDefinition();
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    changeModelElementDate(processInstanceDto2, START_EVENT, today);
+    changeModelElementDate(processInstanceDto2, END_EVENT, today.minusDays(1));
+    changeDuration(processInstanceDto2, START_EVENT, 20.);
+    changeDuration(processInstanceDto2, END_EVENT, 20.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData =
+      createReportData(processDefinition1.getKey(), ALL_VERSIONS, GroupByDateUnit.DAY);
+    final Map<AggregationType, ReportMapResultDto> results = evaluateMapReportForAllAggTypes(reportData);
+
+    // then
+    getAggregationTypesAsListWithoutSum().forEach((AggregationType aggType) -> {
+      ReportMapResultDto result = results.get(aggType);
+      assertThat(result.getData()).isNotNull();
+
+      assertThat(result.getEntryForKey(groupedByDayDateAsString(today)))
+        .get()
+        .extracting(MapResultEntryDto::getValue)
+        .isEqualTo(calculateExpectedValueGivenDurations(10., 20.).get(aggType));
+    });
+  }
+
+  @Test
+  public void resultIsSortedInAscendingOrder() {
+    // given
+    final OffsetDateTime referenceDate = OffsetDateTime.now();
+    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(5));
+
+    ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(4));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(6));
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getData())
+      .hasSize(6)
+      .extracting(MapResultEntryDto::getKey)
+      .isSortedAccordingTo(Comparator.naturalOrder());
+  }
+
+  @Test
+  public void testCustomOrderOnResultKeyIsApplied() {
+    // given
+    final OffsetDateTime referenceDate = OffsetDateTime.now();
+    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(5));
+
+    ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(4));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(6));
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getData())
+      .hasSize(6)
+      .extracting(MapResultEntryDto::getKey)
+      .isSortedAccordingTo(Comparator.comparing(String::toString).reversed());
+  }
+
+  @Test
+  public void testCustomOrderOnResultValueIsApplied() {
+    // given
+    final OffsetDateTime referenceDate = OffsetDateTime.now();
+    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(1));
+
+    ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, USER_TASK_1, referenceDate.minusDays(2));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(2));
+
+    ProcessInstanceEngineDto processInstance3 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeModelElementDate(processInstance3, START_EVENT, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance3, USER_TASK_1, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance3, END_EVENT, referenceDate.minusDays(3));
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.DESC));
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(3L);
+    assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getData())
+      .hasSize(3)
+      .isSortedAccordingTo(Comparator.comparing(MapResultEntryDto::getValue).reversed());
+  }
+
+  @Test
+  public void flowNodesStartedAtSameIntervalAreGroupedTogether() {
+    // given
+    final OffsetDateTime referenceDate = OffsetDateTime.now();
+    ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
+    ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(2));
+    changeDuration(processInstance1, START_EVENT, 10.);
+    changeDuration(processInstance1, END_EVENT, 20.);
+
+    ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    changeModelElementDate(processInstance2, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance2, END_EVENT, referenceDate.minusDays(2));
+    changeDuration(processInstance2, START_EVENT, 10.);
+    changeDuration(processInstance2, END_EVENT, 20.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    final List<MapResultEntryDto> resultData = result.getData();
+    assertThat(resultData).hasSize(2);
+    ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
+
+    final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
+    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 10.));
+    final String expectedStringDayBeforeYesterday = localDateTimeToString(startOfToday.minusDays(2));
+    assertThat(resultData).contains(new MapResultEntryDto(expectedStringDayBeforeYesterday, 20.));
+  }
+
+  @Test
+  public void emptyIntervalBetweenTwoFlowNodeDates() {
+    // given
+    final OffsetDateTime referenceDate = OffsetDateTime.now();
+    ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    ProcessInstanceEngineDto processInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeModelElementDate(processInstance, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance, USER_TASK_1, referenceDate.minusDays(3));
+    changeModelElementDate(processInstance, END_EVENT, referenceDate.minusDays(4));
+    changeDuration(processInstance, START_EVENT, 10.);
+    changeDuration(processInstance, USER_TASK_1, 30.);
+    changeDuration(processInstance, END_EVENT, 50.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    final List<MapResultEntryDto> resultData = result.getData();
+    assertThat(resultData).hasSize(4);
+    ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
+
+    final String oneDayAgo = localDateTimeToString(startOfToday.minusDays(1));
+    assertThat(resultData).contains(new MapResultEntryDto(oneDayAgo, 10.));
+    final String twoDaysAgo = localDateTimeToString(startOfToday.minusDays(2));
+    assertThat(resultData).contains(new MapResultEntryDto(twoDaysAgo, null));
+    final String threeDaysAgo = localDateTimeToString(startOfToday.minusDays(3));
+    assertThat(resultData).contains(new MapResultEntryDto(threeDaysAgo, 30.));
+    final String fourDaysAgo = localDateTimeToString(startOfToday.minusDays(4));
+    assertThat(resultData).contains(new MapResultEntryDto(fourDaysAgo, 50.));
+  }
+
+  @Test
+  public void otherProcessDefinitionsDoNotAffectResult() {
+    // given
+    final OffsetDateTime referenceDate = OffsetDateTime.now();
+    ProcessDefinitionEngineDto processDefinition1 = deployOneUserTaskDefinition();
+    ProcessInstanceEngineDto processInstance1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition1.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeModelElementDate(processInstance1, START_EVENT, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, USER_TASK_1, referenceDate.minusDays(1));
+    changeModelElementDate(processInstance1, END_EVENT, referenceDate.minusDays(1));
+    changeDuration(processInstance1, 10.);
+
+    ProcessDefinitionEngineDto processDefinition2 = deployOneUserTaskDefinition();
+    ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition2.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    changeDuration(processInstance2, 100.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition1);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    final List<MapResultEntryDto> resultData = result.getData();
+    assertThat(resultData).hasSize(1);
+    ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
+
+    final String expectedStringYesterday = localDateTimeToString(startOfToday.minusDays(1));
+    assertThat(resultData).contains(new MapResultEntryDto(expectedStringYesterday, 10.));
+  }
+
+  @Test
+  public void automaticIntervalSelection_simpleSetup() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployStartEndDefinition();
+    ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto3 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    Map<String, OffsetDateTime> updates = new HashMap<>();
+    OffsetDateTime startOfToday = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
+    updates.put(processInstanceDto1.getId(), startOfToday);
+    updates.put(processInstanceDto2.getId(), startOfToday);
+    updates.put(processInstanceDto3.getId(), startOfToday.minusDays(1));
+    changeModelElementDates(updates);
+    changeDuration(processInstanceDto1, START_EVENT, 100.);
+    changeDuration(processInstanceDto1, END_EVENT, 100.);
+    changeDuration(processInstanceDto2, START_EVENT, 100.);
+    changeDuration(processInstanceDto2, END_EVENT, 100.);
+    changeDuration(processInstanceDto3, START_EVENT, 200.);
+    changeDuration(processInstanceDto3, END_EVENT, 200.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getIsComplete()).isTrue();
+    final List<MapResultEntryDto> resultData = result.getData();
+    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(200.);
+    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(100.);
+  }
+
+  @Test
+  public void automaticIntervalSelection_takesAllFlowNodesIntoAccount() {
+    //given
+    final ProcessDefinitionEngineDto processDefinition = deployOneUserTaskDefinition();
+    ProcessInstanceEngineDto processInstanceDto1 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto processInstanceDto3 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    Map<String, OffsetDateTime> updates = new HashMap<>();
+    OffsetDateTime startOfToday = OffsetDateTime.now().truncatedTo(ChronoUnit.DAYS);
+    updates.put(processInstanceDto1.getId(), startOfToday);
+    updates.put(processInstanceDto2.getId(), startOfToday.plusDays(2));
+    updates.put(processInstanceDto3.getId(), startOfToday.plusDays(5));
+    changeModelElementDates(updates);
+    changeDuration(processInstanceDto1, START_EVENT, 100.);
+    changeDuration(processInstanceDto1, USER_TASK_1, 100.);
+    changeDuration(processInstanceDto1, END_EVENT, 100.);
+    changeDuration(processInstanceDto2, START_EVENT, 200.);
+    changeDuration(processInstanceDto2, USER_TASK_1, 200.);
+    changeDuration(processInstanceDto2, END_EVENT, 200.);
+    changeDuration(processInstanceDto3, START_EVENT, 500.);
+    changeDuration(processInstanceDto3, USER_TASK_1, 500.);
+    changeDuration(processInstanceDto3, END_EVENT, 500.);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getIsComplete()).isTrue();
+    final List<MapResultEntryDto> resultData = result.getData();
+    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(resultData.stream()
+                 .map(MapResultEntryDto::getValue)
+                 .filter(Objects::nonNull)
+                 .mapToInt(Double::intValue)
+                 .sum()).isEqualTo(800);
+    assertThat(resultData).first().extracting(MapResultEntryDto::getValue).isEqualTo(100.);
+    assertThat(resultData).last().extracting(MapResultEntryDto::getValue).isEqualTo(500.);
+  }
+
+  protected ProcessReportDataDto createReportData(final String processDefinitionKey, final String version,
+                                                  final GroupByDateUnit groupByDateUnit) {
+    return createReportData(processDefinitionKey, ImmutableList.of(version), groupByDateUnit);
+  }
+
+  protected ProcessReportDataDto createReportData(final String processDefinitionKey,
+                                                  final List<String> versions,
+                                                  final GroupByDateUnit groupByDateUnit) {
+    return TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(processDefinitionKey)
+      .setProcessDefinitionVersions(versions)
+      .setReportDataType(getReportDataType())
+      .setDateInterval(groupByDateUnit)
+      .build();
+  }
+
+  protected ProcessReportDataDto createReportData(final ProcessDefinitionEngineDto processDefinition,
+                                                  final GroupByDateUnit groupByDateUnit) {
+    return createReportData(
+      processDefinition.getKey(),
+      String.valueOf(processDefinition.getVersion()),
+      groupByDateUnit
+    );
+  }
+
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                final String modelElementId,
+                                final Double durationInMs) {
+    engineDatabaseExtension.changeActivityDuration(
+      processInstanceDto.getId(),
+      modelElementId,
+      durationInMs.longValue()
+    );
+  }
+
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                final Double durationInMs) {
+    engineDatabaseExtension.changeAllActivityDurations(
+      processInstanceDto.getId(),
+      durationInMs.longValue()
+    );
+  }
+
+  protected abstract void changeModelElementDates(final Map<String, OffsetDateTime> updates);
+
+  protected abstract void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
+                                                 final String modelElementId,
+                                                 final OffsetDateTime dateToChangeTo);
+
+  @Override
+  protected ProcessViewEntity getViewEntity() {
+    return ProcessViewEntity.FLOW_NODE;
+  }
+
+  @Override
+  protected void startProcessInstancesWithModelElementDateInDayRange(ProcessDefinitionEngineDto processDefinition,
+                                                                     ZonedDateTime min,
+                                                                     ZonedDateTime max) {
+    ProcessInstanceEngineDto procInstMin = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto procInstMax = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    changeModelElementDate(procInstMin, START_EVENT, min.toOffsetDateTime());
+    changeModelElementDate(procInstMin, END_EVENT, min.toOffsetDateTime());
+    changeModelElementDate(procInstMax, START_EVENT, max.toOffsetDateTime());
+    changeModelElementDate(procInstMax, END_EVENT, max.toOffsetDateTime());
+  }
+
+  @Override
+  protected ProcessDefinitionEngineDto deploySimpleDefinition() {
+    return deployStartEndDefinition();
+  }
+
+}

@@ -5,7 +5,8 @@
  */
 package org.camunda.optimize.plugin;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.metadata.Version;
@@ -16,7 +17,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 @Slf4j
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class PluginVersionChecker {
 
   static final String OPTIMIZE_VERSION_KEY = "optimize.version";

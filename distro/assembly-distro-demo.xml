@@ -47,6 +47,16 @@
       <outputDirectory></outputDirectory>
     </file>
     <file>
+      <source>src/elasticsearch-startup.bat</source>
+      <filtered>true</filtered>
+      <outputDirectory></outputDirectory>
+    </file>
+    <file>
+      <source>src/elasticsearch-startup.sh</source>
+      <filtered>true</filtered>
+      <outputDirectory></outputDirectory>
+    </file>
+    <file>
       <source>src/curl.exe</source>
       <outputDirectory></outputDirectory>
     </file>

@@ -26,7 +26,6 @@ import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -53,6 +52,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_RE
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -165,7 +165,7 @@ public class ReportReader {
       ReportDefinitionDto.class,
       objectMapper,
       esClient,
-      configurationService.getElasticsearchScrollTimeout()
+      configurationService.getEsScrollTimeoutInSeconds()
     );
   }
 
@@ -182,7 +182,7 @@ public class ReportReader {
       ReportDefinitionDto.class,
       objectMapper,
       esClient,
-      configurationService.getElasticsearchScrollTimeout()
+      configurationService.getEsScrollTimeoutInSeconds()
     );
   }
 
@@ -210,7 +210,7 @@ public class ReportReader {
       ReportDefinitionDto.class,
       objectMapper,
       esClient,
-      configurationService.getElasticsearchScrollTimeout()
+      configurationService.getEsScrollTimeoutInSeconds()
     );
   }
 
@@ -227,7 +227,7 @@ public class ReportReader {
       ReportDefinitionDto.class,
       objectMapper,
       esClient,
-      configurationService.getElasticsearchScrollTimeout()
+      configurationService.getEsScrollTimeoutInSeconds()
     );
   }
 
@@ -385,7 +385,7 @@ public class ReportReader {
       query,
       indices,
       size
-    ).scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+    ).scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     try {
       return esClient.search(searchRequest, RequestOptions.DEFAULT);

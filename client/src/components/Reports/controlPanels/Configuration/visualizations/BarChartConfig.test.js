@@ -16,7 +16,7 @@ const configuration = {
   xLabel: '',
   yLabel: '',
   targetValue: {active: false},
-  distributedBy: 'none',
+  distributedBy: {type: 'none', value: null},
 };
 
 const barReport = {
@@ -44,7 +44,7 @@ it('should not display show instance count and color picker for combined reports
   expect(node.find('ColorPicker')).not.toExist();
 });
 
-it('should not display color picker for hyper reports (distributed by user task)', () => {
+it('should not display color picker for hyper reports (distributed by userTask/assignee/candidateGroup)', () => {
   const node = shallow(
     <BarChartConfig
       report={{
@@ -52,7 +52,7 @@ it('should not display color picker for hyper reports (distributed by user task)
         data: {
           ...barReport.data,
           groupBy: {type: 'assignee'},
-          configuration: {...configuration, distributedBy: 'userTask'},
+          configuration: {...configuration, distributedBy: {type: 'userTask', value: null}},
         },
       }}
     />

@@ -1078,7 +1078,7 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
                                       final String password) {
     switch (reportUpdate.getReportType()) {
       case PROCESS:
-        if (reportUpdate.getCombined()) {
+        if (reportUpdate.isCombined()) {
           return reportClient.updateCombinedReport(reportId, reportUpdate, user, password);
         } else {
           return reportClient.updateSingleProcessReport(reportId, reportUpdate, false, user, password);

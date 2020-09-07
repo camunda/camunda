@@ -11,6 +11,7 @@ import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -22,12 +23,21 @@ import static org.camunda.optimize.service.es.schema.OptimizeIndexNameService.ge
 public class UpdateIndexStep implements UpgradeStep {
   private final IndexMappingCreator index;
   private final String mappingScript;
+  private final Map<String, Object> parameters;
   // expected suffix: hyphen and numbers at end of index name
   private final Pattern indexSuffixPattern = Pattern.compile("-\\d+$");
 
   public UpdateIndexStep(final IndexMappingCreator index, final String mappingScript) {
     this.index = index;
     this.mappingScript = mappingScript;
+    this.parameters = Collections.emptyMap();
+  }
+
+  public UpdateIndexStep(final IndexMappingCreator index, final String mappingScript,
+                         final Map<String, Object> parameters) {
+    this.index = index;
+    this.mappingScript = mappingScript;
+    this.parameters = parameters;
   }
 
   @Override
@@ -68,7 +78,7 @@ public class UpdateIndexStep implements UpgradeStep {
         final Set<AliasMetaData> existingAliases = esIndexAdjuster.getAllAliasesForIndex(sourceIndexNameWithSuffix);
         esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexNameWithSuffix, existingAliases);
         esIndexAdjuster.createIndexFromTemplate(targetIndexNameWithSuffix);
-        esIndexAdjuster.reindex(sourceIndexNameWithSuffix, targetIndexNameWithSuffix, mappingScript);
+        esIndexAdjuster.reindex(sourceIndexNameWithSuffix, targetIndexNameWithSuffix, mappingScript, parameters);
         applyAliasesToIndex(esIndexAdjuster, targetIndexNameWithSuffix, existingAliases);
         esIndexAdjuster.deleteIndex(sourceIndexNameWithSuffix);
       }
@@ -77,7 +87,7 @@ public class UpdateIndexStep implements UpgradeStep {
       final Set<AliasMetaData> existingAliases = esIndexAdjuster.getAllAliasesForIndex(sourceIndexName);
       esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexName, existingAliases);
       esIndexAdjuster.createIndex(index);
-      esIndexAdjuster.reindex(sourceIndexName, targetIndexName, mappingScript);
+      esIndexAdjuster.reindex(sourceIndexName, targetIndexName, mappingScript, parameters);
       applyAliasesToIndex(esIndexAdjuster, targetIndexName, existingAliases);
       esIndexAdjuster.deleteIndex(sourceIndexName);
     }

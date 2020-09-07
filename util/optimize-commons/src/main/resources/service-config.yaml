@@ -16,7 +16,7 @@ security:
     # List of user ids that are granted full permission to all collections, reports & dashboards
     # Note: For reports these users are still required to be granted access to the corresponding process/decision
     # definitions in Camunda BPM Admin
-    superUserIds: []
+    superUserIds: ${OPTIMIZE_SUPER_USER_IDS:[]}
 
   # Here you can define HTTP response headers that Optimize can send in its responses
   # to increase the security of your application.
@@ -127,23 +127,11 @@ engine-commons:
     #until a time out is triggered. A value of zero means to wait an
     # infinite amount of time.
     timeout: 0
-  procdef:
-    #The engine endpoint to the process definition.
-    resource: '/process-definition'
-    #The engine endpoint to the process definition xml.
-    xml: '/xml'
-  decision-definition:
-    resource: '/decision-definition'
-    xml: '/xml'
   read:
     # Maximum time a request to the engine should last,
     # before a timeout triggers. A value of zero means to wait an
     # infinite amount of time.
     timeout: 0
-  user:
-    validation:
-      #The engine endpoint for the user validation.
-      resource: '/identity/verify'
 
 import:
   data:
@@ -279,9 +267,9 @@ es:
       # used to enable or disable TLS/SSL for the HTTP connection
       enabled: false
 
-  # Maximum time a request to elasticsearch should last, before a timeout
+  # Maximum time in seconds a request to elasticsearch should last, before a timeout
   # triggers.
-  scrollTimeout: 60000
+  scrollTimeoutInSeconds: 60
   settings:
     # the maximum number of buckets returned for an aggregation
     aggregationBucketLimit: 1000
@@ -472,3 +460,12 @@ eventBasedProcess:
     scheduleIntervalInMinutes: 10
     # A rollover is triggered when the size of the current event index matches or exceeds the maxIndexSizeGB threshold.
     maxIndexSizeGB: 50
+
+telemetry:
+  # Sets the initial property value of telemetry configuration once when it has never been enabled/disabled before.
+  # Telemetry can later be enabled/disabled in the UI by superusers
+  initializeTelemetry: false
+  # Interval for telemetry reporting, defaults to every 24 hours.
+  reportingIntervalInHours: 24
+  # Telemetry endpoint to send data to (production environment)
+  telemetryEndpoint: 'https://api.telemetry.camunda.cloud/pings'

@@ -11,7 +11,7 @@ import org.camunda.optimize.service.es.writer.DecisionDefinitionWriter;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.DecisionDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.DecisionDefinitionEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.service.DecisionDefinitionImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;

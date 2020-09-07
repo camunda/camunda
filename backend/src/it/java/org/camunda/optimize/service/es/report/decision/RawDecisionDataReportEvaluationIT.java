@@ -411,6 +411,38 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
       .contains(OUTPUT_PREFIX + OUTPUT_AUDIT_ID);
   }
 
+  @Test
+  public void removeNonExistentVariableColumns() {
+    // given
+    final String nonExistentInputVariable = INPUT_PREFIX + "nonExistentVariable";
+    final String nonExistentOutputVariable = OUTPUT_PREFIX + "nonExistentVariable";
+    DecisionDefinitionEngineDto decisionDefinitionDto = engineIntegrationExtension.deployDecisionDefinition();
+    startDecisionInstanceWithInputVars(decisionDefinitionDto.getId(), createInputs(100.0, "Misc"));
+
+    importAllEngineEntitiesFromScratch();
+
+    // when we have a report with variables columns that no longer exist in the instance data
+    DecisionReportDataDto reportData = createReport(decisionDefinitionDto.getKey(), ALL_VERSIONS);
+    reportData.getConfiguration().getTableColumns().getExcludedColumns().add(nonExistentInputVariable);
+    reportData.getConfiguration().getTableColumns().getIncludedColumns().add(nonExistentOutputVariable);
+    final AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluationResult =
+      reportClient.evaluateRawReport(reportData);
+
+    // then the nonexistent variable columns are removed from the column configurations
+    final List<String> allColumns = evaluationResult.getReportDefinition()
+      .getData()
+      .getConfiguration()
+      .getTableColumns()
+      .getExcludedColumns();
+    allColumns.addAll(evaluationResult.getReportDefinition()
+                        .getData()
+                        .getConfiguration()
+                        .getTableColumns()
+                        .getIncludedColumns());
+
+    assertThat(allColumns).doesNotContain(nonExistentInputVariable, nonExistentOutputVariable);
+  }
+
   private void assertInputVariablesMatchExcepted(final HashMap<String, InputVariableEntry> expectedVariables,
                                                  final Map<String, InputVariableEntry> actualVariables) {
     assertThat(actualVariables).hasSize(expectedVariables.size());

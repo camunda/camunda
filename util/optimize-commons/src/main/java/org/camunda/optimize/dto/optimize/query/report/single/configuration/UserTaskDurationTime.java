@@ -6,22 +6,29 @@
 package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.IDLE_USER_TASK_DURATION_TIME;
 import static org.camunda.optimize.dto.optimize.ReportConstants.TOTAL_USER_TASK_DURATION_TIME;
 import static org.camunda.optimize.dto.optimize.ReportConstants.WORK_USER_TASK_DURATION_TIME;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_CLAIM_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_START_DATE;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
+import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
 
+@AllArgsConstructor
+@Getter
 public enum UserTaskDurationTime {
-  IDLE(IDLE_USER_TASK_DURATION_TIME),
-  WORK(WORK_USER_TASK_DURATION_TIME),
-  TOTAL(TOTAL_USER_TASK_DURATION_TIME),
+  IDLE(IDLE_USER_TASK_DURATION_TIME, USER_TASK_IDLE_DURATION, USER_TASK_START_DATE),
+  WORK(WORK_USER_TASK_DURATION_TIME, USER_TASK_WORK_DURATION, USER_TASK_CLAIM_DATE),
+  TOTAL(TOTAL_USER_TASK_DURATION_TIME, USER_TASK_TOTAL_DURATION, USER_TASK_START_DATE),
   ;
 
   private final String id;
-
-  UserTaskDurationTime(final String id) {
-    this.id = id;
-  }
+  private final String durationFieldName;
+  private final String startDateFieldName;
 
   @JsonValue
   public String getId() {

@@ -80,12 +80,8 @@ public class ProcessReportCmdExecutionPlan<R extends ProcessReportResultDto>
     return ProcessReportDataDto::new;
   }
 
-  public Optional<MinMaxStatDto> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context) {
-    return groupByPart.calculateDateRangeForAutomaticGroupByDate(context, setupBaseQuery(context));
-  }
-
-  public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<ProcessReportDataDto> context) {
-    return groupByPart.calculateNumberRangeForGroupByNumberVariable(context, setupBaseQuery(context));
+  public Optional<MinMaxStatDto> getGroupByMinMaxStats(final ExecutionContext<ProcessReportDataDto> context) {
+    return groupByPart.getMinMaxStats(context, setupBaseQuery(context));
   }
 
   private List<ProcessFilterDto<?>> getAllFilters(final ProcessReportDataDto reportData) {

@@ -10,13 +10,14 @@ import {t} from 'translation';
 
 export default function HeatmapConfig(props) {
   const {
-    report: {data},
+    report: {reportType, data},
     onChange,
   } = props;
   return (
     <fieldset>
       <legend>{t('report.config.tooltips.legend')}</legend>
       <RelativeAbsoluteSelection
+        reportType={reportType}
         hideRelative={data.view.property !== 'frequency'}
         absolute={data.configuration.alwaysShowAbsolute}
         relative={data.configuration.alwaysShowRelative}

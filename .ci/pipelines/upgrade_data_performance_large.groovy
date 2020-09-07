@@ -319,7 +319,7 @@ pipeline {
             cloneGitRepo()
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                sh 'apt-get update && apt-get install jq netcat -y'
+                sh 'apt-get update && apt-get install jq netcat diffutils -y'
                 sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s $MAVEN_SETTINGS_XML clean install -B'
               }
             }
@@ -327,7 +327,7 @@ pipeline {
         }
         stage('Restore Test Data') {
           steps {
-            timeout(90) {
+            timeout(time: 90, unit: 'MINUTES') {
               container('gcloud') {
                 sh "gsutil -q cp gs://optimize-data/${SQL_DUMP} /db_dump/${SQL_DUMP}"
               }
@@ -346,8 +346,10 @@ pipeline {
         }
         stage('Run Upgrade Performance Tests') {
           steps {
-            container('maven') {
-              runMaven('-Dupgrade.timeout.seconds=${UPGRADE_TIMEOUT} -Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots -Dskip.docker -Pstatic-data-upgrade-es-schema-tests -pl qa/upgrade-es-schema-tests clean verify')
+            timeout(time: params.UPGRADE_TIMEOUT_MINUTES, unit: 'MINUTES') {
+              container('maven') {
+                runMaven('-Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots -Dskip.docker -Pstatic-data-upgrade-es-schema-tests -pl qa/upgrade-es-schema-tests clean verify')
+              }
             }
           }
           post {

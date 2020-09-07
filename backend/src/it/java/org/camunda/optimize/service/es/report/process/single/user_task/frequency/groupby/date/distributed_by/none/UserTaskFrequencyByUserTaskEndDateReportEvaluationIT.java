@@ -26,7 +26,7 @@ public class UserTaskFrequencyByUserTaskEndDateReportEvaluationIT
   @Test
   public void groupedByEndDateWithExecutionStateRunning_setIsCompleteFlagToTrue() {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessDefinitionEngineDto processDefinition = deployTwoModelElementDefinition();
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
 
     importAllEngineEntitiesFromScratch();
@@ -53,14 +53,14 @@ public class UserTaskFrequencyByUserTaskEndDateReportEvaluationIT
   }
 
   @Override
-  protected void changeUserTaskDates(final Map<String, OffsetDateTime> updates) {
+  protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
     engineDatabaseExtension.changeUserTaskEndDates(updates);
   }
 
   @Override
-  protected void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
-                                    final String userTaskKey,
-                                    final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
+                                        final String modelElementId,
+                                        final OffsetDateTime dateToChangeTo) {
+    engineDatabaseExtension.changeUserTaskEndDate(processInstance.getId(), modelElementId, dateToChangeTo);
   }
 }

@@ -36,7 +36,7 @@ export default withRouter(
           !report.combined &&
           report.reportType === 'process' &&
           acceptedVisualizations.includes(report.data.visualization) &&
-          report.data.configuration.distributedBy === 'none' &&
+          report.data.configuration.distributedBy.type === 'none' &&
           report.data.view.property !== 'rawData'
       );
 
@@ -168,9 +168,9 @@ export default withRouter(
           );
         } else if (
           ['Integer', 'Double', 'Short', 'Long'].includes(groupBy.value?.type) &&
-          configuration?.customNumberBucket.active
+          configuration?.customBucket.active
         ) {
-          return equal(configuration.customNumberBucket, data.configuration.customNumberBucket);
+          return equal(configuration.customBucket, data.configuration.customBucket);
         }
       }
       return true;

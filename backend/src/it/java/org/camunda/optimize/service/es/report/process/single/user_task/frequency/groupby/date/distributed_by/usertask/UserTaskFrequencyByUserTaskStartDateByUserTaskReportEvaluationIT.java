@@ -50,8 +50,8 @@ public class UserTaskFrequencyByUserTaskStartDateByUserTaskReportEvaluationIT ex
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
-      .distributedByContains(USER_TASK_2, executionStateTestValues.expectedUserTask2Count, USER_TASK_2_NAME)
       .distributedByContains(USER_TASK_1, executionStateTestValues.expectedUserTask1Count, USER_TASK_1_NAME)
+      .distributedByContains(USER_TASK_2, executionStateTestValues.expectedUserTask2Count, USER_TASK_2_NAME)
       .doAssert(result);
     // @formatter:on
   }
@@ -84,14 +84,14 @@ public class UserTaskFrequencyByUserTaskStartDateByUserTaskReportEvaluationIT ex
   }
 
   @Override
-  protected void changeUserTaskDates(final Map<String, OffsetDateTime> updates) {
+  protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
     engineDatabaseExtension.changeUserTaskStartDates(updates);
   }
 
   @Override
-  protected void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
-                                    final String userTaskKey,
-                                    final OffsetDateTime dateToChangeTo) {
+  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
+                                        final String userTaskKey,
+                                        final OffsetDateTime dateToChangeTo) {
     engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
   }
 }

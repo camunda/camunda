@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.es.report.command.decision.raw;
 
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
@@ -71,16 +71,13 @@ public class RawDecisionInstanceDataGroupByNoneCmd
         .map(this::getPrefixedOutputVariableId)
         .collect(toList())
     );
-    commandContext.getReportDefinition()
+
+    TableColumnDto tableColumns = commandContext.getReportDefinition()
       .getData()
       .getConfiguration()
-      .getTableColumns()
-      .addNewVariableColumns(variableNames);
-    commandContext.getReportDefinition()
-      .getData()
-      .getConfiguration()
-      .getTableColumns()
-      .addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
+      .getTableColumns();
+    tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
+    tableColumns.addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
   }
 
   private String getPrefixedInputVariableId(final InputVariableEntry inputVariableEntry) {

@@ -25,6 +25,7 @@ async function createReport(
   await u.selectDefinition(t, definition, 'All');
 
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectGroupby(t, 'Flow Nodes');
   await u.selectVisualization(t, visualization);
 
   if (completed) {

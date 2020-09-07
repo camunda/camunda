@@ -23,6 +23,7 @@ import:
   elasticsearchJobExecutorThreadCount: 1
   currentTimeBackoffMilliseconds: 0
 es:
+  scrollTimeoutInSeconds: 5
   settings:
     index:
       prefix: ${indexPrefix:optimize}
@@ -38,3 +39,7 @@ eventBasedProcess:
 plugin:
   # as default just use an existing directory
   directory: '.'
+
+telemetry:
+  # Telemetry endpoint to send data to (integration environment)
+  telemetryEndpoint: 'https://api.int.telemetry.camunda.cloud/pings'

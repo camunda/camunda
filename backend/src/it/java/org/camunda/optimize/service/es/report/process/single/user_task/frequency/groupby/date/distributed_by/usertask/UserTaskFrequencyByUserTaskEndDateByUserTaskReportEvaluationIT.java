@@ -52,14 +52,14 @@ public class UserTaskFrequencyByUserTaskEndDateByUserTaskReportEvaluationIT exte
   }
 
   @Override
-  protected void changeUserTaskDates(final Map<String, OffsetDateTime> updates) {
+  protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
     engineDatabaseExtension.changeUserTaskEndDates(updates);
   }
 
   @Override
-  protected void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
-                                    final String userTaskKey,
-                                    final OffsetDateTime dateToChangeTo) {
+  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance,
+                                        final String userTaskKey,
+                                        final OffsetDateTime dateToChangeTo) {
     engineDatabaseExtension.changeUserTaskEndDate(processInstance.getId(), userTaskKey, dateToChangeTo);
   }
 }

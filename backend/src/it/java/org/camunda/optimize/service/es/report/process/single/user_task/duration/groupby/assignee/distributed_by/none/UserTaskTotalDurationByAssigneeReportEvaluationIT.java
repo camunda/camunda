@@ -30,12 +30,12 @@ public class UserTaskTotalDurationByAssigneeReportEvaluationIT
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final double durationInMs) {
+                                final Number durationInMs) {
     changeUserTaskTotalDuration(processInstanceDto, userTaskKey, durationInMs);
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final double durationInMs) {
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Number durationInMs) {
     changeUserTaskTotalDuration(processInstanceDto, durationInMs);
   }
 

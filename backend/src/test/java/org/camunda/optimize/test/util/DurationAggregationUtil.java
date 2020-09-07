@@ -21,28 +21,29 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 
 public class DurationAggregationUtil {
 
-  public static Double calculateExpectedValueGivenDurationsDefaultAggr(final Double setDuration) {
+  public static Double calculateExpectedValueGivenDurationsDefaultAggr(final Number setDuration) {
     return Optional.ofNullable(setDuration)
       .map(DurationAggregationUtil::calculateExpectedValueGivenDurations)
       .map(stats -> stats.get(AVERAGE))
       .orElse(null);
   }
 
-  public static Double calculateExpectedValueGivenDurationsDefaultAggr(final Double... setDuration) {
-    final Double aggregatedDuration = calculateExpectedValueGivenDurations(setDuration).get(AVERAGE);
+  public static Double calculateExpectedValueGivenDurationsDefaultAggr(final Number... setDuration) {
+    final double aggregatedDuration = calculateExpectedValueGivenDurations(setDuration).get(AVERAGE);
     // for duration we should omit the decimal numbers since it's not relevant for the user
     return Precision.round(aggregatedDuration, 0);
   }
 
-  public static Map<AggregationType, Double> calculateExpectedValueGivenDurations(final Double... setDuration) {
+  public static Map<AggregationType, Double> calculateExpectedValueGivenDurations(final Number... setDuration) {
     final DescriptiveStatistics statistics = new DescriptiveStatistics();
-    Stream.of(setDuration).forEach(statistics::addValue);
+    Stream.of(setDuration).map(Number::longValue).forEach(statistics::addValue);
 
     // for duration we should omit the decimal numbers since it's not relevant for the user
-    return ImmutableMap.of(MIN, Precision.round(statistics.getMin(), 0),
-                           MAX, Precision.round(statistics.getMax(), 0),
-                           AVERAGE, Precision.round(statistics.getMean(), 0),
-                           MEDIAN, Precision.round(statistics.getPercentile(50.0D), 0)
+    return ImmutableMap.of(
+      MIN, Precision.round(statistics.getMin(), 0),
+      MAX, Precision.round(statistics.getMax(), 0),
+      AVERAGE, Precision.round(statistics.getMean(), 0),
+      MEDIAN, Precision.round(statistics.getPercentile(50.0D), 0)
     );
   }
 }

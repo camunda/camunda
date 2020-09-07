@@ -35,10 +35,8 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
   @MethodSource("getExecutionStateExpectedValues")
   public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
     // given
-    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+    final ProcessDefinitionEngineDto processDefinition = deployTwoModelElementDefinition();
+    final ProcessInstanceEngineDto processInstanceDto = startAndCompleteInstance(processDefinition.getId());
 
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
@@ -61,6 +59,7 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(executionStateTestValues.resultValue);
   }
+
   @Data
   @AllArgsConstructor
   static class ExecutionStateTestValues {
@@ -83,19 +82,19 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
   }
 
   @Override
-  protected ProcessGroupByType getGroupByType() {
-    return ProcessGroupByType.START_DATE;
-  }
-
-  @Override
-  protected void changeUserTaskDates(final Map<String, OffsetDateTime> updates) {
+  protected void changeModelElementDates(final Map<String, OffsetDateTime> updates) {
     engineDatabaseExtension.changeUserTaskStartDates(updates);
   }
 
   @Override
-  protected void changeUserTaskDate(final ProcessInstanceEngineDto processInstance,
-                                  final String userTaskKey,
-                                  final OffsetDateTime dateToChangeTo) {
-    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), userTaskKey, dateToChangeTo);
+  protected void changeModelElementDate(final ProcessInstanceEngineDto processInstance, final String modelElementId,
+                                        final OffsetDateTime dateToChangeTo) {
+    engineDatabaseExtension.changeUserTaskStartDate(processInstance.getId(), modelElementId, dateToChangeTo);
   }
+
+  @Override
+  protected ProcessGroupByType getGroupByType() {
+    return ProcessGroupByType.START_DATE;
+  }
+
 }

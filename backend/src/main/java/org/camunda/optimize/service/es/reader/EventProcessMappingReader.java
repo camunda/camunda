@@ -21,7 +21,6 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.springframework.stereotype.Component;
@@ -34,6 +33,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_MAPPING_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 @AllArgsConstructor
@@ -86,7 +86,7 @@ public class EventProcessMappingReader {
       .fetchSource(null, fieldsToExclude);
     final SearchRequest searchRequest = new SearchRequest(EVENT_PROCESS_MAPPING_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     final SearchResponse scrollResp;
     try {
@@ -101,7 +101,7 @@ public class EventProcessMappingReader {
       IndexableEventProcessMappingDto.class,
       objectMapper,
       esClient,
-      configurationService.getElasticsearchScrollTimeout()
+      configurationService.getEsScrollTimeoutInSeconds()
     ).stream().map(IndexableEventProcessMappingDto::toEventProcessMappingDto).collect(Collectors.toList());
   }
 

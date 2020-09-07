@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report.command;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
-import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 
@@ -19,21 +18,17 @@ public interface Command<RD extends ReportDefinitionDto<?>> {
 
   String createCommandKey();
 
-  default Optional<MinMaxStatDto> retrieveStatsForCombinedAutomaticGroupByDate(
-    final CommandContext<SingleProcessReportDefinitionDto> reportDefinitionDto) {
-    // this method is used for *combined* grouped by date with automatic interval
-    // commands to calculate what's the total data range. This allows to calculate
-    // the same date interval for each single report in the combined report.
-    // By default it's assumed that there is no date range to be calculated.
+  /**
+   * This method is used for *combined* grouped by commands to calculate the total data range.
+   * This allows to calculate the same bucket interval for each single report in the combined report.
+   * By default it's assumed that there is no range to be calculated, this needs to be implemented
+   * in corresponding commands.
+   *
+   * @param commandContext the command context to perform the min max retrieval with
+   * @return the min max stats for the commands groupBy, empty if not available or not implemented
+   */
+  default Optional<MinMaxStatDto> getGroupByMinMaxStats(final CommandContext<RD> commandContext) {
     return Optional.empty();
   }
 
-  default Optional<MinMaxStatDto> retrieveStatsForCombinedGroupByNumberVariable(
-    final CommandContext<SingleProcessReportDefinitionDto> reportDefinitionDto) {
-    // this method is used for *combined* grouped by number variable report
-    // to calculate what's the total data range. This allows to calculate
-    // the same number interval for each single report in the combined report.
-    // By default, it's assumed that there is no number range to be calculated.
-    return Optional.empty();
-  }
 }

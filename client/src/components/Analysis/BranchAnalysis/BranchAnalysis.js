@@ -8,7 +8,7 @@ import React from 'react';
 import equal from 'deep-equal';
 
 import {BPMNDiagram, MessageBox} from 'components';
-import {incompatibleFilters, containsSuspensionFilter, loadProcessDefinitionXml} from 'services';
+import {incompatibleFilters, loadProcessDefinitionXml} from 'services';
 import {t} from 'translation';
 import {withDocs} from 'HOC';
 
@@ -58,17 +58,6 @@ export class BranchAnalysis extends React.Component {
         />
         {config.filter && incompatibleFilters(config.filter) && (
           <MessageBox type="warning">{t('common.filter.incompatibleFilters')}</MessageBox>
-        )}
-        {config.filter && containsSuspensionFilter(config.filter) && (
-          <MessageBox
-            type="warning"
-            dangerouslySetInnerHTML={{
-              __html: t('common.filter.suspensionFilterWarning', {
-                docsLink:
-                  this.props.docsLink + 'technical-guide/update/2.7-to-3.0/#suspension-filter',
-              }),
-            }}
-          />
         )}
         <div className="content">
           <div className="BranchAnalysis__diagram">

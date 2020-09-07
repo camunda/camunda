@@ -77,7 +77,7 @@ public class CustomIndexPrefixIT extends AbstractIT {
 
     // then
     final List<IndexMappingCreator> mappings = embeddedOptimizeExtension.getElasticSearchSchemaManager().getMappings();
-    assertThat(mappings).hasSize(25);
+    assertThat(mappings).hasSize(26);
     for (IndexMappingCreator mapping : mappings) {
       final String expectedAliasName = getOptimizeIndexAliasForIndexNameAndPrefix(
         mapping.getIndexName(),

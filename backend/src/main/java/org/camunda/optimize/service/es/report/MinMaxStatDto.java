@@ -33,6 +33,10 @@ public class MinMaxStatDto {
     this.maxAsString = maxAsString;
   }
 
+  public double getRange() {
+    return max - min;
+  }
+
   public boolean isMinValid() {
     return Double.isFinite(min);
   }

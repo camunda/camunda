@@ -65,7 +65,7 @@ export default function processRawData(
     return row;
   });
 
-  const head = instanceProps.map((key) => t('report.table.rawData.' + key));
+  const head = instanceProps.map((key) => ({id: key, label: t('report.table.rawData.' + key)}));
 
   if (variableNames.length > 0) {
     head.push({label: t('report.variables.default'), columns: variableNames});

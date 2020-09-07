@@ -61,11 +61,18 @@
           "active": false,
           "values": {}
         },
-        "distributedBy": "none",
+        "distributedBy": {"type": "none", "value": null},
         "ylabel": "",
         "xlabel": "",
         "processPart": null,
-        "sorting": null
+        "sorting": null,
+        "customBucket": {
+          "active": false,
+          "bucketSize": "10",
+          "bucketSizeUnit": "minute",
+          "baseline": "0",
+          "baselineUnit": "minute"
+        }
       },
       "processDefinitionKey": null,
       "processDefinitionVersions": null,
@@ -177,7 +184,7 @@
           "active": false,
           "values": {}
         },
-        "distributedBy": "none",
+        "distributedBy": {"type": "none", "value": null},
         "ylabel": "",
         "xlabel": "",
         "sorting": null

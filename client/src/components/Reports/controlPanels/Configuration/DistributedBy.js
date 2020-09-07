@@ -15,25 +15,28 @@ export default function DistributedBy({
   },
   onChange,
 }) {
-  if (view && view.entity === 'userTask' && groupBy) {
+  if (canDistributeData(view, groupBy)) {
     return (
       <fieldset className="DistributedBy">
         <legend>{t('report.config.userTaskDistributedBy')}</legend>
         <Select
-          value={configuration.distributedBy}
+          value={configuration.distributedBy.type}
           onChange={(value) => {
-            if (value !== 'none' && (visualization === 'pie' || visualization === 'line')) {
+            if (value !== 'none' && !['line', 'table'].includes(visualization)) {
               onChange(
-                {visualization: {$set: 'bar'}, configuration: {distributedBy: {$set: value}}},
+                {
+                  visualization: {$set: 'bar'},
+                  configuration: {distributedBy: {type: {$set: value}}},
+                },
                 true
               );
             } else {
-              onChange({configuration: {distributedBy: {$set: value}}}, true);
+              onChange({configuration: {distributedBy: {type: {$set: value}}}}, true);
             }
           }}
         >
           <Select.Option value="none">{t('common.nothing')}</Select.Option>
-          {getOptionsFor(groupBy.type)}
+          {getOptionsFor(view.entity, groupBy.type)}
         </Select>
       </fieldset>
     );
@@ -41,26 +44,53 @@ export default function DistributedBy({
   return null;
 }
 
-function getOptionsFor(type) {
+function canDistributeData(view, groupBy) {
+  if (!view || !groupBy) {
+    return false;
+  }
+  if (view.entity === 'userTask') {
+    return true;
+  }
+  if (
+    view.entity === 'flowNode' &&
+    (groupBy.type === 'startDate' || groupBy.type === 'endDate' || groupBy.type === 'duration')
+  ) {
+    return true;
+  }
+}
+
+function getOptionsFor(view, groupBy) {
   const options = [];
 
-  if (['userTasks', 'startDate', 'endDate'].includes(type)) {
-    options.push(
-      <Select.Option key="assignee" value="assignee">
-        {t('report.groupBy.userAssignee')}
-      </Select.Option>,
-      <Select.Option key="candidateGroup" value="candidateGroup">
-        {t('report.groupBy.userGroup')}
-      </Select.Option>
-    );
+  if (view === 'userTask') {
+    if (['userTasks', 'startDate', 'endDate'].includes(groupBy)) {
+      options.push(
+        <Select.Option key="assignee" value="assignee">
+          {t('report.groupBy.userAssignee')}
+        </Select.Option>,
+        <Select.Option key="candidateGroup" value="candidateGroup">
+          {t('report.groupBy.userGroup')}
+        </Select.Option>
+      );
+    }
+
+    if (groupBy !== 'userTasks') {
+      options.push(
+        <Select.Option key="userTask" value="userTask">
+          {t('report.view.userTask')}
+        </Select.Option>
+      );
+    }
   }
 
-  if (type !== 'userTasks') {
-    options.push(
-      <Select.Option key="userTask" value="userTask">
-        {t('report.view.userTask')}
-      </Select.Option>
-    );
+  if (view === 'flowNode') {
+    if (['startDate', 'endDate', 'duration'].includes(groupBy)) {
+      options.push(
+        <Select.Option key="flowNode" value="flowNode">
+          {t('report.view.fn')}
+        </Select.Option>
+      );
+    }
   }
 
   return options;

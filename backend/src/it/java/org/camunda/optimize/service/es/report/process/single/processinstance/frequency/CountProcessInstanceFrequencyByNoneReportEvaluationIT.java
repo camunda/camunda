@@ -30,6 +30,7 @@ import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE;
+import static org.camunda.optimize.util.BpmnModels.TASK_ID_1;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -173,7 +174,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id("task1")
+      .id(TASK_ID_1)
       .add()
       .buildList();
     reportData.getFilter().addAll(flowNodeFilter);

@@ -7,7 +7,8 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.beanutils.PropertyUtils;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -32,9 +33,11 @@ import java.lang.reflect.InvocationTargetException;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -43,10 +46,10 @@ import static java.util.stream.Collectors.groupingBy;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 
-@UtilityClass
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ElasticsearchWriterUtil {
-  private static DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
+  private static final DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern(OPTIMIZE_DATE_FORMAT);
 
   public static Script createPrimitiveFieldUpdateScript(final Set<String> fields,
                                                         final Object entityDto) {
@@ -63,7 +66,7 @@ public class ElasticsearchWriterUtil {
       }
     }
 
-    return createDefaultScript(ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()), params);
+    return createDefaultScriptWithPrimitiveParams(ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()), params);
   }
 
   static Script createFieldUpdateScript(final Set<String> fields,
@@ -83,15 +86,39 @@ public class ElasticsearchWriterUtil {
       }
     }
 
-    return createDefaultScript(ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()), params);
+    return createDefaultScriptWithPrimitiveParams(
+      ElasticsearchWriterUtil.createUpdateFieldsScript(params.keySet()),
+      params
+    );
   }
 
-  public static Script createDefaultScript(final String inlineUpdateScript, final Map<String, Object> params) {
+  public static Script createDefaultScriptWithPrimitiveParams(final String inlineUpdateScript,
+                                                              final Map<String, Object> params) {
     return new Script(
       ScriptType.INLINE,
       Script.DEFAULT_SCRIPT_LANG,
       inlineUpdateScript,
       params
+    );
+  }
+
+  public static Script createDefaultScriptWithSpecificDtoParams(final String inlineUpdateScript,
+                                                                final Map<String, Object> params,
+                                                                final ObjectMapper objectMapper) {
+    return new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      inlineUpdateScript,
+      mapParamsForScriptCreation(params, objectMapper)
+    );
+  }
+
+  public static Script createDefaultScript(final String inlineUpdateScript) {
+    return new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      inlineUpdateScript,
+      Collections.emptyMap()
     );
   }
 
@@ -240,9 +267,9 @@ public class ElasticsearchWriterUtil {
     }
   }
 
-  private void checkBulkByScrollResponse(BulkByScrollResponse bulkByScrollResponse,
-                                         String itemName,
-                                         String verb) {
+  private static void checkBulkByScrollResponse(BulkByScrollResponse bulkByScrollResponse,
+                                                String itemName,
+                                                String verb) {
     if (!bulkByScrollResponse.getBulkFailures().isEmpty()) {
       throw new OptimizeRuntimeException(String.format(
         "There were failures while %s %s with message: %s",
@@ -251,6 +278,20 @@ public class ElasticsearchWriterUtil {
         bulkByScrollResponse.getBulkFailures()
       ));
     }
+  }
+
+  private static Map<String, Object> mapParamsForScriptCreation(final Map<String, Object> parameters,
+                                                                final ObjectMapper objectMapper) {
+    return Optional.ofNullable(parameters)
+      // this conversion seems redundant but it's not
+      // in case the values are specific dto objects this ensures they get converted to generic objects
+      // that the elasticsearch client is happy to serialize while it complains on specific DTO's
+      .map(value -> objectMapper.convertValue(
+        value,
+        new TypeReference<Map<String, Object>>() {
+        }
+      ))
+      .orElse(Collections.emptyMap());
   }
 
 }

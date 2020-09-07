@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_ASSIGNEE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_CANDIDATE_GROUP;
+import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_DURATION;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_END_DATE_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_FLOW_NODES_TYPE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.GROUP_BY_NONE_TYPE;
@@ -27,6 +28,7 @@ public enum ProcessGroupByType {
   VARIABLE(GROUP_BY_VARIABLE_TYPE),
   ASSIGNEE(GROUP_BY_ASSIGNEE),
   CANDIDATE_GROUP(GROUP_BY_CANDIDATE_GROUP),
+  DURATION(GROUP_BY_DURATION),
   ;
 
   private final String id;

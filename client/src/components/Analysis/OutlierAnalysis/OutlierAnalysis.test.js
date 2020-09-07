@@ -138,3 +138,17 @@ it('should display correct tooltip details', async () => {
   const tooltipNode = node.find('HeatmapOverlay').renderProp('formatter')({}, 'nodeKey');
   expect(tooltipNode).toMatchSnapshot();
 });
+
+it('should display an empty state if no outliers found', async () => {
+  loadNodesOutliers.mockReturnValueOnce({});
+
+  const node = shallow(<OutlierAnalysis {...props} />);
+
+  node.instance().updateConfig({
+    processDefinitionKey: 'someKey',
+    processDefinitionVersions: ['someVersion'],
+    tenantIds: ['a', 'b'],
+  });
+
+  expect(node.find('.noOutliers')).toExist();
+});

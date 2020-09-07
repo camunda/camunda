@@ -30,8 +30,8 @@ jest.mock('services', () => {
 
 it('should apply flow node names to the body rows', () => {
   expect(
-    getBodyRows(
-      [
+    getBodyRows({
+      unitedResults: [
         [
           {key: 'a', value: 1},
           {key: 'b', value: 2},
@@ -41,16 +41,17 @@ it('should apply flow node names to the body rows', () => {
           {key: 'b', value: 0},
         ],
       ],
-      ['a', 'b'],
-      (v) => v,
-      false,
-      [100, 100],
-      true,
-      {
+      allKeys: ['a', 'b'],
+      formatter: (v) => v,
+      displayRelativeValue: false,
+      instanceCount: [100, 100],
+      displayAbsoluteValue: true,
+      flowNodeNames: {
         a: 'Flownode A',
         b: 'Flownode B',
-      }
-    )
+      },
+      groupedByDuration: false,
+    })
   ).toEqual([
     ['Flownode A', 1, ''],
     ['Flownode B', 2, 0],
@@ -59,8 +60,8 @@ it('should apply flow node names to the body rows', () => {
 
 it('should return correctly formatted body rows', () => {
   expect(
-    getBodyRows(
-      [
+    getBodyRows({
+      unitedResults: [
         [
           {key: 'a', value: 1},
           {key: 'b', value: 2},
@@ -70,12 +71,13 @@ it('should return correctly formatted body rows', () => {
           {key: 'b', value: 0},
         ],
       ],
-      ['a', 'b'],
-      (v) => v,
-      false,
-      [100, 100],
-      true
-    )
+      allKeys: ['a', 'b'],
+      formatter: (v) => v,
+      displayRelativeValue: false,
+      instanceCount: [100, 100],
+      displayAbsoluteValue: true,
+      groupedByDuration: false,
+    })
   ).toEqual([
     ['a', 1, ''],
     ['b', 2, 0],
@@ -84,8 +86,8 @@ it('should return correctly formatted body rows', () => {
 
 it('should hide absolute values when sepcified from body rows', () => {
   expect(
-    getBodyRows(
-      [
+    getBodyRows({
+      unitedResults: [
         [
           {key: 'a', value: 1},
           {key: 'b', value: 2},
@@ -95,12 +97,13 @@ it('should hide absolute values when sepcified from body rows', () => {
           {key: 'b', value: 1},
         ],
       ],
-      ['a', 'b'],
-      (v) => v,
-      false,
-      [100, 100],
-      false
-    )
+      allKeys: ['a', 'b'],
+      formatter: (v) => v,
+      displayRelativeValue: false,
+      instanceCount: [100, 100],
+      displayAbsoluteValue: false,
+      groupedByDuration: false,
+    })
   ).toEqual([['a'], ['b']]);
 });
 
@@ -112,12 +115,13 @@ it('should return correct table label structure', () => {
         ['key', 'value'],
       ],
       ['Report A', 'Report B'],
+      ['ReportIdA', 'ReportIdB'],
       false,
       true
     )
   ).toEqual([
-    {label: 'Report A', columns: ['value']},
-    {label: 'Report B', columns: ['value']},
+    {label: 'Report A', id: 'ReportIdA', columns: ['value']},
+    {label: 'Report B', id: 'ReportIdB', columns: ['value']},
   ]);
 });
 
@@ -129,12 +133,13 @@ it('should hide absolute values when specified from labels', () => {
         ['key', 'value'],
       ],
       ['Report A', 'Report B'],
+      ['ReportIdA', 'ReportIdB'],
       false,
       false
     )
   ).toEqual([
-    {columns: [], label: 'Report A'},
-    {columns: [], label: 'Report B'},
+    {columns: [], label: 'Report A', id: 'ReportIdA'},
+    {columns: [], label: 'Report B', id: 'ReportIdB'},
   ]);
 });
 
@@ -194,5 +199,6 @@ it('should return correct combined table report data properties', () => {
     ],
     instanceCount: [100, 100],
     reportsNames: ['report A', 'report A'],
+    reportsIds: ['report A', 'report B'],
   });
 });

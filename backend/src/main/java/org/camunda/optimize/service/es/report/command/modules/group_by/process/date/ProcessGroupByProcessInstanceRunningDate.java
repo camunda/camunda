@@ -18,8 +18,8 @@ import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
+import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
-import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -53,13 +53,13 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
   private final MinMaxStatsService minMaxStatsService;
 
   @Override
-  public Optional<MinMaxStatDto> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context,
-                                                                           final BoolQueryBuilder baseQuery) {
+  public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
+                                                final BoolQueryBuilder baseQuery) {
     if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
       DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
         return Optional.of(
-          minMaxStatsService.getMinMaxDateRange(
+          minMaxStatsService.getMinMaxDateRangeForCrossField(
             context,
             baseQuery,
             PROCESS_INSTANCE_INDEX_NAME,
@@ -74,7 +74,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxDateRange(
+    final MinMaxStatDto minMaxStats = minMaxStatsService.getMinMaxDateRangeForCrossField(
       context,
       searchSourceBuilder.query(),
       PROCESS_INSTANCE_INDEX_NAME,

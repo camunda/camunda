@@ -101,11 +101,11 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
-    if (candidateGroup2Count != null) {
-      groupByAsserter.distributedByContains(SECOND_CANDIDATE_GROUP, getCorrectTestExecutionValue(candidateGroup2Count));
-    }
     if (candidateGroup1Count != null) {
       groupByAsserter.distributedByContains(FIRST_CANDIDATE_GROUP, getCorrectTestExecutionValue(candidateGroup1Count));
+    }
+    if (candidateGroup2Count != null) {
+      groupByAsserter.distributedByContains(SECOND_CANDIDATE_GROUP, getCorrectTestExecutionValue(candidateGroup2Count));
     }
     groupByAsserter.doAssert(result);
   }

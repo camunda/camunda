@@ -18,21 +18,21 @@ import java.util.List;
 public class VariableUpdateElasticsearchImportJob extends ElasticsearchImportJob<ProcessVariableDto> {
 
   private ProcessVariableUpdateWriter variableWriter;
-  private CamundaEventImportService camundaEventService;
+  private CamundaEventImportService camundaEventImportService;
 
   public VariableUpdateElasticsearchImportJob(ProcessVariableUpdateWriter variableWriter,
-                                              CamundaEventImportService camundaEventService,
+                                              CamundaEventImportService camundaEventImportService,
                                               Runnable callback) {
     super(callback);
     this.variableWriter = variableWriter;
-    this.camundaEventService = camundaEventService;
+    this.camundaEventImportService = camundaEventImportService;
   }
 
   @Override
   protected void persistEntities(List<ProcessVariableDto> variableUpdates) {
     List<ImportRequestDto> importBulks = new ArrayList<>();
     importBulks.addAll(variableWriter.generateVariableUpdateImports(variableUpdates));
-    importBulks.addAll(camundaEventService.generateVariableUpdateImports(variableUpdates));
+    importBulks.addAll(camundaEventImportService.generateVariableUpdateImports(variableUpdates));
     ElasticsearchWriterUtil.executeImportRequestsAsBulk("Variable updates", importBulks);
   }
 

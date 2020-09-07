@@ -239,7 +239,7 @@ function formatSorting(sorting, resultType, columns) {
 
 Table.formatColumns = (head, ctx = '') => {
   return head.map((elem) => {
-    if (typeof elem === 'string' || elem.id) {
+    if (!elem.columns) {
       const id = convertHeaderNameToAccessor(ctx + (elem.id || elem));
       return {
         Header: elem.label || elem,
@@ -250,7 +250,7 @@ Table.formatColumns = (head, ctx = '') => {
     }
     return {
       Header: elem.label,
-      columns: Table.formatColumns(elem.columns, ctx + elem.label),
+      columns: Table.formatColumns(elem.columns, ctx + (elem.id || elem.label)),
     };
   });
 };

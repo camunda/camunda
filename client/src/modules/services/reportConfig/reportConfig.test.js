@@ -16,6 +16,8 @@ const {
   update,
 } = reportConfig(process);
 
+const report = {data: {configuration: {distributedBy: {type: 'none', value: null}}}};
+
 it('should get a label for a simple visualization', () => {
   expect(getLabelFor('visualization', visualization, 'heat')).toBe('Heatmap');
 });
@@ -42,40 +44,40 @@ it('should get a label for group by variables for dmn', () => {
 });
 
 it('should always allow view selection', () => {
-  expect(isAllowed(null, {property: 'rawData', entity: null})).toBe(true);
+  expect(isAllowed(report, {property: 'rawData', entity: null})).toBe(true);
 });
 
 it('should allow only groupBy options that make sense for the selected view', () => {
   expect(
-    isAllowed(null, {property: 'rawData', entity: null}, {type: 'none', value: null})
+    isAllowed(report, {property: 'rawData', entity: null}, {type: 'none', value: null})
   ).toBeTruthy();
   expect(
-    isAllowed(null, {property: 'rawData', entity: null}, {type: 'flowNodes', value: null})
+    isAllowed(report, {property: 'rawData', entity: null}, {type: 'flowNodes', value: null})
   ).toBeFalsy();
   expect(
     isAllowed(
-      null,
+      report,
       {property: 'frequency', entity: 'processInstance'},
       {type: 'runningDate', value: {unit: 'automatic'}}
     )
   ).toBeTruthy();
   expect(
     isAllowed(
-      null,
+      report,
       {property: 'duration', entity: 'processInstance'},
       {type: 'runningDate', value: {unit: 'automatic'}}
     )
   ).toBeFalsy();
   expect(
     isAllowed(
-      null,
+      report,
       {property: {name: 'doubleVar', type: 'Double'}, entity: 'variable'},
       {type: 'flowNodes', value: null}
     )
   ).toBeFalsy();
   expect(
     isAllowed(
-      null,
+      report,
       {property: {name: 'doubleVar', type: 'Double'}, entity: 'variable'},
       {type: 'none', value: null}
     )
@@ -84,15 +86,15 @@ it('should allow only groupBy options that make sense for the selected view', ()
 
 it('should allow only visualization options that make sense for the selected view and group', () => {
   expect(
-    isAllowed(null, {property: 'rawData', entity: null}, {type: 'none', value: null}, 'table')
+    isAllowed(report, {property: 'rawData', entity: null}, {type: 'none', value: null}, 'table')
   ).toBeTruthy();
   expect(
-    isAllowed(null, {property: 'rawData', entity: null}, {type: 'none', value: null}, 'heat')
+    isAllowed(report, {property: 'rawData', entity: null}, {type: 'none', value: null}, 'heat')
   ).toBeFalsy();
 
   expect(
     isAllowed(
-      null,
+      report,
       {
         entity: 'processInstance',
         property: 'duration',
@@ -108,7 +110,7 @@ it('should allow only visualization options that make sense for the selected vie
   ).toBeTruthy();
   expect(
     isAllowed(
-      null,
+      report,
       {
         entity: 'processInstance',
         property: 'duration',
@@ -122,23 +124,23 @@ it('should allow only visualization options that make sense for the selected vie
   ).toBeFalsy();
 });
 
-it('should forbid line and pie charts for distributed user task reports', () => {
-  const report = {data: {configuration: {distributedBy: 'userTask'}}};
+it('should forbid pie charts for distributed user task reports', () => {
+  const report = {data: {configuration: {distributedBy: {type: 'userTask', value: null}}}};
   const view = {entity: 'userTask', property: 'frequency'};
   const groupBy = {type: 'assignee', value: null};
 
   expect(isAllowed(report, view, groupBy, 'bar')).toBeTruthy();
-  expect(isAllowed(report, view, groupBy, 'line')).toBeFalsy();
+  expect(isAllowed(report, view, groupBy, 'line')).toBeTruthy();
   expect(isAllowed(report, view, groupBy, 'pie')).toBeFalsy();
 });
 
-it('should forbid line, pie charts and heatmap for distributed userTask reports', () => {
-  const report = {data: {configuration: {distributedBy: 'assignee'}}};
+it('should forbid pie charts and heatmap for distributed userTask reports', () => {
+  const report = {data: {configuration: {distributedBy: {type: 'assignee', value: null}}}};
   const view = {entity: 'userTask', property: 'frequency'};
   const groupBy = {type: 'userTasks', value: null};
 
   expect(isAllowed(report, view, groupBy, 'table')).toBeTruthy();
-  expect(isAllowed(report, view, groupBy, 'line')).toBeFalsy();
+  expect(isAllowed(report, view, groupBy, 'line')).toBeTruthy();
   expect(isAllowed(report, view, groupBy, 'pie')).toBeFalsy();
   expect(isAllowed(report, view, groupBy, 'heat')).toBeFalsy();
 });
@@ -147,7 +149,7 @@ it('should find a selected option based on property', () => {
   expect(findSelectedOption(view, 'data', {property: 'frequency', entity: 'processInstance'})).toBe(
     view[1].options[0]
   );
-  expect(findSelectedOption(groupBy, 'key', 'startDate_day')).toBe(groupBy[3].options[4]);
+  expect(findSelectedOption(groupBy, 'key', 'startDate_day')).toBe(groupBy[4].options[4]);
 });
 
 describe('update', () => {

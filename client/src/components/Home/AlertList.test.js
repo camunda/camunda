@@ -114,6 +114,7 @@ it('should show information about alerts', async () => {
   const node = shallow(<AlertList {...props} />);
 
   expect(node.find(EntityList).prop('data')[0].name).toBe('Some Alert');
+  expect(node.find(EntityList).prop('data')[0].meta[0]).toBe('Report 2');
 });
 
 it('should show create Alert button', () => {

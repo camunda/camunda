@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.writer.variable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +34,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
@@ -76,14 +75,13 @@ public class ProcessVariableUpdateWriter {
       throw new InvalidParameterException("Method called with incorrect instance of DTO.");
     }
     final List<ProcessVariableDto> variablesWithAllInformation =
-      (List<ProcessVariableDto>) (List<?>) processInstanceIdToVariables
-        .getValue();
+      (List<ProcessVariableDto>) (List<?>) processInstanceIdToVariables.getValue();
     final String processInstanceId = processInstanceIdToVariables.getKey();
 
     List<SimpleProcessVariableDto> variables = mapToSimpleVariables(variablesWithAllInformation);
     Map<String, Object> params = buildParameters(variables);
 
-    final Script updateScript = createDefaultScript(createInlineUpdateScript(), params);
+    final Script updateScript = createDefaultScriptWithSpecificDtoParams(createInlineUpdateScript(), params, objectMapper);
 
     if (variablesWithAllInformation.isEmpty()) {
       //all is lost, no variables to persist, should have crashed before.
@@ -120,7 +118,10 @@ public class ProcessVariableUpdateWriter {
 
   public void deleteVariableDataByProcessInstanceIds(final List<String> processInstanceIds) {
     final BulkRequest bulkRequest = new BulkRequest();
-    log.debug("Deleting variable data on [{}] process instance documents with bulk request.", processInstanceIds.size());
+    log.debug(
+      "Deleting variable data on [{}] process instance documents with bulk request.",
+      processInstanceIds.size()
+    );
     processInstanceIds.forEach(
       id -> bulkRequest.add(new UpdateRequest(PROCESS_INSTANCE_INDEX_NAME, id).script(VARIABLE_CLEAR_SCRIPT))
     );
@@ -158,11 +159,7 @@ public class ProcessVariableUpdateWriter {
 
   private Map<String, Object> buildParameters(final List<SimpleProcessVariableDto> variables) {
     Map<String, Object> params = new HashMap<>();
-    params.put(
-      VARIABLE_UPDATES_FROM_ENGINE,
-      objectMapper.convertValue(variables, new TypeReference<List<Map>>() {
-      })
-    );
+    params.put(VARIABLE_UPDATES_FROM_ENGINE, variables);
     return params;
   }
 

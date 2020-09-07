@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {parseISO} from 'date-fns';
+import {parseISO, isValid} from 'date-fns';
 
 import {format} from 'dates';
 import {t} from 'translation';
@@ -185,6 +185,7 @@ export function objectifyResult(result) {
 
 export function formatReportResult(data, result) {
   const groupBy = data.groupBy;
+
   let unit;
   if (groupBy.value && groupBy.type.includes('Date')) {
     unit = determineUnit(groupBy.value.unit, result);
@@ -204,10 +205,16 @@ export function formatReportResult(data, result) {
     dateFormat += ' ';
   }
 
-  const formattedResult = result.map((entry) => ({
-    ...entry,
-    label: format(parseISO(entry.label), dateFormat),
-  }));
+  const formattedResult = result.map((entry) => {
+    const date = parseISO(entry.label);
+    if (!isValid(date)) {
+      return entry;
+    }
+    return {
+      ...entry,
+      label: format(date, dateFormat),
+    };
+  });
 
   return formattedResult;
 }

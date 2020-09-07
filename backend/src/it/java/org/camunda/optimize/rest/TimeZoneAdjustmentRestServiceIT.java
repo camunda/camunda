@@ -73,6 +73,8 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID;
+import static org.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
 
 public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT {
 
@@ -140,6 +142,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .setReportDataType(reportType)
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
+      .setVariableName("someVariable")
+      .setVariableType(VariableType.STRING)
       .build();
 
     // when
@@ -179,6 +183,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .setReportDataType(reportType)
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
+      .setVariableName("someVariable")
+      .setVariableType(VariableType.STRING)
       .build();
 
     // when
@@ -245,9 +251,18 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto1.getId(), now);
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceDto2.getId(), now);
     engineDatabaseExtension.changeProcessInstanceEndDate(processInstanceDto1.getId(), now);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto1.getId(), START_EVENT, now);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto2.getId(), START_EVENT, now);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto1.getId(), START_EVENT, now);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto2.getId(), START_EVENT, now);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto1.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
     engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto1.getId(), USER_TASK_1, now);
     engineDatabaseExtension.changeUserTaskStartDate(processInstanceDto2.getId(), USER_TASK_1, now);
     engineDatabaseExtension.changeUserTaskEndDate(processInstanceDto1.getId(), USER_TASK_1, now);
+    engineDatabaseExtension.changeActivityInstanceStartDate(processInstanceDto1.getId(), END_EVENT, now);
+    engineDatabaseExtension.changeActivityInstanceEndDate(processInstanceDto1.getId(), END_EVENT, now);
     importAllEngineEntitiesFromScratch();
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
@@ -257,6 +272,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       .setReportDataType(reportType)
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
+      .setVariableName("someVariable")
+      .setVariableType(VariableType.STRING)
       .build();
 
     // when
@@ -297,7 +314,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
   @ParameterizedTest
   @MethodSource("allProcessVariableReports")
-  public void adjustReportEvaluationResultToTimezone_groupByDateVariable(final ProcessReportDataType reportType) {
+  public void adjustReportEvaluationResultToTimezone_groupOrDistributedByDateVariable(final ProcessReportDataType reportType) {
     // given
     OffsetDateTime now = dateFreezer().timezone("Europe/Berlin").freezeDateAndReturn();
     Map<String, Object> variables = ImmutableMap.of("dateVar", now);
@@ -306,6 +323,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
 
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setGroupByDateVariableUnit(GroupByDateUnit.HOUR)
+      .setDateInterval(GroupByDateUnit.HOUR)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(reportType)
@@ -895,8 +913,8 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       gatewayDefinition.getKey(),
       Lists.newArrayList(String.valueOf(gatewayDefinition.getVersion())),
       Collections.singletonList(null),
-      "splittingGateway",
-      "endEvent"
+      SPLITTING_GATEWAY_ID,
+      END_EVENT_ID
     );
 
     List<ProcessFilterDto<?>> relativeStartDateFilter =

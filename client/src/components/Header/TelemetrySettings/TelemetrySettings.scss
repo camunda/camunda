@@ -1,0 +1,21 @@
+@import 'shared-styles/shared-styles.scss';
+
+.TelemetrySettings {
+  .options {
+    margin-left: 40px;
+
+    .label {
+      margin-left: 10px;
+      font-weight: bold;
+    }
+  }
+
+  p {
+    font-size: 14px;
+    color: $grey-darken-36;
+  }
+
+  .Input[type='checkbox'] {
+    align-self: center;
+  }
+}

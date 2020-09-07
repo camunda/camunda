@@ -11,7 +11,6 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
-import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -60,8 +59,8 @@ public abstract class AbstractUpgradeIT {
   protected OptimizeElasticsearchClient prefixAwareClient;
   protected OptimizeIndexNameService indexNameService;
   protected UpgradeExecutionDependencies upgradeDependencies;
+  protected ElasticsearchMetadataService metadataService;
   private ConfigurationService configurationService;
-  private ElasticsearchMetadataService metadataService;
 
   @AfterEach
   public void after() throws Exception {
@@ -92,7 +91,7 @@ public abstract class AbstractUpgradeIT {
   }
 
   protected void setMetadataIndexVersion(String version) {
-    metadataService.writeMetadata(prefixAwareClient, new MetadataDto(version));
+    metadataService.upsertMetadata(prefixAwareClient, version);
   }
 
   protected void createOptimizeIndexWithTypeAndVersion(DefaultIndexMappingCreator indexMapping,

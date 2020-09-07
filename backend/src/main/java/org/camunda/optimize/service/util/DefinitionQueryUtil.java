@@ -5,7 +5,8 @@
  */
 package org.camunda.optimize.service.util;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.camunda.optimize.service.es.schema.index.DefinitionBasedType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -25,7 +26,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefinitionQueryUtil {
 
   public static BoolQueryBuilder createDefinitionQuery(String definitionKey,

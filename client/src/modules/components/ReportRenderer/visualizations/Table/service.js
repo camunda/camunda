@@ -12,11 +12,12 @@ const {
   getLabelFor,
 } = reportConfig.process;
 
-const {formatReportResult, getRelativeValue} = formatters;
+const {formatReportResult, getRelativeValue, duration} = formatters;
 
 export function getFormattedLabels(
   reportsLabels,
   reportsNames,
+  reportsIds,
   displayRelativeValue,
   displayAbsoluteValue
 ) {
@@ -25,6 +26,7 @@ export function getFormattedLabels(
       ...prev,
       {
         label: reportsNames[i],
+        id: reportsIds[i],
         columns: [
           ...(displayAbsoluteValue ? reportLabels.slice(1) : []),
           ...(displayRelativeValue ? [t('report.table.relativeFrequency')] : []),
@@ -35,17 +37,18 @@ export function getFormattedLabels(
   );
 }
 
-export function getBodyRows(
+export function getBodyRows({
   unitedResults,
   allKeys,
   formatter,
   displayRelativeValue,
   instanceCount,
   displayAbsoluteValue,
-  flowNodeNames = {}
-) {
+  flowNodeNames = {},
+  groupedByDuration,
+}) {
   const rows = allKeys.map((key, idx) => {
-    const row = [flowNodeNames[key] || key];
+    const row = [groupedByDuration ? duration(key) : flowNodeNames[key] || key];
     unitedResults.forEach((result, i) => {
       const value = result[idx].value;
       if (displayAbsoluteValue) {
@@ -64,6 +67,7 @@ export function getCombinedTableProps(reportResult, reports) {
   const initialData = {
     labels: [],
     reportsNames: [],
+    reportsIds: [],
     combinedResult: [],
     instanceCount: [],
   };
@@ -80,6 +84,9 @@ export function getCombinedTableProps(reportResult, reports) {
     // 2d array of all names
     const reportsNames = [...prevReport.reportsNames, name];
 
+    // 2d array of all ids
+    const reportsIds = [...prevReport.reportsIds, id];
+
     // 2d array of all results
     const formattedResult = formatReportResult(data, result.data);
     const reportsResult = [...prevReport.combinedResult, formattedResult];
@@ -90,6 +97,7 @@ export function getCombinedTableProps(reportResult, reports) {
     return {
       labels,
       reportsNames,
+      reportsIds,
       combinedResult: reportsResult,
       instanceCount: reportsInstanceCount,
     };

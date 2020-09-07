@@ -36,6 +36,7 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationServi
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.IDENTITY_SYNC_CONFIGURATION;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.TELEMETRY_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.UI_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
@@ -44,7 +45,6 @@ import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.
 
 @Setter
 public class ConfigurationService {
-  private static final String ENGINE_REST_PATH = "/engine/";
   private static final String ERROR_NO_ENGINE_WITH_ALIAS = "No Engine configured with alias ";
 
   // @formatter:off
@@ -70,21 +70,13 @@ public class ConfigurationService {
   private Boolean XContentTypeOptions;
   private String contentSecurityPolicy;
 
-
-
-  private String userValidationEndpoint;
-  private String processDefinitionEndpoint;
-  private String processDefinitionXmlEndpoint;
-  private String decisionDefinitionEndpoint;
-  private String decisionDefinitionXmlEndpoint;
-
   private String engineDateFormat;
   private Long initialBackoff;
   private Long maximumBackoff;
 
   // elasticsearch connection
   private List<ElasticsearchConnectionNodeConfiguration> elasticsearchConnectionNodes;
-  private Integer elasticsearchScrollTimeout;
+  private Integer esScrollTimeoutInSeconds;
   private Integer elasticsearchConnectionTimeout;
   private ProxyConfiguration elasticSearchProxyConfig;
 
@@ -189,6 +181,8 @@ public class ConfigurationService {
   private EventIndexRolloverConfiguration eventIndexRolloverConfiguration;
 
   private EventBasedProcessConfiguration eventBasedProcessConfiguration;
+
+  private TelemetryConfiguration telemetryConfiguration;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -313,37 +307,6 @@ public class ConfigurationService {
     return decisionOutputImportPluginBasePackages;
   }
 
-  public String getUserValidationEndpoint() {
-    if (userValidationEndpoint == null) {
-      userValidationEndpoint = cutTrailingSlash(
-        configJsonContext.read(ConfigurationServiceConstants.USER_VALIDATION_ENDPOINT)
-      );
-    }
-    return userValidationEndpoint;
-  }
-
-  public String getProcessDefinitionEndpoint() {
-    if (processDefinitionEndpoint == null) {
-      processDefinitionEndpoint = cutTrailingSlash(
-        configJsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_ENDPOINT)
-      );
-    }
-    return processDefinitionEndpoint;
-  }
-
-  public String getDecisionDefinitionEndpoint() {
-    if (decisionDefinitionEndpoint == null) {
-      decisionDefinitionEndpoint = cutTrailingSlash(
-        configJsonContext.read(ConfigurationServiceConstants.DECISION_DEFINITION_ENDPOINT)
-      );
-    }
-    return decisionDefinitionEndpoint;
-  }
-
-  public String getDecisionDefinitionXmlEndpoint(String decisionDefinitionId) {
-    return getDecisionDefinitionEndpoint() + "/" + decisionDefinitionId + getDecisionDefinitionXmlEndpoint();
-  }
-
   public String getEngineDateFormat() {
     if (engineDateFormat == null) {
       engineDateFormat = configJsonContext.read(ConfigurationServiceConstants.ENGINE_DATE_FORMAT);
@@ -392,13 +355,13 @@ public class ConfigurationService {
     return elasticsearchJobExecutorThreadCount;
   }
 
-  public int getElasticsearchScrollTimeout() {
-    if (elasticsearchScrollTimeout == null) {
-      elasticsearchScrollTimeout = configJsonContext.read(
-        ConfigurationServiceConstants.ELASTIC_SEARCH_SCROLL_TIMEOUT, Integer.class
+  public int getEsScrollTimeoutInSeconds() {
+    if (esScrollTimeoutInSeconds == null) {
+      esScrollTimeoutInSeconds = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTIC_SEARCH_SCROLL_TIMEOUT_IN_SECONDS, Integer.class
       );
     }
-    return elasticsearchScrollTimeout;
+    return esScrollTimeoutInSeconds;
   }
 
   public int getElasticsearchConnectionTimeout() {
@@ -532,29 +495,11 @@ public class ConfigurationService {
     return engineImportProcessDefinitionMaxPageSize;
   }
 
-  private String getProcessDefinitionXmlEndpoint() {
-    if (processDefinitionXmlEndpoint == null) {
-      processDefinitionXmlEndpoint = cutTrailingSlash(
-        configJsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_XML_ENDPOINT)
-      );
-    }
-    return processDefinitionXmlEndpoint;
-  }
-
   public Boolean getSharingEnabled() {
     if (sharingEnabled == null) {
       sharingEnabled = configJsonContext.read(ConfigurationServiceConstants.SHARING_ENABLED, Boolean.class);
     }
     return sharingEnabled;
-  }
-
-  private String getDecisionDefinitionXmlEndpoint() {
-    if (decisionDefinitionXmlEndpoint == null) {
-      decisionDefinitionXmlEndpoint = cutTrailingSlash(
-        configJsonContext.read(ConfigurationServiceConstants.DECISION_DEFINITION_XML_ENDPOINT)
-      );
-    }
-    return decisionDefinitionXmlEndpoint;
   }
 
   public int getEngineImportDecisionDefinitionXmlMaxPageSize() {
@@ -775,14 +720,8 @@ public class ConfigurationService {
   }
 
   // Note: special setter for Optional field value, see note on field why the field is Optional
-
   public void setContainerHttpPortValue(Integer containerHttpPort) {
     this.containerHttpPort = Optional.ofNullable(containerHttpPort);
-  }
-
-  @JsonIgnore
-  public boolean isHttpDisabled() {
-    return !getContainerHttpPort().isPresent();
   }
 
   public int getMaxStatusConnections() {
@@ -794,10 +733,6 @@ public class ConfigurationService {
     return maxStatusConnections;
   }
 
-  public String getProcessDefinitionXmlEndpoint(String processDefinitionId) {
-    return getProcessDefinitionEndpoint() + "/" + processDefinitionId + getProcessDefinitionXmlEndpoint();
-  }
-
   public Optional<String> getEngineDefaultTenantIdOfCustomEngine(String engineAlias) {
     return getEngineConfiguration(engineAlias)
       .map(EngineConfiguration::getDefaultTenantId)
@@ -805,7 +740,7 @@ public class ConfigurationService {
   }
 
   public String getEngineRestApiEndpointOfCustomEngine(String engineAlias) {
-    return this.getEngineRestApiEndpoint(engineAlias) + ENGINE_REST_PATH + getEngineName(engineAlias);
+    return this.getEngineRestApiEndpoint(engineAlias) + "/engine/" + getEngineName(engineAlias);
   }
 
   public String getDefaultEngineAuthenticationUser(String engineAlias) {
@@ -1057,5 +992,15 @@ public class ConfigurationService {
   @JsonIgnore
   public List<String> getEventBasedProcessAccessUserIds() {
     return getEventBasedProcessConfiguration().getAuthorizedUserIds();
+  }
+
+  public TelemetryConfiguration getTelemetryConfiguration() {
+    if (telemetryConfiguration == null) {
+      telemetryConfiguration = configJsonContext.read(
+        TELEMETRY_CONFIGURATION,
+        TelemetryConfiguration.class
+      );
+    }
+    return telemetryConfiguration;
   }
 }

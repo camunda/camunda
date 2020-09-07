@@ -11,9 +11,9 @@ import {Select} from 'components';
 import DistributedBy from './DistributedBy';
 
 const data = {
-  visualization: 'line',
+  visualization: 'heat',
   view: {entity: 'userTask'},
-  configuration: {},
+  configuration: {distributedBy: {}},
   groupBy: {type: 'userTasks'},
 };
 
@@ -43,7 +43,7 @@ it('should change the visualization if it is incompatible with the new configura
 
   expect(spy).toHaveBeenCalledWith(
     {
-      configuration: {distributedBy: {$set: 'userTask'}},
+      configuration: {distributedBy: {type: {$set: 'userTask'}}},
       visualization: {$set: 'bar'},
     },
     true

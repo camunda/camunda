@@ -73,3 +73,48 @@ Array [
   },
 ]
 `;
+
+exports[`should support explicit id for nested columns 1`] = `
+Array [
+  Object {
+    "Header": "X",
+    "columns": Array [
+      Object {
+        "Header": "i",
+        "accessor": [Function],
+        "id": "column1i",
+        "minWidth": 100,
+      },
+      Object {
+        "Header": "j",
+        "accessor": [Function],
+        "id": "column1columnJ",
+        "minWidth": 100,
+      },
+    ],
+  },
+  Object {
+    "Header": "Y",
+    "accessor": [Function],
+    "id": "y",
+    "minWidth": 100,
+  },
+  Object {
+    "Header": "Z",
+    "columns": Array [
+      Object {
+        "Header": "Z1",
+        "accessor": [Function],
+        "id": "zcolumnZ1",
+        "minWidth": 100,
+      },
+      Object {
+        "Header": "Z2",
+        "accessor": [Function],
+        "id": "zZ2",
+        "minWidth": 100,
+      },
+    ],
+  },
+]
+`;

@@ -5,7 +5,8 @@
  */
 package org.camunda.optimize.service.util;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.createCamundaEventTypeDto;
 
 @Slf4j
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BpmnModelUtil {
 
   public static BpmnModelInstance parseBpmnModel(final String bpmn20Xml) {

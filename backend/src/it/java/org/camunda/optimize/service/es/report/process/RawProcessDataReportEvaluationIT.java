@@ -46,6 +46,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.util.BpmnModels.TASK_ID_1;
 
 public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -560,11 +561,10 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .viewProperty(ProcessViewProperty.RAW_DATA)
       .build();
 
-
     List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id("task1")
+      .id(TASK_ID_1)
       .add()
       .buildList();
 
@@ -736,6 +736,41 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
         VARIABLE_PREFIX + "anotherNewVar",
         VARIABLE_PREFIX + "existingExcludedVar"
       );
+  }
+
+  @Test
+  public void removeNonExistentVariableColumns() {
+    // given
+    final String nonExistentVariable1 = VARIABLE_PREFIX + "nonExistentVariable1";
+    final String nonExistentVariable2 = VARIABLE_PREFIX + "nonExistentVariable2";
+    final ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleProcessWithVariables(
+      ImmutableMap.of(
+        "someVar", 1,
+        "someOtherVar", 1
+      )
+    );
+    importAllEngineEntitiesFromScratch();
+
+    // when we have a report with variables columns that no longer exist in the instance data
+    final ProcessReportDataDto reportData = createReport(processInstanceDto);
+    reportData.getConfiguration().getTableColumns().getExcludedColumns().add(nonExistentVariable1);
+    reportData.getConfiguration().getTableColumns().getIncludedColumns().add(nonExistentVariable2);
+    final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
+      reportClient.evaluateRawReport(reportData);
+
+    // then the nonexistent variable columns are removed from the column configurations
+    final List<String> allColumns = evaluationResult.getReportDefinition()
+      .getData()
+      .getConfiguration()
+      .getTableColumns()
+      .getExcludedColumns();
+    allColumns.addAll(evaluationResult.getReportDefinition()
+                        .getData()
+                        .getConfiguration()
+                        .getTableColumns()
+                        .getIncludedColumns());
+
+    assertThat(allColumns).doesNotContain(nonExistentVariable1, nonExistentVariable2);
   }
 
   private void assertBasicResultData(final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result,

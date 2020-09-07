@@ -55,6 +55,7 @@ export default function ColumnSelection({report, onChange}) {
         }
       />
       <LabeledInput
+        className="includeNew"
         type="checkbox"
         checked={includeNewVariables}
         label={t('report.config.includeNewVariables')}

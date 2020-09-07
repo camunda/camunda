@@ -49,8 +49,8 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate))
-      .distributedByContains(getLocalisedUnassignedLabel(), 1.)
       .distributedByContains(DEFAULT_USERNAME, 1.)
+      .distributedByContains(getLocalisedUnassignedLabel(), 1.)
       .doAssert(result);
     // @formatter:on
   }
@@ -86,11 +86,11 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()));
-    if (assignee2Count != null) {
-      groupByAsserter.distributedByContains(SECOND_USER, assignee2Count);
-    }
     if (assignee1Count != null) {
       groupByAsserter.distributedByContains(DEFAULT_USERNAME, assignee1Count);
+    }
+    if (assignee2Count != null) {
+      groupByAsserter.distributedByContains(SECOND_USER, assignee2Count);
     }
     groupByAsserter.doAssert(result);
   }

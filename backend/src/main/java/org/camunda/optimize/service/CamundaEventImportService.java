@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ImportRequestDto;
@@ -15,14 +15,14 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
 import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
+import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
 import org.camunda.optimize.service.es.writer.CamundaActivityEventWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableUpdateInstanceWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionResolverService;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.springframework.stereotype.Component;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -40,8 +40,7 @@ import static org.camunda.optimize.service.events.CamundaEventService.SPLIT_STAR
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 
-@AllArgsConstructor
-@Component
+@RequiredArgsConstructor
 @Slf4j
 public class CamundaEventImportService {
 
@@ -50,6 +49,7 @@ public class CamundaEventImportService {
   private final BusinessKeyWriter businessKeyWriter;
   private final ProcessDefinitionResolverService processDefinitionResolverService;
   private final ConfigurationService configurationService;
+  private final EngineContext engineContext;
 
   public List<ImportRequestDto> generateRunningCamundaActivityEventsImports(
     List<FlowNodeEventDto> runningActivityInstances) {
@@ -171,7 +171,7 @@ public class CamundaEventImportService {
 
   private CamundaActivityEventDto toCamundaActivityEvent(final FlowNodeEventDto flowNodeEventDto) {
     final ProcessDefinitionOptimizeDto processDefinition =
-      processDefinitionResolverService.getDefinitionForProcessDefinitionId(flowNodeEventDto.getProcessDefinitionId())
+      processDefinitionResolverService.getDefinition(flowNodeEventDto.getProcessDefinitionId(), engineContext)
         .orElseThrow(() -> new OptimizeRuntimeException(
           "Could not resolve version for process definition id: " + flowNodeEventDto.getProcessDefinitionId() + "."
         ));
@@ -201,8 +201,9 @@ public class CamundaEventImportService {
 
   private Stream<CamundaActivityEventDto> convertRunningProcessInstanceToCamundaActivityEvents(
     final ProcessInstanceDto processInstanceDto) {
-    String processDefinitionName = processDefinitionResolverService.getDefinitionForProcessDefinitionId(
-      processInstanceDto.getProcessDefinitionId()).map(DefinitionOptimizeDto::getName).orElse(null);
+    String processDefinitionName =
+      processDefinitionResolverService.getDefinition(processInstanceDto.getProcessDefinitionId(), engineContext)
+        .map(DefinitionOptimizeDto::getName).orElse(null);
     return Stream.of(toProcessInstanceStartEvent(
       processInstanceDto, processDefinitionName, processInstanceDto.getStartDate()
     ));
@@ -210,8 +211,9 @@ public class CamundaEventImportService {
 
   private Stream<CamundaActivityEventDto> convertCompletedProcessInstanceToCamundaActivityEvents(
     final ProcessInstanceDto processInstanceDto) {
-    String processDefinitionName = processDefinitionResolverService.getDefinitionForProcessDefinitionId(
-      processInstanceDto.getProcessDefinitionId()).map(DefinitionOptimizeDto::getName).orElse(null);
+    String processDefinitionName =
+      processDefinitionResolverService.getDefinition(processInstanceDto.getProcessDefinitionId(), engineContext)
+        .map(DefinitionOptimizeDto::getName).orElse(null);
     return Stream.of(
       toProcessInstanceStartEvent(processInstanceDto, processDefinitionName, processInstanceDto.getStartDate()),
       toProcessInstanceEndEvent(processInstanceDto, processDefinitionName, processInstanceDto.getEndDate())

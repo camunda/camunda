@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.command.process.processinstance.raw;
 
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
@@ -57,15 +58,12 @@ public class RawProcessInstanceDataGroupByNoneCmd extends ProcessCmd<RawDataProc
       .flatMap(rawDataProcessInstanceDto -> rawDataProcessInstanceDto.getVariables().keySet().stream())
       .map(varKey -> VARIABLE_PREFIX + varKey)
       .collect(toList());
-    commandContext.getReportDefinition()
+
+    TableColumnDto tableColumns = commandContext.getReportDefinition()
       .getData()
       .getConfiguration()
-      .getTableColumns()
-      .addNewVariableColumns(variableNames);
-    commandContext.getReportDefinition()
-      .getData()
-      .getConfiguration()
-      .getTableColumns()
-      .addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
+      .getTableColumns();
+    tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
+    tableColumns.addDtoColumns(extractAllProcessInstanceDtoFieldKeys());
   }
 }

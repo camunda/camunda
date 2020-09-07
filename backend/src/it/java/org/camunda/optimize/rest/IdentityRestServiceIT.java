@@ -14,7 +14,9 @@ import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
+import org.camunda.optimize.dto.optimize.rest.AuthorizationType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.providers.GenericExceptionMapper;
 import org.camunda.optimize.service.SyncedIdentityCacheService;
@@ -31,6 +33,7 @@ import org.mockserver.model.HttpResponse;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -45,7 +48,6 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FIRSTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.KERMIT_GROUP_NAME;
-import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockserver.model.HttpRequest.request;
 
@@ -454,15 +456,18 @@ public class IdentityRestServiceIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    final UserDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);
+    final UserResponseDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);
 
     // then
-    assertThat(currentUserDto).isEqualTo(new UserDto(
-      KERMIT_USER,
-      DEFAULT_FIRSTNAME,
-      DEFAULT_LASTNAME,
-      DEFAULT_USERNAME + DEFAULT_EMAIL_DOMAIN
-    ));
+    final UserResponseDto expectedUser = new UserResponseDto(
+      new UserDto(
+        KERMIT_USER,
+        DEFAULT_FIRSTNAME,
+        DEFAULT_LASTNAME,
+        KERMIT_USER + DEFAULT_EMAIL_DOMAIN
+      ), Collections.emptyList());
+
+    assertThat(currentUserDto).isEqualTo(expectedUser);
   }
 
   @Test
@@ -474,11 +479,33 @@ public class IdentityRestServiceIT extends AbstractIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
 
     // when
-    final UserDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);
+    final UserResponseDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);
 
     // then only user ID property is set and `getName` returns user ID
-    assertThat(currentUserDto).isEqualTo(new UserDto(KERMIT_USER));
-    assertThat(currentUserDto.getName()).isEqualTo(KERMIT_USER);
+    assertThat(currentUserDto).isEqualTo(new UserResponseDto(new UserDto(KERMIT_USER), Collections.emptyList()));
+    assertThat(currentUserDto.getUserDto().getName()).isEqualTo(KERMIT_USER);
+  }
+
+  @Test
+  public void getCurrentUserIdentity_withSuperUserAuthorizations() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().getSuperUserIds().add(KERMIT_USER);
+    embeddedOptimizeExtension.reloadConfiguration();
+    authorizationClient.addKermitUserAndGrantAccessToOptimize();
+
+    // when
+    final UserResponseDto currentUserDto = identityClient.getCurrentUserIdentity(KERMIT_USER, KERMIT_USER);
+
+    // then
+    final UserResponseDto expectedUser = new UserResponseDto(
+      new UserDto(
+        KERMIT_USER,
+        DEFAULT_FIRSTNAME,
+        DEFAULT_LASTNAME,
+        KERMIT_USER + DEFAULT_EMAIL_DOMAIN
+      ), Lists.newArrayList(AuthorizationType.TELEMETRY));
+
+    assertThat(currentUserDto).isEqualTo(expectedUser);
   }
 
   private static Stream<IdentityWithMetadataDto> identities() {

@@ -8,6 +8,7 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
+import org.assertj.core.api.Assertions;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
@@ -15,8 +16,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.valu
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
@@ -40,9 +41,9 @@ import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.DmnModels.OUTPUT_AUDIT_ID;
@@ -945,11 +946,13 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     importAllEngineEntitiesFromScratch();
 
     // when
-    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
-    ).getResult().getData();
+    ).getResult();
 
     // then
+    Assertions.assertThat(result.getIsComplete()).isTrue();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
 
@@ -979,11 +982,13 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     );
 
     // when
-    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
+    final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
       definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
-    ).getResult().getData();
+    ).getResult();
 
     // then
+    Assertions.assertThat(result.getIsComplete()).isTrue();
+    final List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }
@@ -1185,9 +1190,9 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       variableType
     );
     reportData.getConfiguration().setGroupByDateVariableUnit(unit);
-    reportData.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData.getConfiguration().getCustomNumberBucket().setBucketSize(numberVariableBucketSize);
-    reportData.getConfiguration().getCustomNumberBucket().setBaseline(baseline);
+    reportData.getConfiguration().getCustomBucket().setActive(true);
+    reportData.getConfiguration().getCustomBucket().setBucketSize(numberVariableBucketSize);
+    reportData.getConfiguration().getCustomBucket().setBaseline(baseline);
     return reportClient.evaluateMapReport(reportData);
   }
 

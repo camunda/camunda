@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by.process.date;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
@@ -19,12 +20,13 @@ import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.GroupByPart;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
+import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
-import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -35,7 +37,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.isResultComplete;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -49,18 +50,12 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
   protected final ProcessQueryFilterEnhancer queryFilterEnhancer;
 
   @Override
-  public Optional<MinMaxStatDto> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<ProcessReportDataDto> context,
-                                                                           final BoolQueryBuilder baseQuery) {
+  public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
+                                                final BoolQueryBuilder baseQuery) {
     if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
-      DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
+      final DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
       if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
-        return Optional.of(
-          minMaxStatsService.getMinMaxDateRange(
-            context,
-            baseQuery,
-            PROCESS_INSTANCE_INDEX_NAME,
-            getDateField()
-          ));
+        return Optional.of(getMinMaxDateStats(context, baseQuery));
       }
     }
     return Optional.empty();
@@ -88,12 +83,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context,
                                                     final GroupByDateUnit unit) {
-    MinMaxStatDto stats = minMaxStatsService.getMinMaxDateRange(
-      context,
-      searchSourceBuilder.query(),
-      PROCESS_INSTANCE_INDEX_NAME,
-      getDateField()
-    );
+    final MinMaxStatDto stats = getMinMaxDateStats(context, searchSourceBuilder.query());
 
     final DateAggregationContext dateAggContext = DateAggregationContext.builder()
       .groupByDateUnit(unit)
@@ -107,8 +97,14 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
       .build();
 
     return dateAggregationService.createProcessInstanceDateAggregation(dateAggContext)
+      .map(agg -> addSiblingAggregationIfRequired(context, agg))
       .map(Collections::singletonList)
       .orElse(Collections.emptyList());
+  }
+
+  private MinMaxStatDto getMinMaxDateStats(final ExecutionContext<ProcessReportDataDto> context,
+                                           final QueryBuilder baseQuery) {
+    return minMaxStatsService.getMinMaxDateRange(context, baseQuery, PROCESS_INSTANCE_INDEX_NAME, getDateField());
   }
 
   @Override
@@ -116,7 +112,9 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
                              final SearchResponse response,
                              final ExecutionContext<ProcessReportDataDto> context) {
     result.setGroups(processAggregations(response, response.getAggregations(), context));
-    result.setIsComplete(isResultComplete(response));
+    result.setIsComplete(dateAggregationService.isResultComplete(
+      response.getAggregations(), response.getHits().getTotalHits().value
+    ));
     result.setSorting(
       context.getReportConfiguration()
         .getSorting()
@@ -139,12 +137,18 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
         unwrappedLimitedAggregations.get(),
         context.getTimezone()
       );
+      // enrich context with complete set of distributed by keys
+      distributedByPart.enrichContextWithAllExpectedDistributedByKeys(
+        context,
+        unwrappedLimitedAggregations.get()
+      );
     } else {
       keyToAggregationMap = dateAggregationService.mapRangeAggregationsToKeyAggregationMap(
         aggregations,
         context.getTimezone()
       );
     }
+
     return mapKeyToAggMapToGroupByResults(keyToAggregationMap, response, context);
   }
 
@@ -168,6 +172,20 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
 
   private GroupByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
     return ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();
+  }
+
+  private DistributedByType getDistributedByType(final ProcessReportDataDto processReportDataDto) {
+    return processReportDataDto.getConfiguration().getDistributedBy().getType();
+  }
+
+  private AggregationBuilder addSiblingAggregationIfRequired(final ExecutionContext<ProcessReportDataDto> context,
+                                                             final AggregationBuilder aggregationBuilder) {
+    // add sibling distributedBy aggregation to enrich context with all distributed by keys,
+    // required for variable distribution
+    if (DistributedByType.VARIABLE.equals(getDistributedByType(context.getReportData()))) {
+      aggregationBuilder.subAggregation(distributedByPart.createAggregation(context));
+    }
+    return aggregationBuilder;
   }
 
 }

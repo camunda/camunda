@@ -11,6 +11,7 @@ import {migrateDiagram} from '@bpmn-io/dmn-migrate';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 
+import 'dmn-js//dist/assets/dmn-js-shared.css';
 import 'dmn-js/dist/assets/dmn-js-decision-table.css';
 import './DMNDiagram.scss';
 

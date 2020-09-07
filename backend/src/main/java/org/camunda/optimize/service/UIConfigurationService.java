@@ -8,6 +8,7 @@ package org.camunda.optimize.service;
 import com.google.common.collect.Lists;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.UIConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.WebappsEndpointDto;
@@ -35,6 +36,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
   private final ConfigurationService configurationService;
   private final OptimizeVersionService versionService;
   private final TenantService tenantService;
+  private final SettingsService settingService;
 
   // cached version
   private String logoAsBase64;
@@ -48,6 +50,11 @@ public class UIConfigurationService implements ConfigurationReloadable {
     uiConfigurationDto.setOptimizeVersion(versionService.getRawVersion());
     uiConfigurationDto.setWebappsEndpoints(getCamundaWebappsEndpoints());
     uiConfigurationDto.setWebhooks(getConfiguredWebhooks());
+
+    final SettingsDto settings = settingService.getSettings();
+    uiConfigurationDto.setMetadataTelemetryEnabled(settings.isMetadataTelemetryEnabled());
+    uiConfigurationDto.setSettingsManuallyConfirmed(settings.isManuallyConfirmed());
+
     return uiConfigurationDto;
   }
 

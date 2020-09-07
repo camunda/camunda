@@ -776,6 +776,17 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     return prefixAwareRestHighLevelClient;
   }
 
+  public String getEsVersion() {
+    try {
+      return prefixAwareRestHighLevelClient.getHighLevelClient()
+        .info(RequestOptions.DEFAULT)
+        .getVersion()
+        .toString();
+    } catch (IOException e) {
+      throw new OptimizeIntegrationTestException("Could not retrieve elasticsearch version.", e);
+    }
+  }
+
   private List<EventProcessRoleDto<IdentityDto>> normalizeToSimpleIdentityDtos(final List<IdentityDto> identityDtos) {
     return identityDtos.stream()
       .filter(Objects::nonNull)

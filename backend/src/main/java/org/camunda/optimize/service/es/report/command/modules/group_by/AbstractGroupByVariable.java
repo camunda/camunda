@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.command.modules.group_by;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -17,8 +16,8 @@ import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
+import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
-import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -45,7 +44,8 @@ import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
-import static org.camunda.optimize.service.es.report.command.util.DateAggregationService.RANGE_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.DateAggregationService.RANGE_AGGREGATION;
+import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -85,9 +85,9 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   protected abstract BoolQueryBuilder getVariableUndefinedOrNullQuery(final ExecutionContext<Data> context);
 
   @Override
-  public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<Data> context,
-                                                                              final BoolQueryBuilder baseQuery) {
-    if (isGroupedByNumberVariable(getVariableType(context))) {
+  public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<Data> context,
+                                                final BoolQueryBuilder baseQuery) {
+    if (isGroupedByNumberVariable(getVariableType(context)) || VariableType.DATE.equals(getVariableType(context))) {
       return Optional.of(getMinMaxStats(baseQuery, context));
     }
     return Optional.empty();
@@ -214,7 +214,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     );
 
     if (VariableType.DATE.equals(getVariableType(context))) {
-      return minMaxStatsService.getMinMaxDateRange(
+      return minMaxStatsService.getMinMaxDateRangeForNestedField(
         context,
         baseQuery,
         getIndexName(),
@@ -223,7 +223,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
         filterQuery
       );
     } else {
-      return minMaxStatsService.getMinMaxNumberRange(
+      return minMaxStatsService.getMinMaxNumberRangeForNestedField(
         context,
         baseQuery,
         getIndexName(),
@@ -292,20 +292,17 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private Double getMaxForNumberVariableAggregation(final ExecutionContext<Data> context,
                                                     final MinMaxStatDto minMaxStats) {
-    return context.getNumberVariableRange().isPresent()
-      ? context.getNumberVariableRange().get().getMaximum()
-      : minMaxStats.getMax();
+    return context.getCombinedRangeMinMaxStats().map(MinMaxStatDto::getMax).orElse(minMaxStats.getMax());
   }
 
   private Optional<Double> getBaselineForNumberVariableAggregation(final ExecutionContext<Data> context,
                                                                    final MinMaxStatDto minMaxStats) {
-    final Optional<Range<Double>> range = context.getNumberVariableRange();
+    final Optional<MinMaxStatDto> contextMinMaxStats = context.getCombinedRangeMinMaxStats();
     final Optional<Double> baselineForSingleReport = context.getReportData()
       .getConfiguration()
-      .getBaselineForNumberVariableReport();
+      .getGroupByBaseline();
 
-    if (!range.isPresent()
-      && baselineForSingleReport.isPresent()) {
+    if (!contextMinMaxStats.isPresent() && baselineForSingleReport.isPresent()) {
       if (baselineForSingleReport.get() > minMaxStats.getMax()) {
         // if report is single report and invalid baseline is set, return empty result
         return Optional.empty();
@@ -314,30 +311,22 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       return baselineForSingleReport;
     }
 
-    return range.isPresent()
-      ? Optional.of(roundBaselineToNearestPowerOfTen(range.get().getMinimum()))
-      : Optional.of(roundBaselineToNearestPowerOfTen(minMaxStats.getMin()));
+    return Optional.of(roundDownToNearestPowerOfTen(contextMinMaxStats.orElse(minMaxStats).getMin()));
   }
 
   private Double getGroupByNumberVariableUnit(final ExecutionContext<Data> context,
                                               final Double baseline,
                                               final MinMaxStatDto minMaxStats) {
-    final Optional<Range<Double>> rangeForCombinedReport = context.getNumberVariableRange();
-    final double maxVariableValue = rangeForCombinedReport.isPresent()
-      ? rangeForCombinedReport.get().getMaximum()
-      : minMaxStats.getMax();
-
-    final boolean customBucketsActive = context.getReportData().getConfiguration().getCustomNumberBucket().isActive();
-    Double unit = context.getReportData().getConfiguration().getCustomNumberBucket().getBucketSize();
+    final double maxVariableValue = context.getCombinedRangeMinMaxStats().orElse(minMaxStats).getMax();
+    final boolean customBucketsActive = context.getReportData().getConfiguration().getCustomBucket().isActive();
+    Double unit = context.getReportData().getConfiguration().getCustomBucket().getBucketSize();
     if (!customBucketsActive || unit == null || unit <= 0) {
       // if no valid unit is configured, calculate default automatic unit
       unit =
         (maxVariableValue - baseline)
           / (NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1); // -1 because the end of the loop is
       // inclusive and would otherwise create 81 buckets
-      unit = unit == 0
-        ? 1
-        : roundToNearestPowerOfTen(unit);
+      unit = unit == 0 ? 1 : roundDownToNearestPowerOfTen(unit);
     }
     if (!VariableType.DOUBLE.equals(getVariableType(context))) {
       // round unit up if grouped by number variable without decimal point
@@ -359,27 +348,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private GroupByDateUnit getGroupByDateUnit(final ExecutionContext<Data> context) {
     return context.getReportData().getConfiguration().getGroupByDateVariableUnit();
-  }
-
-  private Double roundBaselineToNearestPowerOfTen(Double baselineToRound) {
-    if (baselineToRound >= 0) {
-      return roundDownToNearestPowerOfTen(baselineToRound);
-    } else {
-      // round up if baseline is negative and apply sign again after rounding
-      return roundUpToNearestPowerOfTen(Math.abs(baselineToRound)) * -1;
-    }
-  }
-
-  private Double roundDownToNearestPowerOfTen(Double numberToRound) {
-    return Math.pow(10, Math.floor(Math.log10(numberToRound)));
-  }
-
-  private Double roundUpToNearestPowerOfTen(Double numberToRound) {
-    return Math.pow(10, Math.ceil(Math.log10(numberToRound)));
-  }
-
-  private Double roundToNearestPowerOfTen(Double numberToRound) {
-    return Math.pow(10, Math.round(Math.log10(numberToRound)));
   }
 
   private boolean isGroupedByNumberVariable(final VariableType varType) {

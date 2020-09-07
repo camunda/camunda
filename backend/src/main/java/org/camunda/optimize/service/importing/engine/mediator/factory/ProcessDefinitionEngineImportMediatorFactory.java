@@ -11,7 +11,7 @@ import org.camunda.optimize.service.es.writer.ProcessDefinitionWriter;
 import org.camunda.optimize.service.importing.engine.fetcher.definition.ProcessDefinitionFetcher;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.ProcessDefinitionEngineImportMediator;
-import org.camunda.optimize.service.importing.engine.service.ProcessDefinitionImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;

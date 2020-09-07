@@ -26,4 +26,10 @@ public class UIConfigurationDto {
   private String optimizeVersion;
   private Map<String, WebappsEndpointDto> webappsEndpoints;
   private List<String> webhooks;
+
+  // mirrors SettingsDto
+  private boolean metadataTelemetryEnabled;
+
+  // true if settingsDto flags are confirmed by superuser. If false, settings reflect initial config flags only
+  private boolean settingsManuallyConfirmed;
 }

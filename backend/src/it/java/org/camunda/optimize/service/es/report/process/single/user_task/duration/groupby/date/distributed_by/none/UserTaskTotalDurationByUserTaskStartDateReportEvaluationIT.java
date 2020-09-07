@@ -18,9 +18,9 @@ public class UserTaskTotalDurationByUserTaskStartDateReportEvaluationIT
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                final String userTaskKey,
+                                final String modelElementId,
                                 final Double durationInMs) {
-    changeUserTaskTotalDuration(processInstanceDto, userTaskKey, durationInMs);
+    changeUserTaskTotalDuration(processInstanceDto, modelElementId, durationInMs);
   }
 
   @Override

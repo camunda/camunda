@@ -5,7 +5,8 @@
  */
 package org.camunda.optimize.service.util;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
@@ -14,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
 import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
 
 @Slf4j
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class EventDtoBuilderUtil {
 
   private static final String START_MAPPED_SUFFIX = "start";

@@ -13,6 +13,8 @@ import java.time.temporal.ChronoUnit;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class GroupByDateUnitMapper {
+  private static final String UNSUPPORTED_UNIT_STRING = "Unsupportet unit: ";
+
   public static ChronoUnit mapToChronoUnit(final GroupByDateUnit unit) {
     switch (unit) {
       case YEAR:
@@ -29,7 +31,7 @@ public class GroupByDateUnitMapper {
         return ChronoUnit.MINUTES;
       default:
       case AUTOMATIC:
-        throw new IllegalArgumentException("Unsupported unit " + unit);
+        throw new IllegalArgumentException(UNSUPPORTED_UNIT_STRING + unit);
     }
   }
 
@@ -48,7 +50,7 @@ public class GroupByDateUnitMapper {
       case MINUTES:
         return GroupByDateUnit.MINUTE;
       default:
-        throw new IllegalArgumentException("Unsupported unit " + unit);
+        throw new IllegalArgumentException(UNSUPPORTED_UNIT_STRING + unit);
     }
   }
 
@@ -67,7 +69,7 @@ public class GroupByDateUnitMapper {
       case MINUTE:
         return DateHistogramInterval.MINUTE;
       default:
-        throw new IllegalArgumentException("Unsupported unit " + unit);
+        throw new IllegalArgumentException(UNSUPPORTED_UNIT_STRING + unit);
     }
   }
 }

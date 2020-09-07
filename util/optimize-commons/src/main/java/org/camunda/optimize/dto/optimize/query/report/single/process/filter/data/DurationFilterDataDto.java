@@ -23,5 +23,6 @@ public class DurationFilterDataDto implements FilterDataDto {
   protected Long value;
   protected DurationFilterUnit unit;
   protected FilterOperator operator;
+  protected boolean includeNull;
 
 }

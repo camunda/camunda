@@ -16,7 +16,6 @@ import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.rest.RestStatus;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -33,6 +32,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLE_ID;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
@@ -100,7 +100,7 @@ public class ProcessInstanceReader {
         String.class,
         searchHit -> (String) searchHit.getSourceAsMap().get(PROCESS_INSTANCE_ID),
         esClient,
-        configurationService.getElasticsearchScrollTimeout(),
+        configurationService.getEsScrollTimeoutInSeconds(),
         previousPage.getLimit()
       );
     } catch (ElasticsearchStatusException e) {
@@ -125,7 +125,7 @@ public class ProcessInstanceReader {
 
     final SearchRequest scrollSearchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     try {
       final SearchResponse response = esClient.search(scrollSearchRequest, RequestOptions.DEFAULT);

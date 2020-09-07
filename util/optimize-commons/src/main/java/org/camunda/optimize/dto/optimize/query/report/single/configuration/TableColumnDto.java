@@ -38,18 +38,15 @@ public class TableColumnDto {
   @Builder.Default
   private List<String> includedColumns = new ArrayList<>();
 
-  public void addNewVariableColumns(final List<String> columns) {
-    final List<String> newColumnsToAdd = columns
-      .stream()
-      .filter(col -> !excludedColumns.contains(col))
-      .filter(col -> !includedColumns.contains(col))
-      .distinct()
-      .collect(toList());
-    if (includeNewVariables) {
-      includedColumns.addAll(newColumnsToAdd);
-    } else {
-      excludedColumns.addAll(newColumnsToAdd);
-    }
+  public void addNewAndRemoveUnexpectedVariableColumns(final List<String> allVariableColumns) {
+    addNewVariableColumns(allVariableColumns);
+
+    // remove all variable columns that are in excluded/included lists but not in allVariableColumns
+    final List<String> variableColumnsToRemove = new ArrayList<>();
+    variableColumnsToRemove.addAll(getAllVariablePrefixedColumns(excludedColumns));
+    variableColumnsToRemove.addAll(getAllVariablePrefixedColumns(includedColumns));
+    variableColumnsToRemove.removeAll(allVariableColumns);
+    removeColumns(variableColumnsToRemove);
   }
 
   public void addDtoColumns(final List<String> columns) {
@@ -68,6 +65,25 @@ public class TableColumnDto {
     includedColumns.removeAll(excludedColumns);
     sortIncludedColumns();
     return includedColumns;
+  }
+
+  private void addNewVariableColumns(final List<String> variableColumns) {
+    final List<String> newColumnsToAdd = variableColumns
+      .stream()
+      .filter(col -> !excludedColumns.contains(col))
+      .filter(col -> !includedColumns.contains(col))
+      .distinct()
+      .collect(toList());
+    if (includeNewVariables) {
+      includedColumns.addAll(newColumnsToAdd);
+    } else {
+      excludedColumns.addAll(newColumnsToAdd);
+    }
+  }
+
+  private void removeColumns(final List<String> columnsToRemove) {
+    excludedColumns.removeAll(columnsToRemove);
+    includedColumns.removeAll(columnsToRemove);
   }
 
   private void sortIncludedColumns() {
@@ -109,5 +125,13 @@ public class TableColumnDto {
     return digitsInString.isEmpty()
       ? 0
       : Integer.parseInt(digitsInString);
+  }
+
+  private List<String> getAllVariablePrefixedColumns(List<String> columns) {
+    return columns.stream()
+      .filter(col -> col.contains(VARIABLE_PREFIX)
+        || col.contains(INPUT_PREFIX)
+        || col.contains(OUTPUT_PREFIX))
+      .collect(toList());
   }
 }

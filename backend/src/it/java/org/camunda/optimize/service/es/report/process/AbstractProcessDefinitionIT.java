@@ -17,12 +17,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -70,7 +71,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected static final String SECOND_USER = "secondUser";
   protected static final String SECOND_USERS_PASSWORD = "secondUserPW";
   protected static final VariableType DEFAULT_VARIABLE_TYPE = VariableType.STRING;
-  public static final String TEST_PROCESS = "aProcess";
+  protected static final String TEST_PROCESS = "aProcess";
 
   protected static final Map<String, VariableType> varNameToTypeMap = new HashMap<>(VariableType.values().length);
 
@@ -116,7 +117,11 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition() {
-    return deploySimpleOneUserTasksDefinition("aProcess", null);
+    return deploySimpleOneUserTasksDefinition(TEST_PROCESS, null);
+  }
+
+  protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key) {
+    return deploySimpleOneUserTasksDefinition(key, null);
   }
 
   protected ProcessDefinitionEngineDto deploySimpleOneUserTasksDefinition(String key, String tenantId) {
@@ -128,7 +133,12 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String activityId) {
-    return deployAndStartSimpleServiceTaskProcess("aProcess", activityId, null);
+    return deployAndStartSimpleServiceTaskProcess(TEST_PROCESS, activityId, null);
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String key,
+                                                                            String activityId) {
+    return deployAndStartSimpleServiceTaskProcess(key, activityId, null);
   }
 
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String key,
@@ -154,29 +164,18 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition() {
-    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance(TEST_PROCESS, "anActivityId");
+    return deploySimpleServiceTaskProcessAndGetDefinition(TEST_PROCESS);
+  }
+
+  protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition(String key) {
+    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance(key, TEST_ACTIVITY);
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
   }
 
   protected ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() {
-    // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent("startEvent")
-      .exclusiveGateway("splittingGateway")
-        .name("Should we go to task 1?")
-        .condition("yes", "${goToTask1}")
-        .serviceTask("task1")
-          .camundaExpression("${true}")
-      .exclusiveGateway("mergeGateway")
-        .endEvent("endEvent")
-      .moveToNode("splittingGateway")
-        .condition("no", "${!goToTask1}")
-        .serviceTask("task2")
-          .camundaExpression("${true}")
-        .connectTo("mergeGateway")
-      .done();
-    // @formatter:on
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(modelInstance);
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      BpmnModels.getSimpleGatewayProcess(TEST_PROCESS)
+    );
   }
 
   protected String deployAndStartMultiTenantSimpleServiceTaskProcess(final List<String> deployedTenants) {
@@ -193,7 +192,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected List<ProcessInstanceEngineDto> startAndEndProcessInstancesWithGivenRuntime(
     final int numberOfInstances,
     final Duration instanceRuntime,
-    final OffsetDateTime startTimeOfFirstInstance) throws SQLException {
+    final OffsetDateTime startTimeOfFirstInstance) {
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(numberOfInstances);
 
     for (int i = 0; i < numberOfInstances; i++) {
@@ -206,6 +205,27 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       );
     }
     return processInstanceDtos;
+  }
+
+  protected ProcessInstanceEngineDto startInstanceAndModifyDuration(final String definitionId,
+                                                                    final long durationInMilliseconds) {
+    final ProcessInstanceEngineDto processInstance = engineIntegrationExtension
+      .startProcessInstance(definitionId);
+    changeProcessInstanceDuration(processInstance, durationInMilliseconds);
+    return processInstance;
+  }
+
+  protected void changeProcessInstanceDuration(final ProcessInstanceEngineDto processInstanceDto,
+                                               final long durationInMilliseconds) {
+    final OffsetDateTime startDate = LocalDateUtil.getCurrentDateTime();
+    final OffsetDateTime endDate = startDate.plus(durationInMilliseconds, ChronoUnit.MILLIS);
+    engineDatabaseExtension.changeProcessInstanceStartAndEndDate(processInstanceDto.getId(), startDate, endDate);
+  }
+
+  protected void startProcessInstanceAndModifyActivityDuration(final String definitionId,
+                                                               final long activityDurationInMs) {
+    final ProcessInstanceEngineDto thirdProcessInstance = engineIntegrationExtension.startProcessInstance(definitionId);
+    engineDatabaseExtension.changeAllActivityDurations(thirdProcessInstance.getId(), activityDurationInMs);
   }
 
   protected ProcessReportDataDto createReportDataSortedDesc(final String definitionKey,
@@ -270,30 +290,22 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
                                             final String userTaskKey,
-                                            final double durationInMs) {
+                                            final Number durationInMs) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
-        historicUserTaskInstanceDto ->
-          changeUserClaimStartTimestamp(
-            durationInMs,
-            historicUserTaskInstanceDto
-          )
+        historicUserTaskInstanceDto -> changeUserClaimStartTimestamp(durationInMs, historicUserTaskInstanceDto)
       );
   }
 
   protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                            final double durationInMs) {
+                                            final Number durationInMs) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(
-        historicUserTaskInstanceDto ->
-          changeUserClaimStartTimestamp(
-            durationInMs,
-            historicUserTaskInstanceDto
-          )
+        historicUserTaskInstanceDto -> changeUserClaimStartTimestamp(durationInMs, historicUserTaskInstanceDto)
       );
   }
 
-  private void changeUserClaimStartTimestamp(final Double durationInMs,
+  private void changeUserClaimStartTimestamp(final Number durationInMs,
                                              final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
     try {
       engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
@@ -307,58 +319,45 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
                                              final String userTaskKey,
-                                             final Double durationInMs) {
-    try {
-      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, durationInMs.longValue());
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+                                             final Number durationInMs) {
+    engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), userTaskKey, durationInMs.longValue());
   }
 
   protected void changeUserTaskTotalDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                             final Double durationInMs) {
-    try {
-      engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), durationInMs.longValue());
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
+                                             final Number durationInMs) {
+    engineDatabaseExtension.changeUserTaskDuration(processInstanceDto.getId(), durationInMs.longValue());
   }
 
   protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
-                                            final Double durationInMs) {
+                                            final Number durationInMs) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId())
       .forEach(
-        historicUserTaskInstanceDto ->
-          changeUserClaimEndTimestamp(
-            durationInMs,
-            historicUserTaskInstanceDto
-          )
+        historicUserTaskInstanceDto -> changeUserClaimEndTimestamp(
+          historicUserTaskInstanceDto, durationInMs.longValue()
+        )
       );
   }
 
   protected void changeUserTaskWorkDuration(final ProcessInstanceEngineDto processInstanceDto,
                                             final String userTaskKey,
-                                            final Double durationInMs) {
+                                            final Number durationInMs) {
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
         historicUserTaskInstanceDto -> {
           if (historicUserTaskInstanceDto.getEndTime() != null) {
-            changeUserClaimEndTimestamp(
-              durationInMs,
-              historicUserTaskInstanceDto
-            );
+            changeUserClaimEndTimestamp(historicUserTaskInstanceDto, durationInMs.longValue());
           }
         }
       );
   }
 
-  private void changeUserClaimEndTimestamp(final Double durationInMs,
-                                           final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
+  private void changeUserClaimEndTimestamp(final HistoricUserTaskInstanceDto userTaskInstance,
+                                           final Number durationInMs) {
     try {
-      if (historicUserTaskInstanceDto.getEndTime() != null) {
+      if (userTaskInstance.getEndTime() != null) {
         engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
-          historicUserTaskInstanceDto.getId(),
-          historicUserTaskInstanceDto.getEndTime().minus(durationInMs.longValue(), ChronoUnit.MILLIS)
+          userTaskInstance.getId(),
+          userTaskInstance.getEndTime().minus(durationInMs.longValue(), ChronoUnit.MILLIS)
         );
       }
     } catch (SQLException e) {
@@ -369,11 +368,9 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected void changeUserTaskStartDate(final ProcessInstanceEngineDto processInstanceDto,
                                          final OffsetDateTime now,
                                          final String userTaskId,
-                                         final Double offsetDuration) {
+                                         final Number offsetDurationInMs) {
     engineDatabaseExtension.changeUserTaskStartDate(
-      processInstanceDto.getId(),
-      userTaskId,
-      now.minus(offsetDuration.longValue(), ChronoUnit.MILLIS)
+      processInstanceDto.getId(), userTaskId, now.minus(offsetDurationInMs.longValue(), ChronoUnit.MILLIS)
     );
   }
 
@@ -386,16 +383,14 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,
                                          final OffsetDateTime now,
                                          final String userTaskKey,
-                                         final Double offsetDuration) {
+                                         final Number offsetDurationInMs) {
 
     engineIntegrationExtension.getHistoricTaskInstances(processInstanceDto.getId(), userTaskKey)
       .forEach(
-        historicUserTaskInstanceDto ->
-        {
+        historicUserTaskInstanceDto -> {
           try {
             engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
-              historicUserTaskInstanceDto.getId(),
-              now.minus(offsetDuration.longValue(), ChronoUnit.MILLIS)
+              historicUserTaskInstanceDto.getId(), now.minus(offsetDurationInMs.longValue(), ChronoUnit.MILLIS)
             );
           } catch (SQLException e) {
             throw new OptimizeIntegrationTestException(e);

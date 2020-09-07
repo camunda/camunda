@@ -29,7 +29,6 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
@@ -78,6 +77,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
@@ -259,7 +259,7 @@ public class DurationOutliersReader {
 
     final SearchRequest scrollSearchRequest = new SearchRequest(PROCESS_INSTANCE_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     try {
       final SearchResponse response = esClient.search(scrollSearchRequest, RequestOptions.DEFAULT);
@@ -268,7 +268,7 @@ public class DurationOutliersReader {
         ProcessInstanceIdDto.class,
         objectMapper,
         esClient,
-        configurationService.getElasticsearchScrollTimeout(),
+        configurationService.getEsScrollTimeoutInSeconds(),
         recordLimit
       );
     } catch (IOException e) {
@@ -589,6 +589,7 @@ public class DurationOutliersReader {
 
         return new AbstractMap.SimpleEntry<>(flowNodeId, finding);
       })
+      .filter(entry -> entry.getValue().getOutlierCount() > 0)
       .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
     final long totalOutlierCount = totalLowerOutlierCount.get() + totalHigherOutlierCount.get();

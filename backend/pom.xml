@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>parent</artifactId>
-    <version>3.2.0-alpha2</version>
+    <version>3.2.0</version>
   </parent>
 
   <artifactId>optimize-backend</artifactId>
@@ -39,17 +39,17 @@
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-bpmn-model</artifactId>
-      <version>${camunda.model.version}-ee</version>
+      <version>${camunda.maven.artifacts.version}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-dmn-model</artifactId>
-      <version>${camunda.model.version}-ee</version>
+      <version>${camunda.maven.artifacts.version}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>
-      <version>${camunda.model.version}-ee</version>
+      <version>${camunda.maven.artifacts.version}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
@@ -236,7 +236,7 @@
     <dependency>
       <groupId>io.github.classgraph</groupId>
       <artifactId>classgraph</artifactId>
-      <version>4.8.87</version>
+      <version>4.8.89</version>
     </dependency>
 
     <!--Test dependencies-->
@@ -272,7 +272,7 @@
     <dependency>
       <groupId>com.icegreen</groupId>
       <artifactId>greenmail</artifactId>
-      <version>1.5.14</version>
+      <version>1.6.0</version>
       <scope>test</scope>
       <exclusions>
         <exclusion>
@@ -288,7 +288,7 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine-rest-core</artifactId>
-      <version>${camunda.model.version}</version>
+      <version>${camunda.maven.artifacts.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -438,7 +438,7 @@
         <dependency>
           <groupId>org.postgresql</groupId>
           <artifactId>postgresql</artifactId>
-          <version>42.2.14</version>
+          <version>42.2.16</version>
           <scope>test</scope>
         </dependency>
         <dependency>

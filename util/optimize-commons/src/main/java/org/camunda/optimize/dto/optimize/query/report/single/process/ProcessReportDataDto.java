@@ -128,7 +128,7 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
         return this.getConfiguration()
           .getGroupByDateVariableUnit()
           .equals(that.getConfiguration().getGroupByDateVariableUnit());
-      } else if (isGroupByNumberVariableReport()) {
+      } else if (isGroupByNumberReport()) {
         return isBucketSizeCombinable(that);
       }
       return true;
@@ -137,19 +137,19 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
   }
 
   private boolean isBucketSizeCombinable(final ProcessReportDataDto that) {
-    return this.getConfiguration().getCustomNumberBucket().isActive()
-      && that.getConfiguration().getCustomNumberBucket().isActive()
+    return this.getConfiguration().getCustomBucket().isActive()
+      && that.getConfiguration().getCustomBucket().isActive()
       && Objects.equals(
-      this.getConfiguration().getCustomNumberBucket().getBucketSize(),
-      that.getConfiguration().getCustomNumberBucket().getBucketSize()
+      this.getConfiguration().getCustomBucket().getBucketSize(),
+      that.getConfiguration().getCustomBucket().getBucketSize()
     ) || isBucketSizeIrrelevant(this) && isBucketSizeIrrelevant(that);
   }
 
   private boolean isBucketSizeIrrelevant(final ProcessReportDataDto reportData) {
     // Bucket size settings for combined reports are not relevant if custom bucket config is
     // inactive or bucket size is null
-    if (reportData.getConfiguration().getCustomNumberBucket().isActive()) {
-      return reportData.getConfiguration().getCustomNumberBucket().getBucketSize() == null;
+    if (reportData.getConfiguration().getCustomBucket().isActive()) {
+      return reportData.getConfiguration().getCustomBucket().getBucketSize() == null;
     }
     return true;
   }
@@ -166,10 +166,14 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
       && ProcessGroupByType.END_DATE.equals(groupBy.getType());
   }
 
-  private boolean isGroupByNumberVariableReport() {
+  private boolean isGroupByNumberReport() {
     return groupBy != null
-      && ProcessGroupByType.VARIABLE.equals(groupBy.getType())
-      && (VariableType.getNumericTypes().contains(((VariableGroupByDto) groupBy).getValue().getType()));
+      &&
+      (
+        ProcessGroupByType.VARIABLE.equals(groupBy.getType())
+          && (VariableType.getNumericTypes().contains(((VariableGroupByDto) groupBy).getValue().getType()))
+        || ProcessGroupByType.DURATION.equals(groupBy.getType())
+      );
   }
 
 }

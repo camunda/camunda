@@ -11,7 +11,6 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.test.engine.AuthorizationClient;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;
@@ -20,11 +19,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class AnalysisAuthorizationIT extends AbstractIT {
 
@@ -35,8 +33,6 @@ public class AnalysisAuthorizationIT extends AbstractIT {
   private static final String TASK_ID_2 = "serviceTask2";
   private static final String MERGE_GATEWAY_ID = "mergeExclusiveGateway";
   private static final String END_EVENT_ID = "endEvent";
-
-  private AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 
   @Test
   public void branchAnalysis_authorized() {
@@ -52,7 +48,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     Response response = executeBranchAnalysisAsKermit(processDefinition);
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -65,8 +61,11 @@ public class AnalysisAuthorizationIT extends AbstractIT {
 
     importAllEngineEntitiesFromScratch();
 
-    //when + then
-    executeBranchAnalysisAsKermit(processDefinition, Collections.singletonList(null));
+    // when
+    Response response = executeBranchAnalysisAsKermit(processDefinition, Collections.singletonList(null));
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -86,7 +85,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     );
     Response response = analysisClient.getProcessDefinitionCorrelationRawResponseWithoutAuth(analysisDto);
 
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -107,7 +106,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     Response response = executeBranchAnalysisAsKermit(processDefinition);
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -126,7 +125,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     Response response = executeBranchAnalysisAsKermit(processDefinition);
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -150,7 +149,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     Response response = executeBranchAnalysisAsKermit(processDefinition1, Lists.newArrayList(tenantId1, tenantId2));
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @Test
@@ -169,7 +168,7 @@ public class AnalysisAuthorizationIT extends AbstractIT {
     final Response response = executeBranchAnalysisAsKermit(processDefinition, Lists.newArrayList(tenantId));
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private Response executeBranchAnalysisAsKermit(final ProcessDefinitionEngineDto processDefinition) {

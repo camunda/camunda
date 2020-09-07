@@ -11,7 +11,7 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -25,8 +25,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -100,7 +100,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .extracting(DateGroupByValueDto.class::cast)
       .extracting(DateGroupByValueDto::getUnit)
       .isEqualTo(GroupByDateUnit.DAY);
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy()).isEqualTo(DistributedBy.CANDIDATE_GROUP);
+    assertThat(resultReportDataDto.getConfiguration().getDistributedBy().getType()).isEqualTo(DistributedByType.CANDIDATE_GROUP);
 
     final ReportHyperMapResultDto result = evaluationResponse.getResult();
     // @formatter:off
@@ -114,7 +114,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
   }
 
   @Test
-  public void resultIsSortedInDescendingOrder() {
+  public void resultIsSortedInAscendingOrder() {
     // given
     final OffsetDateTime referenceDate = OffsetDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
@@ -142,17 +142,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
         .distributedByContains(FIRST_CANDIDATE_GROUP, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
         .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
         .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
         .distributedByContains(FIRST_CANDIDATE_GROUP, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
       .doAssert(result);
     // @formatter:on
   }
@@ -178,7 +178,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
 
     // when
     final ProcessReportDataDto reportData = createGroupedByDayReport(processDefinition);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
+    reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.DESC));
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
@@ -187,17 +187,17 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
         .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
         .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
         .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(4)))
-        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
         .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
+        .distributedByContains(FIRST_CANDIDATE_GROUP, null)
       .doAssert(result);
     // @formatter:on
   }
@@ -282,11 +282,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .processInstanceCountWithoutFilters(2L)
       .isComplete(false)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
         .distributedByContains(FIRST_CANDIDATE_GROUP, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
         .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
       .doAssert(result);
     // @formatter:on
   }
@@ -320,11 +320,11 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
         .distributedByContains(FIRST_CANDIDATE_GROUP, 2.)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 2.)
         .distributedByContains(FIRST_CANDIDATE_GROUP, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 2.)
       .doAssert(result);
     // @formatter:on
   }
@@ -352,14 +352,14 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(1)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
         .distributedByContains(FIRST_CANDIDATE_GROUP, 1.)
-      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
         .distributedByContains(SECOND_CANDIDATE_GROUP, null)
+      .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(2)))
         .distributedByContains(FIRST_CANDIDATE_GROUP, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, null)
       .groupByContains(groupedByDayDateAsString(referenceDate.minusDays(3)))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
         .distributedByContains(FIRST_CANDIDATE_GROUP, null)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
       .doAssert(result);
     // @formatter:on
   }
@@ -619,6 +619,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
     final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertFirstValueEquals(resultData, 2.);
@@ -651,6 +652,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
     final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     assertFirstValueEquals(resultData, 1.);
@@ -676,6 +678,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
     final List<HyperMapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isEmpty();
   }
@@ -695,6 +698,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then the single data point should be grouped by month
+    assertThat(result.getIsComplete()).isTrue();
     final List<HyperMapResultEntryDto> resultData = result.getData();
     String nowStrippedToMonthAsString = localDateTimeToString(truncateToStartOfUnit(now, ChronoUnit.MONTHS));
     assertThat(resultData).hasSize(1);
@@ -727,8 +731,8 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .processInstanceCount(2L)
       .processInstanceCountWithoutFilters(2L)
       .groupByContains(groupedByDayDateAsString(now))
-        .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
         .distributedByContains(FIRST_CANDIDATE_GROUP, 2.)
+        .distributedByContains(SECOND_CANDIDATE_GROUP, 1.)
       .doAssert(result);
     // @formatter:on
   }

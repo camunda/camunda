@@ -22,6 +22,13 @@ public class BpmnModels {
   public static final String DEFAULT_PROCESS_ID = "aProcess";
   public static final String VERSION_TAG = "aVersionTag";
 
+  public static final String START_EVENT_ID = "startEvent";
+  public static final String SPLITTING_GATEWAY_ID = "splittingGateway";
+  public static final String TASK_ID_1 = "serviceTask1";
+  public static final String TASK_ID_2 = "serviceTask2";
+  public static final String MERGE_GATEWAY_ID = "mergeExclusiveGateway";
+  public static final String END_EVENT_ID = "endEvent";
+
 
   public static BpmnModelInstance getSimpleBpmnDiagram() {
     return getSimpleBpmnDiagram(DEFAULT_PROCESS_ID, START_EVENT, END_EVENT);
@@ -88,13 +95,51 @@ public class BpmnModels {
   }
 
   public static BpmnModelInstance getSingleServiceTaskProcess(String procDefKey, String serviceTaskId) {
+    // @formatter:off
     return Bpmn.createExecutableProcess(procDefKey)
       .camundaVersionTag(VERSION_TAG)
       .name(procDefKey)
       .startEvent(START_EVENT)
       .serviceTask(serviceTaskId)
-      .camundaExpression("${true}")
+        .camundaExpression("${true}")
       .endEvent(END_EVENT)
       .done();
+    // @formatter:on
   }
+
+  public static BpmnModelInstance getTwoServiceTasksProcess(String procDefKey) {
+    // @formatter:off
+    return Bpmn.createExecutableProcess(procDefKey)
+      .camundaVersionTag(VERSION_TAG)
+      .name(procDefKey)
+      .startEvent(START_EVENT)
+      .serviceTask(TASK_ID_1)
+          .camundaExpression("${true}")
+      .serviceTask(TASK_ID_2)
+        .camundaExpression("${true}")
+      .endEvent(END_EVENT)
+      .done();
+    // @formatter:on
+  }
+
+  public static BpmnModelInstance getSimpleGatewayProcess(final String procDefKey) {
+    // @formatter:off
+    return Bpmn.createExecutableProcess(procDefKey)
+      .startEvent(START_EVENT_ID)
+      .exclusiveGateway(SPLITTING_GATEWAY_ID)
+        .name("Should we go to task 1?")
+        .condition("yes", "${goToTask1}")
+        .serviceTask(TASK_ID_1)
+        .camundaExpression("${true}")
+      .exclusiveGateway(MERGE_GATEWAY_ID)
+        .endEvent(END_EVENT_ID)
+      .moveToNode(SPLITTING_GATEWAY_ID)
+        .condition("no", "${!goToTask1}")
+        .serviceTask(TASK_ID_2)
+        .camundaExpression("${true}")
+        .connectTo(MERGE_GATEWAY_ID)
+      .done();
+    // @formatter:on
+  }
+
 }

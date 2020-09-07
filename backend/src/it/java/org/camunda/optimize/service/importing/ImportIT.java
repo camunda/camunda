@@ -117,13 +117,13 @@ public class ImportIT extends AbstractImportIT {
       });
   }
 
-  protected void assertDocumentCountInES(final String elasticsearchIndex,
-                                         final long count) {
+  private void assertDocumentCountInES(final String elasticsearchIndex,
+                                       final long count) {
     final Integer docCount = elasticSearchIntegrationTestExtension.getDocumentCountOf(elasticsearchIndex);
     assertThat(docCount.longValue()).isEqualTo(count);
   }
 
-  protected ProcessInstanceEngineDto deployAndStartSimpleTwoUserTaskProcessWithVariables(
+  private ProcessInstanceEngineDto deployAndStartSimpleTwoUserTaskProcessWithVariables(
     final Map<String, Object> variables) {
     // @formatter:off
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")

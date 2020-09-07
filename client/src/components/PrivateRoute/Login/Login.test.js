@@ -23,23 +23,14 @@ it('renders without crashing', () => {
   shallow(<Login />);
 });
 
-it('should reflect the state in the input fields', () => {
-  const node = shallow(<Login />);
-  const input = 'asdf';
-
-  node.setState({username: input});
-
-  expect(node.find('[name="username"]')).toHaveValue(input);
-});
-
-it('should update the state from the input fields', () => {
+it('should have entered values in the input fields', () => {
   const node = shallow(<Login />);
   const input = 'asdf';
   const field = 'username';
 
-  node.find(`[name="${field}"]`).simulate('change', {target: {value: input, name: field}});
+  node.find(`[name="${field}"]`).simulate('change', {target: {value: input}});
 
-  expect(node).toHaveState(field, input);
+  expect(node.find('[name="username"]')).toHaveValue(input);
 });
 
 it('should call the login function when submitting the form', async () => {
@@ -48,8 +39,8 @@ it('should call the login function when submitting the form', async () => {
   const username = 'david';
   const password = 'dennis';
 
-  node.setState({username, password});
-  login.mockReturnValueOnce({token: '4mfio34nfinN93Jk9'});
+  node.find(`[name="username"]`).simulate('change', {target: {value: username}});
+  node.find(`[name="password"]`).simulate('change', {target: {value: password}});
 
   await node.find(Button).simulate('click', {preventDefault: jest.fn()});
 
@@ -60,36 +51,24 @@ it('should call the onLogin callback after login', async () => {
   const spy = jest.fn();
   const node = shallow(<Login onLogin={spy} />);
 
-  login.mockReturnValueOnce({token: '4mfio34nfinN93Jk9'});
-
   await node.find(Button).simulate('click', {preventDefault: jest.fn()});
 
   expect(spy).toHaveBeenCalled();
 });
 
-it('should display the error message if there is an error', () => {
-  const node = shallow(<Login />);
-
-  node.setState({error: true});
-
-  expect(node.find('MessageBox[type="error"]')).toExist();
-});
-
-it('should set the error property on failed login', async () => {
+it('should display error message on failed login', async () => {
   const node = shallow(<Login />);
 
   login.mockReturnValueOnce({errorMessage: 'Failed'});
 
-  node.instance().passwordField = document.createElement('input');
   await node.find(Button).simulate('click', {preventDefault: jest.fn()});
 
-  expect(node).toHaveState('error', 'Failed');
+  expect(node.find('MessageBox[type="error"]')).toExist();
 });
 
 it('should disable the login button when waiting for server response', () => {
   const node = shallow(<Login onLogin={jest.fn()} />);
 
-  node.instance().passwordField = document.createElement('input');
   node.find(Button).simulate('click', {preventDefault: jest.fn()});
 
   expect(node.find(Button)).toBeDisabled();

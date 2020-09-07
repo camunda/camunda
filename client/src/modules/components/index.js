@@ -48,3 +48,4 @@ export {LastModifiedInfo} from './LastModifiedInfo';
 export {ReportDetails} from './ReportDetails';
 export {InstanceCount} from './InstanceCount';
 export {DocsLink} from './DocsLink';
+export {Tabs} from './Tabs';

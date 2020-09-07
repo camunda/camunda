@@ -245,7 +245,7 @@ public class CollectionScopeService {
     CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(scopeEntryId);
     List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
     return reportsInCollection.stream()
-      .filter(report -> !report.getCombined())
+      .filter(report -> !report.isCombined())
       .map(report -> (SingleReportDefinitionDto<?>) report)
       .filter(report -> reportInSameScopeAsGivenScope(scopeEntry, report))
       .collect(Collectors.toList());
@@ -339,7 +339,7 @@ public class CollectionScopeService {
                                                                              final CollectionDefinitionDto collectionDefinition) {
     List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
     return reportsInCollection.stream()
-      .filter(report -> !report.getCombined())
+      .filter(report -> !report.isCombined())
       .map(report -> (SingleReportDefinitionDto<?>) report)
       .filter(report -> !reportService.isReportAllowedForCollectionScope(report, collectionDefinition))
       .collect(Collectors.toList());

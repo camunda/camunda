@@ -7,8 +7,8 @@ package org.camunda.optimize.service.es.report.command.util;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -29,10 +29,9 @@ public class FilterLimitedAggregationUtil {
     return wrapWithFilterLimitedParentAggregation(FILTER_LIMITED_AGGREGATION, limitFilterQuery, subAggregationToLimit);
   }
 
-  public static FilterAggregationBuilder wrapWithFilterLimitedParentAggregation(
-    final String filterParentAggregationName,
-    final BoolQueryBuilder limitFilterQuery,
-    final AggregationBuilder subAggregationToLimit) {
+  public static FilterAggregationBuilder wrapWithFilterLimitedParentAggregation(final String filterParentAggregationName,
+                                                                                final QueryBuilder limitFilterQuery,
+                                                                                final AggregationBuilder subAggregationToLimit) {
     return AggregationBuilders
       .filter(filterParentAggregationName, limitFilterQuery)
       .subAggregation(subAggregationToLimit);
@@ -48,13 +47,12 @@ public class FilterLimitedAggregationUtil {
       .map(ParsedSingleBucketAggregation::getAggregations);
   }
 
-  public static boolean isResultComplete(final SearchResponse response) {
-    boolean complete = true;
-    final Aggregations aggregations = response.getAggregations();
+  public static boolean isResultComplete(final Aggregations aggregations, final long totalHits) {
+    boolean complete = totalHits == 0L;
     if (aggregations != null
       && aggregations.getAsMap().containsKey(FILTER_LIMITED_AGGREGATION)) {
       final ParsedFilter limitingAggregation = aggregations.get(FILTER_LIMITED_AGGREGATION);
-      complete = limitingAggregation.getDocCount() == response.getHits().getTotalHits().value;
+      complete = limitingAggregation.getDocCount() == totalHits;
     }
     return complete;
   }

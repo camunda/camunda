@@ -25,8 +25,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -968,9 +968,9 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
 
   protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                          final String userTaskKey,
-                                         final double durationInMs);
+                                         final Number durationInMs);
 
-  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final double durationInMs);
+  protected abstract void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Number durationInMs);
 
   protected abstract ProcessReportDataDto createReport(final String processDefinitionKey, final List<String> versions);
 

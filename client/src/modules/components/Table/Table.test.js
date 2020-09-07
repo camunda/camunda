@@ -41,6 +41,16 @@ it('should support explicit id for columns', () => {
   expect(result).toMatchSnapshot();
 });
 
+it('should support explicit id for nested columns', () => {
+  const result = Table.formatColumns([
+    {id: 'column1', label: 'X', columns: ['i', {id: 'columnJ', label: 'j'}]},
+    'Y',
+    {label: 'Z', columns: [{id: 'columnZ1', label: 'Z1'}, 'Z2']},
+  ]);
+
+  expect(result).toMatchSnapshot();
+});
+
 it('shoud correctly format body', () => {
   const result = Table.formatData(['Header 1', 'Header 2', 'Header 3'], [['a', 'b', 'c']]);
 

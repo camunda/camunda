@@ -7,7 +7,6 @@ package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
-import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
@@ -25,7 +24,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMediatorFactory {
-  private final CamundaEventImportService camundaEventService;
+  private final CamundaEventImportServiceFactory camundaEventImportServiceFactory;
   private final CompletedProcessInstanceWriter completedProcessInstanceWriter;
   private final RunningProcessInstanceWriter runningProcessInstanceWriter;
   private final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider;
@@ -33,12 +32,12 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMe
   public ProcessInstanceEngineImportMediatorFactory(final BeanFactory beanFactory,
                                                     final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
                                                     final ConfigurationService configurationService,
-                                                    final CamundaEventImportService camundaEventService,
+                                                    final CamundaEventImportServiceFactory camundaEventImportServiceFactory,
                                                     final CompletedProcessInstanceWriter completedProcessInstanceWriter,
                                                     final RunningProcessInstanceWriter runningProcessInstanceWriter,
                                                     final BusinessKeyImportAdapterProvider businessKeyImportAdapterProvider) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
-    this.camundaEventService = camundaEventService;
+    this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.businessKeyImportAdapterProvider = businessKeyImportAdapterProvider;
@@ -57,7 +56,7 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMe
         engineContext,
         businessKeyImportAdapterProvider,
         completedProcessInstanceWriter,
-        camundaEventService
+        camundaEventImportServiceFactory.createCamundaEventService(engineContext)
       ),
       configurationService,
       new BackoffCalculator(configurationService)
@@ -77,7 +76,7 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMe
         engineContext,
         businessKeyImportAdapterProvider,
         runningProcessInstanceWriter,
-        camundaEventService
+        camundaEventImportServiceFactory.createCamundaEventService(engineContext)
       ),
       configurationService,
       new BackoffCalculator(configurationService)

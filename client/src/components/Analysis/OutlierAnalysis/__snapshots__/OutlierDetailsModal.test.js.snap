@@ -10,29 +10,42 @@ exports[`should render a modal with a button group showing duration chart 1`] = 
     Outliers of test Flow Node
   </Component>
   <Component>
-    <ButtonGroup>
-      <ForwardRef(Button)
-        active={true}
-        onClick={[Function]}
+    <Tabs>
+      <Component
+        title="Duration Distribution chart"
       >
-        Duration Distribution chart
-      </ForwardRef(Button)>
-      <ForwardRef(Button)
-        active={false}
-        onClick={[Function]}
+        <p
+          className="description"
+        >
+          4 instances took 110% longer than average.
+          <InstancesButtonErrorHandler
+            name="test"
+          />
+        </p>
+        <DurationChart />
+      </Component>
+      <Component
+        title="Common Significant Variables Table"
       >
-        Common Significant Variables Table
-      </ForwardRef(Button)>
-    </ButtonGroup>
-    <p
-      className="description"
-    >
-      4 instances took 110% longer than average.
-      <InstancesButtonErrorHandler
-        name="test"
-      />
-    </p>
-    <DurationChart />
+        <p
+          className="description"
+        >
+          Total Instances
+          : 
+        </p>
+        <VariablesTable
+          selectedNode={
+            Object {
+              "higherOutlier": Object {
+                "count": 4,
+                "relation": 1.1,
+              },
+              "name": "test",
+            }
+          }
+        />
+      </Component>
+    </Tabs>
   </Component>
 </Modal>
 `;

@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.data.upgrade;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
@@ -34,15 +33,12 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisu
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDto;
-import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
-import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.optimize.AlertClient;
 import org.camunda.optimize.test.optimize.CollectionClient;
@@ -58,8 +54,6 @@ import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.client.RequestOptions;
 
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -91,15 +85,8 @@ public class Generator {
       new OptimizeIndexNameService(configurationService)
     );
 
-    final ObjectMapper objectMapper = new ObjectMapperFactory(
-      new OptimizeDateTimeFormatterFactory().getObject(), configurationService
-    ).createOptimizeMapper();
-    final WebTarget optimizeClient = ClientBuilder.newClient()
-      .target("http://localhost:8090/api/")
-      .register(new OptimizeObjectMapperContextResolver(objectMapper));
-    final OptimizeRequestExecutor requestExecutor = new OptimizeRequestExecutor(optimizeClient, objectMapper)
-      .withUserAuthentication(DEFAULT_USER, DEFAULT_USER)
-      .withCurrentUserAuthenticationAsNewDefaultToken();
+    final OptimizeRequestExecutor requestExecutor = new OptimizeRequestExecutor(DEFAULT_USER, DEFAULT_USER, "http://localhost:8090/api/");
+
     collectionClient = new CollectionClient(() -> requestExecutor);
     reportClient = new ReportClient(() -> requestExecutor);
     alertClient = new AlertClient(() -> requestExecutor);

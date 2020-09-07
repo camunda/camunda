@@ -15,11 +15,12 @@ import lombok.NonNull;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomNumberBucketDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -81,12 +82,12 @@ public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
   @Builder.Default
-  private DistributedBy distributedBy = DistributedBy.NONE;
+  private ProcessDistributedByDto<?> distributedBy = new ProcessDistributedByDto<>();
   @Builder.Default
   @NonNull
   private GroupByDateUnit groupByDateVariableUnit = GroupByDateUnit.AUTOMATIC;
   @Builder.Default
-  private CustomNumberBucketDto customNumberBucket = new CustomNumberBucketDto();
+  private CustomBucketDto customBucket = CustomBucketDto.builder().build();
   @Builder.Default
   private ReportSortingDto sorting = null;
   @Builder.Default
@@ -95,8 +96,8 @@ public class SingleReportConfigurationDto implements Combinable {
   @JsonIgnore
   public String createCommandKey(ProcessViewDto viewDto) {
     final List<String> configsToConsiderForCommand = new ArrayList<>();
-    if (isUserTaskCommand(viewDto)) {
-      configsToConsiderForCommand.add(this.distributedBy.getId());
+    if (isModelElementCommand(viewDto) || isInstanceCommand(viewDto)) {
+      configsToConsiderForCommand.add(this.distributedBy.getType().getId());
     }
     getProcessPart().ifPresent(processPartDto -> configsToConsiderForCommand.add(processPartDto.createCommandKey()));
     return String.join("-", configsToConsiderForCommand);
@@ -111,12 +112,18 @@ public class SingleReportConfigurationDto implements Combinable {
       return false;
     }
     SingleReportConfigurationDto that = (SingleReportConfigurationDto) o;
-    return DistributedBy.NONE.equals(distributedBy) && DistributedBy.NONE.equals(that.distributedBy);
+    return distributedBy.isCombinable(that.distributedBy);
   }
 
-  private boolean isUserTaskCommand(ProcessViewDto viewDto) {
+  private boolean isModelElementCommand(ProcessViewDto viewDto) {
     return nonNull(viewDto) && nonNull(viewDto.getEntity()) &&
-      viewDto.getEntity().equals(ProcessViewEntity.USER_TASK);
+      (ProcessViewEntity.USER_TASK.equals(viewDto.getEntity()) || ProcessViewEntity.FLOW_NODE.equals(viewDto.getEntity()));
+  }
+
+  private boolean isInstanceCommand(ProcessViewDto viewDto) {
+    return nonNull(viewDto)
+      && nonNull(viewDto.getEntity())
+      && ProcessViewEntity.PROCESS_INSTANCE.equals(viewDto.getEntity());
   }
 
   public Optional<ReportSortingDto> getSorting() {
@@ -127,15 +134,10 @@ public class SingleReportConfigurationDto implements Combinable {
     return Optional.ofNullable(processPart);
   }
 
-  public Optional<Double> getBaselineForNumberVariableReport() {
-    return customNumberBucket.isActive()
-      ? Optional.ofNullable(customNumberBucket.getBaseline())
+  public Optional<Double> getGroupByBaseline() {
+    return customBucket.isActive()
+      ? Optional.ofNullable(customBucket.getBaseline())
       : Optional.empty();
   }
 
-  public Optional<Double> getBucketSizeForNumberVariableReport() {
-    return customNumberBucket.isActive()
-      ? Optional.ofNullable(customNumberBucket.getBucketSize())
-      : Optional.empty();
-  }
 }

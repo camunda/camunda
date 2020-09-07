@@ -17,7 +17,6 @@ import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.SortOrder;
@@ -29,6 +28,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 
 @RequiredArgsConstructor
 @Component
@@ -78,7 +78,7 @@ public class CollectionReader {
       .size(LIST_FETCH_LIMIT);
     SearchRequest searchRequest = new SearchRequest(COLLECTION_INDEX_NAME)
       .source(searchSourceBuilder)
-      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
 
     SearchResponse scrollResp;
     try {
@@ -93,7 +93,7 @@ public class CollectionReader {
       CollectionDefinitionDto.class,
       objectMapper,
       esClient,
-      configurationService.getElasticsearchScrollTimeout()
+      configurationService.getEsScrollTimeoutInSeconds()
     );
   }
 

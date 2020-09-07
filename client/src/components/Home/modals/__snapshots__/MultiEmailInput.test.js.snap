@@ -5,6 +5,19 @@ exports[`should match snapshot 1`] = `
   className="MultiEmailInput"
   onClick={[Function]}
 >
+  <ForwardRef(Input)
+    autoComplete="none"
+    disabled={false}
+    onBlur={[Function]}
+    onChange={[Function]}
+    onInput={[Function]}
+    onKeyDown={[Function]}
+    onPaste={[Function]}
+    value=""
+  />
+  <span
+    className="sizer"
+  />
   <div
     className="tag"
     key="0"
@@ -47,14 +60,6 @@ exports[`should match snapshot 1`] = `
       />
     </ForwardRef(Button)>
   </div>
-  <ForwardRef(Input)
-    onBlur={[Function]}
-    onChange={[Function]}
-    onInput={[Function]}
-    onKeyDown={[Function]}
-    onPaste={[Function]}
-    value=""
-  />
   <button
     className="searchClear"
     onKeyDown={[Function]}

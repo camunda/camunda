@@ -5,6 +5,8 @@
   padding: 6px 10px 0px;
   border-radius: 3px;
   position: relative;
+  display: flex;
+  flex-wrap: wrap;
 
   .placeholder {
     position: absolute;
@@ -13,6 +15,10 @@
     transform: translateY(-50%);
     color: $grey-lighten-56;
     pointer-events: none;
+    max-width: calc(100% - 20px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   &:hover {
@@ -25,18 +31,18 @@
   }
 
   .tag {
-    display: inline-block;
-    padding: 0 0.4em;
+    display: flex;
+    padding: 2px 0 0 9px;
     font-size: 0.875em;
     white-space: nowrap;
-    border-radius: 0.2em;
+    border-radius: 11px;
     color: $grey-lighten-50;
     background-color: $silver-darken-87;
     margin-right: 6px;
     margin-bottom: 6px;
+    order: 1;
 
     .tagText {
-      display: inline-block;
       max-width: 220px;
       vertical-align: middle;
       white-space: nowrap;
@@ -50,10 +56,11 @@
 
     .Button {
       height: 20px;
-      width: 20px;
+      width: 22px;
+      color: $grey-lighten-56;
 
       .Icon {
-        margin: 0;
+        margin: 0 2px 0 0;
       }
 
       &:hover {
@@ -67,13 +74,28 @@
     padding: 0;
     margin-bottom: 6px;
     max-width: 100%;
+    order: 2;
 
     &:focus {
       box-shadow: none;
+    }
+
+    &:disabled {
+      visibility: hidden;
+    }
+
+    &:not(:valid) ~ .searchClear {
+      display: block;
     }
   }
 
   .searchClear {
     right: 5px;
+  }
+
+  .sizer {
+    padding: 5px;
+    font-size: 0.875em;
+    display: none;
   }
 }

@@ -44,6 +44,7 @@ test('create and name a report', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.resizeWindow(1350, 750);
 
@@ -64,6 +65,7 @@ test('sharing', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.resizeWindow(1000, 650);
 
@@ -341,8 +343,7 @@ test('should only enable valid combinations for Flow Node Count', async (t) => {
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
 
   await u.selectView(t, 'Flow Node', 'Count');
-
-  await t.expect(e.groupbyDropdownButton.textContent).contains('Flow Nodes');
+  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.click(e.visualizationDropdown);
 
@@ -356,6 +357,7 @@ test('select which flow nodes to show from the configuration', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectGroupby(t, 'Flow Nodes');
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.nodeTableCell('Assign Approver Group').exists).ok();
@@ -385,6 +387,7 @@ test('select to show only running or completed nodes', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectGroupby(t, 'Flow Nodes');
   await u.selectVisualization(t, 'Table');
 
   await t.click(e.configurationButton);
@@ -442,6 +445,7 @@ test('different visualizations', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
   await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectGroupby(t, 'Flow Nodes');
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.reportTable.visible).ok();
@@ -546,6 +550,7 @@ test('heatmap target values', async (t) => {
 
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Duration');
+  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.resizeWindow(1650, 850);
 
@@ -594,6 +599,7 @@ test('always show tooltips', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Flow Node', 'Count');
+  await u.selectGroupby(t, 'Flow Nodes');
 
   await t.resizeWindow(1650, 850);
 
@@ -669,8 +675,8 @@ test('should be able to distribute candidate group by user task', async (t) => {
 
   await t.expect(e.option('Table').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Bar Chart').hasAttribute('disabled')).notOk();
+  await t.expect(e.option('Line Chart').hasAttribute('disabled')).notOk();
   await t.expect(e.option('Number').hasAttribute('disabled')).ok();
-  await t.expect(e.option('Line Chart').hasAttribute('disabled')).ok();
   await t.expect(e.option('Pie Chart').hasAttribute('disabled')).ok();
 
   await t.click(e.option('Table'));
@@ -756,4 +762,38 @@ test('show raw data and process model', async (t) => {
   await t.click(e.detailsPopoverButton);
   await t.click(e.modalButton('View Process Model'));
   await t.expect(e.modalDiagram.visible).ok();
+});
+
+test('group by duration', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'Duration');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.expect(e.reportChart.visible).ok();
+
+  await t.click(e.configurationButton);
+  await t.click(e.bucketSizeSwitch);
+  await t.click(e.bucketSizeUnitSelect);
+  await t.click(e.configurationOption('days'));
+  await t.click(e.configurationButton);
+
+  await t.expect(e.reportChart.visible).ok();
+
+  await u.selectView(t, 'Flow Node', 'Count');
+
+  await t.expect(e.reportChart.visible).ok();
+
+  await t.click(e.configurationButton);
+  await t.click(e.distributedBySelect);
+  await t.click(e.configurationOption('Flow Node'));
+  await u.selectVisualization(t, 'Table');
+
+  await t.expect(e.reportRenderer.textContent).contains('Invoice\nprocessed');
+
+  await u.selectView(t, 'User Task', 'Count');
+
+  await t.expect(e.reportRenderer.textContent).notContains('Invoice processed');
+  await t.expect(e.reportRenderer.textContent).contains('User Task: Count');
 });

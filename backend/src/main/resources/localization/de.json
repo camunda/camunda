@@ -4,6 +4,7 @@
     "homepage": "Home",
     "analysis": "Analyse",
     "events": "Eventbasierte Prozesse",
+    "telemetry": "Telemetrie-Einstellungen",
     "logout": "Abmelden",
     "logoutFailed": "Abmeldung fehlgeschlagen",
     "logoutSuccess": "Sie haben sich erfolgreich abgemeldet.",
@@ -15,7 +16,8 @@
     "password": "Passwort",
     "btn": "Einloggen",
     "error": "Bei der Anmeldung ist ein Fehler aufgetreten.",
-    "timeout": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um die Aktion abzuschließen."
+    "timeout": "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an, um die Aktion abzuschließen.",
+    "telemetry": "Durch Anmelden akzeptieren Sie unsere <a href=\"https://camunda.com/legal/terms/\" target=\"_blank\" rel=\"noopener noreferrer\">AGB</a> und <a href=\"https://camunda.com/legal/privacy/\" target=\"_blank\" rel=\"noopener noreferrer\">Datenschutzerklärung</a>"
   },
   "footer": {
     "importing": "wird importiert ...",
@@ -43,6 +45,15 @@
     "buttonTitle": "Was ist neu",
     "modalHeader": "Neues in Optimize"
   },
+  "telemetry": {
+    "updated": "Telemetrie-Einstellungen aktualisiert.",
+    "header": "Telemetrie-Einstellungen",
+    "text": "Erlauben Sie Camunda Optimize Telemetriedaten mit Camunda zu teilen, um Stabilität und Kundenservice zu verbessern.",
+    "enable": "Telemetrie aktivieren",
+    "personalData": "Keine persönlichen Informationen oder gespeicherten Daten werden übermittelt.",
+    "learnMore": "Weitere Informationen: ",
+    "privacyPolicy": "Camunda Datenschutzerklärung"
+  },
   "home": {
     "createBtn": {
       "default": "Neu erstellen",
@@ -59,6 +70,7 @@
     "contents": "Inhalt",
     "members": "Mitglieder",
     "search": {
+      "generic": "Zum Suchen eingeben...",
       "name": "Nach Namen suchen..."
     },
     "collectionTitle": "Dashboards und Berichte",
@@ -255,6 +267,7 @@
       "none": "Keiner",
       "flowNodes": "Prozessknoten",
       "userTasks": "Benutzeraufgaben",
+      "duration": "Dauer",
       "startDate": "Startdatum",
       "runningDate": "Ausführungsdatum",
       "automatic": "Automatisch",
@@ -387,6 +400,7 @@
       }
     },
     "config": {
+      "label": "Konfiguration",
       "buttonTooltip": "Konfigurationsoptionen",
       "reset": "Zurücksetzen auf Standardwerte",
       "showCount": {
@@ -426,7 +440,10 @@
       },
       "tooltips": {
         "legend": "Tooltips",
-        "showRelative": "Relativen Wert anzeigen",
+        "showRelative": {
+          "process": "Relativen Wert basierend auf der Anzahl der Prozessinstanzen anzeigen",
+          "decision": "Relativen Wert basierend auf der Anzahl der Entscheidungsevaluierungen anzeigen"
+        },
         "showAbsolute": "Absolutwert anzeigen"
       },
       "axisLabels": {
@@ -444,7 +461,7 @@
       },
       "pointMarkers": {
         "legend": "Linienpunkte",
-        "disableMarkers": "Punktmarkierungen deaktivieren"
+        "enableMarkers": "Punktmarkierungen aktivieren"
       },
       "limitPrecision": {
         "legend": "Genauigkeit begrenzen",
@@ -552,8 +569,9 @@
       "sendNotification": "Benachrichtigung senden, wenn gelöst",
       "reminder": "Erinnerung senden",
       "reminderFrequency": "jede",
-      "emailThreshold": "Bis zu 20 E-Mails können hinzugefügt werden",
-      "invalidEmail": "Ungültige E-Mail hinzugefügt"
+      "emailThreshold": "Bis zu 20 Empfänger können hinzugefügt werden",
+      "invalidEmail": "Ungültige E-Mail hinzugefügt",
+      "value": "Berichtswert: {value}"
     },
     "apply": "Änderungen übernehmen",
     "create": "Alarm erstellen",
@@ -573,6 +591,7 @@
         },
         "tookDuration": "Benötigte eine Dauer von"
       },
+      "notFound": "Keine Ausreißer für den ausgewählten Prozess gefunden",
       "onlyCompletedHint": "Hinweis: Die Ausreißeranalyse wird nur für abgeschlossene Knoten durchgeführt",
       "info": "Die Heatmap zeigt die Häufigkeit nach oben abweichender Ausreißer basierend auf der Dauer an. Berechnet mit dem Z-Score.",
       "tooltipText": {
@@ -633,7 +652,7 @@
     "change": "Ändern",
     "copyName": "{name} kopieren",
     "copyLabel": "Kopie",
-    "description": "Beschreibung",
+    "condition": "Bedingung",
     "saving": "Speichern ... ",
     "creating": "Erstellen ...",
     "select": "Auswählen ...",
@@ -641,6 +660,8 @@
     "disableAll": "Alle deaktivieren",
     "selectAll": "Alle auswählen",
     "deselectAll": "Alle abwählen",
+    "enabled": "aktiviert",
+    "disabled": "deaktiviert",
     "and": "und",
     "off": "Aus",
     "none": "Keiner",
@@ -878,8 +899,7 @@
           "excluded": "Die folgenden Auswahlen werden ausgeschlossen sein:"
         }
       },
-      "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind.",
-      "suspensionFilterWarning": "Bitte beachten Sie die Einschränkungen der Suspensions-Filter, die in der <a href='{docsLink}'>Optimize Dokumentation</a> beschrieben sind."
+      "incompatibleFilters": "Es werden keine Daten angezeigt, da diese Filter nicht miteinander kombinierbar sind."
     },
     "definitionSelection": {
       "latest": "Neueste",

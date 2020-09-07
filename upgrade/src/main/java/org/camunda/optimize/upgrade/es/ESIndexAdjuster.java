@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.upgrade.es;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Sets;
 import org.apache.http.client.methods.HttpGet;
@@ -14,6 +13,7 @@ import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
@@ -39,8 +39,6 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 import org.elasticsearch.index.reindex.ReindexRequest;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
-import org.elasticsearch.script.Script;
-import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +46,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -79,7 +76,8 @@ public class ESIndexAdjuster {
     this.reindex(
       sourceIndex,
       destinationIndex,
-      null
+      null,
+      Collections.emptyMap()
     );
   }
 
@@ -105,7 +103,8 @@ public class ESIndexAdjuster {
 
   public void reindex(final String sourceIndexName,
                       final String destinationIndexName,
-                      final String mappingScript) {
+                      final String mappingScript,
+                      final Map<String, Object> parameters) {
     logger.debug(
       "Reindexing from index [{}] to [{}] using the mapping script [{}].",
       sourceIndexName,
@@ -119,7 +118,12 @@ public class ESIndexAdjuster {
       .setRefresh(true);
 
     if (mappingScript != null) {
-      reindexRequest.setScript(new Script(mappingScript));
+      reindexRequest.setScript(
+        ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams(
+          mappingScript,
+          parameters,
+          objectMapper
+        ));
     }
 
     String taskId;
@@ -257,20 +261,10 @@ public class ESIndexAdjuster {
       UpdateByQueryRequest request = new UpdateByQueryRequest(aliasName);
       request.setRefresh(true);
       request.setQuery(query);
-      request.setScript(new Script(
-        ScriptType.INLINE,
-        Script.DEFAULT_SCRIPT_LANG,
+      request.setScript(ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams(
         updateScript,
-        Optional.ofNullable(parameters)
-          // this conversion seems redundant but it's not
-          // in case the values are specific dto objects this ensures they get converted to generic objects
-          // that the elasticsearch client is happy to serialize while it complains on specific DTO's
-          .map(value -> objectMapper.convertValue(
-            value,
-            new TypeReference<Map<String, Object>>() {
-            }
-          ))
-          .orElse(Collections.emptyMap())
+        parameters,
+        objectMapper
       ));
       getPlainRestClient().updateByQuery(request, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -422,4 +416,5 @@ public class ESIndexAdjuster {
       throw new UpgradeRuntimeException("Could not create index settings");
     }
   }
+
 }

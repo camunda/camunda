@@ -7,7 +7,6 @@ package org.camunda.optimize.service.es.report;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.Range;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
@@ -17,17 +16,17 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.metrics.Stats;
+import org.elasticsearch.search.aggregations.metrics.StatsAggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.unwrapFilterLimitedAggregations;
@@ -48,96 +47,124 @@ public class MinMaxStatsService {
   private static final String STATS_AGGREGATION_FIRST_FIELD = "statsAggField1";
   private static final String STATS_AGGREGATION_SECOND_FIELD = "statsAggField2";
 
-  private final DateTimeFormatter dateTimeFormatter;
   private final OptimizeElasticsearchClient esClient;
 
   public MinMaxStatDto getMinMaxDateRange(final ExecutionContext<? extends SingleReportDataDto> context,
                                           final QueryBuilder query,
                                           final String indexName,
                                           final String field) {
-    return getMinMaxDateRange(context, query, indexName, field, field, null, null);
+    return getMinMaxDateRangeForNestedField(context, query, indexName, field, field, null, null);
   }
 
-  public MinMaxStatDto getMinMaxDateRange(final ExecutionContext<? extends SingleReportDataDto> context,
-                                          final QueryBuilder query,
-                                          final String indexName,
-                                          final String firstField,
-                                          final String secondField) {
-    return getMinMaxDateRange(context, query, indexName, firstField, secondField, null, null);
+  public MinMaxStatDto getMinMaxDateRangeForCrossField(final ExecutionContext<? extends SingleReportDataDto> context,
+                                                       final QueryBuilder query,
+                                                       final String indexName,
+                                                       final String firstField,
+                                                       final String secondField) {
+    return getMinMaxDateRangeForNestedField(context, query, indexName, firstField, secondField, null, null);
   }
 
-  public MinMaxStatDto getMinMaxDateRange(final ExecutionContext<? extends SingleReportDataDto> context,
-                                          final QueryBuilder query,
-                                          final String indexName,
-                                          final String field,
-                                          final String pathForNestedStatsAgg,
-                                          final BoolQueryBuilder filterQueryToWrapStatsWith) {
-    return getMinMaxDateRange(
-      context,
-      query,
-      indexName,
-      field,
-      field,
-      pathForNestedStatsAgg,
-      filterQueryToWrapStatsWith
+  public MinMaxStatDto getMinMaxDateRangeForNestedField(final ExecutionContext<? extends SingleReportDataDto> context,
+                                                        final QueryBuilder query,
+                                                        final String indexName,
+                                                        final String field,
+                                                        final String pathForNestedStatsAgg,
+                                                        final QueryBuilder filterQueryToWrapStatsWith) {
+    return getMinMaxDateRangeForNestedField(
+      context, query, indexName, field, field, pathForNestedStatsAgg, filterQueryToWrapStatsWith
     );
   }
 
-  public MinMaxStatDto getMinMaxDateRange(final ExecutionContext<? extends SingleReportDataDto> context,
-                                          final QueryBuilder query,
-                                          final String indexName,
-                                          final String firstField,
-                                          final String secondField,
-                                          final String pathForNestedStatsAgg,
-                                          final BoolQueryBuilder filterQueryToWrapStatsWith) {
-    final boolean combinedReportRangeProvided = context.getDateIntervalRange().isPresent();
-    if (combinedReportRangeProvided) {
-      final Range<OffsetDateTime> combinedRange = context.getDateIntervalRange().get();
-      return new MinMaxStatDto(
-        combinedRange.getMinimum().toInstant().toEpochMilli(),
-        combinedRange.getMaximum().toInstant().toEpochMilli(),
-        combinedRange.getMinimum().format(dateTimeFormatter),
-        combinedRange.getMaximum().format(dateTimeFormatter)
+  private MinMaxStatDto getMinMaxDateRangeForNestedField(final ExecutionContext<? extends SingleReportDataDto> context,
+                                                         final QueryBuilder query,
+                                                         final String indexName,
+                                                         final String firstField,
+                                                         final String secondField,
+                                                         final String pathForNestedStatsAgg,
+                                                         final QueryBuilder filterQueryToWrapStatsWith) {
+    return context.getCombinedRangeMinMaxStats()
+      .orElseGet(
+        () -> getCrossFieldMinMaxStats(
+          query, indexName, firstField, secondField, OPTIMIZE_DATE_FORMAT,
+          pathForNestedStatsAgg, filterQueryToWrapStatsWith
+        )
       );
-    } else {
-      return getCrossFieldMinMaxStats(
-        query,
-        indexName,
-        firstField,
-        secondField,
-        OPTIMIZE_DATE_FORMAT,
-        pathForNestedStatsAgg,
-        filterQueryToWrapStatsWith
-      );
-    }
   }
 
-  public MinMaxStatDto getMinMaxNumberRange(final ExecutionContext<? extends SingleReportDataDto> context,
-                                            final QueryBuilder query,
-                                            final String indexName,
-                                            final String field,
-                                            final String pathForNestedStatsAgg,
-                                            final BoolQueryBuilder filterQueryToWrapStatsWith) {
-    final boolean combinedReportRangeProvided = context.getNumberVariableRange().isPresent();
-    if (combinedReportRangeProvided) {
-      final Range<Double> combinedRange = context.getNumberVariableRange().get();
-      return new MinMaxStatDto(
-        combinedRange.getMinimum(),
-        combinedRange.getMaximum(),
-        combinedRange.getMinimum().toString(),
-        combinedRange.getMaximum().toString()
+  public MinMaxStatDto getMinMaxNumberRangeForNestedField(final ExecutionContext<? extends SingleReportDataDto> context,
+                                                          final QueryBuilder query,
+                                                          final String indexName,
+                                                          final String field,
+                                                          final String pathForNestedStatsAgg,
+                                                          final BoolQueryBuilder filterQueryToWrapStatsWith) {
+    return context.getCombinedRangeMinMaxStats()
+      .orElseGet(
+        () -> getSingleFieldMinMaxStats(query, indexName, field, pathForNestedStatsAgg, filterQueryToWrapStatsWith)
       );
-    } else {
-      return getCrossFieldMinMaxStats(
-        query,
-        indexName,
-        field,
-        field,
-        null,
-        pathForNestedStatsAgg,
-        filterQueryToWrapStatsWith
+  }
+
+  public MinMaxStatDto getMinMaxNumberRangeForScriptedField(final ExecutionContext<? extends SingleReportDataDto> context,
+                                                            final QueryBuilder query,
+                                                            final String indexName,
+                                                            final Script script) {
+    return context.getCombinedRangeMinMaxStats()
+      .orElseGet(() -> getScriptedMinMaxStats(query, indexName, null, script));
+  }
+
+  public MinMaxStatDto getMinMaxNumberRangeForNestedScriptedField(
+    final ExecutionContext<? extends SingleReportDataDto> context,
+    final QueryBuilder query,
+    final String indexName,
+    final String pathForNestedStatsAgg,
+    final Script script) {
+    return context.getCombinedRangeMinMaxStats()
+      .orElseGet(() -> getScriptedMinMaxStats(query, indexName, pathForNestedStatsAgg, script));
+  }
+
+  public MinMaxStatDto getScriptedMinMaxStats(final QueryBuilder query,
+                                              final String indexName,
+                                              final String pathForNestedStatsAgg,
+                                              final Script script) {
+    final StatsAggregationBuilder statsAggregation =
+      AggregationBuilders.stats(STATS_AGGREGATION_FIRST_FIELD).script(script);
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
+      .query(query)
+      .fetchSource(false)
+      .aggregation(
+        Optional.ofNullable(pathForNestedStatsAgg)
+          .map(nestedPath -> nested(NESTED_AGGREGATION_FIRST_FIELD, nestedPath))
+          .map(nestedAgg -> (AggregationBuilder) nestedAgg.subAggregation(statsAggregation))
+          .orElse(statsAggregation)
+      )
+      .size(0);
+
+    final SearchRequest searchRequest = new SearchRequest(indexName).source(searchSourceBuilder);
+    final SearchResponse response;
+    try {
+      response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+    } catch (IOException e) {
+      final String reason = String.format(
+        "Could not retrieve stats for script %s on index %s", script.toString(), indexName
       );
+      log.error(reason, e);
+      throw new OptimizeRuntimeException(reason, e);
     }
+
+    final Stats minMaxStats = Optional.ofNullable(pathForNestedStatsAgg)
+      .map(paths -> ((Nested) response.getAggregations().get(NESTED_AGGREGATION_FIRST_FIELD)).getAggregations())
+      .orElse(response.getAggregations())
+      .get(STATS_AGGREGATION_FIRST_FIELD);
+    return new MinMaxStatDto(minMaxStats.getMin(), minMaxStats.getMax());
+  }
+
+  public MinMaxStatDto getSingleFieldMinMaxStats(final QueryBuilder query,
+                                                 final String indexName,
+                                                 final String field,
+                                                 final String pathForNestedStatsAgg,
+                                                 final BoolQueryBuilder filterQueryToWrapStatsWith) {
+    return getCrossFieldMinMaxStats(
+      query, indexName, field, field, null, pathForNestedStatsAgg, filterQueryToWrapStatsWith
+    );
   }
 
   private MinMaxStatDto getCrossFieldMinMaxStats(final QueryBuilder query,
@@ -146,7 +173,7 @@ public class MinMaxStatsService {
                                                  final String secondField,
                                                  final String format,
                                                  final String pathForNestedStatsAgg,
-                                                 final BoolQueryBuilder filterQueryToWrapStatsWith) {
+                                                 final QueryBuilder filterQueryToWrapStatsWith) {
     AggregationBuilder statsAggField1 = createStatsAggregation(
       STATS_AGGREGATION_FIRST_FIELD,
       firstField,
@@ -197,7 +224,7 @@ public class MinMaxStatsService {
       log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
-    return mapStatsAggregationToStatDto(response);
+    return mapCrossFieldStatAggregationsToStatDto(response);
   }
 
   private AggregationBuilder createStatsAggregation(final String aggregationName,
@@ -215,7 +242,7 @@ public class MinMaxStatsService {
     }
   }
 
-  private MinMaxStatDto mapStatsAggregationToStatDto(final SearchResponse response) {
+  private MinMaxStatDto mapCrossFieldStatAggregationsToStatDto(final SearchResponse response) {
     final Stats minMaxStats1 = retrieveNestedWrappedStatsAggregation(
       NESTED_AGGREGATION_FIRST_FIELD,
       FILTER_AGGREGATION_FIRST_FIELD,
@@ -237,10 +264,7 @@ public class MinMaxStatsService {
       : minMaxStats2;
 
     return new MinMaxStatDto(
-      minStats.getMin(),
-      maxStats.getMax(),
-      minStats.getMinAsString(),
-      maxStats.getMaxAsString()
+      minStats.getMin(), maxStats.getMax(), minStats.getMinAsString(), maxStats.getMaxAsString()
     );
   }
 

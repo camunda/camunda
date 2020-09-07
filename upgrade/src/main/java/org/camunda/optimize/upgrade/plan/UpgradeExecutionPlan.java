@@ -6,7 +6,6 @@
 package org.camunda.optimize.upgrade.plan;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
@@ -124,6 +123,6 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   private void updateOptimizeVersion() {
     logger.info("Updating Optimize Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
-    metadataService.writeMetadata(prefixAwareClient, new MetadataDto(toVersion));
+    metadataService.upsertMetadata(prefixAwareClient, toVersion);
   }
 }

@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 
@@ -76,9 +76,8 @@ public abstract class AbstractActivityInstanceWriter {
     // see https://discuss.elastic.co/t/how-to-update-nested-objects-in-elasticsearch-2-2-script-via-java-api/43135
 
     try {
-      List jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(simpleEvents), List.class);
-      params.put(EVENTS, jsonMap);
-      final Script updateScript = createDefaultScript(createInlineUpdateScript(), params);
+      params.put(EVENTS, simpleEvents);
+      final Script updateScript = createDefaultScriptWithSpecificDtoParams(createInlineUpdateScript(), params, objectMapper);
 
       final ProcessInstanceDto procInst = new ProcessInstanceDto()
         .setProcessInstanceId(processInstanceId)

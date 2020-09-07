@@ -11,7 +11,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
@@ -20,8 +20,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 
@@ -101,6 +101,12 @@ public class CompositeCommandResult {
       return new DistributedByResult(key, null, new ViewResult());
     }
 
+    public static DistributedByResult createResultWithZeroValue(String key) {
+      ViewResult viewResult = new ViewResult();
+      viewResult.setNumber(0.0);
+      return new DistributedByResult(key, null, viewResult);
+    }
+
     public static DistributedByResult createResultWithEmptyValue(String key, String label) {
       return new DistributedByResult(key, label, new ViewResult());
     }
@@ -153,7 +159,8 @@ public class CompositeCommandResult {
     for (GroupByResult group : groups) {
       List<MapResultEntryDto> distribution = group.distributions.stream()
         .map(DistributedByResult::getValueAsMapResultEntry)
-        .sorted(getSortingComparator(sorting, keyIsOfNumericType))
+        // as distribution key is never numeric yet, always false
+        .sorted(getSortingComparator(sorting, false))
         .collect(Collectors.toList());
       resultDto.getData().add(new HyperMapResultEntryDto(group.getKey(), distribution, group.getLabel()));
     }
@@ -170,7 +177,7 @@ public class CompositeCommandResult {
         final Double value = distributions.get(0).getValueAsDouble();
         mapData.add(new MapResultEntryDto(group.getKey(), value, group.getLabel()));
       } else {
-        throw new OptimizeRuntimeException(createErrorMessage(ReportMapResultDto.class, DistributedBy.class));
+        throw new OptimizeRuntimeException(createErrorMessage(ReportMapResultDto.class, DistributedByType.class));
       }
     }
     mapData.sort(getSortingComparator(sorting, keyIsOfNumericType));
@@ -188,7 +195,7 @@ public class CompositeCommandResult {
         numberResultDto.setData(value);
         return numberResultDto;
       } else {
-        throw new OptimizeRuntimeException(createErrorMessage(NumberResultDto.class, DistributedBy.class));
+        throw new OptimizeRuntimeException(createErrorMessage(NumberResultDto.class, DistributedByType.class));
       }
     } else {
       throw new OptimizeRuntimeException(createErrorMessage(NumberResultDto.class, GroupByResult.class));
@@ -204,7 +211,7 @@ public class CompositeCommandResult {
       } else {
         throw new OptimizeRuntimeException(createErrorMessage(
           RawDataProcessReportResultDto.class,
-          DistributedBy.class
+          DistributedByType.class
         ));
       }
     } else {
@@ -221,7 +228,7 @@ public class CompositeCommandResult {
       } else {
         throw new OptimizeRuntimeException(createErrorMessage(
           RawDataDecisionReportResultDto.class,
-          DistributedBy.class
+          DistributedByType.class
         ));
       }
     } else {

@@ -210,6 +210,11 @@ export default withErrorHandling(
                 )}
               </li>
             )}
+            <Configuration
+              type={data.visualization}
+              onChange={this.props.updateReport}
+              report={this.props.report}
+            />
             {isDurationHeatmap(data) && (
               <li>
                 <TargetValueComparison
@@ -218,11 +223,6 @@ export default withErrorHandling(
                 />
               </li>
             )}
-            <Configuration
-              type={data.visualization}
-              onChange={this.props.updateReport}
-              report={this.props.report}
-            />
             {isProcessInstanceDuration(data) && (
               <li>
                 <ProcessPart

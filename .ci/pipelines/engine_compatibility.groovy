@@ -6,6 +6,7 @@
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
 
+CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 
 
@@ -218,6 +219,9 @@ pipeline {
         gitCheckoutOptimize()
         script {
           env.ES_VERSION = readMavenPom().getProperties().getProperty(ES_TEST_VERSION_POM_PROPERTY)
+          env.CAMBPM_7_11_VERSION = getCamBpmVersion('engine-7.11')
+          env.CAMBPM_7_12_VERSION = getCamBpmVersion('engine-7.12')
+          env.CAMBPM_SNAPSHOT_VERSION = getCamBpmVersion('engine-snapshot')
         }
       }
     }
@@ -230,7 +234,7 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.11_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec('7.11.13', env.ES_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_7_11_VERSION, env.ES_VERSION)
             }
           }
           steps {
@@ -248,11 +252,29 @@ pipeline {
               cloud 'optimize-ci'
               label "optimize-ci-build-it-7.12_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
               defaultContainer 'jnlp'
-              yaml integrationTestPodSpec('7.12.6', env.ES_VERSION)
+              yaml integrationTestPodSpec(env.CAMBPM_7_12_VERSION, env.ES_VERSION)
             }
           }
           steps {
             integrationTestSteps('7.12')
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
+        stage('IT SNAPSHOT') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-engine-snapshot_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yaml integrationTestPodSpec(env.CAMBPM_SNAPSHOT_VERSION, env.ES_VERSION)
+            }
+          }
+          steps {
+            integrationTestSteps('snapshot')
           }
           post {
             always {
@@ -283,6 +305,11 @@ pipeline {
       }
     }
   }
+}
+
+private void getCamBpmVersion(String profileId) {
+  def profile = readMavenPom().getProfiles().find { it.getId().equals(profileId) }
+  return profile.getProperties().getProperty(CAMBPM_LATEST_VERSION_POM_PROPERTY)
 }
 
 void buildNotification(String buildStatus) {

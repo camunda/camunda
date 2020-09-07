@@ -73,8 +73,8 @@ it('should return correct table props for decision tables', () => {
 
   expect(processDecisionRawData({report: {result, reportType: 'decision', data}})).toEqual({
     head: [
-      'Decision Instance Id',
-      'Decision Definition Id',
+      {id: 'decisionInstanceId', label: 'Decision Instance Id'},
+      {id: 'decisionDefinitionId', label: 'Decision Definition Id'},
       {
         label: 'Input Variables',
         columns: [

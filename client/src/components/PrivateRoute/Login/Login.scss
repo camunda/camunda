@@ -48,4 +48,16 @@
     font-size: 1em;
     padding: 8px 14px 9px;
   }
+
+  .privacyNotice {
+    width: 340px;
+    text-align: center;
+    margin-top: 1.5em;
+    font-size: 13px;
+    font-weight: 500;
+
+    a {
+      color: inherit;
+    }
+  }
 }

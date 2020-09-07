@@ -7,8 +7,10 @@ package org.camunda.optimize.service.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.experimental.UtilityClass;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.util.EntityUtils;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -26,10 +28,11 @@ import static org.camunda.optimize.service.metadata.Version.getMinorVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.getPatchVersionFrom;
 import static org.camunda.optimize.service.metadata.Version.stripToPlainVersion;
 
-@UtilityClass
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class ESVersionChecker {
   @Getter
+  @Setter
   private static List<String> supportedVersions = new ArrayList<>();
 
   static {
@@ -43,6 +46,15 @@ public class ESVersionChecker {
     supportedVersions.add("7.7.0");
     supportedVersions.add("7.8.0");
   }
+
+  private static final Comparator<String> MAJOR_COMPARATOR = Comparator.comparingInt(major -> Integer.parseInt(
+    getMajorVersionFrom(major)));
+  private static final Comparator<String> MINOR_COMPARATOR = Comparator.comparingInt(minor -> Integer.parseInt(
+    getMinorVersionFrom(minor)));
+  private static final Comparator<String> PATCH_COMPARATOR = Comparator.comparingInt(patch -> Integer.parseInt(
+    getPatchVersionFrom(patch)));
+  private static final Comparator<String> LATEST_VERSION_COMPARATOR =
+    MAJOR_COMPARATOR.thenComparing(MINOR_COMPARATOR).thenComparing(PATCH_COMPARATOR);
 
   public static void checkESVersionSupport(RestHighLevelClient esClient) throws IOException {
     String currentVersion = getCurrentESVersion(esClient);
@@ -71,7 +83,7 @@ public class ESVersionChecker {
                                                  .getEntity());
     ObjectNode node = new ObjectMapper().readValue(responseJson, ObjectNode.class);
 
-    return node.get("version").get("number").toString().replaceAll("\"", "");
+    return node.get("version").get("number").toString().replace("\"", "");
   }
 
   public static boolean isCurrentVersionSupported(String currentVersion) {
@@ -81,14 +93,14 @@ public class ESVersionChecker {
       String neededMajorAndMinor = getMajorAndMinor(neededVersion);
 
       return currentMajorAndMinor.equals(neededMajorAndMinor)
-        && Integer.parseInt(getPatchVersionFrom(currentVersion)) >= Integer.parseInt(getPatchVersionFrom
-                                                                                       (neededVersion));
+        && Integer.parseInt(getPatchVersionFrom(currentVersion)) >=
+        Integer.parseInt(getPatchVersionFrom(neededVersion));
     });
   }
 
   public static String getLatestSupportedESVersion() {
     return supportedVersions.stream()
-      .max(Comparator.naturalOrder())
+      .max(LATEST_VERSION_COMPARATOR)
       .orElseThrow(() -> new IllegalStateException("No supported versions found"));
   }
 

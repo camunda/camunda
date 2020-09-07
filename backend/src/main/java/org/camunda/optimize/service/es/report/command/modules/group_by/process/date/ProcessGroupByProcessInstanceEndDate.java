@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.MinMaxStatsService;
-import org.camunda.optimize.service.es.report.command.util.DateAggregationService;
+import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;

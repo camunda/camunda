@@ -17,7 +17,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -58,20 +57,16 @@ public abstract class GroupByPart<Data extends SingleReportDataDto> {
 
   protected abstract void addGroupByAdjustmentsForCommandKeyGeneration(final Data dataForCommandKey);
 
-  public Optional<MinMaxStatDto> calculateDateRangeForAutomaticGroupByDate(final ExecutionContext<Data> context,
-                                                                           final BoolQueryBuilder baseQuery) {
-    // this method is only needed for group by date reports with
-    // automatic unit generation since we need to calculate the
-    // total range for a combined report to be able to use the same
-    // interval for all reports in a combined report.
-    return Optional.empty();
-  }
-
-  public Optional<MinMaxStatDto> calculateNumberRangeForGroupByNumberVariable(final ExecutionContext<Data> context,
-                                                                              final BoolQueryBuilder baseQuery) {
-    // this method is only needed for group by number variable reports
-    // since we need to calculate the total range for a combined report
-    // to be able to use the same interval for all reports in a combined report.
+  /**
+   * This method returns the min and maximum values for range value types (e.g. number or date).
+   * It defaults to an empty result and needs to get overridden when applicable.
+   *
+   * @param context   command execution context to perform the min max retrieval with
+   * @param baseQuery filtering query on which data to perform the min max retrieval
+   * @return min and max value range for the value grouped on by
+   */
+  public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<Data> context,
+                                                final BoolQueryBuilder baseQuery) {
     return Optional.empty();
   }
 

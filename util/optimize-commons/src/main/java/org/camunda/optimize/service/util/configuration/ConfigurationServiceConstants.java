@@ -63,10 +63,9 @@ public class ConfigurationServiceConstants {
   public static final String DECISION_OUTPUT_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.decisionOutputImport.basePackages";
   public static final String BUSINESS_KEY_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.businessKeyImport.basePackages";
   public static final String ELASTIC_SEARCH_CONNECTION_TIMEOUT = "$.es.connection.timeout";
-  public static final String ELASTIC_SEARCH_SCROLL_TIMEOUT = "$.es.scrollTimeout";
+  public static final String ELASTIC_SEARCH_SCROLL_TIMEOUT_IN_SECONDS = "$.es.scrollTimeoutInSeconds";
   public static final String ELASTIC_SEARCH_CONNECTION_NODES = "$.es.connection.nodes";
   public static final String ELASTIC_SEARCH_PROXY = "$.es.connection.proxy";
-
 
   public static final String ELASTIC_SEARCH_SECURITY_USERNAME = "$.es.security.username";
   public static final String ELASTIC_SEARCH_SECURITY_PASSWORD = "$.es.security.password";
@@ -78,12 +77,6 @@ public class ConfigurationServiceConstants {
 
   public static final String ENGINE_CONNECT_TIMEOUT = "$.engine-commons.connection.timeout";
   public static final String ENGINE_READ_TIMEOUT = "$.engine-commons.read.timeout";
-  public static final String PROCESS_DEFINITION_ENDPOINT = "$.engine-commons.procdef.resource";
-  public static final String PROCESS_DEFINITION_XML_ENDPOINT = "$.engine-commons.procdef.xml";
-  public static final String USER_VALIDATION_ENDPOINT = "$.engine-commons.user.validation.resource";
-
-  public static final String DECISION_DEFINITION_ENDPOINT = "$.engine-commons.decision-definition.resource";
-  public static final String DECISION_DEFINITION_XML_ENDPOINT = "$.engine-commons.decision-definition.xml";
 
   public static final String INITIAL_BACKOFF_INTERVAL = "$.import.handler.backoff.initial";
   public static final String MAXIMUM_BACK_OFF = "$.import.handler.backoff.max";
@@ -119,4 +112,6 @@ public class ConfigurationServiceConstants {
   public static final String IDENTITY_SYNC_CONFIGURATION = "$.import.identitySync";
 
   public static final String EVENT_BASED_PROCESS_CONFIGURATION = "$.eventBasedProcess";
+
+  public static final String TELEMETRY_CONFIGURATION = "$.telemetry";
 }

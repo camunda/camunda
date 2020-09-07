@@ -5,7 +5,7 @@
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
-    <version>3.2.0-alpha2</version>
+    <version>3.2.0</version>
   </parent>
 
   <artifactId>data-generation</artifactId>
@@ -29,17 +29,17 @@
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine</artifactId>
-      <version>${camunda.model.version}-ee</version>
+      <version>${camunda.maven.artifacts.version}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm</groupId>
       <artifactId>camunda-engine-rest-core</artifactId>
-      <version>${camunda.model.version}-ee</version>
+      <version>${camunda.maven.artifacts.version}</version>
     </dependency>
     <dependency>
       <groupId>org.camunda.bpm.model</groupId>
       <artifactId>camunda-dmn-model</artifactId>
-      <version>${camunda.model.version}-ee</version>
+      <version>${camunda.maven.artifacts.version}</version>
     </dependency>
 
     <dependency>

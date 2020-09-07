@@ -13,6 +13,7 @@ exports[`should provde a sane interface for decision tables 1`] = `
   />
   <ForwardRef(LabeledInput)
     checked={true}
+    className="includeNew"
     label="Display data from new variables"
     onChange={[Function]}
     type="checkbox"

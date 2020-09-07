@@ -20,7 +20,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
-import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -38,8 +37,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,12 +61,12 @@ public class PostMigrationTest {
   public static void init() {
     final ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext("optimizeDataUpgradeContext.xml");
     final ObjectMapper objectMapper = ctx.getBean(ObjectMapper.class);
-    final WebTarget optimizeClient = ClientBuilder.newClient()
-      .target("http://localhost:8090/api/")
-      .register(new OptimizeObjectMapperContextResolver(objectMapper));
-    requestExecutor = new OptimizeRequestExecutor(optimizeClient, ctx.getBean(ObjectMapper.class))
-      .withUserAuthentication(DEFAULT_USER, DEFAULT_USER)
-      .withCurrentUserAuthenticationAsNewDefaultToken();
+    requestExecutor = new OptimizeRequestExecutor(
+      DEFAULT_USER,
+      DEFAULT_USER,
+      "http://localhost:8090/api/",
+      objectMapper
+    );
     final ConfigurationService configurationService = ctx.getBean(ConfigurationService.class);
     elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
@@ -134,11 +131,16 @@ public class PostMigrationTest {
     final List<EventProcessMappingDto> allEventProcessMappings = eventProcessClient.getAllEventProcessMappings();
     assertEventProcessesArePublished(allEventProcessMappings);
 
-    final Map<String, Long> eventProcessInstanceCounts =
-      retrieveEventProcessInstanceCounts(allEventProcessMappings);
-    assertThat(eventProcessInstanceCounts.values())
+    refreshAllElasticsearchIndices();
+
+    final Map<String, Long> eventProcessInstanceCounts = retrieveEventProcessInstanceCounts(allEventProcessMappings);
+    assertThat(eventProcessInstanceCounts.entrySet())
       .isNotEmpty()
-      .allSatisfy(instanceCount -> assertThat(instanceCount).isGreaterThan(0L));
+      .allSatisfy(entry -> {
+        assertThat(entry.getValue())
+          .withFailMessage("Event process with key %s did not contain instances.", entry.getKey())
+          .isGreaterThan(0L);
+      });
   }
 
   @Test

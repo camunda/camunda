@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 import java.time.ZoneId;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.getDurationFilterScript;
+import static org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil.getDurationFilterScript;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.ACTIVITY_START_DATE;

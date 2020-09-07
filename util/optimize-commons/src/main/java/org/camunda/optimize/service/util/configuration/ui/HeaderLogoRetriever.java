@@ -6,7 +6,8 @@
 package org.camunda.optimize.service.util.configuration.ui;
 
 import com.google.common.collect.ImmutableSet;
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.tika.Tika;
 import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.springframework.util.StreamUtils;
@@ -20,7 +21,7 @@ import java.util.Set;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathToStream;
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class HeaderLogoRetriever {
 
   /**

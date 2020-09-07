@@ -24,8 +24,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
@@ -61,16 +61,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class ProcessInstanceDurationByVariableReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -145,11 +144,11 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableType(VariableType.STRING)
       .build();
 
-    createNewReport(reportData);
+    final String reportId = createNewReport(reportData);
 
     // when
-    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
-      reportData);
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReportById(reportId);
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
@@ -176,7 +175,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void testCustomOrderOnResultKeyIsApplied() {
+  public void customOrderOnResultKeyIsApplied() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
@@ -212,7 +211,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void testCustomOrderOnResultValueIsApplied() {
+  public void customOrderOnResultValueIsApplied() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar1");
@@ -492,8 +491,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("foo")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData.getConfiguration().getCustomNumberBucket().setBucketSize(1.0);
+    reportData.getConfiguration().getCustomBucket().setActive(true);
+    reportData.getConfiguration().getCustomBucket().setBucketSize(1.0);
 
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse = reportClient.evaluateMapReport(
       reportData);
@@ -566,9 +565,9 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("foo")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData.getConfiguration().getCustomNumberBucket().setBaseline(10.0);
-    reportData.getConfiguration().getCustomNumberBucket().setBucketSize(100.0);
+    reportData.getConfiguration().getCustomBucket().setActive(true);
+    reportData.getConfiguration().getCustomBucket().setBaseline(10.0);
+    reportData.getConfiguration().getCustomBucket().setBucketSize(100.0);
 
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(
       reportData).getResult();
@@ -609,9 +608,9 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("foo")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData.getConfiguration().getCustomNumberBucket().setBaseline(30.0);
-    reportData.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    reportData.getConfiguration().getCustomBucket().setActive(true);
+    reportData.getConfiguration().getCustomBucket().setBaseline(30.0);
+    reportData.getConfiguration().getCustomBucket().setBucketSize(5.0);
 
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -714,8 +713,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("doubleVar")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData1.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData1.getConfiguration().getCustomNumberBucket().setBucketSize(10.0);
+    reportData1.getConfiguration().getCustomBucket().setActive(true);
+    reportData1.getConfiguration().getCustomBucket().setBucketSize(10.0);
 
 
     ProcessReportDataDto reportData2 = TemplatedProcessReportDataBuilder
@@ -726,8 +725,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("doubleVar")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData2.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData2.getConfiguration().getCustomNumberBucket().setBucketSize(10.0);
+    reportData2.getConfiguration().getCustomBucket().setActive(true);
+    reportData2.getConfiguration().getCustomBucket().setBucketSize(10.0);
 
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
@@ -786,8 +785,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("doubleVar")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData1.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData1.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    reportData1.getConfiguration().getCustomBucket().setActive(true);
+    reportData1.getConfiguration().getCustomBucket().setBucketSize(5.0);
 
 
     ProcessReportDataDto reportData2 = TemplatedProcessReportDataBuilder
@@ -798,8 +797,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("doubleVar")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData2.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData2.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    reportData2.getConfiguration().getCustomBucket().setActive(true);
+    reportData2.getConfiguration().getCustomBucket().setBucketSize(5.0);
 
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
@@ -858,8 +857,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("doubleVar")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData1.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData1.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    reportData1.getConfiguration().getCustomBucket().setActive(true);
+    reportData1.getConfiguration().getCustomBucket().setBucketSize(5.0);
 
 
     ProcessReportDataDto reportData2 = TemplatedProcessReportDataBuilder
@@ -870,8 +869,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName("doubleVar")
       .setVariableType(VariableType.DOUBLE)
       .build();
-    reportData2.getConfiguration().getCustomNumberBucket().setActive(true);
-    reportData2.getConfiguration().getCustomNumberBucket().setBucketSize(5.0);
+    reportData2.getConfiguration().getCustomBucket().setActive(true);
+    reportData2.getConfiguration().getCustomBucket().setBucketSize(5.0);
 
     CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
 
@@ -1626,9 +1625,11 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName(dateVarName)
       .setVariableType(VariableType.DATE)
       .build();
-    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
+    List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
     // bucket span covers the values of all date variables (buckets are in descending order, so the first bucket is
@@ -1662,9 +1663,11 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
       .setVariableName(dateVarName)
       .setVariableType(VariableType.DATE)
       .build();
-    List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
+    assertThat(result.getIsComplete()).isTrue();
+    List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
   }

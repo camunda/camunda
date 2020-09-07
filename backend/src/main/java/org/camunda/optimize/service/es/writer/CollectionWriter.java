@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.writer;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -55,6 +54,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.index.CollectionIndex.DATA;
 import static org.camunda.optimize.service.es.schema.index.CollectionIndex.SCOPE;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
@@ -83,10 +83,11 @@ public class CollectionWriter {
     collectionDefinitionDto.setOwner(userId);
     collectionDefinitionDto.setLastModifier(userId);
     collectionDefinitionDto.setName(Optional.ofNullable(partialCollectionDefinitionDto.getName())
-                                            .orElse(DEFAULT_COLLECTION_NAME));
+                                      .orElse(DEFAULT_COLLECTION_NAME));
 
     final CollectionDataDto newCollectionDataDto = new CollectionDataDto();
-    newCollectionDataDto.getRoles().add(new CollectionRoleDto(new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER));
+    newCollectionDataDto.getRoles()
+      .add(new CollectionRoleDto(new IdentityDto(userId, IdentityType.USER), RoleType.MANAGER));
     if (partialCollectionDefinitionDto.getData() != null) {
       newCollectionDataDto.setConfiguration(partialCollectionDefinitionDto.getData().getConfiguration());
     }
@@ -193,14 +194,10 @@ public class CollectionWriter {
                                           final List<CollectionScopeEntryDto> scopeUpdates) {
     try {
       final Map<String, Object> params = new HashMap<>();
-      params.put(
-        "scopeEntriesToUpdate",
-        objectMapper.convertValue(scopeUpdates, new TypeReference<List<Map>>() {
-        })
-      );
+      params.put("scopeEntriesToUpdate", scopeUpdates);
       params.put("lastModifier", userId);
       params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
-      final Script updateEntityScript = ElasticsearchWriterUtil.createDefaultScript(
+      final Script updateEntityScript = createDefaultScriptWithSpecificDtoParams(
         "Map newScopes = ctx._source.data.scope.stream()" +
           "  .collect(Collectors.toMap(s -> s.id, Function.identity()));\n" +
           "params.scopeEntriesToUpdate" +
@@ -216,7 +213,8 @@ public class CollectionWriter {
           "ctx._source.data.scope = newScopes.values();" +
           "ctx._source.lastModifier = params.lastModifier;" +
           "ctx._source.lastModified = params.lastModified;",
-        params
+        params,
+        objectMapper
       );
 
       final UpdateResponse updateResponse;
@@ -277,7 +275,7 @@ public class CollectionWriter {
       params.put("lastModifier", userId);
       params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
 
-      final Script updateEntityScript = ElasticsearchWriterUtil.createDefaultScript(
+      final Script updateEntityScript = ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
         "boolean removed = ctx._source.data.scope.removeIf(scope -> scope.id.equals(params.id));" +
           "if (removed) { " +
           "  ctx._source.lastModifier = params.lastModifier;" +
@@ -313,12 +311,12 @@ public class CollectionWriter {
                                 String scopeEntryId) {
     try {
       final Map<String, Object> params = new HashMap<>();
-      params.put("entryDto", objectMapper.convertValue(scopeEntry, Object.class));
+      params.put("entryDto", scopeEntry);
       params.put("entryId", scopeEntryId);
       params.put("lastModifier", userId);
       params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
 
-      final Script updateEntityScript = ElasticsearchWriterUtil.createDefaultScript(
+      final Script updateEntityScript = createDefaultScriptWithSpecificDtoParams(
         "def optionalEntry = ctx._source.data.scope.stream()" +
           "  .filter(s -> s.id.equals(params.entryId))" +
           "  .findFirst();" +
@@ -330,7 +328,8 @@ public class CollectionWriter {
           "} else { " +
           "  throw new Exception('Cannot find scope entry.');" +
           "}",
-        params
+        params,
+        objectMapper
       );
 
       executeUpdateRequest(
@@ -378,11 +377,11 @@ public class CollectionWriter {
 
     try {
       final Map<String, Object> params = new HashMap<>();
-      params.put("roleDto", objectMapper.convertValue(roleDto, Object.class));
+      params.put("roleDto", roleDto);
       params.put("lastModifier", userId);
       params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
 
-      final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(
+      final Script addEntityScript = createDefaultScriptWithSpecificDtoParams(
         // @formatter:off
         "boolean exists = ctx._source.data.roles.stream()" +
           ".filter(dto -> dto.id.equals(params.roleDto.id))" +
@@ -397,7 +396,8 @@ public class CollectionWriter {
           "ctx.op = \"none\";" +
         "}",
         // @formatter:on
-        params
+        params,
+        objectMapper
       );
 
       final UpdateResponse updateResponse = executeUpdateRequest(
@@ -437,7 +437,7 @@ public class CollectionWriter {
       final Map<String, Object> params = constructParamsForRoleUpdateScript(roleEntryId, userId);
       params.put("role", roleUpdateDto.getRole().toString());
 
-      final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(
+      final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
         // @formatter:off
         "def optionalExistingEntry = ctx._source.data.roles.stream()" +
           ".filter(dto -> dto.id.equals(params.roleEntryId))" +
@@ -510,7 +510,7 @@ public class CollectionWriter {
                                         final Map<String, Object> params) {
     log.debug("Deleting the role [{}] in collection with id [{}] in Elasticsearch.", roleEntryId, collectionId);
     try {
-      final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(
+      final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
         // @formatter:off
         "def optionalExistingEntry = ctx._source.data.roles.stream()" +
           ".filter(dto -> dto.id.equals(params.roleEntryId))" +
@@ -557,7 +557,7 @@ public class CollectionWriter {
     throws OptimizeConflictException {
     log.debug("Deleting the role [{}] in collection with id [{}] in Elasticsearch.", roleEntryId, collectionId);
     try {
-      final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScript(
+      final Script addEntityScript = ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams(
         // @formatter:off
         "def optionalExistingEntry = ctx._source.data.roles.stream()" +
           ".filter(dto -> dto.id.equals(params.roleEntryId))" +

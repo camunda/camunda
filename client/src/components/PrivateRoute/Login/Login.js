@@ -4,92 +4,85 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
-import {t} from 'translation';
-import {login} from './service';
+import React, {useState, useRef} from 'react';
+
 import {MessageBox, Button, Input, Labeled} from 'components';
+import {t} from 'translation';
+
+import {login} from './service';
 import {ReactComponent as Logo} from './logo.svg';
 
 import './Login.scss';
 
-export default class Login extends React.Component {
-  constructor(props) {
-    super(props);
+export default function Login({onLogin}) {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [waitingForServer, setWaitingForServer] = useState(false);
+  const [error, setError] = useState(null);
 
-    this.state = {
-      username: '',
-      password: '',
-      waitingForServer: false,
-      error: null,
-    };
-  }
+  const passwordField = useRef(null);
 
-  handleInputChange = ({target: {name, value}}) => {
-    this.setState({
-      [name]: value,
-    });
-  };
+  const usernameLabel = t('login.username');
+  const passwordLabel = t('login.password');
 
-  submit = async (evt) => {
+  async function submit(evt) {
     evt.preventDefault();
 
-    const {username, password} = this.state;
-
-    this.setState({waitingForServer: true});
+    setWaitingForServer(true);
 
     const authResult = await login(username, password);
 
     if (authResult.token) {
-      this.props.onLogin(authResult.token);
+      onLogin(authResult.token);
     } else {
       const {errorCode, errorMessage} = authResult;
       const error = errorCode ? t('apiErrors.' + errorCode) : errorMessage;
-      this.setState({waitingForServer: false, error: error || t('login.error')});
-      this.passwordField.focus();
-      this.passwordField.select();
+
+      setWaitingForServer(false);
+      setError(error || t('login.error'));
+
+      if (passwordField.current) {
+        passwordField.current.focus();
+        passwordField.current.select();
+      }
     }
-  };
-
-  render() {
-    const {username, password, waitingForServer, error} = this.state;
-    const usernameLabel = t('login.username');
-    const passwordLabel = t('login.password');
-
-    return (
-      <form className="Login">
-        <Logo />
-        <h1>{t('login.appName')}</h1>
-        {error ? <MessageBox type="error">{error}</MessageBox> : ''}
-        <div className="controls">
-          <div className="row">
-            <Labeled label={usernameLabel}>
-              <Input
-                type="text"
-                placeholder={usernameLabel}
-                value={username}
-                onChange={this.handleInputChange}
-                name="username"
-                autoFocus={true}
-              />
-            </Labeled>
-          </div>
-          <div className="row">
-            <Labeled label={passwordLabel}>
-              <Input
-                placeholder={passwordLabel}
-                value={password}
-                onChange={this.handleInputChange}
-                type="password"
-                name="password"
-                ref={(input) => (this.passwordField = input)}
-              />
-            </Labeled>
-          </div>
-        </div>
-        <Button main primary type="submit" onClick={this.submit} disabled={waitingForServer}>
-          {t('login.btn')}
-        </Button>
-      </form>
-    );
   }
+
+  return (
+    <form className="Login">
+      <Logo />
+      <h1>{t('login.appName')}</h1>
+      {error ? <MessageBox type="error">{error}</MessageBox> : ''}
+      <div className="controls">
+        <div className="row">
+          <Labeled label={usernameLabel}>
+            <Input
+              type="text"
+              placeholder={usernameLabel}
+              value={username}
+              onChange={(evt) => setUsername(evt.target.value)}
+              name="username"
+              autoFocus={true}
+            />
+          </Labeled>
+        </div>
+        <div className="row">
+          <Labeled label={passwordLabel}>
+            <Input
+              placeholder={passwordLabel}
+              value={password}
+              onChange={(evt) => setPassword(evt.target.value)}
+              type="password"
+              name="password"
+              ref={passwordField}
+            />
+          </Labeled>
+        </div>
+      </div>
+      <Button main primary type="submit" onClick={submit} disabled={waitingForServer}>
+        {t('login.btn')}
+      </Button>
+      <div className="privacyNotice" dangerouslySetInnerHTML={{__html: t('login.telemetry')}} />
+    </form>
+  );
 }

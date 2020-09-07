@@ -5,8 +5,8 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process.identity;
 
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.CandidateGroupDistributedByDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -34,6 +34,6 @@ public class ProcessDistributedByCandidateGroup extends ProcessDistributedByIden
 
   @Override
   protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.getConfiguration().setDistributedBy(DistributedBy.CANDIDATE_GROUP);
+    dataForCommandKey.getConfiguration().setDistributedBy(new CandidateGroupDistributedByDto());
   }
 }

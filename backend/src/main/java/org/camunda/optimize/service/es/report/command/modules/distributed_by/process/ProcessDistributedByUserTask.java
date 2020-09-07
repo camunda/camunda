@@ -5,98 +5,44 @@
  */
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process;
 
-import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.DefinitionType;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedBy;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.UserTaskDistributedByDto;
 import org.camunda.optimize.service.DefinitionService;
-import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
-import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
-import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.ViewResult;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
-import org.elasticsearch.search.aggregations.Aggregations;
-import org.elasticsearch.search.aggregations.BucketOrder;
-import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
 
-@RequiredArgsConstructor
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessDistributedByUserTask extends ProcessDistributedByPart {
+public class ProcessDistributedByUserTask extends ProcessDistributedByModelElement {
 
-  private static final String USER_TASK_ID_TERMS_AGGREGATION = "tasks";
-
-  private final ConfigurationService configurationService;
-  private final DefinitionService definitionService;
-
-  @Override
-  public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
-    return AggregationBuilders
-      .terms(USER_TASK_ID_TERMS_AGGREGATION)
-      .size(configurationService.getEsAggregationBucketLimit())
-      .order(BucketOrder.key(true))
-      .field(USER_TASKS + "." + USER_TASK_ACTIVITY_ID)
-      .subAggregation(viewPart.createAggregation(context));
+  public ProcessDistributedByUserTask(final ConfigurationService configurationService,
+                                      final DefinitionService definitionService) {
+    super(configurationService, definitionService);
   }
 
   @Override
-  public List<DistributedByResult> retrieveResult(final SearchResponse response,
-                                                  final Aggregations aggregations,
-                                                  final ExecutionContext<ProcessReportDataDto> context) {
-
-    final Terms byTaskIdAggregation = aggregations.get(USER_TASK_ID_TERMS_AGGREGATION);
-
-    final Map<String, String> userTaskNames = getUserTaskNames(context.getReportData());
-    final List<DistributedByResult> distributedByUserTask = new ArrayList<>();
-    for (Terms.Bucket taskBucket : byTaskIdAggregation.getBuckets()) {
-      final ViewResult viewResult = viewPart.retrieveResult(response, taskBucket.getAggregations(), context);
-      final String userTaskKey = taskBucket.getKeyAsString();
-      if (userTaskNames.containsKey(userTaskKey)) {
-        String label = userTaskNames.get(userTaskKey);
-        distributedByUserTask.add(createDistributedByResult(userTaskKey, label, viewResult));
-        userTaskNames.remove(userTaskKey);
-      }
-    }
-
-    // enrich data user tasks that haven't been executed, but should still show up in the result
-    userTaskNames.keySet().forEach(userTaskKey -> {
-      DistributedByResult emptyResult = DistributedByResult.createResultWithEmptyValue(userTaskKey);
-      emptyResult.setLabel(userTaskNames.get(userTaskKey));
-      distributedByUserTask.add(emptyResult);
-    });
-
-    return distributedByUserTask;
-  }
-
-  private Map<String, String> getUserTaskNames(final ProcessReportDataDto reportData) {
-    return definitionService
-      .getLatestDefinition(
-        DefinitionType.PROCESS,
-        reportData.getDefinitionKey(),
-        reportData.getDefinitionVersions(),
-        reportData.getTenantIds()
-      )
-      .map(def -> ((ProcessDefinitionOptimizeDto) def).getUserTaskNames())
-      .orElse(Collections.emptyMap());
+  protected String getModelElementIdPath() {
+    return USER_TASKS + "." + USER_TASK_ACTIVITY_ID;
   }
 
   @Override
-  protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.getConfiguration().setDistributedBy(DistributedBy.USER_TASK);
+  protected Map<String, String> extractModelElementNames(DefinitionOptimizeDto def) {
+    return ((ProcessDefinitionOptimizeDto) def).getUserTaskNames();
   }
+
+  @Override
+  protected ProcessDistributedByDto getDistributedBy() {
+    return new UserTaskDistributedByDto();
+  }
+
 }

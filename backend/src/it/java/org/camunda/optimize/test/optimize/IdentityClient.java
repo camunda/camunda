@@ -10,6 +10,7 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
 import org.camunda.optimize.dto.optimize.UserDto;
 import org.camunda.optimize.dto.optimize.query.IdentitySearchResultDto;
+import org.camunda.optimize.dto.optimize.rest.UserResponseDto;
 
 import javax.ws.rs.core.Response;
 import java.util.function.Supplier;
@@ -28,11 +29,11 @@ public class IdentityClient {
       .execute(IdentityWithMetadataDto.class, Response.Status.OK.getStatusCode());
   }
 
-  public UserDto getCurrentUserIdentity(final String username, final String password) {
+  public UserResponseDto getCurrentUserIdentity(final String username, final String password) {
     return getRequestExecutor()
       .buildCurrentUserIdentity()
       .withUserAuthentication(username, password)
-      .execute(UserDto.class, Response.Status.OK.getStatusCode());
+      .execute(UserResponseDto.class, Response.Status.OK.getStatusCode());
   }
 
   public IdentitySearchResultDto searchForIdentity(final String searchTerms, final Integer limit) {

@@ -35,23 +35,29 @@ public class EngineConstants {
   public static final String MEMBER = "member";
   public static final String MEMBER_OF_GROUP = "memberOfGroup";
 
+  // endpoints in the engines to fetch the data for Optimize import
   public static final String VARIABLE_UPDATE_ENDPOINT = "/optimize/variable-update";
   public static final String COMPLETED_ACTIVITY_INSTANCE_ENDPOINT = "/optimize/activity-instance/completed";
   public static final String RUNNING_ACTIVITY_INSTANCE_ENDPOINT = "/optimize/activity-instance/running";
   public static final String COMPLETED_PROCESS_INSTANCE_ENDPOINT = "/optimize/process-instance/completed";
   public static final String RUNNING_PROCESS_INSTANCE_ENDPOINT = "/optimize/process-instance/running";
+  public static final String DECISION_INSTANCE_ENDPOINT = "/optimize/decision-instance";
   public static final String COMPLETED_USER_TASK_INSTANCE_ENDPOINT = "/optimize/task-instance/completed";
   public static final String RUNNING_USER_TASK_INSTANCE_ENDPOINT = "/optimize/task-instance/running";
   public static final String IDENTITY_LINK_LOG_ENDPOINT = "/optimize/identity-link-log";
   public static final String USER_OPERATION_LOG_ENDPOINT = "/optimize/user-operation";
+
+  // native engine endpoints
   public static final String TENANT_ENDPOINT = "/tenant";
   public static final String VERSION_ENDPOINT = "/version";
   public static final String PROCESS_DEFINITION_ENDPOINT = "/process-definition";
+  public static final String PROCESS_DEFINITION_ENDPOINT_TEMPLATE = "/process-definition/{id}";
+  public static final String PROCESS_DEFINITION_XML_ENDPOINT_TEMPLATE = "/process-definition/{id}/xml";
   public static final String DECISION_DEFINITION_ENDPOINT = "/decision-definition";
+  public static final String DECISION_DEFINITION_ENDPOINT_TEMPLATE = "/decision-definition/{id}";
+  public static final String DECISION_DEFINITION_XML_ENDPOINT_TEMPLATE = "/decision-definition/{id}/xml";
   public static final String DEPLOYMENT_ENDPOINT_TEMPLATE = "/deployment/{id}";
-
-  public static final String DECISION_INSTANCE_ENDPOINT = "/optimize/decision-instance";
-
+  public static final String USER_VALIDATION_ENDPOINT = "/identity/verify";
   public static final String AUTHORIZATION_ENDPOINT = "/authorization";
   public static final String GROUP_ENDPOINT = "/group";
   public static final String GROUP_BY_ID_ENDPOINT_TEMPLATE = "/group/{id}";

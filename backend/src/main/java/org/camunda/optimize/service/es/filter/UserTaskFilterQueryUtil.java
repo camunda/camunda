@@ -5,7 +5,8 @@
  */
 package org.camunda.optimize.service.es.filter;
 
-import lombok.experimental.UtilityClass;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
@@ -22,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
-import static org.camunda.optimize.service.es.report.command.util.ExecutionStateAggregationUtil.addExecutionStateFilter;
+import static org.camunda.optimize.service.es.report.command.util.AggregationFilterUtil.addExecutionStateFilter;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASKS;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_ASSIGNEE;
@@ -32,7 +33,7 @@ import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
-@UtilityClass
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class UserTaskFilterQueryUtil {
 
   public static BoolQueryBuilder createUserTaskIdentityAggregationFilter(final ProcessReportDataDto reportDataDto,
@@ -61,37 +62,35 @@ public class UserTaskFilterQueryUtil {
     return filterBoolQuery;
   }
 
-  public static void addUserTaskIdFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
+  private static void addUserTaskIdFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
                                          final Set<String> userTaskIds) {
     userTaskFilterBoolQuery.filter(QueryBuilders.termsQuery(USER_TASKS + "." + USER_TASK_ACTIVITY_ID, userTaskIds));
   }
 
-  private static BoolQueryBuilder addAssigneeFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
-                                                    final ProcessReportDataDto reportDataDto) {
+  private static void addAssigneeFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
+                                        final ProcessReportDataDto reportDataDto) {
     reportDataDto.getFilter().stream().filter(AssigneeFilterDto.class::isInstance)
       .map(filterDto -> (IdentityLinkFilterDataDto) filterDto.getData())
       .forEach(addAssigneeFilter -> userTaskFilterBoolQuery.filter(createAssigneeFilterQuery(addAssigneeFilter)));
-    return userTaskFilterBoolQuery;
   }
 
-  private static BoolQueryBuilder addCandidateGroupFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
-                                                          final ProcessReportDataDto reportDataDto) {
+  private static void addCandidateGroupFilter(final BoolQueryBuilder userTaskFilterBoolQuery,
+                                              final ProcessReportDataDto reportDataDto) {
     reportDataDto.getFilter().stream().filter(CandidateGroupFilterDto.class::isInstance)
       .map(filterDto -> (IdentityLinkFilterDataDto) filterDto.getData())
       .forEach(addAssigneeFilter -> userTaskFilterBoolQuery.filter(createCandidateGroupFilterQuery(addAssigneeFilter)));
-    return userTaskFilterBoolQuery;
   }
 
-  public static final QueryBuilder createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter) {
+  public static QueryBuilder createAssigneeFilterQuery(final IdentityLinkFilterDataDto assigneeFilter) {
     return createIdentityLinkFilterQuery(assigneeFilter, USER_TASK_ASSIGNEE);
   }
 
-  public static final QueryBuilder createCandidateGroupFilterQuery(final IdentityLinkFilterDataDto candidateGroupFilter) {
+  public static QueryBuilder createCandidateGroupFilterQuery(final IdentityLinkFilterDataDto candidateGroupFilter) {
     return createIdentityLinkFilterQuery(candidateGroupFilter, USER_TASK_CANDIDATE_GROUPS);
   }
 
-  private static final QueryBuilder createIdentityLinkFilterQuery(final IdentityLinkFilterDataDto assigneeFilter,
-                                                                  final String valueField) {
+  private static QueryBuilder createIdentityLinkFilterQuery(final IdentityLinkFilterDataDto assigneeFilter,
+                                                            final String valueField) {
     if (CollectionUtils.isEmpty(assigneeFilter.getValues())) {
       throw new OptimizeValidationException("Filter values are not allowed to be empty.");
     }

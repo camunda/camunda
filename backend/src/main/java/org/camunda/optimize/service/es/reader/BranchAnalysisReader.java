@@ -15,6 +15,8 @@ import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityType;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisOutcomeDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
@@ -81,7 +83,9 @@ public class BranchAnalysisReader {
 
     final BranchAnalysisDto result = new BranchAnalysisDto();
     getBpmnModelInstance(
-      userId, request.getProcessDefinitionKey(), request.getProcessDefinitionVersions(), request.getTenantIds()
+      request.getProcessDefinitionKey(),
+      request.getProcessDefinitionVersions(),
+      request.getTenantIds()
     ).ifPresent(bpmnModelInstance -> {
       final List<FlowNode> gatewayOutcomes = fetchGatewayOutcomes(bpmnModelInstance, request.getGateway());
       final Set<String> activityIdsWithMultipleIncomingSequenceFlows =
@@ -249,29 +253,31 @@ public class BranchAnalysisReader {
     return result;
   }
 
-  private Optional<BpmnModelInstance> getBpmnModelInstance(final String userId,
-                                                           final String definitionKey,
+  private Optional<BpmnModelInstance> getBpmnModelInstance(final String definitionKey,
                                                            final List<String> definitionVersions,
                                                            final List<String> tenantIds) {
     final Optional<String> processDefinitionXml = tenantIds.stream()
-      .map(tenantId -> definitionService.getDefinitionXml(
-        DefinitionType.PROCESS,
-        userId,
-        definitionKey,
-        definitionVersions,
-        tenantId
-      ))
+      .map(tenantId -> getDefinitionXml(definitionKey, definitionVersions, Collections.singletonList(tenantId)))
       .filter(Optional::isPresent)
       .findFirst()
-      .orElse(definitionService.getDefinitionXml(
-        DefinitionType.PROCESS,
-        userId,
-        definitionKey,
-        definitionVersions
-      ));
+      .orElseGet(() -> getDefinitionXml(definitionKey, definitionVersions, ReportConstants.DEFAULT_TENANT_IDS));
 
     return processDefinitionXml
       .map(xml -> Bpmn.readModelFromStream(new ByteArrayInputStream(xml.getBytes())));
+  }
+
+  private Optional<String> getDefinitionXml(final String definitionKey,
+                                            final List<String> definitionVersions,
+                                            final List<String> tenants) {
+    final Optional<ProcessDefinitionOptimizeDto> definitionWithXmlAsService =
+      definitionService.getDefinitionWithXmlAsService(
+        DefinitionType.PROCESS,
+        definitionKey,
+        definitionVersions,
+        tenants
+      );
+    return definitionWithXmlAsService
+      .map(ProcessDefinitionOptimizeDto::getBpmn20Xml);
   }
 
   private Set<String> extractFlowNodesWithMultipleIncomingSequenceFlows(final BpmnModelInstance bpmnModelInstance) {

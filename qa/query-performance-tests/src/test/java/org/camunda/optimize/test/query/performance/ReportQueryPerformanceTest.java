@@ -65,12 +65,6 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
   public static void init() throws TimeoutException, InterruptedException {
     // given
     importEngineData();
-
-    // if the import takes a long time the auth header
-    // will time out and the requests will fail with a 401.
-    // Therefore, we need to make sure that we renew the auth header
-    // after the import and before we start the tests
-    embeddedOptimizeExtension.refreshAuthenticationToken();
     elasticSearchIntegrationTestExtension.disableCleanup();
   }
 

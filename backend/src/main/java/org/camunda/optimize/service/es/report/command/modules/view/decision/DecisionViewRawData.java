@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
@@ -26,7 +27,6 @@ import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -52,6 +52,7 @@ import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariab
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableMultivalueFields;
 import static org.camunda.optimize.service.util.DecisionVariableHelper.getVariableValueFieldForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
+import static org.elasticsearch.common.unit.TimeValue.timeValueSeconds;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Slf4j
@@ -84,7 +85,7 @@ public class DecisionViewRawData extends DecisionViewPart {
     addSortingToQuery(context.getReportData(), searchRequest.source());
 
     searchRequest
-      .scroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()));
+      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
   }
 
   private void addSortingToQuery(final DecisionReportDataDto decisionReportData,
@@ -175,7 +176,7 @@ public class DecisionViewRawData extends DecisionViewPart {
         DecisionInstanceDto.class,
         objectMapper,
         esClient,
-        configurationService.getElasticsearchScrollTimeout(),
+        configurationService.getEsScrollTimeoutInSeconds(),
         context.getRecordLimit()
       );
     final RawDataDecisionReportResultDto rawDataSingleReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
@@ -206,12 +207,10 @@ public class DecisionViewRawData extends DecisionViewPart {
         .map(this::getPrefixedOutputVariableId)
         .collect(toList())
     );
-    context.getReportConfiguration()
-      .getTableColumns()
-      .addNewVariableColumns(variableNames);
-    context.getReportConfiguration()
-      .getTableColumns()
-      .addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
+
+    TableColumnDto tableColumns = context.getReportConfiguration().getTableColumns();
+    tableColumns.addNewAndRemoveUnexpectedVariableColumns(variableNames);
+    tableColumns.addDtoColumns(extractAllDecisionInstanceDtoFieldKeys());
   }
 
   private String getPrefixedInputVariableId(final InputVariableEntry inputVariableEntry) {

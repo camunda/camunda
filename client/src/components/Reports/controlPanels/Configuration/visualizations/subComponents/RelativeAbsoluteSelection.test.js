@@ -12,6 +12,7 @@ import RelativeAbsoluteSelection from './RelativeAbsoluteSelection';
 const props = {
   absolute: true,
   relative: true,
+  reportType: 'process',
 };
 
 it('should match snapshot', () => {

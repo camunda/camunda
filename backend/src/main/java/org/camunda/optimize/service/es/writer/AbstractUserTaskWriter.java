@@ -37,7 +37,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_IDLE_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_TOTAL_DURATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.USER_TASK_WORK_DURATION;
-import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScript;
+import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithSpecificDtoParams;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_RETRIES_ON_CONFLICT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
@@ -159,16 +159,9 @@ public abstract class AbstractUserTaskWriter<T extends OptimizeDto> {
       .collect(Collectors.toList());
   }
 
-  @SuppressWarnings("unchecked")
-  private List<Map<String, String>> mapToParameterSet(final List<UserTaskInstanceDto> userTaskInstanceDtos) {
-    return userTaskInstanceDtos.stream()
-      .map(userTaskInstanceDto -> (Map<String, String>) objectMapper.convertValue(userTaskInstanceDto, Map.class))
-      .collect(Collectors.toList());
-  }
-
   private Script createUpdateScript(List<UserTaskInstanceDto> userTasks) {
-    final ImmutableMap<String, Object> scriptParameters = ImmutableMap.of(USER_TASKS, mapToParameterSet(userTasks));
-    return createDefaultScript(createInlineUpdateScript(), scriptParameters);
+    final ImmutableMap<String, Object> scriptParameters = ImmutableMap.of(USER_TASKS, userTasks);
+    return createDefaultScriptWithSpecificDtoParams(createInlineUpdateScript(), scriptParameters, objectMapper);
   }
 
 }

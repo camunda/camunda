@@ -17,7 +17,6 @@ export {
 } from './dataLoaders';
 export {numberParser} from './NumberParser';
 export {incompatibleFilters} from './incompatibleFilters';
-export {containsSuspensionFilter} from './suspensionFilter';
 export {default as reportConfig} from './reportConfig';
 export {getDiagramElementsBetween} from './diagramServices';
 export {flatten} from './tableServices';

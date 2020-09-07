@@ -7,7 +7,10 @@ exports[`should convert a hypermap to a combined report 1`] = `
       "combined": true,
       "data": Object {
         "configuration": Object {
-          "distributedBy": "userTask",
+          "distributedBy": Object {
+            "type": "userTask",
+            "value": null,
+          },
         },
         "reports": Array [
           Object {
@@ -32,7 +35,10 @@ exports[`should convert a hypermap to a combined report 1`] = `
             "combined": false,
             "data": Object {
               "configuration": Object {
-                "distributedBy": "userTask",
+                "distributedBy": Object {
+                  "type": "userTask",
+                  "value": null,
+                },
               },
               "groupBy": Object {
                 "type": "assignee",
@@ -75,7 +81,10 @@ exports[`should convert a hypermap to a combined report 1`] = `
             "combined": false,
             "data": Object {
               "configuration": Object {
-                "distributedBy": "userTask",
+                "distributedBy": Object {
+                  "type": "userTask",
+                  "value": null,
+                },
               },
               "groupBy": Object {
                 "type": "assignee",
@@ -118,7 +127,10 @@ exports[`should convert a hypermap to a combined report 1`] = `
             "combined": false,
             "data": Object {
               "configuration": Object {
-                "distributedBy": "userTask",
+                "distributedBy": Object {
+                  "type": "userTask",
+                  "value": null,
+                },
               },
               "groupBy": Object {
                 "type": "assignee",

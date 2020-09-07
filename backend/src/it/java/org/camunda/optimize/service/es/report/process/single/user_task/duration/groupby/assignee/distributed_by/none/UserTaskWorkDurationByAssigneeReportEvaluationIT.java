@@ -6,18 +6,14 @@
 package org.camunda.optimize.service.es.report.process.single.user_task.duration.groupby.assignee.distributed_by.none;
 
 import com.google.common.collect.ImmutableMap;
-import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
-import java.sql.SQLException;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -38,14 +34,14 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
   }
 
   @Override
-  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final double durationInMs) {
+  protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto, final Number durationInMs) {
     changeUserTaskWorkDuration(processInstanceDto, durationInMs);
   }
 
   @Override
   protected void changeDuration(final ProcessInstanceEngineDto processInstanceDto,
                                 final String userTaskKey,
-                                final double durationInMs) {
+                                final Number durationInMs) {
     changeUserTaskWorkDuration(processInstanceDto, userTaskKey, durationInMs);
   }
 
@@ -58,18 +54,6 @@ public class UserTaskWorkDurationByAssigneeReportEvaluationIT
       .setUserTaskDurationTime(UserTaskDurationTime.WORK)
       .setReportDataType(USER_TASK_DURATION_GROUP_BY_ASSIGNEE)
       .build();
-  }
-
-  private void changeUserClaimTimestamp(final long millis,
-                                        final HistoricUserTaskInstanceDto historicUserTaskInstanceDto) {
-    try {
-      engineDatabaseExtension.changeUserTaskAssigneeOperationTimestamp(
-        historicUserTaskInstanceDto.getId(),
-        historicUserTaskInstanceDto.getEndTime().minus(millis, ChronoUnit.MILLIS)
-      );
-    } catch (SQLException e) {
-      throw new OptimizeIntegrationTestException(e);
-    }
   }
 
   @Override

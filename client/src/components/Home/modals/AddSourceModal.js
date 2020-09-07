@@ -5,15 +5,16 @@
  */
 
 import React from 'react';
-import {ButtonGroup, Button, Modal, Form} from 'components';
 
+import {Button, Modal, Form, Tabs} from 'components';
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
+import {showError} from 'notifications';
+
 import {getDefinitionsWithTenants, getTenantsWithDefinitions} from './service';
 import TenantSource from './TenantSource';
 import DefinitionSource from './DefinitionSource';
 import MultiDefinitionSource from './MultiDefinitionSource';
-import {showError} from 'notifications';
 
 export default withErrorHandling(
   class AddSourceModal extends React.Component {
@@ -82,35 +83,24 @@ export default withErrorHandling(
         >
           <Modal.Header>{t('home.sources.add')}</Modal.Header>
           <Modal.Content>
-            {tenantsAvailable && (
-              <ButtonGroup>
-                <Button
-                  active={addBy === 'definition'}
-                  onClick={() => this.changeAddBy('definition')}
-                >
-                  {t('home.sources.definition.label')}
-                </Button>
-                <Button active={addBy === 'tenant'} onClick={() => this.changeAddBy('tenant')}>
-                  {t('common.tenant.label')}
-                </Button>
-              </ButtonGroup>
-            )}
             <Form>
-              {addBy === 'definition' && tenantsAvailable && (
-                <DefinitionSource
-                  definitionsWithTenants={definitions}
-                  onChange={this.onChange}
-                  setInvalid={this.setInvalid}
-                />
-              )}
-
-              {addBy === 'tenant' && tenantsAvailable && (
-                <TenantSource
-                  tenantsWithDefinitions={tenants}
-                  onChange={this.onChange}
-                  setInvalid={this.setInvalid}
-                  preSelectTenant={!tenantsAvailable}
-                />
+              {tenantsAvailable && (
+                <Tabs value={addBy} onChange={this.changeAddBy}>
+                  <Tabs.Tab value="definition" title={t('home.sources.definition.label')}>
+                    <DefinitionSource
+                      definitionsWithTenants={definitions}
+                      onChange={this.onChange}
+                      setInvalid={this.setInvalid}
+                    />
+                  </Tabs.Tab>
+                  <Tabs.Tab value="tenant" title={t('common.tenant.label')}>
+                    <TenantSource
+                      tenantsWithDefinitions={tenants}
+                      onChange={this.onChange}
+                      setInvalid={this.setInvalid}
+                    />
+                  </Tabs.Tab>
+                </Tabs>
               )}
 
               {!tenantsAvailable && (

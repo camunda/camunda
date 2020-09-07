@@ -16,9 +16,9 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.LocalizationService;
+import org.camunda.optimize.service.SettingsService;
 import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.TenantService;
 import org.camunda.optimize.service.alert.AlertService;
@@ -26,6 +26,7 @@ import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
@@ -36,14 +37,15 @@ import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngineImportMediator;
+import org.camunda.optimize.service.importing.engine.mediator.factory.CamundaEventImportServiceFactory;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.importing.engine.service.RunningActivityInstanceImportService;
 import org.camunda.optimize.service.importing.event.EventTraceStateProcessingScheduler;
 import org.camunda.optimize.service.importing.eventprocess.EventBasedProcessesInstanceImportScheduler;
 import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceImportMediatorManager;
 import org.camunda.optimize.service.importing.page.TimestampBasedImportPage;
-import org.camunda.optimize.service.security.AuthCookieService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.camunda.optimize.service.telemetry.TelemetryScheduler;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -68,6 +70,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 
 /**
@@ -128,9 +132,10 @@ public class EmbeddedOptimizeExtension
       objectMapper = getApplicationContext().getBean(ObjectMapper.class);
       requestExecutor =
         new OptimizeRequestExecutor(
-          getOptimize().target(),
-          getAuthorizationCookieValue(),
-          objectMapper
+          DEFAULT_USERNAME,
+          DEFAULT_PASSWORD,
+          objectMapper,
+          target()
         );
       if (isResetImportOnStart()) {
         resetImportStartIndexes();
@@ -210,13 +215,14 @@ public class EmbeddedOptimizeExtension
   @SneakyThrows
   public void importRunningActivityInstance(List<HistoricActivityInstanceEngineDto> activities) {
     RunningActivityInstanceWriter writer = getApplicationContext().getBean(RunningActivityInstanceWriter.class);
-    CamundaEventImportService camundaEventService = getApplicationContext().getBean(CamundaEventImportService.class);
+    CamundaEventImportServiceFactory camundaEventServiceFactory =
+      getApplicationContext().getBean(CamundaEventImportServiceFactory.class);
 
     for (EngineContext configuredEngine : getConfiguredEngines()) {
       RunningActivityInstanceImportService service =
         new RunningActivityInstanceImportService(
           writer,
-          camundaEventService,
+          camundaEventServiceFactory.createCamundaEventService(configuredEngine),
           getElasticsearchImportJobExecutor(),
           configuredEngine
         );
@@ -326,20 +332,8 @@ public class EmbeddedOptimizeExtension
     return requestExecutor;
   }
 
-  public void refreshAuthenticationToken() {
-    getOptimize().refreshAuthenticationToken();
-  }
-
-  private String getAuthenticationToken() {
-    return getOptimize().getAuthenticationToken();
-  }
-
-  private String getAuthorizationCookieValue() {
-    return AuthCookieService.createOptimizeAuthCookieValue(getAuthenticationToken());
-  }
-
   public String getNewAuthenticationToken() {
-    return getOptimize().getNewAuthenticationToken().orElse(null);
+    return authenticateUser(DEFAULT_USERNAME, DEFAULT_PASSWORD);
   }
 
   public String authenticateUser(String username, String password) {
@@ -356,6 +350,7 @@ public class EmbeddedOptimizeExtension
 
   public void startOptimize() throws Exception {
     getOptimize().start();
+    getElasticsearchMetadataService().initMetadataIfMissing(getOptimizeElasticClient());
     getAlertService().init();
     getElasticsearchImportJobExecutor().startExecutingImportJobs();
   }
@@ -452,6 +447,10 @@ public class EmbeddedOptimizeExtension
     return getOptimize().getCleanupService();
   }
 
+  public TelemetryScheduler getTelemetryScheduler() {
+    return getOptimize().getTelemetryService();
+  }
+
   public SyncedIdentityCacheService getSyncedIdentityCacheService() {
     return getOptimize().getSyncedIdentityCacheService();
   }
@@ -499,6 +498,10 @@ public class EmbeddedOptimizeExtension
     return getApplicationContext().getBean(ExternalEventService.class);
   }
 
+  public SettingsService getSettingsService() {
+    return getApplicationContext().getBean(SettingsService.class);
+  }
+
   public EventTraceStateProcessingScheduler getEventProcessingScheduler() {
     return getApplicationContext().getBean(EventTraceStateProcessingScheduler.class);
   }
@@ -517,6 +520,10 @@ public class EmbeddedOptimizeExtension
 
   public OptimizeElasticsearchClient getOptimizeElasticClient() {
     return getApplicationContext().getBean(OptimizeElasticsearchClient.class);
+  }
+
+  private ElasticsearchMetadataService getElasticsearchMetadataService() {
+    return getApplicationContext().getBean(ElasticsearchMetadataService.class);
   }
 
   private boolean isResetImportOnStart() {

@@ -8,8 +8,6 @@ import 'raf/polyfill';
 import Enzyme from 'enzyme';
 import Adapter from 'enzyme-adapter-react-16';
 import 'jest-enzyme';
-import {shim as objectValuesShim} from 'object.values';
-import 'element-closest';
 import './modules/polyfills/array_flat';
 import {init} from 'translation';
 import * as request from 'request';
@@ -29,5 +27,3 @@ global.MutationObserver = class MutationObserver {
 // since jest does not offer an out of the box way to flush promises:
 // https://github.com/facebook/jest/issues/2157
 global.flushPromises = () => new Promise((resolve) => setImmediate(resolve));
-
-objectValuesShim();

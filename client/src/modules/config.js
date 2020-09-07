@@ -10,16 +10,18 @@ import {showError} from 'notifications';
 let config;
 const awaiting = [];
 
-(async () => {
+export async function loadConfig() {
   try {
     const response = await get('api/ui-configuration');
     config = await response.json();
 
     awaiting.forEach((cb) => cb(config));
+    awaiting.length = 0;
   } catch (e) {
     showError(e);
   }
-})();
+}
+loadConfig();
 
 function createAccessorFunction(property) {
   return async function () {
@@ -35,6 +37,8 @@ function createAccessorFunction(property) {
 
 export const isEmailEnabled = createAccessorFunction('emailEnabled');
 export const isSharingEnabled = createAccessorFunction('sharingEnabled');
+export const isMetadataTelemetryEnabled = createAccessorFunction('metadataTelemetryEnabled');
+export const areSettingsManuallyConfirmed = createAccessorFunction('settingsManuallyConfirmed');
 export const areTenantsAvailable = createAccessorFunction('tenantsAvailable');
 export const getOptimizeVersion = createAccessorFunction('optimizeVersion');
 export const getWebappEndpoints = createAccessorFunction('webappsEndpoints');

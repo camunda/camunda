@@ -33,7 +33,7 @@ public class ReportDefinitionDto<RD extends ReportDataDto> implements Collection
 
   protected RD data;
 
-  private final Boolean combined;
+  private final boolean combined;
 
   private final ReportType reportType;
 
