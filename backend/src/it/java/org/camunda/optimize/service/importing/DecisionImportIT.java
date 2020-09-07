@@ -13,7 +13,6 @@ import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportInd
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.DecisionInstanceIndex;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
-import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
@@ -33,7 +32,6 @@ import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.GET;
 import static javax.ws.rs.HttpMethod.POST;
@@ -373,9 +371,6 @@ public class DecisionImportIT extends AbstractImportIT {
       .withPath(engineIntegrationExtension.getEnginePath() + "/deployment/.*")
       .withMethod(GET);
     mockedResp.mock(requestMatcher, Times.once(), engineMockServer);
-//    engineMockServer
-//      .when(requestMatcher, Times.exactly(1))
-//      .error(HttpError.error().withDropConnection(true));
 
     // when
     engineIntegrationExtension.deployAndStartDecisionDefinition();
