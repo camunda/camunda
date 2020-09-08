@@ -6,11 +6,11 @@
 
 import {get} from 'request';
 
-export async function evaluateEntity(id, type) {
+export async function evaluateEntity(id, type, params = {}) {
   let response;
 
   try {
-    response = await get(`api/share/${type}/${id}/evaluate`);
+    response = await get(`api/share/${type}/${id}/evaluate`, params);
   } catch (e) {
     return (await e.json()).reportDefinition;
   }

@@ -76,8 +76,8 @@ export default class Dropdown extends React.Component {
     const overlay = this.menuContainer.current;
     const buttonPosition = activeButton.getBoundingClientRect();
     this.initilizeHeaderAndFooterRefs();
-    const footerTop = this.footerRef.getBoundingClientRect().top;
-    const headerBottom = this.headerRef.getBoundingClientRect().bottom;
+    const footerTop = this.footerRef?.getBoundingClientRect().top || window.innerHeight;
+    const headerBottom = this.headerRef?.getBoundingClientRect().bottom || 0;
 
     // check to flip menu horizentally
     if (buttonPosition.left + overlay.clientWidth > bodyWidth) {

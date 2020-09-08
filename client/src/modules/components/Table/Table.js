@@ -6,14 +6,12 @@
 
 import React, {useEffect, useRef} from 'react';
 import classnames from 'classnames';
-import {Select, Icon, Button} from 'components';
+import {Select, Icon, Button, LoadingIndicator} from 'components';
 import {useTable, useSortBy, usePagination, useResizeColumns, useFlexLayout} from 'react-table';
 import {flatten} from 'services';
 
 import './Table.scss';
 import {t} from 'translation';
-
-const defaultPageSize = 20;
 
 export default function Table({
   head,
@@ -27,6 +25,10 @@ export default function Table({
   noHighlight,
   noData = t('common.noData'),
   onScroll,
+  fetchData = () => {},
+  defaultPageSize = 20,
+  totalEntries,
+  loading,
 }) {
   const columns = React.useMemo(() => Table.formatColumns(head), [head]);
   const data = React.useMemo(() => Table.formatData(head, body), [head, body]);
@@ -62,6 +64,9 @@ export default function Table({
         sortBy: initialSorting,
         pageSize: disablePagination ? Number.MAX_VALUE : defaultPageSize,
       },
+      ...(totalEntries
+        ? {manualPagination: true, pageCount: Math.ceil(totalEntries / defaultPageSize)}
+        : {}),
     },
     useSortBy,
     usePagination,
@@ -70,7 +75,8 @@ export default function Table({
   );
   const firstRowIndex = pageIndex * pageSize;
   const maxLastRow = firstRowIndex + pageSize;
-  const totalRows = body.length;
+  const totalRows = totalEntries || body.length;
+  const empty = totalRows === 0 || head.length === 0;
   const lastRowIndex = maxLastRow > totalRows ? totalRows : maxLastRow;
 
   function getSortingProps(column) {
@@ -121,8 +127,17 @@ export default function Table({
     }
   }, []);
 
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+    } else {
+      fetchData({pageIndex, pageSize});
+    }
+  }, [fetchData, pageIndex, pageSize]);
+
   return (
-    <div className={classnames('Table', className, {highlight: !noHighlight})}>
+    <div className={classnames('Table', className, {highlight: !noHighlight, loading})}>
       <table {...getTableProps()}>
         <thead ref={thead}>
           {headerGroups.map((headerGroup, i) => (
@@ -170,8 +185,9 @@ export default function Table({
           })}
         </tbody>
       </table>
-      {totalRows === 0 && <div className="noData">{noData}</div>}
-      {!disablePagination && totalRows > defaultPageSize && (
+      {loading && <LoadingIndicator />}
+      {empty && <div className="noData">{noData}</div>}
+      {!disablePagination && !empty && (totalRows > defaultPageSize || totalEntries) && (
         <div className="tableFooter">
           <div className="size">
             {t('report.table.rows')}

@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import WrappedTable from './Table';
@@ -13,8 +13,8 @@ import processRawData from './processRawData';
 import {getWebappEndpoints} from 'config';
 
 jest.mock('./processRawData', () => ({
-  process: jest.fn(),
-  decision: jest.fn(),
+  process: jest.fn().mockReturnValue({}),
+  decision: jest.fn().mockReturnValue({}),
 }));
 
 jest.mock('config', () => ({getWebappEndpoints: jest.fn()}));
@@ -59,10 +59,11 @@ it('should get the camunda endpoints for raw data', () => {
       report={{
         ...report,
         data: {...report.data, view: {property: 'rawData'}},
-        result: {data: [1, 2, 3]},
+        result: {data: [1, 2, 3], pagination: {limit: 20}},
       }}
     />
   );
+  runLastEffect();
 
   expect(getWebappEndpoints).toHaveBeenCalled();
 });
@@ -90,6 +91,7 @@ it('should process raw data', async () => {
       formatter={(v) => v}
     />
   );
+  runLastEffect();
 
   expect(processRawData.process).toHaveBeenCalled();
 });
@@ -100,10 +102,29 @@ it('should set the correct configuration when updating sorting', () => {
     <Table {...props} report={{...report, result: {data: []}}} updateReport={spy} />
   );
 
-  node.instance().updateSorting('columnId', 'desc');
+  node.find('Table').prop('updateSorting')('columnId', 'desc');
 
   expect(spy).toHaveBeenCalled();
   expect(spy.mock.calls[0][0].configuration.sorting).toEqual({
     $set: {by: 'columnId', order: 'desc'},
   });
+});
+
+it('should reload report with correct pagination parameters', async () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <Table
+      {...props}
+      loadReport={spy}
+      report={{
+        ...report,
+        data: {...report.data, view: {property: 'rawData'}},
+        result: {data: [1, 2, 3], pagination: {limit: 20}},
+      }}
+    />
+  );
+  runLastEffect();
+
+  node.find('Table').prop('fetchData')({pageIndex: 2, pageSize: 50});
+  expect(spy).toHaveBeenCalledWith({limit: 50, offset: 100});
 });

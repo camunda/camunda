@@ -141,7 +141,7 @@ export class ReportEdit extends React.Component {
         data: newReport,
       };
       delete query.result;
-      await this.loadReport(query);
+      await this.loadUpdatedReport(query);
     }
   };
 
@@ -165,19 +165,12 @@ export class ReportEdit extends React.Component {
   isReportComplete = ({data: {view, groupBy, visualization}, combined}) =>
     (view && groupBy && visualization) || combined;
 
-  loadReport = async (query) => {
+  loadUpdatedReport = async (query) => {
     this.setState({report: query});
 
     if (this.isReportComplete(query)) {
       this.setState({loadingReportData: true});
-      await this.props.mightFail(
-        evaluateReport(query),
-        (response) =>
-          this.setState({
-            report: response,
-          }),
-        showError
-      );
+      await this.loadReport({}, query);
       this.setState({loadingReportData: false});
     }
   };
@@ -199,6 +192,17 @@ export class ReportEdit extends React.Component {
   closeConflictModal = () => {
     this.state.updatePromise(null);
     this.setState({conflict: null, updatePromise: null});
+  };
+
+  loadReport = async (params, query = this.state.report) => {
+    await this.props.mightFail(
+      evaluateReport(query, [], params),
+      (response) =>
+        this.setState({
+          report: response,
+        }),
+      showError
+    );
   };
 
   render() {
@@ -253,7 +257,11 @@ export class ReportEdit extends React.Component {
             {loadingReportData ? (
               <LoadingIndicator />
             ) : (
-              <ReportRenderer report={report} updateReport={this.updateReport} />
+              <ReportRenderer
+                report={report}
+                updateReport={this.updateReport}
+                loadReport={this.loadReport}
+              />
             )}
           </div>
           {combined && <CombinedReportPanel report={report} updateReport={this.updateReport} />}

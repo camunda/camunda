@@ -83,7 +83,7 @@ it('should retrieve report for the given id', () => {
   props.match.params.type = 'report';
   shallow(<Sharing {...props} />);
 
-  expect(evaluateEntity).toHaveBeenCalledWith(123, 'report');
+  expect(evaluateEntity).toHaveBeenCalledWith(123, 'report', undefined);
 });
 
 it('should display the report name and include report details', () => {
@@ -129,7 +129,7 @@ it('should retrieve dashboard for the given id', () => {
   props.match.params.type = 'dashboard';
   shallow(<Sharing {...props} />);
 
-  expect(evaluateEntity).toHaveBeenCalledWith(123, 'dashboard');
+  expect(evaluateEntity).toHaveBeenCalledWith(123, 'dashboard', undefined);
 });
 
 it('should display the dashboard name and last modification info', () => {

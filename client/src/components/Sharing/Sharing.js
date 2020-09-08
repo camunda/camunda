@@ -43,8 +43,8 @@ export default class Sharing extends React.Component {
     return this.props.match.params.type;
   };
 
-  performEvaluation = async () => {
-    const evaluationResult = await evaluateEntity(this.getId(), this.getType());
+  performEvaluation = async (params) => {
+    const evaluationResult = await evaluateEntity(this.getId(), this.getType(), params);
 
     this.setState({
       evaluationResult,
@@ -54,7 +54,13 @@ export default class Sharing extends React.Component {
 
   getSharingView = () => {
     if (this.getType() === 'report') {
-      return <ReportRenderer report={this.state.evaluationResult} context="shared" />;
+      return (
+        <ReportRenderer
+          report={this.state.evaluationResult}
+          context="shared"
+          loadReport={this.performEvaluation}
+        />
+      );
     } else {
       return (
         <DashboardRenderer

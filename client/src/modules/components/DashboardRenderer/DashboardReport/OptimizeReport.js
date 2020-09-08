@@ -46,10 +46,10 @@ export class OptimizeReport extends React.Component {
     }
   }
 
-  loadReport = async () => {
-    this.setState({loading: true});
+  loadReport = async (params) => {
+    this.setState({loading: !params});
     await this.props.mightFail(
-      this.props.loadReport(this.props.report.id, this.props.filter),
+      this.props.loadReport(this.props.report.id, this.props.filter, params),
       (response) => {
         this.setState({
           loading: false,
@@ -105,7 +105,7 @@ export class OptimizeReport extends React.Component {
           {error ? (
             <NoDataNotice title={error.title}>{error.text}</NoDataNotice>
           ) : (
-            <ReportRenderer report={data} context="dashboard" />
+            <ReportRenderer report={data} context="dashboard" loadReport={this.loadReport} />
           )}
         </div>
         {children({loadReportData: this.loadReport})}

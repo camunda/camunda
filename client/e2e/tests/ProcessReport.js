@@ -135,6 +135,16 @@ test('version selection', async (t) => {
   );
 });
 
+test('raw data table pagination', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Raw Data');
+  await t.click(e.nextPageButton);
+  await t.click(e.rowsPerPageButton);
+  await t.click(e.option('100'));
+  await t.expect(e.reportTable.visible).ok();
+});
+
 test('sort table columns', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');

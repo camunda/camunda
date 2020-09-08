@@ -111,7 +111,7 @@ export default class ReportView extends React.Component {
         </div>
         <div className="Report__view">
           <div className="Report__content">
-            <ReportRenderer report={report} />
+            <ReportRenderer report={report} loadReport={this.props.loadReport} />
           </div>
         </div>
         <Deleter

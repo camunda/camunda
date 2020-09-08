@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React from 'react';
+import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
 import {Select} from 'components';
@@ -141,8 +141,40 @@ it('should show empty message', () => {
   expect(node.find('.noData')).toExist();
 });
 
+it('should show empty message if all columns are hidden', () => {
+  const node = shallow(<Table head={[]} body={[]} totalEntries={100} />);
+
+  expect(node.find('.noData')).toExist();
+});
+
 it('should add a noOverflow classname to tds with Selects', () => {
   const node = shallow(<Table head={['a']} body={[[<Select />]]} />);
 
   expect(node.find('td')).toHaveClassName('noOverflow');
+});
+
+it('should show a loading state when specified', () => {
+  const node = shallow(<Table head={['a']} body={[]} loading={true} />);
+
+  expect(node.find('.loading')).toExist();
+  expect(node.find('LoadingIndicator')).toExist();
+});
+
+it('should use manuel pagination values if specified', () => {
+  const node = shallow(<Table head={['a']} body={[]} totalEntries={250} defaultPageSize={50} />);
+
+  expect(node.find('.tableFooter')).toIncludeText('page 1 of 5');
+});
+
+it('should invoke fetchData when the page is change', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <Table head={['a']} body={[]} fetchData={spy} totalEntries={250} defaultPageSize={50} />
+  );
+
+  runLastEffect();
+  node.find('.next').simulate('click');
+  runLastEffect();
+
+  expect(spy).toHaveBeenCalledWith({pageIndex: 1, pageSize: 50});
 });
