@@ -110,9 +110,9 @@ if (binding.variables.get("ENVIRONMENT") == "prod") {
         buildOriginBranch()
         // Discover pull requests from origin => The current pull request revision
         buildOriginPRHead()
-        // Based on team usage and decision, only main branch and PRs will be part of CI.
+        // Based on team usage and decision, only main branch, PRs, and selected branches will be part of CI.
         // That to avoid running the same CI job twice (one for branch and one for PR).
-        includes 'master PR-*'
+        includes 'master PR-* CI-*'
       }
     }
   
