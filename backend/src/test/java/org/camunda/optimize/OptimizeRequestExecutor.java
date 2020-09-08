@@ -10,6 +10,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.SettingsDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
@@ -62,15 +64,28 @@ import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
+import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
+import org.glassfish.jersey.client.ClientProperties;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.X509TrustManager;
+import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.ClientRequestFilter;
+import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.io.BufferedInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyManagementException;
+import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -90,46 +105,40 @@ import static org.camunda.optimize.rest.IngestionRestService.EVENT_BATCH_SUB_PAT
 import static org.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static org.camunda.optimize.rest.constants.RestConstants.OPTIMIZE_AUTHORIZATION;
 
+@Slf4j
 public class OptimizeRequestExecutor {
+  private static final int MAX_LOGGED_BODY_SIZE = 10_000;
   private static final String ALERT = "alert";
 
-  private WebTarget client;
+  @Getter
+  private final WebTarget defaultWebTarget;
+  private final String defaultUser;
+  private final String defaultUserPassword;
+  private final ObjectMapper objectMapper;
+  private final Map<String, String> cookies = new HashMap<>();
+  private final Map<String, String> requestHeaders = new HashMap<>();
+
   private String defaultAuthCookie;
   private String authCookie;
   private String path;
   private String method;
-  private Entity body;
+  private Entity<?> body;
   private String mediaType = MediaType.APPLICATION_JSON;
   private Map<String, Object> queryParams;
-  private Map<String, String> cookies = new HashMap<>();
-  private Map<String, String> requestHeaders = new HashMap<>();
 
-  private ObjectMapper objectMapper;
-
-  public OptimizeRequestExecutor(final String username, final String password, final String restEndpoint) {
+  public OptimizeRequestExecutor(final String defaultUser,
+                                 final String defaultUserPassword,
+                                 final String restEndpoint) {
+    this.defaultUser = defaultUser;
+    this.defaultUserPassword = defaultUserPassword;
     this.objectMapper = getDefaultObjectMapper();
-    this.client = getSimpleOptimizeClient(restEndpoint, objectMapper);
-    String authCookie = authenticateUserRequest(username, password);
-    this.defaultAuthCookie = authCookie;
-    this.authCookie = authCookie;
+    this.defaultWebTarget = createWebTarget(restEndpoint);
   }
 
-  public OptimizeRequestExecutor(final String username, final String password, final String restEndpoint,
-                                 ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-    this.client = getSimpleOptimizeClient(restEndpoint, objectMapper);
-    String authCookie = authenticateUserRequest(username, password);
-    this.defaultAuthCookie = authCookie;
-    this.authCookie = authCookie;
-  }
-
-  public OptimizeRequestExecutor(final String username, final String password,
-                                 ObjectMapper objectMapper, WebTarget client) {
-    this.objectMapper = objectMapper;
-    this.client = client;
-    String authCookie = authenticateUserRequest(username, password);
-    this.defaultAuthCookie = authCookie;
-    this.authCookie = authCookie;
+  public OptimizeRequestExecutor initAuthCookie() {
+    this.defaultAuthCookie = authenticateUserRequest(defaultUser, defaultUserPassword);
+    this.authCookie = defaultAuthCookie;
+    return this;
   }
 
   public OptimizeRequestExecutor addQueryParams(Map<String, Object> queryParams) {
@@ -203,7 +212,7 @@ public class OptimizeRequestExecutor {
   }
 
   private Invocation.Builder prepareRequest() {
-    WebTarget webTarget = client.path(this.path);
+    WebTarget webTarget = defaultWebTarget.path(this.path);
 
     if (queryParams != null && queryParams.size() != 0) {
       for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
@@ -227,6 +236,9 @@ public class OptimizeRequestExecutor {
       builder = builder.cookie(cookieEntry.getKey(), cookieEntry.getValue());
     }
 
+    if (defaultAuthCookie == null) {
+      initAuthCookie();
+    }
     if (authCookie != null) {
       builder = builder.cookie(OPTIMIZE_AUTHORIZATION, this.authCookie);
     }
@@ -1313,7 +1325,7 @@ public class OptimizeRequestExecutor {
 
   private String authenticateUserRequest(String username, String password) {
     final CredentialsDto entity = new CredentialsDto(username, password);
-    final Response response = client.path("authentication")
+    final Response response = defaultWebTarget.path("authentication")
       .request()
       .post(Entity.json(entity));
     return AuthCookieService.createOptimizeAuthCookieValue(response.readEntity(String.class));
@@ -1326,13 +1338,80 @@ public class OptimizeRequestExecutor {
     return params;
   }
 
-  private WebTarget getSimpleOptimizeClient(String restEndpoint, ObjectMapper objectMapper) {
-    return ClientBuilder.newClient()
-      .target(restEndpoint)
-      .register(new OptimizeObjectMapperContextResolver(objectMapper));
+  public WebTarget createWebTarget(final String targetUrl) {
+    return createClient().target(targetUrl);
   }
 
-  private ObjectMapper getDefaultObjectMapper() {
+  private Client createClient() {
+    // register the default object provider for serialization/deserialization ob objects
+    OptimizeObjectMapperContextResolver provider = new OptimizeObjectMapperContextResolver(objectMapper);
+
+    Client client = ClientBuilder.newClient()
+      .register(provider);
+    client.register((ClientRequestFilter) requestContext -> log.debug(
+      "EmbeddedTestClient request {} {}", requestContext.getMethod(), requestContext.getUri()
+    ));
+    client.register((ClientResponseFilter) (requestContext, responseContext) -> {
+      if (responseContext.hasEntity()) {
+        responseContext.setEntityStream(wrapEntityStreamIfNecessary(responseContext.getEntityStream()));
+      }
+      log.debug(
+        "EmbeddedTestClient response for {} {}: {}",
+        requestContext.getMethod(),
+        requestContext.getUri(),
+        responseContext.hasEntity() ? serializeBodyCappedToMaxSize(responseContext.getEntityStream()) : ""
+      );
+    });
+    client.property(ClientProperties.CONNECT_TIMEOUT, IntegrationTestConfigurationUtil.getHttpTimeoutMillis());
+    client.property(ClientProperties.READ_TIMEOUT, IntegrationTestConfigurationUtil.getHttpTimeoutMillis());
+    client.property(ClientProperties.FOLLOW_REDIRECTS, Boolean.FALSE);
+
+    acceptSelfSignedCertificates(client);
+    return client;
+  }
+
+  private void acceptSelfSignedCertificates(final Client client) {
+    try {
+      // @formatter:off
+      client.getSslContext().init(null, new TrustManager[]{new X509TrustManager() {
+        public void checkClientTrusted(X509Certificate[] arg0, String arg1) {}
+        public void checkServerTrusted(X509Certificate[] arg0, String arg1) {}
+        public X509Certificate[] getAcceptedIssuers() {
+          return new X509Certificate[0];
+        }
+      }}, new java.security.SecureRandom());
+      HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
+      // @formatter:on
+    } catch (KeyManagementException e) {
+      throw new OptimizeIntegrationTestException(
+        "Was not able to configure jersey client to accept all certificates",
+        e
+      );
+    }
+  }
+
+  private InputStream wrapEntityStreamIfNecessary(final InputStream originalEntityStream) {
+    return !originalEntityStream.markSupported() ? new BufferedInputStream(originalEntityStream) : originalEntityStream;
+  }
+
+  private String serializeBodyCappedToMaxSize(final InputStream entityStream) throws IOException {
+    entityStream.mark(MAX_LOGGED_BODY_SIZE + 1);
+
+    final byte[] entity = new byte[MAX_LOGGED_BODY_SIZE + 1];
+    final int entitySize = entityStream.read(entity);
+    final StringBuilder stringBuilder = new StringBuilder(
+      new String(entity, 0, Math.min(entitySize, MAX_LOGGED_BODY_SIZE), StandardCharsets.UTF_8)
+    );
+    if (entitySize > MAX_LOGGED_BODY_SIZE) {
+      stringBuilder.append("...");
+    }
+    stringBuilder.append('\n');
+
+    entityStream.reset();
+    return stringBuilder.toString();
+  }
+
+  private static ObjectMapper getDefaultObjectMapper() {
     final ConfigurationService configurationService = ConfigurationServiceBuilder.createDefaultConfiguration();
     return new ObjectMapperFactory(
       new OptimizeDateTimeFormatterFactory().getObject(), configurationService

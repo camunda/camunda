@@ -151,7 +151,7 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
         memory: ${memoryLimitInGb}Gi
     volumeMounts:
     - name: es-snapshot
-      mountPath: /var/lib/elasticsearch/snapshots
+      mountPath: /tmp/essnapshots
     env:
       - name: ES_NODE_NAME
         valueFrom:
@@ -168,7 +168,7 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
       - name: cluster.name
         value: elasticsearch
       - name: path.repo
-        value: /var/lib/elasticsearch/snapshots
+        value: /tmp/essnapshots
    """
 }
 
@@ -190,7 +190,7 @@ String elasticSearchUpgradeContainerSpec(String esVersion) {
         memory: 1Gi
     volumeMounts:
     - name: es-snapshot
-      mountPath: /var/lib/elasticsearch/snapshots
+      mountPath: /tmp/essnapshots
     env:
       - name: ES_NODE_NAME
         valueFrom:
@@ -207,7 +207,7 @@ String elasticSearchUpgradeContainerSpec(String esVersion) {
       - name: cluster.name
         value: elasticsearch
       - name: path.repo
-        value: /var/lib/elasticsearch/snapshots
+        value: /tmp/essnapshots
    """
 }
 
@@ -588,13 +588,12 @@ void integrationTestSteps(String engineVersion = 'latest') {
 
 void migrationTestSteps() {
   container('maven') {
-    sh ("""apt-get update && apt-get install -y jq netcat diffutils""")
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend -am -Pengine-latest,it")
     runMaven("install -Dskip.docker -DskipTests -f upgrade")
     runMaven("install -Dskip.docker -DskipTests -f qa")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -pl upgrade")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -pl util/optimize-reimport-preparation -Pengine-latest,it")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests -Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots")
+    runMaven("verify -Dskip.docker -pl upgrade")
+    runMaven("verify -Dskip.docker -pl util/optimize-reimport-preparation -Pengine-latest,it")
+    runMaven("verify -Dskip.docker -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests")
   }
 }
 
@@ -603,7 +602,7 @@ void dataUpgradeTestSteps() {
     sh ("""apt-get update && apt-get install -y jq""")
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa/data-generation -am -Pengine-latest")
     runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -f qa/upgrade-optimize-data -pl generator -am")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-optimize-data -am -Pupgrade-optimize-data -Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-optimize-data -am -Pupgrade-optimize-data")
   }
 }
 

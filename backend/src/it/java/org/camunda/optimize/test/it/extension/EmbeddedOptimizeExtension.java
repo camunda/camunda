@@ -132,11 +132,8 @@ public class EmbeddedOptimizeExtension
       objectMapper = getApplicationContext().getBean(ObjectMapper.class);
       requestExecutor =
         new OptimizeRequestExecutor(
-          DEFAULT_USERNAME,
-          DEFAULT_PASSWORD,
-          objectMapper,
-          target()
-        );
+          DEFAULT_USERNAME, DEFAULT_PASSWORD, IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint()
+        ).initAuthCookie();
       if (isResetImportOnStart()) {
         resetImportStartIndexes();
       }
@@ -384,19 +381,20 @@ public class EmbeddedOptimizeExtension
   }
 
   public final WebTarget target(String path) {
-    return getOptimize().target(path);
+    return requestExecutor.getDefaultWebTarget().path(path);
   }
 
   public final WebTarget target() {
-    return getOptimize().target();
+    return requestExecutor.getDefaultWebTarget();
   }
 
   public final WebTarget rootTarget(String path) {
-    return getOptimize().rootTarget(path);
+    return requestExecutor.createWebTarget(IntegrationTestConfigurationUtil.getEmbeddedOptimizeEndpoint())
+      .path(path);
   }
 
   public final WebTarget securedRootTarget() {
-    return getOptimize().securedRootTarget();
+    return requestExecutor.createWebTarget(IntegrationTestConfigurationUtil.getSecuredEmbeddedOptimizeEndpoint());
   }
 
   public List<Long> getImportIndexes() {

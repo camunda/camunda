@@ -212,7 +212,7 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>camunda</sonar.organization>
         <sonar.projectKey>camunda_camunda-optimize</sonar.projectKey>
-        <sonar.moduleKey>${artifactId}</sonar.moduleKey>
+        <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
         <sonar.login>${env.SONARCLOUD_TOKEN}</sonar.login>
       </properties>
       <build>

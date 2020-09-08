@@ -85,7 +85,9 @@ public class Generator {
       new OptimizeIndexNameService(configurationService)
     );
 
-    final OptimizeRequestExecutor requestExecutor = new OptimizeRequestExecutor(DEFAULT_USER, DEFAULT_USER, "http://localhost:8090/api/");
+    final OptimizeRequestExecutor requestExecutor = new OptimizeRequestExecutor(
+      DEFAULT_USER, DEFAULT_USER, "http://localhost:8090/api/"
+    );
 
     collectionClient = new CollectionClient(() -> requestExecutor);
     reportClient = new ReportClient(() -> requestExecutor);

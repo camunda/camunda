@@ -8,39 +8,22 @@ package org.camunda.optimize.test.it.extension;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.apache.http.entity.mime.MIME;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
-import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.LocalizationService;
 import org.camunda.optimize.service.SyncedIdentityCacheService;
 import org.camunda.optimize.service.cleanup.CleanupScheduler;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
-import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.telemetry.TelemetryScheduler;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.glassfish.jersey.client.ClientProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.context.ApplicationContext;
 
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.client.ClientResponseFilter;
-import javax.ws.rs.client.WebTarget;
-import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.KeyManagementException;
-import java.security.cert.X509Certificate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
@@ -59,7 +42,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   public static final String DEFAULT_USERNAME = "demo";
   public static final String DEFAULT_PASSWORD = "demo";
   private static final String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
-  private static final int MAX_LOGGED_BODY_SIZE = 10_000;
 
   private static TestEmbeddedCamundaOptimize testOptimizeInstance;
   /**
@@ -187,95 +169,4 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
     return getApplicationContext().getBean(DateTimeFormatter.class);
   }
 
-  public WebTarget target() {
-    return getClient().target(IntegrationTestConfigurationUtil.getEmbeddedOptimizeRestApiEndpoint());
-  }
-
-  private WebTarget rootTarget() {
-    return getClient().target(IntegrationTestConfigurationUtil.getEmbeddedOptimizeEndpoint());
-  }
-
-  public WebTarget securedRootTarget() {
-    return getClient().target(IntegrationTestConfigurationUtil.getSecuredEmbeddedOptimizeEndpoint());
-  }
-
-  public final WebTarget rootTarget(String path) {
-    return this.rootTarget().path(path);
-  }
-
-  public final WebTarget target(String path) {
-    return this.target().path(path);
-  }
-
-  private Client getClient() {
-    // register the default object provider for serialization/deserialization ob objects
-    OptimizeObjectMapperContextResolver provider = getApplicationContext()
-      .getBean(OptimizeObjectMapperContextResolver.class);
-
-    Client client = ClientBuilder.newClient()
-      .register(provider);
-    client.register((ClientRequestFilter) requestContext -> logger.info(
-      "EmbeddedTestClient request {} {}",
-      requestContext.getMethod(),
-      requestContext.getUri()
-    ));
-    client.register((ClientResponseFilter) (requestContext, responseContext) -> {
-      if (responseContext.hasEntity()) {
-        responseContext.setEntityStream(wrapEntityStreamIfNecessary(responseContext.getEntityStream()));
-      }
-      logger.debug(
-        "EmbeddedTestClient response for {} {}: {}",
-        requestContext.getMethod(),
-        requestContext.getUri(),
-        responseContext.hasEntity() ? serializeBodyCappedToMaxSize(responseContext.getEntityStream()) : ""
-      );
-    });
-    client.property(ClientProperties.CONNECT_TIMEOUT, IntegrationTestConfigurationUtil.getHttpTimeoutMillis());
-    client.property(ClientProperties.READ_TIMEOUT, IntegrationTestConfigurationUtil.getHttpTimeoutMillis());
-    client.property(ClientProperties.FOLLOW_REDIRECTS, Boolean.FALSE);
-
-    acceptSelfSignedCertificates(client);
-    return client;
-  }
-
-  private void acceptSelfSignedCertificates(final Client client) {
-    try {
-      // @formatter:off
-      client.getSslContext().init(null, new TrustManager[]{new X509TrustManager() {
-        public void checkClientTrusted(X509Certificate[] arg0, String arg1) {}
-        public void checkServerTrusted(X509Certificate[] arg0, String arg1) {}
-        public X509Certificate[] getAcceptedIssuers() {
-          return new X509Certificate[0];
-        }
-      }}, new java.security.SecureRandom());
-      HttpsURLConnection.setDefaultHostnameVerifier((hostname, session) -> true);
-      // @formatter:on
-    } catch (KeyManagementException e) {
-      throw new OptimizeIntegrationTestException(
-        "Was not able to configure jersey client to accept all certificates",
-        e
-      );
-    }
-  }
-
-  private InputStream wrapEntityStreamIfNecessary(final InputStream originalEntityStream) {
-    return !originalEntityStream.markSupported() ? new BufferedInputStream(originalEntityStream) : originalEntityStream;
-  }
-
-  private String serializeBodyCappedToMaxSize(final InputStream entityStream) throws IOException {
-    entityStream.mark(MAX_LOGGED_BODY_SIZE + 1);
-
-    final byte[] entity = new byte[MAX_LOGGED_BODY_SIZE + 1];
-    final int entitySize = entityStream.read(entity);
-    final StringBuilder stringBuilder = new StringBuilder(
-      new String(entity, 0, Math.min(entitySize, MAX_LOGGED_BODY_SIZE), MIME.DEFAULT_CHARSET)
-    );
-    if (entitySize > MAX_LOGGED_BODY_SIZE) {
-      stringBuilder.append("...");
-    }
-    stringBuilder.append('\n');
-
-    entityStream.reset();
-    return stringBuilder.toString();
-  }
 }

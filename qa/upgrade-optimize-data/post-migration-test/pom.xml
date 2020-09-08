@@ -6,7 +6,7 @@
     <skip.tests>true</skip.tests>
     <old.optimize.elasticsearch.port>9250</old.optimize.elasticsearch.port>
     <new.optimize.elasticsearch.port>9200</new.optimize.elasticsearch.port>
-    <elasticsearch.snapshot.path>/usr/share/elasticsearch/essnapshots</elasticsearch.snapshot.path>
+    <elasticsearch.snapshot.path>/tmp/essnapshots</elasticsearch.snapshot.path>
   </properties>
 
   <parent>
@@ -48,7 +48,6 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-antrun-plugin</artifactId>
             <executions>
-
               <!-- 1. Start CamBPM and ES through docker-compose -->
               <execution>
                 <id>start-old-new-ES-and-CamBpm</id>
@@ -124,7 +123,7 @@
                 </configuration>
               </execution>
 
-              <!--3. Generate engine data-->
+              <!-- 3. Generate engine data-->
               <execution>
                 <id>generate-engine-data</id>
                 <goals>
@@ -189,7 +188,7 @@
                 </configuration>
               </execution>
 
-              <!--5. Download and unpack Optimize versions -->
+              <!-- 5. Download and unpack Optimize versions -->
               <execution>
                 <id>download-and-unpack-Optimize-versions</id>
                 <goals>
@@ -233,7 +232,7 @@
                 </configuration>
               </execution>
 
-              <!--6. Start old Optimize, generate Data and kill Optimize-->
+              <!-- 6. Start old Optimize, generate Data and kill Optimize-->
               <execution>
                 <id>start-old-Optimize-and-run-data-generation</id>
                 <goals>
@@ -344,8 +343,7 @@
                 </configuration>
               </execution>
 
-
-              <!--7. Run migration, start new Optimize and run post migration tests -->
+              <!-- 8. Run migration, start new Optimize and run post migration tests -->
               <execution>
                 <id>run-migration-start-new-Optimize-and-run-post-migration-tests</id>
                 <goals>
@@ -427,7 +425,7 @@
                 </configuration>
               </execution>
 
-              <!-- 8. Cleanup: stop all docker containers -->
+              <!-- 9. Cleanup: stop all docker containers -->
               <execution>
                 <id>cleanup</id>
                 <goals>
@@ -454,19 +452,6 @@
                 </configuration>
               </execution>
             </executions>
-            <dependencies>
-              <dependency>
-                <groupId>ant-contrib</groupId>
-                <artifactId>ant-contrib</artifactId>
-                <version>1.0b3</version>
-                <exclusions>
-                  <exclusion>
-                    <groupId>ant</groupId>
-                    <artifactId>ant</artifactId>
-                  </exclusion>
-                </exclusions>
-              </dependency>
-            </dependencies>
           </plugin>
         </plugins>
       </build>

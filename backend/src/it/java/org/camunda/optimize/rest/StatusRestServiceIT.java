@@ -29,7 +29,7 @@ public class StatusRestServiceIT extends AbstractIT {
 
   @Test
   public void getConnectedStatus() {
-    final StatusWithProgressDto statusWithProgressDto = statusClient.getImportStatus();
+    final StatusWithProgressDto statusWithProgressDto = statusClient.getStatus();
 
     assertThat(statusWithProgressDto.getConnectionStatus().isConnectedToElasticsearch()).isTrue();
     assertThat(statusWithProgressDto.getConnectionStatus().getEngineConnections()).hasSize(1);
@@ -38,7 +38,7 @@ public class StatusRestServiceIT extends AbstractIT {
 
   @Test
   public void getImportStatus() {
-    final StatusWithProgressDto statusWithProgressDto = statusClient.getImportStatus();
+    final StatusWithProgressDto statusWithProgressDto = statusClient.getStatus();
 
     assertThat(statusWithProgressDto.getIsImporting().keySet()).contains(DEFAULT_ENGINE_ALIAS);
   }
@@ -49,7 +49,7 @@ public class StatusRestServiceIT extends AbstractIT {
     importAllEngineEntitiesFromScratch();
 
     // when
-    final StatusWithProgressDto status = statusClient.getImportStatus();
+    final StatusWithProgressDto status = statusClient.getStatus();
 
     // then
     final Map<String, Boolean> isImportingMap = status.getIsImporting();
@@ -60,7 +60,7 @@ public class StatusRestServiceIT extends AbstractIT {
   @Test
   public void importStatusIsFalseWhenNotImporting() {
     // when
-    final StatusWithProgressDto status = statusClient.getImportStatus();
+    final StatusWithProgressDto status = statusClient.getStatus();
 
     // then
     final Map<String, Boolean> isImportingMap = status.getIsImporting();
@@ -83,7 +83,7 @@ public class StatusRestServiceIT extends AbstractIT {
     mockedResponse.mock(request, Times.once(), esMockServer);
 
     // when
-    final StatusWithProgressDto status = statusClient.getImportStatus();
+    final StatusWithProgressDto status = statusClient.getStatus();
 
     // then
     final Map<String, Boolean> connectionStatusMap = status.getConnectionStatus().getEngineConnections();

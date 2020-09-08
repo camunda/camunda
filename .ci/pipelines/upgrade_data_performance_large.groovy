@@ -186,7 +186,7 @@ static String elasticSearchContainerSpec(esVersion, httpPort = 9200, nameSuffix)
     - name: http.port
       value: $httpPort
     - name: path.repo
-      value: /var/lib/elasticsearch/snapshots
+      value: /tmp/essnapshots
     securityContext:
       privileged: true
       capabilities:
@@ -210,7 +210,7 @@ static String elasticSearchContainerSpec(esVersion, httpPort = 9200, nameSuffix)
         mountPath: /usr/share/elasticsearch/logs
         subPath: es-logs-$nameSuffix
       - name: ssd-storage
-        mountPath: /var/lib/elasticsearch/snapshots
+        mountPath: /tmp/essnapshots
         subPath: es-snapshots
   """
 }
@@ -319,7 +319,6 @@ pipeline {
             cloneGitRepo()
             container('maven') {
               configFileProvider([configFile(fileId: 'maven-nexus-settings-local-repo', variable: 'MAVEN_SETTINGS_XML')]) {
-                sh 'apt-get update && apt-get install jq netcat diffutils -y'
                 sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s $MAVEN_SETTINGS_XML clean install -B'
               }
             }
@@ -348,7 +347,7 @@ pipeline {
           steps {
             timeout(time: params.UPGRADE_TIMEOUT_MINUTES, unit: 'MINUTES') {
               container('maven') {
-                runMaven('-Delasticsearch.snapshot.path=/var/lib/elasticsearch/snapshots -Dskip.docker -Pstatic-data-upgrade-es-schema-tests -pl qa/upgrade-es-schema-tests clean verify')
+                runMaven('-Pupgrade-es-schema-tests -pl qa/upgrade-es-schema-tests clean verify')
               }
             }
           }

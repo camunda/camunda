@@ -17,7 +17,7 @@ public class StatusClient {
 
   private final Supplier<OptimizeRequestExecutor> requestExecutorSupplier;
 
-  public StatusWithProgressDto getImportStatus() {
+  public StatusWithProgressDto getStatus() {
     return getRequestExecutor()
       .withoutAuthentication()
       .buildCheckImportStatusRequest()

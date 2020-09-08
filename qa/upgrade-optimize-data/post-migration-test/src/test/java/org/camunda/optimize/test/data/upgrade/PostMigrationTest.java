@@ -6,7 +6,6 @@
 package org.camunda.optimize.test.data.upgrade;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.OptimizeRequestExecutor;
@@ -60,13 +59,7 @@ public class PostMigrationTest {
   @BeforeAll
   public static void init() {
     final ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext("optimizeDataUpgradeContext.xml");
-    final ObjectMapper objectMapper = ctx.getBean(ObjectMapper.class);
-    requestExecutor = new OptimizeRequestExecutor(
-      DEFAULT_USER,
-      DEFAULT_USER,
-      "http://localhost:8090/api/",
-      objectMapper
-    );
+    requestExecutor = new OptimizeRequestExecutor(DEFAULT_USER, DEFAULT_USER, "http://localhost:8090/api/");
     final ConfigurationService configurationService = ctx.getBean(ConfigurationService.class);
     elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
