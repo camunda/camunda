@@ -48,7 +48,7 @@
   "telemetry": {
     "updated": "Telemetry Settings updated.",
     "header": "Telemetry Settings",
-    "text": "To improve the stability and customer support, allow Camunda Optimize to share telemetry data with Camunda services.",
+    "text": "To improve the stability and customer support, allow Camunda Optimize to share telemetry data with Camunda services GmbH.",
     "enable": "Enable Telemetry",
     "personalData": "None of your personal information or stored data will be submitted.",
     "learnMore": "Learn more: ",

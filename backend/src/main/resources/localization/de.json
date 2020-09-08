@@ -48,7 +48,7 @@
   "telemetry": {
     "updated": "Telemetrie-Einstellungen aktualisiert.",
     "header": "Telemetrie-Einstellungen",
-    "text": "Erlauben Sie Camunda Optimize Telemetriedaten mit Camunda zu teilen, um Stabilität und Kundenservice zu verbessern.",
+    "text": "Erlauben Sie Camunda Optimize Telemetriedaten mit Camunda Services GmbH zu teilen, um Stabilität und Kundenservice zu verbessern.",
     "enable": "Telemetrie aktivieren",
     "personalData": "Keine persönlichen Informationen oder gespeicherten Daten werden übermittelt.",
     "learnMore": "Weitere Informationen: ",
