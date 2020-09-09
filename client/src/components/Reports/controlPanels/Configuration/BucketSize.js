@@ -99,7 +99,7 @@ export default function BucketSize({
             onBlur={flush}
             onChange={(evt) => {
               const valid = isGroupedByDuration
-                ? numberParser.isPositiveNumber(evt.target.value)
+                ? numberParser.isNonNegativeNumber(evt.target.value)
                 : numberParser.isFloatNumber(evt.target.value);
               setBaseValid(valid);
               applyChanges('baseline', evt.target.value, valid);
@@ -119,13 +119,7 @@ export default function BucketSize({
             </Select>
           )}
         </div>
-        {!baseValid && (
-          <Message error>
-            {isGroupedByDuration
-              ? t('common.errors.postiveNum')
-              : t('report.config.bucket.invalidNumber')}
-          </Message>
-        )}
+        {!baseValid && <Message error>{t('report.config.bucket.invalidNumber')}</Message>}
       </fieldset>
     );
   }
