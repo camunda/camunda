@@ -27,6 +27,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.filter.Proc
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
@@ -42,6 +43,7 @@ import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
@@ -615,6 +617,72 @@ public class ReportEvaluationRestServiceIT extends AbstractReportRestServiceIT {
 
     // then
     AbstractSharingIT.assertErrorFields(response);
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonPaginateableReportTypes")
+  public void evaluateNonPaginateableUnsavedReportWithPaginationParametersReturnsError(SingleReportDataDto reportDataDto) {
+    // given
+    PaginationRequestDto paginationDto = new PaginationRequestDto();
+    paginationDto.setOffset(10);
+    paginationDto.setLimit(10);
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequestWithPagination(reportDataDto, paginationDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonPaginateableReportTypes")
+  public void evaluateNonPaginateableSavedReportWithPaginationParametersReturnsError(SingleReportDataDto reportDataDto) {
+    // given
+    final String reportId = saveReport(reportDataDto);
+    PaginationRequestDto paginationDto = new PaginationRequestDto();
+    paginationDto.setOffset(10);
+    paginationDto.setLimit(10);
+
+    // when
+    Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildEvaluateSavedReportRequest(reportId, paginationDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  private String saveReport(final SingleReportDataDto reportDataDto) {
+    final String reportId;
+    if (reportDataDto instanceof ProcessReportDataDto) {
+      reportId = reportClient.createSingleProcessReport((ProcessReportDataDto) reportDataDto);
+    } else {
+      reportId = reportClient.createSingleDecisionReport((DecisionReportDataDto) reportDataDto);
+    }
+    return reportId;
+  }
+
+  private static Stream<SingleReportDataDto> nonPaginateableReportTypes() {
+    return Stream.concat(
+      Stream.of(DecisionReportDataType.values())
+        .filter(type -> !DecisionReportDataType.RAW_DATA.equals(type))
+        .map(type -> DecisionReportDataBuilder
+          .create()
+          .setDecisionDefinitionKey(RANDOM_KEY)
+          .setDecisionDefinitionVersion(RANDOM_VERSION)
+          .setReportDataType(type)
+          .build()),
+      Stream.of(ProcessReportDataType.values())
+        .filter(type -> !ProcessReportDataType.RAW_DATA.equals(type))
+        .map(type -> TemplatedProcessReportDataBuilder
+          .createReportData()
+          .setProcessDefinitionKey(RANDOM_KEY)
+          .setProcessDefinitionVersion(RANDOM_VERSION)
+          .setReportDataType(type)
+          .build())
+    );
   }
 
   private SingleReportDataDto createSingleReportDataForType(final ReportType reportType) {

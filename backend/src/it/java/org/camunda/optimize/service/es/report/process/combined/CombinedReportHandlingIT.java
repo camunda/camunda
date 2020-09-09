@@ -10,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -36,6 +37,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
@@ -703,6 +705,45 @@ public class CombinedReportHandlingIT extends AbstractIT {
     assertThat(result.getReportDefinition().getData().getReportIds().get(0)).isEqualTo(singleReportId);
     assertThat(result.getReportDefinition().getData().getConfiguration())
       .isEqualTo(new CombinedReportConfigurationDto());
+  }
+
+  @Test
+  public void unsavedReportEvaluationWithPaginationReturnsError() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String singleReportId = createNewSingleMapReport(engineDto);
+    Map<String, Object> params = ImmutableMap.of(
+      PaginationRequestDto.LIMIT_PARAM, 10,
+      PaginationRequestDto.OFFSET_PARAM, 20
+    );
+
+    // when
+    final OptimizeRequestExecutor optimizeRequestExecutor = embeddedOptimizeExtension.getRequestExecutor()
+      .buildEvaluateCombinedUnsavedReportRequest(createCombinedReportData(singleReportId));
+    optimizeRequestExecutor.addQueryParams(params);
+    final Response response = optimizeRequestExecutor.execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void savedReportEvaluationWithPaginationReturnsError() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String singleReportId = createNewSingleMapReport(engineDto);
+    PaginationRequestDto paginationRequestDto = new PaginationRequestDto();
+    paginationRequestDto.setOffset(10);
+    paginationRequestDto.setLimit(10);
+    final String combinedReportId = reportClient.createNewCombinedReport(singleReportId);
+
+    // when
+    final OptimizeRequestExecutor optimizeRequestExecutor = embeddedOptimizeExtension.getRequestExecutor()
+      .buildEvaluateSavedReportRequest(combinedReportId, paginationRequestDto);
+    final Response response = optimizeRequestExecutor.execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test

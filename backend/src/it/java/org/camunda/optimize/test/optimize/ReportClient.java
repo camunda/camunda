@@ -268,6 +268,16 @@ public class ReportClient {
     return createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
+  public String createSingleDecisionReport(DecisionReportDataDto data) {
+    SingleDecisionReportDefinitionDto definitionDto = new SingleDecisionReportDefinitionDto();
+    definitionDto.setName(TEST_REPORT_NAME);
+    definitionDto.setData(data);
+    return getRequestExecutor()
+      .buildCreateSingleDecisionReportRequest(definitionDto)
+      .execute(IdDto.class, Response.Status.OK.getStatusCode())
+      .getId();
+  }
+
   public String createEmptySingleProcessReport() {
     return createEmptySingleProcessReportInCollection(null);
   }

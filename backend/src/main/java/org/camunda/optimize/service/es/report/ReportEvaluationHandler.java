@@ -78,6 +78,12 @@ public abstract class ReportEvaluationHandler {
     final CombinedReportDefinitionDto combinedReportDefinitionDto =
       (CombinedReportDefinitionDto) evaluationInfo.getReport();
     ValidationHelper.validateCombinedReportDefinition(combinedReportDefinitionDto, currentUserRole);
+    Optional.ofNullable(evaluationInfo.getPagination())
+      .ifPresent(pagination -> {
+        if (pagination.getLimit() != null || pagination.getOffset() != null) {
+          throw new OptimizeValidationException("Pagination cannot be applied to combined reports");
+        }
+      });
     final List<SingleProcessReportDefinitionDto> singleReportDefinitions =
       getAuthorizedSingleReportDefinitions(evaluationInfo);
     final List<ReportEvaluationResult> resultList =

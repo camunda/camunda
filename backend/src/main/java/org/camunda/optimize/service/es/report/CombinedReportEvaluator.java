@@ -27,7 +27,6 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -40,14 +39,11 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 public class CombinedReportEvaluator {
 
   private final SingleReportEvaluator singleReportEvaluatorInjected;
-  private final DateTimeFormatter dateTimeFormatter;
   private final OptimizeElasticsearchClient esClient;
 
   public CombinedReportEvaluator(final SingleReportEvaluator singleReportEvaluator,
-                                 final DateTimeFormatter dateTimeFormatter,
                                  final OptimizeElasticsearchClient esClient) {
     this.singleReportEvaluatorInjected = singleReportEvaluator;
-    this.dateTimeFormatter = dateTimeFormatter;
     this.esClient = esClient;
   }
 
@@ -159,7 +155,12 @@ public class CombinedReportEvaluator {
     private MinMaxStatDto combinedRangeMinMaxStats;
 
     private SingleReportEvaluatorForCombinedReports(final SingleReportEvaluator evaluator) {
-      super(evaluator.notSupportedCommand, evaluator.applicationContext, evaluator.commandSuppliers.values());
+      super(
+        evaluator.configurationService,
+        evaluator.notSupportedCommand,
+        evaluator.applicationContext,
+        evaluator.commandSuppliers.values()
+      );
     }
 
     @Override

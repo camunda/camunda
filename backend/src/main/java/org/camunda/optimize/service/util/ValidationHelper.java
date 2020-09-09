@@ -78,7 +78,6 @@ public class ValidationHelper {
   }
 
   private static void validateDefinitionData(ReportDataDto data) {
-
     if (data instanceof SingleReportDataDto) {
       SingleReportDataDto singleReportData = (SingleReportDataDto) data;
       ensureNotNull("definitionKey", singleReportData.getDefinitionKey());

@@ -10,7 +10,6 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.OutputVariableEntry;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionInstanceDto;
@@ -33,7 +32,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.ws.rs.core.Response;
-import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -672,7 +670,7 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     engineIntegrationExtension.startDecisionInstance(decisionDefinitionDto.getId());
 
     importAllEngineEntitiesFromScratch();
-    final String reportId = createAndStoreDefaultReportDefinition(createReport(
+    final String reportId = reportClient.createSingleDecisionReport(createReport(
       decisionDefinitionDto.getKey(),
       ALL_VERSIONS
     ));
@@ -723,19 +721,6 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
       .extracting(RawDataDecisionInstanceDto::getDecisionInstanceId)
       .containsExactly(expectedInstanceIds.get(4));
     assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
-  }
-
-  private String createAndStoreDefaultReportDefinition(DecisionReportDataDto reportData) {
-    SingleDecisionReportDefinitionDto singleDecisionReportDefinitionDto = new SingleDecisionReportDefinitionDto();
-    singleDecisionReportDefinitionDto.setData(reportData);
-    singleDecisionReportDefinitionDto.setId("something");
-    singleDecisionReportDefinitionDto.setLastModifier("something");
-    singleDecisionReportDefinitionDto.setName("something");
-    OffsetDateTime someDate = OffsetDateTime.now().plusHours(1);
-    singleDecisionReportDefinitionDto.setCreated(someDate);
-    singleDecisionReportDefinitionDto.setLastModified(someDate);
-    singleDecisionReportDefinitionDto.setOwner("something");
-    return reportClient.createSingleDecisionReport(singleDecisionReportDefinitionDto);
   }
 
   private AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateSavedRawDataDecisionReport(
