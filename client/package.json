@@ -24,7 +24,7 @@
     "react-full-screen": "^0.3.1",
     "react-grid-layout": "^1.0.0",
     "react-markdown": "^4.3.1",
-    "react-resizable": "^1.10.1",
+    "react-resizable": "^1.11.0",
     "react-router": "^5.0.1",
     "react-router-dom": "^5.2.0",
     "react-table": "^7.5.0",
