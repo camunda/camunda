@@ -12,7 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.client.api.worker.JobHandler;
-import io.zeebe.containers.ZeebeBrokerContainer;
+import io.zeebe.containers.ZeebeContainer;
+import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.ZeebePort;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -39,7 +40,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.slf4j.event.Level;
 import org.testcontainers.containers.Network;
 import org.testcontainers.lifecycle.Startable;
 import org.testcontainers.lifecycle.Startables;
@@ -47,7 +47,7 @@ import org.testcontainers.lifecycle.Startables;
 public class RollingUpdateTest {
   private static final String OLD_VERSION = VersionUtil.getPreviousVersion();
   private static final String NEW_VERSION = VersionUtil.getVersion();
-  private static final String IMAGE_TAG = "current-test";
+  private static final String CURRENT_IMAGE_NAME = "camunda/zeebe:current-test";
   private static final BpmnModelInstance PROCESS =
       Bpmn.createExecutableProcess("process")
           .startEvent()
@@ -69,7 +69,7 @@ public class RollingUpdateTest {
 
   @Rule public TemporaryFolder tmpFolder = new TemporaryFolder(SHARED_DATA);
 
-  private List<ZeebeBrokerContainer> containers;
+  private List<ZeebeContainer> containers;
   private String initialContactPoints;
   private Network network;
 
@@ -77,16 +77,15 @@ public class RollingUpdateTest {
   public void setup() {
     initialContactPoints =
         IntStream.range(0, 3)
-            .mapToObj(id -> "broker-" + id + ":" + ZeebePort.INTERNAL_API.getPort())
+            .mapToObj(id -> "broker-" + id + ":" + ZeebePort.INTERNAL.getPort())
             .collect(Collectors.joining(","));
 
     network = Network.newNetwork();
-
     containers =
         Arrays.asList(
-            new ZeebeBrokerContainer(OLD_VERSION),
-            new ZeebeBrokerContainer(OLD_VERSION),
-            new ZeebeBrokerContainer(OLD_VERSION));
+            new ZeebeContainer("camunda/zeebe:" + OLD_VERSION),
+            new ZeebeContainer("camunda/zeebe:" + OLD_VERSION),
+            new ZeebeContainer("camunda/zeebe:" + OLD_VERSION));
 
     configureBrokerContainer(0, containers);
     configureBrokerContainer(1, containers);
@@ -111,7 +110,7 @@ public class RollingUpdateTest {
     // then
     try (final var client = newZeebeClient(containers.get(1))) {
       Awaitility.await()
-          .atMost(Duration.ofSeconds(5))
+          .atMost(Duration.ofSeconds(10))
           .pollInterval(Duration.ofMillis(100))
           .untilAsserted(() -> assertTopologyDoesNotContainerBroker(client, index));
 
@@ -301,34 +300,32 @@ public class RollingUpdateTest {
         .isComplete(containers.size() - 1, 1);
   }
 
-  private ZeebeClient newZeebeClient(final ZeebeBrokerContainer container) {
+  private ZeebeClient newZeebeClient(final ZeebeGatewayNode<?> gateway) {
     return ZeebeClient.newClientBuilder()
         .usePlaintext()
-        .brokerContactPoint(container.getExternalAddress(ZeebePort.GATEWAY))
+        .brokerContactPoint(gateway.getExternalGatewayAddress())
         .build();
   }
 
-  private ZeebeBrokerContainer upgradeBroker(final int index) {
-    final var broker = new ZeebeBrokerContainer(IMAGE_TAG);
+  private ZeebeContainer upgradeBroker(final int index) {
+    final var broker = new ZeebeContainer(CURRENT_IMAGE_NAME);
     containers.set(index, broker);
     return configureBrokerContainer(index, containers);
   }
 
-  private ZeebeBrokerContainer configureBrokerContainer(
-      final int index, final List<ZeebeBrokerContainer> brokers) {
+  private ZeebeContainer configureBrokerContainer(
+      final int index, final List<ZeebeContainer> brokers) {
     final int clusterSize = brokers.size();
     final var broker = brokers.get(index);
     final var hostName = "broker-" + index;
     final var volumePath = getBrokerVolumePath(index);
-    broker.withNetworkAliases(hostName);
 
     // once old version is 0.24 and more membership configuration is exposed, further tune for fast
     // failure detection
     return broker
         .withNetwork(network)
-        .withEnv("ZEEBE_BROKER_NETWORK_HOST", "0.0.0.0")
-        .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISED_HOST", hostName)
-        .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERNAME", "zeebe-cluster")
+        .withNetworkAliases(hostName)
+        .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", hostName)
         .withEnv("ZEEBE_BROKER_NETWORK_MAXMESSAGESIZE", "128KB")
         .withEnv("ZEEBE_BROKER_CLUSTER_NODEID", String.valueOf(index))
         .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERSIZE", String.valueOf(clusterSize))
@@ -338,8 +335,8 @@ public class RollingUpdateTest {
         .withEnv("ZEEBE_BROKER_CLUSTER_GOSSIPINTERVAL", "100")
         .withEnv("ZEEBE_BROKER_CLUSTER_GOSSIPPROBEINTERVAL", "100")
         .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
-        .withFileSystemBind(volumePath.toString(), "/usr/local/zeebe/data")
-        .withLogLevel(Level.DEBUG);
+        .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+        .withFileSystemBind(volumePath.toString(), "/usr/local/zeebe/data");
   }
 
   private Path getBrokerVolumePath(final int index) {
