@@ -133,7 +133,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
     final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
     Map<String, Aggregations> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
-      keyToAggregationMap = dateAggregationService.mapHistogramAggregationsToKeyAggregationMap(
+      keyToAggregationMap = dateAggregationService.mapDateAggregationsToKeyAggregationMap(
         unwrappedLimitedAggregations.get(),
         context.getTimezone()
       );
@@ -143,10 +143,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
         unwrappedLimitedAggregations.get()
       );
     } else {
-      keyToAggregationMap = dateAggregationService.mapRangeAggregationsToKeyAggregationMap(
-        aggregations,
-        context.getTimezone()
-      );
+      return Collections.emptyList();
     }
 
     return mapKeyToAggMapToGroupByResults(keyToAggregationMap, response, context);

@@ -13,6 +13,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.Proce
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
@@ -158,7 +160,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
@@ -216,7 +218,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(4L)
@@ -265,7 +267,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
@@ -313,7 +315,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     HyperMapAsserter.asserter()
       .processInstanceCount(3L)
       .processInstanceCountWithoutFilters(3L)
@@ -351,7 +353,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(2L)
@@ -380,7 +382,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
@@ -484,7 +486,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReportById(reportId).getResult();
 
     // then
-    final ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(5L)
@@ -496,11 +498,61 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     // @formatter:on
   }
 
+  @Test
+  public void worksForAutomaticIntervalSelection() {
+    // given
+    final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto procInstance = deployAndStartSimpleProcess(Collections.singletonMap(
+      "boolVar",
+      true
+    ));
+    final ProcessInstanceEngineDto procInstance2 =
+      engineIntegrationExtension.startProcessInstance(procInstance.getDefinitionId(), Collections.singletonMap(
+        "boolVar",
+        true
+      ));
+
+    changeProcessInstanceDate(procInstance.getId(), referenceDate);
+    changeProcessInstanceDate(procInstance2.getId(), referenceDate.plusDays(1));
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData =
+      createReportData(procInstance, VariableType.BOOLEAN, "boolVar", GroupByDateUnit.AUTOMATIC);
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then a non-empty result is returned with instances in the first and last bucket
+    assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getInstanceCount()).isEqualTo(2);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2);
+    assertThat(result.getData()).isNotEmpty();
+
+    assertThat(result.getData())
+      .flatExtracting(HyperMapResultEntryDto::getValue)
+      .first()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.0);
+    assertThat(result.getData())
+      .flatExtracting(HyperMapResultEntryDto::getValue)
+      .last()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.0);
+  }
+
+
   private ProcessReportDataDto createReportData(final ProcessInstanceEngineDto processInstanceDto,
                                                 final VariableType variableType,
                                                 final String variableName) {
+    return createReportData(processInstanceDto, variableType, variableName, GroupByDateUnit.DAY);
+  }
+
+  private ProcessReportDataDto createReportData(final ProcessInstanceEngineDto processInstanceDto,
+                                                final VariableType variableType,
+                                                final String variableName,
+                                                final GroupByDateUnit groupByDateUnit) {
     return TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(groupByDateUnit)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())

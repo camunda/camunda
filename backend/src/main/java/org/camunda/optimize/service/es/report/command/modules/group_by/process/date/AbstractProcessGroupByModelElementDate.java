@@ -184,15 +184,12 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
 
     Map<String, Aggregations> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
-      keyToAggregationMap = dateAggregationService.mapHistogramAggregationsToKeyAggregationMap(
+      keyToAggregationMap = dateAggregationService.mapDateAggregationsToKeyAggregationMap(
         unwrappedLimitedAggregations.get(),
         context.getTimezone()
       );
     } else {
-      keyToAggregationMap = dateAggregationService.mapRangeAggregationsToKeyAggregationMap(
-        filteredFlowNodes.getAggregations(),
-        context.getTimezone()
-      );
+      return Collections.emptyList();
     }
     return mapKeyToAggMapToGroupByResults(keyToAggregationMap, response, context);
   }

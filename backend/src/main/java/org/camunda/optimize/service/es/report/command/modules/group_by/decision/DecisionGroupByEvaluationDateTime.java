@@ -112,15 +112,12 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
     final Optional<Aggregations> unwrappedLimitedAggregations = unwrapFilterLimitedAggregations(aggregations);
     Map<String, Aggregations> keyToAggregationMap;
     if (unwrappedLimitedAggregations.isPresent()) {
-      keyToAggregationMap = dateAggregationService.mapHistogramAggregationsToKeyAggregationMap(
+      keyToAggregationMap = dateAggregationService.mapDateAggregationsToKeyAggregationMap(
         unwrappedLimitedAggregations.get(),
         context.getTimezone()
       );
     } else {
-      keyToAggregationMap = dateAggregationService.mapRangeAggregationsToKeyAggregationMap(
-        aggregations,
-        context.getTimezone()
-      );
+      return Collections.emptyList();
     }
     return mapKeyToAggMapToGroupByResults(keyToAggregationMap, response, context);
   }

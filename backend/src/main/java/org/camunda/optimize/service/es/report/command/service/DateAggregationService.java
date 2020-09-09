@@ -17,10 +17,9 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
+import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.FiltersAggregator;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
-import org.elasticsearch.search.aggregations.bucket.range.Range;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
 import org.springframework.stereotype.Component;
@@ -53,13 +52,14 @@ import static org.camunda.optimize.service.es.report.command.util.FilterLimitedA
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.wrapWithFilterLimitedParentAggregation;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 @RequiredArgsConstructor
 @Component
 public class DateAggregationService {
 
-  private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
-  public static final String RANGE_AGGREGATION = "rangeAggregation";
+  private static final String DATE_AGGREGATION = "dateAggregation";
 
   private final DateTimeFormatter dateTimeFormatter;
   private final ConfigurationService configurationService;
@@ -147,30 +147,18 @@ public class DateAggregationService {
     return Duration.of(Math.max(intervalFromMinToMax, 1), ChronoUnit.MILLIS);
   }
 
-  public Map<String, Aggregations> mapRangeAggregationsToKeyAggregationMap(final Aggregations aggregations,
-                                                                           final ZoneId timezone) {
-    Range agg = aggregations.get(RANGE_AGGREGATION);
-
-    Map<String, Aggregations> formattedKeyToBucketMap = new LinkedHashMap<>();
-    for (Range.Bucket entry : agg.getBuckets()) {
-      String formattedDate = formatToCorrectTimezone(entry.getKeyAsString(), timezone, dateTimeFormatter);
-      formattedKeyToBucketMap.put(formattedDate, entry.getAggregations());
-    }
-    // sort in descending order
-    formattedKeyToBucketMap = formattedKeyToBucketMap.entrySet().stream()
-      .sorted(Collections.reverseOrder(Map.Entry.comparingByKey()))
-      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (u, v) -> {
-        throw new IllegalStateException(String.format("Duplicate key %s", u));
-      }, LinkedHashMap::new));
-    return formattedKeyToBucketMap;
+  public Map<String, Aggregations> mapDateAggregationsToKeyAggregationMap(final Aggregations aggregations,
+                                                                          final ZoneId timezone) {
+    return mapDateAggregationsToKeyAggregationMap(aggregations, timezone, DATE_AGGREGATION);
   }
 
-  public Map<String, Aggregations> mapHistogramAggregationsToKeyAggregationMap(final Aggregations aggregations,
-                                                                               final ZoneId timezone) {
-    final Histogram agg = aggregations.get(DATE_HISTOGRAM_AGGREGATION);
+  public Map<String, Aggregations> mapDateAggregationsToKeyAggregationMap(final Aggregations aggregations,
+                                                                          final ZoneId timezone,
+                                                                          final String aggregationName) {
+    final MultiBucketsAggregation agg = aggregations.get(aggregationName);
 
     Map<String, Aggregations> formattedKeyToBucketMap = new LinkedHashMap<>();
-    for (Histogram.Bucket entry : agg.getBuckets()) {
+    for (MultiBucketsAggregation.Bucket entry : agg.getBuckets()) {
       String formattedDate = formatToCorrectTimezone(entry.getKeyAsString(), timezone, dateTimeFormatter);
       formattedKeyToBucketMap.put(formattedDate, entry.getAggregations());
     }
@@ -184,16 +172,12 @@ public class DateAggregationService {
   }
 
   public boolean isResultComplete(final Aggregations aggregations, final long totalHits) {
-    boolean complete = FilterLimitedAggregationUtil.isResultComplete(aggregations, totalHits);
-    if (aggregations != null && aggregations.getAsMap().containsKey(RANGE_AGGREGATION)) {
-      complete = true;
-    }
-    return complete;
+    return FilterLimitedAggregationUtil.isResultComplete(aggregations, totalHits);
   }
 
   private DateHistogramAggregationBuilder createDateHistogramAggregation(final DateAggregationContext context) {
     return AggregationBuilders
-      .dateHistogram(context.getDateAggregationName().orElse(DATE_HISTOGRAM_AGGREGATION))
+      .dateHistogram(context.getDateAggregationName().orElse(DATE_AGGREGATION))
       .order(BucketOrder.key(false))
       .field(context.getDateField())
       .dateHistogramInterval(mapToDateHistogramInterval(context.getGroupByDateUnit()))
@@ -272,7 +256,7 @@ public class DateAggregationService {
 
     final Duration intervalDuration = getDateHistogramIntervalDurationFromMinMax(context.getMinMaxStats());
     RangeAggregationBuilder rangeAgg = AggregationBuilders
-      .range(RANGE_AGGREGATION)
+      .range(context.getDateAggregationName().orElse(DATE_AGGREGATION))
       .field(context.getDateField());
     ZonedDateTime start = min;
     int bucketCount = 0;
@@ -298,7 +282,10 @@ public class DateAggregationService {
       bucketCount++;
     } while (start.isBefore(max));
     return Optional.of(
-      rangeAgg.subAggregation(context.getDistributedBySubAggregation())
+      wrapWithFilterLimitedParentAggregation(
+        boolQuery().filter(matchAllQuery()),
+        rangeAgg.subAggregation(context.getDistributedBySubAggregation())
+      )
     );
   }
 

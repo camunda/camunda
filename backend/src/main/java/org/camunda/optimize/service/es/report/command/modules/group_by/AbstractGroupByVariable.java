@@ -24,6 +24,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
@@ -40,11 +41,13 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
+import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
-import static org.camunda.optimize.service.es.report.command.service.DateAggregationService.RANGE_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -63,6 +66,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   private static final String FILTERED_INSTANCE_COUNT_AGGREGATION = "filteredInstCount";
   private static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "inst_count";
   private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
+  private static final String RANGE_AGGREGATION = "rangeAggregation";
 
   private final ConfigurationService configurationService;
   private final DateAggregationService dateAggregationService;
@@ -242,32 +246,49 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       // aggregations are null if there are no instances in the report and it is grouped by date variable
       return;
     }
+
     final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
     final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-    MultiBucketsAggregation variableTerms = filteredVariables.getAggregations().get(VARIABLES_AGGREGATION);
+    Filter filteredParentAgg = filteredVariables.getAggregations().get(FILTER_LIMITED_AGGREGATION);
+    if (filteredParentAgg == null) {
+      filteredParentAgg = filteredVariables;
+    }
+    MultiBucketsAggregation variableTerms = filteredParentAgg.getAggregations().get(VARIABLES_AGGREGATION);
     if (variableTerms == null) {
-      variableTerms = filteredVariables.getAggregations().get(RANGE_AGGREGATION);
+      variableTerms = filteredParentAgg.getAggregations().get(RANGE_AGGREGATION);
+    }
+
+    Map<String, Aggregations> bucketAggregations;
+    if (VariableType.DATE.equals(getVariableType(context))) {
+      bucketAggregations =
+        dateAggregationService.mapDateAggregationsToKeyAggregationMap(
+          filteredParentAgg.getAggregations(),
+          context.getTimezone(),
+          VARIABLES_AGGREGATION
+        );
+    } else {
+      bucketAggregations =
+        variableTerms.getBuckets().stream()
+          .collect(toMap(
+            MultiBucketsAggregation.Bucket::getKeyAsString,
+            MultiBucketsAggregation.Bucket::getAggregations,
+            (bucketAggs1, bucketAggs2) -> bucketAggs1
+          ));
     }
 
     final List<GroupByResult> groupedData = new ArrayList<>();
-    for (MultiBucketsAggregation.Bucket b : variableTerms.getBuckets()) {
-      ReverseNested reverseNested = b.getAggregations().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
+    for (Map.Entry<String, Aggregations> keyToAggregationEntry : bucketAggregations.entrySet()) {
+      final ReverseNested reverseNested = keyToAggregationEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
       final List<DistributedByResult> distribution =
-        distributedByPart.retrieveResult(response, reverseNested.getAggregations(), context);
-      groupedData.add(GroupByResult.createGroupByResult(b.getKeyAsString(), distribution));
+        distributedByPart.retrieveResult(
+          response,
+          reverseNested == null ? keyToAggregationEntry.getValue() : reverseNested.getAggregations(),
+          context
+        );
+      groupedData.add(GroupByResult.createGroupByResult(keyToAggregationEntry.getKey(), distribution));
     }
 
-    final ReverseNested filteredInstAggr = filteredVariables.getAggregations()
-      .get(FILTERED_INSTANCE_COUNT_AGGREGATION);
-    final long filteredProcInstCount = filteredInstAggr.getDocCount();
-
-    if (response.getHits().getTotalHits().value > filteredProcInstCount) {
-
-      final Filter aggregation = response.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
-      final List<DistributedByResult> missingVarsOperationResult =
-        distributedByPart.retrieveResult(response, aggregation.getAggregations(), context);
-      groupedData.add(GroupByResult.createGroupByResult(MISSING_VARIABLE_KEY, missingVarsOperationResult));
-    }
+    addMissingVariableBuckets(groupedData, response, context);
 
     compositeCommandResult.setGroups(groupedData);
     compositeCommandResult.setIsComplete(isResultComplete(filteredVariables, variableTerms));
@@ -275,6 +296,24 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       compositeCommandResult.setSorting(new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC));
     }
     compositeCommandResult.setKeyIsOfNumericType(getSortByKeyIsOfNumericType(context));
+  }
+
+  private void addMissingVariableBuckets(final List<GroupByResult> groupedData,
+                                         final SearchResponse response,
+                                         final ExecutionContext<Data> context) {
+    final Nested nested = response.getAggregations().get(NESTED_AGGREGATION);
+    final Filter filteredVariables = nested.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
+
+    final ReverseNested filteredInstAggr = filteredVariables.getAggregations()
+      .get(FILTERED_INSTANCE_COUNT_AGGREGATION);
+    final long filteredProcInstCount = filteredInstAggr.getDocCount();
+
+    if (response.getHits().getTotalHits().value > filteredProcInstCount) {
+      final Filter aggregation = response.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
+      final List<DistributedByResult> missingVarsOperationResult =
+        distributedByPart.retrieveResult(response, aggregation.getAggregations(), context);
+      groupedData.add(GroupByResult.createGroupByResult(MISSING_VARIABLE_KEY, missingVarsOperationResult));
+    }
   }
 
   private boolean getSortByKeyIsOfNumericType(final ExecutionContext<Data> context) {
