@@ -37,12 +37,6 @@ public class CustomIndexPrefixIT extends AbstractIT {
   @Order(2)
   public ElasticSearchIntegrationTestExtension customPrefixElasticSearchIntegrationTestExtension
     = new ElasticSearchIntegrationTestExtension(CUSTOM_PREFIX);
-  @RegisterExtension
-  @Order(3)
-  public EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension();
-  @RegisterExtension
-  @Order(4)
-  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
 
   private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
 

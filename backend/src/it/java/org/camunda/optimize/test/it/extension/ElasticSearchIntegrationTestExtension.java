@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.Builder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
@@ -127,26 +128,32 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   private static final ToXContent.Params XCONTENT_PARAMS_FLAT_SETTINGS = new ToXContent.MapParams(
     Collections.singletonMap("flat_settings", "true")
   );
-
   private static final String MOCKSERVER_CLIENT_KEY = "MockServer";
-
   private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
   private static final Map<String, OptimizeElasticsearchClient> CLIENT_CACHE = new HashMap<>();
-
-  private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
-
-  private boolean haveToClean = true;
+  private static final ClientAndServer mockServerClient = initMockServer();
 
   private final String customIndexPrefix;
 
-  private static final ClientAndServer mockServerClient = initMockServer();
+  private OptimizeElasticsearchClient prefixAwareRestHighLevelClient;
+  private boolean haveToClean;
 
   public ElasticSearchIntegrationTestExtension() {
-    this(null);
+    this(true);
+  }
+
+  public ElasticSearchIntegrationTestExtension(final boolean haveToClean) {
+    this(null, haveToClean);
   }
 
   public ElasticSearchIntegrationTestExtension(final String customIndexPrefix) {
+    this(customIndexPrefix, true);
+  }
+
+  public ElasticSearchIntegrationTestExtension(final String customIndexPrefix,
+                                               final boolean haveToClean) {
     this.customIndexPrefix = customIndexPrefix;
+    this.haveToClean = haveToClean;
     initEsClient();
   }
 
@@ -156,7 +163,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   @Override
-  public void afterEach(final ExtensionContext context) throws Exception {
+  public void afterEach(final ExtensionContext context) {
     // If the MockServer has been used, we reset all expectations and logs and revert to the default client
     if (prefixAwareRestHighLevelClient == CLIENT_CACHE.get(MOCKSERVER_CLIENT_KEY)) {
       log.info("Resetting all MockServer expectations and logs");

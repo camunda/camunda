@@ -242,8 +242,8 @@ public class SchemaManagerIT extends AbstractIT {
 
     // then an exception is thrown when I add a document to an unknown type
     assertThatThrownBy(() -> elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
-      "myAwesomeNewIndex", "12312412", new ProcessInstanceDto()))
-      .isInstanceOf(ElasticsearchStatusException.class);
+      "myAwesomeNewIndex", "12312412", ProcessInstanceDto.builder().build())
+    ).isInstanceOf(ElasticsearchStatusException.class);
   }
 
   @Test

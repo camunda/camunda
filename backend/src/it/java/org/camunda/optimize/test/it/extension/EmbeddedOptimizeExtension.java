@@ -78,20 +78,30 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
  * Helper to start embedded jetty with Camunda Optimize on board.
  */
 @Slf4j
-@NoArgsConstructor
 public class EmbeddedOptimizeExtension
   implements BeforeEachCallback, AfterEachCallback, BeforeAllCallback, AfterAllCallback {
 
   public static final String DEFAULT_ENGINE_ALIAS = "camunda-bpm";
 
+  private final String context;
+  private final boolean beforeAllMode;
+
   private OptimizeRequestExecutor requestExecutor;
   private ObjectMapper objectMapper;
-
-  private String context = null;
-  private boolean beforeAllMode = false;
   private boolean resetImportOnStart = true;
 
-  @Builder(builderMethodName = "customPropertiesBuilder")
+  public EmbeddedOptimizeExtension() {
+    this(false);
+  }
+
+  public EmbeddedOptimizeExtension(final boolean beforeAllMode) {
+    this(null, beforeAllMode);
+  }
+
+  public EmbeddedOptimizeExtension(final String context) {
+    this(context, false);
+  }
+
   public EmbeddedOptimizeExtension(final String context,
                                    final boolean beforeAllMode) {
     this.context = context;

@@ -10,6 +10,7 @@ import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.optimize.ProcessInstanceConstants;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
@@ -109,8 +110,8 @@ public abstract class AbstractEventProcessIT extends AbstractIT {
   protected static final String EVENT_BASED_GATEWAY_TYPE = "eventBasedGateway";
   protected static final String USER_TASK_TYPE = "userTask";
 
-  protected static final String PROCESS_INSTANCE_STATE_COMPLETED = "COMPLETED";
-  protected static final String PROCESS_INSTANCE_STATE_ACTIVE = "ACTIVE";
+  protected static final String PROCESS_INSTANCE_STATE_COMPLETED = ProcessInstanceConstants.COMPLETED_STATE;
+  protected static final String PROCESS_INSTANCE_STATE_ACTIVE = ProcessInstanceConstants.ACTIVE_STATE;
 
   protected static final String FIRST_EVENT_NAME = "firstEvent";
   protected static final String SECOND_EVENT_NAME = "secondEvent";

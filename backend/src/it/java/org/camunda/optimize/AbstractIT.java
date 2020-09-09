@@ -40,8 +40,8 @@ public abstract class AbstractIT {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension
-    = new ElasticSearchIntegrationTestExtension();
+  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
+    new ElasticSearchIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
   public EngineIntegrationExtension engineIntegrationExtension = new EngineIntegrationExtension();

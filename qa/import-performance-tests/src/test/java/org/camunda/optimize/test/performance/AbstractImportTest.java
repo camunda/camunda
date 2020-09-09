@@ -38,8 +38,8 @@ public abstract class AbstractImportTest {
 
   @RegisterExtension
   @Order(1)
-  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension
-    = new ElasticSearchIntegrationTestExtension();
+  public ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
+    new ElasticSearchIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
@@ -100,7 +100,7 @@ public abstract class AbstractImportTest {
 
   protected ScheduledExecutorService reportImportProgress() {
     final ScheduledExecutorService exec = Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactoryBuilder().setNameFormat(getClass().getSimpleName()).build()
+      new ThreadFactoryBuilder().setNameFormat(getClass().getSimpleName()).build()
     );
     exec.scheduleAtFixedRate(
       () -> logger.info("Progress of engine import: {}%", computeImportProgress()),

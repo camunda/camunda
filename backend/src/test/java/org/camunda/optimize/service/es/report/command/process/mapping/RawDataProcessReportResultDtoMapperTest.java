@@ -69,7 +69,9 @@ public class RawDataProcessReportResultDtoMapperTest {
   }
 
   private List<ProcessInstanceDto> generateInstanceList(final Integer rawDataLimit) {
-    return IntStream.range(0, rawDataLimit).mapToObj(i -> new ProcessInstanceDto()).collect(Collectors.toList());
+    return IntStream.range(0, rawDataLimit)
+      .mapToObj(i -> ProcessInstanceDto.builder().build())
+      .collect(Collectors.toList());
   }
 
 }

@@ -79,10 +79,11 @@ public abstract class AbstractActivityInstanceWriter {
       params.put(EVENTS, simpleEvents);
       final Script updateScript = createDefaultScriptWithSpecificDtoParams(createInlineUpdateScript(), params, objectMapper);
 
-      final ProcessInstanceDto procInst = new ProcessInstanceDto()
-        .setProcessInstanceId(processInstanceId)
-        .setEngine(activityInstances.get(0).getEngineAlias())
-        .setEvents(simpleEvents);
+      final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
+        .processInstanceId(processInstanceId)
+        .engine(activityInstances.get(0).getEngineAlias())
+        .events(simpleEvents)
+        .build();
       String newEntryIfAbsent = objectMapper.writeValueAsString(procInst);
       return new UpdateRequest()
         .index(PROCESS_INSTANCE_INDEX_NAME)

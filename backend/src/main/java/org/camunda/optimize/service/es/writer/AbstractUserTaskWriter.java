@@ -113,10 +113,11 @@ public abstract class AbstractUserTaskWriter<T extends OptimizeDto> {
 
     final UserTaskInstanceDto firstUserTaskInstance = userTasks.stream().findFirst()
       .orElseThrow(() -> new OptimizeRuntimeException("No user tasks to import provided"));
-    final ProcessInstanceDto procInst = new ProcessInstanceDto()
-      .setProcessInstanceId(firstUserTaskInstance.getProcessInstanceId())
-      .setEngine(firstUserTaskInstance.getEngine())
-      .setUserTasks(userTasks);
+    final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
+      .processInstanceId(firstUserTaskInstance.getProcessInstanceId())
+      .engine(firstUserTaskInstance.getEngine())
+      .userTasks(userTasks)
+      .build();
     String newEntryIfAbsent;
     try {
       newEntryIfAbsent = objectMapper.writeValueAsString(procInst);

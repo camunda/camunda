@@ -123,9 +123,10 @@ public class ExportLimitsIT extends AbstractIT {
     final int maxBulkSize = 10000;
     final int batchCount = Double.valueOf(Math.ceil((double) totalInstanceCount / maxBulkSize)).intValue();
 
-    final ProcessInstanceDto processInstanceDto = new ProcessInstanceDto();
-    processInstanceDto.setProcessDefinitionKey(processDefinitionKey);
-    processInstanceDto.setProcessDefinitionVersion("1");
+    final ProcessInstanceDto processInstanceDto = ProcessInstanceDto.builder()
+      .processDefinitionKey(processDefinitionKey)
+      .processDefinitionVersion("1")
+      .build();
 
     for (int i = 0; i < batchCount; i++) {
       final BulkRequest bulkInsert = new BulkRequest();
@@ -140,7 +141,7 @@ public class ExportLimitsIT extends AbstractIT {
             .source(
               elasticSearchIntegrationTestExtension.getObjectMapper().writeValueAsString(processInstanceDto),
               XContentType.JSON
-          );
+            );
 
         bulkInsert.add(indexRequest);
       }

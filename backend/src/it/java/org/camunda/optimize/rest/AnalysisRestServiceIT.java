@@ -90,14 +90,15 @@ public class AnalysisRestServiceIT extends AbstractIT {
     processDefinitionXmlDto.setVersion(PROCESS_DEFINITION_VERSION_2);
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_ID_2, processDefinitionXmlDto);
 
-    final ProcessInstanceDto procInst = new ProcessInstanceDto()
-      .setProcessDefinitionId(PROCESS_DEFINITION_ID)
-      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion(PROCESS_DEFINITION_VERSION_1)
-      .setProcessInstanceId(PROCESS_INSTANCE_ID)
-      .setStartDate(OffsetDateTime.now())
-      .setEndDate(OffsetDateTime.now())
-      .setEvents(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}));
+    final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
+      .processDefinitionId(PROCESS_DEFINITION_ID)
+      .processDefinitionKey(PROCESS_DEFINITION_KEY)
+      .processDefinitionVersion(PROCESS_DEFINITION_VERSION_1)
+      .processInstanceId(PROCESS_INSTANCE_ID)
+      .startDate(OffsetDateTime.now())
+      .endDate(OffsetDateTime.now())
+      .events(createEventList(new String[]{GATEWAY_ACTIVITY, END_ACTIVITY, TASK}))
+      .build();
     elasticSearchIntegrationTestExtension.addEntryToElasticsearch(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_ID, procInst);
 
     procInst.setEvents(

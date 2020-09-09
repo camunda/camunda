@@ -42,12 +42,9 @@ public class AbstractMultiEngineIT extends AbstractIT {
   protected final String SECOND_ENGINE_ALIAS = "secondTestEngine";
 
   @RegisterExtension
-  @Order(3)
-  public EngineIntegrationExtension secondaryEngineIntegrationExtension = new EngineIntegrationExtension(
-    "anotherEngine");
-  @RegisterExtension
   @Order(4)
-  public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  public EngineIntegrationExtension secondaryEngineIntegrationExtension =
+    new EngineIntegrationExtension("anotherEngine");
 
   private ConfigurationService configurationService;
 

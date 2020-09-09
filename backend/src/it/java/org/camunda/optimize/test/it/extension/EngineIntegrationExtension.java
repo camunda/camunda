@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.ser.std.DateSerializer;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -104,35 +105,36 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 @Slf4j
 public class EngineIntegrationExtension implements BeforeEachCallback, AfterEachCallback {
-  private static final Set<String> DEPLOYED_ENGINES = new HashSet<>(Collections.singleton("default"));
-
-  private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
-  private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
-  private static final EnginePluginClient ENGINE_PLUGIN_CLIENT = new EnginePluginClient(HTTP_CLIENT);
-
-  private static final ClientAndServer mockServerClient = initMockServer();
-
   public static final String DEFAULT_EMAIL_DOMAIN = "@camunda.org";
   public static final String DEFAULT_FIRSTNAME = "firstName";
   public static final String DEFAULT_LASTNAME = "lastName";
   public static final String DEFAULT_FULLNAME = DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME;
-  private static final int MAX_WAIT = 10;
-  private static final String COUNT = "count";
   public static final String KERMIT_GROUP_NAME = "anyGroupName";
 
-  private boolean shouldCleanEngine;
+  private static final Set<String> DEPLOYED_ENGINES = new HashSet<>(Collections.singleton("default"));
+  private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
+  private static final CloseableHttpClient HTTP_CLIENT = HttpClients.createDefault();
+  private static final EnginePluginClient ENGINE_PLUGIN_CLIENT = new EnginePluginClient(HTTP_CLIENT);
+  private static final ClientAndServer mockServerClient = initMockServer();
+  private static final int MAX_WAIT = 10;
+  private static final String COUNT = "count";
 
+  private final boolean shouldCleanEngine;
   @Getter
   private final String engineName;
 
   private boolean usingMockServer = false;
 
   public EngineIntegrationExtension() {
-    this(null);
+    this(true);
   }
 
   public EngineIntegrationExtension(final String customEngineName) {
     this(customEngineName, true);
+  }
+
+  public EngineIntegrationExtension(final boolean shouldCleanEngine) {
+    this(null, shouldCleanEngine);
   }
 
   public EngineIntegrationExtension(final String customEngineName, final boolean shouldCleanEngine) {
@@ -144,8 +146,10 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   @Override
-  public void beforeEach(final ExtensionContext extensionContext) throws Exception {
-    before();
+  public void beforeEach(final ExtensionContext extensionContext) {
+    if (shouldCleanEngine) {
+      cleanEngine();
+    }
   }
 
   @Override
@@ -158,12 +162,10 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     usingMockServer = false;
   }
 
-  private void before() {
-    if (shouldCleanEngine) {
-      ENGINE_PLUGIN_CLIENT.cleanEngine(engineName);
-      addUser("demo", "demo");
-      grantAllAuthorizations("demo");
-    }
+  public void cleanEngine() {
+    ENGINE_PLUGIN_CLIENT.cleanEngine(engineName);
+    addUser("demo", "demo");
+    grantAllAuthorizations("demo");
   }
 
   private void initEngine() {
@@ -613,51 +615,63 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     }
   }
 
-  public void suspendProcessInstanceByInstanceId(final String processInstanceId) throws IOException {
+  @SneakyThrows
+  public void suspendProcessInstanceByInstanceId(final String processInstanceId) {
     performProcessInstanceByInstanceIdSuspensionRequest(processInstanceId, true);
   }
 
-  public void suspendProcessInstanceByDefinitionId(final String processDefinitionId) throws IOException {
+  @SneakyThrows
+  public void suspendProcessInstanceByDefinitionId(final String processDefinitionId) {
     performProcessInstanceByDefinitionIdSuspensionRequest(processDefinitionId, true);
   }
 
-  public void suspendProcessInstanceByDefinitionKey(final String processDefinitionKey) throws IOException {
+  @SneakyThrows
+  public void suspendProcessInstanceByDefinitionKey(final String processDefinitionKey) {
     performProcessInstanceByDefinitionKeySuspensionRequest(processDefinitionKey, true);
   }
 
-  public void suspendProcessDefinitionById(final String processDefinitionId) throws IOException {
+  @SneakyThrows
+  public void suspendProcessDefinitionById(final String processDefinitionId) {
     performProcessDefinitionSuspensionByIdRequest(processDefinitionId, true);
   }
 
-  public void suspendProcessDefinitionByKey(final String processDefinitionKey) throws IOException {
+  @SneakyThrows
+  public void suspendProcessDefinitionByKey(final String processDefinitionKey) {
     performProcessDefinitionSuspensionByKeyRequest(processDefinitionKey, true);
   }
 
-  public void unsuspendProcessInstanceByInstanceId(final String processInstanceId) throws IOException {
+  @SneakyThrows
+  public void unsuspendProcessInstanceByInstanceId(final String processInstanceId) {
     performProcessInstanceByInstanceIdSuspensionRequest(processInstanceId, false);
   }
 
-  public void unsuspendProcessInstanceByDefinitionId(final String processDefinitionId) throws IOException {
+  @SneakyThrows
+  public void unsuspendProcessInstanceByDefinitionId(final String processDefinitionId) {
     performProcessInstanceByDefinitionIdSuspensionRequest(processDefinitionId, false);
   }
 
-  public void unsuspendProcessInstanceByDefinitionKey(final String processDefinitionKey) throws IOException {
+  @SneakyThrows
+  public void unsuspendProcessInstanceByDefinitionKey(final String processDefinitionKey) {
     performProcessInstanceByDefinitionKeySuspensionRequest(processDefinitionKey, false);
   }
 
-  public void unsuspendProcessDefinitionById(final String processDefinitionId) throws IOException {
+  @SneakyThrows
+  public void unsuspendProcessDefinitionById(final String processDefinitionId) {
     performProcessDefinitionSuspensionByIdRequest(processDefinitionId, false);
   }
 
-  public void unsuspendProcessDefinitionByKey(final String processDefinitionKey) throws IOException {
+  @SneakyThrows
+  public void unsuspendProcessDefinitionByKey(final String processDefinitionKey) {
     performProcessDefinitionSuspensionByKeyRequest(processDefinitionKey, false);
   }
 
-  public void suspendProcessInstanceViaBatch(final String processInstanceId) throws IOException {
+  @SneakyThrows
+  public void suspendProcessInstanceViaBatch(final String processInstanceId) {
     performProcessInstanceSuspensionViaBatchRequestAndForceBatchExecution(processInstanceId, true);
   }
 
-  public void unsuspendProcessInstanceViaBatch(final String processInstanceId) throws IOException {
+  @SneakyThrows
+  public void unsuspendProcessInstanceViaBatch(final String processInstanceId) {
     performProcessInstanceSuspensionViaBatchRequestAndForceBatchExecution(processInstanceId, false);
   }
 

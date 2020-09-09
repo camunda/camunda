@@ -69,9 +69,7 @@ public abstract class AbstractConnectToElasticsearchIT {
   }
 
   private EmbeddedOptimizeExtension getEmbeddedOptimizeExtension() {
-    return EmbeddedOptimizeExtension.customPropertiesBuilder()
-      .context(getContextFile())
-      .build();
+    return new EmbeddedOptimizeExtension(getContextFile());
   }
 
 }

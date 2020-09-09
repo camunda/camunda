@@ -29,7 +29,8 @@ public abstract class AbstractDataCleanupTest {
 
   @RegisterExtension
   @Order(1)
-  protected static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension = new ElasticSearchIntegrationTestExtension();
+  protected static ElasticSearchIntegrationTestExtension elasticSearchIntegrationTestExtension =
+    new ElasticSearchIntegrationTestExtension();
   @RegisterExtension
   @Order(2)
   protected static EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
