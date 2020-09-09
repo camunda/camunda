@@ -14,7 +14,7 @@ import static org.awaitility.Awaitility.await;
 import com.github.dockerjava.api.model.Bind;
 import com.github.dockerjava.api.model.Volume;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.containers.ZeebeBrokerContainer;
+import io.zeebe.containers.ZeebeContainer;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -28,30 +28,28 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 public class DiskSpaceRecoveryITTest {
-  static ZeebeBrokerContainer zeebeBroker;
+  static ZeebeContainer zeebeBroker;
   private static final Logger LOG = LoggerFactory.getLogger(DiskSpaceRecoveryITTest.class);
   private static final String VOLUME_NAME = "data-DiskSpaceRecoveryITTest";
   private static ElasticsearchContainer elastic;
-  private static String elasticHostUrl;
+  private static final String ELASTIC_HOST = "http://elastic:9200";
   private ZeebeClient client;
 
   @Before
   public void setUp() {
-    elasticHostUrl = "http://elastic:9200";
-    zeebeBroker = new ZeebeBrokerContainer("current-test");
-    configureZeebe(zeebeBroker, elasticHostUrl);
+    zeebeBroker = new ZeebeContainer("camunda/zeebe:current-test");
+    configureZeebe(zeebeBroker);
     final var network = zeebeBroker.getNetwork();
     elastic = createElastic(network);
   }
 
-  private static ZeebeBrokerContainer configureZeebe(
-      final ZeebeBrokerContainer zeebeBroker, final String elasticHost) {
+  private static ZeebeContainer configureZeebe(final ZeebeContainer zeebeBroker) {
 
     zeebeBroker
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
             "io.zeebe.exporter.ElasticsearchExporter")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", elasticHost)
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", ELASTIC_HOST)
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_DELAY", "1")
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE", "1")
         .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
