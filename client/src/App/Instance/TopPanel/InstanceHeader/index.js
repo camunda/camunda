@@ -24,7 +24,7 @@ const InstanceHeader = observer(() => {
       {!instance ? (
         <Skeleton />
       ) : (
-        <Styled.Table>
+        <Styled.Table data-test="instance-header">
           <tbody>
             <Styled.Tr>
               <Styled.Td>
@@ -33,8 +33,12 @@ const InstanceHeader = observer(() => {
               </Styled.Td>
               <Styled.Td>{instance.id}</Styled.Td>
               <Styled.Td>{`Version ${instance.workflowVersion}`}</Styled.Td>
-              <Styled.Td>{formatDate(instance.startDate)}</Styled.Td>
-              <Styled.Td>{formatDate(instance.endDate)}</Styled.Td>
+              <Styled.Td data-test="start-date">
+                {formatDate(instance.startDate)}
+              </Styled.Td>
+              <Styled.Td data-test="end-date">
+                {formatDate(instance.endDate)}
+              </Styled.Td>
               <Styled.Td>
                 <Styled.OperationsWrapper>
                   <Operations

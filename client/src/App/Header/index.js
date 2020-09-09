@@ -183,7 +183,7 @@ const Header = observer(
         return (
           <>
             <Styled.StateIcon
-              data-test="instance-detail"
+              data-test={`state-icon-${instance.state}`}
               state={instance.state}
             />
             Instance {instance.id}
@@ -211,7 +211,7 @@ const Header = observer(
       const filters = this.getLinkProperties('filters');
 
       return (
-        <Styled.Header role="banner">
+        <Styled.Header>
           <Styled.Menu role="navigation">
             <BrandNavElement
               to="/"

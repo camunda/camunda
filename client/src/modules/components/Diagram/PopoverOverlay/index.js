@@ -144,7 +144,11 @@ export default class PopoverOverlay extends React.Component {
         position={this.props.position}
       >
         <Styled.PopoverOverlayStyle side={this.props.position.side} />
-        <Styled.Popover theme={theme} side={this.props.position.side}>
+        <Styled.Popover
+          theme={theme}
+          side={this.props.position.side}
+          data-test="popover"
+        >
           {this.renderSummary()}
           {Boolean(metadata.data) && (
             <LinkButton

@@ -162,7 +162,7 @@ Modal.Header = function ModalHeader({children, ...props}) {
           <Styled.CrossButton
             data-test="cross-button"
             onClick={modalContext.onModalClose}
-            title="Close Modal"
+            title="Exit Modal"
           >
             <Styled.CrossIcon />
           </Styled.CrossButton>

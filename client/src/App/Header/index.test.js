@@ -180,7 +180,7 @@ describe('Header', () => {
     render(<MockApp {...mockProps} />);
     await waitForComponentToLoad();
 
-    expect(screen.queryByTestId('instance-detail')).not.toBeInTheDocument();
+    expect(screen.queryByTestId(/state-icon/)).not.toBeInTheDocument();
     expect(screen.getByTestId('instance-skeleton-circle')).toBeInTheDocument();
     expect(screen.getByTestId('instance-skeleton-block')).toBeInTheDocument();
   });
@@ -205,7 +205,7 @@ describe('Header', () => {
     expect(
       await screen.findByText(`Instance ${MOCK_INSTANCE_ID}`)
     ).toBeInTheDocument();
-    expect(screen.getByTestId('instance-detail')).toBeInTheDocument();
+    expect(screen.getByTestId(/state-icon/)).toBeInTheDocument();
     expect(
       screen.queryByTestId('instance-skeleton-circle')
     ).not.toBeInTheDocument();

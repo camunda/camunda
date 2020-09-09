@@ -80,7 +80,7 @@ describe('CreateOperationDropdown', () => {
     ).toBeInTheDocument();
     expect(
       within(screen.getByTestId('modal')).getByRole('button', {
-        name: 'Close Modal',
+        name: 'Exit Modal',
       })
     ).toBeInTheDocument();
   });
@@ -107,7 +107,7 @@ describe('CreateOperationDropdown', () => {
     ).toBeInTheDocument();
     expect(
       within(screen.getByTestId('modal')).getByRole('button', {
-        name: 'Close Modal',
+        name: 'Exit Modal',
       })
     ).toBeInTheDocument();
   });
@@ -152,7 +152,7 @@ describe('CreateOperationDropdown', () => {
     fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
     fireEvent.click(
       within(screen.getByTestId('modal')).getByRole('button', {
-        name: 'Close Modal',
+        name: 'Exit Modal',
       })
     );
 
