@@ -804,7 +804,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then we get the first page of results, sorted according to their default order
     RawDataProcessReportResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).isNotNull().hasSize(2)
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
       .containsExactly(instanceId5, instanceId4);
@@ -818,7 +817,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then we get the second page of results
     result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).isNotNull().hasSize(2)
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
       .containsExactly(instanceId3, instanceId2);
@@ -832,7 +830,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then we get the last page of results, which contains less results than the limit
     result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).isNotNull().hasSize(1)
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
       .containsExactly(processInstance1.getId());
@@ -898,7 +895,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).isNotNull().isEmpty();
     assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
   }
@@ -923,7 +919,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).isNotNull().isEmpty();
     assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
   }
@@ -948,7 +943,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).hasSize(1)
       .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
       .containsExactly(processInstance2.getId());
@@ -976,7 +970,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // then
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(30L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).hasSize(20);
     assertThat(result.getPagination().getLimit()).isEqualTo(DEFAULT_LIMIT);
     assertThat(result.getPagination().getOffset()).isZero();
@@ -1001,7 +994,6 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .extracting(ProcessViewDto::getProperty)
       .isEqualTo(ProcessViewProperty.RAW_DATA);
     assertThat(result.getResult().getData()).isNotNull().hasSize(expectedDataSize);
-    assertThat(result.getResult().getIsComplete()).isTrue();
   }
 
   private void assertResultInstance(final ProcessInstanceEngineDto expectedInstance,

@@ -56,7 +56,6 @@ public class RawDataDecisionReportResultDtoMapperTest {
 
     // then
     assertThat(result.getData()).hasSize(rawDataLimit);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getInstanceCount()).isEqualTo(actualInstanceCount);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(unfilteredInstanceCount);
     assertThat(result.getPagination()).isEqualTo(expectedPagination);
@@ -85,7 +84,6 @@ public class RawDataDecisionReportResultDtoMapperTest {
 
     // then
     assertThat(result.getData()).hasSize(rawDataLimit);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getInstanceCount()).isEqualTo(actualInstanceCount);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(unfilteredInstanceCount);
     assertThat(result.getPagination()).isEqualTo(expectedPagination);
@@ -116,7 +114,6 @@ public class RawDataDecisionReportResultDtoMapperTest {
 
     // then
     assertThat(result.getData()).hasSize(rawDataLimit);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getInstanceCount()).isEqualTo(actualInstanceCount);
     assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(unfilteredInstanceCount);
     assertThat(result.getPagination()).isEqualTo(expectedPagination);

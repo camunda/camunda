@@ -210,7 +210,6 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // then
     final RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
-    assertThat(result.getIsComplete()).isTrue();
     assertThat(result.getData()).isNotNull().hasSize(5);
 
     // The given list should be sorted in descending evaluationDateTime order
@@ -484,7 +483,6 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // then we get the first page of results
     RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).isNotNull().hasSize(2)
       .extracting(RawDataDecisionInstanceDto::getDecisionInstanceId)
       .containsExactly(expectedInstanceIds.get(0), expectedInstanceIds.get(1));
@@ -498,7 +496,6 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // then we get the second page of results
     result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).isNotNull().hasSize(2)
       .extracting(RawDataDecisionInstanceDto::getDecisionInstanceId)
       .containsExactly(expectedInstanceIds.get(2), expectedInstanceIds.get(3));
@@ -512,7 +509,6 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // then we get the last page of results, which contains less results than the limit
     result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(5L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).isNotNull().hasSize(1)
       .extracting(RawDataDecisionInstanceDto::getDecisionInstanceId)
       .containsExactly(expectedInstanceIds.get(4));
@@ -577,7 +573,6 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // then
     RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).isNotNull().isEmpty();
     assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
   }
@@ -603,7 +598,6 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // then
     RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).isNotNull().isEmpty();
     assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
   }
@@ -632,7 +626,6 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // then
     RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(2L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).hasSize(1)
       .extracting(RawDataDecisionInstanceDto::getDecisionInstanceId)
       .containsExactly(expectedDecisionInstanceId);
@@ -660,7 +653,6 @@ public class RawDecisionDataReportEvaluationIT extends AbstractDecisionDefinitio
     // then
     RawDataDecisionReportResultDto result = evaluationResult.getResult();
     assertThat(result.getInstanceCount()).isEqualTo(30L);
-    assertThat(result.getIsComplete()).isFalse();
     assertThat(result.getData()).hasSize(20);
     assertThat(result.getPagination().getLimit()).isEqualTo(DEFAULT_LIMIT);
     assertThat(result.getPagination().getOffset()).isZero();
