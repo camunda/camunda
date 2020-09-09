@@ -25,7 +25,7 @@ public final class PartitionAwareRateLimiterTest {
   public void setUp() {
     final var backpressureCfg = new BackpressureCfg();
     backpressureCfg.setAlgorithm("fixed");
-    backpressureCfg.getFixedLimit().setLimit(1);
+    backpressureCfg.getFixed().setLimit(1);
     partitionedLimiter =
         io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter.newLimiter(
             backpressureCfg);

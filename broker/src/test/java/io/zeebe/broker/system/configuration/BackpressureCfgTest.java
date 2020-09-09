@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg.LimitAlgorithm;
-import io.zeebe.broker.system.configuration.backpressure.FixedLimitCfg;
+import io.zeebe.broker.system.configuration.backpressure.FixedCfg;
 import io.zeebe.broker.system.configuration.backpressure.Gradient2Cfg;
 import io.zeebe.broker.system.configuration.backpressure.GradientCfg;
 import io.zeebe.broker.system.configuration.backpressure.VegasCfg;
@@ -56,13 +56,15 @@ public final class BackpressureCfgTest {
   }
 
   @Test
-  public void shouldSetFixedLimitCfg() {
+  public void shouldSetFixedCfg() {
     // when
-    final BrokerCfg cfg = readConfig("backpressure-cfg");
-    final FixedLimitCfg fixedLimitCfg = cfg.getBackpressure().getFixedLimit();
+    final BrokerCfg cfg = readConfig("backpressure-fixed-cfg");
+    final LimitAlgorithm algorithm = cfg.getBackpressure().getAlgorithm();
+    final FixedCfg fixedCfg = cfg.getBackpressure().getFixed();
 
     // then
-    assertThat(fixedLimitCfg.getLimit()).isEqualTo(12);
+    assertThat(algorithm).isEqualTo(LimitAlgorithm.FIXED);
+    assertThat(fixedCfg.getLimit()).isEqualTo(13);
   }
 
   @Test

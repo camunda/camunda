@@ -9,7 +9,7 @@ package io.zeebe.broker.system.configuration.backpressure;
 
 import static io.zeebe.broker.system.configuration.ConfigurationUtil.checkPositive;
 
-public class FixedLimitCfg {
+public class FixedCfg {
 
   private int limit = 20;
 
@@ -24,6 +24,6 @@ public class FixedLimitCfg {
 
   @Override
   public String toString() {
-    return "FixedLimitCfg{" + "limit=" + limit + '}';
+    return "FixedCfg{" + "limit=" + limit + '}';
   }
 }
