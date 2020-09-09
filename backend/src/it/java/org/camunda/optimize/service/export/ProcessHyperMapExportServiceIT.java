@@ -53,7 +53,7 @@ public class ProcessHyperMapExportServiceIT extends AbstractIT {
   }
 
   @Test
-  public void hyperMapFrequencyReportHasExpectedValue() throws Exception {
+  public void hyperMapFrequencyReportHasExpectedValue() {
     //given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -78,7 +78,7 @@ public class ProcessHyperMapExportServiceIT extends AbstractIT {
   }
 
   @Test
-  public void hyperMapDurationReportHasExpectedValue() throws Exception {
+  public void hyperMapDurationReportHasExpectedValue() {
     //given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
@@ -105,7 +105,7 @@ public class ProcessHyperMapExportServiceIT extends AbstractIT {
   }
 
   @Test
-  public void reportWithEmptyResultProducesEmptyCsv() throws Exception {
+  public void reportWithEmptyResultProducesEmptyCsv() {
     //given
     ProcessDefinitionEngineDto processDefinition = deployFourUserTasksDefinition();
     importAllEngineEntitiesFromScratch();

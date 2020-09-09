@@ -25,28 +25,21 @@ public class SingleProcessMapReportResult
 
   @Override
   public List<String[]> getResultAsCsv(final Integer limit, final Integer offset, final ZoneId timezone) {
-    if (reportDefinition.getData().isFrequencyReport()) {
-      return frequencyMapResultAsCsv(limit, offset);
-    } else {
-      return durationMapResultAsCsv(limit, offset);
-    }
-  }
-
-  private List<String[]> frequencyMapResultAsCsv(final Integer limit, final Integer offset) {
     final List<String[]> csvStrings = CSVUtils.map(reportResult.getData(), limit, offset);
-
-    final String normalizedCommandKey =
-      reportDefinition.getData().getView().createCommandKey().replace("-", "_");
-    final String[] header =
-      new String[]{reportDefinition.getData().getGroupBy().toString(), normalizedCommandKey};
-    csvStrings.add(0, header);
+    addCsvHeader(csvStrings);
     return csvStrings;
   }
 
-  private List<String[]> durationMapResultAsCsv(final Integer limit, final Integer offset) {
-    final List<String[]> csvStrings = CSVUtils.map(reportResult.getData(), limit, offset);
-    final ProcessReportDataDto reportData = reportDefinition.getData();
+  public void addCsvHeader(final List<String[]> csvStrings) {
+    if (reportDefinition.getData().isFrequencyReport()) {
+      addFrequencyHeader(csvStrings);
+    } else {
+      addDurationHeader(csvStrings);
+    }
+  }
 
+  private void addDurationHeader(final List<String[]> csvStrings) {
+    final ProcessReportDataDto reportData = reportDefinition.getData();
     final String normalizedCommandKey =
       reportData.getView().createCommandKey().replace("-", "_");
     final String[] operations =
@@ -55,7 +48,12 @@ public class SingleProcessMapReportResult
     final String[] header =
       new String[]{reportData.getGroupBy().toString(), normalizedCommandKey};
     csvStrings.add(0, header);
-    return csvStrings;
+  }
+
+  private void addFrequencyHeader(final List<String[]> csvStrings) {
+    final String normalizedCommandKey =
+      reportDefinition.getData().getView().createCommandKey().replace("-", "_");
+    csvStrings.add(0, new String[]{reportDefinition.getData().getGroupBy().toString(), normalizedCommandKey});
   }
 
 }
