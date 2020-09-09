@@ -255,7 +255,7 @@ public class AuthenticationExtractorPluginIT extends AbstractIT {
   private void optimizeAuthCookieIsBeingDeleted(Response response) {
     NewCookie deleteCookie = response.getCookies().get(OPTIMIZE_AUTHORIZATION);
     assertThat(deleteCookie).isNotNull();
-    assertThat(deleteCookie.getValue()).isEqualTo("");
+    assertThat(deleteCookie.getValue()).isEmpty();
     assertThat(deleteCookie.getPath()).isEqualTo("/");
   }
 

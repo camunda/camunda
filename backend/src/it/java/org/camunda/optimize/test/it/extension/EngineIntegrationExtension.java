@@ -998,10 +998,6 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return getEngineUrl() + "/process-definition";
   }
 
-  private String getProcessDefinitionXmlUri(String processDefinitionId) {
-    return getProcessDefinitionUri() + "/" + processDefinitionId + "/xml";
-  }
-
   private String getDecisionDefinitionUri() {
     return getEngineUrl() + "/decision-definition";
   }

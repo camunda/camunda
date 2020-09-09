@@ -31,6 +31,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedCombinedReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
@@ -491,6 +492,26 @@ public class ReportClient {
       .buildEvaluateSingleUnsavedReportRequest(reportData)
       // @formatter:off
       .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<NumberResultDto>>() {});
+      // @formatter:on
+  }
+
+  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateRawReportWithPagination(
+    DecisionReportDataDto reportData,
+    PaginationRequestDto paginationDto) {
+    return getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequestWithPagination(reportData, paginationDto)
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto>>() {});
+      // @formatter:on
+  }
+
+  public AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReportWithPagination(
+    ProcessReportDataDto reportData,
+    PaginationRequestDto paginationDto) {
+    return getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequestWithPagination(reportData, paginationDto)
+      // @formatter:off
+      .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {});
       // @formatter:on
   }
 

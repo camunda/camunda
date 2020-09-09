@@ -19,13 +19,17 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.test.util.ProcessReportDataBuilderHelper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
@@ -38,6 +42,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -45,7 +50,10 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto.VARIABLE_PREFIX;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.GREATER_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
+import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAULT_LIMIT;
+import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAULT_OFFSET;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
 import static org.camunda.optimize.util.BpmnModels.TASK_ID_1;
 
 public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionIT {
@@ -61,7 +69,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -79,7 +87,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -97,7 +105,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -146,7 +154,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance1);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -181,7 +189,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -216,7 +224,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
       .viewProperty(ProcessViewProperty.RAW_DATA)
       .build();
     reportData.setTenantIds(selectedTenants);
-    RawDataProcessReportResultDto result = reportClient.evaluateRawReport(reportData).getResult();
+    RawDataProcessReportResultDto result = evaluateRawReportWithDefaultPagination(reportData).getResult();
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
@@ -247,7 +255,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then the given list should be sorted in ascending order
@@ -270,9 +278,10 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     // when
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
-    reportData.getConfiguration().setSorting(new ReportSortingDto(ProcessInstanceIndex.PROCESS_INSTANCE_ID, SortOrder.DESC));
+    reportData.getConfiguration()
+      .setSorting(new ReportSortingDto(ProcessInstanceIndex.PROCESS_INSTANCE_ID, SortOrder.DESC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -294,7 +303,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
     reportData.getConfiguration().setSorting(new ReportSortingDto("lalalala", SortOrder.ASC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -327,7 +336,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
     reportData.getConfiguration().setSorting(new ReportSortingDto("variable:intVar", SortOrder.ASC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -354,7 +363,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = createReport(processInstanceDto1);
     reportData.getConfiguration().setSorting(new ReportSortingDto("variable:lalalala", SortOrder.ASC));
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -378,7 +387,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -408,7 +417,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     // when
     ProcessReportDataDto reportData = createReport(processInstance);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -439,7 +448,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
                            .add()
                            .buildList());
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult1 =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result1 = evaluationResult1.getResult();
 
     // then
@@ -489,7 +498,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
                            .add()
                            .buildList());
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult1 =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result1 = evaluationResult1.getResult();
 
     // then
@@ -528,7 +537,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     ProcessReportDataDto reportData = createReport(processInstance);
     reportData.setFilter(createVariableFilter());
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -570,7 +579,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
 
     reportData.getFilter().addAll(flowNodeFilter);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
     final RawDataProcessReportResultDto result = evaluationResult.getResult();
 
     // then
@@ -676,7 +685,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     reportData.getConfiguration().getTableColumns().getIncludedColumns().add(VARIABLE_PREFIX + "existingIncludedVar");
     reportData.getConfiguration().getTableColumns().setIncludeNewVariables(true);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
 
     // then the new vars are added in alphabetical order to the included columns
     assertThat(evaluationResult.getReportDefinition()
@@ -717,7 +726,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     reportData.getConfiguration().getTableColumns().getIncludedColumns().add(VARIABLE_PREFIX + "existingIncludedVar");
     reportData.getConfiguration().getTableColumns().setIncludeNewVariables(false);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
 
     // then the new vars are added in alphabetical order to the excluded columns
     assertThat(evaluationResult.getReportDefinition()
@@ -756,7 +765,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     reportData.getConfiguration().getTableColumns().getExcludedColumns().add(nonExistentVariable1);
     reportData.getConfiguration().getTableColumns().getIncludedColumns().add(nonExistentVariable2);
     final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
-      reportClient.evaluateRawReport(reportData);
+      evaluateRawReportWithDefaultPagination(reportData);
 
     // then the nonexistent variable columns are removed from the column configurations
     final List<String> allColumns = evaluationResult.getReportDefinition()
@@ -771,6 +780,214 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
                         .getIncludedColumns());
 
     assertThat(allColumns).doesNotContain(nonExistentVariable1, nonExistentVariable2);
+  }
+
+  @Test
+  public void reportEvaluation_pageThroughResults() {
+    // given
+    ProcessInstanceEngineDto processInstance1 = deployAndStartSimpleProcess();
+    String instanceId2 = engineIntegrationExtension.startProcessInstance(processInstance1.getDefinitionId()).getId();
+    String instanceId3 = engineIntegrationExtension.startProcessInstance(processInstance1.getDefinitionId()).getId();
+    String instanceId4 = engineIntegrationExtension.startProcessInstance(processInstance1.getDefinitionId()).getId();
+    String instanceId5 = engineIntegrationExtension.startProcessInstance(processInstance1.getDefinitionId()).getId();
+    importAllEngineEntitiesFromScratch();
+
+    ProcessReportDataDto reportData = createReport(processInstance1);
+
+    // when we request the first page of results
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    paginationDto.setOffset(0);
+    paginationDto.setLimit(2);
+    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
+      reportClient.evaluateRawReportWithPagination(reportData, paginationDto);
+
+    // then we get the first page of results, sorted according to their default order
+    RawDataProcessReportResultDto result = evaluationResult.getResult();
+    assertThat(result.getInstanceCount()).isEqualTo(5L);
+    assertThat(result.getIsComplete()).isFalse();
+    assertThat(result.getData()).isNotNull().hasSize(2)
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+      .containsExactly(instanceId5, instanceId4);
+    assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
+
+    // when we request the next page of results
+    paginationDto.setOffset(2);
+    paginationDto.setLimit(2);
+    evaluationResult = reportClient.evaluateRawReportWithPagination(reportData, paginationDto);
+
+    // then we get the second page of results
+    result = evaluationResult.getResult();
+    assertThat(result.getInstanceCount()).isEqualTo(5L);
+    assertThat(result.getIsComplete()).isFalse();
+    assertThat(result.getData()).isNotNull().hasSize(2)
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+      .containsExactly(instanceId3, instanceId2);
+    assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
+
+    // when we request the next page of results
+    paginationDto.setOffset(4);
+    paginationDto.setLimit(2);
+    evaluationResult = reportClient.evaluateRawReportWithPagination(reportData, paginationDto);
+
+    // then we get the last page of results, which contains less results than the limit
+    result = evaluationResult.getResult();
+    assertThat(result.getInstanceCount()).isEqualTo(5L);
+    assertThat(result.getIsComplete()).isFalse();
+    assertThat(result.getData()).isNotNull().hasSize(1)
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+      .containsExactly(processInstance1.getId());
+    assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
+  }
+
+  @Test
+  public void reportEvaluation_negativeOffset() {
+    // given
+    final ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
+    ProcessReportDataDto reportData = createReport(processInstance);
+
+    // when
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    paginationDto.setLimit(20);
+    paginationDto.setOffset(-1);
+
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequestWithPagination(reportData, paginationDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @ValueSource(ints = {-1, MAX_RESPONSE_SIZE_LIMIT + 1})
+  public void reportEvaluation_limitOutOfAcceptableBounds(int limit) {
+    // given
+    final ProcessInstanceEngineDto processInstance = deployAndStartSimpleServiceTaskProcess();
+    ProcessReportDataDto reportData = createReport(processInstance);
+
+    // when
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    paginationDto.setOffset(0);
+    paginationDto.setLimit(limit);
+
+    final Response response = embeddedOptimizeExtension.getRequestExecutor()
+      .buildEvaluateSingleUnsavedReportRequestWithPagination(reportData, paginationDto)
+      .execute();
+
+    // then
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void reportEvaluation_limitedToZeroResults() {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
+
+    importAllEngineEntitiesFromScratch();
+    final ProcessReportDataDto reportData = createReport(processInstance);
+
+    // when
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    paginationDto.setOffset(0);
+    paginationDto.setLimit(0);
+
+    final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = reportClient
+      .evaluateRawReportWithPagination(reportData, paginationDto);
+
+    // then
+    final RawDataProcessReportResultDto result = evaluationResult.getResult();
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getIsComplete()).isFalse();
+    assertThat(result.getData()).isNotNull().isEmpty();
+    assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
+  }
+
+  @Test
+  public void reportEvaluation_offsetGreaterThanMaxResultReturnsEmptyData() {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
+
+    importAllEngineEntitiesFromScratch();
+    final ProcessReportDataDto reportData = createReport(processInstance);
+
+    // when
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    paginationDto.setLimit(20);
+    paginationDto.setOffset(10);
+
+    final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = reportClient
+      .evaluateRawReportWithPagination(reportData, paginationDto);
+
+    // then
+    final RawDataProcessReportResultDto result = evaluationResult.getResult();
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getIsComplete()).isFalse();
+    assertThat(result.getData()).isNotNull().isEmpty();
+    assertThat(result.getPagination()).isEqualTo(PaginationDto.fromPaginationRequest(paginationDto));
+  }
+
+  @Test
+  public void reportEvaluation_defaultOffset() {
+    // given
+    final ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    final ProcessInstanceEngineDto processInstance2 =
+      engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId());
+
+    importAllEngineEntitiesFromScratch();
+    final ProcessReportDataDto reportData = createReport(processInstance);
+
+    // when
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    paginationDto.setLimit(1);
+
+    final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = reportClient
+      .evaluateRawReportWithPagination(reportData, paginationDto);
+
+    // then
+    final RawDataProcessReportResultDto result = evaluationResult.getResult();
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getIsComplete()).isFalse();
+    assertThat(result.getData()).hasSize(1)
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+      .containsExactly(processInstance2.getId());
+    assertThat(result.getPagination().getLimit()).isEqualTo(1);
+    assertThat(result.getPagination().getOffset()).isEqualTo(DEFAULT_OFFSET);
+  }
+
+  @Test
+  public void reportEvaluation_defaultLimit() {
+    // given
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+    IntStream.range(0, 29)
+      .forEach(i -> engineIntegrationExtension.startProcessInstance(processInstance.getDefinitionId()));
+
+    importAllEngineEntitiesFromScratch();
+    final ProcessReportDataDto reportData = createReport(processInstance);
+
+    // when
+    final PaginationRequestDto paginationDto = new PaginationRequestDto();
+    paginationDto.setOffset(0);
+
+    final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult = reportClient
+      .evaluateRawReportWithPagination(reportData, paginationDto);
+
+    // then
+    final RawDataProcessReportResultDto result = evaluationResult.getResult();
+    assertThat(result.getInstanceCount()).isEqualTo(30L);
+    assertThat(result.getIsComplete()).isFalse();
+    assertThat(result.getData()).hasSize(20);
+    assertThat(result.getPagination().getLimit()).isEqualTo(DEFAULT_LIMIT);
+    assertThat(result.getPagination().getOffset()).isZero();
+  }
+
+  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReportWithDefaultPagination(
+    ProcessReportDataDto reportData) {
+    PaginationRequestDto paginationDto = new PaginationRequestDto();
+    paginationDto.setOffset(0);
+    paginationDto.setLimit(20);
+    return reportClient.evaluateRawReportWithPagination(reportData, paginationDto);
   }
 
   private void assertBasicResultData(final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> result,

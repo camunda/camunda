@@ -5,6 +5,8 @@
  */
 package org.camunda.optimize.service.util;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -25,13 +27,11 @@ import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class DecisionVariableHelper {
   private static final List<VariableType> MULTIVALUE_TYPE_FIELDS = Collections.unmodifiableList(Arrays.asList(
     VariableType.DATE, VariableType.DOUBLE, VariableType.LONG
   ));
-
-  private DecisionVariableHelper() {
-  }
 
   public static String getVariableValueField(final String variablePath) {
     return variablePath + "." + VARIABLE_VALUE;

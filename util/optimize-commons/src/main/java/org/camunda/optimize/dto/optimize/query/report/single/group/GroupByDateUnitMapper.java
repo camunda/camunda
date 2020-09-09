@@ -13,7 +13,7 @@ import java.time.temporal.ChronoUnit;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class GroupByDateUnitMapper {
-  private static final String UNSUPPORTED_UNIT_STRING = "Unsupportet unit: ";
+  private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
 
   public static ChronoUnit mapToChronoUnit(final GroupByDateUnit unit) {
     switch (unit) {

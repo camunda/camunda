@@ -7,19 +7,18 @@ package org.camunda.optimize.service.es.report.command;
 
 import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 
 import java.time.ZoneId;
-import java.util.Optional;
-
-import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAULT_RECORD_LIMIT;
 
 @Data
 public class CommandContext<T extends ReportDefinitionDto> {
 
   private T reportDefinition;
-  private Integer recordLimit = DEFAULT_RECORD_LIMIT;
+  private PaginationDto pagination;
+  private boolean isExport;
 
   // used in the context of combined reports to establish identical bucket sizes/ranges across all single reports
   private MinMaxStatDto combinedRangeMinMaxStats;
@@ -29,13 +28,11 @@ public class CommandContext<T extends ReportDefinitionDto> {
 
   public static CommandContext<ReportDefinitionDto<?>> fromReportEvaluation(final ReportEvaluationInfo evaluationInfo) {
     CommandContext<ReportDefinitionDto<?>> context = new CommandContext<>();
-    context.setRecordLimit(evaluationInfo.getCustomRecordLimit());
     context.setReportDefinition(evaluationInfo.getReport());
     context.setTimezone(evaluationInfo.getTimezone());
+    context.setPagination(evaluationInfo.getPagination());
+    context.setExport(evaluationInfo.isExport());
     return context;
   }
 
-  public void setRecordLimit(final Integer recordLimit) {
-    this.recordLimit = Optional.ofNullable(recordLimit).orElse(DEFAULT_RECORD_LIMIT);
-  }
 }

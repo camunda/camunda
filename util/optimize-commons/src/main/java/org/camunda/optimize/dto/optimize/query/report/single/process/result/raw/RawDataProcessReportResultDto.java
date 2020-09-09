@@ -6,10 +6,11 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.result.raw;
 
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.LimitedResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
+import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 
 import java.util.List;
 
@@ -20,6 +21,7 @@ public class RawDataProcessReportResultDto implements ProcessReportResultDto, Li
   private long instanceCountWithoutFilters;
   private List<RawDataProcessInstanceDto> data;
   private Boolean isComplete = true;
+  private PaginationDto pagination;
 
   @Override
   public ResultType getType() {

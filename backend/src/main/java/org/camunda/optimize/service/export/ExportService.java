@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.report.ReportEvaluationInfo;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -24,6 +25,8 @@ import java.util.Optional;
 @Slf4j
 public class ExportService {
 
+  public static final Integer DEFAULT_RECORD_LIMIT = 1_000;
+
   private final AuthorizationCheckReportEvaluationHandler reportEvaluationHandler;
   private final ConfigurationService configurationService;
 
@@ -31,13 +34,14 @@ public class ExportService {
                                                               final String reportId,
                                                               final ZoneId timezone) {
     log.debug("Exporting report with id [{}] as csv.", reportId);
-    final Integer exportCsvLimit = configurationService.getExportCsvLimit();
+    Integer exportCsvLimit = Optional.ofNullable(configurationService.getExportCsvLimit()).orElse(DEFAULT_RECORD_LIMIT);
 
     try {
       ReportEvaluationInfo evaluationInfo = ReportEvaluationInfo.builder(reportId)
         .userId(userId)
         .timezone(timezone)
-        .customRecordLimit(exportCsvLimit)
+        .pagination(buildExportPaginationDto(exportCsvLimit))
+        .isExport(true)
         .build();
       final AuthorizedReportEvaluationResult reportResult = reportEvaluationHandler.evaluateReport(evaluationInfo);
       final List<String[]> resultAsCsv = reportResult.getEvaluationResult().getResultAsCsv(exportCsvLimit, 0, timezone);
@@ -55,13 +59,14 @@ public class ExportService {
                                                     final ReportDefinitionDto<?> reportDefinition,
                                                     final ZoneId timezone) {
     log.debug("Exporting provided report definition as csv.");
-    final Integer exportCsvLimit = configurationService.getExportCsvLimit();
+    Integer exportCsvLimit = Optional.ofNullable(configurationService.getExportCsvLimit()).orElse(DEFAULT_RECORD_LIMIT);
 
     try {
       ReportEvaluationInfo evaluationInfo = ReportEvaluationInfo.builder(reportDefinition)
         .userId(userId)
         .timezone(timezone)
-        .customRecordLimit(exportCsvLimit)
+        .pagination(buildExportPaginationDto(exportCsvLimit))
+        .isExport(true)
         .build();
       final AuthorizedReportEvaluationResult reportResult =
         reportEvaluationHandler.evaluateReport(evaluationInfo);
@@ -74,5 +79,11 @@ public class ExportService {
     }
   }
 
+  private PaginationDto buildExportPaginationDto(final Integer exportCsvLimit) {
+    final PaginationDto paginationDto = new PaginationDto();
+    paginationDto.setOffset(0);
+    paginationDto.setLimit(exportCsvLimit);
+    return paginationDto;
+  }
 
 }

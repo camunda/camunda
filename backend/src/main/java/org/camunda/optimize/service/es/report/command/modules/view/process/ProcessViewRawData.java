@@ -54,6 +54,7 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ProcessViewRawData extends ProcessViewPart {
+
   private final ConfigurationService configurationService;
   private final ObjectMapper objectMapper;
   private final OptimizeElasticsearchClient esClient;
@@ -74,16 +75,23 @@ public class ProcessViewRawData extends ProcessViewPart {
       .map(order -> SortOrder.valueOf(order.name()))
       .orElse(SortOrder.DESC);
 
-    searchRequest.source()
+    final SearchSourceBuilder search = searchRequest.source()
       .fetchSource(true)
-      .fetchSource(null, new String[]{EVENTS, USER_TASKS})
-      // size of each scroll page, needs to be capped to max size of elasticsearch
-      .size(context.getRecordLimit() > MAX_RESPONSE_SIZE_LIMIT ? MAX_RESPONSE_SIZE_LIMIT : context.getRecordLimit());
-
+      .fetchSource(null, new String[]{EVENTS, USER_TASKS});
+    if (context.isExport()) {
+      search.size(
+        context.getPagination().getLimit() > MAX_RESPONSE_SIZE_LIMIT ?
+          MAX_RESPONSE_SIZE_LIMIT : context.getPagination().getLimit());
+      searchRequest.scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
+    } else {
+      if (context.getPagination().getLimit() > MAX_RESPONSE_SIZE_LIMIT) {
+        context.getPagination().setLimit(MAX_RESPONSE_SIZE_LIMIT);
+      }
+      search
+        .size(context.getPagination().getLimit())
+        .from(context.getPagination().getOffset());
+    }
     addSorting(sortByField, sortOrder, searchRequest.source());
-
-    searchRequest
-      .scroll(timeValueSeconds(configurationService.getEsScrollTimeoutInSeconds()));
   }
 
   private void addSorting(String sortByField, SortOrder sortOrder, SearchSourceBuilder searchSourceBuilder) {
@@ -119,20 +127,29 @@ public class ProcessViewRawData extends ProcessViewPart {
   public ViewResult retrieveResult(final SearchResponse response,
                                    final Aggregations aggs,
                                    final ExecutionContext<ProcessReportDataDto> context) {
-    final List<ProcessInstanceDto> rawDataProcessInstanceDtos =
-      ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
-        response,
+    final List<ProcessInstanceDto> rawDataProcessInstanceDtos;
+    if (context.isExport()) {
+      rawDataProcessInstanceDtos =
+        ElasticsearchReaderUtil.retrieveScrollResultsTillLimit(
+          response,
+          ProcessInstanceDto.class,
+          objectMapper,
+          esClient,
+          configurationService.getEsScrollTimeoutInSeconds(),
+          context.getPagination().getLimit()
+        );
+    } else {
+      rawDataProcessInstanceDtos = ElasticsearchReaderUtil.mapHits(
+        response.getHits(),
         ProcessInstanceDto.class,
-        objectMapper,
-        esClient,
-        configurationService.getEsScrollTimeoutInSeconds(),
-        context.getRecordLimit()
+        objectMapper
       );
+    }
 
     final RawDataProcessReportResultDto rawDataSingleReportResultDto = rawDataSingleReportResultDtoMapper.mapFrom(
       rawDataProcessInstanceDtos,
       response.getHits().getTotalHits().value,
-      context.getUnfilteredInstanceCount(),
+      context,
       objectMapper
     );
     addNewVariablesAndDtoFieldsToTableColumnConfig(context, rawDataSingleReportResultDto);

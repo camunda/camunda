@@ -9,6 +9,7 @@ import lombok.Data;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
 
@@ -20,9 +21,10 @@ import java.util.Set;
 public class ExecutionContext<ReportData extends SingleReportDataDto> {
 
   private ReportData reportData;
-  private Integer recordLimit;
   private ZoneId timezone;
   private long unfilteredInstanceCount;
+  private PaginationDto pagination;
+  private boolean isExport;
 
   // used in the context of combined reports to establish identical bucket sizes/ranges across all single reports
   private MinMaxStatDto combinedRangeMinMaxStats;
@@ -35,9 +37,10 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
 
   public <RD extends ReportDefinitionDto<ReportData>> ExecutionContext(final CommandContext<RD> commandContext) {
     this.reportData = commandContext.getReportDefinition().getData();
-    this.recordLimit = commandContext.getRecordLimit();
     this.timezone = commandContext.getTimezone();
     this.combinedRangeMinMaxStats = commandContext.getCombinedRangeMinMaxStats();
+    this.pagination = commandContext.getPagination();
+    this.isExport = commandContext.isExport();
   }
 
   public SingleReportConfigurationDto getReportConfiguration() {

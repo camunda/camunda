@@ -54,6 +54,7 @@ import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import org.camunda.optimize.dto.optimize.rest.GetVariableNamesForReportsRequestDto;
 import org.camunda.optimize.dto.optimize.rest.OnboardingStateRestDto;
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.dto.optimize.rest.sorting.Sorter;
@@ -445,6 +446,14 @@ public class OptimizeRequestExecutor {
     this.path = "/report/" + reportId + "/evaluate";
     this.method = POST;
     Optional.ofNullable(filters).ifPresent(filterDto -> this.body = getBody(filterDto));
+    return this;
+  }
+
+  public <T extends SingleReportDataDto> OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequestWithPagination(
+    T entity,
+    PaginationRequestDto paginationDto) {
+    buildEvaluateSingleUnsavedReportRequest(entity);
+    addQueryParams(extractPagination(paginationDto));
     return this;
   }
 
@@ -1409,6 +1418,13 @@ public class OptimizeRequestExecutor {
 
     entityStream.reset();
     return stringBuilder.toString();
+  }
+
+  private Map<String, Object> extractPagination(final PaginationRequestDto pagination) {
+    Map<String, Object> params = new HashMap<>();
+    Optional.ofNullable(pagination.getLimit()).ifPresent(limit -> params.put(PaginationRequestDto.LIMIT_PARAM, limit));
+    Optional.ofNullable(pagination.getOffset()).ifPresent(offset -> params.put(PaginationRequestDto.OFFSET_PARAM, offset));
+    return params;
   }
 
   private static ObjectMapper getDefaultObjectMapper() {
