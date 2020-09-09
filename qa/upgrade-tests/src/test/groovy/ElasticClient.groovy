@@ -101,7 +101,7 @@ class ElasticClient {
   def createSnapshotRepository() {
     println "Creating snapshot repository on ${name} Elasticsearch..."
     def settings = Settings.builder()
-      .put(FsRepository.LOCATION_SETTING.getKey(), "/tmp/essnapshots")
+      .put(FsRepository.LOCATION_SETTING.getKey(), "/var/tmp")
       .put(FsRepository.COMPRESS_SETTING.getKey(), true)
       .build()
     client.snapshot().createRepository(

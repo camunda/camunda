@@ -16,15 +16,15 @@ services:
       timeout: 5s
       retries: 10
   elasticsearch-old:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${OLD_ES_VERSION:-6.8.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:${OLD_ES_VERSION:-7.0.0}
     container_name: upgrade-schema-tests-old-elasticsearch-version
     volumes:
-      - essnapshot:/tmp/essnapshots
+      - essnapshot:/var/tmp:rw
     environment:
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - discovery.type=single-node
-      - path.repo=/tmp/essnapshots
+      - path.repo=/var/tmp
     ulimits:
       memlock:
         soft: -1
@@ -41,12 +41,12 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch-oss:${NEW_ES_VERSION:-7.0.0}
     container_name: upgrade-schema-tests-new-elasticsearch-version
     volumes:
-      - essnapshot:/tmp/essnapshots
+      - essnapshot:/var/tmp:rw
     environment:
       - bootstrap.memory_lock=true
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - discovery.type=single-node
-      - path.repo=/tmp/essnapshots
+      - path.repo=/var/tmp
     ulimits:
       memlock:
         soft: -1

@@ -3,49 +3,40 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.test.data.upgrade;
+import com.fasterxml.jackson.databind.JsonNode
+import lombok.SneakyThrows
+import org.camunda.optimize.OptimizeRequestExecutor
+import org.camunda.optimize.dto.optimize.ReportConstants
+import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto
+import org.camunda.optimize.dto.optimize.query.entity.EntityDto
+import org.camunda.optimize.dto.optimize.query.entity.EntityType
+import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto
+import org.camunda.optimize.dto.optimize.query.event.EventProcessState
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto
+import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto
+import org.camunda.optimize.service.es.OptimizeElasticsearchClient
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameService
+import org.camunda.optimize.service.util.configuration.ConfigurationService
+import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder
+import org.camunda.optimize.test.optimize.*
+import org.camunda.optimize.test.util.ProcessReportDataType
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder
+import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder
+import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
+import org.elasticsearch.client.RequestOptions
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Test
+import org.springframework.context.support.ClassPathXmlApplicationContext
 
-import com.fasterxml.jackson.databind.JsonNode;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.ReportConstants;
-import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.entity.EntityType;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessState;
-import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
-import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.test.optimize.AlertClient;
-import org.camunda.optimize.test.optimize.CollectionClient;
-import org.camunda.optimize.test.optimize.EntitiesClient;
-import org.camunda.optimize.test.optimize.EventProcessClient;
-import org.camunda.optimize.test.optimize.ReportClient;
-import org.camunda.optimize.test.util.ProcessReportDataType;
-import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.client.RequestOptions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.springframework.context.support.ClassPathXmlApplicationContext;
+import javax.ws.rs.core.Response
+import java.util.function.Function
+import java.util.stream.Collectors
 
-import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import static org.assertj.core.api.Assertions.assertThat
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-@Slf4j
-public class PostMigrationTest {
+class PostMigrationTest {
   private static final String DEFAULT_USER = "demo";
 
   private static OptimizeRequestExecutor requestExecutor;
@@ -57,10 +48,9 @@ public class PostMigrationTest {
   private static ReportClient reportClient;
 
   @BeforeAll
-  public static void init() {
-    final ClassPathXmlApplicationContext ctx = new ClassPathXmlApplicationContext("optimizeDataUpgradeContext.xml");
+  static void init() {
     requestExecutor = new OptimizeRequestExecutor(DEFAULT_USER, DEFAULT_USER, "http://localhost:8090/api/");
-    final ConfigurationService configurationService = ctx.getBean(ConfigurationService.class);
+    def configurationService = ConfigurationServiceBuilder.createDefaultConfiguration()
     elasticsearchClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
       new OptimizeIndexNameService(configurationService)
@@ -74,13 +64,13 @@ public class PostMigrationTest {
   }
 
   @Test
-  public void retrieveAllEntities() {
+  void retrieveAllEntities() {
     final List<EntityDto> entities = entitiesClient.getAllEntities();
     assertThat(entities).isNotEmpty();
   }
 
   @Test
-  public void retrieveAlerts() {
+  void retrieveAlerts() {
     List<AlertDefinitionDto> allAlerts = new ArrayList<>();
 
     List<EntityDto> collections = getCollections();
@@ -94,7 +84,7 @@ public class PostMigrationTest {
   }
 
   @Test
-  public void retrieveAllCollections() {
+  void retrieveAllCollections() {
     final List<EntityDto> collections = getCollections();
 
     assertThat(collections).isNotEmpty();
@@ -104,7 +94,7 @@ public class PostMigrationTest {
   }
 
   @Test
-  public void evaluateAllCollectionReports() {
+  void evaluateAllCollectionReports() {
     final List<EntityDto> collections = getCollections();
     for (EntityDto collection : collections) {
       final List<EntityDto> collectionEntities = collectionClient.getEntitiesForCollection(collection.getId());
@@ -120,7 +110,7 @@ public class PostMigrationTest {
   }
 
   @Test
-  public void retrieveAllEventBasedProcessesAndEnsureTheyArePublishedAndHaveInstanceData() {
+  void retrieveAllEventBasedProcessesAndEnsureTheyArePublishedAndHaveInstanceData() {
     final List<EventProcessMappingDto> allEventProcessMappings = eventProcessClient.getAllEventProcessMappings();
     assertEventProcessesArePublished(allEventProcessMappings);
 
@@ -137,7 +127,7 @@ public class PostMigrationTest {
   }
 
   @Test
-  public void republishAllEventBasedProcessesAndEnsureTheyArePublishedAndHaveInstanceData() {
+  void republishAllEventBasedProcessesAndEnsureTheyArePublishedAndHaveInstanceData() {
     final List<EventProcessMappingDto> eventProcessMappingsBeforeRepublish =
       eventProcessClient.getAllEventProcessMappings();
     assertThat(eventProcessMappingsBeforeRepublish).isNotEmpty();
@@ -168,7 +158,7 @@ public class PostMigrationTest {
     assertThat(eventProcessInstanceCountsAfterRepublish).isEqualTo(eventProcessInstanceCountsBeforeRepublish);
   }
 
-  private Map<String, Long> retrieveEventProcessInstanceCounts(final List<EventProcessMappingDto> eventProcessMappings) {
+  private static Map<String, Long> retrieveEventProcessInstanceCounts(final List<EventProcessMappingDto> eventProcessMappings) {
     return eventProcessMappings.stream()
       .map(EventProcessMappingDto::getId)
       .map(this::evaluateRawDataReportForProcessKey)
@@ -179,18 +169,18 @@ public class PostMigrationTest {
   }
 
   @SneakyThrows
-  private void refreshAllElasticsearchIndices() {
+  private static void refreshAllElasticsearchIndices() {
     elasticsearchClient.getHighLevelClient().indices().refresh(new RefreshRequest("*"), RequestOptions.DEFAULT);
   }
 
-  private void assertEventProcessesArePublished(final List<EventProcessMappingDto> allEventProcessMappings) {
+  private static void assertEventProcessesArePublished(final List<EventProcessMappingDto> allEventProcessMappings) {
     assertThat(allEventProcessMappings)
       .isNotEmpty()
-      .extracting(EventProcessMappingDto::getState)
+      .extracting((Function<EventProcessMappingDto, EventProcessState>) EventProcessMappingDto::getState)
       .allSatisfy(eventProcessState -> assertThat(eventProcessState).isEqualTo(EventProcessState.PUBLISHED));
   }
 
-  private AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawDataReportForProcessKey(
+  private static AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawDataReportForProcessKey(
     final String eventProcessKey) {
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
@@ -201,12 +191,11 @@ public class PostMigrationTest {
     return reportClient.evaluateRawReport(reportData);
   }
 
-  private List<EntityDto> getCollections() {
+  private static List<EntityDto> getCollections() {
     final List<EntityDto> entities = entitiesClient.getAllEntities();
 
     return entities.stream()
       .filter(entityDto -> EntityType.COLLECTION.equals(entityDto.getEntityType()))
       .collect(Collectors.toList());
   }
-
 }

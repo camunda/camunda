@@ -151,7 +151,7 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
         memory: ${memoryLimitInGb}Gi
     volumeMounts:
     - name: es-snapshot
-      mountPath: /tmp/essnapshots
+      mountPath: /var/tmp
     env:
       - name: ES_NODE_NAME
         valueFrom:
@@ -168,7 +168,7 @@ String elasticSearchContainerSpec(String esVersion, Integer cpuLimit = 4, Intege
       - name: cluster.name
         value: elasticsearch
       - name: path.repo
-        value: /tmp/essnapshots
+        value: /var/tmp
    """
 }
 
@@ -190,7 +190,7 @@ String elasticSearchUpgradeContainerSpec(String esVersion) {
         memory: 1Gi
     volumeMounts:
     - name: es-snapshot
-      mountPath: /tmp/essnapshots
+      mountPath: /var/tmp
     env:
       - name: ES_NODE_NAME
         valueFrom:
@@ -207,7 +207,7 @@ String elasticSearchUpgradeContainerSpec(String esVersion) {
       - name: cluster.name
         value: elasticsearch
       - name: path.repo
-        value: /tmp/essnapshots
+        value: /var/tmp
    """
 }
 
@@ -384,10 +384,7 @@ pipeline {
                 fileId: 'maven-nexus-settings-local-repo',
                 variable: 'MAVEN_SETTINGS_XML'
               )]) {
-                // SonarQube requires compiled classes of .java files before run the analysis.
-                // The module qa/upgrade-optimize-data/generator has an issue with maven-compiler-plugin,
-                // so it has been ignored for now.
-                runMaven('compile -pl !qa/upgrade-optimize-data/generator -Dskip.fe.build -T\$LIMITS_CPU')
+                runMaven('compile -Dskip.fe.build -T\$LIMITS_CPU')
                 sh '''
                   apt-get update && apt-get install -qq git
                   # This step is needed to fetch repo branches so SonarQube can diff them.
@@ -419,7 +416,7 @@ pipeline {
               junit testResults: 'upgrade/target/failsafe-reports/**/*.xml', keepLongStdio: true
             }
             failure {
-              archiveArtifacts artifacts: 'qa/upgrade-es-schema-tests/target/*.json'
+              archiveArtifacts artifacts: 'qa/upgrade-tests/target/*.json'
             }
           }
         }
@@ -588,21 +585,17 @@ void integrationTestSteps(String engineVersion = 'latest') {
 
 void migrationTestSteps() {
   container('maven') {
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend -am -Pengine-latest,it")
-    runMaven("install -Dskip.docker -DskipTests -f upgrade")
-    runMaven("install -Dskip.docker -DskipTests -f qa")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,upgrade,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest,it")
     runMaven("verify -Dskip.docker -pl upgrade")
     runMaven("verify -Dskip.docker -pl util/optimize-reimport-preparation -Pengine-latest,it")
-    runMaven("verify -Dskip.docker -pl qa/upgrade-es-schema-tests -Pupgrade-es-schema-tests")
+    runMaven("verify -Dskip.docker -pl qa/upgrade-tests -Pupgrade-es-schema-tests")
   }
 }
 
 void dataUpgradeTestSteps() {
   container('maven') {
-    sh ("""apt-get update && apt-get install -y jq""")
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa/data-generation -am -Pengine-latest")
-    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -f qa/upgrade-optimize-data -pl generator -am")
-    runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-optimize-data -am -Pupgrade-optimize-data")
+    runMaven("install -Dskip.docker -Dskip.fe.build -DskipTests -pl backend,qa/data-generation,qa/optimize-data-generator -am -Pengine-latest")
+    runMaven("verify -Dskip.docker -Dskip.fe.build -f qa/upgrade-tests -Pupgrade-optimize-data")
   }
 }
 

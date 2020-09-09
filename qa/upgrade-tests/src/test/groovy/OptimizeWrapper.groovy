@@ -4,10 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+
 import org.camunda.optimize.OptimizeRequestExecutor
 import org.camunda.optimize.test.optimize.StatusClient
 
 import javax.ws.rs.ProcessingException
+import java.nio.file.CopyOption
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.concurrent.TimeUnit
 
 import static java.util.concurrent.TimeUnit.MINUTES
 import static java.util.concurrent.TimeUnit.SECONDS
@@ -25,6 +30,14 @@ class OptimizeWrapper {
     this.optimizeDirectory = "${baseDirectory}/${optimizeVersion}"
     this.requestExecutor = new OptimizeRequestExecutor("demo", "demo", "http://localhost:8090/api")
     this.elasticPort = elasticPort
+  }
+
+  def copyLicense(String licensePath) {
+    Files.copy(
+      new File(licensePath).toPath(),
+      new File(optimizeDirectory + "/environment/OptimizeLicense.txt").toPath(),
+      StandardCopyOption.REPLACE_EXISTING
+    )
   }
 
   def runUpgrade() {
@@ -50,6 +63,10 @@ class OptimizeWrapper {
     println "Starting Optimize ${optimizeVersion}..."
     def environmentVars = getCurrentEnvironmentVariables()
     environmentVars.add("OPTIMIZE_ELASTICSEARCH_HTTP_PORT=${elasticPort}")
+    environmentVars.add("OPTIMIZE_EVENT_BASED_PROCESSES_USER_IDS=[demo]")
+    environmentVars.add("OPTIMIZE_EVENT_BASED_PROCESSES_IMPORT_ENABLED=true")
+    environmentVars.add("OPTIMIZE_CAMUNDA_BPM_EVENT_IMPORT_ENABLED=true")
+    environmentVars.add("OPTIMIZE_EVENT_INGESTION_ACCESS_TOKEN=secret")
     def command = ["/bin/bash", "./optimize-startup.sh"]
     this.process = command.execute(environmentVars, new File(optimizeDirectory))
     try {
@@ -86,7 +103,7 @@ class OptimizeWrapper {
 
   def waitForImportToFinish(int timeoutInMinutes = 90) {
     StatusClient statusClient = new StatusClient(() -> requestExecutor)
-    println "Waiting for Optimize ${optimizeVersion} import to become dle..."
+    println "Waiting for Optimize ${optimizeVersion} import to become idle..."
     await()
       .atMost(timeoutInMinutes, MINUTES)
       .ignoreException(ProcessingException)
@@ -97,8 +114,8 @@ class OptimizeWrapper {
     println "Optimize ${optimizeVersion} import is idle!"
   }
 
-  private static List<GString> getCurrentEnvironmentVariables() {
-    System.getenv().collect { key, value -> "$key=$value" }
+  private static List<String> getCurrentEnvironmentVariables() {
+    System.getenv().collect { key, value -> "$key=$value".toString() }
   }
 
 }

@@ -4,12 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+
+import groovy.transform.NullCheck
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex
 
 import static org.assertj.core.api.Assertions.assertThat
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.*
 
 class UpgradeEsSchemaTest {
+  @NullCheck
   static upgradeAndVerifySchemaIntegrityTest(String previousVersion,
                                              String currentVersion,
                                              String buildDir,
@@ -25,6 +28,7 @@ class UpgradeEsSchemaTest {
     try {
       // start new optimize to obtain expected schema and settings
       newOptimize.start().consumeProcessOutput()
+      newOptimize.waitForImportToFinish()
       newElasticClient.refreshAll()
       def expectedSettings = newElasticClient.getSettings()
       def expectedMappings = newElasticClient.getMappings()
@@ -68,31 +72,38 @@ class UpgradeEsSchemaTest {
       println "Finished asserting expected index metadata!"
 
       println "Asserting expected instance data doc counts..."
-      assertThat(oldElasticClient.getDocumentCount(PROCESS_DEFINITION_INDEX_NAME))
-        .isEqualTo(newElasticClient.getDocumentCount(PROCESS_DEFINITION_INDEX_NAME))
-      assertThat(oldElasticClient.getDocumentCount(PROCESS_INSTANCE_INDEX_NAME))
-        .isEqualTo(newElasticClient.getDocumentCount(PROCESS_INSTANCE_INDEX_NAME))
-      assertThat(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.EVENTS))
-        .isEqualTo(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.EVENTS))
-      assertThat(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.VARIABLES))
-        .isEqualTo(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.VARIABLES))
-      assertThat(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.USER_TASKS))
-        .isEqualTo(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.USER_TASKS))
+      assertThat(newElasticClient.getDocumentCount(PROCESS_DEFINITION_INDEX_NAME))
+        .as("Process Definition Document Count is not as expected")
+        .isEqualTo(oldElasticClient.getDocumentCount(PROCESS_DEFINITION_INDEX_NAME))
+      assertThat(newElasticClient.getDocumentCount(PROCESS_INSTANCE_INDEX_NAME))
+        .as("Process Instance Document Count is not as expected")
+        .isEqualTo(oldElasticClient.getDocumentCount(PROCESS_INSTANCE_INDEX_NAME))
+      assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.EVENTS))
+        .as("Process Instance Activity Document Count is not as expected")
+        .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.EVENTS))
+      assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.VARIABLES))
+        .as("Process Instance Activity Variable Count is not as expected")
+        .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.VARIABLES))
+      assertThat(newElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.USER_TASKS))
+        .as("Process Instance User Task Count is not as expected")
+        .isEqualTo(oldElasticClient.getNestedDocumentCount(PROCESS_INSTANCE_INDEX_NAME, ProcessInstanceIndex.USER_TASKS))
 
       assertThat(oldElasticClient.getDocumentCount(DECISION_DEFINITION_INDEX_NAME))
+        .as("Decision Definition Document Count is not as expected")
         .isEqualTo(newElasticClient.getDocumentCount(DECISION_DEFINITION_INDEX_NAME))
       assertThat(oldElasticClient.getDocumentCount(DECISION_INSTANCE_INDEX_NAME))
+        .as("Decision Instance Document Count is not as expected")
         .isEqualTo(newElasticClient.getDocumentCount(DECISION_INSTANCE_INDEX_NAME))
       println "Finished asserting expected instance data doc counts..."
 
       println "Asserting on startup and upgrade errors..."
-      new File("optimize-upgrade.log").eachLine {line ->
+      new File("optimize-upgrade.log").eachLine { line ->
         def matcherWarn = line =~ /WARN/
         def matcherError = line =~ /ERROR/
         assertThat(matcherWarn.find()).withFailMessage("Upgrade log contained warn log: %s", line).isEqualTo(false)
         assertThat(matcherError.find()).withFailMessage("Upgrade log contained error log: %s", line).isEqualTo(false)
       }
-      new File("optimize-startup.log").eachLine {line ->
+      new File("optimize-startup.log").eachLine { line ->
         def matcherWarn = line =~ /WARN/
         def matcherError = line =~ /ERROR/
         assertThat(matcherWarn.find()).withFailMessage("Startup log contained warn log: %s", line).isEqualTo(false)
@@ -103,8 +114,6 @@ class UpgradeEsSchemaTest {
       System.err.println e.getMessage()
       System.exit(1)
     } finally {
-      "rm optimize-upgrade.log".execute()
-      "rm optimize-startup.log".execute()
       oldElasticClient.close()
       newElasticClient.close()
       oldOptimize.stop()

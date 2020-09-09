@@ -186,7 +186,7 @@ static String elasticSearchContainerSpec(esVersion, httpPort = 9200, nameSuffix)
     - name: http.port
       value: $httpPort
     - name: path.repo
-      value: /tmp/essnapshots
+      value: /var/tmp
     securityContext:
       privileged: true
       capabilities:
@@ -210,7 +210,7 @@ static String elasticSearchContainerSpec(esVersion, httpPort = 9200, nameSuffix)
         mountPath: /usr/share/elasticsearch/logs
         subPath: es-logs-$nameSuffix
       - name: ssd-storage
-        mountPath: /tmp/essnapshots
+        mountPath: /var/tmp
         subPath: es-snapshots
   """
 }
@@ -347,7 +347,7 @@ pipeline {
           steps {
             timeout(time: params.UPGRADE_TIMEOUT_MINUTES, unit: 'MINUTES') {
               container('maven') {
-                runMaven('-Pupgrade-es-schema-tests -pl qa/upgrade-es-schema-tests clean verify')
+                runMaven('-Pupgrade-es-schema-tests -pl qa/upgrade-tests clean verify')
               }
             }
           }

@@ -25,7 +25,7 @@
   <files>
     <!-- root directory -->
     <file>
-      <source>${project.build.directory}/generator-${project.version}.jar</source>
+      <source>${project.build.directory}/optimize-data-generator-${project.version}.jar</source>
       <outputDirectory></outputDirectory>
     </file>
   </files>
