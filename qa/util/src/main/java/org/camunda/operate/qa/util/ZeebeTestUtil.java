@@ -5,10 +5,8 @@
  */
 package org.camunda.operate.qa.util;
 
-import java.time.Duration;
-import java.util.Random;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.camunda.operate.util.ThreadUtil.sleepFor;
+
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.command.CompleteJobCommandStep1;
@@ -18,13 +16,34 @@ import io.zeebe.client.api.response.DeploymentEvent;
 import io.zeebe.client.api.response.WorkflowInstanceEvent;
 import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import static org.camunda.operate.util.ThreadUtil.sleepFor;
+import java.time.Duration;
+import java.util.Random;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class ZeebeTestUtil {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeTestUtil.class);
 
   private static Random random = new Random();
+
+  public static String deployWorkflow(ZeebeClient client, String... classpathResources) {
+    if (classpathResources.length == 0) {
+      return null;
+    }
+    DeployWorkflowCommandStep1 deployWorkflowCommandStep1 = client.newDeployCommand();
+    for (String classpathResource: classpathResources) {
+      deployWorkflowCommandStep1 = deployWorkflowCommandStep1.addResourceFromClasspath(classpathResource);
+    }
+    final DeploymentEvent deploymentEvent =
+        ((DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2)deployWorkflowCommandStep1)
+            .send()
+            .join();
+    logger.debug("Deployment of resource [{}] was performed", (Object[])classpathResources);
+    return String.valueOf(
+        deploymentEvent.getWorkflows().get(classpathResources.length - 1).getWorkflowKey());
+  }
+
 
   public static String deployWorkflow(ZeebeClient client, BpmnModelInstance workflowModel, String resourceName) {
     DeployWorkflowCommandStep1 deployWorkflowCommandStep1 = client.newDeployCommand()

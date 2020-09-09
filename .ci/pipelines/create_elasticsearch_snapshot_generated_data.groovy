@@ -139,13 +139,13 @@ spec:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
           value: io.zeebe.exporter.ElasticsearchExporter
         - name: ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT
-          value: 4
+          value: 8
       resources:
         limits:
-          cpu: 8
+          cpu: 10
           memory: 16Gi
         requests:
-          cpu: 8
+          cpu: 10
           memory: 16Gi
   volumes:
   - name: configdir

@@ -62,7 +62,7 @@ public class ResultChecker {
   }
 
   private void assertWorkflowCount() {
-    final int expectedCount = dataGeneratorProperties.getWorkflowCount();
+    final int expectedCount = dataGeneratorProperties.getWorkflowCount() + 1;
     final Supplier<Integer> workflowCounter = () -> {
       try {
         return ElasticsearchUtil.getFieldCardinality(esClient, getAliasName(ZeebeESConstants.DEPLOYMENT_INDEX_NAME), "value.deployedWorkflows.bpmnProcessId");

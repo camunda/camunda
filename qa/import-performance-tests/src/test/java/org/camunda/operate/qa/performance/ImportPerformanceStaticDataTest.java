@@ -9,15 +9,21 @@ import java.io.IOException;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import org.camunda.operate.Application;
+import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
+import org.camunda.operate.exceptions.ArchiverException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
 import org.camunda.operate.schema.indices.WorkflowIndex;
 import org.camunda.operate.schema.templates.ListViewTemplate;
+import org.camunda.operate.zeebe.PartitionHolder;
 import org.camunda.operate.zeebe.ZeebeESConstants;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -25,6 +31,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import static java.lang.Math.abs;
 import static org.assertj.core.api.Assertions.assertThat;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ImportPerformanceStaticDataTest {
 
   private static final Logger logger = LoggerFactory.getLogger(ImportPerformanceStaticDataTest.class);
@@ -36,6 +43,7 @@ public class ImportPerformanceStaticDataTest {
 
   @Before
   public void setup() {
+    logger.info("Operate will be started");
     applicationContext = new SpringApplicationBuilder(Application.class)
       .addCommandLineProperties(true)
       .profiles("auth")
@@ -43,8 +51,13 @@ public class ImportPerformanceStaticDataTest {
     operateProperties = applicationContext.getBean(OperateProperties.class);
   }
 
+  @After
+  public void stop() {
+    applicationContext.stop();
+  }
+
   @Test
-  public void test() throws InterruptedException, IOException {
+  public void testAImport() throws InterruptedException, IOException {
     final ZeebeImporter zeebeImporter = applicationContext.getBean(ZeebeImporter.class);
 
     final OffsetDateTime dataGenerationStart = OffsetDateTime.now();
@@ -59,6 +72,14 @@ public class ImportPerformanceStaticDataTest {
       assertData();
     }
 
+  }
+
+  @Test
+  public void testBArchiver() throws ArchiverException {
+    final PartitionHolder partitionHolder = applicationContext.getBean(PartitionHolder.class);
+    WorkflowInstancesArchiverJob archiverJob = applicationContext.getBean(WorkflowInstancesArchiverJob.class, partitionHolder.getPartitionIds());
+    final int archivedCount = archiverJob.archiveNextBatch();
+    assertThat(archivedCount).isEqualTo(1);
   }
 
   private void assertData() throws IOException {

@@ -22,7 +22,6 @@ public class Connector {
   @Autowired
   private DataGeneratorProperties dataGeneratorProperties;
 
-  @Bean
   public ZeebeClient createZeebeClient() {
     String brokerContactPoint = dataGeneratorProperties.getZeebeBrokerContactPoint();
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder()
@@ -31,6 +30,11 @@ public class Connector {
       .usePlaintext();
     //TODO test the connection?
     return builder.build();
+  }
+
+  @Bean
+  public ZeebeClient getZeebeClient() {
+    return createZeebeClient();
   }
 
   @Bean

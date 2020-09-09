@@ -5,6 +5,11 @@
  */
 package org.camunda.operate.data.generation;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.annotation.PreDestroy;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -15,11 +20,14 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import org.camunda.operate.data.generation.DataGenerationApp.DataGeneratorThread;
 import org.camunda.operate.qa.util.ZeebeTestUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
@@ -41,6 +49,10 @@ public class DataGenerator {
   @Autowired
   private ZeebeClient zeebeClient;
 
+  @Autowired
+  @Qualifier("dataGeneratorThreadPoolExecutor")
+  private ThreadPoolTaskExecutor dataGeneratorTaskExecutor;
+
   private Set<String> bpmnProcessIds = new HashSet<>();
   private Random random = new Random();
 
@@ -53,6 +65,11 @@ public class DataGenerator {
     startWorkflowInstances();
     completeAllTasks("task1");
     createIncidents("task2");
+
+
+    //wait for task "endTask" of long-running process and complete it
+    ZeebeTestUtil.completeTask(zeebeClient, "endTask", "data-generator", null, 1);
+    logger.info("Task endTask completed.");
 
     logger.info("Data generation completed in: " + ChronoUnit.SECONDS.between(dataGenerationStart, OffsetDateTime.now()) + " s");
   }
@@ -69,7 +86,7 @@ public class DataGenerator {
   }
 
   private void completeTasks(String jobType, int count) {
-    ZeebeTestUtil.completeTask(zeebeClient, jobType, "worker", "{\"varOut\": \"value2\"}", count);
+    ZeebeTestUtil.completeTask(zeebeClient, jobType, "data-generator", "{\"varOut\": \"value2\"}", count);
   }
 
   private void startWorkflowInstances() {
@@ -77,11 +94,11 @@ public class DataGenerator {
     final BlockingQueue<Future> requestFutures = new ArrayBlockingQueue<>(dataGeneratorProperties.getQueueSize());
     ResponseChecker responseChecker = startWaitingForResponses(requestFutures);
 
-    InstancesStarter instancesStarter = sendStartWorkflowInstanceCommands(requestFutures);
+    List<InstancesStarter> instancesStarters = sendStartWorkflowInstanceCommands(requestFutures);
 
     stopWaitingForResponses(responseChecker);
 
-    instancesStarter.close();
+    instancesStarters.forEach(InstancesStarter::close);
 
   }
 
@@ -100,15 +117,33 @@ public class DataGenerator {
     logger.info("{} workflow instances started", responseChecker.getResponseCount());
   }
 
-  private InstancesStarter sendStartWorkflowInstanceCommands(BlockingQueue<Future> requestFutures) {
-    InstancesStarter instancesStarter = new InstancesStarter(requestFutures);
-    instancesStarter.start();
-    return instancesStarter;
+  private List<InstancesStarter> sendStartWorkflowInstanceCommands(BlockingQueue<Future> requestFutures) {
+    //separately start one instance with multi-instance subprocess
+    startBigWorkflowInstance();
+
+    List<InstancesStarter> instancesStarters = new ArrayList<>();
+    final int threadCount = dataGeneratorTaskExecutor.getMaxPoolSize();
+    final AtomicInteger counter = new AtomicInteger(0);
+    for (int i = 0; i < threadCount; i++) {
+      InstancesStarter instancesStarter = new InstancesStarter(requestFutures, counter);
+      dataGeneratorTaskExecutor.submit(instancesStarter);
+      instancesStarters.add(instancesStarter);
+    }
+    return instancesStarters;
+  }
+
+  private void startBigWorkflowInstance() {
+    String payload =
+        "{\"items\": [" + IntStream.range(1, 3000).boxed().map(Object::toString).collect(
+            Collectors.joining(",")) + "]}";
+    ZeebeTestUtil
+        .startWorkflowInstance(zeebeClient, "sequential-noop", payload);
   }
 
   @PreDestroy
   public void shutdown(){
     zeebeClient.close();
+    dataGeneratorTaskExecutor.shutdown();
   }
 
   private String getRandomBpmnProcessId() {
@@ -121,6 +156,8 @@ public class DataGenerator {
       ZeebeTestUtil.deployWorkflow(zeebeClient, createModel(bpmnProcessId), bpmnProcessId + ".bpmn");
       bpmnProcessIds.add(bpmnProcessId);
     }
+    //deploy workflow with multi-instance subprocess
+    ZeebeTestUtil.deployWorkflow(zeebeClient, "sequential-noop.bpmn");
     logger.info("{} workflows deployed", dataGeneratorProperties.getWorkflowCount());
   }
 
@@ -180,31 +217,42 @@ public class DataGenerator {
     }
   }
 
-  class InstancesStarter extends Thread {
+  class InstancesStarter implements Runnable {
 
     private final BlockingQueue<Future> futures;
 
     private boolean shuttingDown = false;
 
-    public InstancesStarter(BlockingQueue<Future> futures) {
+    private AtomicInteger count;
+
+    public InstancesStarter(BlockingQueue<Future> futures, AtomicInteger count) {
       this.futures = futures;
+      this.count = count;
     }
 
     @Override
     public void run() {
-      int count = 0;
-      while (++count <= dataGeneratorProperties.getWorkflowInstanceCount() && ! shuttingDown) {
+      zeebeClient = resolveZeebeClient();
+      int localCount = 0;
+      while (count.getAndIncrement() <= dataGeneratorProperties.getWorkflowInstanceCount()  && ! shuttingDown) {
         try {
           futures.put(ZeebeTestUtil.startWorkflowInstanceAsync(zeebeClient, getRandomBpmnProcessId(), "{\"var1\": \"value1\"}"));
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();
         }
+        localCount++;
+        if (localCount % 1000 == 0) {
+          logger.info("{} start workflow instance requests were sent", localCount);
+        }
       }
+    }
+
+    private ZeebeClient resolveZeebeClient() {
+      return ((DataGeneratorThread)Thread.currentThread()).getZeebeClient();
     }
 
     public void close() {
       shuttingDown = true;
-      interrupt();
     }
 
   }

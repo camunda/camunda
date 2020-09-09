@@ -31,6 +31,8 @@ public class DataGeneratorProperties {
 
   private int queueSize = 200;
 
+  private int threadCount = 2;
+
   public int getWorkflowCount() {
     return workflowCount;
   }
@@ -93,5 +95,14 @@ public class DataGeneratorProperties {
 
   public void setQueueSize(int queueSize) {
     this.queueSize = queueSize;
+  }
+
+  public int getThreadCount() {
+    return threadCount;
+  }
+
+  public DataGeneratorProperties setThreadCount(final int threadCount) {
+    this.threadCount = threadCount;
+    return this;
   }
 }

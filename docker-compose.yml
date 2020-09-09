@@ -29,7 +29,7 @@ services:
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
-      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=2
+      - ZEEBE_BROKER_CLUSTER_PARTITIONS_COUNT=4
       #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
       - 26500:26500
