@@ -444,7 +444,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     // when
     AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(combinedReportId, null)
+      .buildEvaluateSavedReportRequest(combinedReportId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
       // @formatter:off
       .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto>>() {});
@@ -491,7 +491,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     // when
     AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto> result = embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildEvaluateSavedReportRequest(combinedReportId, null)
+      .buildEvaluateSavedReportRequest(combinedReportId)
       .addSingleHeader(X_OPTIMIZE_CLIENT_TIMEZONE, "Europe/London")
       // @formatter:off
       .execute(new TypeReference<AuthorizedCombinedReportEvaluationResultDto<ReportMapResultDto>>() {});

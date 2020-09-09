@@ -495,7 +495,7 @@ public class ReportClient {
       // @formatter:on
   }
 
-  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateRawReportWithPagination(
+  public AuthorizedDecisionReportEvaluationResultDto<RawDataDecisionReportResultDto> evaluateRawReport(
     DecisionReportDataDto reportData,
     PaginationRequestDto paginationDto) {
     return getRequestExecutor()
@@ -505,7 +505,7 @@ public class ReportClient {
       // @formatter:on
   }
 
-  public AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReportWithPagination(
+  public AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluateRawReport(
     ProcessReportDataDto reportData,
     PaginationRequestDto paginationDto) {
     return getRequestExecutor()

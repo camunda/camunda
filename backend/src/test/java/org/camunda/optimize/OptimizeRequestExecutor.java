@@ -438,14 +438,26 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildEvaluateSavedReportRequest(String reportId) {
-    return buildEvaluateSavedReportRequest(reportId, null);
+    return buildEvaluateSavedReportRequest(reportId, null, null);
+  }
+
+  public OptimizeRequestExecutor buildEvaluateSavedReportRequest(String reportId,
+                                                                 PaginationRequestDto paginationRequestDto) {
+    return buildEvaluateSavedReportRequest(reportId, null, paginationRequestDto);
   }
 
   public OptimizeRequestExecutor buildEvaluateSavedReportRequest(String reportId,
                                                                  AdditionalProcessReportEvaluationFilterDto filters) {
+    return buildEvaluateSavedReportRequest(reportId, filters, null);
+  }
+
+  private OptimizeRequestExecutor buildEvaluateSavedReportRequest(String reportId,
+                                                                  AdditionalProcessReportEvaluationFilterDto filters,
+                                                                  PaginationRequestDto paginationRequestDto) {
     this.path = "/report/" + reportId + "/evaluate";
     this.method = POST;
     Optional.ofNullable(filters).ifPresent(filterDto -> this.body = getBody(filterDto));
+    Optional.ofNullable(paginationRequestDto).ifPresent(pagination -> addQueryParams(extractPagination(pagination)));
     return this;
   }
 
@@ -1423,7 +1435,8 @@ public class OptimizeRequestExecutor {
   private Map<String, Object> extractPagination(final PaginationRequestDto pagination) {
     Map<String, Object> params = new HashMap<>();
     Optional.ofNullable(pagination.getLimit()).ifPresent(limit -> params.put(PaginationRequestDto.LIMIT_PARAM, limit));
-    Optional.ofNullable(pagination.getOffset()).ifPresent(offset -> params.put(PaginationRequestDto.OFFSET_PARAM, offset));
+    Optional.ofNullable(pagination.getOffset())
+      .ifPresent(offset -> params.put(PaginationRequestDto.OFFSET_PARAM, offset));
     return params;
   }
 

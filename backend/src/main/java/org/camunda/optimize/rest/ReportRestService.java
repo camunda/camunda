@@ -15,6 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProce
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.rest.mapper.ReportRestMapper;
@@ -170,6 +171,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedEvaluationResultDto evaluateReportByIdWithFilters(@Context ContainerRequestContext requestContext,
                                                                      @PathParam("id") String reportId,
+                                                                     @BeanParam @Valid final PaginationRequestDto paginationRequestDto,
                                                                      AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
@@ -178,7 +180,8 @@ public class ReportRestService {
         userId,
         timezone,
         reportId,
-        reportEvaluationFilter
+        reportEvaluationFilter,
+        PaginationDto.fromPaginationRequest(paginationRequestDto)
       );
     return reportRestMapper.mapToEvaluationResultDto(reportEvaluationResult);
   }
@@ -194,11 +197,16 @@ public class ReportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public AuthorizedEvaluationResultDto evaluateProvidedReport(@Context ContainerRequestContext requestContext,
                                                               @NotNull ReportDefinitionDto reportDefinitionDto,
-                                                              @BeanParam @Valid final PaginationRequestDto paginationDto) {
+                                                              @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
     final AuthorizedReportEvaluationResult reportEvaluationResult =
-      reportEvaluationService.evaluateUnsavedReport(userId, timezone, reportDefinitionDto, paginationDto);
+      reportEvaluationService.evaluateUnsavedReport(
+        userId,
+        timezone,
+        reportDefinitionDto,
+        PaginationDto.fromPaginationRequest(paginationRequestDto)
+      );
     return reportRestMapper.mapToEvaluationResultDto(reportEvaluationResult);
   }
 
