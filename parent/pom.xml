@@ -96,6 +96,8 @@
     <version.kryo>4.0.2</version.kryo>
     <version.awaitility>4.0.3</version.awaitility>
     <version.failsafe>2.4.0</version.failsafe>
+    <version.jqwik>1.3.6</version.jqwik>
+    <version.jmock>2.11.0</version.jmock>
 
 
     <!-- maven plugins -->
@@ -575,6 +577,23 @@
         <version>${version.testcontainers}</version>
       </dependency>
 
+
+      <dependency>
+        <groupId>net.jqwik</groupId>
+        <artifactId>jqwik</artifactId>
+        <version>${version.jqwik}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>net.jqwik</groupId>
+        <artifactId>jqwik-api</artifactId>
+        <version>${version.jqwik}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jmock</groupId>
+        <artifactId>jmock</artifactId>
+        <version>${version.jmock}</version>
+      </dependency>
 
       <dependency>
         <groupId>com.netflix.concurrency-limits</groupId>
