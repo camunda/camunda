@@ -88,7 +88,7 @@
     "license-checker": "^25.0.1",
     "lint-staged": "^10.2.13",
     "mock-socket": "^9.0.3",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "node-sass": "^4.14.1",
     "opn": "^6.0.0",
     "prettier": "2.1.1",
