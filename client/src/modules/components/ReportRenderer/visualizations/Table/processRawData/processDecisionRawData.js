@@ -4,8 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {sortColumns, cockpitLink, getNoDataMessage, isVisibleColumn} from './service';
+import {parseISO} from 'date-fns';
+
+import {format} from 'dates';
 import {t} from 'translation';
+
+import {sortColumns, cockpitLink, getNoDataMessage, isVisibleColumn} from './service';
 
 export default function processDecisionRawData(
   {
@@ -44,6 +48,11 @@ export default function processDecisionRawData(
       if (entry === 'decisionInstanceId') {
         return cockpitLink(endpoints, instance, 'decision');
       }
+
+      if (entry === 'evaluationDateTime' && instance[entry]) {
+        return format(parseISO(instance[entry]), "yyyy-MM-dd HH:mm:ss 'UTC'X");
+      }
+
       return instance[entry];
     });
     const inputVariableValues = inputVariables.map((entry) => {
