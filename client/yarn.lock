@@ -12978,10 +12978,10 @@ react-full-screen@^0.3.1:
   dependencies:
     fscreen "^1.0.2"
 
-react-grid-layout@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/react-grid-layout/-/react-grid-layout-1.0.0.tgz#85495f1e9da2e5b9dad5ece82b3052d624be709d"
-  integrity sha512-0gSnLQL9dYZtAlZCjIPYIqZtswnzMhIT1uip78vs3J432FLOF6LD5PmYaRm34V/s6bEpS9cMZNMcsOanwZXBEw==
+react-grid-layout@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/react-grid-layout/-/react-grid-layout-1.1.0.tgz#b71d8e94fd3f433c973121f5465a288bef3042e6"
+  integrity sha512-jdMsHjxOsrwdpEhCu3ghKP03M/QjR56KhgH9uCIWGd1qqAITYobAksDPk9ppERvkNaGTH+mcSuL0pmQjTcQfeg==
   dependencies:
     classnames "2.x"
     lodash.isequal "^4.0.0"
