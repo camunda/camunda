@@ -179,12 +179,6 @@
 
       <dependency>
         <groupId>io.zeebe</groupId>
-        <artifactId>zeebe-legacy-toml-config</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.zeebe</groupId>
         <artifactId>zeebe-snapshots</artifactId>
         <version>${project.version}</version>
       </dependency>

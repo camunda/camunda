@@ -10,8 +10,6 @@ package io.zeebe.broker;
 import static java.lang.Runtime.getRuntime;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.legacy.tomlconfig.LegacyConfigurationSupport;
-import io.zeebe.legacy.tomlconfig.LegacyConfigurationSupport.Scope;
 import io.zeebe.shared.EnvironmentHelper;
 import io.zeebe.util.FileUtil;
 import java.io.IOException;
@@ -42,12 +40,6 @@ public class StandaloneBroker implements CommandLineRunner {
     System.setProperty("spring.banner.location", "classpath:/assets/zeebe_broker_banner.txt");
 
     EnvironmentHelper.disableGatewayHealthIndicatorsAndProbes();
-
-    final LegacyConfigurationSupport legacyConfigSupport =
-        new LegacyConfigurationSupport(Scope.BROKER);
-    legacyConfigSupport.checkForLegacyTomlConfigurationArgument(
-        args, "broker.standalone.yaml.template");
-    legacyConfigSupport.checkForLegacyEnvironmentVariables();
 
     SpringApplication.run(StandaloneBroker.class, args);
   }
