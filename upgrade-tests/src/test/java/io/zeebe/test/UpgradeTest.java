@@ -10,7 +10,6 @@ package io.zeebe.test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.client.api.response.ActivateJobsResponse;
-import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.UpgradeTestCase.TestCaseBuilder;
@@ -45,6 +44,7 @@ public class UpgradeTest {
   public static final String CHILD_PROCESS_ID = "childProc";
   private static final String CURRENT_VERSION = "current-test";
   private static final String TASK = "task";
+  private static final String JOB = TASK;
   private static final String MESSAGE = "message";
   private static final File SHARED_DATA;
 
@@ -149,19 +149,25 @@ public class UpgradeTest {
                 .createInstance()
                 .afterUpgrade(
                     (state, wfKey, key) -> {
-                      final ActivatedJob job =
+                      TestUtil.waitUntil(() -> state.hasElementInState(JOB, "CREATED"));
+
+                      final var jobsResponse =
                           state
                               .client()
                               .newActivateJobsCommand()
                               .jobType(TASK)
                               .maxJobsToActivate(1)
                               .send()
-                              .join()
-                              .getJobs()
-                              .iterator()
-                              .next();
+                              .join();
+                      assertThat(jobsResponse.getJobs()).hasSize(1);
 
-                      state.client().newCompleteCommand(job.getKey()).send().join();
+                      TestUtil.waitUntil(() -> state.hasElementInState(JOB, "ACTIVATED"));
+
+                      state
+                          .client()
+                          .newCompleteCommand(jobsResponse.getJobs().get(0).getKey())
+                          .send()
+                          .join();
                       TestUtil.waitUntil(
                           () -> state.hasLogContaining(CHILD_PROCESS_ID, "COMPLETED"));
                     })
@@ -229,10 +235,13 @@ public class UpgradeTest {
   }
 
   private static long activateJob(final ContainerStateRule state) {
+    TestUtil.waitUntil(() -> state.hasElementInState(JOB, "CREATED"));
+
     final ActivateJobsResponse jobsResponse =
         state.client().newActivateJobsCommand().jobType(TASK).maxJobsToActivate(1).send().join();
+    assertThat(jobsResponse.getJobs()).hasSize(1);
 
-    TestUtil.waitUntil(() -> state.hasElementInState(TASK, "ACTIVATED"));
+    TestUtil.waitUntil(() -> state.hasElementInState(JOB, "ACTIVATED"));
     return jobsResponse.getJobs().get(0).getKey();
   }
 

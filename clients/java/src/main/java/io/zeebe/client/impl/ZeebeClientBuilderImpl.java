@@ -48,7 +48,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
   private Duration defaultJobPollInterval = Duration.ofMillis(100);
   private Duration defaultMessageTimeToLive = Duration.ofHours(1);
-  private Duration defaultRequestTimeout = Duration.ofSeconds(20);
+  private Duration defaultRequestTimeout = Duration.ofSeconds(10);
   private boolean usePlaintextConnection = false;
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
