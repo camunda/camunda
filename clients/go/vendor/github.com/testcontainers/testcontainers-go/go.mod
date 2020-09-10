@@ -8,15 +8,15 @@ require (
 	github.com/Microsoft/hcsshim v0.8.6 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/containerd/continuity v0.0.0-20190426062206-aaeac12a7ffc // indirect
-	github.com/docker/distribution v2.7.1-0.20190205005809-0d3efadf0154+incompatible
-	github.com/docker/docker v0.7.3-0.20190506211059-b20a14b54661
+	github.com/docker/distribution v2.7.1-0.20190205005809-0d3efadf0154+incompatible // indirect
+	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.3.3 // indirect
 	github.com/gin-gonic/gin v1.6.3
-	github.com/go-redis/redis v6.15.8+incompatible
+	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gogo/protobuf v1.2.0 // indirect
-	github.com/google/uuid v1.1.1
+	github.com/google/uuid v1.1.2
 	github.com/gorilla/context v1.1.1 // indirect
 	github.com/gorilla/mux v1.6.2 // indirect
 	github.com/kr/pretty v0.1.0 // indirect

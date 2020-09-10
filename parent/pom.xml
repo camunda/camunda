@@ -46,7 +46,7 @@
     <version.commons-codec>1.15</version.commons-codec>
     <version.elasticsearch>6.8.12</version.elasticsearch>
     <version.error-prone>2.4.0</version.error-prone>
-    <version.grpc>1.31.1</version.grpc>
+    <version.grpc>1.32.1</version.grpc>
     <version.gson>2.8.6</version.gson>
     <version.guava>29.0-jre</version.guava>
     <version.hamcrest>2.2</version.hamcrest>
@@ -88,7 +88,7 @@
     <version.spring-framework>5.2.8.RELEASE</version.spring-framework>
     <version.spring-boot>2.3.3.RELEASE</version.spring-boot>
     <version.tomcat>9.0.37</version.tomcat>
-    <version.classgraph>4.8.89</version.classgraph>
+    <version.classgraph>4.8.90</version.classgraph>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.0</version.config>
     <version.kryo>4.0.2</version.kryo>
