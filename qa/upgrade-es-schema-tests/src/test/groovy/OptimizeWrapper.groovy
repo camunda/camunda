@@ -51,23 +51,25 @@ class OptimizeWrapper {
     environmentVars.add("OPTIMIZE_ELASTICSEARCH_HTTP_PORT=${elasticPort}")
     def command = ["/bin/bash", "./optimize-startup.sh"]
     this.process = command.execute(environmentVars, new File(optimizeDirectory))
+    // to prevent process from blocking when output buffer is full
+    this.process.consumeProcessOutput()
     try {
       StatusClient statusClient = new StatusClient(() -> requestExecutor)
       println "Waiting for Optimize ${optimizeVersion} to boot..."
       await()
         .atMost(timeoutInSeconds, SECONDS)
+        .pollInterval(1, SECONDS)
         .ignoreException(ProcessingException)
         .until(
           statusClient::getStatus,
           statusResponse -> statusResponse.connectionStatus.engineConnections.values().every()
         )
-      // this sleep is here for avoiding race conditions if still running initializations
-      // after the endpoint is available
-      sleep(3000)
+      // this sleep is here for avoiding race conditions of still running initializations
+      // after the endpoint is available, should be solved with a proper health-check endpoint in future, OPT-3442
+      sleep(5000)
       println "Optimize ${optimizeVersion} is up!"
     } catch (Exception e) {
       println "Optimize did not start within ${timeoutInSeconds}s."
-      println this.process.text
       stop()
       throw e
     }
@@ -82,9 +84,9 @@ class OptimizeWrapper {
     }
   }
 
-  def waitForImportToFinish(int timeoutInMinutes = 60) {
+  def waitForImportToFinish(int timeoutInMinutes = 90) {
     StatusClient statusClient = new StatusClient(() -> requestExecutor)
-    println "Waiting for Optimize ${optimizeVersion} import to become idle..."
+    println "Waiting for Optimize ${optimizeVersion} import to become dle..."
     await()
       .atMost(timeoutInMinutes, MINUTES)
       .ignoreException(ProcessingException)

@@ -5,6 +5,7 @@
  */
 
 import org.apache.http.HttpHost
+import org.apache.http.client.config.RequestConfig
 import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryRequest
 import org.elasticsearch.action.admin.cluster.snapshots.create.CreateSnapshotRequest
 import org.elasticsearch.action.admin.cluster.snapshots.delete.DeleteSnapshotRequest
@@ -16,6 +17,7 @@ import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestClient
+import org.elasticsearch.client.RestClientBuilder
 import org.elasticsearch.client.RestHighLevelClient
 import org.elasticsearch.client.core.CountRequest
 import org.elasticsearch.client.indices.GetIndexTemplatesRequest
@@ -42,7 +44,25 @@ class ElasticClient {
 
   ElasticClient(String name, int port = 9200, String host = "localhost") {
     this.name = name
-    this.client = new RestHighLevelClient(RestClient.builder(new HttpHost(host, port, "http")))
+    this.client = new RestHighLevelClient(
+      RestClient.builder(
+        new HttpHost(host, port, "http"))
+        .setRequestConfigCallback(
+          new RestClientBuilder.RequestConfigCallback() {
+            @Override
+            RequestConfig.Builder customizeRequestConfig(
+              RequestConfig.Builder requestConfigBuilder) {
+              return requestConfigBuilder
+                .setConnectTimeout(5000)
+              // some requests like creating snapshots might take a while and we do them blocking
+                .setSocketTimeout(0);
+            }
+          })
+    )
+  }
+
+  def close() {
+    this.client.close()
   }
 
   def refreshAll() {
@@ -128,7 +148,7 @@ class ElasticClient {
       RequestOptions.DEFAULT
     )
     Nested aggregation = (Nested) searchResponse.getAggregations()[0]
-    return  aggregation.getDocCount()
+    return aggregation.getDocCount()
   }
 
   private static String prefixIndexName(String indexName) {
