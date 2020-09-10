@@ -18,7 +18,7 @@ import static org.apache.commons.lang3.RandomUtils.nextInt;
 
 public class DRIProcessWithLoadsOfVariablesDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/dri-process.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/dri-process.bpmn";
   private static final String[] REVIEW_GATEWAY_OPTIONS = new String[]{"yes", "no"};
 
   private final String[] variableNames;

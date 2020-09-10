@@ -15,7 +15,7 @@ import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class BookRequestWithSuspendedInstancesDataGenerator extends ProcessDataGenerator {
-  private static final String DIAGRAM = "diagrams/process/book-request-suspended-instances.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/book-request-suspended-instances.bpmn";
 
   public BookRequestWithSuspendedInstancesDataGenerator(final SimpleEngineClient engineClient,
                                                         final Integer nVersions) {

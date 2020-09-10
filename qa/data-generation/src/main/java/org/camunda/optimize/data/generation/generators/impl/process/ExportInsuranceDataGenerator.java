@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class ExportInsuranceDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/export-insurance.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/export-insurance.bpmn";
 
   public ExportInsuranceDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

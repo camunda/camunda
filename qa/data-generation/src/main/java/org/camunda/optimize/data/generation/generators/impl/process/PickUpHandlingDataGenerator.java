@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class PickUpHandlingDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/pick-up-handling.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/pick-up-handling.bpmn";
 
   public PickUpHandlingDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

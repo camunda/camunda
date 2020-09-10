@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class ProcessRequestDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/process-request.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/process-request.bpmn";
 
   public ProcessRequestDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

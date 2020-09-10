@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class MultiInstanceSubprocessRequestDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/multi-instance.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/multi-instance.bpmn";
 
   public MultiInstanceSubprocessRequestDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

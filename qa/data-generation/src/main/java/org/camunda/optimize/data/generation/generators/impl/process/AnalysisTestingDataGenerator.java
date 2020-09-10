@@ -15,7 +15,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import static org.camunda.optimize.test.util.client.SimpleEngineClient.DELAY_VARIABLE_NAME;
 
 public class AnalysisTestingDataGenerator extends ProcessDataGenerator {
-  private static final String DIAGRAM = "diagrams/process/analysis-testing.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/analysis-testing.bpmn";
 
   public AnalysisTestingDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

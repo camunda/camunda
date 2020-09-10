@@ -13,8 +13,8 @@ import java.util.Map;
 
 public class BranchAnalysisDataGenerator extends ProcessDataGenerator {
 
-  private static final String CALLER_DIAGRAM = "diagrams/process/call-branch-analysis.bpmn";
-  private static final String CALLEE_DIAGRAM = "diagrams/process/branch_analysis_process.bpmn";
+  private static final String CALLER_DIAGRAM = "/diagrams/process/call-branch-analysis.bpmn";
+  private static final String CALLEE_DIAGRAM = "/diagrams/process/branch_analysis_process.bpmn";
 
   public BranchAnalysisDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

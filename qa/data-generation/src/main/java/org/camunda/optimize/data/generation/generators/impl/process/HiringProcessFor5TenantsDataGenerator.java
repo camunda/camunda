@@ -16,7 +16,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class HiringProcessFor5TenantsDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/hiring-process-5-tenants.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/hiring-process-5-tenants.bpmn";
   private static String TASK_AUTOMATICALLY_ASSIGNED = "Task_automatically_assigned";
   private static String TASK_SCREEN_PROCEED = "Task_screen_proceed";
   private static String TASK_PHONE_PROCEED = "Task_phone_proceed";

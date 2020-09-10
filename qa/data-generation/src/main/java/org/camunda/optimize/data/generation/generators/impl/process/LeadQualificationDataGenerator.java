@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class LeadQualificationDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/lead-qualification.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/lead-qualification.bpmn";
 
   public LeadQualificationDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

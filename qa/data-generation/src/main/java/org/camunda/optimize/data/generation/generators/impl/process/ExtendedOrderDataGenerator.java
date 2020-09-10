@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class ExtendedOrderDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/extended-order-process.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/extended-order-process.bpmn";
 
   public ExtendedOrderDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

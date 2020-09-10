@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class InvoiceWithAlternativeCorrelationVariableDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/invoice.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/invoice.bpmn";
 
   public InvoiceWithAlternativeCorrelationVariableDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

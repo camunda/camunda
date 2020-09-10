@@ -14,7 +14,7 @@ import java.util.Map;
 
 public class BookRequestForOneTenantDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/book-request-1-tenant.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/book-request-1-tenant.bpmn";
 
   public BookRequestForOneTenantDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

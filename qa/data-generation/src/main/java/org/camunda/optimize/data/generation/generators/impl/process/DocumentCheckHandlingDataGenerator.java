@@ -16,7 +16,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class DocumentCheckHandlingDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/document-check-handling.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/document-check-handling.bpmn";
 
   public DocumentCheckHandlingDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

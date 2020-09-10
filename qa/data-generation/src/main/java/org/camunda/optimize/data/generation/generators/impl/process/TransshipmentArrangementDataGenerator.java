@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class TransshipmentArrangementDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/transshipment-arrangement.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/transshipment-arrangement.bpmn";
 
   public TransshipmentArrangementDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

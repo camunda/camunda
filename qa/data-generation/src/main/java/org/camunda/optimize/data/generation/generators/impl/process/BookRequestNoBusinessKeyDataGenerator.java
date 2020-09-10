@@ -13,7 +13,7 @@ import java.util.Map;
 
 public class BookRequestNoBusinessKeyDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/book-request.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/book-request.bpmn";
 
   public BookRequestNoBusinessKeyDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

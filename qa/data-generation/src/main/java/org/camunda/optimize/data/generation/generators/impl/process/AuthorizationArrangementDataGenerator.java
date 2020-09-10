@@ -14,7 +14,7 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class AuthorizationArrangementDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "diagrams/process/authorization-arrangement.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/authorization-arrangement.bpmn";
 
   public AuthorizationArrangementDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);

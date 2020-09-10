@@ -17,7 +17,7 @@ import java.util.Map;
 
 public class ExampleDmn13DataGenerator extends DecisionDataGenerator {
 
-  private static final String DMN_DIAGRAM = "diagrams/decision/Example-DMN-1.3.dmn";
+  private static final String DMN_DIAGRAM = "/diagrams/decision/Example-DMN-1.3.dmn";
 
   private Pair<String, String> inputVarNames = Pair.of("status", "sum");
   private List<Pair<String, Double>> possibleInputCombinations = ImmutableList.of(
