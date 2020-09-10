@@ -57,7 +57,7 @@ export default () => {
 
     components.onGetComponent('cell', ({cellType}) => {
       if (cellType === 'after-label-cells') {
-        return () => createVNode(1, 'th', 'hit header', createTextVNode('Hits'), 2, {rowspan: 3});
+        return () => createVNode(1, 'th', 'hit header', createTextVNode('Hits'), 2);
       }
 
       if (cellType === 'after-rule-cells') {
