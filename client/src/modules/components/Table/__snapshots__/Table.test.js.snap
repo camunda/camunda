@@ -5,18 +5,21 @@ Array [
   Object {
     "Header": "x",
     "accessor": [Function],
+    "disableSortBy": false,
     "id": "x",
     "minWidth": 100,
   },
   Object {
     "Header": "y",
     "accessor": [Function],
+    "disableSortBy": false,
     "id": "y",
     "minWidth": 100,
   },
   Object {
     "Header": "z",
     "accessor": [Function],
+    "disableSortBy": false,
     "id": "z",
     "minWidth": 100,
   },
@@ -28,6 +31,7 @@ Array [
   Object {
     "Header": "x",
     "accessor": [Function],
+    "disableSortBy": false,
     "id": "x",
     "minWidth": 100,
   },
@@ -37,12 +41,14 @@ Array [
       Object {
         "Header": "i",
         "accessor": [Function],
+        "disableSortBy": false,
         "id": "ai",
         "minWidth": 100,
       },
       Object {
         "Header": "j",
         "accessor": [Function],
+        "disableSortBy": false,
         "id": "aj",
         "minWidth": 100,
       },
@@ -56,18 +62,21 @@ Array [
   Object {
     "Header": "X",
     "accessor": [Function],
+    "disableSortBy": false,
     "id": "column1",
     "minWidth": 100,
   },
   Object {
     "Header": "Y",
     "accessor": [Function],
+    "disableSortBy": false,
     "id": "y",
     "minWidth": 100,
   },
   Object {
     "Header": "Z",
     "accessor": [Function],
+    "disableSortBy": false,
     "id": "column3",
     "minWidth": 100,
   },
@@ -82,12 +91,14 @@ Array [
       Object {
         "Header": "i",
         "accessor": [Function],
+        "disableSortBy": false,
         "id": "column1i",
         "minWidth": 100,
       },
       Object {
         "Header": "j",
         "accessor": [Function],
+        "disableSortBy": false,
         "id": "column1columnJ",
         "minWidth": 100,
       },
@@ -96,6 +107,7 @@ Array [
   Object {
     "Header": "Y",
     "accessor": [Function],
+    "disableSortBy": false,
     "id": "y",
     "minWidth": 100,
   },
@@ -105,12 +117,14 @@ Array [
       Object {
         "Header": "Z1",
         "accessor": [Function],
+        "disableSortBy": false,
         "id": "zcolumnZ1",
         "minWidth": 100,
       },
       Object {
         "Header": "Z2",
         "accessor": [Function],
+        "disableSortBy": false,
         "id": "zZ2",
         "minWidth": 100,
       },

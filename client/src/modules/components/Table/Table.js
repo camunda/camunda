@@ -56,6 +56,7 @@ export default function Table({
       data,
       manualSortBy: true,
       disableMultiSort: true,
+      disableSortRemove: true,
       initialState: {
         pageIndex: 0,
         sortBy: initialSorting,
@@ -80,7 +81,7 @@ export default function Table({
     return {
       ...props,
       style: {
-        cursor: 'pointer',
+        cursor: column.disableSortBy ? 'default' : 'pointer',
       },
       onClick: (evt) => {
         if (props.onClick) {
@@ -246,6 +247,7 @@ Table.formatColumns = (head, ctx = '') => {
         accessor: (d) => d[id],
         id,
         minWidth: 100,
+        disableSortBy: elem.sortable === false,
       };
     }
     return {

@@ -39,10 +39,15 @@ export async function updateProcess(id, name, xml, mappings, eventSources) {
   return await put('api/eventBasedProcess/' + id, {name, xml, mappings, eventSources});
 }
 
-export async function loadEvents(body, searchTerm) {
+export async function loadEvents(body, searchTerm, sorting) {
   const query = {};
   if (searchTerm) {
     query.searchTerm = searchTerm;
+  }
+
+  if (sorting) {
+    query.sortBy = sorting.by;
+    query.sortOrder = sorting.order;
   }
 
   const response = await post('api/event/count', body, {query});

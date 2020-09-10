@@ -41,6 +41,16 @@ it('should support explicit id for columns', () => {
   expect(result).toMatchSnapshot();
 });
 
+it('should be possible to explicitly disable sorting on a column', () => {
+  const result = Table.formatColumns([
+    {id: 'column1', label: 'X'},
+    {id: 'column3', label: 'Z', sortable: false},
+  ]);
+
+  expect(result[0].disableSortBy).toBe(false);
+  expect(result[1].disableSortBy).toBe(true);
+});
+
 it('should support explicit id for nested columns', () => {
   const result = Table.formatColumns([
     {id: 'column1', label: 'X', columns: ['i', {id: 'columnJ', label: 'j'}]},
