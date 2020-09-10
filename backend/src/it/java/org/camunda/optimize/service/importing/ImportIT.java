@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
-import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.test.util.VariableTestUtil;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -26,7 +25,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.GET;
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.COMPLETED_USER_TASK_INSTANCE_ENDPOINT;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.DECISION_DEFINITION_ENDPOINT;

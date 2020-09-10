@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -80,7 +79,7 @@ public class CollectionRestServiceReportsIT extends AbstractIT {
       .executeAndReturnList(AuthorizedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    Assertions.assertThat(allReports)
+    assertThat(allReports)
       .isNotNull()
       .hasSize(1);
     ReportDefinitionDto reportDefinitionDto = allReports.get(0).getDefinitionDto();

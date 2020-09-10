@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.report.process.single.user_task.frequenc
 import com.google.common.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.assertj.core.api.Assertions;
 import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
@@ -23,8 +22,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
@@ -48,6 +47,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
@@ -57,11 +57,6 @@ import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.hamcrest.core.IsNull.nullValue;
 
 public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -91,25 +86,19 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processDefinition.getVersionAsString());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
 
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result), is(2L));
-    assertThat(
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(1.)
-    );
-    assertThat(
-      result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
-      is(1.)
-    );
-    assertThat(result.getInstanceCount(), is(1L));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(2);
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue()).isEqualTo(1.);
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
   @Test
@@ -130,25 +119,19 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processDefinition.getVersionAsString()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processDefinition.getKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processDefinition.getVersionAsString());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
 
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result), is(2L));
-    assertThat(
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(1.)
-    );
-    assertThat(
-      result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
-      is(1.)
-    );
-    assertThat(result.getInstanceCount(), is(1L));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(2);
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(2L);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue()).isEqualTo(1.);
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
   @Test
@@ -176,17 +159,11 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
     final ReportMapResultDto result = evaluationResponse.getResult();
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(2));
-    assertThat(
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(2.)
-    );
-    assertThat(
-      result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
-      is(1.)
-    );
-    assertThat(result.getInstanceCount(), is(1L));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue()).isEqualTo(2.);
+    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue()).isEqualTo(1.);
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
   @Test
@@ -208,21 +185,12 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(3));
-    assertThat(getExecutedFlowNodeCount(result), is(3L));
-    assertThat(
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(2.)
-    );
-    assertThat(
-      result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
-      is(1.)
-    );
-    assertThat(
-      result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
-      is(1.)
-    );
-    assertThat(result.getInstanceCount(), is(2L));
+    assertThat(result.getData()).hasSize(3);
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue()).isEqualTo(2.);
+    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue()).isEqualTo(1.);
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
 
   @Test
@@ -247,11 +215,11 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(resultDto.getInstanceCount(), is(2L));
-    assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(resultDto), is(1L));
-    assertThat(resultDto.getIsComplete(), is(false));
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).hasSize(1);
+    assertThat(getExecutedFlowNodeCount(resultDto)).isEqualTo(1L);
+    assertThat(resultDto.getIsComplete()).isFalse();
   }
 
   @Test
@@ -276,16 +244,13 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(3));
-    assertThat(getExecutedFlowNodeCount(result), is(3L));
+    assertThat(resultData).hasSize(3);
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
     final List<String> resultKeys = resultData.stream()
       .map(entry -> entry.getKey().toLowerCase())
       .collect(Collectors.toList());
-    assertThat(
-      resultKeys,
-      // expect descending order ignoring case
-      contains(resultKeys.stream().sorted(Comparator.reverseOrder()).toArray())
-    );
+    // expect descending order ignoring case
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.reverseOrder());
   }
 
   @Test
@@ -310,16 +275,13 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(3));
-    assertThat(getExecutedFlowNodeCount(result), is(3L));
+    assertThat(resultData).hasSize(3);
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
     final List<String> resultLabels = resultData.stream()
       .map(entry -> entry.getLabel().toLowerCase())
       .collect(Collectors.toList());
-    assertThat(
-      resultLabels,
-      // expect descending order ignoring case
-      contains(resultLabels.stream().sorted(Comparator.reverseOrder()).toArray())
-    );
+    // expect descending order ignoring case
+    assertThat(resultLabels).isSortedAccordingTo(Comparator.reverseOrder());
   }
 
   @Test
@@ -343,8 +305,8 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(3));
-    assertThat(getExecutedFlowNodeCount(result), is(3L));
+    assertThat(result.getData()).hasSize(3);
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(3L);
     assertCorrectValueOrdering(result);
   }
 
@@ -373,27 +335,15 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result2 = reportClient.evaluateMapReport(reportData2).getResult();
 
     // then
-    assertThat(result1.getData().size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result1), is(2L));
-    assertThat(
-      result1.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(2.)
-    );
-    assertThat(
-      result1.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue(),
-      is(2.)
-    );
+    assertThat(result1.getData()).hasSize(2);
+    assertThat(getExecutedFlowNodeCount(result1)).isEqualTo(2L);
+    assertThat(result1.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue()).isEqualTo(2.);
+    assertThat(result1.getEntryForKey(SECOND_CANDIDATE_GROUP).get().getValue()).isEqualTo(2.);
 
-    assertThat(result2.getData().size(), is(2));
-    assertThat(getExecutedFlowNodeCount(result2), is(2L));
-    assertThat(
-      result2.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(1.)
-    );
-    assertThat(
-      result2.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue(),
-      is(1.)
-    );
+    assertThat(result2.getData()).hasSize(2);
+    assertThat(getExecutedFlowNodeCount(result2)).isEqualTo(2L);
+    assertThat(result2.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue()).isEqualTo(1.);
+    assertThat(result2.getEntryForKey(getLocalisedUnassignedLabel()).get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -414,7 +364,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
   }
 
   @Test
@@ -426,7 +376,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(0));
+    assertThat(result.getData()).isEmpty();
   }
 
   public static Stream<Arguments> assigneeFilterScenarios() {
@@ -472,7 +422,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    Assertions.assertThat(result.getData())
+    assertThat(result.getData())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
@@ -518,7 +468,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    Assertions.assertThat(result.getData())
+    assertThat(result.getData())
       .extracting(MapResultEntryDto::getKey, MapResultEntryDto::getValue)
       .containsExactlyInAnyOrderElementsOf(expectedResult);
   }
@@ -574,19 +524,13 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(
-      (long) result.getData().size(),
-      is(executionStateTestValues.getExpectedFrequencyValues().values().stream().filter(Objects::nonNull).count())
-    );
-    assertThat(
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(executionStateTestValues.getExpectedFrequencyValues().get(FIRST_CANDIDATE_GROUP))
-    );
-    assertThat(
-      result.getEntryForKey(SECOND_CANDIDATE_GROUP).map(MapResultEntryDto::getValue).orElse(null),
-      is(executionStateTestValues.getExpectedFrequencyValues().get(SECOND_CANDIDATE_GROUP))
-    );
-    assertThat(result.getInstanceCount(), is(2L));
+    assertThat((long) result.getData().size()).isEqualTo(
+      executionStateTestValues.getExpectedFrequencyValues().values().stream().filter(Objects::nonNull).count());
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue()).isEqualTo(
+      executionStateTestValues.getExpectedFrequencyValues().get(FIRST_CANDIDATE_GROUP));
+    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP).map(MapResultEntryDto::getValue).orElse(null))
+      .isEqualTo(executionStateTestValues.getExpectedFrequencyValues().get(SECOND_CANDIDATE_GROUP));
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
   }
 
   @Test
@@ -617,12 +561,9 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
-    assertThat(
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(2.)
-    );
+    assertThat(result.getData()).hasSize(1);
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -644,12 +585,9 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
-    assertThat(
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(11.)
-    );
+    assertThat(result.getData()).hasSize(1);
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue()).isEqualTo(11.);
   }
 
   @Test
@@ -672,9 +610,9 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(0));
-    assertThat(getExecutedFlowNodeCount(result), is(0L));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).isEmpty();
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(0L);
 
     // when
     reportData = createReport(processDefinition);
@@ -682,13 +620,10 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
-    assertThat(getExecutedFlowNodeCount(result), is(1L));
-    assertThat(
-      result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue(),
-      is(1.)
-    );
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(1);
+    assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP).get().getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -701,7 +636,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -714,7 +649,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -727,7 +662,7 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   protected ProcessReportDataDto createReport(final String processDefinitionKey, final String version) {
@@ -804,13 +739,9 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     final List<Double> bucketValuesWithoutNullValue = bucketValues.stream()
       .filter(Objects::nonNull)
       .collect(Collectors.toList());
-    assertThat(
-      bucketValuesWithoutNullValue,
-      contains(bucketValuesWithoutNullValue.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
-    long notExecutedFlowNodes = resultData.size() - getExecutedFlowNodeCount(result);
+    assertThat(bucketValuesWithoutNullValue).isSortedAccordingTo(Comparator.naturalOrder());
     for (int i = resultData.size() - 1; i > getExecutedFlowNodeCount(result) - 1; i--) {
-      assertThat(bucketValues.get(i), nullValue());
+      assertThat(bucketValues.get(i)).isNull();
     }
   }
 

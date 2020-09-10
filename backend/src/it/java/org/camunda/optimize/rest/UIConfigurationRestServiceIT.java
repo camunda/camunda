@@ -6,7 +6,6 @@
 package org.camunda.optimize.rest;
 
 import com.google.common.collect.Sets;
-import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.ui_configuration.HeaderCustomizationDto;
@@ -161,7 +160,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     List<String> allWebhooks = uiConfigurationClient.getUIConfiguration().getWebhooks();
 
     // then
-    Assertions.assertThat(allWebhooks).containsExactly(WEBHOOK_1_NAME, WEBHOOK_2_NAME);
+    assertThat(allWebhooks).containsExactly(WEBHOOK_1_NAME, WEBHOOK_2_NAME);
   }
 
   @Test

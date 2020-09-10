@@ -214,14 +214,14 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       .executeAndReturnList(AuthorizedReportDefinitionDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    Assertions.assertThat(reports)
+    assertThat(reports)
       .isNotNull()
       .hasSize(1);
     ReportDefinitionDto definitionDto = reports.get(0).getDefinitionDto();
-    Assertions.assertThat(definitionDto.getCreated()).isEqualTo(now);
-    Assertions.assertThat(definitionDto.getLastModified()).isEqualTo(now);
-    Assertions.assertThat(getOffsetDiffInHours(definitionDto.getCreated(), now)).isEqualTo(1.);
-    Assertions.assertThat(getOffsetDiffInHours(definitionDto.getLastModified(), now)).isEqualTo(1.);
+    assertThat(definitionDto.getCreated()).isEqualTo(now);
+    assertThat(definitionDto.getLastModified()).isEqualTo(now);
+    assertThat(getOffsetDiffInHours(definitionDto.getCreated(), now)).isEqualTo(1.);
+    assertThat(getOffsetDiffInHours(definitionDto.getLastModified(), now)).isEqualTo(1.);
   }
 
   @Test
@@ -355,11 +355,11 @@ public class ReportRestServiceIT extends AbstractReportRestServiceIT {
       .execute(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    Assertions.assertThat(report).isNotNull();
-    Assertions.assertThat(report.getCreated()).isEqualTo(now);
-    Assertions.assertThat(report.getLastModified()).isEqualTo(now);
-    Assertions.assertThat(getOffsetDiffInHours(report.getCreated(), now)).isEqualTo(1.);
-    Assertions.assertThat(getOffsetDiffInHours(report.getLastModified(), now)).isEqualTo(1.);
+    assertThat(report).isNotNull();
+    assertThat(report.getCreated()).isEqualTo(now);
+    assertThat(report.getLastModified()).isEqualTo(now);
+    assertThat(getOffsetDiffInHours(report.getCreated(), now)).isEqualTo(1.);
+    assertThat(getOffsetDiffInHours(report.getLastModified(), now)).isEqualTo(1.);
   }
 
   @Test

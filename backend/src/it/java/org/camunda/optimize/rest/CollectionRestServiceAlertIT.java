@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.rest;
 
-import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractAlertIT;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -74,7 +73,7 @@ public class CollectionRestServiceAlertIT extends AbstractAlertIT {
       .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    Assertions.assertThat(allAlerts)
+    assertThat(allAlerts)
       .isNotNull()
       .hasSize(1);
     AlertDefinitionDto alertDefinitionDto = allAlerts.get(0);

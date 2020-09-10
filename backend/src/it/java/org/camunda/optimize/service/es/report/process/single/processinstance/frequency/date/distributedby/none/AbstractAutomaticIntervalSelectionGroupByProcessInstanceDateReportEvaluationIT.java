@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.date.distributedby.none;
 
-import org.assertj.core.api.Assertions;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
@@ -31,14 +30,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThan;
 
 public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDateReportEvaluationIT
   extends AbstractIT {
@@ -78,11 +74,11 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     ReportMapResultDto result = reportClient.evaluateReportAndReturnMapResult(reportData);
 
     // then
-    Assertions.assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    assertThat(resultData.get(0).getValue(), is(1.));
-    assertThat(resultData.get(resultData.size() - 1).getValue(), is(2.));
+    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
+    assertThat(resultData.get(resultData.size() - 1).getValue()).isEqualTo(2.);
   }
 
   @Test
@@ -111,10 +107,10 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Double::intValue).sum(), is(3));
-    assertThat(resultData.get(0).getValue(), is(1.));
-    assertThat(resultData.get(resultData.size() - 1).getValue(), is(1.));
+    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(resultData.stream().map(MapResultEntryDto::getValue).mapToInt(Double::intValue).sum()).isEqualTo(3);
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
+    assertThat(resultData.get(resultData.size() - 1).getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -129,7 +125,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(0));
+    assertThat(resultData).isEmpty();
   }
 
   @Test
@@ -147,11 +143,11 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
 
     // then the single data point should be grouped by month
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(1));
+    assertThat(resultData).hasSize(1);
     ZonedDateTime nowStrippedToMonth = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.MONTHS);
     String nowStrippedToMonthAsString = localDateTimeToString(nowStrippedToMonth);
-    assertThat(resultData.get(0).getKey(), is(nowStrippedToMonthAsString));
-    assertThat(resultData.get(0).getValue(), is(1.));
+    assertThat(resultData.get(0).getKey()).isEqualTo(nowStrippedToMonthAsString);
+    assertThat(resultData.get(0).getValue()).isEqualTo(1.);
   }
 
   @Test
@@ -214,7 +210,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
   }
 
   @Test
-  public void combinedReportsGroupedByStartAndEndDate() throws Exception {
+  public void combinedReportsGroupedByStartAndEndDate() {
     // given
     ZonedDateTime now = ZonedDateTime.now();
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
@@ -265,11 +261,11 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
     ZonedDateTime endRange,
     Map<String, AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto>> resultMap,
     int resultSize) {
-    assertThat(resultMap.size(), is(resultSize));
+    assertThat(resultMap).hasSize(resultSize);
     for (AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> result : resultMap.values()) {
       final List<MapResultEntryDto> resultData = result.getResult().getData();
-      assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-      assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startRange)));
+      assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+      assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startRange));
       assertIsInRangeOfLastInterval(resultData.get(resultData.size() - 1).getKey(), startRange, endRange);
     }
   }
@@ -279,11 +275,9 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
                                              ZonedDateTime endTotal) {
     long totalDuration = endTotal.toInstant().toEpochMilli() - startTotal.toInstant().toEpochMilli();
     long interval = totalDuration / NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-    assertThat(
-      lastIntervalAsString,
-      greaterThanOrEqualTo(localDateTimeToString(endTotal.minus(interval, ChronoUnit.MILLIS)))
-    );
-    assertThat(lastIntervalAsString, lessThan(localDateTimeToString(endTotal)));
+    assertThat(lastIntervalAsString)
+      .isGreaterThanOrEqualTo(localDateTimeToString(endTotal.minus(interval, ChronoUnit.MILLIS)));
+    assertThat(lastIntervalAsString).isLessThan(localDateTimeToString(endTotal));
   }
 
   private String createNewSingleReport(ProcessDefinitionEngineDto engineDto) {

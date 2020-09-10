@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_END_TYPE;
 import static org.camunda.optimize.service.events.CamundaEventService.PROCESS_START_TYPE;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceEndEventSuffix;
@@ -34,7 +34,6 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class CamundaActivityEventImportIT extends AbstractImportIT {
 

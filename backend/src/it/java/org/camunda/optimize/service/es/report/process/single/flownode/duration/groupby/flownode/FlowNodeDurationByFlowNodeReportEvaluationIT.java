@@ -8,7 +8,6 @@ package org.camunda.optimize.service.es.report.process.single.flownode.duration.
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
-import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -492,8 +491,8 @@ public class FlowNodeDurationByFlowNodeReportEvaluationIT extends AbstractProces
       getReportEvaluationResult(definitionKey, ALL_VERSIONS, tenantListOtherTenantFirst);
 
     // then
-    Assertions.assertThat(resultNoneTenantFirst.getData()).isNotEmpty();
-    Assertions.assertThat(resultOtherTenantFirst.getData()).isEqualTo(resultNoneTenantFirst.getData());
+    assertThat(resultNoneTenantFirst.getData()).isNotEmpty();
+    assertThat(resultOtherTenantFirst.getData()).isEqualTo(resultNoneTenantFirst.getData());
   }
 
   @SneakyThrows

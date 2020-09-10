@@ -20,10 +20,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class MixedFilterIT extends AbstractFilterIT {
 
@@ -35,12 +34,15 @@ public class MixedFilterIT extends AbstractFilterIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", "value");
 
-      // this is the process instance that should be filtered
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    // this is the process instance that should be filtered
+    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId(),
+      variables
+    );
     final String expectedInstanceId = instanceEngineDto.getId();
     engineIntegrationExtension.finishAllRunningUserTasks(expectedInstanceId);
 
-      // wrong not executed flow node
+    // wrong not executed flow node
     engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
 
     // wrong variable
@@ -53,7 +55,8 @@ public class MixedFilterIT extends AbstractFilterIT {
     variables.put("var", "value");
     instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
-    OffsetDateTime start = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
+    OffsetDateTime start = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId())
+      .getStartTime();
     OffsetDateTime end = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId()).getEndTime();
     engineDatabaseExtension.changeProcessInstanceStartDate(instanceEngineDto.getId(), start.plusDays(2));
     engineDatabaseExtension.changeProcessInstanceEndDate(instanceEngineDto.getId(), end.plusDays(2));
@@ -97,7 +100,10 @@ public class MixedFilterIT extends AbstractFilterIT {
     variables.put("var", "value");
 
     // this is the process instance that should be filtered
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
+    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId(),
+      variables
+    );
     final String expectedInstanceId = instanceEngineDto.getId();
 
     // wrong variable
@@ -110,7 +116,8 @@ public class MixedFilterIT extends AbstractFilterIT {
     variables.put("var", "value");
     instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId(), variables);
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
-    OffsetDateTime start = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
+    OffsetDateTime start = engineIntegrationExtension.getHistoricProcessInstance(instanceEngineDto.getId())
+      .getStartTime();
     engineDatabaseExtension.changeProcessInstanceStartDate(instanceEngineDto.getId(), start.plusDays(2));
     importAllEngineEntitiesFromScratch();
 
@@ -139,7 +146,8 @@ public class MixedFilterIT extends AbstractFilterIT {
     assertThat(rawDataReportResultDto.getData().get(0).getProcessInstanceId()).isEqualTo(expectedInstanceId);
   }
 
-  protected RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<ProcessFilterDto<?>> filter) {
+  protected RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
+                                                                   List<ProcessFilterDto<?>> filter) {
     ProcessReportDataDto reportData =
       createReportWithCompletedInstancesFilter(processDefinition);
     reportData.setFilter(filter);

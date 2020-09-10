@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.variable;
 
 import lombok.SneakyThrows;
-import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -1296,7 +1295,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    Assertions.assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getIsComplete()).isTrue();
     List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();

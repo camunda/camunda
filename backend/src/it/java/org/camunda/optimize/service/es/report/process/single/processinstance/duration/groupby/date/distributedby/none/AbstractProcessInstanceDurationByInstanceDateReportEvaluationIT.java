@@ -5,7 +5,6 @@
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.date.distributedby.none;
 
-import org.assertj.core.api.Assertions;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -49,6 +48,7 @@ import java.util.stream.IntStream;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.time.temporal.ChronoUnit.MILLIS;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.LESS_THAN;
 import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
@@ -58,11 +58,6 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluationIT
   extends AbstractProcessDefinitionIT {
@@ -127,21 +122,22 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
-    assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
-    assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(), is(GroupByDateUnit.DAY));
-    assertThat(evaluationResponse.getResult().getInstanceCount(), is(1L));
-    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
-    assertThat(evaluationResponse.getResult().getData().size(), is(1));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
+    assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy()
+      .getValue()).getUnit()).isEqualTo(GroupByDateUnit.DAY);
+    assertThat(evaluationResponse.getResult().getInstanceCount()).isEqualTo(1L);
+    assertThat(evaluationResponse.getResult().getData()).isNotNull();
+    assertThat(evaluationResponse.getResult().getData()).hasSize(1);
 
     final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(1000.));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
 
   }
 
@@ -169,20 +165,21 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     // then
     final ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
-    assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
-    assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(), is(GroupByDateUnit.DAY));
-    assertThat(evaluationResponse.getResult().getData(), is(notNullValue()));
-    assertThat(evaluationResponse.getResult().getData().size(), is(1));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions()).contains(processInstanceDto.getProcessDefinitionVersion());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
+    assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy()
+      .getValue()).getUnit()).isEqualTo(GroupByDateUnit.DAY);
+    assertThat(evaluationResponse.getResult().getData()).isNotNull();
+    assertThat(evaluationResponse.getResult().getData()).hasSize(1);
 
     final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultData.get(0).getValue(), is(1000.));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
   }
 
   @Test
@@ -247,13 +244,10 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(
-      resultKeys,
-      // expect descending order
-      contains(resultKeys.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
+    // expect descending order
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
@@ -287,15 +281,12 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getIsComplete(), is(true));
+    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
     final List<String> resultKeys = resultData.stream().map(MapResultEntryDto::getKey).collect(Collectors.toList());
-    assertThat(
-      resultKeys,
-      // expect ascending order
-      contains(resultKeys.stream().sorted(Comparator.naturalOrder()).toArray())
-    );
+    // expect ascending order
+    assertThat(resultKeys).isSortedAccordingTo(Comparator.naturalOrder());
   }
 
   @Test
@@ -336,16 +327,13 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
       // then
-      assertThat(result.getIsComplete(), is(true));
+      assertThat(result.getIsComplete()).isTrue();
       final List<MapResultEntryDto> resultData = result.getData();
-      assertThat(resultData.size(), is(3));
+      assertThat(resultData).hasSize(3);
       final List<Double> bucketValues = resultData.stream()
         .map(MapResultEntryDto::getValue)
         .collect(Collectors.toList());
-      assertThat(
-        bucketValues,
-        contains(bucketValues.stream().sorted(Comparator.naturalOrder()).toArray())
-      );
+      assertThat(bucketValues).isSortedAccordingTo(Comparator.naturalOrder());
     });
   }
 
@@ -387,8 +375,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     // then
     List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(2));
-    assertThat(result.getIsComplete(), is(false));
+    assertThat(resultData).hasSize(2);
+    assertThat(result.getIsComplete()).isFalse();
   }
 
   @Test
@@ -420,17 +408,15 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     // then
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(3));
+    assertThat(resultData).hasSize(3);
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
-    assertThat(resultData.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(
-      resultData.get(0).getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.))
-    );
-    assertThat(resultData.get(1).getKey(), is(localDateTimeToString(startOfToday.minusDays(1))));
-    assertThat(resultData.get(1).getValue(), is(nullValue()));
-    assertThat(resultData.get(2).getKey(), is(localDateTimeToString(startOfToday.minusDays(2))));
-    assertThat(resultData.get(2).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000.)));
+    assertThat(resultData.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultData.get(0).getValue())
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.));
+    assertThat(resultData.get(1).getKey()).isEqualTo(localDateTimeToString(startOfToday.minusDays(1)));
+    assertThat(resultData.get(1).getValue()).isNull();
+    assertThat(resultData.get(2).getKey()).isEqualTo(localDateTimeToString(startOfToday.minusDays(2)));
+    assertThat(resultData.get(2).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
 
   @Test
@@ -461,18 +447,15 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    Assertions.assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getIsComplete()).isTrue();
     final List<MapResultEntryDto> resultData = result.getData();
-    assertThat(resultData.size(), is(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION));
-    assertThat(
-      resultData.get(0).getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.))
-    );
-    assertThat(resultData.stream().map(MapResultEntryDto::getValue).filter(v -> v != null && v > 0L).count(), is(2L));
-    assertThat(
-      resultData.get(resultData.size() - 1).getValue(),
-      is(calculateExpectedValueGivenDurationsDefaultAggr(1000.))
-    );
+    assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+    assertThat(resultData.get(0).getValue())
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000., 9000., 2000.));
+    assertThat(resultData.stream().map(MapResultEntryDto::getValue).filter(v -> v != null && v > 0L).count())
+      .isEqualTo(2L);
+    assertThat(resultData.get(resultData.size() - 1).getValue())
+      .isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
 
   @Test
@@ -518,9 +501,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     // then
     final List<MapResultEntryDto> resultData = resultDto.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(1000.));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1);
+    assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
   }
 
   @Test
@@ -568,9 +551,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     // then
     final List<MapResultEntryDto> resultData = resultDto.getData();
-    assertThat(resultData, is(notNullValue()));
-    assertThat(resultData.size(), is(1));
-    assertThat(resultData.get(0).getValue(), is(1000.));
+    assertThat(resultData).isNotNull();
+    assertThat(resultData).hasSize(1);
+    assertThat(resultData.get(0).getValue()).isEqualTo(1000.);
   }
 
   @ParameterizedTest
@@ -594,7 +577,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
+    assertThat(result.getData()).isNotNull();
     assertDateResultMap(result.getData(), 8, now, mapToChronoUnit(unit));
   }
 
@@ -620,9 +603,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     // then
     final List<MapResultEntryDto> resultMap = result.getData();
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
-    assertThat(resultMap.size(), is(1));
-    assertThat(resultMap.get(0).getKey(), is(localDateTimeToString(startOfToday)));
-    assertThat(resultMap.get(0).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000.)));
+    assertThat(resultMap).hasSize(1);
+    assertThat(resultMap.get(0).getKey()).isEqualTo(localDateTimeToString(startOfToday));
+    assertThat(resultMap.get(0).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
   }
 
   @Test
@@ -649,7 +632,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is((long) selectedTenants.size()));
+    assertThat(result.getInstanceCount()).isEqualTo((long) selectedTenants.size());
   }
 
   @Test
@@ -677,8 +660,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(1));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(1);
 
     // when
     reportData = TemplatedProcessReportDataBuilder
@@ -693,8 +676,8 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     result = reportClient.evaluateMapReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData().size(), is(0));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).isEmpty();
   }
 
   private List<ProcessFilterDto<?>> createVariableFilter(String value) {
@@ -726,7 +709,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -748,7 +731,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -770,7 +753,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
@@ -801,11 +784,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     aggregationTypes.forEach((AggregationType aggType) -> {
       final List<MapResultEntryDto> resultData = results.get(aggType).getData();
-      assertThat(resultData, is(notNullValue()));
-      assertThat(
-        resultData.get(0).getValue(),
-        is(calculateExpectedValueGivenDurations(expectedDurations).get(aggType))
-      );
+      assertThat(resultData).isNotNull();
+      assertThat(resultData.get(0).getValue())
+        .isEqualTo(calculateExpectedValueGivenDurations(expectedDurations).get(aggType));
     });
   }
 
@@ -813,13 +794,13 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
                                    int size,
                                    OffsetDateTime now,
                                    ChronoUnit unit) {
-    assertThat(resultData.size(), is(size));
+    assertThat(resultData).hasSize(size);
     final ZonedDateTime finalStartOfUnit = truncateToStartOfUnit(now, unit);
     IntStream.range(0, size)
       .forEach(i -> {
         final String expectedDateString = localDateTimeToString(finalStartOfUnit.minus(i, unit));
-        assertThat(resultData.get(i).getKey(), is(expectedDateString));
-        assertThat(resultData.get(i).getValue(), is(calculateExpectedValueGivenDurationsDefaultAggr(1000.)));
+        assertThat(resultData.get(i).getKey()).isEqualTo(expectedDateString);
+        assertThat(resultData.get(i).getValue()).isEqualTo(calculateExpectedValueGivenDurationsDefaultAggr(1000.));
       });
   }
 
