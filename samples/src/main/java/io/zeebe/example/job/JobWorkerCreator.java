@@ -29,20 +29,18 @@ public final class JobWorkerCreator {
 
       System.out.println("Opening job worker.");
 
-      final JobWorker workerRegistration =
+      try (final JobWorker workerRegistration =
           client
               .newWorker()
               .jobType(jobType)
               .handler(new ExampleJobHandler())
               .timeout(Duration.ofSeconds(10))
-              .open();
+              .open()) {
+        System.out.println("Job worker opened and receiving jobs.");
 
-      System.out.println("Job worker opened and receiving jobs.");
-
-      // call workerRegistration.close() to close it
-
-      // run until System.in receives exit command
-      waitUntilSystemInput("exit");
+        // run until System.in receives exit command
+        waitUntilSystemInput("exit");
+      }
     }
   }
 

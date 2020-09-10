@@ -273,8 +273,8 @@ public class App
     {
         // after the workflow instance is created
 
-        final JobWorker jobWorker = client.newWorker()
-            .jobType("payment-service")
+        try(final JobWorker jobWorker = client.newWorker()) {
+            jobWorker.jobType("payment-service")
             .handler((jobClient, job) ->
             {
                 System.out.println("Collect money");
@@ -287,12 +287,13 @@ public class App
             })
             .open();
 
-        // waiting for the jobs
+            // waiting for the jobs
+            // Don't close, we need to keep polling to get work
+            // It will be close after last statement in try-with resources block
 
-        // Don't close, we need to keep polling to get work
-        // jobWorker.close();
+            // ...
+        }
 
-        // ...
     }
 }
 ```

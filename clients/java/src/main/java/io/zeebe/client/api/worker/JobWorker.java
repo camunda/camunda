@@ -20,7 +20,7 @@ package io.zeebe.client.api.worker;
  * open, the client continuously receives jobs from the broker and hands them to a registered {@link
  * JobHandler}.
  */
-public interface JobWorker {
+public interface JobWorker extends AutoCloseable {
   /**
    * @return true if this registration is currently active and work items are being received for it
    */
@@ -35,5 +35,6 @@ public interface JobWorker {
    * Closes this registration and stops receiving new work items. Blocks until all previously
    * received items have been handed to the worker.
    */
+  @Override
   void close();
 }
