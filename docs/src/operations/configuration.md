@@ -145,6 +145,17 @@ To enable Google Stackdriver compatible JSON logging you can set the environment
 {{#include ../../../dist/src/main/config/log4j2.xml}}
 ```
 
+### Change log level dynamically
+
+Zeebe brokers expose a [Spring Boot Actuators web endpoint](https://docs.spring.io/spring-boot/docs/current/actuator-api/html/#loggers)
+ for configuring loggers dynamically. 
+To change the log level of a logger make a `POST` request to the `/actuator/loggers/{logger.name}` endpoint as shown in the example below.
+Change `io.zeebe` to the required logger name and `debug` to required log level.
+
+```
+curl 'http://localhost:9600/actuator/loggers/io.zeebe' -i -X POST -H 'Content-Type: application/json' -d '{"configuredLevel":"debug"}'
+```
+
 ## Health Probes
 Health probes are set to sensible defaults which cover common use cases.
 
