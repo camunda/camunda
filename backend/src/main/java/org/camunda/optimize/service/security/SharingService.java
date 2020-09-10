@@ -17,6 +17,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.SharingReader;
 import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
@@ -179,42 +180,44 @@ public class SharingService implements ReportReferencingService, DashboardRefere
     sharingWriter.deleteDashboardShare(shareId);
   }
 
-  public AuthorizedReportEvaluationResult evaluateReportShare(final String shareId, final ZoneId timezone) {
+  public AuthorizedReportEvaluationResult evaluateReportShare(final String shareId, final ZoneId timezone,
+                                                              final PaginationDto paginationDto) {
     Optional<ReportShareDto> optionalReportShare = sharingReader.getReportShare(shareId);
 
     return optionalReportShare
-      .map(share -> evaluateReport(share.getReportId(), timezone))
+      .map(share -> evaluateReport(share.getReportId(), timezone, paginationDto))
       .orElseThrow(() -> new OptimizeRuntimeException("share [" + shareId + "] does not exist or is of unsupported " +
                                                         "type"));
   }
 
   public AuthorizedReportEvaluationResult evaluateReportForSharedDashboard(final String dashboardShareId,
                                                                            final String reportId,
-                                                                           final ZoneId timezone) {
-    Optional<DashboardShareDto> sharedDashboard = sharingReader.findDashboardShare(dashboardShareId);
-    AuthorizedReportEvaluationResult result;
-
-    DashboardShareDto share = sharedDashboard.orElseThrow(
-      () -> new OptimizeRuntimeException(String.format("Could not find dashboard share for id [%s]", dashboardShareId))
-    );
-    DashboardDefinitionDto dashboard = dashboardService.getDashboardDefinitionAsService(share.getDashboardId());
-    boolean hasGivenReport = dashboard.getReports().stream().anyMatch(r -> Objects.equals(r.getId(), reportId));
-    if (hasGivenReport) {
-      result = evaluateReport(reportId, timezone);
-    } else {
+                                                                           final ZoneId timezone,
+                                                                           final PaginationDto paginationDto) {
+    final DashboardDefinitionDto dashboard = sharingReader.findDashboardShare(dashboardShareId)
+      .map(share -> dashboardService.getDashboardDefinitionAsService(share.getDashboardId()))
+      .orElseThrow(() -> new OptimizeRuntimeException(String.format(
+        "Could not find dashboard share for id [%s]",
+        dashboardShareId
+      )));
+    boolean dashboardContainsReport = dashboard.getReports()
+      .stream()
+      .anyMatch(r -> Objects.equals(r.getId(), reportId));
+    if (!dashboardContainsReport) {
       String reason = "Cannot evaluate report [" + reportId +
         "] for shared dashboard id [" + dashboardShareId + "]. Given report is not contained in dashboard.";
       log.error(reason);
       throw new OptimizeRuntimeException(reason);
     }
-
-    return result;
+    return evaluateReport(reportId, timezone, paginationDto);
   }
 
-  public AuthorizedReportEvaluationResult evaluateReport(String reportId, final ZoneId timezone) {
+  public AuthorizedReportEvaluationResult evaluateReport(String reportId, final ZoneId timezone,
+                                                         final PaginationDto paginationDto) {
     try {
       final ReportEvaluationInfo reportEvaluationInfo = ReportEvaluationInfo.builder(reportId)
         .timezone(timezone)
+        .pagination(paginationDto)
         .build();
       return reportEvaluationHandler.evaluateReport(reportEvaluationInfo);
     } catch (ReportEvaluationException e) {

@@ -13,6 +13,8 @@ import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
+import org.camunda.optimize.dto.optimize.rest.pagination.PaginationRequestDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto;
 import org.camunda.optimize.rest.mapper.DashboardRestMapper;
 import org.camunda.optimize.rest.mapper.ReportRestMapper;
@@ -23,6 +25,8 @@ import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
+import javax.validation.Valid;
+import javax.ws.rs.BeanParam;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -115,10 +119,15 @@ public class SharingRestService {
   @Path("/report/{shareId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedEvaluationResultDto evaluateReport(@Context ContainerRequestContext requestContext,
-                                                      @PathParam("shareId") String reportShareId) {
+                                                      @PathParam("shareId") String reportShareId,
+                                                      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     final ZoneId timezone = extractTimezone(requestContext);
     return reportRestMapper.mapToEvaluationResultDto(
-      sharingService.evaluateReportShare(reportShareId, timezone)
+      sharingService.evaluateReportShare(
+        reportShareId,
+        timezone,
+        PaginationDto.fromPaginationRequest(paginationRequestDto)
+      )
     );
   }
 
@@ -127,11 +136,16 @@ public class SharingRestService {
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedEvaluationResultDto evaluateReport(@Context ContainerRequestContext requestContext,
                                                       @PathParam("shareId") String dashboardShareId,
-                                                      @PathParam("reportId") String reportId
-  ) {
+                                                      @PathParam("reportId") String reportId,
+                                                      @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     final ZoneId timezone = extractTimezone(requestContext);
     return reportRestMapper.mapToEvaluationResultDto(
-      sharingService.evaluateReportForSharedDashboard(dashboardShareId, reportId, timezone)
+      sharingService.evaluateReportForSharedDashboard(
+        dashboardShareId,
+        reportId,
+        timezone,
+        PaginationDto.fromPaginationRequest(paginationRequestDto)
+      )
     );
   }
 

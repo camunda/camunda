@@ -14,10 +14,7 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class SharingRestServiceIT extends AbstractSharingIT {
 
@@ -31,7 +28,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -45,7 +42,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -58,28 +55,28 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void createNewReportShare() {
     //given
-    String reportId = createReport();
+    String reportId = createReportWithInstance();
     ReportShareDto share = createReportShare(reportId);
 
     // when
     Response response = sharingClient.createReportShareResponse(share);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
-    String id =response.readEntity(String.class);
-    assertThat(id, is(notNullValue()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+    String id = response.readEntity(String.class);
+    assertThat(id).isNotNull();
   }
 
   @Test
   public void createNewReportShareWithSharingDisabled() {
     //given
-    String reportId = createReport();
+    String reportId = createReportWithInstance();
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(false);
     ReportShareDto share = createReportShare(reportId);
 
@@ -87,7 +84,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     Response response = sharingClient.createReportShareResponse(share);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -102,10 +99,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     Response response = sharingClient.createDashboardShareResponse(sharingDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     String id =
       response.readEntity(String.class);
-    assertThat(id, is(notNullValue()));
+    assertThat(id).isNotNull();
   }
 
   @Test
@@ -118,19 +115,19 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void deleteNonExistingReportShare() {
     // when
     Response response = embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildDeleteReportShareRequest("nonExistingId")
-            .execute();
+      .getRequestExecutor()
+      .buildDeleteReportShareRequest("nonExistingId")
+      .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
@@ -143,25 +140,25 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void deleteNonExistingDashboardShare() {
     // when
     Response response = embeddedOptimizeExtension
-            .getRequestExecutor()
-            .buildDeleteDashboardShareRequest("nonExistingId")
-            .execute();
+      .getRequestExecutor()
+      .buildDeleteDashboardShareRequest("nonExistingId")
+      .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NOT_FOUND.getStatusCode());
   }
 
   @Test
   public void deleteReportShare() {
     //given
-    String reportId = createReport();
+    String reportId = createReportWithInstance();
     String id = addShareForReport(reportId);
 
     // when
@@ -172,14 +169,14 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
-    assertThat(getShareForReport(FAKE_REPORT_ID), is(nullValue()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(getShareForReport(FAKE_REPORT_ID)).isNull();
   }
 
   @Test
   public void deleteDashboardShare() {
     //given
-    String reportId = createReport();
+    String reportId = createReportWithInstance();
     String dashboardWithReport = createDashboardWithReport(reportId);
     String id = addShareForDashboard(dashboardWithReport);
 
@@ -191,22 +188,22 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.NO_CONTENT.getStatusCode()));
-    assertThat(getShareForReport(reportId), is(nullValue()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
+    assertThat(getShareForReport(reportId)).isNull();
   }
 
   @Test
   public void findShareForReport() {
     //given
-    String reportId = createReport();
+    String reportId = createReportWithInstance();
     String id = addShareForReport(reportId);
 
     //when
     ReportShareDto share = getShareForReport(reportId);
 
     //then
-    assertThat(share, is(notNullValue()));
-    assertThat(share.getId(), is(id));
+    assertThat(share).isNotNull();
+    assertThat(share.getId()).isEqualTo(id);
   }
 
   @Test
@@ -222,13 +219,13 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void findShareForSharedDashboard() {
     //given
-    String reportId = createReport();
+    String reportId = createReportWithInstance();
     String dashboardWithReport = createDashboardWithReport(reportId);
     String id = addShareForDashboard(dashboardWithReport);
 
@@ -236,14 +233,14 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     DashboardShareDto share = findShareForDashboard(dashboardWithReport).readEntity(DashboardShareDto.class);
 
     //then
-    assertThat(share, is(notNullValue()));
-    assertThat(share.getId(), is(id));
+    assertThat(share).isNotNull();
+    assertThat(share.getId()).isEqualTo(id);
   }
 
   @Test
   public void evaluateSharedDashboard() {
     //given
-    String reportId = createReport();
+    String reportId = createReportWithInstance();
     String dashboardId = createDashboardWithReport(reportId);
     String dashboardShareId = addShareForDashboard(dashboardId);
 
@@ -251,10 +248,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     DashboardDefinitionDto dashboardShareDto = sharingClient.evaluateDashboard(dashboardShareId);
 
     //then
-    assertThat(dashboardShareDto, is(notNullValue()));
-    assertThat(dashboardShareDto.getId(), is(dashboardId));
-    assertThat(dashboardShareDto.getReports(), is(notNullValue()));
-    assertThat(dashboardShareDto.getReports().size(), is(1));
+    assertThat(dashboardShareDto).isNotNull();
+    assertThat(dashboardShareDto.getId()).isEqualTo(dashboardId);
+    assertThat(dashboardShareDto.getReports()).isNotNull();
+    assertThat(dashboardShareDto.getReports()).hasSize(1);
 
     // when
     String reportShareId = dashboardShareDto.getReports().get(0).getId();
@@ -271,7 +268,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void findShareForDashboardWithoutAuthentication() {
     //given
-    String reportId = createReport();
+    String reportId = createReportWithInstance();
     String dashboardWithReport = createDashboardWithReport(reportId);
     addShareForDashboard(dashboardWithReport);
 
@@ -283,7 +280,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
@@ -296,7 +293,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
       .execute();
 
     //then
-    assertThat(response.getStatus(), is(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
   @Test
@@ -310,13 +307,13 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         .execute();
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(Response.Status.UNAUTHORIZED.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.UNAUTHORIZED.getStatusCode());
   }
 
   @Test
   public void checkSharingAuthorizationIsOkay() {
     //given
-    String reportId = createReport();
+    String reportId = createReportWithInstance();
     String dashboardId = createDashboardWithReport(reportId);
 
     // when
@@ -327,7 +324,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
   }
 
   @Test
@@ -335,7 +332,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     //given
     engineIntegrationExtension.addUser("kermit", "kermit");
     engineIntegrationExtension.grantUserOptimizeAccess("kermit");
-    String reportId = createReport();
+    String reportId = createReportWithInstance();
     String dashboardId = createDashboardWithReport(reportId);
 
     // when
@@ -347,7 +344,7 @@ public class SharingRestServiceIT extends AbstractSharingIT {
         .execute();
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   private Response findShareForDashboard(String dashboardId) {

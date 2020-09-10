@@ -698,14 +698,27 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildEvaluateSharedReportRequest(String shareId) {
+    return buildEvaluateSharedReportRequest(shareId, null);
+  }
+
+  public OptimizeRequestExecutor buildEvaluateSharedReportRequest(String shareId,
+                                                                  PaginationRequestDto paginationRequestDto) {
     this.path = "share/report/" + shareId + "/evaluate";
     this.method = GET;
+    Optional.ofNullable(paginationRequestDto).ifPresent(pagination -> addQueryParams(extractPagination(pagination)));
     return this;
   }
 
   public OptimizeRequestExecutor buildEvaluateSharedDashboardReportRequest(String dashboardShareId, String reportId) {
+    return buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId, null);
+  }
+
+  public OptimizeRequestExecutor buildEvaluateSharedDashboardReportRequest(String dashboardShareId,
+                                                                           String reportId,
+                                                                           PaginationRequestDto paginationRequestDto) {
     this.path = "share/dashboard/" + dashboardShareId + "/report/" + reportId + "/evaluate";
     this.method = GET;
+    Optional.ofNullable(paginationRequestDto).ifPresent(pagination -> addQueryParams(extractPagination(pagination)));
     return this;
   }
 

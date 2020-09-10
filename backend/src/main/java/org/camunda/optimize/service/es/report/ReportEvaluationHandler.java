@@ -64,11 +64,11 @@ public abstract class ReportEvaluationHandler {
         evaluationInfo.getUserId(),
         evaluationInfo.getReport().getName()
       )));
-    final ReportEvaluationResult result;
-    if (!evaluationInfo.getReport().isCombined()) {
-      result = evaluateSingleReportWithErrorCheck(evaluationInfo, currentUserRole);
-    } else {
+    final ReportEvaluationResult<?, ?> result;
+    if (evaluationInfo.getReport().isCombined()) {
       result = evaluateCombinedReport(evaluationInfo, currentUserRole);
+    } else {
+      result = evaluateSingleReportWithErrorCheck(evaluationInfo, currentUserRole);
     }
     return new AuthorizedReportEvaluationResult(result, currentUserRole);
   }

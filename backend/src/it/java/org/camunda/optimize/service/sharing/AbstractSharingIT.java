@@ -25,53 +25,66 @@ import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public abstract class AbstractSharingIT extends AbstractIT {
 
   protected static final String FAKE_REPORT_ID = "fake";
 
-  protected String createReport() {
-    return createReport("aProcess");
+  protected String createReportWithInstance() {
+    return createReportWithInstance("aProcess");
   }
 
-  protected String createReport(String definitionKey) {
+  protected String createReportWithInstance(String definitionKey) {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess(definitionKey);
     importAllEngineEntitiesFromScratch();
+    return createReport(processInstance.getProcessDefinitionKey(), Collections.singletonList("ALL"));
+  }
 
-    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setProcessDefinitionKey(processInstance.getProcessDefinitionKey())
-      .setProcessDefinitionVersion(processInstance.getProcessDefinitionVersion())
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .build();
-    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
-    singleProcessReportDefinitionDto.setData(reportData);
+  protected String createReport(String definitionKey, List<String> versions) {
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = createSingleProcessReport(
+      definitionKey,
+      versions,
+      ProcessReportDataType.RAW_DATA
+    );
     return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
+  protected SingleProcessReportDefinitionDto createSingleProcessReport(final String definitionKey,
+                                                                       final List<String> versions,
+                                                                       final ProcessReportDataType type) {
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(definitionKey)
+      .setProcessDefinitionVersions(versions)
+      .setReportDataType(type)
+      .build();
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = new SingleProcessReportDefinitionDto();
+    singleProcessReportDefinitionDto.setData(reportData);
+    return singleProcessReportDefinitionDto;
+  }
+
   public static void assertErrorFields(ReportEvaluationException errorMessage) {
-    assertThat(errorMessage.getReportDefinition(), is(notNullValue()));
+    assertThat(errorMessage.getReportDefinition()).isNotNull();
     ReportDefinitionDto<?> reportDefinitionDto = errorMessage.getReportDefinition().getDefinitionDto();
     if (reportDefinitionDto instanceof SingleProcessReportDefinitionDto) {
       SingleProcessReportDefinitionDto singleProcessReport =
         (SingleProcessReportDefinitionDto) reportDefinitionDto;
-      assertThat(singleProcessReport.getData(), is(notNullValue()));
-      assertThat(singleProcessReport.getName(), is(notNullValue()));
-      assertThat(singleProcessReport.getId(), is(notNullValue()));
+      assertThat(singleProcessReport.getData()).isNotNull();
+      assertThat(singleProcessReport.getName()).isNotNull();
+      assertThat(singleProcessReport.getId()).isNotNull();
     } else if (reportDefinitionDto instanceof SingleDecisionReportDefinitionDto) {
       SingleDecisionReportDefinitionDto singleDecisionReport =
         (SingleDecisionReportDefinitionDto) reportDefinitionDto;
-      assertThat(singleDecisionReport.getData(), is(notNullValue()));
-      assertThat(singleDecisionReport.getName(), is(notNullValue()));
-      assertThat(singleDecisionReport.getId(), is(notNullValue()));
+      assertThat(singleDecisionReport.getData()).isNotNull();
+      assertThat(singleDecisionReport.getName()).isNotNull();
+      assertThat(singleDecisionReport.getId()).isNotNull();
     } else {
       throw new OptimizeIntegrationTestException("Evaluation exception should return single report definition!");
     }
@@ -169,9 +182,9 @@ public abstract class AbstractSharingIT extends AbstractIT {
   }
 
   protected void assertReportData(String reportId, HashMap<?, ?> evaluatedReportAsMap) {
-    assertThat(evaluatedReportAsMap, is(notNullValue()));
-    assertThat(evaluatedReportAsMap.get("id"), is(reportId));
-    assertThat(evaluatedReportAsMap.get("data"), is(notNullValue()));
+    assertThat(evaluatedReportAsMap).isNotNull();
+    assertThat(evaluatedReportAsMap.get("id")).isEqualTo(reportId);
+    assertThat(evaluatedReportAsMap.get("data")).isNotNull();
   }
 
 }
