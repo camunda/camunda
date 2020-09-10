@@ -138,11 +138,8 @@
       </exclusions>
     </dependency>
     <dependency>
-      <!-- no spring5 artifact as of when we migrated to spring 5 -->
-      <!-- although spring4 may suggests it only works for 4, it works with 5 -->
-      <!-- see https://github.com/jersey/jersey/pull/3737 for an eventual spring 5 module  in future -->
       <groupId>org.glassfish.jersey.ext</groupId>
-      <artifactId>jersey-spring4</artifactId>
+      <artifactId>jersey-spring5</artifactId>
       <version>${jersey.version}</version>
       <exclusions>
         <!-- excludes taken over from spring-boot pom -->
