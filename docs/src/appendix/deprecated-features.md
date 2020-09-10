@@ -4,7 +4,7 @@ This section lists deprecated features.
 
 ## Deprecated in 0.23.0-alpha2
 - TOML configuration - deprecated and removed in 0.23.0-alpha2
-- Legacy environment variables - deprecated in 0.23.0-alpha2, to be removed in 0.25.0-alpha2
+- Legacy environment variables - deprecated in 0.23.0-alpha2, removed in 0.25.0
 
 New configuration:
 ```yaml
