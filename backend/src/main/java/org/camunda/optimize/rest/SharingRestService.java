@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.rest;
 
-
 import lombok.AllArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
@@ -131,12 +131,14 @@ public class SharingRestService {
     );
   }
 
-  @GET
+  @POST
   @Path("/dashboard/{shareId}/report/{reportId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
+  @Consumes(MediaType.APPLICATION_JSON)
   public AuthorizedEvaluationResultDto evaluateReport(@Context ContainerRequestContext requestContext,
                                                       @PathParam("shareId") String dashboardShareId,
                                                       @PathParam("reportId") String reportId,
+                                                      AdditionalProcessReportEvaluationFilterDto reportEvaluationFilter,
                                                       @BeanParam @Valid final PaginationRequestDto paginationRequestDto) {
     final ZoneId timezone = extractTimezone(requestContext);
     return reportRestMapper.mapToEvaluationResultDto(
@@ -144,6 +146,7 @@ public class SharingRestService {
         dashboardShareId,
         reportId,
         timezone,
+        reportEvaluationFilter,
         PaginationDto.fromPaginationRequest(paginationRequestDto)
       )
     );

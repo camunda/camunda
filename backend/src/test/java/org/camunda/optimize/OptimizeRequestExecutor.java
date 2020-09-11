@@ -710,15 +710,17 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildEvaluateSharedDashboardReportRequest(String dashboardShareId, String reportId) {
-    return buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId, null);
+    return buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportId, null, null);
   }
 
   public OptimizeRequestExecutor buildEvaluateSharedDashboardReportRequest(String dashboardShareId,
                                                                            String reportId,
-                                                                           PaginationRequestDto paginationRequestDto) {
+                                                                           PaginationRequestDto paginationRequestDto,
+                                                                           AdditionalProcessReportEvaluationFilterDto filters) {
     this.path = "share/dashboard/" + dashboardShareId + "/report/" + reportId + "/evaluate";
-    this.method = GET;
+    this.method = POST;
     Optional.ofNullable(paginationRequestDto).ifPresent(pagination -> addQueryParams(extractPagination(pagination)));
+    Optional.ofNullable(filters).ifPresent(filterDto -> this.body = getBody(filterDto));
     return this;
   }
 
