@@ -54,7 +54,7 @@
     "jest-junit": "^11.1.0",
     "jest-styled-components": "^7.0.3",
     "lint-staged": "^10.3.0",
-    "msw": "^0.20.5",
+    "msw": "^0.21.0",
     "prettier": "^2.1.1",
     "react-scripts": "3.4.3",
     "react-test-renderer": "^16.13.1"
