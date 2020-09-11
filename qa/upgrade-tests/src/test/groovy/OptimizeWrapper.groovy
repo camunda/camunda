@@ -73,6 +73,9 @@ class OptimizeWrapper {
       StatusClient statusClient = new StatusClient(() -> requestExecutor)
       println "Waiting for Optimize ${optimizeVersion} to boot..."
       await()
+      // this delay is here for avoiding race conditions of still running initializations
+      // after the endpoint is available, should be solved with a proper health-check endpoint in future, OPT-3442
+        .pollDelay(30, SECONDS)
         .atMost(timeoutInSeconds, SECONDS)
         .pollInterval(1, SECONDS)
         .ignoreException(ProcessingException)
@@ -80,9 +83,6 @@ class OptimizeWrapper {
           statusClient::getStatus,
           statusResponse -> statusResponse.connectionStatus.engineConnections.values().every()
         )
-      // this sleep is here for avoiding race conditions of still running initializations
-      // after the endpoint is available, should be solved with a proper health-check endpoint in future, OPT-3442
-      sleep(5000)
       println "Optimize ${optimizeVersion} is up!"
       return this.process
     } catch (Exception e) {
