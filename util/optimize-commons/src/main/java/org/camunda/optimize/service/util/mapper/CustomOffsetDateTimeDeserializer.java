@@ -11,10 +11,7 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 
 
 public class CustomOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDateTime> {
@@ -27,16 +24,6 @@ public class CustomOffsetDateTimeDeserializer extends JsonDeserializer<OffsetDat
 
   @Override
   public OffsetDateTime deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-
-    OffsetDateTime parsedDate;
-    try {
-      parsedDate = OffsetDateTime.parse(parser.getText(), this.formatter);
-    } catch(DateTimeParseException exception) {
-      //
-      parsedDate = ZonedDateTime
-        .parse(parser.getText(), DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss").withZone(ZoneId.systemDefault()))
-        .toOffsetDateTime();
-    }
-    return parsedDate;
+    return OffsetDateTime.parse(parser.getText(), this.formatter);
   }
 }
