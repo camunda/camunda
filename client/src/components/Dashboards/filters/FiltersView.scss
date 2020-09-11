@@ -1,6 +1,15 @@
 @import 'shared-styles/shared-styles.scss';
 
 .dark .FiltersView {
+  > .Button {
+    color: $silver-darken-87;
+
+    &:hover {
+      border: none;
+      background: none;
+    }
+  }
+
   > * > .title {
     color: #ddd;
   }
@@ -14,6 +23,19 @@
       background-color: $grey-darken-33;
 
       color: #ffffff;
+
+      .ButtonGroup .Button {
+        background-color: $grey-base-40;
+        border-color: $grey-darken-33;
+
+        &:hover {
+          background-color: $grey-lighten-50;
+        }
+
+        &.active {
+          background-color: $blue;
+        }
+      }
     }
   }
 

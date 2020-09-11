@@ -1,5 +1,25 @@
 @import 'shared-styles/shared-styles.scss';
 
+.dark .PickerDateInput {
+  .Input {
+    background-color: $grey-darken-36;
+    border-color: $grey-base-40;
+    color: $silver-darken-94;
+
+    &.highlight {
+      border-color: $grey-base-40;
+
+      &.isInvalid {
+        background-color: $red-darken-26;
+      }
+    }
+
+    &.isInvalid {
+      border-color: $red-darken-38;
+    }
+  }
+}
+
 .PickerDateInput {
   position: relative;
 
@@ -22,6 +42,7 @@
     transform: translateY(-50%);
     right: 5px;
     color: $text-disabled;
+    margin-right: 0;
   }
 
   .PickerDateInputWarning {

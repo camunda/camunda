@@ -1,8 +1,16 @@
+@import 'shared-styles/shared-styles.scss';
+
+.dark .Message {
+  &.error {
+    color: $red-darken-42;
+  }
+}
+
 .Message {
-  color: #888888;
+  color: $grey-lighten-50;
   font-size: 0.8em;
 
   &.error {
-    color: red;
+    color: $red-darken-52;
   }
 }

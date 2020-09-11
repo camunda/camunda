@@ -107,7 +107,7 @@ export default function DateFilter({
               setShowDatePicker(false);
             }}
           >
-            {t('common.reset')}
+            {t('common.off')}
           </Button>
         </Popover>
       ) : (
@@ -166,7 +166,7 @@ export default function DateFilter({
           </Dropdown.Submenu>
           <hr />
           <Dropdown.Option disabled={!filter} onClick={() => setFilter()}>
-            {t('common.reset')}
+            {t('common.off')}
           </Dropdown.Option>
         </Dropdown>
       )}

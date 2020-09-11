@@ -79,7 +79,7 @@ export default function InstanceStateFilter({filter, setFilter}) {
             disabled={!active}
             onClick={() => setFilter(filter.filter(({type}) => !types.includes(type)))}
           >
-            {t('common.reset')}
+            {t('common.off')}
           </Button>
         </Form>
       </Popover>
