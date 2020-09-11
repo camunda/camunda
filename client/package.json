@@ -84,7 +84,7 @@
     "lint-staged": "^10.3.0",
     "prettier": "^2.1.1",
     "testcafe": "^1.9.2",
-    "zeebe-node": "0.24.0"
+    "zeebe-node": "0.23.2"
   },
   "lint-staged": {
     "*": [
