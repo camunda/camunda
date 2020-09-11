@@ -9,7 +9,13 @@ import {parseISO} from 'date-fns';
 import {format} from 'dates';
 import {t} from 'translation';
 
-import {sortColumns, cockpitLink, getNoDataMessage, isVisibleColumn} from './service';
+import {
+  sortColumns,
+  cockpitLink,
+  getNoDataMessage,
+  isVisibleColumn,
+  getLabelWithType,
+} from './service';
 
 export default function processDecisionRawData(
   {
@@ -73,26 +79,35 @@ export default function processDecisionRawData(
     return [...propertyValues, ...inputVariableValues, ...outputVariableValues];
   });
 
-  const head = instanceProps.map((key) => ({id: key, label: t('report.table.rawData.' + key)}));
-
-  if (inputVariables.length > 0) {
-    head.push({
-      label: t('report.variables.input'),
-      columns: inputVariables.map((key) => {
+  const head = instanceProps
+    .map((key) => {
+      const label = t('report.table.rawData.' + key);
+      return {id: key, label, title: label};
+    })
+    .concat(
+      inputVariables.map((key) => {
         const {name, id} = result[0].inputVariables[key];
-        return {label: name || id, id: key};
-      }),
-    });
-  }
-  if (outputVariables.length > 0) {
-    head.push({
-      label: t('report.variables.output'),
-      columns: outputVariables.map((key) => {
+        const label = name || id;
+        return {
+          type: 'inputVariables',
+          id: 'inputVariable:' + id,
+          label: getLabelWithType(label, 'inputVariable'),
+          title: label,
+        };
+      })
+    )
+    .concat(
+      outputVariables.map((key) => {
         const {name, id} = result[0].outputVariables[key];
-        return {label: name || id, id: key};
-      }),
-    });
-  }
+        const label = name || id;
+        return {
+          type: 'outputVariables',
+          id: 'outputVariable:' + id,
+          label: getLabelWithType(label, 'outputVariable'),
+          title: label,
+        };
+      })
+    );
 
   const {sortedHead, sortedBody} = sortColumns(head, body, columnOrder);
 

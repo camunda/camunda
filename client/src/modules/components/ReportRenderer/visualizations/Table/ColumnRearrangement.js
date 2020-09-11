@@ -6,11 +6,9 @@
 
 import React from 'react';
 
-import {flatten} from 'services';
 import processRawData from './processRawData';
 
 import './ColumnRearrangement.scss';
-import {t} from 'translation';
 
 export default class ColumnRearrangement extends React.Component {
   render() {
@@ -42,7 +40,7 @@ export default class ColumnRearrangement extends React.Component {
       const {reportType} = this.props.report;
       const currentHead = processRawData[reportType](this.props).head;
 
-      this.columnGroups = currentHead.reduce(flatten(), []);
+      this.columnGroups = currentHead.map((column) => column.type);
       this.dragGroup = this.columnGroups[this.dragIdx];
 
       this.preview = createDragPreview(this.dragIdx, evt);
@@ -101,11 +99,9 @@ export default class ColumnRearrangement extends React.Component {
 
     this.processDrag({
       evt,
-      validTarget: (idx, dropElem) => {
-        // create a list of the text of all header columns
-        const list = Array.from(
-          dropElem.closest('.Table').querySelector('thead tr:last-child').childNodes
-        ).map(({textContent}) => textContent);
+      validTarget: (idx) => {
+        const {reportType} = this.props.report;
+        const list = processRawData[reportType](this.props).head.map((el) => el.id);
 
         // add the column at the specified position
         list.splice(idx + 1, 0, list[this.dragIdx]);
@@ -118,15 +114,7 @@ export default class ColumnRearrangement extends React.Component {
             columnOrder: {
               $set: list.reduce(
                 (orders, entry, idx) => {
-                  if (this.columnGroups[idx] === t('report.variables.input')) {
-                    orders.inputVariables.push(entry);
-                  } else if (this.columnGroups[idx] === t('report.variables.output')) {
-                    orders.outputVariables.push(entry);
-                  } else if (this.columnGroups[idx] === t('report.variables.default')) {
-                    orders.variables.push(entry);
-                  } else {
-                    orders.instanceProps.push(entry);
-                  }
+                  orders[this.columnGroups[idx] || 'instanceProps'].push(entry);
                   return orders;
                 },
                 {instanceProps: [], variables: [], inputVariables: [], outputVariables: []}

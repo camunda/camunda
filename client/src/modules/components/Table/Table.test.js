@@ -31,11 +31,11 @@ it('should correctly format multi-level header', () => {
   expect(result).toMatchSnapshot();
 });
 
-it('should support explicit id for columns', () => {
+it('should support explicit id and titles for columns', () => {
   const result = Table.formatColumns([
-    {id: 'column1', label: 'X'},
+    {id: 'column1', label: 'X', title: 'X'},
     'Y',
-    {id: 'column3', label: 'Z'},
+    {id: 'column3', label: 'Z', title: 'Z'},
   ]);
 
   expect(result).toMatchSnapshot();

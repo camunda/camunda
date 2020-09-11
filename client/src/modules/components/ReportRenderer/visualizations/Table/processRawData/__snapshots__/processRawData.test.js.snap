@@ -1,0 +1,103 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should exclude variable columns using the variable prefix 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "foo",
+      "bar",
+      "",
+    ],
+    Array [
+      "xyz",
+      "abc",
+      "true",
+    ],
+  ],
+  "head": Array [
+    Object {
+      "id": "processInstanceId",
+      "label": "Process Instance Id",
+      "title": "Process Instance Id",
+    },
+    Object {
+      "id": "processDefinitionId",
+      "label": "Process Definition Id",
+      "title": "Process Definition Id",
+    },
+    Object {
+      "id": "variable:var2",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Var
+          : 
+        </span>
+        var2
+      </React.Fragment>,
+      "title": "var2",
+      "type": "variables",
+    },
+  ],
+}
+`;
+
+exports[`should transform data to table compatible format 1`] = `
+Object {
+  "body": Array [
+    Array [
+      "foo",
+      "bar",
+      "12",
+      "",
+    ],
+    Array [
+      "xyz",
+      "abc",
+      "",
+      "true",
+    ],
+  ],
+  "head": Array [
+    Object {
+      "id": "processInstanceId",
+      "label": "Process Instance Id",
+      "title": "Process Instance Id",
+    },
+    Object {
+      "id": "processDefinitionId",
+      "label": "Process Definition Id",
+      "title": "Process Definition Id",
+    },
+    Object {
+      "id": "variable:var1",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Var
+          : 
+        </span>
+        var1
+      </React.Fragment>,
+      "title": "var1",
+      "type": "variables",
+    },
+    Object {
+      "id": "variable:var2",
+      "label": <React.Fragment>
+        <span
+          className="variableExtension"
+        >
+          Var
+          : 
+        </span>
+        var2
+      </React.Fragment>,
+      "title": "var2",
+      "type": "variables",
+    },
+  ],
+}
+`;

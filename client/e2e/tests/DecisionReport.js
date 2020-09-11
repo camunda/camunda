@@ -56,8 +56,8 @@ test('create raw data report', async (t) => {
   await u.selectView(t, 'Raw Data');
 
   await t.expect(Report.reportTable.textContent).contains('Decision Definition Key');
-  await t.expect(Report.reportTable.textContent).contains('Input Variables');
-  await t.expect(Report.reportTable.textContent).contains('Output Variables');
+  await t.expect(Report.reportTable.textContent).contains('InputVar');
+  await t.expect(Report.reportTable.textContent).contains('OutputVar');
 
   await t.typeText(Report.nameEditField, 'DMN - Raw Data Report', {replace: true});
 

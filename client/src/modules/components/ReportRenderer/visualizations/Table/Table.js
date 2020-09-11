@@ -15,6 +15,8 @@ import processCombinedData from './processCombinedData';
 import processDefaultData from './processDefaultData';
 import processRawData from './processRawData';
 
+import './Table.scss';
+
 export function Table(props) {
   const {report, updateReport, mightFail, loadReport} = props;
   const {reportType, combined, data, result} = report;

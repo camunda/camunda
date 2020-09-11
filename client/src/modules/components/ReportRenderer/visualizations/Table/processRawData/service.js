@@ -4,8 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {flatten} from 'services';
 import React from 'react';
+
 import {t} from 'translation';
 import {NoDataNotice} from 'components';
 
@@ -36,8 +36,9 @@ export function sortColumns(head, body, columnOrder) {
   if (!columnOrderDefined(columnOrder)) {
     return {sortedHead: head, sortedBody: body};
   }
+
   const sortedHead = sortHead(head, columnOrder);
-  const sortedBody = sortBody(body, head, sortedHead);
+  const sortedBody = body.map((row) => row.map(valueForNewColumnPosition(head, sortedHead)));
 
   return {sortedHead, sortedBody};
 }
@@ -50,27 +51,12 @@ function columnOrderDefined({instanceProps, variables, inputVariables, outputVar
 
 function sortHead(head, columnOrder) {
   const sortedHeadWithoutVariables = head
-    .filter(onlyNonNestedColumns)
+    .filter((entry) => !entry.type)
     .sort(byOrder(columnOrder.instanceProps));
 
-  const sortedHeadVariables = sortNested(
-    head,
-    columnOrder,
-    t('report.variables.default'),
-    'variables'
-  );
-  const sortedHeadInputVariables = sortNested(
-    head,
-    columnOrder,
-    t('report.variables.input'),
-    'inputVariables'
-  );
-  const sortedHeadOutputVariables = sortNested(
-    head,
-    columnOrder,
-    t('report.variables.output'),
-    'outputVariables'
-  );
+  const sortedHeadVariables = sortNested(head, columnOrder, 'variables');
+  const sortedHeadInputVariables = sortNested(head, columnOrder, 'inputVariables');
+  const sortedHeadOutputVariables = sortNested(head, columnOrder, 'outputVariables');
 
   return [
     ...sortedHeadWithoutVariables,
@@ -80,74 +66,13 @@ function sortHead(head, columnOrder) {
   ];
 }
 
-function sortNested(head, columnOrder, label, accessor) {
-  return head
-    .filter((entry) => entry.label === label)
-    .map((entry) => {
-      return {
-        ...entry,
-        columns: [...entry.columns].sort(byOrder(columnOrder[accessor])),
-      };
-    });
-}
-
-function onlyNonNestedColumns(entry) {
-  return !entry.columns;
+function sortNested(head, columnOrder, accessor) {
+  return head.filter((entry) => entry.type === accessor).sort(byOrder(columnOrder[accessor]));
 }
 
 function byOrder(order) {
   return function (a, b) {
-    return order.indexOf(a.label || a) - order.indexOf(b.label || b);
-  };
-}
-
-function sortBody(body, head, sortedHead) {
-  return body.map((row) => sortRow(row, head, sortedHead));
-}
-
-function sortRow(row, head, sortedHead) {
-  const sortedRowWithoutVariables = row
-    .filter(belongingToNonNestedColumn(head))
-    .map(valueForNewColumnPosition(head, sortedHead));
-
-  const sortedRowVariables = sortNestedRow(row, head, sortedHead, t('report.variables.default'));
-  const sortedRowInputVariables = sortNestedRow(row, head, sortedHead, t('report.variables.input'));
-  const sortedRowOutputVariables = sortNestedRow(
-    row,
-    head,
-    sortedHead,
-    t('report.variables.output')
-  );
-
-  return [
-    ...sortedRowWithoutVariables,
-    ...sortedRowVariables,
-    ...sortedRowInputVariables,
-    ...sortedRowOutputVariables,
-  ];
-}
-
-function sortNestedRow(row, head, sortedHead, label) {
-  return row
-    .filter(belongingToColumnWithLabel(head, label))
-    .map(
-      valueForNewColumnPosition(
-        getNestedColumnsForEntryWithLabel(head, label),
-        getNestedColumnsForEntryWithLabel(sortedHead, label)
-      )
-    );
-}
-
-function belongingToNonNestedColumn(head) {
-  return function (_, idx) {
-    return head[idx] && !head[idx].columns;
-  };
-}
-
-function belongingToColumnWithLabel(head, label) {
-  const flatHead = head.reduce(flatten(), []);
-  return function (_, idx) {
-    return flatHead[idx] === label;
+    return order.indexOf(a.id || a) - order.indexOf(b.id || b);
   };
 }
 
@@ -160,15 +85,19 @@ function valueForNewColumnPosition(head, sortedHead) {
   };
 }
 
-function getNestedColumnsForEntryWithLabel(head, label) {
-  const column = head.find((column) => column.label === label);
-  return column && column.columns;
-}
-
 export function isVisibleColumn(column, {excludedColumns, includedColumns, includeNewVariables}) {
   if (includeNewVariables) {
     return !excludedColumns.includes(column);
   } else {
     return includedColumns.includes(column);
   }
+}
+
+export function getLabelWithType(name, type) {
+  return (
+    <>
+      <span className="variableExtension">{t('report.table.rawData.' + type)}: </span>
+      {name}
+    </>
+  );
 }

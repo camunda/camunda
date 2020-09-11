@@ -385,7 +385,10 @@
         "endDate": "End Date",
         "duration": "Duration",
         "engineName": "Engine Name",
-        "tenantId": "Tenant Id"
+        "tenantId": "Tenant Id",
+        "variable": "Var",
+        "inputVariable": "InputVar",
+        "outputVariable": "OutputVar"
       }
     },
     "progressBar": {

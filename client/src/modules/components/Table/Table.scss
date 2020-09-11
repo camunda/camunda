@@ -90,16 +90,18 @@
       }
 
       .cellContent {
-        padding: 10px 5px;
+        padding: 10px 5px 10px 10px;
         text-align: left;
         display: flex;
         align-items: center;
         min-width: 0;
+        width: 100%;
 
         .text {
           white-space: nowrap;
           text-overflow: ellipsis;
           overflow: hidden;
+          flex-grow: 1;
         }
       }
 

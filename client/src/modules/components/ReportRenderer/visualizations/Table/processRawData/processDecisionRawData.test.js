@@ -71,24 +71,9 @@ it('should return correct table props for decision tables', () => {
     ],
   };
 
-  expect(processDecisionRawData({report: {result, reportType: 'decision', data}})).toEqual({
-    head: [
-      {id: 'decisionInstanceId', label: 'Decision Instance Id'},
-      {id: 'decisionDefinitionId', label: 'Decision Definition Id'},
-      {
-        label: 'Input Variables',
-        columns: [
-          {id: 'var1', label: 'Var 1'},
-          {id: 'var2', label: 'Var 2'},
-        ],
-      },
-      {label: 'Output Variables', columns: [{id: 'result', label: 'Result'}]},
-    ],
-    body: [
-      ['foo', 'bar', '12', '', '1'],
-      ['xyz', 'abc', '', 'true', '8'],
-    ],
-  });
+  expect(
+    processDecisionRawData({report: {result, reportType: 'decision', data}})
+  ).toMatchSnapshot();
 });
 
 it('should show no data message when all column are excluded for decision tables', () => {

@@ -6,12 +6,14 @@
 
 import React, {useEffect, useRef} from 'react';
 import classnames from 'classnames';
-import {Select, Icon, Button, LoadingIndicator} from 'components';
 import {useTable, useSortBy, usePagination, useResizeColumns, useFlexLayout} from 'react-table';
-import {flatten} from 'services';
+
+import {t} from 'translation';
+import {Select, Icon, Button, LoadingIndicator} from 'components';
+
+import {flatten} from './service';
 
 import './Table.scss';
-import {t} from 'translation';
 
 export default function Table({
   head,
@@ -150,7 +152,7 @@ export default function Table({
                   className={classnames('tableHeader', {placeholder: column.placeholderOf})}
                   {...column.getHeaderProps()}
                 >
-                  <div className="cellContent" {...getSortingProps(column)}>
+                  <div className="cellContent" {...getSortingProps(column)} title={column.title}>
                     <span className="text">{column.render('Header')}</span>
                     {column.isSorted && sorting && (
                       <Icon type={sorting?.order === 'asc' ? 'up' : 'down'} />
@@ -260,10 +262,12 @@ Table.formatColumns = (head, ctx = '') => {
       const id = convertHeaderNameToAccessor(ctx + (elem.id || elem));
       return {
         Header: elem.label || elem,
+        title: elem.title,
         accessor: (d) => d[id],
         id,
         minWidth: 100,
         disableSortBy: elem.sortable === false,
+        width: 180,
       };
     }
     return {

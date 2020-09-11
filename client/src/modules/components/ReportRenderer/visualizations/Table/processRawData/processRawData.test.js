@@ -44,17 +44,7 @@ const result = {
 };
 
 it('should transform data to table compatible format', () => {
-  expect(processRawData({report: {data, result}})).toEqual({
-    body: [
-      ['foo', 'bar', '12', ''],
-      ['xyz', 'abc', '', 'true'],
-    ],
-    head: [
-      {id: 'processInstanceId', label: 'Process Instance Id'},
-      {id: 'processDefinitionId', label: 'Process Definition Id'},
-      {columns: ['var1', 'var2'], label: 'Variables'},
-    ],
-  });
+  expect(processRawData({report: {data, result}})).toMatchSnapshot();
 });
 
 it('should not include columns that are hidden', () => {
@@ -69,7 +59,7 @@ it('should not include columns that are hidden', () => {
   };
   expect(processRawData({report: {data, result}})).toEqual({
     body: [['foo'], ['xyz']],
-    head: [{id: 'processInstanceId', label: 'Process Instance Id'}],
+    head: [{id: 'processInstanceId', label: 'Process Instance Id', title: 'Process Instance Id'}],
   });
 });
 
@@ -83,17 +73,7 @@ it('should exclude variable columns using the variable prefix', () => {
       },
     },
   };
-  expect(processRawData({report: {data, result}})).toEqual({
-    head: [
-      {id: 'processInstanceId', label: 'Process Instance Id'},
-      {id: 'processDefinitionId', label: 'Process Definition Id'},
-      {label: 'Variables', columns: ['var2']},
-    ],
-    body: [
-      ['foo', 'bar', ''],
-      ['xyz', 'abc', 'true'],
-    ],
-  });
+  expect(processRawData({report: {data, result}})).toMatchSnapshot();
 });
 
 it('should make the processInstanceId a link', () => {

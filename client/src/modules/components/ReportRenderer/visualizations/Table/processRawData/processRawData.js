@@ -10,7 +10,13 @@ import {format} from 'dates';
 import {formatters} from 'services';
 import {t} from 'translation';
 
-import {sortColumns, cockpitLink, getNoDataMessage, isVisibleColumn} from './service';
+import {
+  sortColumns,
+  cockpitLink,
+  getNoDataMessage,
+  isVisibleColumn,
+  getLabelWithType,
+} from './service';
 
 const {duration} = formatters;
 
@@ -65,11 +71,19 @@ export default function processRawData(
     return row;
   });
 
-  const head = instanceProps.map((key) => ({id: key, label: t('report.table.rawData.' + key)}));
-
-  if (variableNames.length > 0) {
-    head.push({label: t('report.variables.default'), columns: variableNames});
-  }
+  const head = instanceProps
+    .map((key) => {
+      const label = t('report.table.rawData.' + key);
+      return {id: key, label, title: label};
+    })
+    .concat(
+      variableNames.map((variable) => ({
+        type: 'variables',
+        id: 'variable:' + variable,
+        label: getLabelWithType(variable, 'variable'),
+        title: variable,
+      }))
+    );
 
   const {sortedHead, sortedBody} = sortColumns(head, body, columnOrder);
 

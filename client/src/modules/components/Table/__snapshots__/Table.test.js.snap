@@ -8,6 +8,8 @@ Array [
     "disableSortBy": false,
     "id": "x",
     "minWidth": 100,
+    "title": undefined,
+    "width": 180,
   },
   Object {
     "Header": "y",
@@ -15,6 +17,8 @@ Array [
     "disableSortBy": false,
     "id": "y",
     "minWidth": 100,
+    "title": undefined,
+    "width": 180,
   },
   Object {
     "Header": "z",
@@ -22,6 +26,8 @@ Array [
     "disableSortBy": false,
     "id": "z",
     "minWidth": 100,
+    "title": undefined,
+    "width": 180,
   },
 ]
 `;
@@ -34,6 +40,8 @@ Array [
     "disableSortBy": false,
     "id": "x",
     "minWidth": 100,
+    "title": undefined,
+    "width": 180,
   },
   Object {
     "Header": "a",
@@ -44,6 +52,8 @@ Array [
         "disableSortBy": false,
         "id": "ai",
         "minWidth": 100,
+        "title": undefined,
+        "width": 180,
       },
       Object {
         "Header": "j",
@@ -51,13 +61,15 @@ Array [
         "disableSortBy": false,
         "id": "aj",
         "minWidth": 100,
+        "title": undefined,
+        "width": 180,
       },
     ],
   },
 ]
 `;
 
-exports[`should support explicit id for columns 1`] = `
+exports[`should support explicit id and titles for columns 1`] = `
 Array [
   Object {
     "Header": "X",
@@ -65,6 +77,8 @@ Array [
     "disableSortBy": false,
     "id": "column1",
     "minWidth": 100,
+    "title": "X",
+    "width": 180,
   },
   Object {
     "Header": "Y",
@@ -72,6 +86,8 @@ Array [
     "disableSortBy": false,
     "id": "y",
     "minWidth": 100,
+    "title": undefined,
+    "width": 180,
   },
   Object {
     "Header": "Z",
@@ -79,6 +95,8 @@ Array [
     "disableSortBy": false,
     "id": "column3",
     "minWidth": 100,
+    "title": "Z",
+    "width": 180,
   },
 ]
 `;
@@ -94,6 +112,8 @@ Array [
         "disableSortBy": false,
         "id": "column1i",
         "minWidth": 100,
+        "title": undefined,
+        "width": 180,
       },
       Object {
         "Header": "j",
@@ -101,6 +121,8 @@ Array [
         "disableSortBy": false,
         "id": "column1columnJ",
         "minWidth": 100,
+        "title": undefined,
+        "width": 180,
       },
     ],
   },
@@ -110,6 +132,8 @@ Array [
     "disableSortBy": false,
     "id": "y",
     "minWidth": 100,
+    "title": undefined,
+    "width": 180,
   },
   Object {
     "Header": "Z",
@@ -120,6 +144,8 @@ Array [
         "disableSortBy": false,
         "id": "zcolumnZ1",
         "minWidth": 100,
+        "title": undefined,
+        "width": 180,
       },
       Object {
         "Header": "Z2",
@@ -127,6 +153,8 @@ Array [
         "disableSortBy": false,
         "id": "zZ2",
         "minWidth": 100,
+        "title": undefined,
+        "width": 180,
       },
     ],
   },
