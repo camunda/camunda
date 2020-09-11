@@ -11,34 +11,64 @@ import io.zeebe.db.ZeebeDb;
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDBMetricExporter;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import java.util.Properties;
 import java.util.function.BiFunction;
 
 public final class DefaultZeebeDbFactory {
 
-  /**
-   * The default zeebe database factory, which is used in most of the places except for the
-   * exporters.
-   */
-  public static final ZeebeDbFactory<ZbColumnFamilies> DEFAULT_DB_FACTORY =
-      defaultFactory(ZbColumnFamilies.class);
-
   public static final BiFunction<String, ZeebeDb<ZbColumnFamilies>, ZeebeRocksDBMetricExporter>
       DEFAULT_DB_METRIC_EXPORTER_FACTORY =
-          (partitionId, database) -> {
-            return new ZeebeRocksDBMetricExporter<>(partitionId, database, ZbColumnFamilies.class);
-          };
+          (partitionId, database) ->
+              new ZeebeRocksDBMetricExporter<>(partitionId, database, ZbColumnFamilies.class);
+
+  /**
+   * Returns the default zeebe database factory, which is used in most of the places except for the
+   * exporters.
+   *
+   * @return the created zeebe database factory
+   */
+  public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory() {
+    return defaultFactory(new Properties());
+  }
+
+  /**
+   * Returns the default zeebe database factory, which is used in most of the places except for the
+   * exporters.
+   *
+   * @param userProvidedColumnFamilyOptions additional column family options
+   * @return the created zeebe database factory
+   */
+  public static ZeebeDbFactory<ZbColumnFamilies> defaultFactory(
+      final Properties userProvidedColumnFamilyOptions) {
+    return defaultFactory(ZbColumnFamilies.class, userProvidedColumnFamilyOptions);
+  }
 
   /**
    * Returns the default zeebe database factory which is used in the broker.
    *
-   * @param columnFamilyNamesClass the enum class, which contains the column family names
    * @param <ColumnFamilyNames> the type of the enum
+   * @param columnFamilyNamesClass the enum class, which contains the column family names
    * @return the created zeebe database factory
    */
   public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
       ZeebeDbFactory<ColumnFamilyNames> defaultFactory(
           final Class<ColumnFamilyNames> columnFamilyNamesClass) {
+    return defaultFactory(columnFamilyNamesClass, new Properties());
+  }
+
+  /**
+   * Returns the default zeebe database factory which is used in the broker.
+   *
+   * @param <ColumnFamilyNames> the type of the enum
+   * @param columnFamilyNamesClass the enum class, which contains the column family names
+   * @param userProvidedColumnFamilyOptions additional column family options
+   * @return the created zeebe database factory
+   */
+  public static <ColumnFamilyNames extends Enum<ColumnFamilyNames>>
+      ZeebeDbFactory<ColumnFamilyNames> defaultFactory(
+          final Class<ColumnFamilyNames> columnFamilyNamesClass,
+          final Properties userProvidedColumnFamilyOptions) {
     // one place to replace the zeebe database implementation
-    return ZeebeRocksDbFactory.newFactory(columnFamilyNamesClass);
+    return ZeebeRocksDbFactory.newFactory(columnFamilyNamesClass, userProvidedColumnFamilyOptions);
   }
 }

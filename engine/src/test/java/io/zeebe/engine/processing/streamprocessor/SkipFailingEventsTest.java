@@ -100,7 +100,7 @@ public final class SkipFailingEventsTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
           return TypedRecordProcessors.processors(zeebeState.getKeyGenerator())
@@ -139,7 +139,7 @@ public final class SkipFailingEventsTest {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
           return TypedRecordProcessors.processors(zeebeState.getKeyGenerator())
@@ -187,7 +187,7 @@ public final class SkipFailingEventsTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
           return TypedRecordProcessors.processors(zeebeState.getKeyGenerator())
@@ -267,7 +267,7 @@ public final class SkipFailingEventsTest {
     final CountDownLatch latch = new CountDownLatch(1);
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
           return TypedRecordProcessors.processors(zeebeState.getKeyGenerator())
@@ -325,7 +325,7 @@ public final class SkipFailingEventsTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
           return TypedRecordProcessors.processors(zeebeState.getKeyGenerator())
@@ -399,7 +399,7 @@ public final class SkipFailingEventsTest {
 
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) -> {
           zeebeState = processingContext.getZeebeState();
           return TypedRecordProcessors.processors(zeebeState.getKeyGenerator())

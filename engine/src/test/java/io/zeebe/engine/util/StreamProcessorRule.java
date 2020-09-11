@@ -69,11 +69,11 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessorRule(final int partitionId) {
-    this(partitionId, 1, DefaultZeebeDbFactory.DEFAULT_DB_FACTORY);
+    this(partitionId, 1, DefaultZeebeDbFactory.defaultFactory());
   }
 
   public StreamProcessorRule(final int partitionId, final TemporaryFolder temporaryFolder) {
-    this(partitionId, 1, DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, temporaryFolder);
+    this(partitionId, 1, DefaultZeebeDbFactory.defaultFactory(), temporaryFolder);
   }
 
   public StreamProcessorRule(

@@ -435,9 +435,10 @@ public final class ZeebePartition extends Actor
             ? new StateReplication(messagingService, partitionId, localBroker.getNodeId())
             : new NoneSnapshotReplication();
 
+    final var databaseCfg = brokerCfg.getData().getRocksdb();
     return new StateControllerImpl(
         partitionId,
-        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        DefaultZeebeDbFactory.defaultFactory(databaseCfg.getColumnFamilyOptions()),
         snapshotStoreSupplier.getConstructableSnapshotStore(atomixRaftPartition.name()),
         snapshotStoreSupplier.getReceivableSnapshotStore(atomixRaftPartition.name()),
         runtimeDirectory,

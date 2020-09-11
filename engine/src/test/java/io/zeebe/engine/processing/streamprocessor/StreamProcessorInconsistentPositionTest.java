@@ -7,7 +7,6 @@
  */
 package io.zeebe.engine.processing.streamprocessor;
 
-import static io.zeebe.engine.state.DefaultZeebeDbFactory.DEFAULT_DB_FACTORY;
 import static io.zeebe.engine.util.StreamProcessingComposite.getLogName;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.record.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATING;
@@ -17,6 +16,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.util.ListLogStorage;
 import io.zeebe.engine.util.RecordStream;
 import io.zeebe.engine.util.StreamProcessingComposite;
@@ -58,9 +58,9 @@ public final class StreamProcessorInconsistentPositionTest {
     testStreams.createLogStream(getLogName(2), 2, listLogStorage);
 
     firstStreamProcessorComposite =
-        new StreamProcessingComposite(testStreams, 1, DEFAULT_DB_FACTORY);
+        new StreamProcessingComposite(testStreams, 1, DefaultZeebeDbFactory.defaultFactory());
     secondStreamProcessorComposite =
-        new StreamProcessingComposite(testStreams, 2, DEFAULT_DB_FACTORY);
+        new StreamProcessingComposite(testStreams, 2, DefaultZeebeDbFactory.defaultFactory());
   }
 
   @After

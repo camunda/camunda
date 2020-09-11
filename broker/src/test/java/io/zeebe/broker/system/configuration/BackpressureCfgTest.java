@@ -15,8 +15,6 @@ import io.zeebe.broker.system.configuration.backpressure.FixedCfg;
 import io.zeebe.broker.system.configuration.backpressure.Gradient2Cfg;
 import io.zeebe.broker.system.configuration.backpressure.GradientCfg;
 import io.zeebe.broker.system.configuration.backpressure.VegasCfg;
-import io.zeebe.test.util.TestConfigurationFactory;
-import io.zeebe.util.Environment;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -24,14 +22,12 @@ import org.junit.Test;
 
 public final class BackpressureCfgTest {
 
-  public static final String BROKER_BASE = "test";
-
   public final Map<String, String> environment = new HashMap<>();
 
   @Test
   public void shouldSetBackpressureConfig() {
     // when
-    final BrokerCfg cfg = readConfig("backpressure-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("backpressure-cfg", environment);
     final BackpressureCfg backpressure = cfg.getBackpressure();
 
     // then
@@ -43,7 +39,7 @@ public final class BackpressureCfgTest {
   @Test
   public void shouldSetAimdConfig() {
     // when
-    final BrokerCfg cfg = readConfig("backpressure-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("backpressure-cfg", environment);
     final BackpressureCfg backpressure = cfg.getBackpressure();
     final var aimd = backpressure.getAimd();
 
@@ -58,7 +54,7 @@ public final class BackpressureCfgTest {
   @Test
   public void shouldSetFixedCfg() {
     // when
-    final BrokerCfg cfg = readConfig("backpressure-fixed-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("backpressure-fixed-cfg", environment);
     final LimitAlgorithm algorithm = cfg.getBackpressure().getAlgorithm();
     final FixedCfg fixedCfg = cfg.getBackpressure().getFixed();
 
@@ -70,7 +66,7 @@ public final class BackpressureCfgTest {
   @Test
   public void shouldSetVegasCfg() {
     // when
-    final BrokerCfg cfg = readConfig("backpressure-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("backpressure-cfg", environment);
     final VegasCfg vegasCfg = cfg.getBackpressure().getVegas();
 
     // then
@@ -82,7 +78,7 @@ public final class BackpressureCfgTest {
   @Test
   public void shouldSetGradientCfg() {
     // when
-    final BrokerCfg cfg = readConfig("backpressure-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("backpressure-cfg", environment);
     final GradientCfg gradientCfg = cfg.getBackpressure().getGradient();
 
     // then
@@ -94,7 +90,7 @@ public final class BackpressureCfgTest {
   @Test
   public void shouldSetGradient2Cfg() {
     // when
-    final BrokerCfg cfg = readConfig("backpressure-cfg");
+    final BrokerCfg cfg = TestConfigReader.readConfig("backpressure-cfg", environment);
     final Gradient2Cfg gradient2Cfg = cfg.getBackpressure().getGradient2();
     // then
     assertThat(gradient2Cfg.getMinLimit()).isEqualTo(3);
@@ -132,18 +128,5 @@ public final class BackpressureCfgTest {
     backpressure.setAlgorithm("aimd");
     // then
     assertThat(backpressure.getAlgorithm()).isEqualTo(LimitAlgorithm.AIMD);
-  }
-
-  private BrokerCfg readConfig(final String name) {
-    final String configPath = "/system/" + name + ".yaml";
-
-    final Environment environmentVariables = new Environment(environment);
-
-    final BrokerCfg config =
-        new TestConfigurationFactory()
-            .create(environmentVariables, "zeebe.broker", configPath, BrokerCfg.class);
-    config.init(BROKER_BASE, environmentVariables);
-
-    return config;
   }
 }
