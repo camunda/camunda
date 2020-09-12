@@ -268,6 +268,12 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .build());
   }
 
+  public void onPublishMessageRequest(final long key) {
+    addRequestHandler(
+        PublishMessageRequest.class,
+        request -> PublishMessageResponse.newBuilder().setKey(key).build());
+  }
+
   public void onCreateWorkflowInstanceWithResultRequest(
       final long workflowKey,
       final String bpmnProcessId,

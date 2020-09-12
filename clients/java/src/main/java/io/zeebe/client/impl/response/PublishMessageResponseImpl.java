@@ -13,14 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.response;
+package io.zeebe.client.impl.response;
 
-public interface PublishMessageResponse {
+import io.zeebe.client.api.response.PublishMessageResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 
-  /**
-   * Returns the record key of the message that was published.
-   *
-   * @return record key of the message.
-   */
-  long getMessageKey();
+public final class PublishMessageResponseImpl implements PublishMessageResponse {
+
+  private final long key;
+
+  public PublishMessageResponseImpl(final GatewayOuterClass.PublishMessageResponse response) {
+    this.key = response.getKey();
+  }
+
+  @Override
+  public long getMessageKey() {
+    return key;
+  }
 }

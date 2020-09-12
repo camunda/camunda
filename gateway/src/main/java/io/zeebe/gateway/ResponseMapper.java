@@ -59,7 +59,7 @@ public final class ResponseMapper {
 
   public static PublishMessageResponse toPublishMessageResponse(
       final long key, final Object brokerResponse) {
-    return PublishMessageResponse.getDefaultInstance();
+    return PublishMessageResponse.newBuilder().setKey(key).build();
   }
 
   public static UpdateJobRetriesResponse toUpdateJobRetriesResponse(
