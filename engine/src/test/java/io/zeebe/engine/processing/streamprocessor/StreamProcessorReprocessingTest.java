@@ -601,4 +601,88 @@ public final class StreamProcessorReprocessingTest {
     assertThat(processedPositions).doesNotContain(snapshotPosition);
     assertThat(processedPositions).endsWith(lastSourceEvent, lastEvent);
   }
+
+  @Test
+  public void shouldUpdateLastProcessedPositionAfterReprocessing() throws Exception {
+    // given
+    final long firstPosition =
+        streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeWorkflowInstanceEventWithSource(ELEMENT_ACTIVATED, 1, firstPosition);
+
+    waitUntil(
+        () ->
+            streamProcessorRule
+                .events()
+                .onlyWorkflowInstanceRecords()
+                .withIntent(ELEMENT_ACTIVATED)
+                .exists());
+
+    // when
+    final CountDownLatch recoveredLatch = new CountDownLatch(1);
+    final var streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor(
+            (processors, context) ->
+                processors.withListener(
+                    new StreamProcessorLifecycleAware() {
+                      @Override
+                      public void onRecovered(final ReadonlyProcessingContext context) {
+                        recoveredLatch.countDown();
+                      }
+                    }));
+
+    // then
+    recoveredLatch.await();
+
+    assertThat(streamProcessor.getLastProcessedPositionAsync().get()).isEqualTo(firstPosition);
+  }
+
+  @Test
+  public void shouldUpdateLastProcessedEventWhenSnapshot() throws Exception {
+    // given
+    final CountDownLatch onProcessedListenerLatch = new CountDownLatch(2);
+    streamProcessorRule.startTypedStreamProcessor(
+        (processors, context) ->
+            processors.onEvent(
+                ValueType.WORKFLOW_INSTANCE,
+                ELEMENT_ACTIVATING,
+                new TypedRecordProcessor<UnifiedRecordValue>() {
+                  @Override
+                  public void processRecord(
+                      final long position,
+                      final TypedRecord<UnifiedRecordValue> record,
+                      final TypedResponseWriter responseWriter,
+                      final TypedStreamWriter streamWriter,
+                      final Consumer<SideEffectProducer> sideEffect) {}
+                }),
+        (t) -> onProcessedListenerLatch.countDown());
+
+    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING);
+    final var snapshotPosition =
+        streamProcessorRule.writeWorkflowInstanceEvent(
+            ELEMENT_ACTIVATING); // should be processed and included in the snapshot
+    onProcessedListenerLatch.await();
+
+    streamProcessorRule.snapshot();
+    streamProcessorRule.closeStreamProcessor();
+
+    // when
+    // The processor restarts with a snapshot that was the state of the processor before it
+    // was closed.
+    final var recoveredLatch = new CountDownLatch(1);
+    final var streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor(
+            (processors, context) ->
+                processors.withListener(
+                    new StreamProcessorLifecycleAware() {
+                      @Override
+                      public void onRecovered(final ReadonlyProcessingContext context) {
+                        recoveredLatch.countDown();
+                      }
+                    }));
+
+    // then
+    recoveredLatch.await();
+
+    assertThat(streamProcessor.getLastProcessedPositionAsync().get()).isEqualTo(snapshotPosition);
+  }
 }

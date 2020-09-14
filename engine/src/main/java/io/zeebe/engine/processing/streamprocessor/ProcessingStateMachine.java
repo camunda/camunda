@@ -443,4 +443,11 @@ public final class ProcessingStateMachine {
   public boolean isMakingProgress() {
     return !onErrorHandlingLoop;
   }
+
+  public void startProcessing(final long lastReprocessedPosition) {
+    if (lastSuccessfulProcessedEventPosition == StreamProcessor.UNSET_POSITION) {
+      lastSuccessfulProcessedEventPosition = lastReprocessedPosition;
+    }
+    actor.submit(this::readNextEvent);
+  }
 }

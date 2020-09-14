@@ -110,7 +110,7 @@ public final class ReProcessingStateMachine {
   private final Set<Long> failedEventPositions = new HashSet<>();
   // current iteration
   private long lastSourceEventPosition;
-  private ActorFuture<Void> recoveryFuture;
+  private ActorFuture<Long> recoveryFuture;
   private LoggedEvent currentEvent;
   private TypedRecordProcessor eventProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
@@ -130,7 +130,14 @@ public final class ReProcessingStateMachine {
     processRetryStrategy = new EndlessRetryStrategy(actor);
   }
 
-  ActorFuture<Void> startRecover(final long snapshotPosition) {
+  /**
+   * Reprocess the records. It returns the position of the last successfully processed record. If
+   * there is nothing processed it returns {@link StreamProcessor#UNSET_POSITION}
+   *
+   * @param snapshotPosition
+   * @return a ActorFuture with last reprocessed position
+   */
+  ActorFuture<Long> startRecover(final long snapshotPosition) {
     recoveryFuture = new CompletableActorFuture<>();
 
     LOG.trace("Start scanning the log for error events.");
@@ -143,8 +150,10 @@ public final class ReProcessingStateMachine {
           lastSourceEventPosition);
       logStreamReader.seekToNextEvent(snapshotPosition);
       reprocessNextEvent();
+    } else if (snapshotPosition > 0) {
+      recoveryFuture.complete(snapshotPosition);
     } else {
-      recoveryFuture.complete(null);
+      recoveryFuture.complete(StreamProcessor.UNSET_POSITION);
     }
     return recoveryFuture;
   }
@@ -323,14 +332,14 @@ public final class ReProcessingStateMachine {
   private void onRecordReprocessed(final LoggedEvent currentEvent) {
     if (currentEvent.getPosition() == lastSourceEventPosition) {
       LOG.info(LOG_STMT_REPROCESSING_FINISHED, currentEvent.getPosition());
-      onRecovered();
+      onRecovered(lastSourceEventPosition);
     } else {
       actor.submit(this::reprocessNextEvent);
     }
   }
 
-  private void onRecovered() {
-    recoveryFuture.complete(null);
+  private void onRecovered(final long lastProcessedPosition) {
+    recoveryFuture.complete(lastProcessedPosition);
     failedEventPositions.clear();
   }
 }
