@@ -172,4 +172,34 @@ public final class ZeebeClientTest extends ClientTest {
     assertThatThrownBy(() -> new ZeebeClientBuilderImpl().build())
         .isInstanceOf(IllegalArgumentException.class);
   }
+
+  @Test
+  public void shouldBrokerContactPointReturnTheSameAsGatewayAddress() {
+    // given
+    final String gatewayAddress = "localhost:26500";
+    try (final ZeebeClient client =
+        ZeebeClient.newClientBuilder().gatewayAddress(gatewayAddress).build()) {
+      // when
+      final ZeebeClientConfiguration configuration = client.getConfiguration();
+      // then
+      assertThat(configuration.getGatewayAddress())
+          .isEqualTo(configuration.getBrokerContactPoint())
+          .isEqualTo(gatewayAddress);
+    }
+  }
+
+  @Test
+  public void shouldGatewayAddressReturnsTheSameAsBrokerContactPoint() {
+    // given
+    final String gatewayAddress = "localhost:26500";
+    try (final ZeebeClient client =
+        ZeebeClient.newClientBuilder().brokerContactPoint(gatewayAddress).build()) {
+      // when
+      final ZeebeClientConfiguration configuration = client.getConfiguration();
+      // then
+      assertThat(configuration.getBrokerContactPoint())
+          .isEqualTo(configuration.getGatewayAddress())
+          .isEqualTo(gatewayAddress);
+    }
+  }
 }

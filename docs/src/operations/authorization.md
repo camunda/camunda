@@ -17,7 +17,7 @@ public class MyCredentialsProvider implements CredentialsProvider {
     */
     @Override
     public void applyCredentials(final Metadata headers) {
-      final Key<String> authHeaderkey = Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);     
+      final Key<String> authHeaderkey = Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
       headers.put(authHeaderKey, "Bearer someToken");
     }
 
@@ -29,7 +29,7 @@ public class MyCredentialsProvider implements CredentialsProvider {
       return ((StatusRuntimeException) throwable).getStatus() == Status.DEADLINE_EXCEEDED;
     }
 }
-``` 
+```
 
 After implementing the CredentialsProvider, we can simply provide it when building a client:
 
@@ -38,7 +38,7 @@ public class SecureClient {
     public static void main(final String[] args) {
       final ZeebeClient client = ZeebeClient.newClientBuilder().credentialsProvider(new MyCredentialsProvider()).build();
 
-      // continue...    
+      // continue...
     }
 }
 ```
@@ -108,10 +108,10 @@ public class AuthorizedClient {
 
         final ZeebeClient client =
             new ZeebeClientBuilderImpl()
-                .brokerContactPoint("cluster.endpoint.com:443")
+                .gatewayAddress("cluster.endpoint.com:443")
                 .credentialsProvider(provider)
                 .build();
-    
+
         System.out.println(client.newTopologyRequest().send().join().toString());
     }
 }
@@ -124,7 +124,7 @@ public class AuthorizedClient {
     public void main(final String[] args) {
         final ZeebeClient client =
             new ZeebeClientBuilderImpl()
-                .brokerContactPoint("cluster.endpoint.com:443")
+                .gatewayAddress("cluster.endpoint.com:443")
                 .build();
 
         System.out.println(client.newTopologyRequest().send().join().toString());
@@ -134,7 +134,7 @@ public class AuthorizedClient {
 
 The client will create an OAuthCredentialProvider with the credentials specified through the environment variables and the audience will be extracted from the address specified through the ZeebeClientBuilder.
 
-> **Note:** Zeebe's Java client will not prevent you from adding credentials to gRPC calls while using an insecure connection but you should be aware that doing so will expose your access token by transmiting it in plaintext. 
+> **Note:** Zeebe's Java client will not prevent you from adding credentials to gRPC calls while using an insecure connection but you should be aware that doing so will expose your access token by transmiting it in plaintext.
 
 ### Go
 ```go
@@ -204,7 +204,7 @@ func main() {
 }
 ```
 
-> **Note:** Like the Java client, the Go client will not prevent you from adding credentials to gRPC calls while using an insecure connection but doing so will expose your access token. 
+> **Note:** Like the Java client, the Go client will not prevent you from adding credentials to gRPC calls while using an insecure connection but doing so will expose your access token.
 
 
 ### Environment Variables

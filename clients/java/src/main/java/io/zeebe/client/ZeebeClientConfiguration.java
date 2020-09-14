@@ -20,8 +20,16 @@ import java.time.Duration;
 import java.util.List;
 
 public interface ZeebeClientConfiguration {
-  /** @see ZeebeClientBuilder#brokerContactPoint(String) */
+  /**
+   * @see ZeebeClientBuilder#brokerContactPoint(String)
+   * @deprecated Use {@link #getGatewayAddress()}. It's deprecated since 0.25.0, and will be removed
+   *     in 0.26.0
+   */
+  @Deprecated
   String getBrokerContactPoint();
+
+  /** @see ZeebeClientBuilder#gatewayAddress(String) */
+  String getGatewayAddress();
 
   /** @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int) */
   int getNumJobWorkerExecutionThreads();

@@ -28,4 +28,14 @@
     <method>ZeebeClientCredentials(java.lang.String, long, java.lang.String, java.lang.String)</method>
     <differenceType>7004</differenceType>
   </difference>
+  <difference>
+    <className>io/zeebe/client/ZeebeClientBuilder</className>
+    <method>io.zeebe.client.ZeebeClientBuilder gatewayAddress(java.lang.String)</method>
+    <differenceType>7012</differenceType>
+  </difference>
+  <difference>
+    <className>io/zeebe/client/ZeebeClientConfiguration</className>
+    <method>java.lang.String getGatewayAddress()</method>
+    <differenceType>7012</differenceType>
+  </difference>
 </differences>
