@@ -7438,6 +7438,11 @@ firefox-profile@^1.3.1:
     uuid "^3.0.0"
     xml2js "~0.4.4"
 
+fitty@^2.3.2:
+  version "2.3.2"
+  resolved "https://registry.yarnpkg.com/fitty/-/fitty-2.3.2.tgz#6638f3e46d2d133b7da914c43631a4a6ad081f28"
+  integrity sha512-aC0d+N7ORRnKG9JIXunZVgLvJRWf2HES7F529CoGQJGLdxF1aHJPLUdaBDQIMDtLFcZhmY1CgtQgFEDWu9vK+w==
+
 flat-cache@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/flat-cache/-/flat-cache-2.0.1.tgz#5d296d6f04bda44a4630a301413bdbc2ec085ec0"

@@ -1,7 +1,7 @@
 .Number {
   font-weight: bold;
-  font-size: 64px;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
+  display: inline-block;
+  white-space: nowrap;
+  align-self: flex-start;
+  margin: 0 auto;
 }
