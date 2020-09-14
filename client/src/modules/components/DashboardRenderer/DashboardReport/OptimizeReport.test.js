@@ -24,7 +24,7 @@ const props = {
 it('should load the report provided by id', () => {
   shallow(<OptimizeReport {...props} />);
 
-  expect(loadReport).toHaveBeenCalledWith(props.report.id, props.filter, undefined);
+  expect(loadReport).toHaveBeenCalledWith(props.report.id, props.filter, {});
 });
 
 it('should render the ReportRenderer if data is loaded', async () => {
@@ -110,6 +110,6 @@ it('should reload the report if the filter changes', async () => {
   expect(loadReport).toHaveBeenCalledWith(
     props.report.id,
     [{type: 'suspendedInstancesOnly', data: null}],
-    undefined
+    {}
   );
 });

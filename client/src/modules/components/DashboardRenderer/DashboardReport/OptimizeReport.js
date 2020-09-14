@@ -34,7 +34,7 @@ export class OptimizeReport extends React.Component {
   }
 
   async componentDidMount() {
-    await this.loadReport();
+    await this.loadInitialReport();
   }
 
   componentDidUpdate(prevProps) {
@@ -42,30 +42,33 @@ export class OptimizeReport extends React.Component {
       !deepEqual(prevProps.report, this.props.report) ||
       !deepEqual(prevProps.filter, this.props.filter)
     ) {
-      this.loadReport();
+      this.loadInitialReport();
     }
   }
 
-  loadReport = async (params) => {
-    this.setState({loading: !params});
-    await this.props.mightFail(
-      this.props.loadReport(this.props.report.id, this.props.filter, params),
-      (response) => {
-        this.setState({
-          loading: false,
-          data: response,
-        });
-      },
-      async (e) => {
-        const errorData = await e.json();
-        this.setState({
-          loading: false,
-          data: errorData.reportDefinition,
-          error: formatError(e, errorData),
-        });
-      }
-    );
+  loadInitialReport = async () => {
+    this.setState({loading: true});
+    await this.loadReport({});
+    this.setState({loading: false});
   };
+
+  loadReport = (params) =>
+    new Promise((resolve) => {
+      this.props.mightFail(
+        this.props.loadReport(this.props.report.id, this.props.filter, params),
+        (data) => this.setState({data}, resolve),
+        async (e) => {
+          const errorData = await e.json();
+          this.setState(
+            {
+              data: errorData.reportDefinition,
+              error: formatError(e, errorData),
+            },
+            resolve
+          );
+        }
+      );
+    });
 
   getName = () => {
     if (this.state.data) {
@@ -108,7 +111,7 @@ export class OptimizeReport extends React.Component {
             <ReportRenderer report={data} context="dashboard" loadReport={this.loadReport} />
           )}
         </div>
-        {children({loadReportData: this.loadReport})}
+        {children({loadReportData: this.loadInitialReport})}
       </div>
     );
   }

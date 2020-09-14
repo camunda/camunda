@@ -73,8 +73,8 @@ export class Report extends React.Component {
     });
   };
 
-  loadReport = async (params) => {
-    await this.props.mightFail(
+  loadReport = (params) =>
+    this.props.mightFail(
       evaluateReport(this.getId(), [], params),
       async (response) => {
         this.setState({
@@ -93,7 +93,6 @@ export class Report extends React.Component {
         return;
       }
     );
-  };
 
   render() {
     const {report, serverError} = this.state;

@@ -194,8 +194,8 @@ export class ReportEdit extends React.Component {
     this.setState({conflict: null, updatePromise: null});
   };
 
-  loadReport = async (params, query = this.state.report) => {
-    await this.props.mightFail(
+  loadReport = (params, query = this.state.report) =>
+    this.props.mightFail(
       evaluateReport(query, [], params),
       (response) =>
         this.setState({
@@ -203,7 +203,6 @@ export class ReportEdit extends React.Component {
         }),
       showError
     );
-  };
 
   render() {
     const {report, loadingReportData, conflict, redirect} = this.state;

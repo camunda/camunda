@@ -160,7 +160,7 @@ it('should show a loading state when specified', () => {
   expect(node.find('LoadingIndicator')).toExist();
 });
 
-it('should use manuel pagination values if specified', () => {
+it('should use manual pagination values if specified', () => {
   const node = shallow(<Table head={['a']} body={[]} totalEntries={250} defaultPageSize={50} />);
 
   expect(node.find('.tableFooter')).toIncludeText('page 1 of 5');
