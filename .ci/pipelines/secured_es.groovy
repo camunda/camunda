@@ -37,7 +37,7 @@ spec:
       # Defined in: https://github.com/camunda/infra-core/tree/master/camunda-ci-v2/deployments/optimize
       name: ci-optimize-nginx-proxy-config
   imagePullSecrets:
-  - name: registry-camunda-cloud-secret
+  - name: registry-camunda-cloud
   initContainers:
     - name: init-sysctl
       image: busybox

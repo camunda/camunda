@@ -16,7 +16,7 @@ EVENT_IMPORT_ENABLED=$6
 ES_NUM_NODES=$7
 
 sed -e "s/\${NAMESPACE}/$NAMESPACE/g" < .ci/podSpecs/performanceTests/ns.yml | kubectl apply -f -
-kubectl create secret docker-registry registry-camunda-cloud-secret \
+kubectl create secret docker-registry registry-camunda-cloud \
     --namespace "$NAMESPACE" \
     --docker-server=https://registry.camunda.cloud \
     --docker-username="$REGISTRY_USR" \

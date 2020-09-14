@@ -31,7 +31,7 @@ spec:
      operator: "Exists"
      effect: "NoSchedule"
   imagePullSecrets:
-    - name: registry-camunda-cloud-secret
+    - name: registry-camunda-cloud
   securityContext:
     fsGroup: 1000
   volumes:

@@ -124,7 +124,7 @@ spec:
     operator: "Exists"
     effect: "NoSchedule"
   imagePullSecrets:
-  - name: registry-camunda-cloud-secret
+  - name: registry-camunda-cloud
   containers:
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}

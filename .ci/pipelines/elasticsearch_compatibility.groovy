@@ -40,7 +40,7 @@ spec:
       operator: "Exists"
       effect: "NoSchedule"
   imagePullSecrets:
-    - name: registry-camunda-cloud-secret
+    - name: registry-camunda-cloud
   volumes:
   - name: cambpm-config
     configMap:
