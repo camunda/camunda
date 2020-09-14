@@ -8,7 +8,7 @@ organizationFolder('zeebe-io') {
     organizations {
         github {
             repoOwner('zeebe-io')
-            credentialsId('camunda-jenkins-github')
+            credentialsId('github-zeebe-app')
 
             traits {
                 cleanBeforeCheckoutTrait {
