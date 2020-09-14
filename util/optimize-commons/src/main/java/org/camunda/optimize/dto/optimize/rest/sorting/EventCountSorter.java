@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import javax.ws.rs.BadRequestException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsFirst;
@@ -25,18 +26,21 @@ public class EventCountSorter extends Sorter<EventCountDto> {
 
   private static final Comparator<EventCountDto> SUGGESTED_COMPARATOR =
     Comparator.comparing(EventCountDto::isSuggested, nullsFirst(naturalOrder())).reversed();
+  private static final Comparator<EventCountDto> GROUP_COMPARATOR =
+    Comparator.comparing(EventCountDto::getGroup, nullsFirst(String.CASE_INSENSITIVE_ORDER));
+  private static final Comparator<EventCountDto> SOURCE_COMPARATOR =
+    Comparator.comparing(EventCountDto::getSource, nullsFirst(String.CASE_INSENSITIVE_ORDER));
+  private static final Comparator<EventCountDto> EVENT_NAME_COMPARATOR =
+    Comparator.comparing(eventCountDto -> Optional.ofNullable(eventCountDto.getEventLabel())
+      .orElse(eventCountDto.getEventName()), nullsFirst(String.CASE_INSENSITIVE_ORDER));
+
   private static final Comparator<EventCountDto> DEFAULT_COMPARATOR = nullsFirst(
-    Comparator.comparing(EventCountDto::getGroup, nullsFirst(String.CASE_INSENSITIVE_ORDER))
-      .thenComparing(EventCountDto::getSource, nullsFirst(String.CASE_INSENSITIVE_ORDER))
-      .thenComparing(EventCountDto::getEventName, nullsFirst(String.CASE_INSENSITIVE_ORDER)));
+    GROUP_COMPARATOR.thenComparing(SOURCE_COMPARATOR).thenComparing(EVENT_NAME_COMPARATOR));
 
   private static final ImmutableMap<String, Comparator<EventCountDto>> sortComparators = ImmutableMap.of(
-    group.toLowerCase(),
-    Comparator.comparing(EventCountDto::getGroup, nullsFirst(String.CASE_INSENSITIVE_ORDER)),
-    source.toLowerCase(),
-    Comparator.comparing(EventCountDto::getSource, nullsFirst(String.CASE_INSENSITIVE_ORDER)),
-    eventName.toLowerCase(),
-    Comparator.comparing(EventCountDto::getEventName, nullsFirst(String.CASE_INSENSITIVE_ORDER))
+    group.toLowerCase(), GROUP_COMPARATOR,
+    source.toLowerCase(), SOURCE_COMPARATOR,
+    eventName.toLowerCase(), EVENT_NAME_COMPARATOR
   );
 
   @Override

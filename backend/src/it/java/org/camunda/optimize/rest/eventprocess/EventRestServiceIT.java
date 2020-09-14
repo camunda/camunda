@@ -594,6 +594,74 @@ public class EventRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void getEventCounts_sortByEventNameUsesLabelIfAvailable() {
+    // given
+    final String definitionKey = "myProcess";
+    final String startEventId = "startEventId";
+    final String userTaskId = "userTaskId";
+    final String endEventId = "endEventId";
+    BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
+      .startEvent(startEventId).name("zebra")
+      .userTask(userTaskId).name("aardvark")
+      .endEvent(endEventId)
+      .done();
+    engineIntegrationExtension.deployAndStartProcess(processModel);
+    importAllEngineEntitiesFromScratch();
+
+    EventCountSorter eventCountSorter = new EventCountSorter();
+    eventCountSorter.setSortBy("eventName");
+    eventCountSorter.setSortOrder(SortOrder.ASC);
+
+    final List<EventSourceEntryDto> sources = Collections.singletonList(
+      createCamundaEventSourceEntryDto(
+        definitionKey,
+        Collections.singletonList(EventScopeType.ALL),
+        ImmutableList.of("1")
+      ));
+
+    // when
+    List<EventCountDto> eventCountDtos =
+      embeddedOptimizeExtension.getRequestExecutor()
+        .buildPostEventCountRequest(
+          eventCountSorter,
+          null,
+          EventCountRequestDto.builder().eventSources(sources).build()
+        )
+        .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+
+    // then the event counts are listed according to sort parameters according to label if available, or name if not
+    assertThat(eventCountDtos)
+      .isNotNull()
+      .hasSize(4)
+      .containsExactly(
+        EventCountDto.builder()
+          .eventName(applyCamundaTaskEndEventSuffix(userTaskId))
+          .eventLabel(applyCamundaTaskEndEventSuffix("aardvark"))
+          .source(EVENT_SOURCE_CAMUNDA)
+          .group(definitionKey)
+          .build(),
+        EventCountDto.builder()
+          .eventName(applyCamundaTaskStartEventSuffix(userTaskId))
+          .eventLabel(applyCamundaTaskStartEventSuffix("aardvark"))
+          .source(EVENT_SOURCE_CAMUNDA)
+          .group(definitionKey)
+          .build(),
+        EventCountDto.builder()
+          .eventName(endEventId)
+          .eventLabel(endEventId)
+          .source(EVENT_SOURCE_CAMUNDA)
+          .group(definitionKey)
+          .build(),
+        EventCountDto.builder()
+          .eventName(startEventId)
+          .eventLabel("zebra")
+          .source(EVENT_SOURCE_CAMUNDA)
+          .group(definitionKey)
+          .build()
+      );
+  }
+
+  @Test
   public void getEventCounts_usingSortAndOrderParametersMatchingDefault() {
     // given
     EventCountSorter eventCountSorter = new EventCountSorter();
