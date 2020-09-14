@@ -580,10 +580,10 @@ public final class CreateDeploymentTest {
         .hasRejectionReason(
             "Expected to deploy new resources, but encountered the following errors:\n"
                 + "'p1.bpmn': - Element: start-event-1\n"
-                + "    - ERROR: Expected a valid timer expression for start event, "
-                + "but encountered the following error: failed to evaluate expression "
+                + "    - ERROR: Invalid timer cycle expression ("
+                + "failed to evaluate expression "
                 + "'INVALID_CYCLE_EXPRESSION': no variable found for name "
-                + "'INVALID_CYCLE_EXPRESSION'\n");
+                + "'INVALID_CYCLE_EXPRESSION')\n");
   }
 
   private DeployedWorkflow findWorkflow(

@@ -7,12 +7,12 @@
  */
 package io.zeebe.engine.processing.deployment.model.transformer;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.zeebe.engine.processing.deployment.model.element.ExecutableError;
 import io.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Error;
+import io.zeebe.util.buffer.BufferUtil;
+import java.util.Optional;
 
 public class ErrorTransformer implements ModelElementTransformer<Error> {
 
@@ -25,8 +25,14 @@ public class ErrorTransformer implements ModelElementTransformer<Error> {
   public void transform(final Error element, final TransformContext context) {
 
     final var error = new ExecutableError(element.getId());
-    error.setErrorCode(wrapString(element.getErrorCode()));
 
-    context.addError(error);
+    // ignore error events that are not references by the workflow
+    Optional.ofNullable(element.getErrorCode())
+        .map(BufferUtil::wrapString)
+        .ifPresent(
+            errorCode -> {
+              error.setErrorCode(errorCode);
+              context.addError(error);
+            });
   }
 }

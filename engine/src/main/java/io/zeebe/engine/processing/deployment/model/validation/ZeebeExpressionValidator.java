@@ -23,6 +23,20 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
   private static final Pattern PATH_PATTERN =
       Pattern.compile("[a-zA-Z][a-zA-Z0-9_]*(\\.[a-zA-Z][a-zA-Z0-9_]*)*");
 
+  private static final List<String> PATH_RESERVED_WORDS =
+      List.of(
+          "null",
+          "true",
+          "false",
+          "function",
+          "if",
+          "then",
+          "else",
+          "for",
+          "between",
+          "instance",
+          "of");
+
   private final ExpressionLanguage expressionLanguage;
   private final Class<T> elementType;
   private final List<Verification<T>> verifications;
@@ -73,6 +87,15 @@ public final class ZeebeExpressionValidator<T extends ModelElementInstance>
           String.format(
               "Expected path expression '%s' but doesn't match the pattern '%s'.",
               expression, PATH_PATTERN));
+    }
+
+    final var isReservedWord = PATH_RESERVED_WORDS.contains(expression);
+    if (isReservedWord) {
+      resultCollector.addError(
+          0,
+          String.format(
+              "Expected path expression '%s' but is one of the reserved words (%s).",
+              expression, String.join(", ", PATH_RESERVED_WORDS)));
     }
   }
 
