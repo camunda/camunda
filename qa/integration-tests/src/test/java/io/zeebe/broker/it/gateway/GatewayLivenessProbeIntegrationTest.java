@@ -20,6 +20,7 @@ import io.zeebe.containers.ZeebePort;
 import java.time.Duration;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 import org.junit.Test;
 import org.testcontainers.lifecycle.Startable;
 
@@ -56,20 +57,26 @@ public class GatewayLivenessProbeIntegrationTest {
             .build();
 
     // --- when + then ---------------------------------------
-    // most of the liveness health indicators are delayed health indicators which are scheduled at
-    // a fixed rate of 5 seconds, so it may take up to 5 seconds for all the indicators to be
-    // checked
-    Awaitility.await("wait for indicator to turn UP")
-        .atMost(Duration.ofSeconds(5))
-        .pollInterval(Duration.ofMillis(100))
-        .untilAsserted(
-            () ->
-                given()
-                    .spec(gatewayServerSpec)
-                    .when()
-                    .get(PATH_LIVENESS_PROBE)
-                    .then()
-                    .statusCode(200));
+    // most of the liveness probes use a delayed health indicator which is scheduled at a fixed
+    // rate of 5 seconds, so it may take up to that and a bit more in the worst case once the
+    // gateway finds the broker
+    try {
+      Awaitility.await("wait until status turns UP")
+          .atMost(Duration.ofSeconds(10))
+          .pollInterval(Duration.ofMillis(100))
+          .untilAsserted(
+              () ->
+                  given()
+                      .spec(gatewayServerSpec)
+                      .when()
+                      .get(PATH_LIVENESS_PROBE)
+                      .then()
+                      .statusCode(200));
+    } catch (final ConditionTimeoutException e) {
+      // it can happen that a single request takes too long and causes awaitility to timeout,
+      // in which case we want to try a second time to run the request without timeout
+      given().spec(gatewayServerSpec).when().get(PATH_LIVENESS_PROBE).then().statusCode(200);
+    }
 
     // --- shutdown ------------------------------------------
     Stream.of(gateway, broker).parallel().forEach(Startable::stop);
