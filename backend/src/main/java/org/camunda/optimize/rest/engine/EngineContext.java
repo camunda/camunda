@@ -365,6 +365,28 @@ public class EngineContext {
     return Optional.empty();
   }
 
+  public Optional<String> getInstallationId() {
+//    try {
+//      Response response = getEngineClient()
+//        .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
+//        .path("/installationId") // TODO: adjust the path once CAM-12294 is implemented
+//        .request(MediaType.APPLICATION_JSON)
+//        .get();
+//      if (response.getStatus() == Response.Status.OK.getStatusCode()) {
+//        return Optional.of(response.readEntity(String.class));
+//      }
+//      response.close();
+//    } catch (Exception e) {
+//      String message = String.format(
+//        "Could not get installation id from engine with alias [%s]",
+//        engineAlias
+//      );
+//      log.warn(message, e);
+//      return Optional.empty();
+//    }
+    return Optional.empty();
+  }
+
   public List<GroupDto> fetchPageOfGroups(final int pageStartIndex, final int pageLimit) {
     Response response = getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))

@@ -6,12 +6,12 @@
 package org.camunda.optimize.service.telemetry;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.DatabaseDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.InternalsDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
+import org.camunda.optimize.service.AbstractMultiEngineIT;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.index.MetadataIndex;
 import org.camunda.optimize.service.license.LicenseManager;
@@ -24,7 +24,8 @@ import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 import org.mockserver.verify.VerificationTimes;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Optional;
 
 import static javax.ws.rs.HttpMethod.GET;
@@ -34,7 +35,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_IN
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.IMMEDIATE;
 import static org.mockserver.model.HttpRequest.request;
 
-public class TelemetryDataServiceIT extends AbstractIT {
+public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
 
   @Test
   public void retrieveTelemetryData() {
@@ -51,6 +52,30 @@ public class TelemetryDataServiceIT extends AbstractIT {
       metadata.get().getInstallationId(),
       getLicense()
     );
+    assertThat(telemetryData).isEqualTo(expectedTelemetry);
+  }
+
+  @Test
+  public void retrieveTelemetryDataForTwoEngines() {
+    addSecondEngineToConfiguration();
+    // when
+    final TelemetryDataDto telemetryData =
+      embeddedOptimizeExtension.getApplicationContext().getBean(TelemetryDataService.class).getTelemetryData();
+
+    // then
+    final Optional<MetadataDto> metadata = getMetadata();
+    assertThat(metadata).isPresent();
+
+    final TelemetryDataDto expectedTelemetry = createExpectedTelemetry(
+      elasticSearchIntegrationTestExtension.getEsVersion(),
+      metadata.get().getInstallationId(),
+      getLicense()
+    );
+
+    expectedTelemetry.getProduct()
+      .getInternals()
+      .setEngineInstallationIds(Arrays.asList(INFORMATION_UNAVAILABLE_STRING, INFORMATION_UNAVAILABLE_STRING));
+
     assertThat(telemetryData).isEqualTo(expectedTelemetry);
   }
 
@@ -161,7 +186,8 @@ public class TelemetryDataServiceIT extends AbstractIT {
       .build();
 
     final InternalsDto internalsDto = InternalsDto.builder()
-      .engineInstallationIds(new ArrayList<>()) // adjust once engine installation ID retrieval is implemented
+      .engineInstallationIds(Collections.singletonList(INFORMATION_UNAVAILABLE_STRING)) // adjust once engine installation ID
+      // retrieval is implemented
       .database(databaseDto)
       .licenseKey(expectedLicenseKey)
       .build();

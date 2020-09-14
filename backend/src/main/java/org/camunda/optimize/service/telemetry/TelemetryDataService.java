@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.telemetry.DatabaseDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.InternalsDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
+import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.license.LicenseManager;
@@ -19,9 +20,9 @@ import org.elasticsearch.client.RequestOptions;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.metadata.Version.VERSION;
 
@@ -32,6 +33,7 @@ public class TelemetryDataService {
   public static final String INFORMATION_UNAVAILABLE_STRING = "Unknown";
 
   private final ElasticsearchMetadataService elasticsearchMetadataService;
+  private final EngineContextFactory engineContextFactory;
   private final LicenseManager licenseManager;
   private final OptimizeElasticsearchClient esClient;
 
@@ -52,7 +54,7 @@ public class TelemetryDataService {
   }
 
   private InternalsDto getInternalsData() {
-    final List<String> engineInstallationIDs = new ArrayList<>(); // TODO once CAM-12294 is implemented
+    final List<String> engineInstallationIDs = getEngineInstallationIds();
     final String licenseKey =
       Optional.ofNullable(licenseManager.getOptimizeLicense()).orElse(INFORMATION_UNAVAILABLE_STRING);
 
@@ -61,6 +63,13 @@ public class TelemetryDataService {
       .database(getDatabaseData())
       .licenseKey(licenseKey)
       .build();
+  }
+
+  private List<String> getEngineInstallationIds() {
+    return engineContextFactory.getConfiguredEngines()
+      .stream()
+      .map(engineContext -> engineContext.getInstallationId().orElse(INFORMATION_UNAVAILABLE_STRING))
+      .collect(Collectors.toList());
   }
 
   private DatabaseDto getDatabaseData() {

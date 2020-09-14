@@ -23,7 +23,7 @@ import java.util.List;
 public class InternalsDto implements OptimizeDto {
   @NonNull
   @Builder.Default
-  private final List<String> engineInstallationIds = new ArrayList<>();
+  private List<String> engineInstallationIds = new ArrayList<>();
   @NonNull
   private final DatabaseDto database;
   private final String licenseKey;
