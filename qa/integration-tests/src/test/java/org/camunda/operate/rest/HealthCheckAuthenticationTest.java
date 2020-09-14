@@ -7,22 +7,26 @@ package org.camunda.operate.rest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.BDDMockito.given;
 
-import org.camunda.operate.webapp.es.reader.Probes;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.webapp.rest.HealthCheckRestService;
-import org.camunda.operate.webapp.security.WebSecurityConfig;
+import org.camunda.operate.rest.HealthCheckTest.AddManagementPropertiesInitializer;
 import org.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
+import org.camunda.operate.management.ElsIndicesHealthIndicator;
+import org.camunda.operate.webapp.security.OperateURIs;
+import org.camunda.operate.webapp.security.WebSecurityConfig;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 /**
@@ -30,22 +34,24 @@ import org.springframework.test.context.junit4.SpringRunner;
  */
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-  classes = {OperateProperties.class,TestApplicationWithNoBeans.class, HealthCheckRestService.class, WebSecurityConfig.class},
+  classes = {OperateProperties.class,TestApplicationWithNoBeans.class, ElsIndicesHealthIndicator.class, WebSecurityConfig.class},
   webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
-@ActiveProfiles("auth")
-public class HealthCheckRestServiceAuthenticationTest {
+@ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
+@ActiveProfiles(OperateURIs.AUTH_PROFILE)
+public class HealthCheckAuthenticationTest {
 
   @Autowired
   private TestRestTemplate testRestTemplate;
 
   @MockBean
-  private Probes probes;
-  
+  private ElsIndicesHealthIndicator probes;
+
   @Test
   public void testHealthStateEndpointIsNotSecured() {
-    given(probes.isLive(any(Long.class))).willReturn(true);
-    final ResponseEntity<String> response = testRestTemplate.getForEntity(HealthCheckRestService.HEALTH_CHECK_URL, String.class);
+    given(probes.getHealth(anyBoolean())).willReturn(Health.up().build());
+
+    final ResponseEntity<String> response = testRestTemplate.getForEntity("/actuator/health/liveness", String.class);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }

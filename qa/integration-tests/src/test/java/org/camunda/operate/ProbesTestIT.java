@@ -7,11 +7,11 @@ package org.camunda.operate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.camunda.operate.management.ElsIndicesCheck;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.TestElasticsearchSchemaManager;
 import org.camunda.operate.util.TestApplication;
 import org.camunda.operate.util.TestUtil;
-import org.camunda.operate.webapp.es.reader.Probes;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,7 +22,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(
-    classes = { TestApplication.class, OperateProperties.class, TestElasticsearchSchemaManager.class, Probes.class },
+    classes = { TestApplication.class, OperateProperties.class, TestElasticsearchSchemaManager.class},
     properties = {OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
         OperateProperties.PREFIX + ".archiver.rolloverEnabled = false"}
 )
@@ -35,7 +35,7 @@ public class ProbesTestIT{
   private TestElasticsearchSchemaManager schemaManager;
   
   @Autowired
-  private Probes probes;
+  private ElsIndicesCheck probes;
   
   @Before
   public void before() {
@@ -52,28 +52,15 @@ public class ProbesTestIT{
   public void testIsReady() {
     enableCreateSchema(true);
     schemaManager.createSchema();
-    assertThat(probes.isReady()).isTrue();
+    assertThat(probes.indicesArePresent()).isTrue();
   }
   
   @Test
   public void testIsNotReady() {
     enableCreateSchema(false);
-    assertThat(probes.isReady()).isFalse();
+    assertThat(probes.indicesArePresent()).isFalse();
   }
 
-  @Test
-  public void testIsLive() {
-    enableCreateSchema(true);
-    schemaManager.createSchema();
-    assertThat(probes.isLive()).isTrue();
-  }
-  
-  @Test
-  public void testIsNotLive() {
-    enableCreateSchema(false);
-    assertThat(probes.isLive()).isFalse();
-  }
-  
   protected void enableCreateSchema(boolean createSchema) {
     operateProperties.getElasticsearch().setCreateSchema(createSchema);
   }

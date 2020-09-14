@@ -8,6 +8,7 @@ package org.camunda.operate.es;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import org.camunda.operate.management.ElsIndicesCheck;
 import org.camunda.operate.schema.ElasticsearchSchemaManager;
 import org.camunda.operate.schema.indices.IndexDescriptor;
 import org.camunda.operate.schema.templates.EventTemplate;
@@ -46,6 +47,9 @@ public class SchemaCreationIT extends OperateIntegrationTest {
   @Autowired
   private List<TemplateDescriptor> templateDescriptors;
 
+  @Autowired
+  private ElsIndicesCheck elsIndicesCheck;
+
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
@@ -63,7 +67,7 @@ public class SchemaCreationIT extends OperateIntegrationTest {
     assertTemplateOrder(eventTemplate.getTemplateName(), 30);
 
     //assert schema creation won't be performed for the second time
-    assertThat(schemaManager.schemaAlreadyExists()).isTrue();
+    assertThat(elsIndicesCheck.indicesArePresent()).isTrue();
   }
 
   private void assertTemplateOrder(String templateName, int templateOrder) throws IOException {

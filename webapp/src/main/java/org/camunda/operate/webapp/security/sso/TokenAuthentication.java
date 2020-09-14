@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
+import org.camunda.operate.webapp.security.OperateURIs;
 import com.auth0.jwt.exceptions.JWTDecodeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 
-@Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
+@Profile(OperateURIs.SSO_AUTH_PROFILE)
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class TokenAuthentication extends AbstractAuthenticationToken {

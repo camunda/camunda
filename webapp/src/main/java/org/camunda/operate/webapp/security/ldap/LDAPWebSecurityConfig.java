@@ -5,9 +5,27 @@
  */
 package org.camunda.operate.webapp.security.ldap;
 
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static org.camunda.operate.webapp.security.OperateURIs.AUTH_WHITELIST;
+import static org.camunda.operate.webapp.security.OperateURIs.COOKIE_JSESSIONID;
+import static org.camunda.operate.webapp.security.OperateURIs.LDAP_AUTH_PROFILE;
+import static org.camunda.operate.webapp.security.OperateURIs.LOGIN_RESOURCE;
+import static org.camunda.operate.webapp.security.OperateURIs.LOGOUT_RESOURCE;
+import static org.camunda.operate.webapp.security.OperateURIs.X_CSRF_HEADER;
+import static org.camunda.operate.webapp.security.OperateURIs.X_CSRF_PARAM;
+import static org.camunda.operate.webapp.security.OperateURIs.X_CSRF_TOKEN;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import javax.json.Json;
+import javax.servlet.FilterChain;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import org.camunda.operate.property.LdapProperties;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.webapp.rest.HealthCheckRestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -26,20 +44,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import javax.json.Json;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.io.PrintWriter;
-
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
-import static org.camunda.operate.webapp.rest.ClientConfigRestService.CLIENT_CONFIG_RESOURCE;
-import static org.springframework.http.HttpStatus.NO_CONTENT;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
-
-@Profile(LDAPWebSecurityConfig.LDAP_AUTH_PROFILE)
+@Profile(LDAP_AUTH_PROFILE)
 @Configuration
 @EnableWebSecurity
 @Component("webSecurityConfig")
@@ -47,32 +52,11 @@ public class LDAPWebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     private static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
 
-    public static final String LDAP_AUTH_PROFILE = "ldap-auth";
-    public static final String X_CSRF_PARAM = "X-CSRF-PARAM";
-    public static final String X_CSRF_HEADER = "X-CSRF-HEADER";
-    public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
-    public static final String COOKIE_JSESSIONID = "JSESSIONID";
-    public static final String LOGIN_RESOURCE = "/api/login";
-    public static final String LOGOUT_RESOURCE = "/api/logout";
-    public static final String ACTUATOR_ENDPOINTS = "/actuator/**";
-
     // Used to store the CSRF Token in a cookie.
     private final CookieCsrfTokenRepository cookieCSRFTokenRepository = new CookieCsrfTokenRepository();
 
     @Autowired
     private OperateProperties operateProperties;
-
-    private static final String[] AUTH_WHITELIST = {
-        // -- swagger ui
-        "/swagger-resources",
-        "/swagger-resources/**",
-        "/swagger-ui.html",
-        "/documentation",
-        "/webjars/**",
-        HealthCheckRestService.HEALTH_CHECK_URL,
-        ACTUATOR_ENDPOINTS,
-        CLIENT_CONFIG_RESOURCE
-    };
 
     @Override
     public void configure(HttpSecurity http) throws Exception {

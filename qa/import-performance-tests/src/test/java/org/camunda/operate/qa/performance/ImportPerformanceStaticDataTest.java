@@ -15,6 +15,7 @@ import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.qa.util.ElasticsearchUtil;
 import org.camunda.operate.schema.indices.WorkflowIndex;
 import org.camunda.operate.schema.templates.ListViewTemplate;
+import org.camunda.operate.webapp.security.OperateURIs;
 import org.camunda.operate.zeebe.PartitionHolder;
 import org.camunda.operate.zeebe.ZeebeESConstants;
 import org.camunda.operate.zeebeimport.ZeebeImporter;
@@ -46,7 +47,7 @@ public class ImportPerformanceStaticDataTest {
     logger.info("Operate will be started");
     applicationContext = new SpringApplicationBuilder(Application.class)
       .addCommandLineProperties(true)
-      .profiles("auth")
+      .profiles(OperateURIs.AUTH_PROFILE)
       .run();
     operateProperties = applicationContext.getBean(OperateProperties.class);
   }

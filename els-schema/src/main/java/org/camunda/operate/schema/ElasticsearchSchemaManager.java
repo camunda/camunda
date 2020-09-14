@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.annotation.PostConstruct;
+import org.camunda.operate.management.ElsIndicesCheck;
 import org.camunda.operate.property.MigrationProperties;
 import org.camunda.operate.exceptions.OperateRuntimeException;
 import org.camunda.operate.property.OperateProperties;
@@ -49,6 +50,9 @@ public class ElasticsearchSchemaManager {
   private List<TemplateDescriptor> templateDescriptors;
 
   @Autowired
+  private ElsIndicesCheck elsIndicesCheck;
+
+  @Autowired
   private Migrator migrator;
   
   @Autowired
@@ -73,10 +77,8 @@ public class ElasticsearchSchemaManager {
     }
   }
   
-  public boolean schemaAlreadyExists() {
-    return indexDescriptors.stream().allMatch(i -> indexExists(i.getAlias())) 
-        && templateDescriptors.stream().allMatch(t -> templateExists(t.getTemplateName())
-                                                   && indexExists(t.getMainIndexName()));
+  private boolean schemaAlreadyExists() {
+    return elsIndicesCheck.indicesArePresent();
   }
   
   public void createSchema() {
