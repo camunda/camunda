@@ -24,7 +24,7 @@ class UpgradeEsSchemaTest {
     def newOptimize = new OptimizeWrapper(currentVersion, buildDir, newElasticPort)
     try {
       // start new optimize to obtain expected schema and settings
-      newOptimize.start()
+      newOptimize.start().consumeProcessOutput()
       newElasticClient.refreshAll()
       def expectedSettings = newElasticClient.getSettings()
       def expectedMappings = newElasticClient.getMappings()
@@ -34,7 +34,7 @@ class UpgradeEsSchemaTest {
       newElasticClient.cleanIndices()
 
       // start old optimize to prepare for upgrade
-      oldOptimize.start()
+      oldOptimize.start().consumeProcessOutput()
       oldOptimize.waitForImportToFinish()
       oldElasticClient.refreshAll()
       oldOptimize.stop()
@@ -47,10 +47,18 @@ class UpgradeEsSchemaTest {
       oldElasticClient.deleteSnapshot()
 
       // run the upgrade
-      newOptimize.runUpgrade()
-      newOptimize.start()
+      def optimizeUpgradeOutputWriter = new FileWriter("optimize-upgrade.log")
+      newOptimize.runUpgrade().consumeProcessOutputStream(optimizeUpgradeOutputWriter)
+
+      // start new optimize
+      def newOptimizeStartupOutputWriter = new FileWriter("optimize-startup.log")
+      newOptimize.start().consumeProcessOutputStream(newOptimizeStartupOutputWriter)
+
       newOptimize.waitForImportToFinish()
       newOptimize.stop()
+
+      optimizeUpgradeOutputWriter.flush()
+      newOptimizeStartupOutputWriter.flush()
 
       println "Asserting expected index metadata..."
       assertThat(newElasticClient.getSettings()).isEqualTo(expectedSettings)
@@ -58,6 +66,7 @@ class UpgradeEsSchemaTest {
       assertThat(newElasticClient.getAliases()).isEqualTo(expectedAliases)
       assertThat(newElasticClient.getTemplates()).isEqualTo(expectedTemplates)
       println "Finished asserting expected index metadata!"
+
       println "Asserting expected instance data doc counts..."
       assertThat(oldElasticClient.getDocumentCount(PROCESS_DEFINITION_INDEX_NAME))
         .isEqualTo(newElasticClient.getDocumentCount(PROCESS_DEFINITION_INDEX_NAME))
@@ -75,10 +84,27 @@ class UpgradeEsSchemaTest {
       assertThat(oldElasticClient.getDocumentCount(DECISION_INSTANCE_INDEX_NAME))
         .isEqualTo(newElasticClient.getDocumentCount(DECISION_INSTANCE_INDEX_NAME))
       println "Finished asserting expected instance data doc counts..."
+
+      println "Asserting on startup and upgrade errors..."
+      new File("optimize-upgrade.log").eachLine {line ->
+        def matcherWarn = line =~ /WARN/
+        def matcherError = line =~ /ERROR/
+        assertThat(matcherWarn.find()).withFailMessage("Upgrade log contained warn log: %s", line).isEqualTo(false)
+        assertThat(matcherError.find()).withFailMessage("Upgrade log contained error log: %s", line).isEqualTo(false)
+      }
+      new File("optimize-startup.log").eachLine {line ->
+        def matcherWarn = line =~ /WARN/
+        def matcherError = line =~ /ERROR/
+        assertThat(matcherWarn.find()).withFailMessage("Startup log contained warn log: %s", line).isEqualTo(false)
+        assertThat(matcherError.find()).withFailMessage("Startup log contained error log: %s", line).isEqualTo(false)
+      }
+      println "Finished asserting on startup and upgrade errors"
     } catch (Exception e) {
       System.err.println e.getMessage()
       System.exit(1)
     } finally {
+      "rm optimize-upgrade.log".execute()
+      "rm optimize-startup.log".execute()
       oldElasticClient.close()
       newElasticClient.close()
       oldOptimize.stop()

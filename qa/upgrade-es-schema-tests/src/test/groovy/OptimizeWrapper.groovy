@@ -36,6 +36,7 @@ class OptimizeWrapper {
     upgradeProcess.waitFor()
     if (upgradeProcess.exitValue() == 0) {
       println "Successfully upgraded to Optimize ${optimizeVersion}"
+      return upgradeProcess
     } else {
       println "Error output: ${upgradeProcess.text}"
       throw new Exception("Failed upgrading to Optimize ${optimizeVersion}!")
@@ -51,8 +52,6 @@ class OptimizeWrapper {
     environmentVars.add("OPTIMIZE_ELASTICSEARCH_HTTP_PORT=${elasticPort}")
     def command = ["/bin/bash", "./optimize-startup.sh"]
     this.process = command.execute(environmentVars, new File(optimizeDirectory))
-    // to prevent process from blocking when output buffer is full
-    this.process.consumeProcessOutput()
     try {
       StatusClient statusClient = new StatusClient(() -> requestExecutor)
       println "Waiting for Optimize ${optimizeVersion} to boot..."
@@ -68,6 +67,7 @@ class OptimizeWrapper {
       // after the endpoint is available, should be solved with a proper health-check endpoint in future, OPT-3442
       sleep(5000)
       println "Optimize ${optimizeVersion} is up!"
+      return this.process
     } catch (Exception e) {
       println "Optimize did not start within ${timeoutInSeconds}s."
       stop()
