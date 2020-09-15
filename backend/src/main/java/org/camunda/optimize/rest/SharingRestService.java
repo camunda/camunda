@@ -115,7 +115,7 @@ public class SharingRestService {
     return sharingService.findShareForDashboard(dashboardId).orElse(null);
   }
 
-  @GET
+  @POST
   @Path("/report/{shareId}/evaluate")
   @Produces(MediaType.APPLICATION_JSON)
   public AuthorizedEvaluationResultDto evaluateReport(@Context ContainerRequestContext requestContext,

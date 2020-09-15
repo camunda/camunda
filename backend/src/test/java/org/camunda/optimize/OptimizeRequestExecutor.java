@@ -703,7 +703,7 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildEvaluateSharedReportRequest(String shareId,
                                                                   PaginationRequestDto paginationRequestDto) {
     this.path = "share/report/" + shareId + "/evaluate";
-    this.method = GET;
+    this.method = POST;
     Optional.ofNullable(paginationRequestDto).ifPresent(pagination -> addQueryParams(extractPagination(pagination)));
     return this;
   }
