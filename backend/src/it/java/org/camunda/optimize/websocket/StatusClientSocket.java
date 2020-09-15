@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
-import javax.websocket.Session;
 import java.util.concurrent.CountDownLatch;
 
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
@@ -40,7 +39,7 @@ public class StatusClientSocket {
 
 
   @OnMessage
-  public void onText(String message, Session session) throws Exception {
+  public void onText(String message) throws Exception {
     log.info("Message received from server:" + message);
 
     StatusWithProgressDto dto = objectMapper.readValue(message, StatusWithProgressDto.class);

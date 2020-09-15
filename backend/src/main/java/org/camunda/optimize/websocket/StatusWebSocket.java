@@ -36,7 +36,7 @@ public class StatusWebSocket {
 
   @OnOpen
   public void onOpen(Session session) {
-    if (statusReportJobs.size() <= configurationService.getMaxStatusConnections()) {
+    if (statusReportJobs.size() < configurationService.getMaxStatusConnections()) {
       StatusNotifier job = new StatusNotifier(
         statusCheckingService,
         objectMapper,

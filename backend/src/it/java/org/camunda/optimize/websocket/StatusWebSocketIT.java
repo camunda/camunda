@@ -17,9 +17,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.TimeUnit;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class StatusWebSocketIT extends AbstractIT {
 
@@ -30,14 +29,32 @@ public class StatusWebSocketIT extends AbstractIT {
     connectStatusClientSocket(socket);
 
     final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-    assertThat(initialStatusCorrectlyReceived, is(true));
+    assertThat(initialStatusCorrectlyReceived).isTrue();
 
     // when
     deployProcessAndTriggerImport();
 
     // then
     boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-    assertThat(statusCorrectlyReceived, is(true));
+    assertThat(statusCorrectlyReceived).isTrue();
+  }
+
+  @Test
+  public void getImportStatus_zeroMaxStatusConnectionsConfigured() throws Exception {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().setMaxStatusConnections(0);
+    final StatusClientSocket socket = new StatusClientSocket();
+    connectStatusClientSocket(socket);
+
+    final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+    assertThat(initialStatusCorrectlyReceived).isFalse();
+
+    // when
+    deployProcessAndTriggerImport();
+
+    // then
+    boolean statusCorrectlyReceived = socket.getImportingStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+    assertThat(statusCorrectlyReceived).isFalse();
   }
 
   @Test
@@ -47,14 +64,14 @@ public class StatusWebSocketIT extends AbstractIT {
     connectStatusClientSocket(socket);
 
     final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-    assertThat(initialStatusCorrectlyReceived, is(true));
+    assertThat(initialStatusCorrectlyReceived).isTrue();
 
     // when
     deployProcessAndTriggerImport();
 
     //then
-    assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS), is(true));
-    assertThat(socket.isImportStatusChanged(), is(true));
+    assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isTrue();
+    assertThat(socket.isImportStatusChanged()).isTrue();
   }
 
   @Test
@@ -69,7 +86,7 @@ public class StatusWebSocketIT extends AbstractIT {
       connectStatusClientSocket(socket);
 
       final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
-      assertThat(initialStatusCorrectlyReceived, is(true));
+      assertThat(initialStatusCorrectlyReceived).isTrue();
 
       //when
       BpmnModelInstance processModel = getSimpleBpmnDiagram();
@@ -78,12 +95,12 @@ public class StatusWebSocketIT extends AbstractIT {
       //then
       embeddedOptimizeExtension.getImportSchedulerFactory()
         .getImportSchedulers()
-        .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun(), is(false)));
-      assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS), is(false));
-      assertThat(socket.getReceivedTwoUpdatesLatch().getCount(), is(1L));
-      assertThat(socket.getImportStatus().isPresent(), is(true));
-      assertThat(socket.getImportStatus().get(), is(false));
-      assertThat(socket.isImportStatusChanged(), is(false));
+        .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
+      assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isFalse();
+      assertThat(socket.getReceivedTwoUpdatesLatch().getCount()).isEqualTo(1L);
+      assertThat(socket.getImportStatus()).isPresent();
+      assertThat(socket.getImportStatus().get()).isFalse();
+      assertThat(socket.isImportStatusChanged()).isFalse();
     } finally {
       // cleanup
       embeddedOptimizeExtension.getConfigurationService().getConfiguredEngines().values()
