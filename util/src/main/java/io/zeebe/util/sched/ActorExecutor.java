@@ -83,6 +83,7 @@ public final class ActorExecutor {
       Loggers.ACTOR_LOGGER.debug("Closing blocking task runner: closed successfully");
 
     } catch (final InterruptedException e) {
+      Thread.currentThread().interrupt();
       Loggers.ACTOR_LOGGER.error(
           "Closing blocking task runner: interrupted while awaiting termination", e);
     }

@@ -15,26 +15,26 @@ import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
-import io.zeebe.containers.ZeebeBrokerContainer;
-import java.io.IOException;
+import io.zeebe.containers.ZeebeContainer;
+import io.zeebe.containers.ZeebePort;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public final class BrokerMonitoringEndpointTest {
 
-  static ZeebeBrokerContainer sutBroker;
+  static ZeebeContainer sutBroker;
 
   static RequestSpecification brokerServerSpec;
 
   @BeforeClass
   public static void setUpClass() {
-    sutBroker = new ZeebeBrokerContainer("current-test").withClusterName("zeebe-cluster");
+    sutBroker = new ZeebeContainer("camunda/zeebe:current-test");
 
     sutBroker.start();
 
-    final Integer monitoringPort = sutBroker.getMappedPort(9600);
-    final String containerIPAddress = sutBroker.getContainerIpAddress();
+    final Integer monitoringPort = sutBroker.getMappedPort(ZeebePort.MONITORING.getPort());
+    final String containerIPAddress = sutBroker.getExternalHost();
 
     brokerServerSpec =
         new RequestSpecBuilder()
@@ -68,7 +68,7 @@ public final class BrokerMonitoringEndpointTest {
   }
 
   @Test
-  public void shouldGetReadyStatus() throws IOException, InterruptedException {
+  public void shouldGetReadyStatus() {
     given()
         .spec(brokerServerSpec)
         .when()
@@ -78,7 +78,7 @@ public final class BrokerMonitoringEndpointTest {
   }
 
   @Test
-  public void shouldGetHealthStatus() throws IOException, InterruptedException {
+  public void shouldGetHealthStatus() {
     given()
         .spec(brokerServerSpec)
         .when()

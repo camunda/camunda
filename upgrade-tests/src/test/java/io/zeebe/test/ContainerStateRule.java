@@ -8,9 +8,8 @@
 package io.zeebe.test;
 
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.containers.ZeebeBrokerContainer;
-import io.zeebe.containers.ZeebePort;
-import io.zeebe.containers.ZeebeStandaloneGatewayContainer;
+import io.zeebe.containers.ZeebeContainer;
+import io.zeebe.containers.ZeebeGatewayContainer;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
@@ -22,7 +21,6 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.event.Level;
 import org.testcontainers.containers.ContainerFetchException;
 import org.testcontainers.containers.ContainerLaunchException;
 import org.testcontainers.containers.Network;
@@ -49,8 +47,8 @@ class ContainerStateRule extends TestWatcher {
             });
   }
 
-  private ZeebeBrokerContainer broker;
-  private ZeebeStandaloneGatewayContainer gateway;
+  private ZeebeContainer broker;
+  private ZeebeGatewayContainer gateway;
   private ZeebeClient client;
   private Network network;
 
@@ -91,31 +89,27 @@ class ContainerStateRule extends TestWatcher {
   }
 
   public void start() {
+    final String contactPoint;
     network = Network.newNetwork();
     broker =
-        new ZeebeBrokerContainer(brokerVersion)
+        new ZeebeContainer("camunda/zeebe:" + brokerVersion)
             .withFileSystemBind(volumePath, "/usr/local/zeebe/data")
-            .withEnv("ZEEBE_BROKER_CLUSTER_CLUSTERNAME", "zeebe-cluster")
-            .withNetwork(network)
-            .withEmbeddedGateway(gatewayVersion == null)
-            .withLogLevel(Level.DEBUG)
-            .withDebug(true);
+            .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+            .withEnv("ZEEBE_DEBUG", "true")
+            .withNetwork(network);
+    Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> broker.self().start());
 
-    Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> broker.start());
-
-    String contactPoint = broker.getExternalAddress(ZeebePort.GATEWAY);
-
-    if (gatewayVersion != null) {
+    if (gatewayVersion == null) {
+      contactPoint = broker.getExternalGatewayAddress();
+    } else {
       gateway =
-          new ZeebeStandaloneGatewayContainer(gatewayVersion)
-              .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getContactPoint())
-              .withEnv("ZEEBE_GATEWAY_CLUSTER_CLUSTERNAME", "zeebe-cluster")
-              .withNetwork(network)
-              .withLogLevel(Level.DEBUG);
+          new ZeebeGatewayContainer("camunda/zeebe:" + gatewayVersion)
+              .withEnv("ZEEBE_GATEWAY_CLUSTER_CONTACTPOINT", broker.getInternalClusterAddress())
+              .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
+              .withNetwork(network);
 
-      Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> gateway.start());
-
-      contactPoint = gateway.getExternalAddress(ZeebePort.GATEWAY);
+      Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> gateway.self().start());
+      contactPoint = gateway.getExternalGatewayAddress();
     }
 
     client = ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint).usePlaintext().build();
@@ -186,7 +180,7 @@ class ContainerStateRule extends TestWatcher {
     }
 
     if (gateway != null) {
-      gateway.close();
+      gateway.shutdownGracefully(CLOSE_TIMEOUT);
       gateway = null;
     }
 
