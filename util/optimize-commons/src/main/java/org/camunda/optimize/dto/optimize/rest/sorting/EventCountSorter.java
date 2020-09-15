@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsFirst;
+import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.count;
 import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.eventName;
 import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.group;
 import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.source;
@@ -33,14 +34,17 @@ public class EventCountSorter extends Sorter<EventCountDto> {
   private static final Comparator<EventCountDto> EVENT_NAME_COMPARATOR =
     Comparator.comparing(eventCountDto -> Optional.ofNullable(eventCountDto.getEventLabel())
       .orElse(eventCountDto.getEventName()), nullsFirst(String.CASE_INSENSITIVE_ORDER));
+  private static final Comparator<EventCountDto> COUNTS_COMPARATOR =
+    Comparator.comparing(EventCountDto::getCount, nullsFirst(naturalOrder()));
 
-  private static final Comparator<EventCountDto> DEFAULT_COMPARATOR = nullsFirst(
-    GROUP_COMPARATOR.thenComparing(SOURCE_COMPARATOR).thenComparing(EVENT_NAME_COMPARATOR));
+  private static final Comparator<EventCountDto> DEFAULT_COMPARATOR = nullsFirst(GROUP_COMPARATOR.thenComparing(
+    SOURCE_COMPARATOR).thenComparing(EVENT_NAME_COMPARATOR).thenComparing(COUNTS_COMPARATOR));
 
   private static final ImmutableMap<String, Comparator<EventCountDto>> sortComparators = ImmutableMap.of(
     group.toLowerCase(), GROUP_COMPARATOR,
     source.toLowerCase(), SOURCE_COMPARATOR,
-    eventName.toLowerCase(), EVENT_NAME_COMPARATOR
+    eventName.toLowerCase(), EVENT_NAME_COMPARATOR,
+    count.toLowerCase(), COUNTS_COMPARATOR
   );
 
   @Override

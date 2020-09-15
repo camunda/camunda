@@ -40,10 +40,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
+import static java.util.Comparator.naturalOrder;
+import static java.util.Comparator.nullsFirst;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOURCE_CAMUNDA;
@@ -591,6 +594,52 @@ public class EventRestServiceIT extends AbstractIT {
         createManagementBbqCountDto(false),
         createNullGroupCountDto(false)
       );
+  }
+
+  @Test
+  public void getEventCounts_sortedByEventCountsInDescendingOrder() {
+    // given
+    final String definitionKey = "myProcess";
+    deployAndStartUserTaskProcess(definitionKey);
+    importAllEngineEntitiesFromScratch();
+
+    EventCountSorter eventCountSorter = new EventCountSorter();
+    eventCountSorter.setSortBy("count");
+    eventCountSorter.setSortOrder(SortOrder.DESC);
+    final List<EventSourceEntryDto> sources = ImmutableList.of(
+      createExternalEventSourceEntry(),
+      createCamundaEventSourceEntryDto(
+        definitionKey,
+        Collections.singletonList(EventScopeType.ALL),
+        ImmutableList.of("1")
+      )
+    );
+
+    // when
+    List<EventCountDto> eventCountDtos =
+      embeddedOptimizeExtension.getRequestExecutor()
+        .buildPostEventCountRequest(
+          eventCountSorter,
+          null,
+          EventCountRequestDto.builder().eventSources(sources).build()
+        )
+        .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+
+    // then the event counts are sorted by the highest count first
+    assertThat(eventCountDtos)
+      .containsExactlyInAnyOrder(
+        createNullGroupCountDto(false),
+        createBackendKetchupCountDto(false),
+        createBackendMayoCountDto(false),
+        createFrontendMayoCountDto(false),
+        createKetchupMayoCountDto(false),
+        createManagementBbqCountDto(false),
+        createEndEventCountDto(definitionKey),
+        createStartEventCountDto(definitionKey),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK)
+      )
+      .isSortedAccordingTo(Comparator.comparing(EventCountDto::getCount, nullsFirst(naturalOrder())).reversed());
   }
 
   @Test

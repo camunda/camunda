@@ -13,7 +13,6 @@ import org.camunda.optimize.service.status.StatusCheckingService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.web.socket.server.standard.SpringConfigurator;
 
-import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
 import javax.websocket.OnOpen;
@@ -58,8 +57,8 @@ public class StatusWebSocket {
   }
 
   @OnClose
-  public void onClose(CloseReason reason, Session session) {
-    log.debug("stopping to report status for session [{}]", session.getId());
+  public void onClose(Session session) {
+    log.debug("stopping status reporting for session [{}]", session.getId());
     removeSession(session);
   }
 
