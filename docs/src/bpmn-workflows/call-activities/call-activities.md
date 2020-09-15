@@ -32,9 +32,9 @@ When the call activity is activated then **all variables** of the call activity 
 
 Input mappings can be used to create new local variables in the scope of the call activity. These variables are also copied to the created workflow instance.
 
-By default, all variables of the created workflow instance are propagated to the call activity. This behavior can be customized by defining output mappings at the call activity. The output mappings are applied on completing the call activity.
-This is especially important in the case of a call activity in a parallel flow to avoid overriding variables (e.g. when it is marked as
-[parallel multi-instance](/bpmn-workflows/multi-instance/multi-instance.html#variable-mappings)).
+If the attribute `propagateAllChildVariables` is set (default: `true`) then all variables of the created workflow instance are propagated to the call activity. This behavior can be customized by defining output mappings at the call activity. The output mappings are applied on completing the call activity and only those variables that are defined in the output mappings are propagated.
+
+It is recommended to disable the attribute `propagateAllChildVariables` or define output mappings if the call activity is in a parallel flow (e.g. when it is marked as [parallel multi-instance](/bpmn-workflows/multi-instance/multi-instance.html#variable-mappings)). Otherwise, it can happen that variables are overridden accidentally when they are changed in the parallel flow.
 
 ## Additional Resources
 

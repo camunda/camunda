@@ -44,5 +44,9 @@ public final class CallActivityTransformer implements ModelElementTransformer<Ca
     final var expression = expressionLanguage.parseExpression(processId);
 
     callActivity.setCalledElementProcessId(expression);
+
+    final var propagateAllChildVariablesEnabled =
+        calledElement.isPropagateAllChildVariablesEnabled();
+    callActivity.setPropagateAllChildVariablesEnabled(propagateAllChildVariablesEnabled);
   }
 }
