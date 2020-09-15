@@ -57,9 +57,12 @@
     <version.httpcomponents>4.4.13</version.httpcomponents>
     <version.jackson>2.11.1</version.jackson>
     <version.java-grpc-prometheus>0.3.0</version.java-grpc-prometheus>
-    <version.junit>4.13</version.junit>
+    <version.junit>5.7.0</version.junit>
+    <version.junit4>4.13</version.junit4>
+    <version.opentest4j>1.2.0</version.opentest4j>
     <version.log4j>2.13.3</version.log4j>
-    <version.mockito>3.3.3</version.mockito>
+    <version.mockito>3.5.10</version.mockito>
+    <version.mockito-jupiter>3.5.10</version.mockito-jupiter>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.20</version.msgpack>
     <version.netty-tcnative>2.0.31.Final</version.netty-tcnative>
@@ -206,9 +209,17 @@
 
 
       <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${version.junit}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
         <groupId>junit</groupId>
         <artifactId>junit</artifactId>
-        <version>${version.junit}</version>
+        <version>${version.junit4}</version>
       </dependency>
 
       <dependency>
@@ -221,6 +232,18 @@
         <groupId>org.mockito</groupId>
         <artifactId>mockito-core</artifactId>
         <version>${version.mockito}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.mockito</groupId>
+        <artifactId>mockito-junit-jupiter</artifactId>
+        <version>${version.mockito-jupiter}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>org.opentest4j</groupId>
+        <artifactId>opentest4j</artifactId>
+        <version>${version.opentest4j}</version>
       </dependency>
 
       <dependency>
@@ -1276,6 +1299,22 @@
           <version>${plugin.version.surefire}</version>
           <scope>test</scope>
         </dependency>
+        <dependency>
+          <groupId>org.apache.maven.surefire</groupId>
+          <artifactId>surefire-junit-platform</artifactId>
+          <version>${plugin.version.surefire}</version>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.junit.jupiter</groupId>
+          <artifactId>junit-jupiter-engine</artifactId>
+          <scope>test</scope>
+        </dependency>
+        <dependency>
+          <groupId>org.junit.vintage</groupId>
+          <artifactId>junit-vintage-engine</artifactId>
+          <scope>test</scope>
+        </dependency>
       </dependencies>
       <build>
         <plugins>
@@ -1292,6 +1331,9 @@
                   <ignoredUnusedDeclaredDependencies combine.children="append">
                     <dep>org.apache.maven.surefire:surefire-junit4</dep>
                     <dep>org.apache.maven.surefire:surefire-junit47</dep>
+                    <dep>org.apache.maven.surefire:surefire-junit-platform</dep>
+                    <dep>org.junit.jupiter:junit-jupiter-engine</dep>
+                    <dep>org.junit.vintage:junit-vintage-engine</dep>
                   </ignoredUnusedDeclaredDependencies>
                 </configuration>
               </execution>

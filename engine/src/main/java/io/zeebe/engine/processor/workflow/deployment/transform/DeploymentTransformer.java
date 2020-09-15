@@ -104,6 +104,9 @@ public final class DeploymentTransformer {
       final String validationError = validator.validate(definition);
 
       if (validationError == null) {
+        // transform the model to avoid unexpected failures that are not covered by the validator
+        BpmnFactory.createTransformer().transformDefinitions(definition);
+
         final String bpmnIdDuplicateError = checkForDuplicateBpmnId(definition, resourceName);
 
         if (bpmnIdDuplicateError == null) {
