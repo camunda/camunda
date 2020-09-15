@@ -19,8 +19,8 @@ import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RequiredArgsConstructor
 @ServerEndpoint(value = "/ws/status", configurator = SpringConfigurator.class)
@@ -32,7 +32,7 @@ public class StatusWebSocket {
   private final ConfigurationService configurationService;
   private final EngineImportSchedulerFactory engineImportSchedulerFactory;
 
-  private Map<String, StatusNotifier> statusReportJobs = new HashMap<>();
+  private Map<String, StatusNotifier> statusReportJobs = new ConcurrentHashMap<>();
 
   @OnOpen
   public void onOpen(Session session) {

@@ -25,11 +25,7 @@ public class StatusNotifier implements ImportObserver {
 
   private Map<String, Boolean> importStatusMap;
 
-  public StatusNotifier(
-    StatusCheckingService statusCheckingService,
-    ObjectMapper objectMapper,
-    Session session
-  ) {
+  public StatusNotifier(StatusCheckingService statusCheckingService, ObjectMapper objectMapper, Session session) {
     this.statusCheckingService = statusCheckingService;
     this.objectMapper = objectMapper;
     this.session = session;

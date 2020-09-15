@@ -24,6 +24,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RequiredArgsConstructor
 @Component
@@ -41,7 +42,7 @@ public class StatusCheckingService {
     engineImportSchedulerFactory
       .getImportSchedulers()
       .forEach(s -> importStatusMap.put(s.getEngineAlias(), s.isImporting()));
-    result.setIsImporting(importStatusMap);
+    result.setIsImporting(new ConcurrentHashMap<>(importStatusMap));
     return result;
   }
 

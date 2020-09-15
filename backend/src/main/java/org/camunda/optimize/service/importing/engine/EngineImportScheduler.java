@@ -24,7 +24,8 @@ public class EngineImportScheduler extends AbstractScheduledService {
 
   private List<EngineImportMediator> importMediators;
 
-  private List<ImportObserver> importObservers = Collections.synchronizedList(new LinkedList<>());
+  // Iterating through this synchronized list is only thread-safe when synchronizing on the list itself, as per docs
+  private final List<ImportObserver> importObservers = Collections.synchronizedList(new LinkedList<>());
 
   private String engineAlias;
   private boolean isImporting = false;
@@ -145,11 +146,19 @@ public class EngineImportScheduler extends AbstractScheduledService {
   }
 
   private void notifyThatImportIsInProgress() {
-    importObservers.forEach(o -> o.importInProgress(engineAlias));
+    synchronized (importObservers) {
+      for (final ImportObserver importObserver : importObservers) {
+        importObserver.importInProgress(engineAlias);
+      }
+    }
   }
 
   private void notifyThatImportIsIdle() {
-    importObservers.forEach(o -> o.importIsIdle(engineAlias));
+    synchronized (importObservers) {
+      for (final ImportObserver importObserver : importObservers) {
+        importObserver.importIsIdle(engineAlias);
+      }
+    }
   }
 
   private boolean nothingToBeImported(List<?> currentImportRound) {
