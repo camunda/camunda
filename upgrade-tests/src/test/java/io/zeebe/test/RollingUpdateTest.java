@@ -101,6 +101,7 @@ public class RollingUpdateTest {
   @After
   public void tearDown() {
     containers.parallelStream().forEach(Startable::stop);
+    network.close();
   }
 
   @Test
