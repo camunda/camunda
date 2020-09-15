@@ -53,7 +53,7 @@ spec:
   - name: es-snapshot
     emptyDir: {}
   imagePullSecrets:
-  - name: registry-camunda-cloud-secret
+  - name: registry-camunda-cloud
   initContainers:
     - name: init-sysctl
       image: busybox
