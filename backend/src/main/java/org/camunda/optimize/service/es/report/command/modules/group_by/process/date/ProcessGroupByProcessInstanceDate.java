@@ -83,6 +83,9 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context,
                                                     final GroupByDateUnit unit) {
+    // set baseQuery in context for distribution by variable minMaxStat calculation
+    context.setDistributedByMinMaxBaseQuery(searchSourceBuilder.query());
+
     final MinMaxStatDto stats = getMinMaxDateStats(context, searchSourceBuilder.query());
 
     final DateAggregationContext dateAggContext = DateAggregationContext.builder()
@@ -120,6 +123,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
         .getSorting()
         .orElseGet(() -> new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC))
     );
+    result.setKeyIsOfNumericType(distributedByPart.isKeyOfNumericType(context).orElse(false));
   }
 
   private List<GroupByResult> processAggregations(final SearchResponse response,

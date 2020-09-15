@@ -577,7 +577,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
-    // then the bucket range defaults to min. - max. variable value
+    // then the report returns an empty result
     final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).isEmpty();
@@ -625,7 +625,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
 
     importAllEngineEntitiesFromScratch();
 
-    // when there is no baseline set
+    // when
     ProcessReportDataDto reportData = createReport(
       processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion(),
@@ -635,7 +635,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
       reportClient.evaluateMapReport(reportData);
 
-    // then the result includes all instances
+    // then
     final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData)

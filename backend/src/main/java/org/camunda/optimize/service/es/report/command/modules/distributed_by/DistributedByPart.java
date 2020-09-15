@@ -18,11 +18,14 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 
 import java.util.List;
+import java.util.Optional;
 
 public abstract class DistributedByPart<Data extends SingleReportDataDto> {
 
   @Setter
   protected ViewPart<Data> viewPart;
+
+  public abstract Optional<Boolean> isKeyOfNumericType(final ExecutionContext<Data> context);
 
   public void adjustSearchRequest(final SearchRequest searchRequest,
                                   final BoolQueryBuilder baseQuery,

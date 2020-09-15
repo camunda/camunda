@@ -89,6 +89,8 @@ public class SingleReportConfigurationDto implements Combinable {
   @Builder.Default
   private CustomBucketDto customBucket = CustomBucketDto.builder().build();
   @Builder.Default
+  private CustomBucketDto distributeByCustomBucket = CustomBucketDto.builder().build();
+  @Builder.Default
   private ReportSortingDto sorting = null;
   @Builder.Default
   private ProcessPartDto processPart = null;

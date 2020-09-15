@@ -6,8 +6,16 @@
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process;
 
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.DistributedByPart;
 
+import java.util.Optional;
+
 public abstract class ProcessDistributedByPart extends DistributedByPart<ProcessReportDataDto> {
+
+  @Override
+  public Optional<Boolean> isKeyOfNumericType(final ExecutionContext<ProcessReportDataDto> context) {
+    return Optional.of(false);
+  }
 
 }

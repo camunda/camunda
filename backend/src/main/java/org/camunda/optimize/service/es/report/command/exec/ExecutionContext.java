@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.Singl
 import org.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
+import org.elasticsearch.index.query.QueryBuilder;
 
 import java.time.ZoneId;
 import java.util.Optional;
@@ -28,6 +29,9 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
 
   // used in the context of combined reports to establish identical bucket sizes/ranges across all single reports
   private MinMaxStatDto combinedRangeMinMaxStats;
+
+  // used for distributed by variable report which need to create minMaxStats based on the baseQuery
+  private QueryBuilder distributedByMinMaxBaseQuery;
 
   // used to ensure a complete list of distributedByResults (to include all keys, even if the result is empty)
   // e.g. used for groupBy usertask - distributedBy assignee reports, where it is possible that

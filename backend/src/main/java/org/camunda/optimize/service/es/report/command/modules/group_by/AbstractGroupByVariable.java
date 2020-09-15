@@ -17,6 +17,7 @@ import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
 import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
+import org.camunda.optimize.service.es.report.command.service.NumberVariableAggregationService;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchResponse;
@@ -30,17 +31,12 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
 import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
-import org.elasticsearch.search.aggregations.bucket.range.RangeAggregationBuilder;
-import org.elasticsearch.search.aggregations.bucket.range.RangeAggregator;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -48,8 +44,6 @@ import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
-import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -66,10 +60,11 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   private static final String FILTERED_INSTANCE_COUNT_AGGREGATION = "filteredInstCount";
   private static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "inst_count";
   private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
-  private static final String RANGE_AGGREGATION = "rangeAggregation";
+  public static final String RANGE_AGGREGATION = "rangeAggregation";
 
   private final ConfigurationService configurationService;
   private final DateAggregationService dateAggregationService;
+  private final NumberVariableAggregationService numberVariableAggregationService;
   private final MinMaxStatsService minMaxStatsService;
 
   protected abstract String getVariableName(final ExecutionContext<Data> context);
@@ -136,65 +131,37 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
   private Optional<AggregationBuilder> createVariableSubAggregation(final ExecutionContext<Data> context,
                                                                     final QueryBuilder baseQuery) {
-    AggregationBuilder aggregationBuilder = AggregationBuilders
-      .terms(VARIABLES_AGGREGATION)
-      .size(configurationService.getEsAggregationBucketLimit())
-      .field(getNestedVariableValueFieldLabel(VariableType.STRING));
+    Optional<AggregationBuilder> aggregationBuilder = Optional.empty();
+    final VariableType type = getVariableType(context);
 
-    if (VariableType.DATE.equals(getVariableType(context))) {
-      Optional<AggregationBuilder> dateVariableAggregation = createDateVariableAggregation(baseQuery, context);
-      if (!dateVariableAggregation.isPresent()) {
-        return Optional.empty();
-      }
-      aggregationBuilder = dateVariableAggregation.get();
-    } else if (isGroupedByNumberVariable(getVariableType(context))) {
-      Optional<AggregationBuilder> numberVariableAggregation = createNumberVariableAggregation(baseQuery, context);
-      if (!numberVariableAggregation.isPresent()) {
-        return Optional.empty();
-      }
-      aggregationBuilder = numberVariableAggregation.get();
+    switch (getVariableType(context)) {
+      case STRING:
+      case BOOLEAN:
+        aggregationBuilder = Optional.of(AggregationBuilders
+                                           .terms(VARIABLES_AGGREGATION)
+                                           .size(configurationService.getEsAggregationBucketLimit())
+                                           .field(getNestedVariableValueFieldLabel(VariableType.STRING)));
+        break;
+      case DATE:
+        aggregationBuilder = createDateVariableAggregation(baseQuery, context);
+        break;
+      default:
+        if (VariableType.getNumericTypes().contains(type)) {
+          aggregationBuilder =
+            numberVariableAggregationService.createNumberVariableAggregation(
+              context,
+              getVariableType(context),
+              getNestedVariableValueFieldLabel(getVariableType(context)),
+              getMinMaxStats(baseQuery, context),
+              context.getReportData().getConfiguration().getCustomBucket()
+            );
+        }
     }
 
-    AggregationBuilder operationsAggregation = reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
+    final AggregationBuilder nestedDistributedByAgg = reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
       .subAggregation(distributedByPart.createAggregation(context));
 
-    aggregationBuilder.subAggregation(operationsAggregation);
-    return Optional.of(aggregationBuilder);
-  }
-
-  private Optional<AggregationBuilder> createNumberVariableAggregation(final QueryBuilder baseQuery,
-                                                                       final ExecutionContext<Data> context) {
-    final MinMaxStatDto minMaxStats = getMinMaxStats(baseQuery, context);
-    if (minMaxStats.isEmpty()) {
-      return Optional.empty();
-    }
-
-    final Optional<Double> min = getBaselineForNumberVariableAggregation(context, minMaxStats);
-    if (!min.isPresent()) {
-      // no valid baseline is set, return empty result
-      return Optional.empty();
-    }
-
-    final double unit = getGroupByNumberVariableUnit(context, min.get(), minMaxStats);
-    final double max = getMaxForNumberVariableAggregation(context, minMaxStats);
-    int numberOfBuckets = 0;
-
-    RangeAggregationBuilder rangeAgg = AggregationBuilders
-      .range(RANGE_AGGREGATION)
-      .field(getNestedVariableValueFieldLabel(getVariableType(context)));
-
-    for (double start = min.get();
-         start <= max && numberOfBuckets < configurationService.getEsAggregationBucketLimit();
-         start += unit, numberOfBuckets++) {
-      RangeAggregator.Range range =
-        new RangeAggregator.Range(
-          getKeyForNumberBucket(getVariableType(context), start),
-          start,
-          start + unit
-        );
-      rangeAgg.addRange(range);
-    }
-    return Optional.of(rangeAgg);
+    return aggregationBuilder.map(builder -> builder.subAggregation(nestedDistributedByAgg));
   }
 
   private Optional<AggregationBuilder> createDateVariableAggregation(final QueryBuilder baseQuery,
@@ -295,7 +262,9 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     if (VariableType.DATE.equals(getVariableType(context))) {
       compositeCommandResult.setSorting(new ReportSortingDto(ReportSortingDto.SORT_BY_KEY, SortOrder.ASC));
     }
-    compositeCommandResult.setKeyIsOfNumericType(getSortByKeyIsOfNumericType(context));
+    compositeCommandResult.setKeyIsOfNumericType(
+      distributedByPart.isKeyOfNumericType(context).orElse(getSortByKeyIsOfNumericType(context))
+    );
   }
 
   private void addMissingVariableBuckets(final List<GroupByResult> groupedData,
@@ -327,62 +296,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .mapToLong(MultiBucketsAggregation.Bucket::getDocCount)
       .sum();
     return filteredVariables.getDocCount() == resultDocCount;
-  }
-
-  private Double getMaxForNumberVariableAggregation(final ExecutionContext<Data> context,
-                                                    final MinMaxStatDto minMaxStats) {
-    return context.getCombinedRangeMinMaxStats().map(MinMaxStatDto::getMax).orElse(minMaxStats.getMax());
-  }
-
-  private Optional<Double> getBaselineForNumberVariableAggregation(final ExecutionContext<Data> context,
-                                                                   final MinMaxStatDto minMaxStats) {
-    final Optional<MinMaxStatDto> contextMinMaxStats = context.getCombinedRangeMinMaxStats();
-    final Optional<Double> baselineForSingleReport = context.getReportData()
-      .getConfiguration()
-      .getGroupByBaseline();
-
-    if (!contextMinMaxStats.isPresent() && baselineForSingleReport.isPresent()) {
-      if (baselineForSingleReport.get() > minMaxStats.getMax()) {
-        // if report is single report and invalid baseline is set, return empty result
-        return Optional.empty();
-      }
-      // if report is single report and a valid baseline is set, use this instead of the min. range value
-      return baselineForSingleReport;
-    }
-
-    return Optional.of(roundDownToNearestPowerOfTen(contextMinMaxStats.orElse(minMaxStats).getMin()));
-  }
-
-  private Double getGroupByNumberVariableUnit(final ExecutionContext<Data> context,
-                                              final Double baseline,
-                                              final MinMaxStatDto minMaxStats) {
-    final double maxVariableValue = context.getCombinedRangeMinMaxStats().orElse(minMaxStats).getMax();
-    final boolean customBucketsActive = context.getReportData().getConfiguration().getCustomBucket().isActive();
-    Double unit = context.getReportData().getConfiguration().getCustomBucket().getBucketSize();
-    if (!customBucketsActive || unit == null || unit <= 0) {
-      // if no valid unit is configured, calculate default automatic unit
-      unit =
-        (maxVariableValue - baseline)
-          / (NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1); // -1 because the end of the loop is
-      // inclusive and would otherwise create 81 buckets
-      unit = unit == 0 ? 1 : roundDownToNearestPowerOfTen(unit);
-    }
-    if (!VariableType.DOUBLE.equals(getVariableType(context))) {
-      // round unit up if grouped by number variable without decimal point
-      unit = Math.ceil(unit);
-    }
-    return unit;
-  }
-
-  private String getKeyForNumberBucket(final VariableType varType,
-                                       final double bucketStart) {
-    if (!VariableType.DOUBLE.equals(varType)) {
-      // truncate decimal point for non-double variable aggregations
-      return String.valueOf((long) bucketStart);
-    }
-    DecimalFormatSymbols decimalSymbols = new DecimalFormatSymbols(Locale.US);
-    final DecimalFormat decimalFormat = new DecimalFormat("0.00", decimalSymbols);
-    return decimalFormat.format(bucketStart);
   }
 
   private GroupByDateUnit getGroupByDateUnit(final ExecutionContext<Data> context) {

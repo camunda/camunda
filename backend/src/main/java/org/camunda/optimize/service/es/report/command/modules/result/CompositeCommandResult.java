@@ -159,8 +159,7 @@ public class CompositeCommandResult {
     for (GroupByResult group : groups) {
       List<MapResultEntryDto> distribution = group.distributions.stream()
         .map(DistributedByResult::getValueAsMapResultEntry)
-        // as distribution key is never numeric yet, always false
-        .sorted(getSortingComparator(sorting, false))
+        .sorted(getSortingComparator(sorting, keyIsOfNumericType))
         .collect(Collectors.toList());
       resultDto.getData().add(new HyperMapResultEntryDto(group.getKey(), distribution, group.getLabel()));
     }
