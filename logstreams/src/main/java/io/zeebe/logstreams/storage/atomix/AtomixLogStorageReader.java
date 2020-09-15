@@ -51,7 +51,7 @@ public final class AtomixLogStorageReader implements LogStorageReader {
       return LogStorage.OP_RESULT_NO_DATA;
     }
 
-    final var result =
+    final long result =
         findEntry(address)
             .map(indexed -> wrapEntryData(indexed, readBuffer))
             .orElse(LogStorage.OP_RESULT_NO_DATA);
@@ -154,7 +154,7 @@ public final class AtomixLogStorageReader implements LogStorageReader {
 
     while (reader.hasNext()) {
       final var entry = reader.next();
-      if (entry.type().equals(ZeebeEntry.class)) {
+      if (entry != null && ZeebeEntry.class.equals(entry.type())) {
         return Optional.of(entry.cast());
       }
     }
