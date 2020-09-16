@@ -20,7 +20,9 @@ A job has the following properties:
 
 Job workers request jobs of a certain type from the broker on a regular interval (i.e. polling). This interval and the number of jobs requested are configurable in the Zeebe client.
 
-If one or more jobs of the requested type are available, the broker will stream jobs to the worker. Upon receiving jobs, a worker performs them and sends back a *complete* or *fail* message for each job depending on whether the job could be completed successfully or not.
+If one or more jobs of the requested type are available, the broker will stream activated jobs to
+the worker. Upon receiving jobs, a worker performs them and sends back a *complete* or *fail*
+message for each job depending on whether the job could be completed successfully or not.
 
 For example, the following workflow might generate three different types of jobs: `process-payment`, `fetch-items`, and `ship-parcel`:
 
@@ -31,6 +33,7 @@ Three different job workers, one for each job type, could request jobs from Zeeb
 ![zeebe-job-workers-requesting-jobs](/basics/zeebe-job-workers-graphic.png)
 
 Many workers can request the same job type in order to scale up processing. In this scenario, the broker ensures that each job is sent to only one of the workers.
+Such a job is considered activated until the job is completed, failed or the job activation times out.
 
 On requesting jobs, the following properties can be set:
 
@@ -59,3 +62,21 @@ It is enabled by default.
 Zeebe decouples creation of jobs from performing the work on them. It is always possible to create jobs at the highest possible rate, regardless of whether or not there's a worker available to work on them. This is possible because Zeebe queues jobs until workers request them. If no job worker is currently requesting jobs, jobs remain queued. Because workers request jobs from the broker, the workers have control over the rate at which they take on new jobs.
 
 This allows the broker to handle bursts of traffic and effectively act as a _buffer_ in front of the job workers.
+
+## Completing and Failing Jobs
+After working on an activated job, a job worker can inform the broker that the job has either been
+completed or failed. If the job worker could successfully complete its work, it can inform the
+broker of this success by sending a complete job command. If the job could not be completed within
+the configured job activation timeout, then the broker will make the job available again to other
+job workers.
+
+In order to expose the results of the job, the job worker can pass variables with the complete job
+command. These variables will be merged into the workflow instance depending on the output variable
+mapping. Note that this may overwrite existing variables and can lead to race conditions in
+parallel flows. We recommend completing jobs with only those variables that need to be changed.
+
+If the job worker could not successfully complete its work, it can inform the broker of this failure
+by sending a fail job command. Fail job commands include the number of remaining retries. If this is a positive
+number then the job will be immediately activatable again, and a worker could try to process it
+again. If it is zero or negative however, an incident will be raised and the job will not be
+activatable until the incident is resolved.

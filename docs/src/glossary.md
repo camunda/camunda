@@ -63,14 +63,21 @@ An incident represents an error condition which prevents Zeebe from advancing an
 * [Incident](reference/incidents.md)
 
 ### Job
-A job represents a distinct unit of work within a business process. Jobs are represented by steps in your workflow and are identified by a unique name.
+A job represents a distinct unit of work within a business process. Service tasks represent such
+ jobs in your workflow and are identified by a unique id. A job has a type to allow specific job
+ workers to find jobs that they can work on.
 
 * [Job Workers](basics/job-workers.md#what-is-a-job)
 
 ### Job Activation Timeout
-This is the amount of time the broker will wait for a response from the client after a job has been submitted to the client for processing before it marks the job as completed or failed.  An incomplete job prevents Zeebe from advancing workflow execution to the next step.
+This is the amount of time the broker will wait for a complete or fail response from the job worker after a job has been submitted to the job worker for processing before it marks the job as available again for other job workers.
 
 * [Job Workers](basics/job-workers.md#requesting-jobs-from-the-broker)
+
+### Job Worker
+A special type of client that polls for and executes available jobs. An uncompleted job prevents Zeebe from advancing workflow execution to the next step.
+
+* [Job Workers](basics/job-workers.md)
 
 ### Leader
 In a clustered environment, one broker, the leader, is responsible for workflow execution and housekeeping of data within a partition.  Housekeeping includes, taking snapshots, replication and running exports.

@@ -14,6 +14,8 @@ When you start an instance of a workflow, the client library will then route the
 
 Use partitions to scale your workflow processing. Partitions are dynamically distributed in a Zeebe cluster and for each partition there is one leading broker at a time. This *leader* accepts requests and performs event processing for the partition. Let us assume you want to distribute workflow processing load over five machines. You can achieve that by bootstraping five partitions.
 
+Note that while each partition has one leading broker, _not all brokers are guaranteed to be leading a partition_. A broker can lead more than one partition, and, at times, a broker in a cluster may be acting only as a replication back-up for partitions. This broker will not be doing any active work on processes until a partition fail-over happens.
+
 ## Partition Data Layout
 
 A partition is a persistent append-only event stream. Initially, a partition is empty. As the first entry gets inserted, it takes the place of the first entry. As the second entry comes in and is inserted, it takes the place as the second entry and so on and so forth. Each entry has a position in the partition which uniquely identifies it.
