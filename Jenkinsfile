@@ -386,7 +386,7 @@ pipeline {
               )]) {
                 // We need to at least test-compile as some modules like optimize-data-generator
                 // make use of test classes of the backend module
-                runMaven('install test-compile -Dskip.fe.build -T\$LIMITS_CPU')
+                runMaven('test-compile -Dskip.fe.build -T\$LIMITS_CPU')
                 sh '''
                   apt-get update && apt-get install -qq git
                   # This step is needed to fetch repo branches so SonarQube can diff them.
