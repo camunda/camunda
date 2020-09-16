@@ -66,8 +66,9 @@ public abstract class AbstractQueryPerformanceTest {
   }
 
   protected int getNumberOfDefinitionVersions() {
-    String entityCountString = PROPERTIES.getProperty("camunda.optimize.test.query.definition.version.count");
-    return Integer.parseInt(entityCountString);
+    String definitionVersionCountString =
+      PROPERTIES.getProperty("camunda.optimize.test.query.definition.version.count");
+    return Integer.parseInt(definitionVersionCountString);
   }
 
   protected static long getImportTimeout() {

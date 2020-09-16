@@ -72,9 +72,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
   @EnumSource(DefinitionType.class)
   public void testQueryPerformance_multiEngine_getDefinitions(final DefinitionType definitionType) {
     // given
-    addSecondEngineToConfiguration();
     final int definitionCount = getNumberOfDefinitions();
-
     addTenantsToElasticsearch();
     final Map<String, Object> definitionMap = generateDefinitions(
       definitionType, definitionCount, DEFAULT_ENGINE_ALIAS, null
@@ -85,6 +83,10 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       definitionType, definitionCount, SECOND_ENGINE_ALIAS, null
     );
     addProcessDefinitionsToElasticsearch(definitionType, secondEngineDefinitions);
+    // adding second engine alias as last given action to avoid a race condition between async refreshes running in
+    // AbstractCachingAuthorizationService after EmbeddedOptimizeExtension#setupOptimize (beforeEach test) has been run
+    // and the EmbeddedOptimizeExtension#reloadConfiguration call happening after the engine has been added
+    addSecondEngineAliasToConfiguration();
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -141,9 +143,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
   @EnumSource(DefinitionType.class)
   public void testQueryPerformance_multiEngine_getDefinitionsGroupedByTenant(final DefinitionType definitionType) {
     // given
-    addSecondEngineToConfiguration();
     final int definitionCount = getNumberOfDefinitions();
-
     addTenantsToElasticsearch();
 
     final Map<String, Object> defaultEngineDefinitions = generateDefinitions(
@@ -155,6 +155,10 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       definitionType, definitionCount, SECOND_ENGINE_ALIAS, null
     );
     addProcessDefinitionsToElasticsearch(definitionType, secondEngineDefinitions);
+    // adding second engine alias as last given action to avoid a race condition between async refreshes running in
+    // AbstractCachingAuthorizationService after EmbeddedOptimizeExtension#setupOptimize (beforeEach test) has been run
+    // and the EmbeddedOptimizeExtension#reloadConfiguration call happening after the engine has been added
+    addSecondEngineAliasToConfiguration();
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -209,9 +213,7 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
   @EnumSource(DefinitionType.class)
   public void testQueryPerformance_multiEngine_getDefinitionKeys(final DefinitionType definitionType) {
     // given
-    addSecondEngineToConfiguration();
     final int definitionCount = getNumberOfDefinitions();
-
     addTenantsToElasticsearch();
     Map<String, Object> defaultEngineDefinitions = generateDefinitions(
       definitionType, definitionCount, DEFAULT_ENGINE_ALIAS, null
@@ -222,6 +224,10 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
       definitionType, definitionCount, SECOND_ENGINE_ALIAS, null
     );
     addProcessDefinitionsToElasticsearch(definitionType, secondEngineDefinitions);
+    // adding second engine alias as last given action to avoid a race condition between async refreshes running in
+    // AbstractCachingAuthorizationService after EmbeddedOptimizeExtension#setupOptimize (beforeEach test) has been run
+    // and the EmbeddedOptimizeExtension#reloadConfiguration call happening after the engine has been added
+    addSecondEngineAliasToConfiguration();
 
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
@@ -240,10 +246,12 @@ public class DefinitionQueryPerformanceTest extends AbstractQueryPerformanceTest
     assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
   }
 
-  private void addSecondEngineToConfiguration() {
+  private void addSecondEngineAliasToConfiguration() {
+    // we just use the same real engine as we only want to make Optimize call two engines and don't need two real ones
     final EngineConfiguration defaultEngineConfiguration = embeddedOptimizeExtension.getDefaultEngineConfiguration();
     final EngineConfiguration engineConfiguration = EngineConfiguration.builder()
-      .name(SECOND_ENGINE_ALIAS)
+      // using same engine name as we just point to the same engine again with another alias
+      .name(defaultEngineConfiguration.getName())
       .rest(defaultEngineConfiguration.getRest())
       .importEnabled(false)
       .authentication(EngineAuthenticationConfiguration.builder().enabled(false).build())
