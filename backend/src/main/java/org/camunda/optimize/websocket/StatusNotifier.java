@@ -35,14 +35,20 @@ public class StatusNotifier implements ImportObserver {
 
   @Override
   public synchronized void importInProgress(String engineAlias) {
+    boolean sendUpdate = importStatusMap.containsKey(engineAlias) && !importStatusMap.get(engineAlias);
     importStatusMap.put(engineAlias, true);
-    sendStatus();
+    if (sendUpdate) {
+      sendStatus();
+    }
   }
 
   @Override
   public synchronized void importIsIdle(String engineAlias) {
+    boolean sendUpdate = importStatusMap.containsKey(engineAlias) && importStatusMap.get(engineAlias);
     importStatusMap.put(engineAlias, false);
-    sendStatus();
+    if (sendUpdate) {
+      sendStatus();
+    }
   }
 
   private void sendStatus() {

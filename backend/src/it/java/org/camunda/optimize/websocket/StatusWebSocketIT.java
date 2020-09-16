@@ -69,9 +69,47 @@ public class StatusWebSocketIT extends AbstractIT {
     // when
     deployProcessAndTriggerImport();
 
-    //then
+    // then
     assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isTrue();
     assertThat(socket.isImportStatusChanged()).isTrue();
+  }
+
+  @Test
+  public void importNotInProgressStatusOnlyUpdatedOnValueChange() throws Exception {
+    // given
+    embeddedOptimizeExtension.stopEngineImportScheduling();
+    final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
+
+    // when status socket connects
+    connectStatusClientSocket(socket);
+    // then the initial status is received
+    assertThat(socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS)).isTrue();
+    assertThat(socket.getImportStatus()).isFalse();
+
+    // then no update received as no import is running so no status change
+    assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isFalse();
+    assertThat(socket.getImportStatus()).isFalse();
+  }
+
+  @Test
+  public void importInProgressStatusOnlyUpdatedOnValueChange() throws Exception {
+    // given
+    embeddedOptimizeExtension.stopEngineImportScheduling();
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+    final AssertHasChangedStatusClientSocket socket = new AssertHasChangedStatusClientSocket();
+
+    // when status socket connects
+    connectStatusClientSocket(socket);
+    // then the initial status is received
+    assertThat(socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS)).isTrue();
+    assertThat(socket.getImportStatus()).isTrue();
+
+    // when another import cycle runs and the state doesn't change (still importing)
+    embeddedOptimizeExtension.importAllEngineEntitiesFromScratch();
+
+    // then no update is received
+    assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isFalse();
+    assertThat(socket.getImportStatus()).isTrue();
   }
 
   @Test
@@ -88,18 +126,17 @@ public class StatusWebSocketIT extends AbstractIT {
       final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
       assertThat(initialStatusCorrectlyReceived).isTrue();
 
-      //when
+      // when
       BpmnModelInstance processModel = getSimpleBpmnDiagram();
       engineIntegrationExtension.deployAndStartProcess(processModel);
 
-      //then
+      // then
       embeddedOptimizeExtension.getImportSchedulerFactory()
         .getImportSchedulers()
         .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
       assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isFalse();
       assertThat(socket.getReceivedTwoUpdatesLatch().getCount()).isEqualTo(1L);
-      assertThat(socket.getImportStatus()).isPresent();
-      assertThat(socket.getImportStatus().get()).isFalse();
+      assertThat(socket.getImportStatus()).isFalse();
       assertThat(socket.isImportStatusChanged()).isFalse();
     } finally {
       // cleanup

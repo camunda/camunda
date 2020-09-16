@@ -12,14 +12,11 @@ import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
-import javax.websocket.Session;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * Client class to test Web Socket implementation of status
@@ -30,37 +27,27 @@ import static org.hamcrest.MatcherAssert.assertThat;
  */
 @ClientEndpoint
 @Slf4j
+@Getter
 public class AssertHasChangedStatusClientSocket {
 
-  @Getter
   private CountDownLatch initialStatusReceivedLatch = new CountDownLatch(1);
-
-  @Getter
   private CountDownLatch receivedTwoUpdatesLatch = new CountDownLatch(2);
-
-  private Boolean importStatus = null;
   private boolean importStatusChanged = false;
+  private Boolean importStatus = null;
   private ObjectMapper objectMapper = new ObjectMapper();
 
   @OnMessage
-  public void onText(String message, Session session) throws Exception {
+  public void onText(String message) throws Exception {
     log.info("Message received from server:" + message);
 
-    StatusWithProgressDto dto = objectMapper.readValue(message, StatusWithProgressDto.class);
+    StatusWithProgressDto statusDto = objectMapper.readValue(message, StatusWithProgressDto.class);
 
-    assertThat(dto.getIsImporting(), is(notNullValue()));
+    assertThat(statusDto.getIsImporting()).isNotNull();
     initialStatusReceivedLatch.countDown();
 
-    importStatusChanged |= importStatus != null && dto.getIsImporting().get(DEFAULT_ENGINE_ALIAS) != importStatus;
-    importStatus = dto.getIsImporting().get(DEFAULT_ENGINE_ALIAS);
+    importStatusChanged |= importStatus != null && statusDto.getIsImporting().get(DEFAULT_ENGINE_ALIAS) != importStatus;
+    importStatus = statusDto.getIsImporting().get(DEFAULT_ENGINE_ALIAS);
     receivedTwoUpdatesLatch.countDown();
   }
 
-  public Optional<Boolean> getImportStatus() {
-    return Optional.ofNullable(importStatus);
-  }
-
-  public boolean isImportStatusChanged() {
-    return importStatusChanged;
-  }
 }
