@@ -384,7 +384,7 @@ pipeline {
                 fileId: 'maven-nexus-settings-local-repo',
                 variable: 'MAVEN_SETTINGS_XML'
               )]) {
-                runMaven('compile -Dskip.fe.build -T\$LIMITS_CPU')
+                runMaven('install -pl !distro -DskipTests -Dskip.fe.build -T\$LIMITS_CPU')
                 sh '''
                   apt-get update && apt-get install -qq git
                   # This step is needed to fetch repo branches so SonarQube can diff them.
