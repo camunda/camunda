@@ -10,7 +10,6 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.Builder;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
@@ -173,10 +172,6 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     }
   }
 
-  private static ElasticsearchConnectionNodeConfiguration getEsConfigForConfigurationService(final ConfigurationService configurationService) {
-    return configurationService.getElasticsearchConnectionNodes().get(0);
-  }
-
   private void before() {
     if (haveToClean) {
       log.info("Cleaning elasticsearch...");
@@ -195,8 +190,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
 
   private static ClientAndServer initMockServer() {
     log.debug("Setting up ES MockServer on port {}", IntegrationTestConfigurationUtil.getElasticsearchMockServerPort());
-    final ElasticsearchConnectionNodeConfiguration esConfig = getEsConfigForConfigurationService(
-      IntegrationTestConfigurationUtil.createItConfigurationService());
+    final ElasticsearchConnectionNodeConfiguration esConfig =
+      IntegrationTestConfigurationUtil.createItConfigurationService().getFirstElasticsearchConnectionNode();
     return MockServerUtil.createProxyMockServer(
       esConfig.getHost(),
       esConfig.getHttpPort(),
@@ -211,7 +206,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
     } else {
       final ConfigurationService configurationService = createConfigurationService();
       final ElasticsearchConnectionNodeConfiguration esConfig =
-        getEsConfigForConfigurationService(configurationService);
+        configurationService.getFirstElasticsearchConnectionNode();
       esConfig.setHost(MockServerUtil.MOCKSERVER_HOST);
       esConfig.setHttpPort(mockServerClient.getLocalPort());
       createClientAndAddToCache(MOCKSERVER_CLIENT_KEY, configurationService);
@@ -220,8 +215,8 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   private void createClientAndAddToCache(String clientKey, ConfigurationService configurationService) {
-    final ElasticsearchConnectionNodeConfiguration esConfig = getEsConfigForConfigurationService(
-      configurationService);
+    final ElasticsearchConnectionNodeConfiguration esConfig =
+      configurationService.getFirstElasticsearchConnectionNode();
     log.info("Creating ES Client with host {} and port {}", esConfig.getHost(), esConfig.getHttpPort());
     prefixAwareRestHighLevelClient = new OptimizeElasticsearchClient(
       ElasticsearchHighLevelRestClientBuilder.build(configurationService),
@@ -505,14 +500,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public void deleteIndexOfMapping(final IndexMappingCreator indexMapping) {
-    try {
-      getOptimizeElasticClient().getHighLevelClient().indices().delete(
-        new DeleteIndexRequest(getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(indexMapping)),
-        RequestOptions.DEFAULT
-      );
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not delete all Optimize data", e);
-    }
+    getOptimizeElasticClient().deleteIndex(indexMapping);
   }
 
   private OptimizeIndexNameService getIndexNameService() {
@@ -756,27 +744,15 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   private void deleteAllEventProcessInstanceIndices() {
-    DeleteIndexRequest request = new DeleteIndexRequest(
+    getOptimizeElasticClient().deleteIndexByRawIndexName(
       getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*")
     );
-
-    try {
-      getOptimizeElasticClient().getHighLevelClient().indices().delete(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not delete all event process indices.", e);
-    }
   }
 
   public void deleteAllVariableUpdateInstanceIndices() {
-    DeleteIndexRequest request = new DeleteIndexRequest(
+    getOptimizeElasticClient().deleteIndexByRawIndexName(
       getIndexNameService().getOptimizeIndexAliasForIndex(VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "*")
     );
-
-    try {
-      getOptimizeElasticClient().getHighLevelClient().indices().delete(request, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not delete all variable update instance indices.", e);
-    }
   }
 
   public OptimizeElasticsearchClient getOptimizeElasticClient() {

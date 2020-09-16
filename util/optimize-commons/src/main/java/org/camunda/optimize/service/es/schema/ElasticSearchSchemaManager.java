@@ -42,7 +42,6 @@ import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.admin.indices.alias.Alias;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.Request;
@@ -304,22 +303,14 @@ public class ElasticSearchSchemaManager {
   }
 
   public void deleteOptimizeIndex(final OptimizeElasticsearchClient esClient, final IndexMappingCreator mapping) {
-    final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
     try {
-      try {
-        DeleteIndexRequest request = new DeleteIndexRequest(indexName);
-        esClient.getHighLevelClient().indices().delete(request, RequestOptions.DEFAULT);
-      } catch (ElasticsearchStatusException e) {
-        if (e.status() == RestStatus.NOT_FOUND) {
-          log.debug("Index {} was not found.", indexName);
-        } else {
-          throw e;
-        }
+      esClient.deleteIndex(mapping);
+    } catch (ElasticsearchStatusException e) {
+      if (e.status() == RestStatus.NOT_FOUND) {
+        log.debug("Index {} was not found.", mapping.getIndexName());
+      } else {
+        throw e;
       }
-    } catch (Exception e) {
-      final String message = String.format("Could not delete Index [%s]", indexName);
-      log.error(message, e);
-      throw new OptimizeRuntimeException(message, e);
     }
   }
 

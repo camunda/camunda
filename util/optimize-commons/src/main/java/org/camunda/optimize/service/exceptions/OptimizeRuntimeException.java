@@ -16,7 +16,7 @@ public class OptimizeRuntimeException extends RuntimeException {
     super(detailedErrorMessage);
   }
 
-  public OptimizeRuntimeException(String detailedErrorMessage, Exception e) {
+  public OptimizeRuntimeException(String detailedErrorMessage, Throwable e) {
     super(detailedErrorMessage, e);
   }
 

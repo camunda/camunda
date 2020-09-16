@@ -6,7 +6,7 @@
 package org.camunda.optimize.upgrade.steps.document;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.elasticsearch.index.query.QueryBuilder;
 
@@ -16,8 +16,8 @@ public class DeleteDataStep implements UpgradeStep {
   private final QueryBuilder query;
 
   @Override
-  public void execute(ESIndexAdjuster esIndexAdjuster) {
-    esIndexAdjuster.deleteDataByIndexName(indexName, query);
+  public void execute(SchemaUpgradeClient schemaUpgradeClient) {
+    schemaUpgradeClient.deleteDataByIndexName(indexName, query);
   }
 
 }

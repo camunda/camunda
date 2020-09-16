@@ -5,36 +5,21 @@
  */
 package org.camunda.optimize.upgrade.plan;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.schema.IndexMappingCreator;
-import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import lombok.extern.slf4j.Slf4j;
+import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.camunda.optimize.upgrade.util.MappingMetadataUtil.getAllMappings;
-
+@Slf4j
 public class UpgradeExecutionPlan implements UpgradePlan {
-
-  private final Logger logger = LoggerFactory.getLogger(getClass());
-
-  private OptimizeElasticsearchClient prefixAwareClient;
-
   private final List<UpgradeStep> upgradeSteps = new ArrayList<>();
-  private ElasticsearchMetadataService metadataService;
-  private ElasticSearchSchemaManager schemaManager;
+
   private String toVersion;
   private String fromVersion;
-  private ESIndexAdjuster esIndexAdjuster;
+  private SchemaUpgradeClient schemaUpgradeClient;
 
   /**
    * Package only constructor prevents from building this upgrade execution plan manually.
@@ -43,29 +28,15 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   UpgradeExecutionPlan() {
   }
 
-  public void addUpgradeDependencies(UpgradeExecutionDependencies upgradeDependencies) {
-    final ConfigurationService configurationService = upgradeDependencies.getConfigurationService();
-    final ObjectMapper objectMapper = upgradeDependencies.getObjectMapper();
-    final OptimizeIndexNameService indexNameService = upgradeDependencies.getIndexNameService();
-
-    metadataService = upgradeDependencies.getMetadataService();
-    prefixAwareClient = upgradeDependencies.getEsClient();
-    List<IndexMappingCreator> allMappings = getAllMappings(prefixAwareClient);
-    schemaManager = new ElasticSearchSchemaManager(
-      metadataService,
-      configurationService,
-      indexNameService,
-      allMappings,
-      objectMapper
-    );
-    esIndexAdjuster = new ESIndexAdjuster(schemaManager, prefixAwareClient, configurationService);
+  public void addUpgradeDependencies(final UpgradeExecutionDependencies upgradeDependencies) {
+    schemaUpgradeClient = new SchemaUpgradeClient(upgradeDependencies);
   }
 
   @Override
   public void execute() {
     int currentStepCount = 1;
     for (UpgradeStep step : upgradeSteps) {
-      logger.info(
+      log.info(
         "Starting step {}/{}: {}",
         currentStepCount,
         upgradeSteps.size(),
@@ -73,13 +44,13 @@ public class UpgradeExecutionPlan implements UpgradePlan {
       );
 
       try {
-        step.execute(esIndexAdjuster);
+        step.execute(schemaUpgradeClient);
       } catch (UpgradeRuntimeException e) {
-        logger.error("The upgrade will be aborted. Please restore your Elasticsearch backup and try again.");
+        log.error("The upgrade will be aborted. Please restore your Elasticsearch backup and try again.");
         throw e;
       }
 
-      logger.info(
+      log.info(
         "Successfully finished step {}/{}: {}",
         currentStepCount,
         upgradeSteps.size(),
@@ -88,9 +59,8 @@ public class UpgradeExecutionPlan implements UpgradePlan {
       currentStepCount++;
     }
 
-    schemaManager.initializeSchema(prefixAwareClient);
-
-    updateOptimizeVersion();
+    schemaUpgradeClient.initializeSchema();
+    schemaUpgradeClient.updateOptimizeVersion(fromVersion, toVersion);
   }
 
   public void addUpgradeStep(UpgradeStep upgradeStep) {
@@ -101,16 +71,8 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     this.upgradeSteps.addAll(upgradeSteps);
   }
 
-  public void setEsIndexAdjuster(final ESIndexAdjuster esIndexAdjuster) {
-    this.esIndexAdjuster = esIndexAdjuster;
-  }
-
-  public void setSchemaManager(final ElasticSearchSchemaManager schemaManager) {
-    this.schemaManager = schemaManager;
-  }
-
-  public void setMetadataService(final ElasticsearchMetadataService metadataService) {
-    this.metadataService = metadataService;
+  public void setSchemaUpgradeClient(final SchemaUpgradeClient schemaUpgradeClient) {
+    this.schemaUpgradeClient = schemaUpgradeClient;
   }
 
   public void setFromVersion(String fromVersion) {
@@ -121,8 +83,4 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     this.toVersion = toVersion;
   }
 
-  private void updateOptimizeVersion() {
-    logger.info("Updating Optimize Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
-    metadataService.upsertMetadata(prefixAwareClient, toVersion);
-  }
 }

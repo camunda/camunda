@@ -298,6 +298,11 @@ public class ConfigurationService {
     return elasticsearchConnectionNodes;
   }
 
+  @JsonIgnore
+  public ElasticsearchConnectionNodeConfiguration getFirstElasticsearchConnectionNode() {
+    return getElasticsearchConnectionNodes().get(0);
+  }
+
   public List<String> getDecisionOutputImportPluginBasePackages() {
     if (decisionOutputImportPluginBasePackages == null) {
       decisionOutputImportPluginBasePackages = configJsonContext.read(

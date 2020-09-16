@@ -6,7 +6,7 @@
 package org.camunda.optimize.upgrade.steps.document;
 
 import lombok.SneakyThrows;
-import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.elasticsearch.index.query.QueryBuilder;
 
@@ -45,10 +45,10 @@ public class UpdateDataStep implements UpgradeStep {
 
   @Override
   @SneakyThrows
-  public void execute(ESIndexAdjuster esIndexAdjuster) {
+  public void execute(SchemaUpgradeClient schemaUpgradeClient) {
     if (paramMapProvider != null) {
       parameters = paramMapProvider.call();
     }
-    esIndexAdjuster.updateDataByIndexName(indexName, query, updateScript, parameters);
+    schemaUpgradeClient.updateDataByIndexName(indexName, query, updateScript, parameters);
   }
 }

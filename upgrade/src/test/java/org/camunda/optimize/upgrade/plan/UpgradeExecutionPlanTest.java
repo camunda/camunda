@@ -5,13 +5,10 @@
  */
 package org.camunda.optimize.upgrade.plan;
 
-import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -20,15 +17,13 @@ public class UpgradeExecutionPlanTest {
   @Test
   public void testInitializeSchemaIsCalled() {
     final UpgradeExecutionPlan underTest = new UpgradeExecutionPlan();
-    underTest.setEsIndexAdjuster(Mockito.mock(ESIndexAdjuster.class));
-    underTest.setMetadataService(Mockito.mock(ElasticsearchMetadataService.class));
+    final SchemaUpgradeClient schemaUpgradeClient = Mockito.mock(SchemaUpgradeClient.class);
+    underTest.setSchemaUpgradeClient(schemaUpgradeClient);
     underTest.setFromVersion("1");
     underTest.setToVersion("2");
-    final ElasticSearchSchemaManager schemaManager = Mockito.mock(ElasticSearchSchemaManager.class);
-    underTest.setSchemaManager(schemaManager);
 
     underTest.execute();
 
-    verify(schemaManager, times(1)).initializeSchema(any());
+    verify(schemaUpgradeClient, times(1)).initializeSchema();
   }
 }

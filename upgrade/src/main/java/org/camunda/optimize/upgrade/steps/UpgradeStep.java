@@ -6,9 +6,9 @@
 package org.camunda.optimize.upgrade.steps;
 
 
-import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 
 public interface UpgradeStep {
 
-  void execute(ESIndexAdjuster esIndexAdjuster);
+  void execute(SchemaUpgradeClient schemaUpgradeClient);
 }

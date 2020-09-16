@@ -7,7 +7,7 @@ package org.camunda.optimize.upgrade.steps.schema;
 
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
-import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import org.camunda.optimize.upgrade.es.SchemaUpgradeClient;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.elasticsearch.cluster.metadata.AliasMetaData;
 
@@ -41,10 +41,10 @@ public class UpdateIndexStep implements UpgradeStep {
   }
 
   @Override
-  public void execute(final ESIndexAdjuster esIndexAdjuster) {
+  public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
     String indexName = index.getIndexName();
     int targetVersion = index.getVersion();
-    final OptimizeIndexNameService indexNameService = esIndexAdjuster.getIndexNameService();
+    final OptimizeIndexNameService indexNameService = schemaUpgradeClient.getIndexNameService();
     final String indexAlias = indexNameService.getOptimizeIndexAliasForIndex(indexName);
     final String sourceVersionAsString = String.valueOf(targetVersion - 1);
     final String targetVersionAsString = String.valueOf(targetVersion);
@@ -57,8 +57,8 @@ public class UpdateIndexStep implements UpgradeStep {
 
     if (index.getCreateFromTemplate()) {
       // create new template & indices and reindex data to it
-      esIndexAdjuster.createOrUpdateTemplateWithoutAliases(index, indexAlias);
-      final Map<String, Set<AliasMetaData>> indexAliasMap = esIndexAdjuster.getAliasMap(indexAlias);
+      schemaUpgradeClient.createOrUpdateTemplateWithoutAliases(index, indexAlias);
+      final Map<String, Set<AliasMetaData>> indexAliasMap = schemaUpgradeClient.getAliasMap(indexAlias);
       for (String sourceIndex : indexAliasMap.keySet()) {
         String suffix;
         String sourceIndexNameWithSuffix;
@@ -75,29 +75,29 @@ public class UpdateIndexStep implements UpgradeStep {
         }
         final String targetIndexNameWithSuffix = targetIndexName + suffix;
 
-        final Set<AliasMetaData> existingAliases = esIndexAdjuster.getAllAliasesForIndex(sourceIndexNameWithSuffix);
-        esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexNameWithSuffix, existingAliases);
-        esIndexAdjuster.createIndexFromTemplate(targetIndexNameWithSuffix);
-        esIndexAdjuster.reindex(sourceIndexNameWithSuffix, targetIndexNameWithSuffix, mappingScript, parameters);
-        applyAliasesToIndex(esIndexAdjuster, targetIndexNameWithSuffix, existingAliases);
-        esIndexAdjuster.deleteIndex(sourceIndexNameWithSuffix);
+        final Set<AliasMetaData> existingAliases = schemaUpgradeClient.getAllAliasesForIndex(sourceIndexNameWithSuffix);
+        schemaUpgradeClient.setAllAliasesToReadOnly(sourceIndexNameWithSuffix, existingAliases);
+        schemaUpgradeClient.createIndexFromTemplate(targetIndexNameWithSuffix);
+        schemaUpgradeClient.reindex(sourceIndexNameWithSuffix, targetIndexNameWithSuffix, mappingScript, parameters);
+        applyAliasesToIndex(schemaUpgradeClient, targetIndexNameWithSuffix, existingAliases);
+        schemaUpgradeClient.deleteIndex(sourceIndexNameWithSuffix);
       }
     } else {
       // create new index and reindex data to it
-      final Set<AliasMetaData> existingAliases = esIndexAdjuster.getAllAliasesForIndex(sourceIndexName);
-      esIndexAdjuster.setAllAliasesToReadOnly(sourceIndexName, existingAliases);
-      esIndexAdjuster.createIndex(index);
-      esIndexAdjuster.reindex(sourceIndexName, targetIndexName, mappingScript, parameters);
-      applyAliasesToIndex(esIndexAdjuster, targetIndexName, existingAliases);
-      esIndexAdjuster.deleteIndex(sourceIndexName);
+      final Set<AliasMetaData> existingAliases = schemaUpgradeClient.getAllAliasesForIndex(sourceIndexName);
+      schemaUpgradeClient.setAllAliasesToReadOnly(sourceIndexName, existingAliases);
+      schemaUpgradeClient.createIndex(index);
+      schemaUpgradeClient.reindex(sourceIndexName, targetIndexName, mappingScript, parameters);
+      applyAliasesToIndex(schemaUpgradeClient, targetIndexName, existingAliases);
+      schemaUpgradeClient.deleteIndex(sourceIndexName);
     }
   }
 
-  private void applyAliasesToIndex(final ESIndexAdjuster esIndexAdjuster,
+  private void applyAliasesToIndex(final SchemaUpgradeClient schemaUpgradeClient,
                                    final String indexName,
                                    final Set<AliasMetaData> aliases) {
     for (AliasMetaData alias : aliases) {
-      esIndexAdjuster.addAlias(
+      schemaUpgradeClient.addAlias(
         alias.getAlias(),
         indexName,
         // defaulting to true if this flag is not set but only one index exists

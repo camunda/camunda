@@ -150,14 +150,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final String versionedIndexName = indexNameService
-      .getVersionedOptimizeIndexNameForIndexMapping(TEST_INDEX_WITH_UPDATED_MAPPING);
-    assertThat(
-      prefixAwareClient.getHighLevelClient().indices().exists(
-        new GetIndexRequest(versionedIndexName),
-        RequestOptions.DEFAULT
-      )
-    ).isTrue();
+    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING)).isTrue();
   }
 
   @SneakyThrows
@@ -179,16 +172,13 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final String versionedIndexName = indexNameService
-      .getVersionedOptimizeIndexNameForIndexMapping(TEST_INDEX_WITH_UPDATED_MAPPING);
-    assertThat(
-      prefixAwareClient.getHighLevelClient().indices().exists(
-        new GetIndexRequest(versionedIndexName), RequestOptions.DEFAULT
-      )
-    ).isTrue();
+    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_UPDATED_MAPPING)).isTrue();
     // even though not being set before the writeIndex flag is now set
     final GetAliasesResponse alias = getAliasesForAlias(aliasForIndex);
-    assertThatIndexIsSetAsWriteIndex(versionedIndexName, alias);
+    assertThatIndexIsSetAsWriteIndex(
+      indexNameService.getVersionedOptimizeIndexNameForIndexMapping(TEST_INDEX_WITH_UPDATED_MAPPING),
+      alias
+    );
   }
 
   @SneakyThrows
@@ -208,16 +198,10 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final String versionedIndexName = indexNameService
-      .getVersionedOptimizeIndexNameForIndexMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING);
-    assertThat(
-      prefixAwareClient.getHighLevelClient().indices().exists(
-        new GetIndexRequest(versionedIndexName), RequestOptions.DEFAULT
-      )
-    ).isTrue();
+    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING)).isTrue();
 
-    final Map<?, ?> mappingFields = getMappingFields();
-    assertThat(mappingFields.containsKey("email")).isTrue();
+    final Map<String, Object> mappingFields = getMappingFields();
+    assertThat(mappingFields).containsKey("email");
   }
 
   @SneakyThrows
@@ -239,21 +223,16 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    final String versionedIndexName = indexNameService
-      .getVersionedOptimizeIndexNameForIndexMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING);
-    assertThat(
-      prefixAwareClient.getHighLevelClient().indices().exists(
-        new GetIndexRequest(versionedIndexName),
-        RequestOptions.DEFAULT
-      )
-    ).isTrue();
+    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING)).isTrue();
 
-    final Map<?, ?> mappingFields = getMappingFields();
-    assertThat(mappingFields.containsKey("email")).isTrue();
+    final Map<String, Object> mappingFields = getMappingFields();
+    assertThat(mappingFields).containsKey("email");
 
     // even though not being set before the writeIndex flag is now set
-    final GetAliasesResponse alias = getAliasesForAlias(aliasForIndex);
-    assertThatIndexIsSetAsWriteIndex(versionedIndexName, alias);
+    assertThatIndexIsSetAsWriteIndex(
+      indexNameService.getVersionedOptimizeIndexNameForIndexMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING),
+      getAliasesForAlias(aliasForIndex)
+    );
   }
 
   @SneakyThrows
@@ -283,27 +262,20 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
+    assertThat(prefixAwareClient.exists(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING)).isTrue();
+
     final String versionedIndexName = indexNameService
       .getVersionedOptimizeIndexNameForIndexMapping(TEST_INDEX_WITH_TEMPLATE_UPDATED_MAPPING);
-    assertThat(
-      prefixAwareClient.getHighLevelClient().indices().exists(
-        new GetIndexRequest(versionedIndexName),
-        RequestOptions.DEFAULT
-      )
-    ).isTrue();
-
-    final GetAliasesResponse alias = getAliasesForAlias(aliasForIndex);
-    assertThatIndexIsSetAsWriteIndex(versionedIndexName, alias);
+    assertThatIndexIsSetAsWriteIndex(versionedIndexName, getAliasesForAlias(aliasForIndex));
 
     assertThat(getAliasesForAlias(readOnlyAliasForIndex).getAliases())
       .hasSize(1)
       .extractingByKey(versionedIndexName)
-      .satisfies(aliasMetaData -> {
-        assertThat(aliasMetaData)
-          .hasSize(1)
-          .extracting(AliasMetaData::writeIndex)
-          .containsExactly(false);
-      });
+      .satisfies(aliasMetaData -> assertThat(aliasMetaData)
+        .hasSize(1)
+        .extracting(AliasMetaData::writeIndex)
+        .containsExactly(false)
+      );
   }
 
   @SneakyThrows
@@ -343,9 +315,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       .filter(e -> e.getValue().removeIf(AliasMetaData::writeIndex))
       .map(Map.Entry::getKey)
       .collect(toList());
-    Map<?, ?> mappingFields = getMappingFields();
-
-    assertThat(mappingFields.containsKey("email")).isTrue();
+    final Map<String, Object> mappingFields = getMappingFields();
+    assertThat(mappingFields).containsKey("email");
     assertThat(aliasMap.keySet()).hasSize(2);
     assertThat(indicesWithWriteAlias).hasSize(1);
     assertThat(indicesWithWriteAlias.get(0)).contains(expectedSuffixAfterRollover);
@@ -447,9 +418,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    assertThat(
-      prefixAwareClient.exists(new GetIndexRequest(TEST_INDEX_V2.getIndexName()), RequestOptions.DEFAULT)
-    ).isFalse();
+    assertThat(prefixAwareClient.exists(TEST_INDEX_V2)).isFalse();
   }
 
   @Test
@@ -468,8 +437,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     upgradePlan.execute();
 
     // then
-    Map<?, ?> mappingFields = getMappingFields();
-    assertThat(mappingFields.containsKey("email")).isTrue();
+    final Map<String, Object> mappingFields = getMappingFields();
+    assertThat(mappingFields).containsKey("email");
   }
 
   @Test
@@ -531,12 +500,11 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     assertThat(alias.getAliases())
       .hasSize(1)
       .extractingByKey(versionedIndexName)
-      .satisfies(aliasMetaData -> {
-        assertThat(aliasMetaData)
-          .hasSize(1)
-          .extracting(AliasMetaData::writeIndex)
-          .containsExactly(true);
-      });
+      .satisfies(aliasMetaData -> assertThat(aliasMetaData)
+        .hasSize(1)
+        .extracting(AliasMetaData::writeIndex)
+        .containsExactly(true)
+      );
   }
 
   private void createIndexWithoutWriteIndexFlagOnAlias(final String aliasForIndex) throws IOException {
@@ -548,7 +516,8 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     prefixAwareClient.getHighLevelClient().indices().create(request, RequestOptions.DEFAULT);
   }
 
-  private Map<?, ?> getMappingFields() throws IOException {
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> getMappingFields() throws IOException {
     GetMappingsRequest request = new GetMappingsRequest();
     request.indices(TEST_INDEX_WITH_UPDATED_MAPPING.getIndexName());
     GetMappingsResponse getMappingResponse = prefixAwareClient.getMapping(request, RequestOptions.DEFAULT);
@@ -560,7 +529,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
       .getSourceAsMap()
       .get("properties");
     if (propertiesMap instanceof Map) {
-      return (Map<?, ?>) propertiesMap;
+      return (Map<String, Object>) propertiesMap;
     } else {
       throw new OptimizeRuntimeException("ElasticSearch index mapping properties should be of type map");
     }

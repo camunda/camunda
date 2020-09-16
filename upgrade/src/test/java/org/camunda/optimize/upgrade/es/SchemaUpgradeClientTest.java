@@ -6,12 +6,14 @@
 package org.camunda.optimize.upgrade.es;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import org.apache.http.HttpEntity;
 import org.apache.http.ProtocolVersion;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicStatusLine;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
+import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -29,13 +31,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.OngoingStubbing;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -44,7 +46,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class EsIndexAdjusterIT {
+public class SchemaUpgradeClientTest {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapperFactory(
     new OptimizeDateTimeFormatterFactory().getObject(),
@@ -63,15 +65,19 @@ public class EsIndexAdjusterIT {
   private ConfigurationService configurationService;
   @Mock
   private OptimizeIndexNameService indexNameService;
+  @Mock
+  private ElasticsearchMetadataService metadataService;
 
-  private ESIndexAdjuster underTest;
+  private SchemaUpgradeClient underTest;
 
   @BeforeEach
   public void init() {
     when(elasticsearchClient.getHighLevelClient()).thenReturn(highLevelRestClient);
     when(elasticsearchClient.getIndexNameService()).thenReturn(indexNameService);
     when(highLevelRestClient.getLowLevelClient()).thenReturn(lowLevelRestClient);
-    this.underTest = new ESIndexAdjuster(schemaManager, elasticsearchClient, configurationService);
+    // just using the optimize data format here to satisfy the ObjectMapperFactory ctor
+    when(configurationService.getEngineDateFormat()).thenReturn(ElasticsearchConstants.OPTIMIZE_DATE_FORMAT);
+    this.underTest = new SchemaUpgradeClient(schemaManager, metadataService, elasticsearchClient, configurationService);
   }
 
   @Test
@@ -82,32 +88,14 @@ public class EsIndexAdjusterIT {
     final String taskId = "12345";
 
     // the task is successfully submitted
-    when(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT)).getTask()).thenReturn(
-      taskId);
+    when(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT)).getTask())
+      .thenReturn(taskId);
 
     // the first task response is in progress, the second is successfully complete
-    final Response inProgressResponse = createEsResponse(new TaskResponse(
-      false,
-      new TaskResponse.Task(taskId, new TaskResponse.Status(20L, 3L, 3L, 4L)),
-      null,
-      null
-    ));
-    final Response completedResponse = createEsResponse(new TaskResponse(
-      true,
-      new TaskResponse.Task(taskId, new TaskResponse.Status(20L, 6L, 6L, 8L)),
-      null,
-      null
-    ));
-    when(lowLevelRestClient.performRequest(
-      argThat(argument ->
-                argument != null
-                  && argument.getMethod().equals(HttpGet.METHOD_NAME)
-                  && argument.getEndpoint().equals("/_tasks/" + taskId)
-      )
-    )).thenReturn(inProgressResponse).thenReturn(completedResponse);
+    mockReindexStatus(taskId, new TaskResponse.Status(20L, 3L, 3L, 4L));
 
     // then no exceptions are thrown
-    underTest.reindex(index1, index2);
+    assertThatCode(() -> underTest.reindex(index1, index2)).doesNotThrowAnyException();
   }
 
   @Test
@@ -118,10 +106,12 @@ public class EsIndexAdjusterIT {
 
     // the task cannot be submitted
     given(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT))
-            .getTask()).willAnswer(invocation -> { throw new IOException(); });
+            .getTask()).willAnswer(invocation -> {
+      throw new IOException();
+    });
 
     // then an exception is thrown
-    assertThrows(UpgradeRuntimeException.class, () -> underTest.reindex(index1, index2));
+    assertThatThrownBy(() -> underTest.reindex(index1, index2)).isInstanceOf(UpgradeRuntimeException.class);
   }
 
   @Test
@@ -132,10 +122,10 @@ public class EsIndexAdjusterIT {
     final String taskId = "12345";
 
     // the task is successfully submitted
-    when(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT)).getTask()).thenReturn(
-      taskId);
+    when(highLevelRestClient.submitReindexTask(any(ReindexRequest.class), eq(RequestOptions.DEFAULT))
+           .getTask()).thenReturn(taskId);
 
-    // the task response contains an error when checking for status
+    // but the task status response contains an error when checking for status
     final TaskResponse taskResponseWithError = new TaskResponse(
       true,
       new TaskResponse.Task(taskId, new TaskResponse.Status(1L, 0L, 0L, 0L)),
@@ -143,18 +133,41 @@ public class EsIndexAdjusterIT {
       null
     );
     final Response taskStatusResponse = createEsResponse(taskResponseWithError);
-    when(lowLevelRestClient.performRequest(
+    whenReindexStatusRequest(taskId).thenReturn(taskStatusResponse);
+
+    // then an exception is thrown
+    assertThatThrownBy(() -> underTest.reindex(index1, index2))
+      .isInstanceOf(UpgradeRuntimeException.class)
+      .hasMessage(taskResponseWithError.getError().toString());
+  }
+
+  @SneakyThrows
+  private void mockReindexStatus(final String taskId, final TaskResponse.Status inProgressStatus) {
+    final Response completedResponse = createEsResponse(new TaskResponse(
+      true, new TaskResponse.Task(taskId, new TaskResponse.Status(20L, 6L, 6L, 8L)), null, null
+    ));
+    Response progressResponse = null;
+    if (inProgressStatus != null) {
+      progressResponse = createEsResponse(new TaskResponse(
+        false, new TaskResponse.Task(taskId, inProgressStatus), null, null
+      ));
+    }
+    OngoingStubbing<Response> responseOngoingStubbing = whenReindexStatusRequest(taskId);
+    if (progressResponse != null) {
+      responseOngoingStubbing = responseOngoingStubbing.thenReturn(progressResponse);
+    }
+    responseOngoingStubbing.thenReturn(completedResponse);
+  }
+
+  @SneakyThrows
+  private OngoingStubbing<Response> whenReindexStatusRequest(final String taskId) {
+    return when(lowLevelRestClient.performRequest(
       argThat(argument ->
                 argument != null
                   && argument.getMethod().equals(HttpGet.METHOD_NAME)
                   && argument.getEndpoint().equals("/_tasks/" + taskId)
       )
-    )).thenReturn(taskStatusResponse);
-
-    // then an exception is thrown
-    UpgradeRuntimeException exception =
-      assertThrows(UpgradeRuntimeException.class, () -> underTest.reindex(index1, index2));
-    assertThat(exception.getMessage(), is(taskResponseWithError.getError().toString()));
+    ));
   }
 
   private Response createEsResponse(TaskResponse taskResponse) throws IOException {
