@@ -5,11 +5,15 @@
  */
 package org.camunda.optimize.test.query.performance;
 
+import org.camunda.bpm.model.bpmn.Bpmn;
+import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.camunda.optimize.util.BpmnModels;
+import org.camunda.optimize.util.DmnModels;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestInfo;
@@ -42,27 +46,28 @@ public abstract class AbstractQueryPerformanceTest {
   }
 
   protected long getMaxAllowedQueryTime() {
-    String maxQueryTimeString =
-      PROPERTIES.getProperty("camunda.optimize.test.query.max.time.in.ms");
+    String maxQueryTimeString = PROPERTIES.getProperty("camunda.optimize.test.query.max.time.in.ms");
     return Long.parseLong(maxQueryTimeString);
   }
 
   protected int getNumberOfEntities() {
-    String entityCountString =
-      PROPERTIES.getProperty("camunda.optimize.test.query.entity.count");
+    String entityCountString = PROPERTIES.getProperty("camunda.optimize.test.query.entity.count");
     return Integer.parseInt(entityCountString);
   }
 
   protected int getNumberOfEvents() {
-    String eventCountString =
-      PROPERTIES.getProperty("camunda.optimize.test.query.event.count");
+    String eventCountString = PROPERTIES.getProperty("camunda.optimize.test.query.event.count");
     return Integer.parseInt(eventCountString);
   }
 
   protected int getNumberOfDefinitions() {
-    String definitionCountString =
-      PROPERTIES.getProperty("camunda.optimize.test.query.definition.count");
+    String definitionCountString = PROPERTIES.getProperty("camunda.optimize.test.query.definition.count");
     return Integer.parseInt(definitionCountString);
+  }
+
+  protected int getNumberOfDefinitionVersions() {
+    String entityCountString = PROPERTIES.getProperty("camunda.optimize.test.query.definition.version.count");
+    return Integer.parseInt(entityCountString);
   }
 
   protected static long getImportTimeout() {
@@ -81,14 +86,14 @@ public abstract class AbstractQueryPerformanceTest {
                                                                         final String name,
                                                                         final String engineAlias) {
     return ProcessDefinitionOptimizeDto.builder()
-      .id(key + "-" + version + "-" + tenantId + "-" + engineAlias)
+      .id(key + "-" + version + "-" + tenantId + "-" + engineAlias + "-" + version)
       .key(key)
       .name(name)
       .version(version)
       .versionTag("aVersionTag")
       .tenantId(tenantId)
       .engine(engineAlias)
-      .bpmn20Xml(key + version + tenantId)
+      .bpmn20Xml(Bpmn.convertToString(BpmnModels.getSingleUserTaskDiagram()))
       .build();
   }
 
@@ -103,7 +108,7 @@ public abstract class AbstractQueryPerformanceTest {
       .tenantId(tenantId)
       .engine(engineAlias)
       .name(name)
-      .dmn10Xml("id-" + key + "-version-" + version + "-" + tenantId)
+      .dmn10Xml(Dmn.convertToString(DmnModels.createDefaultDmnModel()))
       .build();
   }
 

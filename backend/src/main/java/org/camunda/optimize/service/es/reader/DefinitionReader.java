@@ -23,7 +23,6 @@ import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
-import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.DefinitionVersionHandlingUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -194,11 +193,13 @@ public class DefinitionReader {
         .size(LIST_FETCH_LIMIT);
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(termQuery(resolveDefinitionKeyFieldFromType(type), definitionKey))
-      .size(LIST_FETCH_LIMIT)
+      // no search results needed, we only need the aggregation
+      .size(0)
       .aggregation(enginesAggregation);
 
-    final SearchRequest searchRequest = new SearchRequest(resolveIndexNameForType(type))
-      .source(searchSourceBuilder);
+    final SearchRequest searchRequest = new SearchRequest(
+      DefinitionType.PROCESS.equals(type) ? PROCESS_DEFINITION_INDEX_NAME : DECISION_DEFINITION_INDEX_NAME
+    ).source(searchSourceBuilder);
 
     final SearchResponse searchResponse;
     try {

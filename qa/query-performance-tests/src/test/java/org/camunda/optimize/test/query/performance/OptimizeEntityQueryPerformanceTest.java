@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
@@ -75,14 +76,14 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDE
 @Slf4j
 public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformanceTest {
 
-  private static ProcessDefinitionOptimizeDto processDefinitionOptimizeDto;
-  private static DecisionDefinitionOptimizeDto decisionDefinitionOptimizeDto;
+  public static final String PROCESS_DEFINITION_KEY = "processKey";
+  public static final String DECISION_DEFINITION_KEY = "decisionKey";
 
   @BeforeEach
   public void init() {
     addTenantsToElasticsearch();
-    processDefinitionOptimizeDto = addProcessDefinitionToOptimize();
-    decisionDefinitionOptimizeDto = addDecisionDefinitionToOptimize();
+    addProcessDefinitionToOptimize();
+    addDecisionDefinitionToOptimize();
   }
 
   @Test
@@ -237,8 +238,8 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
   private List<String> addSingleProcessReportsToOptimize(final int numberOfReports, final String collectionId) {
     final ProcessReportDataDto processReportData = TemplatedProcessReportDataBuilder.createReportData()
       .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .setProcessDefinitionKey(processDefinitionOptimizeDto.getKey())
-      .setProcessDefinitionVersion(processDefinitionOptimizeDto.getVersion())
+      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
+      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .build();
 
     Map<String, Object> definitionsById = new HashMap<>();
@@ -264,8 +265,8 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
   private void addSingleDecisionReportsToOptimize(final int numberOfReports, final String collectionId) {
     final DecisionReportDataDto decisionReportData = DecisionReportDataBuilder.create()
       .setReportDataType(DecisionReportDataType.RAW_DATA)
-      .setDecisionDefinitionKey(decisionDefinitionOptimizeDto.getKey())
-      .setDecisionDefinitionVersion(decisionDefinitionOptimizeDto.getVersion())
+      .setDecisionDefinitionKey(DECISION_DEFINITION_KEY)
+      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .build();
     final SingleDecisionReportDefinitionDto definition = new SingleDecisionReportDefinitionDto(decisionReportData);
     definition.setCollectionId(collectionId);
@@ -373,29 +374,35 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     addToElasticsearch(new AlertIndex().getIndexName(), definitionsById);
   }
 
-  private ProcessDefinitionOptimizeDto addProcessDefinitionToOptimize() {
-    final ProcessDefinitionOptimizeDto processDefinition = createProcessDefinition();
-    addToElasticsearch(
-      new ProcessDefinitionIndex().getIndexName(),
-      ImmutableMap.of(processDefinition.getId(), processDefinition)
-    );
-    return processDefinition;
+  private void addProcessDefinitionToOptimize() {
+    IntStream.rangeClosed(1, getNumberOfDefinitionVersions())
+      .mapToObj(String::valueOf)
+      .forEach(version -> {
+        final ProcessDefinitionOptimizeDto processDefinition = createProcessDefinition(version);
+        addToElasticsearch(
+          new ProcessDefinitionIndex().getIndexName(),
+          ImmutableMap.of(processDefinition.getId(), processDefinition)
+        );
+      });
   }
 
-  private DecisionDefinitionOptimizeDto addDecisionDefinitionToOptimize() {
-    final DecisionDefinitionOptimizeDto decisionDefinition = createDecisionDefinition();
-    addToElasticsearch(
-      new DecisionDefinitionIndex().getIndexName(),
-      ImmutableMap.of(decisionDefinition.getId(), decisionDefinition)
-    );
-    return decisionDefinition;
+  private void addDecisionDefinitionToOptimize() {
+    IntStream.rangeClosed(1, getNumberOfDefinitionVersions())
+      .mapToObj(String::valueOf)
+      .forEach(version -> {
+        final DecisionDefinitionOptimizeDto decisionDefinition = createDecisionDefinition(version);
+        addToElasticsearch(
+          new DecisionDefinitionIndex().getIndexName(),
+          ImmutableMap.of(decisionDefinition.getId(), decisionDefinition)
+        );
+      });
   }
 
   private CollectionDataDto createCollectionData() {
     CollectionDataDto collectionData = new CollectionDataDto();
     collectionData.setScope(Arrays.asList(
-      new CollectionScopeEntryDto(DefinitionType.PROCESS, processDefinitionOptimizeDto.getKey()),
-      new CollectionScopeEntryDto(DefinitionType.DECISION, decisionDefinitionOptimizeDto.getKey())
+      new CollectionScopeEntryDto(DefinitionType.PROCESS, PROCESS_DEFINITION_KEY),
+      new CollectionScopeEntryDto(DefinitionType.DECISION, DECISION_DEFINITION_KEY)
     ));
     final CollectionRoleDto collectionRoleDto = new CollectionRoleDto(
       new IdentityDto(DEFAULT_USER, IdentityType.USER),
@@ -415,12 +422,12 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     return definition;
   }
 
-  private static ProcessDefinitionOptimizeDto createProcessDefinition() {
-    return createProcessDefinition("key", "1", null, "processName", DEFAULT_ENGINE_ALIAS);
+  private static ProcessDefinitionOptimizeDto createProcessDefinition(final String version) {
+    return createProcessDefinition(PROCESS_DEFINITION_KEY, String.valueOf(version), null, "processName", DEFAULT_ENGINE_ALIAS);
   }
 
-  private static DecisionDefinitionOptimizeDto createDecisionDefinition() {
-    return createDecisionDefinition("key", "1", null, "decisionName", DEFAULT_ENGINE_ALIAS);
+  private static DecisionDefinitionOptimizeDto createDecisionDefinition(final String version) {
+    return createDecisionDefinition(DECISION_DEFINITION_KEY, String.valueOf(version), null, "decisionName", DEFAULT_ENGINE_ALIAS);
   }
 
   private void addTenantsToElasticsearch() {

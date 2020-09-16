@@ -83,7 +83,7 @@ public class DefinitionAuthorizationService {
       case PROCESS:
         return eventProcessAuthorizationService.isAuthorizedToEventProcess(
           userId, definitionKey
-        ).orElse(engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
+        ).orElseGet(() -> engineDefinitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
           userId, IdentityType.USER, definitionKey, tenantIds
         ));
       case DECISION:
@@ -122,7 +122,8 @@ public class DefinitionAuthorizationService {
   public boolean isAuthorizedToAccessProcessDefinition(final String userId,
                                                        final ProcessDefinitionOptimizeDto processDefinition) {
     if (processDefinition.isEventBased()) {
-      return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey()).orElse(false);
+      return eventProcessAuthorizationService.isAuthorizedToEventProcess(userId, processDefinition.getKey())
+        .orElse(false);
     } else {
       return engineDefinitionAuthorizationService.isUserAuthorizedToSeeProcessDefinition(
         userId, processDefinition.getKey(), processDefinition.getTenantId(), processDefinition.getEngine()
