@@ -13,7 +13,8 @@
 # Optionally, you can overwrite the default JVM options by setting the `OPTIMIZE_JAVA_OPTS`
 # variable.
 
-BASEDIR=$(dirname "$0")
+cd $(dirname "$0")
+BASEDIR=$(pwd)
 
 echo
 echo "Starting Camunda Optimize ${project.version}...";

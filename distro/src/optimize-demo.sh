@@ -36,7 +36,9 @@ function checkStartup {
 # make sure to kill background/ child processes as well
 trap 'trap - SIGTERM && kill -- -$$' SIGINT SIGTERM EXIT
 
-BASEDIR=$(dirname "$0")
+cd $(dirname "$0")
+BASEDIR=$(pwd)
+
 mkdir -p $BASEDIR/log
 
 # we need to set the JAVA_HOME environment variable so that ElasticSearch can

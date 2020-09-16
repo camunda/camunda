@@ -8,7 +8,8 @@
 #                                                                                                                  #
 ####################################################################################################################
 
-BASEDIR=$(dirname "$0")
+cd $(dirname "$0")
+BASEDIR=$(pwd)
 
 # now set the path to java
 if [ -x "$JAVA_HOME/bin/java" ]; then
