@@ -23,7 +23,7 @@
     "graphql": "^15.3.0",
     "jest-environment-jsdom-fifteen": "^1.0.2",
     "mobx": "^5.15.6",
-    "mobx-react-lite": "^2.2.1",
+    "mobx-react-lite": "^2.2.2",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "react-final-form": "^6.5.1",
