@@ -39,6 +39,8 @@ import io.atomix.raft.protocol.CloseSessionRequest;
 import io.atomix.raft.protocol.CloseSessionResponse;
 import io.atomix.raft.protocol.CommandRequest;
 import io.atomix.raft.protocol.CommandResponse;
+import io.atomix.raft.protocol.ConfigureRequest;
+import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.KeepAliveRequest;
@@ -101,7 +103,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
   public LeaderRole(final RaftContext context) {
     super(context);
-    this.appender = new LeaderAppender(this);
+    appender = new LeaderAppender(this);
   }
 
   @Override
@@ -1105,6 +1107,14 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                         configuring = 0;
                       });
             });
+  }
+
+  @Override
+  public CompletableFuture<ConfigureResponse> onConfigure(final ConfigureRequest request) {
+    if (updateTermAndLeader(request.term(), request.leader())) {
+      raft.transition(Role.FOLLOWER);
+    }
+    return super.onConfigure(request);
   }
 
   @Override
