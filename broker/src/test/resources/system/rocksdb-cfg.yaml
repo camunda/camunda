@@ -1,0 +1,7 @@
+zeebe:
+  broker:
+    data:
+      rocksdb:
+        columnFamilyOptions:
+          compaction_pri: "kOldestSmallestSeqFirst"
+          write_buffer_size: 67108864

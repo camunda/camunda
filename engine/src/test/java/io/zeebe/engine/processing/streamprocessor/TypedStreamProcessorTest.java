@@ -75,7 +75,7 @@ public final class TypedStreamProcessorTest {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) ->
             TypedRecordProcessors.processors(keyGenerator)
                 .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new BatchProcessor()));
@@ -108,7 +108,7 @@ public final class TypedStreamProcessorTest {
     // given
     streams.startStreamProcessor(
         STREAM_NAME,
-        DefaultZeebeDbFactory.DEFAULT_DB_FACTORY,
+        DefaultZeebeDbFactory.defaultFactory(),
         (processingContext) ->
             TypedRecordProcessors.processors(keyGenerator)
                 .onCommand(

@@ -92,7 +92,7 @@ public final class EngineRule extends ExternalResource {
     this.explicitStart = explicitStart;
     environmentRule =
         new StreamProcessorRule(
-            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.DEFAULT_DB_FACTORY);
+            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory());
   }
 
   public static EngineRule singlePartition() {
