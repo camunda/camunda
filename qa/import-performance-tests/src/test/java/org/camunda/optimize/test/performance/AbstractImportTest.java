@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.test.context.ContextConfiguration;
 
 import java.sql.SQLException;
 import java.util.Properties;
@@ -30,7 +29,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-@ContextConfiguration(locations = {"/import-applicationContext.xml"})
 public abstract class AbstractImportTest {
   protected final Logger logger = LoggerFactory.getLogger(getClass());
 
