@@ -824,6 +824,11 @@ public class ConfigurationService {
     return importDmnDataEnabled;
   }
 
+  @JsonIgnore
+  public boolean isImportDmnDataEnabled() {
+    return getImportDmnDataEnabled();
+  }
+
   public Boolean getImportUserTaskWorkerDataEnabled() {
     if (importUserTaskWorkerDataEnabled == null) {
       importUserTaskWorkerDataEnabled = configJsonContext.read(
@@ -832,6 +837,11 @@ public class ConfigurationService {
       );
     }
     return importUserTaskWorkerDataEnabled;
+  }
+
+  @JsonIgnore
+  public boolean isImportUserTaskWorkerDataEnabled() {
+    return getImportUserTaskWorkerDataEnabled();
   }
 
   public String getAlertEmailAddress() {

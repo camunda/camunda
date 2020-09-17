@@ -5,6 +5,7 @@
  */
 package org.camunda.optimize.service.importing.engine;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.AbstractScheduledService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
@@ -19,22 +20,15 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+@RequiredArgsConstructor
 @Slf4j
 public class EngineImportScheduler extends AbstractScheduledService {
-
-  private List<EngineImportMediator> importMediators;
-
   // Iterating through this synchronized list is only thread-safe when synchronizing on the list itself, as per docs
   private final List<ImportObserver> importObservers = Collections.synchronizedList(new LinkedList<>());
 
-  private String engineAlias;
+  private final List<EngineImportMediator> importMediators;
+  private final String engineAlias;
   private boolean isImporting = false;
-
-  public EngineImportScheduler(List<EngineImportMediator> importMediators,
-                               String engineAlias) {
-    this.importMediators = importMediators;
-    this.engineAlias = engineAlias;
-  }
 
   @Override
   public void run() {
@@ -61,6 +55,7 @@ public class EngineImportScheduler extends AbstractScheduledService {
 
   public synchronized void stopImportScheduling() {
     log.info("Stop scheduling import from engine {}.", engineAlias);
+    this.isImporting = false;
     stopScheduling();
   }
 
@@ -175,7 +170,8 @@ public class EngineImportScheduler extends AbstractScheduledService {
       log.debug("No imports to schedule. Scheduler is sleeping for [{}] ms.", timeToSleep);
       Thread.sleep(timeToSleep);
     } catch (InterruptedException e) {
-      log.warn("Scheduler was interrupted while sleeping.", e);
+      log.error("Scheduler was interrupted while sleeping.", e);
+      Thread.currentThread().interrupt();
     }
   }
 }

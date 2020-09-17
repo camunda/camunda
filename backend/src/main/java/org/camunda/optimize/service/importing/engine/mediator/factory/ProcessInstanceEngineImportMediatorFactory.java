@@ -5,11 +5,13 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
+import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.plugin.BusinessKeyImportAdapterProvider;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.CompletedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.RunningProcessInstanceWriter;
+import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedProcessInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningProcessInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
@@ -21,6 +23,8 @@ import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMediatorFactory {
@@ -41,6 +45,14 @@ public class ProcessInstanceEngineImportMediatorFactory extends AbstractImportMe
     this.completedProcessInstanceWriter = completedProcessInstanceWriter;
     this.runningProcessInstanceWriter = runningProcessInstanceWriter;
     this.businessKeyImportAdapterProvider = businessKeyImportAdapterProvider;
+  }
+
+  @Override
+  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+    return ImmutableList.of(
+      createCompletedProcessInstanceEngineImportMediator(engineContext),
+      createRunningProcessInstanceEngineImportMediator(engineContext)
+    );
   }
 
   public CompletedProcessInstanceEngineImportMediator createCompletedProcessInstanceEngineImportMediator(

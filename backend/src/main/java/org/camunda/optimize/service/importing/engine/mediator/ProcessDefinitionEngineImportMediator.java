@@ -58,4 +58,10 @@ public class ProcessDefinitionEngineImportMediator
   protected int getMaxPageSize() {
     return configurationService.getEngineImportProcessDefinitionMaxPageSize();
   }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.DEFINITION;
+  }
+
 }

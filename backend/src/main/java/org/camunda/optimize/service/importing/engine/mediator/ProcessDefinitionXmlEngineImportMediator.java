@@ -42,4 +42,10 @@ public class ProcessDefinitionXmlEngineImportMediator
   protected List<ProcessDefinitionXmlEngineDto> getEntities(final IdSetBasedImportPage page) {
     return engineEntityFetcher.fetchXmlsForDefinitions(page);
   }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.DEFINITION_XML;
+  }
+
 }

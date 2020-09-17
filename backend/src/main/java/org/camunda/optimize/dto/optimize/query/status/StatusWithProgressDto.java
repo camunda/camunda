@@ -8,10 +8,14 @@ package org.camunda.optimize.dto.optimize.query.status;
 import lombok.Data;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 public class StatusWithProgressDto {
-
   protected ConnectionStatusDto connectionStatus;
   protected Map<String, Boolean> isImporting;
+
+  public void setIsImporting(final Map<String, Boolean> isImporting) {
+    this.isImporting = new ConcurrentHashMap<>(isImporting);
+  }
 }

@@ -7,13 +7,6 @@
   http://www.springframework.org/schema/beans/spring-beans.xsd
   http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd"
 >
-  <context:annotation-config/>
-
-  <context:component-scan base-package="org.camunda.optimize.service.util" />
-  <context:component-scan base-package="org.camunda.optimize.rest.providers" >
-    <context:exclude-filter type="assignable" expression="org.camunda.optimize.rest.providers.RequestAuthenticationFilter" />
-    <context:exclude-filter type="assignable" expression="org.camunda.optimize.rest.providers.ResponseCookieRefreshFilter" />
-  </context:component-scan>
 
   <bean id="configurationService"
         class="org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder"
@@ -24,6 +17,14 @@
       </list>
     </constructor-arg>
   </bean>
+
+  <context:annotation-config/>
+
+  <context:component-scan base-package="org.camunda.optimize.service.util" />
+  <context:component-scan base-package="org.camunda.optimize.rest.providers" >
+    <context:exclude-filter type="assignable" expression="org.camunda.optimize.rest.providers.RequestAuthenticationFilter" />
+    <context:exclude-filter type="assignable" expression="org.camunda.optimize.rest.providers.ResponseCookieRefreshFilter" />
+  </context:component-scan>
 
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"

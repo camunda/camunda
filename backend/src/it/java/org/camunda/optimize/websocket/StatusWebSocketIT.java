@@ -131,7 +131,7 @@ public class StatusWebSocketIT extends AbstractIT {
       engineIntegrationExtension.deployAndStartProcess(processModel);
 
       // then
-      embeddedOptimizeExtension.getImportSchedulerFactory()
+      embeddedOptimizeExtension.getImportSchedulerManager()
         .getImportSchedulers()
         .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
       assertThat(socket.getReceivedTwoUpdatesLatch().await(1, TimeUnit.SECONDS)).isFalse();

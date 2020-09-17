@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
-import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
+import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConstants;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -24,7 +24,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 @RequiredArgsConstructor
 @Component
@@ -33,16 +32,12 @@ public class StatusCheckingService {
   private final OptimizeElasticsearchClient esClient;
   private final ConfigurationService configurationService;
   private final EngineContextFactory engineContextFactory;
-  private final EngineImportSchedulerFactory engineImportSchedulerFactory;
+  private final EngineImportSchedulerManagerService engineImportSchedulerManagerService;
 
   public StatusWithProgressDto getConnectionStatusWithProgress() {
-    StatusWithProgressDto result = new StatusWithProgressDto();
+    final StatusWithProgressDto result = new StatusWithProgressDto();
     result.setConnectionStatus(getConnectionStatus());
-    Map<String, Boolean> importStatusMap = new HashMap<>();
-    engineImportSchedulerFactory
-      .getImportSchedulers()
-      .forEach(s -> importStatusMap.put(s.getEngineAlias(), s.isImporting()));
-    result.setIsImporting(new ConcurrentHashMap<>(importStatusMap));
+    result.setIsImporting(engineImportSchedulerManagerService.getImportStatusMap());
     return result;
   }
 

@@ -6,13 +6,19 @@
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
 import lombok.AllArgsConstructor;
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
+
+import java.util.List;
 
 @AllArgsConstructor
 public abstract class AbstractImportMediatorFactory {
   protected final BeanFactory beanFactory;
   protected final EngineImportIndexHandlerRegistry importIndexHandlerRegistry;
   protected final ConfigurationService configurationService;
+
+  public abstract List<EngineImportMediator> createMediators(EngineContext engineContext);
 }

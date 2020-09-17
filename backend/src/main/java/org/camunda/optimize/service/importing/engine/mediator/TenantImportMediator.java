@@ -51,4 +51,9 @@ public class TenantImportMediator extends BackoffImportMediator<TenantImportInde
     return !newEntities.isEmpty();
   }
 
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.TENANT;
+  }
+
 }

@@ -18,7 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.ACTIVE_STATE;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.COMPLETED_STATE;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class UserOperationLogImportIT extends AbstractImportIT {
   private final BpmnModelInstance testModel = BpmnModels.getSingleUserTaskDiagram();
@@ -40,8 +39,8 @@ public class UserOperationLogImportIT extends AbstractImportIT {
 
     // then
     assertInstanceHasState(allProcessInstances, ACTIVE_STATE);
-    assertThat(embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers()).hasSizeGreaterThan(0);
-    embeddedOptimizeExtension.getImportSchedulerFactory().getImportSchedulers()
+    assertThat(embeddedOptimizeExtension.getImportSchedulerManager().getImportSchedulers()).hasSizeGreaterThan(0);
+    embeddedOptimizeExtension.getImportSchedulerManager().getImportSchedulers()
       .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
   }
 

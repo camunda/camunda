@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventDto;
 import org.camunda.optimize.service.events.EventFetcherService;
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
+import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import org.camunda.optimize.service.importing.event.service.EventTraceImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -65,6 +66,11 @@ public class EventTraceImportMediator
   @Override
   public int getMaxPageSize() {
     return configurationService.getEventImportConfiguration().getMaxPageSize();
+  }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.INSTANCE;
   }
 
 }

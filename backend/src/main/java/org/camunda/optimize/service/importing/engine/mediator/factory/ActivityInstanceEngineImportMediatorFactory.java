@@ -5,10 +5,12 @@
  */
 package org.camunda.optimize.service.importing.engine.mediator.factory;
 
+import com.google.common.collect.ImmutableList;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.writer.CompletedActivityInstanceWriter;
 import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.CompletedActivityInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.fetcher.instance.RunningActivityInstanceFetcher;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
@@ -20,6 +22,8 @@ import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
 
 @Component
 public class ActivityInstanceEngineImportMediatorFactory extends AbstractImportMediatorFactory {
@@ -37,6 +41,14 @@ public class ActivityInstanceEngineImportMediatorFactory extends AbstractImportM
     this.camundaEventImportServiceFactory = camundaEventImportServiceFactory;
     this.completedActivityInstanceWriter = completedActivityInstanceWriter;
     this.runningActivityInstanceWriter = runningActivityInstanceWriter;
+  }
+
+  @Override
+  public List<EngineImportMediator> createMediators(final EngineContext engineContext) {
+    return ImmutableList.of(
+      createCompletedActivityInstanceEngineImportMediator(engineContext),
+      createRunningActivityInstanceEngineImportMediator(engineContext)
+    );
   }
 
   public CompletedActivityInstanceEngineImportMediator createCompletedActivityInstanceEngineImportMediator(

@@ -10,15 +10,6 @@
     http://www.springframework.org/schema/util
     http://www.springframework.org/schema/util/spring-util.xsd">
 
-  <context:annotation-config/>
-  <context:component-scan base-package="org.camunda.optimize.service"/>
-  <context:component-scan base-package="org.camunda.optimize.rest"/>
-  <context:component-scan base-package="org.camunda.optimize.test"/>
-  <context:component-scan base-package="org.camunda.optimize.plugin"/>
-
-
-  <context:component-scan base-package="#{configurationService.getVariableImportPluginBasePackages()}"/>
-
   <bean id="configurationService"
         class="org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder"
         factory-method="createConfigurationFromLocations">
@@ -28,6 +19,14 @@
       </list>
     </constructor-arg>
   </bean>
+
+  <context:annotation-config/>
+  <context:component-scan base-package="org.camunda.optimize.service"/>
+  <context:component-scan base-package="org.camunda.optimize.rest"/>
+  <context:component-scan base-package="org.camunda.optimize.test"/>
+  <context:component-scan base-package="org.camunda.optimize.plugin"/>
+
+  <context:component-scan base-package="#{configurationService.getVariableImportPluginBasePackages()}"/>
 
   <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>
 

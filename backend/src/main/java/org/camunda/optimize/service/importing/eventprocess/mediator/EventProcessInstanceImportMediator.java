@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
 import org.camunda.optimize.service.events.EventFetcherService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
+import org.camunda.optimize.service.importing.engine.mediator.MediatorRank;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 import org.camunda.optimize.service.importing.eventprocess.handler.EventProcessInstanceImportSourceIndexHandler;
 import org.camunda.optimize.service.util.BackoffCalculator;
@@ -84,4 +85,10 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
   public int getMaxPageSize() {
     return configurationService.getEventImportConfiguration().getMaxPageSize();
   }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.INSTANCE;
+  }
+
 }

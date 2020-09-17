@@ -58,7 +58,7 @@ public abstract class AbstractImportMediatorPermutationsIT {
 
   @SneakyThrows
   protected void performOrderedImport(final List<Class<? extends EngineImportMediator>> mediatorOrder) {
-    for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerFactory()
+    for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerManager()
       .getImportSchedulers()) {
       final List<EngineImportMediator> sortedMediators = scheduler
         .getImportMediators()

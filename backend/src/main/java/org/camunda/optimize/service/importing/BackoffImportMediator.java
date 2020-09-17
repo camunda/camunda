@@ -109,7 +109,8 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler<?, ?>, 
     try {
       Thread.sleep(timeToSleep);
     } catch (InterruptedException e) {
-      logger.debug("Was interrupted from sleep. Continuing.", e);
+      logger.error("Was interrupted from sleep.", e);
+      Thread.currentThread().interrupt();
     }
   }
 

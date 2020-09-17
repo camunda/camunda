@@ -6,8 +6,6 @@
 package org.camunda.optimize.test.it.extension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.OptimizeRequestExecutor;
@@ -34,7 +32,7 @@ import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.ImportIndexHandler;
 import org.camunda.optimize.service.importing.ScrollBasedImportMediator;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
-import org.camunda.optimize.service.importing.engine.EngineImportSchedulerFactory;
+import org.camunda.optimize.service.importing.engine.EngineImportSchedulerManagerService;
 import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHandlerRegistry;
 import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.factory.CamundaEventImportServiceFactory;
@@ -196,7 +194,7 @@ public class EmbeddedOptimizeExtension
     boolean isDoneImporting;
     do {
       isDoneImporting = true;
-      for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+      for (EngineImportScheduler scheduler : getImportSchedulerManager().getImportSchedulers()) {
         scheduler.runImportRound(false);
         isDoneImporting &= !scheduler.isImporting();
       }
@@ -213,7 +211,7 @@ public class EmbeddedOptimizeExtension
   }
 
   public void importAllEngineEntitiesFromLastIndex() {
-    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+    for (EngineImportScheduler scheduler : getImportSchedulerManager().getImportSchedulers()) {
       log.debug("scheduling import round");
       scheduleImportAndWaitUntilIsFinished(scheduler);
     }
@@ -261,7 +259,7 @@ public class EmbeddedOptimizeExtension
 
   public void storeImportIndexesToElasticsearch() {
     final List<CompletableFuture<Void>> synchronizationCompletables = new ArrayList<>();
-    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+    for (EngineImportScheduler scheduler : getImportSchedulerManager().getImportSchedulers()) {
       synchronizationCompletables.addAll(
         scheduler.getImportMediators()
           .stream()
@@ -287,8 +285,8 @@ public class EmbeddedOptimizeExtension
   }
 
   public void ensureImportSchedulerIsIdle(long timeoutSeconds) {
-    final CountDownLatch importIdleLatch = new CountDownLatch(getImportSchedulerFactory().getImportSchedulers().size());
-    for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
+    final CountDownLatch importIdleLatch = new CountDownLatch(getImportSchedulerManager().getImportSchedulers().size());
+    for (EngineImportScheduler scheduler : getImportSchedulerManager().getImportSchedulers()) {
       if (scheduler.isImporting()) {
         log.info("Scheduler is still importing, waiting for it to finish.");
         final ImportObserver importObserver = new ImportObserver() {
@@ -319,8 +317,8 @@ public class EmbeddedOptimizeExtension
     }
   }
 
-  public EngineImportSchedulerFactory getImportSchedulerFactory() {
-    return getOptimize().getApplicationContext().getBean(EngineImportSchedulerFactory.class);
+  public EngineImportSchedulerManagerService getImportSchedulerManager() {
+    return getOptimize().getApplicationContext().getBean(EngineImportSchedulerManagerService.class);
   }
 
   private TestEmbeddedCamundaOptimize getOptimize() {

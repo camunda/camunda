@@ -57,4 +57,10 @@ public class RunningProcessInstanceEngineImportMediator
   protected int getMaxPageSize() {
     return configurationService.getEngineImportProcessInstanceMaxPageSize();
   }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.INSTANCE;
+  }
+
 }

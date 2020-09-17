@@ -57,4 +57,10 @@ public class VariableUpdateEngineImportMediator
   protected int getMaxPageSize() {
     return configurationService.getEngineImportVariableInstanceMaxPageSize();
   }
+
+  @Override
+  public MediatorRank getRank() {
+    return MediatorRank.INSTANCE_SUB_ENTITIES;
+  }
+
 }
