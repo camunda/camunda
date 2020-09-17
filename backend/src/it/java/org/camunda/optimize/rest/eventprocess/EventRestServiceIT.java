@@ -112,9 +112,11 @@ public class EventRestServiceIT extends AbstractIT {
 
   @BeforeEach
   public void init() {
+    embeddedOptimizeExtension.getDefaultEngineConfiguration().setEventImportEnabled(true);
+    embeddedOptimizeExtension.reloadConfiguration();
     eventClient.ingestEventBatch(allEventDtos);
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
-    embeddedOptimizeExtension.processEvents();
+    processEventTracesAndSequences();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
@@ -182,6 +184,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartUserTaskProcess(definitionKey);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -190,8 +193,8 @@ public class EventRestServiceIT extends AbstractIT {
 
     // then
     assertThat(eventCountDtos).containsExactlyInAnyOrder(
-      createStartEventCountDto(definitionKey),
-      createEndEventCountDto(definitionKey)
+      createStartEventCountDto(definitionKey, 1L),
+      createEndEventCountDto(definitionKey, 0L)
     );
   }
 
@@ -202,13 +205,15 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartUserTaskProcess(definitionKey);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     List<EventCountDto> eventCountDtos =
-      createPostEventCountsRequestCamundaSourceOnly(definitionKey, EventScopeType.PROCESS_INSTANCE,
-                                                    ImmutableList.of("1")
-      )
-        .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+      createPostEventCountsRequestCamundaSourceOnly(
+        definitionKey,
+        EventScopeType.PROCESS_INSTANCE,
+        ImmutableList.of("1")
+      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
 
     // then
     assertThat(eventCountDtos).containsExactlyInAnyOrder(
@@ -224,6 +229,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartUserTaskProcess(definitionKey);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -233,10 +239,10 @@ public class EventRestServiceIT extends AbstractIT {
     // then
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
-        createStartEventCountDto(definitionKey),
-        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createEndEventCountDto(definitionKey)
+        createStartEventCountDto(definitionKey, 1L),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK, 1L),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
+        createEndEventCountDto(definitionKey, 0L)
       );
   }
 
@@ -247,6 +253,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartUserTaskProcess(definitionKey);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -260,8 +267,8 @@ public class EventRestServiceIT extends AbstractIT {
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
         createProcessInstanceStartEventCountDto(definitionKey),
-        createStartEventCountDto(definitionKey),
-        createEndEventCountDto(definitionKey),
+        createStartEventCountDto(definitionKey, 1L),
+        createEndEventCountDto(definitionKey, 0L),
         createProcessInstanceEndEventCount(definitionKey)
       );
   }
@@ -273,6 +280,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartUserTaskProcess(definitionKey);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -286,10 +294,10 @@ public class EventRestServiceIT extends AbstractIT {
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
         createProcessInstanceStartEventCountDto(definitionKey),
-        createStartEventCountDto(definitionKey),
-        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createEndEventCountDto(definitionKey),
+        createStartEventCountDto(definitionKey, 1L),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK, 1L),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
+        createEndEventCountDto(definitionKey, 0L),
         createProcessInstanceEndEventCount(definitionKey)
       );
   }
@@ -301,6 +309,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartUserTaskProcess(definitionKey);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -313,10 +322,10 @@ public class EventRestServiceIT extends AbstractIT {
     // then
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
-        createStartEventCountDto(definitionKey),
-        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createEndEventCountDto(definitionKey)
+        createStartEventCountDto(definitionKey, 1L),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK, 1L),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
+        createEndEventCountDto(definitionKey, 0L)
       );
   }
 
@@ -327,6 +336,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartUserTaskProcess(definitionKey);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -340,10 +350,10 @@ public class EventRestServiceIT extends AbstractIT {
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
         createProcessInstanceStartEventCountDto(definitionKey),
-        createStartEventCountDto(definitionKey),
-        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createEndEventCountDto(definitionKey),
+        createStartEventCountDto(definitionKey, 1L),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK, 1L),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
+        createEndEventCountDto(definitionKey, 0L),
         createProcessInstanceEndEventCount(definitionKey)
       );
   }
@@ -358,6 +368,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartServiceTaskProcess(definitionKey);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -367,11 +378,12 @@ public class EventRestServiceIT extends AbstractIT {
     // then
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
-        createStartEventCountDto(definitionKey),
-        // only V1 tasks are expected
-        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createEndEventCountDto(definitionKey)
+        // the event count represents events from all versions
+        createStartEventCountDto(definitionKey, 2L),
+        // but only V1 tasks are expected
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK, 1L),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
+        createEndEventCountDto(definitionKey, 1L)
       );
   }
 
@@ -386,6 +398,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartServiceTaskProcess(definitionKey);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -395,11 +408,12 @@ public class EventRestServiceIT extends AbstractIT {
     // then
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
-        createStartEventCountDto(definitionKey),
-        // we only expect the events from the latest version in these cases
-        createTaskStartEventCountDto(definitionKey, CAMUNDA_SERVICE_TASK),
-        createTaskEndEventCountDto(definitionKey, CAMUNDA_SERVICE_TASK),
-        createEndEventCountDto(definitionKey)
+        // the event count represents the total from all versions
+        createStartEventCountDto(definitionKey, 2L),
+        // but we only expect the events from the latest version in these cases
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_SERVICE_TASK, 1L),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_SERVICE_TASK, 1L),
+        createEndEventCountDto(definitionKey, 1L)
       );
   }
 
@@ -415,6 +429,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartServiceTaskProcess(definitionKey, tenantId2);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -431,11 +446,12 @@ public class EventRestServiceIT extends AbstractIT {
     // then
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
-        createStartEventCountDto(definitionKey),
-        // only tenant2 tasks are expected
-        createTaskStartEventCountDto(definitionKey, CAMUNDA_SERVICE_TASK),
-        createTaskEndEventCountDto(definitionKey, CAMUNDA_SERVICE_TASK),
-        createEndEventCountDto(definitionKey)
+        // the count reflects all tenants
+        createStartEventCountDto(definitionKey, 2L),
+        // but only tenant2 tasks are expected
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_SERVICE_TASK, 1L),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_SERVICE_TASK, 1L),
+        createEndEventCountDto(definitionKey, 1L)
       );
   }
 
@@ -448,6 +464,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartServiceTaskProcess(definitionKey2);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -469,14 +486,14 @@ public class EventRestServiceIT extends AbstractIT {
     // then
     assertThat(eventCountDtos)
       .containsExactlyInAnyOrder(
-        createStartEventCountDto(definitionKey1),
-        createTaskStartEventCountDto(definitionKey1, CAMUNDA_USER_TASK),
-        createTaskEndEventCountDto(definitionKey1, CAMUNDA_USER_TASK),
-        createEndEventCountDto(definitionKey1),
-        createStartEventCountDto(definitionKey2),
-        createTaskStartEventCountDto(definitionKey2, CAMUNDA_SERVICE_TASK),
-        createTaskEndEventCountDto(definitionKey2, CAMUNDA_SERVICE_TASK),
-        createEndEventCountDto(definitionKey2)
+        createStartEventCountDto(definitionKey1, 1L),
+        createTaskStartEventCountDto(definitionKey1, CAMUNDA_USER_TASK, 1L),
+        createTaskEndEventCountDto(definitionKey1, CAMUNDA_USER_TASK, 0L),
+        createEndEventCountDto(definitionKey1, 0L),
+        createStartEventCountDto(definitionKey2, 1L),
+        createTaskStartEventCountDto(definitionKey2, CAMUNDA_SERVICE_TASK, 1L),
+        createTaskEndEventCountDto(definitionKey2, CAMUNDA_SERVICE_TASK, 1L),
+        createEndEventCountDto(definitionKey2, 1L)
       );
   }
 
@@ -487,6 +504,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartUserTaskProcess(definitionKey);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     List<EventCountDto> eventCountDtos =
@@ -510,10 +528,10 @@ public class EventRestServiceIT extends AbstractIT {
         createFrontendMayoCountDto(false),
         createKetchupMayoCountDto(false),
         createManagementBbqCountDto(false),
-        createEndEventCountDto(definitionKey),
-        createStartEventCountDto(definitionKey),
-        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK)
+        createEndEventCountDto(definitionKey, 0L),
+        createStartEventCountDto(definitionKey, 1L),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK, 1L)
       );
   }
 
@@ -524,6 +542,7 @@ public class EventRestServiceIT extends AbstractIT {
     deployAndStartUserTaskProcess(definitionKey);
 
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     // when
     final EventCountRequestDto countRequestDto = EventCountRequestDto.builder()
@@ -550,10 +569,10 @@ public class EventRestServiceIT extends AbstractIT {
         createBackendKetchupCountDto(false),
         createBackendMayoCountDto(false),
         createKetchupMayoCountDto(false),
-        createEndEventCountDto(definitionKey),
-        createStartEventCountDto(definitionKey),
-        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK)
+        createEndEventCountDto(definitionKey, 0L),
+        createStartEventCountDto(definitionKey, 1L),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK, 1L)
       );
   }
 
@@ -602,6 +621,7 @@ public class EventRestServiceIT extends AbstractIT {
     final String definitionKey = "myProcess";
     deployAndStartUserTaskProcess(definitionKey);
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     EventCountSorter eventCountSorter = new EventCountSorter();
     eventCountSorter.setSortBy("count");
@@ -634,10 +654,10 @@ public class EventRestServiceIT extends AbstractIT {
         createFrontendMayoCountDto(false),
         createKetchupMayoCountDto(false),
         createManagementBbqCountDto(false),
-        createEndEventCountDto(definitionKey),
-        createStartEventCountDto(definitionKey),
-        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK),
-        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK)
+        createEndEventCountDto(definitionKey, 0L),
+        createStartEventCountDto(definitionKey, 1L),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK, 1L)
       )
       .isSortedAccordingTo(Comparator.comparing(EventCountDto::getCount, nullsFirst(naturalOrder())).reversed());
   }
@@ -656,6 +676,7 @@ public class EventRestServiceIT extends AbstractIT {
       .done();
     engineIntegrationExtension.deployAndStartProcess(processModel);
     importAllEngineEntitiesFromScratch();
+    processEventTracesAndSequences();
 
     EventCountSorter eventCountSorter = new EventCountSorter();
     eventCountSorter.setSortBy("eventName");
@@ -688,24 +709,28 @@ public class EventRestServiceIT extends AbstractIT {
           .eventLabel(applyCamundaTaskEndEventSuffix("aardvark"))
           .source(EVENT_SOURCE_CAMUNDA)
           .group(definitionKey)
+          .count(0L)
           .build(),
         EventCountDto.builder()
           .eventName(applyCamundaTaskStartEventSuffix(userTaskId))
           .eventLabel(applyCamundaTaskStartEventSuffix("aardvark"))
           .source(EVENT_SOURCE_CAMUNDA)
           .group(definitionKey)
+          .count(1L)
           .build(),
         EventCountDto.builder()
           .eventName(endEventId)
           .eventLabel(endEventId)
           .source(EVENT_SOURCE_CAMUNDA)
           .group(definitionKey)
+          .count(0L)
           .build(),
         EventCountDto.builder()
           .eventName(startEventId)
           .eventLabel("zebra")
           .source(EVENT_SOURCE_CAMUNDA)
           .group(definitionKey)
+          .count(1L)
           .build()
       );
   }
@@ -1384,39 +1409,45 @@ public class EventRestServiceIT extends AbstractIT {
       .build();
   }
 
-  private EventCountDto createStartEventCountDto(final String definitionKey) {
+  private EventCountDto createStartEventCountDto(final String definitionKey, final Long count) {
     return EventCountDto.builder()
       .eventName(CAMUNDA_START_EVENT)
       .eventLabel(CAMUNDA_START_EVENT)
       .source(EVENT_SOURCE_CAMUNDA)
       .group(definitionKey)
+      .count(count)
       .build();
   }
 
-  private EventCountDto createEndEventCountDto(final String definitionKey) {
+  private EventCountDto createEndEventCountDto(final String definitionKey, final Long count) {
     return EventCountDto.builder()
       .eventName(CAMUNDA_END_EVENT)
       .eventLabel(CAMUNDA_END_EVENT)
       .source(EVENT_SOURCE_CAMUNDA)
       .group(definitionKey)
+      .count(count)
       .build();
   }
 
-  private EventCountDto createTaskEndEventCountDto(final String definitionKey, final String activityId) {
+  private EventCountDto createTaskEndEventCountDto(final String definitionKey, final String activityId,
+                                                   final Long count) {
     return EventCountDto.builder()
       .eventName(applyCamundaTaskEndEventSuffix(activityId))
       .eventLabel(applyCamundaTaskEndEventSuffix(activityId))
       .source(EVENT_SOURCE_CAMUNDA)
       .group(definitionKey)
+      .count(count)
       .build();
   }
 
-  private EventCountDto createTaskStartEventCountDto(final String definitionKey, final String activityId) {
+  private EventCountDto createTaskStartEventCountDto(final String definitionKey, final String activityId,
+                                                     final Long count) {
     return EventCountDto.builder()
       .eventName(applyCamundaTaskStartEventSuffix(activityId))
       .eventLabel(applyCamundaTaskStartEventSuffix(activityId))
       .source(EVENT_SOURCE_CAMUNDA)
       .group(definitionKey)
+      .count(count)
       .build();
   }
 
@@ -1458,6 +1489,11 @@ public class EventRestServiceIT extends AbstractIT {
       ImmutableList.of("2"),
       ImmutableList.of("latest")
     );
+  }
+
+  private void processEventTracesAndSequences() {
+    embeddedOptimizeExtension.processEvents();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

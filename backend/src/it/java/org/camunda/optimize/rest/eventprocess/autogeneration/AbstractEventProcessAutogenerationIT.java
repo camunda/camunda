@@ -283,6 +283,11 @@ public abstract class AbstractEventProcessAutogenerationIT extends AbstractEvent
       .collect(Collectors.toList());
   }
 
+  protected void processEventTracesAndSequences() {
+    embeddedOptimizeExtension.processEvents();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
   protected String idOf(EventTypeDto eventTypeDto) {
     return generateNodeId(eventTypeDto);
   }

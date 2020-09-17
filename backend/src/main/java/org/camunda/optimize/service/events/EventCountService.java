@@ -14,17 +14,19 @@ import org.camunda.bpm.model.xml.ModelParseException;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.EventSequenceCountReader;
 import org.camunda.optimize.service.util.BpmnModelUtil;
+import org.camunda.optimize.service.util.EventDtoBuilderUtil;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.BadRequestException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +39,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.BpmnModelUtil.extractFlowNodeNames;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceEndEventSuffix;
+import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.fromEventCountDto;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
@@ -60,46 +64,46 @@ public class EventCountService {
   public List<EventCountDto> getEventCounts(final String userId,
                                             final String searchTerm,
                                             final EventCountRequestDto eventCountRequestDto) {
-    if (eventCountRequestDto == null) {
+    if (eventCountRequestDto == null || eventCountRequestDto.getEventSources().isEmpty()) {
       return Collections.emptyList();
     }
 
-    final List<EventCountDto> matchingEventCountDtos = eventCountRequestDto
-      .getEventSources()
+    final Map<EventSourceType, List<EventSourceEntryDto>> sourcesByType = eventCountRequestDto.getEventSources()
       .stream()
-      .map(eventSourceEntryDto -> {
-        if (EventSourceType.EXTERNAL.equals(eventSourceEntryDto.getType())) {
-          return eventSequenceCountReader.getEventCounts(searchTerm);
-        } else {
-          return getEventCountsForCamundaProcess(
-            userId,
-            searchTerm,
-            eventSourceEntryDto.getProcessDefinitionKey(),
-            eventSourceEntryDto.getVersions(),
-            eventSourceEntryDto.getTenants(),
-            eventSourceEntryDto.getEventScope()
-          );
-        }
-      })
-      .flatMap(Collection::stream)
-      .collect(Collectors.toList());
-
-    if (eventCountRequestDto.getEventSources().size() == 1
-      && EventSourceType.EXTERNAL.equals(eventCountRequestDto.getEventSources().get(0).getType())) {
-      addSuggestionsForExternalEventCounts(eventCountRequestDto, matchingEventCountDtos);
+      .collect(Collectors.groupingBy(EventSourceEntryDto::getType));
+    final List<EventCountDto> matchingEventCounts = new ArrayList<>();
+    if (sourcesByType.containsKey(EventSourceType.EXTERNAL)) {
+      matchingEventCounts.addAll(eventSequenceCountReader.getEventCountsWithSearchTerm(searchTerm));
+      if (eligibleForEventSuggestions(sourcesByType)) {
+        addSuggestionsForExternalEventCounts(eventCountRequestDto, matchingEventCounts);
+      }
     }
-
-    return matchingEventCountDtos;
+    if (sourcesByType.containsKey(EventSourceType.CAMUNDA)) {
+      final List<EventSourceEntryDto> camundaSources = sourcesByType.get(EventSourceType.CAMUNDA);
+      final Map<EventTypeDto, Long> allCamundaSourcesEventCounts =
+        eventSequenceCountReader.getEventCountsForCamundaSources(camundaSources)
+        .stream()
+        .collect(Collectors.toMap(EventDtoBuilderUtil::fromEventCountDto, EventCountDto::getCount));
+      final List<EventCountDto> countedCamundaEvents = camundaSources.stream()
+        .map(source -> getEventsForCamundaProcess(userId, searchTerm, source, allCamundaSourcesEventCounts))
+        .flatMap(Collection::stream)
+        .collect(Collectors.toList());
+      matchingEventCounts.addAll(countedCamundaEvents);
+    }
+    return matchingEventCounts;
   }
 
-  private List<EventCountDto> getEventCountsForCamundaProcess(final String userId,
-                                                              final String searchTerm,
-                                                              final String definitionKey,
-                                                              final List<String> versions,
-                                                              final List<String> tenants,
-                                                              final List<EventScopeType> eventScope) {
+  private boolean eligibleForEventSuggestions(final Map<EventSourceType, List<EventSourceEntryDto>> sourcesByType) {
+    return !sourcesByType.containsKey(EventSourceType.CAMUNDA)
+      && sourcesByType.get(EventSourceType.EXTERNAL).size() == 1;
+  }
+
+  private List<EventCountDto> getEventsForCamundaProcess(final String userId,
+                                                         final String searchTerm,
+                                                         final EventSourceEntryDto eventSourceEntryDto,
+                                                         final Map<EventTypeDto, Long> typeAndCount) {
     return camundaEventService
-      .getLabeledCamundaEventTypesForProcess(userId, definitionKey, versions, tenants, eventScope)
+      .getLabeledCamundaEventTypesForProcess(userId, eventSourceEntryDto)
       .stream()
       .filter(eventDto -> searchTerm == null
         || StringUtils.containsIgnoreCase(eventDto.getEventName(), searchTerm)
@@ -112,16 +116,31 @@ public class EventCountService {
                .group(labeledEventTypeDto.getGroup())
                .eventName(labeledEventTypeDto.getEventName())
                .eventLabel(labeledEventTypeDto.getEventLabel())
+               .count(findEventCountForCamundaEvent(eventSourceEntryDto, typeAndCount, labeledEventTypeDto))
                .build()
       )
       .collect(Collectors.toList());
+  }
+
+  private Long findEventCountForCamundaEvent(final EventSourceEntryDto eventSourceEntryDto,
+                                             final Map<EventTypeDto, Long> typeAndCount,
+                                             final EventTypeDto labeledEventTypeDto) {
+    return Optional.ofNullable(typeAndCount.get(labeledEventTypeDto))
+      .orElseGet(() -> isProcessInstanceStartEndEvent(eventSourceEntryDto, labeledEventTypeDto) ? null : 0L);
+  }
+
+  private boolean isProcessInstanceStartEndEvent(final EventSourceEntryDto eventSourceEntryDto,
+                                                 final EventTypeDto labeledEventTypeDto) {
+    return labeledEventTypeDto.getEventName().equalsIgnoreCase(
+      applyCamundaProcessInstanceStartEventSuffix(eventSourceEntryDto.getProcessDefinitionKey()))
+      || labeledEventTypeDto.getEventName().equalsIgnoreCase(
+      applyCamundaProcessInstanceEndEventSuffix(eventSourceEntryDto.getProcessDefinitionKey()));
   }
 
   private void addSuggestionsForExternalEventCounts(final EventCountRequestDto eventCountRequestDto,
                                                     final List<EventCountDto> eventCountDtos) {
     if (eventCountRequestDto.getXml() == null
       || eventCountRequestDto.getTargetFlowNodeId() == null
-      || eventCountRequestDto.getMappings() == null
       || eventCountRequestDto.getMappings().isEmpty()) {
       return;
     }

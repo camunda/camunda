@@ -10,10 +10,12 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
+import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.report.command.util.CompositeAggregationScroller;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequest;
@@ -34,6 +36,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.COUNT;
 import static org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex.EVENT_NAME;
@@ -94,7 +97,7 @@ public class EventSequenceCountReader {
     return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), EventSequenceCountDto.class, objectMapper);
   }
 
-  public List<EventCountDto> getEventCounts(final String searchTerm) {
+  public List<EventCountDto> getEventCountsWithSearchTerm(final String searchTerm) {
     log.debug("Fetching event counts with searchTerm [{}}]", searchTerm);
 
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -103,6 +106,29 @@ public class EventSequenceCountReader {
     searchSourceBuilder.size(0);
 
     final SearchRequest searchRequest = new SearchRequest(getIndexName())
+      .source(searchSourceBuilder);
+    List<EventCountDto> eventCountDtos = new ArrayList<>();
+    CompositeAggregationScroller.create()
+      .setEsClient(esClient)
+      .setSearchRequest(searchRequest)
+      .setPathToAggregation(COMPOSITE_EVENT_NAME_SOURCE_AND_GROUP_AGGREGATION)
+      .setCompositeBucketConsumer(bucket -> eventCountDtos.add(extractEventCounts(bucket)))
+      .scroll();
+    return eventCountDtos;
+  }
+
+  public List<EventCountDto> getEventCountsForCamundaSources(final List<EventSourceEntryDto> eventSourceEntryDtos) {
+    log.debug("Fetching event counts for event sources: {}", eventSourceEntryDtos);
+
+    final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+    searchSourceBuilder.query(matchAllQuery());
+    searchSourceBuilder.aggregation(createAggregationBuilder());
+    searchSourceBuilder.size(0);
+
+    final String[] indicesToSearch = eventSourceEntryDtos.stream()
+      .map(source -> new EventSequenceCountIndex(source.getProcessDefinitionKey()).getIndexName())
+      .collect(Collectors.toList()).toArray(new String[eventSourceEntryDtos.size()]);
+    final SearchRequest searchRequest = new SearchRequest(indicesToSearch)
       .source(searchSourceBuilder);
     List<EventCountDto> eventCountDtos = new ArrayList<>();
     CompositeAggregationScroller.create()

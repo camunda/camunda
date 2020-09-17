@@ -797,6 +797,7 @@ public class EventBasedProcessAutogenerationSourceConnectionsIT extends Abstract
       multipleStartMultipleEndModel(PROCESS_ID_2),
       EventScopeType.START_END
     );
+    processEventTracesAndSequences();
     final EventTypeDto camundaStart1 = createCamundaEventTypeDto(PROCESS_ID_2, START_EVENT_ID_1, START_EVENT_ID_1);
     final EventTypeDto camundaStart2 = createCamundaEventTypeDto(PROCESS_ID_2, START_EVENT_ID_2, START_EVENT_ID_2);
     final EventTypeDto camundaEnd1 = createCamundaEventTypeDto(PROCESS_ID_2, END_EVENT_ID_1, END_EVENT_ID_1);

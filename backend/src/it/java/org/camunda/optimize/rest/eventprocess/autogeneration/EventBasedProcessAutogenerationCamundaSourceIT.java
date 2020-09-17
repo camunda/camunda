@@ -62,6 +62,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       EventScopeType.START_END,
       ImmutableMap.of(varName, "varVa1")
     );
+    processEventTracesAndSequences();
     eventSource.setTracedByBusinessKey(tracedByBusinessKey);
     if (!tracedByBusinessKey) {
       eventSource.setTraceVariable(varName);
@@ -379,6 +380,7 @@ public class EventBasedProcessAutogenerationCamundaSourceIT extends AbstractEven
       modelInstance,
       EventScopeType.PROCESS_INSTANCE
     );
+    processEventTracesAndSequences();
     final EventTypeDto expectedStartEvent = createCamundaProcessStartEventTypeDto(PROCESS_ID_1);
     final EventTypeDto expectedEndEvent = createCamundaProcessEndEventTypeDto(PROCESS_ID_1);
     final List<EventSourceEntryDto> sources = Collections.singletonList(eventSource);
