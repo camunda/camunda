@@ -88,7 +88,15 @@ export default class Configuration extends React.Component {
           keys: [],
         },
         groupByDateVariableUnit: 'automatic',
+        distributeByDateVariableUnit: 'automatic',
         customBucket: {
+          active: false,
+          bucketSize: '10',
+          bucketSizeUnit: 'minute',
+          baseline: '0',
+          baselineUnit: 'minute',
+        },
+        distributeByCustomBucket: {
           active: false,
           bucketSize: '10',
           bucketSizeUnit: 'minute',

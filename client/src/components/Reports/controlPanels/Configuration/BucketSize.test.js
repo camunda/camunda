@@ -86,7 +86,7 @@ it('should include a unit selection when report is distributed by number variabl
       groupBy: {type: 'startDate'},
       configuration: {
         distributedBy: {type: 'variable', value: {type: 'Double'}},
-        customBucket: report.data.configuration.customBucket,
+        distributeByCustomBucket: report.data.configuration.customBucket,
       },
     },
   };

@@ -15,20 +15,24 @@ import './BucketSize.scss';
 
 export default function BucketSize({
   report: {
-    data: {
-      configuration: {customBucket, distributedBy},
-      groupBy,
-    },
+    data: {configuration, groupBy},
   },
   onChange,
 }) {
+  const {distributedBy} = configuration;
+  const isDistributedByVariable =
+    distributedBy?.type === 'variable' &&
+    ['Integer', 'Double', 'Short', 'Long'].includes(distributedBy.value.type);
+
+  const customBucket = isDistributedByVariable ? 'distributeByCustomBucket' : 'customBucket';
+
   const [sizeValid, setSizeValid] = useState(true);
   const [baseValid, setBaseValid] = useState(true);
 
   const applyChanges = useCallback(
     debounce((property, value, valid) => {
       if (valid) {
-        onChange({customBucket: {[property]: {$set: value}}}, true);
+        onChange({[customBucket]: {[property]: {$set: value}}}, true);
       }
     }, 800),
     []
@@ -38,12 +42,11 @@ export default function BucketSize({
     groupBy?.type === 'variable' &&
     ['Integer', 'Double', 'Short', 'Long'].includes(groupBy.value?.type);
   const isGroupedByDuration = groupBy?.type === 'duration';
-  const isDistributedByVariable =
-    distributedBy?.type === 'variable' &&
-    ['Integer', 'Double', 'Short', 'Long'].includes(distributedBy.value.type);
 
   if (isBucketableVariableReport || isGroupedByDuration || isDistributedByVariable) {
-    const {active, bucketSize, baseline, bucketSizeUnit, baselineUnit} = customBucket;
+    const {active, bucketSize, baseline, bucketSizeUnit, baselineUnit} = configuration[
+      customBucket
+    ];
     const flush = () => applyChanges.flush();
 
     const units = (
@@ -64,7 +67,9 @@ export default function BucketSize({
         <legend>
           <Switch
             checked={active}
-            onChange={(evt) => onChange({customBucket: {active: {$set: evt.target.checked}}}, true)}
+            onChange={(evt) =>
+              onChange({[customBucket]: {active: {$set: evt.target.checked}}}, true)
+            }
             label={t('report.config.bucket.bucketSize')}
           />
         </legend>
