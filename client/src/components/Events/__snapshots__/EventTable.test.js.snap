@@ -144,7 +144,6 @@ exports[`should match snapshot 1`] = `
         Object {
           "id": "count",
           "label": "Count",
-          "sortable": false,
         },
       ]
     }

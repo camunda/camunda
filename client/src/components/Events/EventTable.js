@@ -218,7 +218,7 @@ export default withErrorHandling(
               {label: t('events.table.name'), id: 'eventName'},
               {label: t('events.table.group'), id: 'group'},
               {label: t('events.table.source'), id: 'source'},
-              {label: t('events.table.count'), id: 'count', sortable: false},
+              {label: t('events.table.count'), id: 'count'},
             ]}
             body={
               events
