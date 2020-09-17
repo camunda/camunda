@@ -15,9 +15,16 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.exporter.api.Exporter;
+import io.zeebe.exporter.api.context.Context;
+import io.zeebe.exporter.api.context.Context.RecordFilter;
 import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.RecordType;
+import io.zeebe.protocol.record.ValueType;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
@@ -29,6 +36,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Rule;
@@ -56,6 +65,100 @@ public class SingleBrokerDataDeletionTest {
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(ControllableExporter.class.getName());
     brokerCfg.setExporters(Collections.singletonMap("snapshot-test-exporter", exporterCfg));
+  }
+
+  @Test
+  public void shouldCompactEvenIfSkippingAllRecords() {
+    // given
+    final Broker broker = clusteringRule.getBroker(0);
+
+    // when
+    ControllableExporter.updatePosition(false);
+    ControllableExporter.RECORD_TYPE_FILTER.set(r -> r == RecordType.COMMAND);
+    ControllableExporter.VALUE_TYPE_FILTER.set(r -> r == ValueType.DEPLOYMENT);
+    writeSegments(broker, 2);
+    clusteringRule
+        .getClient()
+        .newDeployCommand()
+        .addWorkflowModel(
+            Bpmn.createExecutableProcess("process").startEvent().done(), "process.bpmn")
+        .send()
+        .join();
+    await("until at least one record is exported")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> assertThat(ControllableExporter.EXPORTED_RECORDS).hasValueGreaterThan(0));
+
+    // enforce compaction
+    final var segmentsBeforeSnapshot = getSegmentsCount(broker);
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+
+    // then
+    assertThat(clusteringRule.waitForSnapshotAtBroker(broker)).isNotNull();
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(getSegmentsCount(broker))
+                    .describedAs("Expected less segments after a snapshot is taken")
+                    .isLessThan(segmentsBeforeSnapshot));
+  }
+
+  @Test
+  public void shouldNotCompactUnacknowledgedEventsEvenIfSkipping() {
+    // given
+    final RecordMetadata metadata = new RecordMetadata();
+    final Broker broker = clusteringRule.getBroker(0);
+    final var logstream = clusteringRule.getLogStream(1);
+    final var reader = logstream.newLogStreamReader().join();
+
+    // when
+    ControllableExporter.updatePosition(false);
+    ControllableExporter.RECORD_TYPE_FILTER.set(r -> r == RecordType.COMMAND);
+    ControllableExporter.VALUE_TYPE_FILTER.set(r -> r == ValueType.DEPLOYMENT);
+    writeSegments(broker, 2);
+    clusteringRule
+        .getClient()
+        .newDeployCommand()
+        .addWorkflowModel(
+            Bpmn.createExecutableProcess("process").startEvent().done(), "process.bpmn")
+        .send()
+        .join();
+    writeSegments(broker, 2);
+    await("until at least one record is exported")
+        .atMost(Duration.ofSeconds(5))
+        .untilAsserted(
+            () -> assertThat(ControllableExporter.EXPORTED_RECORDS).hasValueGreaterThan(0));
+
+    // grab the first log position, and the position of the last unacknowledged event
+    reader.seekToFirstEvent();
+    final long firstPosition = reader.getPosition();
+    long lastUnacknowledgedPosition = -1;
+    while (reader.hasNext()) {
+      final LoggedEvent event = reader.next();
+      event.readMetadata(metadata);
+      if (metadata.getValueType() == ValueType.DEPLOYMENT) {
+        lastUnacknowledgedPosition = event.getPosition();
+        break;
+      }
+    }
+
+    // enforce compaction
+    final var segmentsBeforeSnapshot = getSegmentsCount(broker);
+    clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
+
+    // then
+    assertThat(lastUnacknowledgedPosition).isGreaterThan(-1L);
+    assertThat(clusteringRule.waitForSnapshotAtBroker(broker)).isNotNull();
+    await()
+        .untilAsserted(
+            () ->
+                assertThat(getSegmentsCount(broker))
+                    .describedAs("Expected less segments after a snapshot is taken")
+                    .isLessThan(segmentsBeforeSnapshot));
+    reader.seekToFirstEvent();
+    assertThat(reader.getPosition())
+        .isGreaterThan(firstPosition)
+        .isLessThanOrEqualTo(lastUnacknowledgedPosition);
   }
 
   @Test
@@ -214,6 +317,8 @@ public class SingleBrokerDataDeletionTest {
     ControllableExporter.NOT_EXPORTED_RECORDS.clear();
     ControllableExporter.updatePosition(true);
     ControllableExporter.EXPORTED_RECORDS.set(0);
+    ControllableExporter.RECORD_TYPE_FILTER.set(r -> true);
+    ControllableExporter.VALUE_TYPE_FILTER.set(r -> true);
 
     writtenRecords.set(0);
   }
@@ -223,11 +328,31 @@ public class SingleBrokerDataDeletionTest {
     static volatile boolean shouldExport = true;
 
     static final AtomicLong EXPORTED_RECORDS = new AtomicLong(0);
+    static final AtomicReference<Predicate<RecordType>> RECORD_TYPE_FILTER =
+        new AtomicReference<>(r -> true);
+    static final AtomicReference<Predicate<ValueType>> VALUE_TYPE_FILTER =
+        new AtomicReference<>(r -> true);
 
     private Controller controller;
 
     static void updatePosition(final boolean flag) {
       shouldExport = flag;
+    }
+
+    @Override
+    public void configure(final Context context) {
+      context.setFilter(
+          new RecordFilter() {
+            @Override
+            public boolean acceptType(final RecordType recordType) {
+              return RECORD_TYPE_FILTER.get().test(recordType);
+            }
+
+            @Override
+            public boolean acceptValue(final ValueType valueType) {
+              return VALUE_TYPE_FILTER.get().test(valueType);
+            }
+          });
     }
 
     @Override
