@@ -64,7 +64,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   private volatile long lastTickTime;
   private boolean shouldProcess = true;
   /** Recover future is completed after reprocessing is done. */
-  private ActorFuture<Void> recoverFuture;
+  private ActorFuture<Long> recoverFuture;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     actorScheduler = processorBuilder.getActorScheduler();
@@ -121,12 +121,12 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
       actor.runOnCompletion(
           recoverFuture,
-          (v, throwable) -> {
+          (lastReprocessedPosition, throwable) -> {
             if (throwable != null) {
               LOG.error("Unexpected error on recovery happens.", throwable);
               onFailure(throwable);
             } else {
-              onRecovered();
+              onRecovered(lastReprocessedPosition);
               new StreamProcessorMetrics(partitionId)
                   .recoveryTime(System.currentTimeMillis() - startTime);
             }
@@ -269,7 +269,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     return zeebeState;
   }
 
-  private void onRecovered() {
+  private void onRecovered(final long lastReprocessedPosition) {
     phase = Phase.PROCESSING;
     onCommitPositionUpdatedCondition =
         actor.onCondition(
@@ -278,7 +278,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
     // start reading
     lifecycleAwareListeners.forEach(l -> l.onRecovered(processingContext));
-    actor.submit(processingStateMachine::readNextEvent);
+    processingStateMachine.startProcessing(lastReprocessedPosition);
   }
 
   private void onFailure(final Throwable throwable) {

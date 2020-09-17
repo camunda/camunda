@@ -184,7 +184,7 @@ public final class AsyncSnapshotDirector extends Actor {
                   final var snapshot = pendingSnapshot.persist();
 
                   LOG.info(
-                      "Current commit position {} is greater then {}, snapshot {} is valid and has been persisted.",
+                      "Current commit position {} is greater than {}, snapshot {} is valid and has been persisted.",
                       currentCommitPosition,
                       lastWrittenEventPosition,
                       snapshot.getId());
