@@ -9,13 +9,13 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {config} from '../config';
 import {setup} from './Operations.setup';
-import {DATE_REGEX} from './constants';
+import {DATE_REGEX, DEFAULT_TIMEOUT} from './constants';
 
 fixture('Operations')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
-    await wait(20000);
+    await wait(DEFAULT_TIMEOUT);
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
@@ -43,7 +43,7 @@ test('Cancel single instance ', async (t) => {
     .expect(
       within(screen.getByTestId('instances-list')).getAllByRole('row').count
     )
-    .eql(1, {timeout: 5000});
+    .eql(1);
 
   // cancel single instance using operation button
   await t.click(
@@ -72,12 +72,10 @@ test('Cancel single instance ', async (t) => {
       screen.findByText('There are no instances matching this filter set.')
         .exists
     )
-    .ok({timeout: 10000});
+    .ok();
 
   // wait for instance to finish in operation list (end time is present)
-  await t
-    .expect(within(operationItem).queryByText(DATE_REGEX).exists)
-    .ok({timeout: 10000});
+  await t.expect(within(operationItem).queryByText(DATE_REGEX).exists).ok();
 
   await t.click(within(operationItem).getByText('1 Instance'));
 
@@ -86,7 +84,7 @@ test('Cancel single instance ', async (t) => {
     .expect(
       within(screen.getByTestId('instances-list')).getAllByRole('row').count
     )
-    .eql(1, {timeout: 5000});
+    .eql(1);
 
   // expect operation id filter to be set
   await t
@@ -129,7 +127,7 @@ test('Retry multiple instances ', async (t) => {
   // wait for the filter to be applied
   await t
     .expect(within(instancesList).getAllByRole('row').count)
-    .eql(instances.length, {timeout: 5000});
+    .eql(instances.length);
 
   await t.click(
     screen.getByRole('checkbox', {
@@ -166,7 +164,7 @@ test('Retry multiple instances ', async (t) => {
   // wait for instance to finish in operation list (end time is present, progess bar gone)
   await t
     .expect(within(operationItem).queryByText(DATE_REGEX).exists)
-    .ok({timeout: 10000})
+    .ok()
     .expect(within(operationItem).queryByTestId('progress-bar').exists)
     .notOk();
 
@@ -174,13 +172,13 @@ test('Retry multiple instances ', async (t) => {
   await t
     .click(screen.getByRole('button', {name: 'Reset filters'}))
     .expect(within(instancesList).getAllByRole('row').count)
-    .gt(instances.length, {timeout: 5000});
+    .gt(instances.length);
 
   // select all instances from operation
   await t
     .click(within(operationItem).getByText('5 Instances'))
     .expect(within(instancesList).getAllByRole('row').count)
-    .eql(instances.length, {timeout: 5000})
+    .eql(instances.length)
     .expect(
       screen.getByRole('textbox', {
         name: 'Operation Id',

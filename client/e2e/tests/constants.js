@@ -5,5 +5,6 @@
  */
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+const DEFAULT_TIMEOUT = 20000;
 
-export {DATE_REGEX};
+export {DATE_REGEX, DEFAULT_TIMEOUT};

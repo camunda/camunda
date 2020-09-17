@@ -9,12 +9,13 @@ import {setup} from './Instances.setup.js';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
+import {DEFAULT_TIMEOUT} from './constants';
 
 fixture('Instances')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
-    await wait(20000);
+    await wait(DEFAULT_TIMEOUT);
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
@@ -58,9 +59,7 @@ test('Instances Page Initial Load', async (t) => {
   );
 
   const withinInstancesList = within(screen.getByTestId('instances-list'));
-  await t
-    .expect(withinInstancesList.getAllByRole('row').count)
-    .eql(2, {timeout: 5000});
+  await t.expect(withinInstancesList.getAllByRole('row').count).eql(2);
 
   await t
     .expect(withinInstancesList.getByTestId('INCIDENT-icon').exists)

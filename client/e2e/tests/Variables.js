@@ -10,12 +10,13 @@ import {Selector} from 'testcafe';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
+import {DEFAULT_TIMEOUT} from './constants';
 
 fixture('Add/Edit Variables')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
-    await wait(20000);
+    await wait(DEFAULT_TIMEOUT);
   })
   .beforeEach(async (t) => {
     const {
@@ -181,9 +182,9 @@ test('Edit variables', async (t) => {
   // see that spinners both disappear after save variable operation completes.
   await t
     .expect(screen.queryByTestId('edit-variable-spinner').exists)
-    .notOk({timeout: 20000})
+    .notOk()
     .expect(screen.queryByTestId('operation-spinner').exists)
-    .notOk({timeout: 20000});
+    .notOk();
 
   // refresh the page and see the variable is still there.
   await t
@@ -248,9 +249,9 @@ test('Add variables', async (t) => {
   // see that spinners both disappear after save variable operation completes
   await t
     .expect(screen.queryByTestId('edit-variable-spinner').exists)
-    .notOk({timeout: 20000})
+    .notOk()
     .expect(screen.queryByTestId('operation-spinner').exists)
-    .notOk({timeout: 20000});
+    .notOk();
 
   // refresh the page and see the variable is still there.
   await t
@@ -278,15 +279,15 @@ test('Add variables', async (t) => {
         name: `View instance ${instanceId}`,
       }).exists
     )
-    .ok({timeout: 5000});
+    .ok();
 });
 
 test('Remove fields when instance is canceled', async (t) => {
   await t
     .click(screen.getByRole('button', {name: 'Add variable'}))
-    .expect(screen.getByRole('textbox', {name: /variable/i}))
+    .expect(screen.getByRole('textbox', {name: /variable/i}).exists)
     .ok()
-    .expect(screen.getByRole('textbox', {name: /value/i}))
+    .expect(screen.getByRole('textbox', {name: /value/i}).exists)
     .ok();
 
   await t
@@ -296,9 +297,9 @@ test('Remove fields when instance is canceled', async (t) => {
 
   await t
     .expect(screen.queryByTestId('operation-spinner').exists)
-    .notOk({timeout: 20000})
+    .notOk()
     .expect(screen.queryByRole('textbox', {name: /variable/i}).exists)
-    .notOk({timeout: 5000})
+    .notOk()
     .expect(screen.queryByRole('textbox', {name: /value/i}).exists)
-    .notOk({timeout: 5000});
+    .notOk();
 });

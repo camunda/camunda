@@ -9,13 +9,13 @@ import {setup} from './Instance.setup.js';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
-import {DATE_REGEX} from './constants';
+import {DATE_REGEX, DEFAULT_TIMEOUT} from './constants';
 
 fixture('Instance')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
-    await wait(20000);
+    await wait(DEFAULT_TIMEOUT);
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
@@ -152,9 +152,7 @@ test('Instance with an incident - resolve an incident', async (t) => {
     })
     .click(screen.getByRole('button', {name: 'Save variable'}));
 
-  await t
-    .expect(screen.queryByTestId('operation-spinner').exists)
-    .notOk({timeout: 20000});
+  await t.expect(screen.queryByTestId('operation-spinner').exists).notOk();
 
   await t
     .click(
@@ -165,9 +163,7 @@ test('Instance with an incident - resolve an incident', async (t) => {
     .expect(screen.getByTestId('operation-spinner').exists)
     .ok();
 
-  await t.expect(screen.queryByTestId('operation-spinner').exists).notOk({
-    timeout: 20000,
-  });
+  await t.expect(screen.queryByTestId('operation-spinner').exists).notOk();
 
   await t
     .expect(
@@ -182,7 +178,7 @@ test('Instance with an incident - resolve an incident', async (t) => {
       within(screen.getByTestId('instance-header')).queryByTestId('ACTIVE-icon')
         .exists
     )
-    .ok({timeout: 20000});
+    .ok();
 
   await t
     .expect(
@@ -217,9 +213,7 @@ test('Instance with an incident - cancel an instance', async (t) => {
     .expect(screen.getByTestId('operation-spinner').exists)
     .ok();
 
-  await t.expect(screen.queryByTestId('operation-spinner').exists).notOk({
-    timeout: 20000,
-  });
+  await t.expect(screen.queryByTestId('operation-spinner').exists).notOk();
   await t
     .expect(
       screen.queryByRole('button', {
@@ -234,7 +228,7 @@ test('Instance with an incident - cancel an instance', async (t) => {
         'CANCELED-icon'
       ).exists
     )
-    .ok({timeout: 20000});
+    .ok();
 
   await t
     .expect(

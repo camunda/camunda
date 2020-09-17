@@ -9,12 +9,13 @@ import {setup} from './Dashboard.setup.js';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
+import {DEFAULT_TIMEOUT} from './constants';
 
 fixture('Dashboard')
   .page(config.endpoint)
   .before(async () => {
     await setup();
-    await wait(20000);
+    await wait(DEFAULT_TIMEOUT);
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
@@ -110,9 +111,7 @@ test('Navigation to Instances View', async (t) => {
 });
 
 test('Select instances by workflow', async (t) => {
-  await t
-    .expect(screen.queryByTestId('instances-by-workflow'))
-    .ok({timeout: 20000});
+  await t.expect(screen.queryByTestId('instances-by-workflow')).ok();
 
   const withinInstanceByWorkflow = within(
     screen.getByTestId('incident-byWorkflow-0')
@@ -146,9 +145,7 @@ test('Select instances by workflow', async (t) => {
 });
 
 test('Select instances by error message', async (t) => {
-  await t
-    .expect(screen.queryByTestId('incidents-by-error'))
-    .ok({timeout: 20000});
+  await t.expect(screen.queryByTestId('incidents-by-error')).ok();
 
   const withinInstanceByError = within(
     screen.getByTestId('incident-byError-0')
@@ -185,9 +182,7 @@ test('Select instances by error message', async (t) => {
 });
 
 test('Select instances by error message (expanded)', async (t) => {
-  await t
-    .expect(screen.queryByTestId('incidents-by-error'))
-    .ok({timeout: 20000});
+  await t.expect(screen.queryByTestId('incidents-by-error')).ok();
 
   const withinInstanceByError = within(
     screen.getByTestId('incident-byError-0')

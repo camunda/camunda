@@ -9,12 +9,13 @@ import {setup} from './Dashboard.setup.js';
 import * as Elements from './InstancesSelection.elements.js';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
+import {DEFAULT_TIMEOUT} from './constants';
 
 fixture('Select Instances')
   .page(config.endpoint)
   .before(async (t) => {
     await setup();
-    await wait(20000);
+    await wait(DEFAULT_TIMEOUT);
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
@@ -34,7 +35,7 @@ test('Selection of instances applied/removed on filter selection', async (t) => 
   await t
     .click(Elements.headerLinkIncidents)
     .expect(Elements.createOperationDropdown.exists)
-    .notOk({timeout: 5000});
+    .notOk();
 
   // go back to instances, select the first instance on the instances table
   await t
@@ -43,9 +44,7 @@ test('Selection of instances applied/removed on filter selection', async (t) => 
 
   // apply a filter from the filters panel and see create operation dropdown is disappeared
   await t.typeText(Elements.errorMessageFilter, 'An error message');
-  await t
-    .expect(Elements.createOperationDropdown.exists)
-    .notOk({timeout: 5000});
+  await t.expect(Elements.createOperationDropdown.exists).notOk();
 
   // remove filter, select first instance on the instances table
   await t
@@ -57,11 +56,11 @@ test('Selection of instances applied/removed on filter selection', async (t) => 
   await t
     .click(Elements.nextPage)
     .expect(Elements.createOperationDropdown.exists)
-    .ok({timeout: 5000});
+    .ok();
 
   // sort by workflow name on the instances table and see create operation dropdown is still there
   await t
     .click(Elements.sortByWorkflowName)
     .expect(Elements.createOperationDropdown.exists)
-    .ok({timeout: 5000});
+    .ok();
 });
