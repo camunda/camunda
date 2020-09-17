@@ -69,7 +69,7 @@
     <version.objenesis>3.1</version.objenesis>
     <version.prometheus>0.9.0</version.prometheus>
     <version.protobuf>3.13.0</version.protobuf>
-    <version.micrometer>1.5.4</version.micrometer>
+    <version.micrometer>1.5.5</version.micrometer>
     <version.rocksdbjni>6.11.4</version.rocksdbjni>
     <version.sbe>1.20.1</version.sbe>
     <version.scala-parser>1.1.2</version.scala-parser>
