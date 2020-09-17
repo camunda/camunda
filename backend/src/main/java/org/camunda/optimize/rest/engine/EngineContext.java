@@ -162,11 +162,11 @@ public class EngineContext {
   public DecisionDefinitionOptimizeDto fetchDecisionDefinition(final String decisionDefinitionId) {
     final Response response =
       engineClient.target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
-      .path(DECISION_DEFINITION_ENDPOINT_TEMPLATE)
-      .resolveTemplate("id", decisionDefinitionId)
-      .request(MediaType.APPLICATION_JSON)
-      .acceptEncoding(UTF8)
-      .get();
+        .path(DECISION_DEFINITION_ENDPOINT_TEMPLATE)
+        .resolveTemplate("id", decisionDefinitionId)
+        .request(MediaType.APPLICATION_JSON)
+        .acceptEncoding(UTF8)
+        .get();
 
     if (response.getStatus() == Response.Status.OK.getStatusCode()) {
       final DecisionDefinitionEngineDto decisionDefinitionEngineDto =
@@ -177,7 +177,8 @@ public class EngineContext {
         "Wasn't able to retrieve decision definition with id [%s] from the engine. It's likely that the definition " +
           "has been deleted but the historic data for it is still available. Please make sure that there are no " +
           "remnants of historic decision instances for that definition left! Response from the engine: \n%s",
-        decisionDefinitionId, response.readEntity(String.class));
+        decisionDefinitionId, response.readEntity(String.class)
+      );
       throw new OptimizeDecisionDefinitionFetchException(message);
     } else {
       final String message = String.format(
@@ -221,7 +222,8 @@ public class EngineContext {
         "Wasn't able to retrieve process definition with id [%s] from the engine. It's likely that the definition " +
           "has been deleted but the historic data for it is still available. Please make sure that there are no " +
           "remnants of historic process instances for that definition left! Response from the engine: \n%s",
-        processDefinitionId, response.readEntity(String.class));
+        processDefinitionId, response.readEntity(String.class)
+      );
       throw new OptimizeProcessDefinitionFetchException(message);
     } else {
       final String message = String.format(
@@ -294,7 +296,7 @@ public class EngineContext {
 
     } else {
       final String message = String.format(
-        "Failed querying users from engine with alias [%s], response status: [%s].", response.getStatus(), engineAlias
+        "Failed querying users from engine with alias [%s], response status: [%s].", engineAlias, response.getStatus()
       );
       response.close();
       log.error(message);
@@ -449,8 +451,7 @@ public class EngineContext {
       return getAuthorizationsForType(RESOURCE_TYPE_APPLICATION);
     } catch (Exception e) {
       String message = String.format(
-        "Could not fetch application authorizations from the Engine with alias [%s] to check the access " +
-          "permissions.",
+        "Could not fetch application authorizations from the Engine with alias [%s] to check the access permissions.",
         engineAlias
       );
       log.error(message, e);
