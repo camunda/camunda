@@ -630,7 +630,7 @@ public final class ClusteringRule extends ExternalResource {
   public void waitForTopology(final Predicate<List<BrokerInfo>> topologyPredicate) {
     Awaitility.await()
         .pollInterval(Duration.ofMillis(100))
-        .atMost(Duration.ofSeconds(10))
+        .atMost(Duration.ofSeconds(60))
         .ignoreExceptions()
         .until(() -> getTopologyFromClient().getBrokers(), topologyPredicate);
   }
