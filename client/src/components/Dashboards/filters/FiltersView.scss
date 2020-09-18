@@ -1,6 +1,8 @@
 @import 'shared-styles/shared-styles.scss';
 
 .dark .FiltersView {
+  border-color: #555;
+
   > .Button {
     color: $silver-darken-87;
 
