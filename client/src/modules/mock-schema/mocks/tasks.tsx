@@ -6,7 +6,7 @@
 
 import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
-import {currentUser} from '../constants/currentUser';
+import {currentUser} from './current-user';
 
 const tasks: ReadonlyArray<Task> = [
   {
@@ -51,4 +51,20 @@ const tasks: ReadonlyArray<Task> = [
   },
 ];
 
-export {tasks};
+const tasksClaimedByDemoUser: ReadonlyArray<Task> = tasks.map((task) => ({
+  ...task,
+  assignee: currentUser,
+}));
+
+const unclaimedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
+  ...task,
+  assignee: null,
+}));
+
+const completedTasks: ReadonlyArray<Task> = tasks.map((task) => ({
+  ...task,
+  assignee: task.assignee === null ? currentUser : task.assignee,
+  taskState: TaskStates.Completed,
+}));
+
+export {tasks, tasksClaimedByDemoUser, unclaimedTasks, completedTasks};

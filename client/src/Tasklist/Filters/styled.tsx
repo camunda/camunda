@@ -14,13 +14,17 @@ const Select = styled.select`
   border-radius: 3px;
   box-shadow: ${({theme}) => theme.shadows.select};
   border: solid 1px ${({theme}) => theme.colors.ui03};
-  background-color: ${({theme}) => theme.colors.ui01};
   font-size: 13px;
   font-weight: 600;
   color: ${({theme}) => theme.colors.ui07};
-  padding: 5px 8px;
-  background: url(${DownIcon}) no-repeat;
+  padding: 4px 8px;
+  background: ${({theme}) => theme.colors.ui01} url(${DownIcon}) no-repeat;
   background-position: calc(100% - 5px) center;
+  outline: none;
+
+  &:focus {
+    box-shadow: ${({theme}) => theme.shadows.fakeOutline};
+  }
 `;
 
 const Container = styled.div`

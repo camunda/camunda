@@ -7,7 +7,7 @@
 import {gql} from '@apollo/client';
 
 import {User} from 'modules/types';
-import {currentUser} from 'modules/mock-schema/constants/currentUser';
+import {currentUser} from 'modules/mock-schema/mocks/current-user';
 
 const GET_CURRENT_USER = gql`
   query GetCurrentUser {

@@ -12,9 +12,9 @@ import {render, screen, fireEvent} from '@testing-library/react';
 import {MockedApolloProvider} from 'modules/mock-schema/MockedApolloProvider';
 import {Route, MemoryRouter} from 'react-router-dom';
 import {
-  mockGetTaskUnclaimed,
-  mockGetTaskCompleted,
-  mockGetTaskClaimed,
+  mockGetTaskDetailsUnclaimed,
+  mockGetTaskDetailsCompleted,
+  mockGetTaskDetailsClaimed,
 } from 'modules/queries/get-task-details';
 import {mockGetAllOpenTasks} from 'modules/queries/get-tasks';
 import {mockClaimTask} from 'modules/mutations/claim-task';
@@ -44,7 +44,7 @@ const getWrapper = ({id, mocks}: GetWrapperProps) => {
 describe('<Details />', () => {
   it('should render completed task details', async () => {
     render(<Details />, {
-      wrapper: getWrapper({id: '0', mocks: [mockGetTaskCompleted]}),
+      wrapper: getWrapper({id: '0', mocks: [mockGetTaskDetailsCompleted]}),
     });
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
@@ -63,7 +63,7 @@ describe('<Details />', () => {
 
   it('should render unclaimed task details', async () => {
     render(<Details />, {
-      wrapper: getWrapper({id: '0', mocks: [mockGetTaskUnclaimed]}),
+      wrapper: getWrapper({id: '0', mocks: [mockGetTaskDetailsUnclaimed]}),
     });
 
     expect(await screen.findByText('My Task')).toBeInTheDocument();
@@ -80,7 +80,11 @@ describe('<Details />', () => {
     render(<Details />, {
       wrapper: getWrapper({
         id: '0',
-        mocks: [mockGetTaskUnclaimed, mockClaimTask, mockGetAllOpenTasks],
+        mocks: [
+          mockGetTaskDetailsUnclaimed,
+          mockClaimTask,
+          mockGetAllOpenTasks,
+        ],
       }),
     });
     expect(
@@ -102,7 +106,11 @@ describe('<Details />', () => {
     render(<Details />, {
       wrapper: getWrapper({
         id: '0',
-        mocks: [mockGetTaskClaimed, mockUnclaimTask, mockGetAllOpenTasks],
+        mocks: [
+          mockGetTaskDetailsClaimed,
+          mockUnclaimTask,
+          mockGetAllOpenTasks,
+        ],
       }),
     });
 

@@ -7,7 +7,12 @@
 /* istanbul ignore file */
 
 import {gql} from '@apollo/client';
-import {tasks} from '../mock-schema/mocks/tasks';
+import {
+  tasks,
+  tasksClaimedByDemoUser,
+  unclaimedTasks,
+  completedTasks,
+} from 'modules/mock-schema/mocks/tasks';
 import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
 
@@ -97,7 +102,7 @@ const mockGetClaimedByMe = {
   },
   result: {
     data: {
-      tasks,
+      tasks: tasksClaimedByDemoUser,
     },
   },
 } as const;
@@ -111,7 +116,7 @@ const mockGetUnclaimed = {
   },
   result: {
     data: {
-      tasks,
+      tasks: unclaimedTasks,
     },
   },
 } as const;
@@ -125,7 +130,7 @@ const mockGetCompleted = {
   },
   result: {
     data: {
-      tasks,
+      tasks: completedTasks,
     },
   },
 } as const;

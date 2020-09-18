@@ -46,7 +46,7 @@ const GET_TASK_DETAILS = gql`
   }
 `;
 
-const mockGetTaskUnclaimed = {
+const mockGetTaskDetailsUnclaimed = {
   request: {
     query: GET_TASK_DETAILS,
     variables: {id: '0'},
@@ -58,7 +58,7 @@ const mockGetTaskUnclaimed = {
   },
 };
 
-const mockGetTaskClaimed = {
+const mockGetTaskDetailsClaimed = {
   request: {
     query: GET_TASK_DETAILS,
     variables: {id: '0'},
@@ -70,7 +70,7 @@ const mockGetTaskClaimed = {
   },
 };
 
-const mockGetTaskCompleted = {
+const mockGetTaskDetailsCompleted = {
   request: {
     query: GET_TASK_DETAILS,
     variables: {id: '0'},
@@ -85,7 +85,7 @@ const mockGetTaskCompleted = {
 export type {GetTaskDetails, TaskDetailsQueryVariables};
 export {
   GET_TASK_DETAILS,
-  mockGetTaskUnclaimed,
-  mockGetTaskCompleted,
-  mockGetTaskClaimed,
+  mockGetTaskDetailsUnclaimed,
+  mockGetTaskDetailsCompleted,
+  mockGetTaskDetailsClaimed,
 };

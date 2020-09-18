@@ -23,6 +23,7 @@ const Title = styled.h1`
   font-size: 20px;
   font-weight: 600;
   color: ${({theme}) => theme.colors.ui06};
+  margin: 0;
 `;
 
 const TableContainer = styled.div`
@@ -33,7 +34,7 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 44px 20px 20px 20px;
+  margin: 44px 20px 30px 20px;
 `;
 
 const Body = styled.div`
@@ -85,7 +86,6 @@ const CreateButton = styled(Button)`
 
 const EmptyMessage = styled.div`
   margin-left: 20px;
-  padding-top: 12px;
   color: ${({theme}) => theme.colors.text.black};
 `;
 

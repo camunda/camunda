@@ -11,7 +11,7 @@ import {Task} from './index';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {Router} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
-import {currentUser} from 'modules/mock-schema/constants/currentUser';
+import {currentUser} from 'modules/mock-schema/mocks/current-user';
 
 const createWrapper = (history = createMemoryHistory()) => {
   const Wrapper: React.FC = ({children}) => (

@@ -6,7 +6,7 @@
 
 import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
-import {currentUser} from '../constants/currentUser';
+import {currentUser} from './current-user';
 
 const unclaimedTask: Task = {
   __typename: 'Task',

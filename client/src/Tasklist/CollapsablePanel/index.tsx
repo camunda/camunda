@@ -15,11 +15,10 @@ import {
   Container,
 } from './styled';
 
-interface Props {
+interface Props extends React.ComponentProps<typeof Panel> {
   children: React.ReactNode;
   title: string;
   className?: string;
-  hasTransparentBackground?: boolean;
 }
 
 const CollapsablePanel: React.FC<Props> = (props) => {

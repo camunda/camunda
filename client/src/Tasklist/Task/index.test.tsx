@@ -22,8 +22,8 @@ import {
   mockTaskWithoutVariables,
 } from 'modules/queries/get-task-variables';
 import {
-  mockGetTaskClaimed,
-  mockGetTaskUnclaimed,
+  mockGetTaskDetailsClaimed,
+  mockGetTaskDetailsUnclaimed,
 } from 'modules/queries/get-task-details';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
 import {mockGetCurrentUser} from 'modules/queries/get-current-user';
@@ -64,7 +64,7 @@ describe('<Task />', () => {
         history,
         mocks: [
           mockGetTaskCreated,
-          mockGetTaskClaimed,
+          mockGetTaskDetailsClaimed,
           mockTaskWithVariables,
           mockGetCurrentUser,
         ],
@@ -88,7 +88,7 @@ describe('<Task />', () => {
         history,
         mocks: [
           mockGetTaskCompleted,
-          mockGetTaskUnclaimed,
+          mockGetTaskDetailsUnclaimed,
           mockTaskWithVariables,
           mockGetCurrentUser,
         ],
@@ -112,7 +112,7 @@ describe('<Task />', () => {
         history,
         mocks: [
           mockGetTaskCreated,
-          mockGetTaskClaimed,
+          mockGetTaskDetailsClaimed,
           mockTaskWithoutVariables,
           mockGetCurrentUser,
           mockCompleteTask,
@@ -138,7 +138,7 @@ describe('<Task />', () => {
         history,
         mocks: [
           mockGetTaskCreated,
-          mockGetTaskClaimed,
+          mockGetTaskDetailsClaimed,
           mockTaskWithVariables,
           mockGetCurrentUser,
           mockCompleteTaskWithEditedVariable,
@@ -168,7 +168,7 @@ describe('<Task />', () => {
         history,
         mocks: [
           mockGetTaskCreated,
-          mockGetTaskClaimed,
+          mockGetTaskDetailsClaimed,
           mockTaskWithVariables,
           mockGetCurrentUser,
           mockCompleteTaskWithAddedVariable,
@@ -210,7 +210,7 @@ describe('<Task />', () => {
         history,
         mocks: [
           mockGetTaskCreated,
-          mockGetTaskClaimed,
+          mockGetTaskDetailsClaimed,
           mockTaskWithVariables,
           mockGetCurrentUser,
         ],
@@ -236,7 +236,7 @@ describe('<Task />', () => {
         history,
         mocks: [
           mockGetTaskCreated,
-          mockGetTaskClaimed,
+          mockGetTaskDetailsClaimed,
           mockTaskWithVariables,
           mockGetCurrentUser,
         ],

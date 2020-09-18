@@ -6,7 +6,7 @@
 
 import {Task} from 'modules/types';
 import {TaskStates} from 'modules/constants/taskStates';
-import {currentUser} from 'modules/mock-schema/constants/currentUser';
+import {currentUser} from 'modules/mock-schema/mocks/current-user';
 
 type PartialTask = Pick<Task, 'id' | 'taskState' | 'assignee' | '__typename'>;
 
