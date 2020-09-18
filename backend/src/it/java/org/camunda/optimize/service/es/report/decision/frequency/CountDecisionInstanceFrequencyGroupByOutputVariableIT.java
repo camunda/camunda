@@ -8,12 +8,11 @@ package org.camunda.optimize.service.es.report.decision.frequency;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import lombok.SneakyThrows;
-import org.assertj.core.api.Assertions;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -41,7 +40,7 @@ import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createBooleanOutputVariableFilter;
@@ -881,7 +880,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
   @ParameterizedTest
   @MethodSource("staticGroupByDateUnits")
-  public void dateVariableGroupByWorksWithAllStaticUnits(final GroupByDateUnit unit) {
+  public void dateVariableGroupByWorksWithAllStaticUnits(final AggregateByDateUnit unit) {
     // given
     final int numberOfInstances = 3;
     final String outputClauseId = "outputClauseId";
@@ -947,7 +946,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
+      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, AggregateByDateUnit.AUTOMATIC
     ).getResult();
 
     // then
@@ -983,7 +982,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByOutputVariable(
-      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
+      definition, definition.getVersionAsString(), outputClauseId, null, VariableType.DATE, AggregateByDateUnit.AUTOMATIC
     ).getResult();
 
     // then
@@ -1140,7 +1139,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final String variableId,
     final String variableName,
     final VariableType variableType,
-    final GroupByDateUnit unit) {
+    final AggregateByDateUnit unit) {
     return evaluateDecisionInstanceFrequencyByOutputVariable(
       decisionDefinitionDto,
       decisionDefinitionVersion,
@@ -1167,7 +1166,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
       variableId,
       variableName,
       variableType,
-      GroupByDateUnit.AUTOMATIC,
+      AggregateByDateUnit.AUTOMATIC,
       baseline,
       numberVariableBucketSize
     );
@@ -1179,7 +1178,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
     final String variableId,
     final String variableName,
     final VariableType variableType,
-    final GroupByDateUnit unit,
+    final AggregateByDateUnit unit,
     final Double baseline,
     final Double numberVariableBucketSize) {
     DecisionReportDataDto reportData = createReportDataDto(

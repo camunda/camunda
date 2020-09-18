@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
@@ -178,7 +178,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .setFilter(createFixedEvaluationDateFilter(beforeStart.minusDays(3L), beforeStart))
       .build();
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
@@ -284,7 +284,7 @@ public class DecisionEvaluationDateFilterIT extends AbstractDecisionDefinitionIT
       .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .setFilter(createRollingEvaluationDateFilter(4L, DateFilterUnit.DAYS))
       .build();
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =

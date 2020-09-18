@@ -9,13 +9,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.VariableGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable;
-import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
-import org.camunda.optimize.service.es.report.command.service.NumberVariableAggregationService;
+import org.camunda.optimize.service.es.report.command.service.VariableAggregationService;
 import org.camunda.optimize.service.util.ProcessVariableHelper;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -31,11 +28,8 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 public class ProcessGroupByVariable extends AbstractGroupByVariable<ProcessReportDataDto> {
 
 
-  public ProcessGroupByVariable(final ConfigurationService configurationService,
-                                final DateAggregationService dateAggregationService,
-                                final NumberVariableAggregationService numberVariableAggregationService,
-                                final MinMaxStatsService minMaxStatsService) {
-    super(configurationService, dateAggregationService, numberVariableAggregationService, minMaxStatsService);
+  public ProcessGroupByVariable(final VariableAggregationService variableAggregationService) {
+    super(variableAggregationService);
   }
 
   private VariableGroupByValueDto getVariableGroupByDto(final ExecutionContext<ProcessReportDataDto> context) {

@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.RawDataDecisionReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
@@ -185,7 +185,7 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
       .createReportData()
       .setProcessDefinitionKey(TEST_PROCESS)
       .setProcessDefinitionVersion("1")
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(reportDataType)
       .build();
     reportDefinitionDto.setData(runningReportData);

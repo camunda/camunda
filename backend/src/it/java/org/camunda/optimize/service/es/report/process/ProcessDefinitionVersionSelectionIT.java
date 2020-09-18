@@ -10,7 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.ProcessReportResultDto;
@@ -158,7 +158,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
         .setProcessDefinitionVersions(definitionVersions)
         .setVariableName(VARIABLE_NAME)
         .setVariableType(VariableType.INTEGER)
-        .setDateInterval(GroupByDateUnit.DAY)
+        .setDateInterval(AggregateByDateUnit.DAY)
         .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
         .setStartFlowNodeId(START_EVENT)
         .setEndFlowNodeId(END_EVENT)

@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.rest.AuthorizedCollectionDefinitionRestDto;
@@ -74,7 +74,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
       .createReportData()
       .setProcessDefinitionKey(processDefinitionEngineDto.getKey())
       .setProcessDefinitionVersion(processDefinitionEngineDto.getVersionAsString())
-      .setDateInterval(GroupByDateUnit.AUTOMATIC)
+      .setDateInterval(AggregateByDateUnit.AUTOMATIC)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
       .build();
 

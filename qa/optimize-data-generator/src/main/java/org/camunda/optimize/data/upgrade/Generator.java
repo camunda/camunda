@@ -27,7 +27,7 @@ import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -202,7 +202,7 @@ public class Generator {
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .setVisualization(ProcessVisualization.BAR)
       .build();
     // here we want two of the same type to be combined in a combined report to follow

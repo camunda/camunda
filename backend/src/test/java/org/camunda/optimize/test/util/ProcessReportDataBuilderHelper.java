@@ -9,7 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
@@ -52,7 +52,7 @@ public class ProcessReportDataBuilderHelper {
   private ProcessGroupByType groupByType = ProcessGroupByType.NONE;
   private DistributedByType distributedByType = DistributedByType.NONE;
   private ProcessVisualization visualization = ProcessVisualization.TABLE;
-  private GroupByDateUnit dateInterval;
+  private AggregateByDateUnit dateInterval;
   private String variableName;
   private VariableType variableType;
   private String processPartStart;
@@ -165,7 +165,7 @@ public class ProcessReportDataBuilderHelper {
     return this;
   }
 
-  public ProcessReportDataBuilderHelper dateInterval(GroupByDateUnit dateInterval) {
+  public ProcessReportDataBuilderHelper dateInterval(AggregateByDateUnit dateInterval) {
     this.dateInterval = dateInterval;
     return this;
   }

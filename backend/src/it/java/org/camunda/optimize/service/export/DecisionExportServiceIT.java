@@ -9,7 +9,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
@@ -103,7 +103,7 @@ public class DecisionExportServiceIT extends AbstractIT {
           .setDecisionDefinitionKey(FAKE)
           .setDecisionDefinitionVersion(FAKE)
           .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-          .setDateInterval(GroupByDateUnit.DAY)
+          .setDateInterval(AggregateByDateUnit.DAY)
           .build(),
         "/csv/decision/count_decision_frequency_group_by_evaluation_date.csv",
         "Count Decision Frequency grouped by evaluation date"

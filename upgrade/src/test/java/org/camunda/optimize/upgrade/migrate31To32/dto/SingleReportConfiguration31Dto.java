@@ -25,7 +25,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.custo
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 
 @AllArgsConstructor
@@ -82,7 +82,7 @@ public class SingleReportConfiguration31Dto implements Combinable {
   private DistributedByType distributedBy = DistributedByType.NONE;
   @Builder.Default
   @NonNull
-  private GroupByDateUnit groupByDateVariableUnit = GroupByDateUnit.AUTOMATIC;
+  private AggregateByDateUnit groupByDateVariableUnit = AggregateByDateUnit.AUTOMATIC;
   @Builder.Default
   private CustomBucketDto customNumberBucket = CustomBucketDto.builder().build();
   @Builder.Default

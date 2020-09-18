@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
@@ -54,7 +54,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
                                                 final BoolQueryBuilder baseQuery) {
     if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
       final DateGroupByValueDto groupByDate = (DateGroupByValueDto) context.getReportData().getGroupBy().getValue();
-      if (GroupByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
+      if (AggregateByDateUnit.AUTOMATIC.equals(groupByDate.getUnit())) {
         return Optional.of(getMinMaxDateStats(context, baseQuery));
       }
     }
@@ -76,13 +76,13 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final GroupByDateUnit unit = getGroupByDateUnit(context.getReportData());
+    final AggregateByDateUnit unit = getGroupByDateUnit(context.getReportData());
     return createAggregation(searchSourceBuilder, context, unit);
   }
 
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context,
-                                                    final GroupByDateUnit unit) {
+                                                    final AggregateByDateUnit unit) {
     // set baseQuery in context for distribution by variable minMaxStat calculation
     context.setDistributedByMinMaxBaseQuery(searchSourceBuilder.query());
 
@@ -93,7 +93,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
       .dateField(getDateField())
       .minMaxStats(stats)
       .timezone(context.getTimezone())
-      .distributedBySubAggregation(distributedByPart.createAggregation(context))
+      .subAggregation(distributedByPart.createAggregation(context))
       .processGroupByType(getGroupByType().getType())
       .processFilters(context.getReportData().getFilter())
       .processQueryFilterEnhancer(queryFilterEnhancer)
@@ -171,7 +171,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
       .collect(Collectors.toList());
   }
 
-  private GroupByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
+  private AggregateByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
     return ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();
   }
 

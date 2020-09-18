@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.date.distributedby.none;
 
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
@@ -24,7 +24,7 @@ public class AutomaticIntervalSelectionGroupByEndProcessInstanceDateReportEvalua
       .createReportData()
       .setProcessDefinitionKey(key)
       .setProcessDefinitionVersion(version)
-      .setDateInterval(GroupByDateUnit.AUTOMATIC)
+      .setDateInterval(AggregateByDateUnit.AUTOMATIC)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
       .build();
   }

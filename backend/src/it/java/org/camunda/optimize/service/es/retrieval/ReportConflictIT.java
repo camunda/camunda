@@ -18,7 +18,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.AssigneeDistributedByDto;
@@ -75,7 +75,7 @@ public class ReportConflictIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(firstSingleReport.getData().getProcessDefinitionKey())
       .setProcessDefinitionVersions(firstSingleReport.getData().getDefinitionVersions())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
     reportUpdate.setData(groupByStartDateReport);
@@ -141,7 +141,7 @@ public class ReportConflictIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(singleReport.getData().getProcessDefinitionKey())
       .setProcessDefinitionVersions(singleReport.getData().getDefinitionVersions())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
     reportUpdate.setData(groupByStartDateReport);

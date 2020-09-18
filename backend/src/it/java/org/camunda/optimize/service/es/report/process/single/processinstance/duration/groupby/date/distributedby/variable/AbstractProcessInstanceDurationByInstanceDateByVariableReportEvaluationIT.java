@@ -9,7 +9,7 @@ import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
@@ -30,6 +30,8 @@ import org.camunda.optimize.test.it.extension.EngineVariableValue;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -44,11 +46,13 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.dto.optimize.query.variable.VariableType.getTypeForId;
 import static org.camunda.optimize.test.util.DateCreationFreezer.dateFreezer;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableReportEvaluationIT
@@ -81,7 +85,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy()
-      .getValue()).getUnit()).isEqualTo(GroupByDateUnit.DAY);
+      .getValue()).getUnit()).isEqualTo(AggregateByDateUnit.DAY);
     assertThat(resultReportDataDto.getConfiguration()
                  .getDistributedBy()
                  .getType()).isEqualTo(DistributedByType.VARIABLE);
@@ -121,7 +125,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy()
-      .getValue()).getUnit()).isEqualTo(GroupByDateUnit.DAY);
+      .getValue()).getUnit()).isEqualTo(AggregateByDateUnit.DAY);
     assertThat(resultReportDataDto.getConfiguration()
                  .getDistributedBy()
                  .getType()).isEqualTo(DistributedByType.VARIABLE);
@@ -262,7 +266,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     // given
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
     Map<String, Object> variables = new HashMap<>();
-//    variables.put(VariableType.DATE.getId(), OffsetDateTime.now()); TODO implement with OPT-4254
+    variables.put(VariableType.DATE.getId(), OffsetDateTime.now());
     variables.put(VariableType.BOOLEAN.getId(), true);
     variables.put(VariableType.SHORT.getId(), (short) 2);
     variables.put(VariableType.INTEGER.getId(), 3);
@@ -405,6 +409,42 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
   }
 
   @Test
+  public void multipleBuckets_groupByLimitedByConfig_dateVariable() {
+    // given
+    embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);
+    final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto procInstance1 =
+      deployAndStartSimpleProcess(Collections.singletonMap("dateVar", referenceDate));
+    adjustProcessInstanceDatesAndDuration(procInstance1.getId(), referenceDate, 0, 1L);
+
+    final ProcessInstanceEngineDto procInstance2 =
+      engineIntegrationExtension.startProcessInstance(
+        procInstance1.getDefinitionId(),
+        Collections.singletonMap("dateVar", referenceDate)
+      );
+    adjustProcessInstanceDatesAndDuration(procInstance2.getId(), referenceDate, 1, 2L);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.DATE, "dateVar");
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
+    final ZonedDateTime truncatedDateVariableValue = truncateToStartOfUnit(referenceDate, ChronoUnit.MONTHS);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .isComplete(false)
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .groupByContains(localDateTimeToString(startOfReferenceDate.plusDays(1)))
+        .distributedByContains(localDateTimeToString(truncatedDateVariableValue), 2000.)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  @Test
   public void variableTypeIsImportant() {
     // given
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
@@ -465,29 +505,85 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     // @formatter:on
   }
 
-  @Test
-  public void dateVariable_returnsEmptyResult() {
-    // given a report with a date variable (not yet supported)
+  @SneakyThrows
+  @ParameterizedTest
+  @MethodSource("staticGroupByDateUnits")
+  public void distributeByDateVariableWorksForAllStaticUnits(final AggregateByDateUnit unit) {
+    // given
+    final ChronoUnit chronoUnit = mapToChronoUnit(unit);
     final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
-    final ProcessInstanceEngineDto procInstance =
-      deployAndStartSimpleProcess(Collections.singletonMap("dateVar", referenceDate));
-    adjustProcessInstanceDatesAndDuration(procInstance.getId(), referenceDate, 0, 1L);
+    OffsetDateTime dateVariableValue = OffsetDateTime.parse("2020-06-15T00:00:00+02:00");
+    final ProcessInstanceEngineDto procInstance1 =
+      deployAndStartSimpleProcess(Collections.singletonMap("dateVar", dateVariableValue));
+    adjustProcessInstanceDatesAndDuration(procInstance1.getId(), referenceDate, 0, 1L);
+
     importAllEngineEntitiesFromScratch();
 
     // when
-    ProcessReportDataDto reportData = createReportData(procInstance, VariableType.DATE, "dateVar");
+    ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.DATE, "dateVar");
+    reportData.getConfiguration().setDistributeByDateVariableUnit(unit);
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
-    // then there are no distributed by results
-    final ZonedDateTime startOfReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
+    // then
+    final ZonedDateTime truncatedReferenceDate = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
+    final ZonedDateTime truncatedDateVariableValue = truncateToStartOfUnit(dateVariableValue, chronoUnit);
     // @formatter:off
     HyperMapAsserter.asserter()
       .processInstanceCount(1L)
       .processInstanceCountWithoutFilters(1L)
-        .groupByContains(localDateTimeToString(startOfReferenceDate))
+      .groupByContains(localDateTimeToString(truncatedReferenceDate))
+        .distributedByContains(localDateTimeToString(truncatedDateVariableValue), 1000.0)
       .doAssert(result);
     // @formatter:on
+  }
 
+  @SneakyThrows
+  @Test
+  public void distributeByDateVariableWorksForAutomaticIntervalSelection() {
+    // given
+    final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
+    OffsetDateTime dateVariableValue = OffsetDateTime.parse("2020-06-15T00:00:00+02:00");
+    final ProcessInstanceEngineDto procInstance1 =
+      deployAndStartSimpleProcess(Collections.singletonMap("dateVar", dateVariableValue));
+    adjustProcessInstanceDatesAndDuration(procInstance1.getId(), referenceDate, 0, 1L);
+
+    final ProcessInstanceEngineDto procInstance2 =
+      engineIntegrationExtension.startProcessInstance(
+        procInstance1.getDefinitionId(),
+        Collections.singletonMap("dateVar", dateVariableValue.plusDays(1))
+      );
+    adjustProcessInstanceDatesAndDuration(procInstance2.getId(), referenceDate, 0, 2L);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.DATE, "dateVar");
+    reportData.getConfiguration().setDistributeByDateVariableUnit(AggregateByDateUnit.AUTOMATIC);
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then result has 80 buckets each and they include both instances
+    assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getData())
+      .hasSize(1);
+    assertThat(result.getData())
+      .extracting(HyperMapResultEntryDto::getValue)
+      .allSatisfy(
+        resultEntries -> {
+          assertThat(resultEntries)
+            .hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+          assertThat(resultEntries.get(0))
+            .extracting(MapResultEntryDto::getKey)
+            .isEqualTo(localDateTimeToString(dateVariableValue.toZonedDateTime()));
+          // TODO below assertions fail due to OPT-4269, add once resolved
+//          assertThat(resultEntries.get(0))
+//            .extracting(MapResultEntryDto::getValue)
+//            .isEqualTo(1000.);
+//          assertThat(resultEntries.get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1))
+//            .extracting(MapResultEntryDto::getValue)
+//            .isEqualTo(2000.);
+        });
   }
 
   @Test
@@ -655,7 +751,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .setVariableName(variableName)
       .setVariableType(variableType)
       .build();

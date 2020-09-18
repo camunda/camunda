@@ -9,7 +9,7 @@ import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -63,7 +63,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
   @SneakyThrows
   @ParameterizedTest
   @MethodSource("staticGroupByDateUnits")
-  public void countRunningInstances_instancesFallIntoMultipleBuckets(final GroupByDateUnit unit) {
+  public void countRunningInstances_instancesFallIntoMultipleBuckets(final AggregateByDateUnit unit) {
     // given
     // first instance starts within a bucket (as opposed to on the "edge" of a bucket)
     final OffsetDateTime startOfFirstInstance = OffsetDateTime.parse("2020-06-15T12:00:00+02:00").withSecond(10);
@@ -112,7 +112,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
   @SneakyThrows
   @ParameterizedTest
   @MethodSource("staticGroupByDateUnits")
-  public void countRunningInstances_runningInstancesOnly(final GroupByDateUnit unit) {
+  public void countRunningInstances_runningInstancesOnly(final AggregateByDateUnit unit) {
     // given two running instances
     final Duration bucketWidth = mapToChronoUnit(unit).getDuration();
     final OffsetDateTime startOfFirstInstance = OffsetDateTime.parse("2020-01-05T12:00:00+02:00");
@@ -145,7 +145,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
   @SneakyThrows
   @ParameterizedTest
   @MethodSource("staticGroupByDateUnits")
-  public void countRunningInstances_latestStartDateAfterLatestEndDate(final GroupByDateUnit unit) {
+  public void countRunningInstances_latestStartDateAfterLatestEndDate(final AggregateByDateUnit unit) {
     // given instances whose latest start date is after the latest end date
     final Duration bucketWidth = mapToChronoUnit(unit).getDuration();
     final OffsetDateTime earliestStartDate = OffsetDateTime.parse("2020-01-05T12:00:10+02:00");
@@ -199,7 +199,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
 
   private ProcessReportDataDto getGroupByRunningDateReportData(final String key,
                                                                final String version,
-                                                               final GroupByDateUnit unit) {
+                                                               final AggregateByDateUnit unit) {
     return TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(key)
@@ -209,7 +209,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
       .build();
   }
 
-  private String convertToExpectedBucketKey(final OffsetDateTime date, final GroupByDateUnit unit) {
+  private String convertToExpectedBucketKey(final OffsetDateTime date, final AggregateByDateUnit unit) {
     return localDateTimeToString(
       truncateToStartOfUnit(date, mapToChronoUnit(unit))
     );

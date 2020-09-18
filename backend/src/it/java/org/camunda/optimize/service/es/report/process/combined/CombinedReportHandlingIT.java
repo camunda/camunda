@@ -22,7 +22,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.configuration.Com
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.BucketUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
@@ -190,7 +190,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .setProcessDefinitionKey("key")
       .setProcessDefinitionVersion("1")
-      .setDateInterval(GroupByDateUnit.YEAR)
+      .setDateInterval(AggregateByDateUnit.YEAR)
       .build();
 
     procDefKeyReportData.setVisualization(ProcessVisualization.BAR);
@@ -202,7 +202,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .setProcessDefinitionKey("anotherKey")
       .setProcessDefinitionVersion("1")
-      .setDateInterval(GroupByDateUnit.YEAR)
+      .setDateInterval(AggregateByDateUnit.YEAR)
       .build();
 
     procDefAnotherKeyReportData.setVisualization(ProcessVisualization.BAR);
@@ -215,7 +215,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
       .setProcessDefinitionKey("key")
       .setProcessDefinitionVersion("1")
-      .setDateInterval(GroupByDateUnit.YEAR)
+      .setDateInterval(AggregateByDateUnit.YEAR)
       .build();
 
     byEndDateData.setVisualization(ProcessVisualization.BAR);
@@ -356,7 +356,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .setProcessDefinitionKey("key")
       .setProcessDefinitionVersion("1")
-      .setDateInterval(GroupByDateUnit.YEAR)
+      .setDateInterval(AggregateByDateUnit.YEAR)
       .build();
 
     pICount_startDateYear_barData.setVisualization(ProcessVisualization.BAR);
@@ -368,7 +368,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .setProcessDefinitionKey("key")
       .setProcessDefinitionVersion("1")
-      .setDateInterval(GroupByDateUnit.YEAR)
+      .setDateInterval(AggregateByDateUnit.YEAR)
       .build();
 
     PICount_startDateYear_lineData.setVisualization(ProcessVisualization.LINE);
@@ -393,7 +393,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
       .viewProperty(ProcessViewProperty.DURATION)
       .groupByType(ProcessGroupByType.START_DATE)
-      .dateInterval(GroupByDateUnit.YEAR)
+      .dateInterval(AggregateByDateUnit.YEAR)
       .processDefinitionKey("key")
       .processDefinitionVersions(Collections.singletonList("1"))
       .build();
@@ -1131,8 +1131,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
 
-    String singleReportId1 = createNewSingleReportGroupByEndDate(engineDto, GroupByDateUnit.DAY);
-    String singleReportId2 = createNewSingleReportGroupByStartDate(engineDto, GroupByDateUnit.DAY);
+    String singleReportId1 = createNewSingleReportGroupByEndDate(engineDto, AggregateByDateUnit.DAY);
+    String singleReportId2 = createNewSingleReportGroupByStartDate(engineDto, AggregateByDateUnit.DAY);
 
     importAllEngineEntitiesFromScratch();
 
@@ -1517,8 +1517,8 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
 
-    String singleReportId1 = createNewSingleReportGroupByEndDate(engineDto, GroupByDateUnit.DAY);
-    String singleReportId2 = createNewSingleReportGroupByStartDate(engineDto, GroupByDateUnit.DAY);
+    String singleReportId1 = createNewSingleReportGroupByEndDate(engineDto, AggregateByDateUnit.DAY);
+    String singleReportId2 = createNewSingleReportGroupByStartDate(engineDto, AggregateByDateUnit.DAY);
 
     importAllEngineEntitiesFromScratch();
 
@@ -1562,7 +1562,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE)
       .build();
     String groupedByEndDateReportId = createNewSingleMapReport(groupedByEndDateReportData);
@@ -1570,7 +1570,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE)
       .build();
     String groupedByStartDateReportId = createNewSingleMapReport(groupedByStartDateReportData);
@@ -1615,7 +1615,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE)
       .build();
     String groupedByEndDateReportId = createNewSingleMapReport(groupedByEndDateReportData);
@@ -1623,7 +1623,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(engineDto.getProcessDefinitionVersion())
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE)
       .build();
     String groupedByStartDateReportId = createNewSingleMapReport(groupedByStartDateReportData);
@@ -1826,7 +1826,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private String createNewSingleReportGroupByEndDate(ProcessInstanceEngineDto engineDto,
-                                                     GroupByDateUnit groupByDateUnit) {
+                                                     AggregateByDateUnit groupByDateUnit) {
     ProcessReportDataDto reportDataByEndDate = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())
@@ -1838,7 +1838,7 @@ public class CombinedReportHandlingIT extends AbstractIT {
   }
 
   private String createNewSingleReportGroupByStartDate(ProcessInstanceEngineDto engineDto,
-                                                       GroupByDateUnit groupByDateUnit) {
+                                                       AggregateByDateUnit groupByDateUnit) {
     ProcessReportDataDto reportDataByStartDate = TemplatedProcessReportDataBuilder
       .createReportData()
       .setProcessDefinitionKey(engineDto.getProcessDefinitionKey())

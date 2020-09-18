@@ -7,24 +7,19 @@ package org.camunda.optimize.service.es.report.command.modules.group_by;
 
 import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
-import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult;
-import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
-import org.camunda.optimize.service.es.report.command.service.NumberVariableAggregationService;
-import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.es.report.command.service.VariableAggregationService;
+import org.camunda.optimize.service.es.report.command.util.VariableAggregationContext;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
@@ -40,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
@@ -62,10 +56,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
   public static final String RANGE_AGGREGATION = "rangeAggregation";
 
-  private final ConfigurationService configurationService;
-  private final DateAggregationService dateAggregationService;
-  private final NumberVariableAggregationService numberVariableAggregationService;
-  private final MinMaxStatsService minMaxStatsService;
+  private final VariableAggregationService variableAggregationService;
 
   protected abstract String getVariableName(final ExecutionContext<Data> context);
 
@@ -87,7 +78,17 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<Data> context,
                                                 final BoolQueryBuilder baseQuery) {
     if (isGroupedByNumberVariable(getVariableType(context)) || VariableType.DATE.equals(getVariableType(context))) {
-      return Optional.of(getMinMaxStats(baseQuery, context));
+      return Optional.of(
+        variableAggregationService.getVariableMinMaxStats(
+          getVariableType(context),
+          getVariableName(context),
+          getVariablePath(),
+          getNestedVariableNameFieldLabel(),
+          getNestedVariableValueFieldLabel(getVariableType(context)),
+          getIndexName(),
+          baseQuery
+        )
+      );
     }
     return Optional.empty();
   }
@@ -95,8 +96,23 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<Data> context) {
-    Optional<AggregationBuilder> variableSubAggregation =
-      createVariableSubAggregation(context, searchSourceBuilder.query());
+    final VariableAggregationContext varAggContext = VariableAggregationContext.builder()
+      .variableName(getVariableName(context))
+      .variableType(getVariableType(context))
+      .variablePath(getVariablePath())
+      .nestedVariableNameField(getNestedVariableNameFieldLabel())
+      .nestedVariableValueFieldLabel(getNestedVariableValueFieldLabel(getVariableType(context)))
+      .indexName(getIndexName())
+      .timezone(context.getTimezone())
+      .customBucketDto(context.getReportData().getConfiguration().getCustomBucket())
+      .dateUnit(getGroupByDateUnit(context))
+      .baseQueryForMinMaxStats(searchSourceBuilder.query())
+      .subAggregation(distributedByPart.createAggregation(context))
+      .combinedRangeMinMaxStats(context.getCombinedRangeMinMaxStats().orElse(null))
+      .build();
+
+    final Optional<AggregationBuilder> variableSubAggregation =
+      variableAggregationService.createVariableSubAggregation(varAggContext);
 
     if (!variableSubAggregation.isPresent()) {
       // if the report contains no instances and is grouped by date variable, this agg will not be present
@@ -129,82 +145,6 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .subAggregation(distributedByPart.createAggregation(context));
   }
 
-  private Optional<AggregationBuilder> createVariableSubAggregation(final ExecutionContext<Data> context,
-                                                                    final QueryBuilder baseQuery) {
-    Optional<AggregationBuilder> aggregationBuilder = Optional.empty();
-    final VariableType type = getVariableType(context);
-
-    switch (getVariableType(context)) {
-      case STRING:
-      case BOOLEAN:
-        aggregationBuilder = Optional.of(AggregationBuilders
-                                           .terms(VARIABLES_AGGREGATION)
-                                           .size(configurationService.getEsAggregationBucketLimit())
-                                           .field(getNestedVariableValueFieldLabel(VariableType.STRING)));
-        break;
-      case DATE:
-        aggregationBuilder = createDateVariableAggregation(baseQuery, context);
-        break;
-      default:
-        if (VariableType.getNumericTypes().contains(type)) {
-          aggregationBuilder =
-            numberVariableAggregationService.createNumberVariableAggregation(
-              context,
-              getVariableType(context),
-              getNestedVariableValueFieldLabel(getVariableType(context)),
-              getMinMaxStats(baseQuery, context),
-              context.getReportData().getConfiguration().getCustomBucket()
-            );
-        }
-    }
-
-    final AggregationBuilder nestedDistributedByAgg = reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
-      .subAggregation(distributedByPart.createAggregation(context));
-
-    return aggregationBuilder.map(builder -> builder.subAggregation(nestedDistributedByAgg));
-  }
-
-  private Optional<AggregationBuilder> createDateVariableAggregation(final QueryBuilder baseQuery,
-                                                                     final ExecutionContext<Data> context) {
-    final DateAggregationContext dateAggContext = DateAggregationContext.builder()
-      .groupByDateUnit(getGroupByDateUnit(context))
-      .dateField(getNestedVariableValueFieldLabel(VariableType.DATE))
-      .minMaxStats(getMinMaxStats(baseQuery, context))
-      .timezone(context.getTimezone())
-      .distributedBySubAggregation(distributedByPart.createAggregation(context))
-      .dateAggregationName(VARIABLES_AGGREGATION)
-      .build();
-
-    return dateAggregationService.createProcessDateVariableAggregation(dateAggContext);
-  }
-
-  private MinMaxStatDto getMinMaxStats(final QueryBuilder baseQuery,
-                                       final ExecutionContext<Data> context) {
-    final BoolQueryBuilder filterQuery = boolQuery().must(
-      termQuery(getNestedVariableNameFieldLabel(), getVariableName(context))
-    );
-
-    if (VariableType.DATE.equals(getVariableType(context))) {
-      return minMaxStatsService.getMinMaxDateRangeForNestedField(
-        context,
-        baseQuery,
-        getIndexName(),
-        getNestedVariableValueFieldLabel(VariableType.DATE),
-        getVariablePath(),
-        filterQuery
-      );
-    } else {
-      return minMaxStatsService.getMinMaxNumberRangeForNestedField(
-        context,
-        baseQuery,
-        getIndexName(),
-        getNestedVariableValueFieldLabel(getVariableType(context)),
-        getVariablePath(),
-        filterQuery
-      );
-    }
-  }
-
   @Override
   public void addQueryResult(final CompositeCommandResult compositeCommandResult,
                              final SearchResponse response,
@@ -225,23 +165,13 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       variableTerms = filteredParentAgg.getAggregations().get(RANGE_AGGREGATION);
     }
 
-    Map<String, Aggregations> bucketAggregations;
-    if (VariableType.DATE.equals(getVariableType(context))) {
-      bucketAggregations =
-        dateAggregationService.mapDateAggregationsToKeyAggregationMap(
-          filteredParentAgg.getAggregations(),
-          context.getTimezone(),
-          VARIABLES_AGGREGATION
-        );
-    } else {
-      bucketAggregations =
-        variableTerms.getBuckets().stream()
-          .collect(toMap(
-            MultiBucketsAggregation.Bucket::getKeyAsString,
-            MultiBucketsAggregation.Bucket::getAggregations,
-            (bucketAggs1, bucketAggs2) -> bucketAggs1
-          ));
-    }
+    Map<String, Aggregations> bucketAggregations =
+      variableAggregationService.retrieveResultBucketMap(
+        filteredParentAgg,
+        variableTerms,
+        getVariableType(context),
+        context.getTimezone()
+      );
 
     final List<GroupByResult> groupedData = new ArrayList<>();
     for (Map.Entry<String, Aggregations> keyToAggregationEntry : bucketAggregations.entrySet()) {
@@ -298,7 +228,7 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     return filteredVariables.getDocCount() == resultDocCount;
   }
 
-  private GroupByDateUnit getGroupByDateUnit(final ExecutionContext<Data> context) {
+  private AggregateByDateUnit getGroupByDateUnit(final ExecutionContext<Data> context) {
     return context.getReportData().getConfiguration().getGroupByDateVariableUnit();
   }
 

@@ -6,20 +6,18 @@
 package org.camunda.optimize.service.es.report.command.modules.distributed_by.process;
 
 import lombok.RequiredArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.VariableDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.VariableDistributedByValueDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
-import org.camunda.optimize.service.es.report.MinMaxStatDto;
-import org.camunda.optimize.service.es.report.MinMaxStatsService;
 import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
 import org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult;
-import org.camunda.optimize.service.es.report.command.service.NumberVariableAggregationService;
-import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.es.report.command.service.DateAggregationService;
+import org.camunda.optimize.service.es.report.command.service.VariableAggregationService;
+import org.camunda.optimize.service.es.report.command.util.VariableAggregationContext;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
@@ -36,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -74,9 +73,8 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
   private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
   private static final String PARENT_FILTER_AGGREGATION = "matchAllFilter";
 
-  private final ConfigurationService configurationService;
-  private final MinMaxStatsService minMaxStatsService;
-  private final NumberVariableAggregationService numberVariableAggregationService;
+  private final DateAggregationService dateAggregationService;
+  private final VariableAggregationService variableAggregationService;
 
   @Override
   public Optional<Boolean> isKeyOfNumericType(final ExecutionContext<ProcessReportDataDto> context) {
@@ -85,7 +83,23 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
 
   @Override
   public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
-    Optional<AggregationBuilder> variableSubAggregation = createVariableSubAggregation(context);
+    final VariableAggregationContext varAggContext = VariableAggregationContext.builder()
+      .variableName(getVariableName(context))
+      .variableType(getVariableType(context))
+      .variablePath(VARIABLES)
+      .nestedVariableNameField(getNestedVariableNameField())
+      .nestedVariableValueFieldLabel(getNestedVariableValueFieldLabel(getVariableType(context)))
+      .indexName(PROCESS_INSTANCE_INDEX_NAME)
+      .timezone(context.getTimezone())
+      .customBucketDto(context.getReportData().getConfiguration().getDistributeByCustomBucket())
+      .dateUnit(getDistributeByDateUnit(context))
+      .baseQueryForMinMaxStats(context.getDistributedByMinMaxBaseQuery())
+      .subAggregation(viewPart.createAggregation(context))
+      .combinedRangeMinMaxStats(context.getCombinedRangeMinMaxStats().orElse(null))
+      .build();
+
+    final Optional<AggregationBuilder> variableSubAggregation =
+      variableAggregationService.createVariableSubAggregation(varAggContext);
 
     if (!variableSubAggregation.isPresent()) {
       // if the report contains no instances and is distributed by date variable, this agg will not be present
@@ -112,37 +126,12 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
           ));
   }
 
-  private Optional<AggregationBuilder> createVariableSubAggregation(final ExecutionContext<ProcessReportDataDto> context) {
-    Optional<AggregationBuilder> aggregationBuilder = Optional.empty();
-    final VariableType type = getVariableType(context);
-    switch (getVariableType(context)) {
-      case STRING:
-      case BOOLEAN:
-        aggregationBuilder = Optional.of(AggregationBuilders
-                                           .terms(VARIABLES_AGGREGATION)
-                                           .size(configurationService.getEsAggregationBucketLimit())
-                                           .field(getNestedVariableValueFieldLabel(VariableType.STRING)));
-        break;
-      case DATE:
-        // TODO implement with OPT-4254
-        break;
-      default:
-        if (VariableType.getNumericTypes().contains(type)) {
-          aggregationBuilder =
-            numberVariableAggregationService.createNumberVariableAggregation(
-              context,
-              type,
-              getNestedVariableValueFieldLabel(type),
-              getMinMaxStats(context),
-              context.getReportData().getConfiguration().getDistributeByCustomBucket()
-            );
-        }
-    }
-
-    final AggregationBuilder nestedViewAgg = reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
+  private AggregationBuilder createUndefinedOrNullVariableAggregation(final ExecutionContext<ProcessReportDataDto> context) {
+    return filter(
+      MISSING_VARIABLES_AGGREGATION,
+      createFilterForUndefinedOrNullQueryBuilder(getVariableName(context), getVariableType(context))
+    )
       .subAggregation(viewPart.createAggregation(context));
-
-    return aggregationBuilder.map(builder -> builder.subAggregation(nestedViewAgg));
   }
 
   @Override
@@ -151,7 +140,7 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
                                                                          final ExecutionContext<ProcessReportDataDto> context) {
     final ParsedFilter parentFilterAgg = aggregations.get(PARENT_FILTER_AGGREGATION);
     if (parentFilterAgg == null) {
-      // TODO implement with OPT-4254
+      // could not create aggregations, e.g. because baseline is invalid
       return Collections.emptyList();
     }
 
@@ -166,16 +155,24 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
       variableTerms = filteredParentAgg.getAggregations().get(RANGE_AGGREGATION);
     }
 
+    Map<String, Aggregations> bucketAggregations =
+      variableAggregationService.retrieveResultBucketMap(
+        filteredParentAgg,
+        variableTerms,
+        getVariableType(context),
+        context.getTimezone()
+      );
+
     List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
 
-    for (MultiBucketsAggregation.Bucket bucket : variableTerms.getBuckets()) {
-      ReverseNested reverseNested = bucket.getAggregations().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
+    for (Map.Entry<String, Aggregations> keyToAggregationEntry : bucketAggregations.entrySet()) {
+      ReverseNested reverseNested = keyToAggregationEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
       final CompositeCommandResult.ViewResult viewResult = viewPart.retrieveResult(
         response,
-        reverseNested == null ? bucket.getAggregations() : reverseNested.getAggregations(),
+        reverseNested == null ? keyToAggregationEntry.getValue() : reverseNested.getAggregations(),
         context
       );
-      distributedByResults.add(createDistributedByResult(bucket.getKeyAsString(), null, viewResult));
+      distributedByResults.add(createDistributedByResult(keyToAggregationEntry.getKey(), null, viewResult));
     }
 
     addMissingVariableBuckets(distributedByResults, response, aggregations, context);
@@ -201,15 +198,25 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
     }
 
     Set<String> allDistributedByKeys = new HashSet<>();
-    if (!VariableType.getNumericTypes().contains(getVariableType(context))) {
+    final VariableType type = getVariableType(context);
+    if (!VariableType.getNumericTypes().contains(type)) {
       // missing distrBy keys evaluation only required if it's not a range (number var) aggregation
       final ParsedNested nestedAgg = parentFilterAgg.getAggregations().get(NESTED_AGGREGATION);
       final ParsedFilter filteredVarAgg = nestedAgg.getAggregations().get(FILTERED_VARIABLES_AGGREGATION);
-      final ParsedStringTerms varNamesAgg = filteredVarAgg.getAggregations().get(VARIABLES_AGGREGATION);
-      allDistributedByKeys = varNamesAgg.getBuckets()
-        .stream()
-        .map(MultiBucketsAggregation.Bucket::getKeyAsString)
-        .collect(toSet());
+      if (VariableType.DATE.equals(type)) {
+        final ParsedFilter filterLimitedAgg = filteredVarAgg.getAggregations().get(FILTER_LIMITED_AGGREGATION);
+        allDistributedByKeys = dateAggregationService.mapDateAggregationsToKeyAggregationMap(
+          filterLimitedAgg == null ? filteredVarAgg.getAggregations() : filterLimitedAgg.getAggregations(),
+          context.getTimezone(),
+          VARIABLES_AGGREGATION
+        ).keySet();
+      } else {
+        final ParsedStringTerms varNamesAgg = filteredVarAgg.getAggregations().get(VARIABLES_AGGREGATION);
+        allDistributedByKeys = varNamesAgg.getBuckets()
+          .stream()
+          .map(MultiBucketsAggregation.Bucket::getKeyAsString)
+          .collect(toSet());
+      }
     }
 
     final Filter missingVarAgg = parentFilterAgg.getAggregations().get(MISSING_VARIABLES_AGGREGATION);
@@ -260,14 +267,6 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
     }
   }
 
-  private AggregationBuilder createUndefinedOrNullVariableAggregation(final ExecutionContext<ProcessReportDataDto> context) {
-    return filter(
-      MISSING_VARIABLES_AGGREGATION,
-      createFilterForUndefinedOrNullQueryBuilder(getVariableName(context), getVariableType(context))
-    )
-      .subAggregation(viewPart.createAggregation(context));
-  }
-
   private String getVariableName(final ExecutionContext<ProcessReportDataDto> context) {
     return getVariableDistributedByValueDto(context).getName();
   }
@@ -284,19 +283,7 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
     return ((VariableDistributedByDto) context.getReportData().getConfiguration().getDistributedBy()).getValue();
   }
 
-  private MinMaxStatDto getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context) {
-    final BoolQueryBuilder filterQuery = boolQuery().must(
-      termQuery(getNestedVariableNameField(), getVariableName(context))
-    );
-    if (VariableType.getNumericTypes().contains(getVariableType(context))) {
-      return minMaxStatsService.getSingleFieldMinMaxStats(
-        context.getDistributedByMinMaxBaseQuery(),
-        PROCESS_INSTANCE_INDEX_NAME,
-        getNestedVariableValueFieldLabel(getVariableType(context)),
-        VARIABLES,
-        filterQuery
-      );
-    }
-    return new MinMaxStatDto(Double.NaN, Double.NaN); // not yet implemented for other variable types
+  private AggregateByDateUnit getDistributeByDateUnit(final ExecutionContext<ProcessReportDataDto> context) {
+    return context.getReportData().getConfiguration().getDistributeByDateVariableUnit();
   }
 }

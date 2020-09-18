@@ -6,11 +6,9 @@
 package org.camunda.optimize.service.es.report.command.service;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
-import org.camunda.optimize.service.es.report.command.exec.ExecutionContext;
+import org.camunda.optimize.service.es.report.command.util.VariableAggregationContext;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -33,43 +31,31 @@ public class NumberVariableAggregationService {
 
   private final ConfigurationService configurationService;
 
-  public Optional<AggregationBuilder> createNumberVariableAggregation(
-    final ExecutionContext<? extends SingleReportDataDto> context,
-    final VariableType variableType,
-    final String nestedVariableValueFieldLabel,
-    final MinMaxStatDto minMaxStats,
-    final CustomBucketDto customBucketDto) {
-    if (minMaxStats.isEmpty()) {
+  public Optional<AggregationBuilder> createNumberVariableAggregation(final VariableAggregationContext context) {
+    if (context.getVariableRangeMinMaxStats().isEmpty()) {
       return Optional.empty();
     }
 
-    final Optional<Double> min = getBaselineForNumberVariableAggregation(context, minMaxStats, customBucketDto);
+    final Optional<Double> min = getBaselineForNumberVariableAggregation(context);
     if (!min.isPresent()) {
       // no valid baseline is set, return empty result
       return Optional.empty();
     }
 
-    final double unit =
-      getGroupByNumberVariableUnit(
-        context,
-        min.get(),
-        minMaxStats,
-        variableType,
-        customBucketDto
-      );
-    final double max = getMaxForNumberVariableAggregation(context, minMaxStats);
+    final double unit = getIntervalUnit(context, min.get());
+    final double max = context.getMaxVariableValue();
     int numberOfBuckets = 0;
 
     RangeAggregationBuilder rangeAgg = AggregationBuilders
       .range(RANGE_AGGREGATION)
-      .field(nestedVariableValueFieldLabel);
+      .field(context.getNestedVariableValueFieldLabel());
 
     for (double start = min.get();
          start <= max && numberOfBuckets < configurationService.getEsAggregationBucketLimit();
          start += unit, numberOfBuckets++) {
       RangeAggregator.Range range =
         new RangeAggregator.Range(
-          getKeyForNumberBucket(variableType, start),
+          getKeyForNumberBucket(context.getVariableType(), start),
           start,
           start + unit
         );
@@ -78,14 +64,11 @@ public class NumberVariableAggregationService {
     return Optional.of(rangeAgg);
   }
 
-  public Double getGroupByNumberVariableUnit(final ExecutionContext<? extends SingleReportDataDto> context,
-                                             final Double baseline,
-                                             final MinMaxStatDto minMaxStats,
-                                             final VariableType variableType,
-                                             final CustomBucketDto customBucketDto) {
-    final double maxVariableValue = context.getCombinedRangeMinMaxStats().orElse(minMaxStats).getMax();
-    final boolean customBucketsActive = customBucketDto.isActive();
-    Double unit = customBucketDto.getBucketSize();
+  private Double getIntervalUnit(final VariableAggregationContext context,
+                                 final Double baseline) {
+    final double maxVariableValue = context.getMaxVariableValue();
+    final boolean customBucketsActive = context.getCustomBucketDto().isActive();
+    Double unit = context.getCustomBucketDto().getBucketSize();
     if (!customBucketsActive || unit == null || unit <= 0) {
       // if no valid unit is configured, calculate default automatic unit
       unit =
@@ -94,24 +77,22 @@ public class NumberVariableAggregationService {
       // inclusive and would otherwise create 81 buckets
       unit = unit == 0 ? 1 : roundDownToNearestPowerOfTen(unit);
     }
-    if (!VariableType.DOUBLE.equals(variableType)) {
+    if (!VariableType.DOUBLE.equals(context.getVariableType())) {
       // round unit up if grouped by number variable without decimal point
       unit = Math.ceil(unit);
     }
     return unit;
   }
 
-  public Optional<Double> getBaselineForNumberVariableAggregation(
-    final ExecutionContext<? extends SingleReportDataDto> context,
-    final MinMaxStatDto minMaxStats,
-    final CustomBucketDto customBucketDto) {
-    final Optional<MinMaxStatDto> contextMinMaxStats = context.getCombinedRangeMinMaxStats();
-    final Optional<Double> baselineForSingleReport = customBucketDto.isActive()
-      ? Optional.ofNullable(customBucketDto.getBaseline())
+  private Optional<Double> getBaselineForNumberVariableAggregation(
+    final VariableAggregationContext context) {
+    final Optional<MinMaxStatDto> combinedMinMaxStats = context.getCombinedRangeMinMaxStats();
+    final Optional<Double> baselineForSingleReport = context.getCustomBucketDto().isActive()
+      ? Optional.ofNullable(context.getCustomBucketDto().getBaseline())
       : Optional.empty();
 
-    if (!contextMinMaxStats.isPresent() && baselineForSingleReport.isPresent()) {
-      if (baselineForSingleReport.get() > minMaxStats.getMax()) {
+    if (!combinedMinMaxStats.isPresent() && baselineForSingleReport.isPresent()) {
+      if (baselineForSingleReport.get() > context.getVariableRangeMinMaxStats().getMax()) {
         // if report is single report and invalid baseline is set, return empty result
         return Optional.empty();
       }
@@ -119,12 +100,9 @@ public class NumberVariableAggregationService {
       return baselineForSingleReport;
     }
 
-    return Optional.of(roundDownToNearestPowerOfTen(contextMinMaxStats.orElse(minMaxStats).getMin()));
-  }
-
-  private Double getMaxForNumberVariableAggregation(final ExecutionContext<? extends SingleReportDataDto> context,
-                                                    final MinMaxStatDto minMaxStats) {
-    return context.getCombinedRangeMinMaxStats().map(MinMaxStatDto::getMax).orElse(minMaxStats.getMax());
+    return Optional.of(
+      roundDownToNearestPowerOfTen(combinedMinMaxStats.orElse(context.getVariableRangeMinMaxStats()).getMin())
+    );
   }
 
   private String getKeyForNumberBucket(final VariableType varType,

@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.process.single.processinstance.fr
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
@@ -224,7 +224,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
       .createReportData()
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(processDefinition.getVersionAsString())
-      .setDateInterval(GroupByDateUnit.AUTOMATIC)
+      .setDateInterval(AggregateByDateUnit.AUTOMATIC)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
       .build();
     String singleReportId = createNewSingleReport(reportDataDto);
@@ -233,7 +233,7 @@ public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDa
       .createReportData()
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(processDefinition.getVersionAsString())
-      .setDateInterval(GroupByDateUnit.AUTOMATIC)
+      .setDateInterval(AggregateByDateUnit.AUTOMATIC)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .build();
     String singleReportId2 = createNewSingleReport(reportDataDto2);

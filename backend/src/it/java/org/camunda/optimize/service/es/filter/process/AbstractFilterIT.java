@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.filter.process;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
@@ -103,7 +103,7 @@ public abstract class AbstractFilterIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(key)
       .setProcessDefinitionVersion(version)
-      .setDateInterval(GroupByDateUnit.AUTOMATIC)
+      .setDateInterval(AggregateByDateUnit.AUTOMATIC)
       .setReportDataType(type)
       .build();
   }

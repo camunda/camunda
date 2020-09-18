@@ -15,7 +15,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Re
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RelativeDateFilterStartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
@@ -43,7 +43,7 @@ import java.util.stream.Stream;
 import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
 import static java.time.temporal.TemporalAdjusters.firstDayOfYear;
 import static java.time.temporal.TemporalAdjusters.previousOrSame;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.service.util.DateFilterUtil.getStartOfCurrentInterval;
 import static org.camunda.optimize.service.util.DateFilterUtil.getStartOfPreviousInterval;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
@@ -251,7 +251,7 @@ public class DateHistogramBucketLimiterUtil {
   }
 
   private static List<DateFilterDataDto<?>> limitDateFiltersOrCreateDefaultFilter(final List<DateFilterDataDto<?>> dateFilters,
-                                                                                  final GroupByDateUnit groupByUnit,
+                                                                                  final AggregateByDateUnit groupByUnit,
                                                                                   final int bucketLimit,
                                                                                   final ZonedDateTime defaultEndTime,
                                                                                   final ZoneId timezone) {
@@ -372,7 +372,7 @@ public class DateHistogramBucketLimiterUtil {
   }
 
   static BoolQueryBuilder createDateHistogramBucketLimitingFilter(final List<DateFilterDataDto<?>> dateFilters,
-                                                                  final GroupByDateUnit unit,
+                                                                  final AggregateByDateUnit unit,
                                                                   final int bucketLimit,
                                                                   final QueryFilter<DateFilterDataDto<?>> queryFilterService,
                                                                   final ZoneId timezone) {
@@ -387,7 +387,7 @@ public class DateHistogramBucketLimiterUtil {
 
   static BoolQueryBuilder createDateHistogramBucketLimitedOrDefaultLimitedFilter(
     final List<DateFilterDataDto<?>> dateFilters,
-    final GroupByDateUnit unit,
+    final AggregateByDateUnit unit,
     final int bucketLimit,
     final ZonedDateTime defaultEndTime,
     final QueryFilter<DateFilterDataDto<?>> queryFilterService,

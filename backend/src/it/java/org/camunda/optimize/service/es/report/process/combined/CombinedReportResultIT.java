@@ -9,7 +9,7 @@ import lombok.SneakyThrows;
 import org.apache.commons.lang3.tuple.Pair;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -42,7 +42,7 @@ import java.util.stream.Stream;
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.SUSPENDED_STATE;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
@@ -53,7 +53,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
   @ParameterizedTest
   @MethodSource("staticIntervalDateReportCombinationsPerUnit")
   public void dateReports_staticIntervals_sameResultsAsSingleReportEvaluation(
-    final Pair<GroupByDateUnit, List<SingleProcessReportDefinitionDto>> combinableReportsWithUnit) {
+    final Pair<AggregateByDateUnit, List<SingleProcessReportDefinitionDto>> combinableReportsWithUnit) {
     // given
     startAndEndProcessInstancesWithGivenRuntime(
       4,
@@ -105,7 +105,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
 
   @ParameterizedTest
   @MethodSource("staticGroupByDateUnits")
-  public void dateVariableReports_staticIntervals_sameResultsAsSingleReportEvaluation(final GroupByDateUnit unit) {
+  public void dateVariableReports_staticIntervals_sameResultsAsSingleReportEvaluation(final AggregateByDateUnit unit) {
     // given
     final ChronoUnit chronoUnit = mapToChronoUnit(unit);
     final int numberOfInstances = 3;
@@ -178,12 +178,12 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
       def.getKey(),
       def.getVersionAsString()
     );
-    reportData1.getConfiguration().setGroupByDateVariableUnit(GroupByDateUnit.AUTOMATIC);
+    reportData1.getConfiguration().setGroupByDateVariableUnit(AggregateByDateUnit.AUTOMATIC);
     ProcessReportDataDto reportData2 = createDateVariableReport(
       def.getKey(),
       def.getVersionAsString()
     );
-    reportData2.getConfiguration().setGroupByDateVariableUnit(GroupByDateUnit.AUTOMATIC);
+    reportData2.getConfiguration().setGroupByDateVariableUnit(AggregateByDateUnit.AUTOMATIC);
 
     List<SingleProcessReportDefinitionDto> reportDefs = Arrays.asList(
       new SingleProcessReportDefinitionDto(reportData1),
@@ -205,19 +205,19 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     // given report for first definition
     final SingleProcessReportDefinitionDto singleReport1 = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
-      GroupByDateUnit.DAY,
+      AggregateByDateUnit.DAY,
       createNonSuspendedInstancesOnlyFilter()
     );
     startAndEndProcessInstancesWithGivenRuntime(
       4,
-      mapToChronoUnit(GroupByDateUnit.DAY).getDuration(),
+      mapToChronoUnit(AggregateByDateUnit.DAY).getDuration(),
       OffsetDateTime.now()
     );
 
     // and report for second definition (with no instances in it)
     final SingleProcessReportDefinitionDto singleReport2 = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
-      GroupByDateUnit.DAY
+      AggregateByDateUnit.DAY
     );
     singleReport2.getData().setProcessDefinitionKey("runningInstanceDef");
     ProcessDefinitionEngineDto runningInstanceDef = deploySimpleOneUserTasksDefinition("runningInstanceDef", null);
@@ -226,7 +226,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     // and a report for a second definition
     final SingleProcessReportDefinitionDto singleReport3 = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
-      GroupByDateUnit.DAY
+      AggregateByDateUnit.DAY
     );
     singleReport3.getData().setProcessDefinitionKey("otherDef");
     ProcessDefinitionEngineDto otherDef = deploySimpleOneUserTasksDefinition("otherDef", null);
@@ -252,17 +252,17 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     // given
     final SingleProcessReportDefinitionDto singleReport1 = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
-      GroupByDateUnit.DAY,
+      AggregateByDateUnit.DAY,
       createNonSuspendedInstancesOnlyFilter()
     );
     final SingleProcessReportDefinitionDto singleReport2 = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
-      GroupByDateUnit.DAY,
+      AggregateByDateUnit.DAY,
       createSuspendedInstancesOnlyFilter()
     );
     List<ProcessInstanceEngineDto> instances = startAndEndProcessInstancesWithGivenRuntime(
       4,
-      mapToChronoUnit(GroupByDateUnit.DAY).getDuration(),
+      mapToChronoUnit(AggregateByDateUnit.DAY).getDuration(),
       OffsetDateTime.now()
     );
     engineDatabaseExtension.changeProcessInstanceState(
@@ -289,16 +289,16 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     // given
     final SingleProcessReportDefinitionDto singleReport1 = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
-      GroupByDateUnit.DAY
+      AggregateByDateUnit.DAY
     );
     final SingleProcessReportDefinitionDto singleReport2 = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
-      GroupByDateUnit.DAY,
+      AggregateByDateUnit.DAY,
       createSuspendedInstancesOnlyFilter()
     );
     List<ProcessInstanceEngineDto> instances = startAndEndProcessInstancesWithGivenRuntime(
       4,
-      mapToChronoUnit(GroupByDateUnit.DAY).getDuration(),
+      mapToChronoUnit(AggregateByDateUnit.DAY).getDuration(),
       OffsetDateTime.now()
     );
     engineDatabaseExtension.changeProcessInstanceState(
@@ -326,17 +326,17 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     // given
     final SingleProcessReportDefinitionDto singleReport1 = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
-      GroupByDateUnit.DAY,
+      AggregateByDateUnit.DAY,
       createSuspendedInstancesOnlyFilter()
     );
     final SingleProcessReportDefinitionDto singleReport2 = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
-      GroupByDateUnit.DAY,
+      AggregateByDateUnit.DAY,
       createSuspendedInstancesOnlyFilter()
     );
     startAndEndProcessInstancesWithGivenRuntime(
       4,
-      mapToChronoUnit(GroupByDateUnit.DAY).getDuration(),
+      mapToChronoUnit(AggregateByDateUnit.DAY).getDuration(),
       OffsetDateTime.now()
     );
     importAllEngineEntitiesFromScratch();
@@ -367,7 +367,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
     assertThat(bucketKeys1).isEqualTo(bucketKeys2);
   }
 
-  private static Stream<Pair<GroupByDateUnit, List<SingleProcessReportDefinitionDto>>> staticIntervalDateReportCombinationsPerUnit() {
+  private static Stream<Pair<AggregateByDateUnit, List<SingleProcessReportDefinitionDto>>> staticIntervalDateReportCombinationsPerUnit() {
     return staticGroupByDateUnits().flatMap(unit -> {
       final SingleProcessReportDefinitionDto runningDateReport = createReport(
         COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE,
@@ -395,28 +395,28 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
   private static Stream<List<SingleProcessReportDefinitionDto>> automaticIntervalDateReportCombinations() {
     final SingleProcessReportDefinitionDto runningDateReport = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE,
-      GroupByDateUnit.AUTOMATIC
+      AggregateByDateUnit.AUTOMATIC
     );
 
     final SingleProcessReportDefinitionDto startDateReport = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
-      GroupByDateUnit.AUTOMATIC
+      AggregateByDateUnit.AUTOMATIC
     );
 
     final SingleProcessReportDefinitionDto endDateReport = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE,
-      GroupByDateUnit.AUTOMATIC
+      AggregateByDateUnit.AUTOMATIC
     );
 
     final SingleProcessReportDefinitionDto emptyRunningDateReport = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE,
-      GroupByDateUnit.AUTOMATIC,
+      AggregateByDateUnit.AUTOMATIC,
       createSuspendedInstancesOnlyFilter()
     );
 
     final SingleProcessReportDefinitionDto emptyStartDateReport = createReport(
       COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE,
-      GroupByDateUnit.AUTOMATIC,
+      AggregateByDateUnit.AUTOMATIC,
       createSuspendedInstancesOnlyFilter()
     );
 
@@ -451,12 +451,12 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
   }
 
   private static SingleProcessReportDefinitionDto createReport(final ProcessReportDataType reportDataType,
-                                                               final GroupByDateUnit unit) {
+                                                               final AggregateByDateUnit unit) {
     return createReport(reportDataType, unit, Collections.emptyList());
   }
 
   private static SingleProcessReportDefinitionDto createReport(final ProcessReportDataType reportDataType,
-                                                               final GroupByDateUnit unit,
+                                                               final AggregateByDateUnit unit,
                                                                final List<ProcessFilterDto<?>> filters) {
     SingleProcessReportDefinitionDto reportDefinitionDto = new SingleProcessReportDefinitionDto();
     ProcessReportDataDto runningReportData = TemplatedProcessReportDataBuilder

@@ -12,10 +12,10 @@ import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInter
 import java.time.temporal.ChronoUnit;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class GroupByDateUnitMapper {
+public class AggregateByDateUnitMapper {
   private static final String UNSUPPORTED_UNIT_STRING = "Unsupported unit: ";
 
-  public static ChronoUnit mapToChronoUnit(final GroupByDateUnit unit) {
+  public static ChronoUnit mapToChronoUnit(final AggregateByDateUnit unit) {
     switch (unit) {
       case YEAR:
         return ChronoUnit.YEARS;
@@ -35,26 +35,26 @@ public class GroupByDateUnitMapper {
     }
   }
 
-  public static GroupByDateUnit mapToGroupByDateUnit(final ChronoUnit unit) {
+  public static AggregateByDateUnit mapToAggregateByDateUnit(final ChronoUnit unit) {
     switch (unit) {
       case YEARS:
-        return GroupByDateUnit.YEAR;
+        return AggregateByDateUnit.YEAR;
       case MONTHS:
-        return GroupByDateUnit.MONTH;
+        return AggregateByDateUnit.MONTH;
       case WEEKS:
-        return GroupByDateUnit.WEEK;
+        return AggregateByDateUnit.WEEK;
       case DAYS:
-        return GroupByDateUnit.DAY;
+        return AggregateByDateUnit.DAY;
       case HOURS:
-        return GroupByDateUnit.HOUR;
+        return AggregateByDateUnit.HOUR;
       case MINUTES:
-        return GroupByDateUnit.MINUTE;
+        return AggregateByDateUnit.MINUTE;
       default:
         throw new IllegalArgumentException(UNSUPPORTED_UNIT_STRING + unit);
     }
   }
 
-  public static DateHistogramInterval mapToDateHistogramInterval(final GroupByDateUnit unit) {
+  public static DateHistogramInterval mapToDateHistogramInterval(final AggregateByDateUnit unit) {
     switch (unit) {
       case YEAR:
         return DateHistogramInterval.YEAR;

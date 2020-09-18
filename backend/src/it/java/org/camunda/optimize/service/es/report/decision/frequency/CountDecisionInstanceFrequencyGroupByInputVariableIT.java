@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -43,7 +43,7 @@ import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.decision.DecisionFilterUtilHelper.createNumericInputVariableFilter;
@@ -730,7 +730,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
 
   @ParameterizedTest
   @MethodSource("staticGroupByDateUnits")
-  public void dateVariableGroupByWorksWithAllStaticUnits(final GroupByDateUnit unit) {
+  public void dateVariableGroupByWorksWithAllStaticUnits(final AggregateByDateUnit unit) {
     // given
     final int numberOfInstances = 3;
     final String inputClauseId = "inputClauseId";
@@ -795,7 +795,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
-      definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
+      definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE, AggregateByDateUnit.AUTOMATIC
     ).getResult();
 
     // then
@@ -831,7 +831,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByInputVariable(
-      definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE, GroupByDateUnit.AUTOMATIC
+      definition, definition.getVersionAsString(), inputClauseId, null, VariableType.DATE, AggregateByDateUnit.AUTOMATIC
     ).getResult();
 
     // then
@@ -1066,7 +1066,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       variableId,
       null,
       variableType,
-      GroupByDateUnit.AUTOMATIC,
+      AggregateByDateUnit.AUTOMATIC,
       baseline,
       numberVariableBucketSize
     );
@@ -1084,7 +1084,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
       variableId,
       variableName,
       variableType,
-      GroupByDateUnit.AUTOMATIC,
+      AggregateByDateUnit.AUTOMATIC,
       null,
       null
     );
@@ -1096,7 +1096,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     final String variableId,
     final String variableName,
     final VariableType variableType,
-    final GroupByDateUnit dateUnit) {
+    final AggregateByDateUnit dateUnit) {
     return evaluateDecisionInstanceFrequencyByInputVariable(
       decisionDefinitionDto,
       decisionDefinitionVersion,
@@ -1115,7 +1115,7 @@ public class CountDecisionInstanceFrequencyGroupByInputVariableIT extends Abstra
     final String variableId,
     final String variableName,
     final VariableType variableType,
-    final GroupByDateUnit dateUnit,
+    final AggregateByDateUnit dateUnit,
     final Double baseline,
     final Double numberVariableBucketSize) {
     DecisionReportDataDto reportData = createReportDataDto(

@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.es.report.command.service;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.service.es.report.MinMaxStatDto;
 import org.camunda.optimize.service.es.report.command.util.DateAggregationContext;
 import org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil;
@@ -42,8 +42,8 @@ import java.util.stream.Collectors;
 import static java.time.temporal.TemporalAdjusters.firstDayOfMonth;
 import static java.time.temporal.TemporalAdjusters.firstDayOfYear;
 import static java.time.temporal.TemporalAdjusters.previousOrSame;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToChronoUnit;
-import static org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnitMapper.mapToDateHistogramInterval;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToChronoUnit;
+import static org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnitMapper.mapToDateHistogramInterval;
 import static org.camunda.optimize.rest.util.TimeZoneUtil.formatToCorrectTimezone;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.createModelElementDateHistogramBucketLimitingFilterFor;
 import static org.camunda.optimize.service.es.filter.DateHistogramBucketLimiterUtil.extendBoundsAndCreateDecisionDateHistogramBucketLimitingFilterFor;
@@ -70,7 +70,7 @@ public class DateAggregationService {
       return Optional.empty();
     }
 
-    if (GroupByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
+    if (AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
       return createAutomaticIntervalAggregationOrFallbackToMonth(
         context,
         this::createFilterLimitedProcessDateHistogramWithSubAggregation
@@ -85,7 +85,7 @@ public class DateAggregationService {
       return Optional.empty();
     }
 
-    if (GroupByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
+    if (AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
       return createAutomaticIntervalAggregationOrFallbackToMonth(
         context,
         this::createFilterLimitedModelElementDateHistogramWithSubAggregation
@@ -100,7 +100,7 @@ public class DateAggregationService {
       return Optional.empty();
     }
 
-    if (GroupByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
+    if (AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
       return createAutomaticIntervalAggregationOrFallbackToMonth(
         context,
         this::createDateHistogramAggregation
@@ -116,7 +116,7 @@ public class DateAggregationService {
       return Optional.empty();
     }
 
-    if (GroupByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
+    if (AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
       return createAutomaticIntervalAggregationOrFallbackToMonth(
         context,
         this::createFilterLimitedDecisionDateHistogramWithSubAggregation
@@ -131,9 +131,9 @@ public class DateAggregationService {
       return Optional.empty();
     }
 
-    if (GroupByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())
+    if (AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())
       && !context.getMinMaxStats().isValidRange()) {
-      context.setGroupByDateUnit(GroupByDateUnit.MONTH);
+      context.setGroupByDateUnit(AggregateByDateUnit.MONTH);
     }
 
     return Optional.of(createRunningDateFilterAggregations(context));
@@ -186,12 +186,12 @@ public class DateAggregationService {
   }
 
   private AggregationBuilder createRunningDateFilterAggregations(final DateAggregationContext context) {
-    final GroupByDateUnit unit = context.getGroupByDateUnit();
+    final AggregateByDateUnit unit = context.getGroupByDateUnit();
     final ZonedDateTime startOfFirstBucket = truncateToUnit(
       context.getEarliestDate(),
       unit
     );
-    final ZonedDateTime endOfLastBucket = GroupByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())
+    final ZonedDateTime endOfLastBucket = AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())
       ? context.getLatestDate()
       : truncateToUnit(context.getLatestDate(), context.getGroupByDateUnit()).plus(
       1,
@@ -228,7 +228,7 @@ public class DateAggregationService {
 
     return AggregationBuilders
       .filters(FILTER_LIMITED_AGGREGATION, filters.toArray(new FiltersAggregator.KeyedFilter[]{}))
-      .subAggregation(context.getDistributedBySubAggregation());
+      .subAggregation(context.getSubAggregation());
   }
 
   private Optional<AggregationBuilder> createAutomaticIntervalAggregationOrFallbackToMonth(
@@ -242,7 +242,7 @@ public class DateAggregationService {
     }
 
     // automatic interval not possible, return default aggregation with unit month instead
-    context.setGroupByDateUnit(GroupByDateUnit.MONTH);
+    context.setGroupByDateUnit(AggregateByDateUnit.MONTH);
     return Optional.of(defaultAggregationCreator.apply(context));
   }
 
@@ -284,7 +284,7 @@ public class DateAggregationService {
     return Optional.of(
       wrapWithFilterLimitedParentAggregation(
         boolQuery().filter(matchAllQuery()),
-        rangeAgg.subAggregation(context.getDistributedBySubAggregation())
+        rangeAgg.subAggregation(context.getSubAggregation())
       )
     );
   }
@@ -302,7 +302,7 @@ public class DateAggregationService {
 
     return wrapWithFilterLimitedParentAggregation(
       limitFilterQuery,
-      dateHistogramAggregation.subAggregation(context.getDistributedBySubAggregation())
+      dateHistogramAggregation.subAggregation(context.getSubAggregation())
     );
   }
 
@@ -318,7 +318,7 @@ public class DateAggregationService {
 
     return wrapWithFilterLimitedParentAggregation(
       limitFilterQuery,
-      dateHistogramAggregation.subAggregation(context.getDistributedBySubAggregation())
+      dateHistogramAggregation.subAggregation(context.getSubAggregation())
     );
   }
 
@@ -334,21 +334,21 @@ public class DateAggregationService {
 
     return wrapWithFilterLimitedParentAggregation(
       limitFilterQuery,
-      dateHistogramAggregation.subAggregation(context.getDistributedBySubAggregation())
+      dateHistogramAggregation.subAggregation(context.getSubAggregation())
     );
   }
 
   private ZonedDateTime getEndOfBucket(final ZonedDateTime startOfBucket,
-                                       final GroupByDateUnit unit,
+                                       final AggregateByDateUnit unit,
                                        final Duration durationOfAutomaticInterval) {
-    return GroupByDateUnit.AUTOMATIC.equals(unit)
+    return AggregateByDateUnit.AUTOMATIC.equals(unit)
       ? startOfBucket.plus(durationOfAutomaticInterval)
       : startOfBucket.plus(1, mapToChronoUnit(unit));
   }
 
 
   private ZonedDateTime truncateToUnit(final ZonedDateTime dateToTruncate,
-                                       final GroupByDateUnit unit) {
+                                       final AggregateByDateUnit unit) {
     switch (unit) {
       case YEAR:
         return dateToTruncate

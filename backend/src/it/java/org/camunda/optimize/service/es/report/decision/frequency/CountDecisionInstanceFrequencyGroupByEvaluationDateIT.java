@@ -14,7 +14,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterO
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.RollingDateFilterStartDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -60,7 +60,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
-      decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.DAY
+      decisionDefinitionDto1, decisionDefinitionVersion1, AggregateByDateUnit.DAY
     ).getResult();
 
     // then
@@ -89,7 +89,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
-      decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.DAY
+      decisionDefinitionDto1, decisionDefinitionVersion1, AggregateByDateUnit.DAY
     ).getResult();
 
     // then
@@ -134,7 +134,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
-      decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.DAY
+      decisionDefinitionDto1, decisionDefinitionVersion1, AggregateByDateUnit.DAY
     ).getResult();
 
     // then
@@ -187,7 +187,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_KEY, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
@@ -241,7 +241,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .build();
     reportData.getConfiguration().setSorting(new ReportSortingDto(SORT_BY_VALUE, SortOrder.ASC));
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
@@ -284,7 +284,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .setFilter(dateFilterDto)
       .build();
 
@@ -352,7 +352,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDecisionDefinitionKey(decisionDefinitionDto1.getKey())
       .setDecisionDefinitionVersion(decisionDefinitionVersion1)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-      .setDateInterval(GroupByDateUnit.DAY)
+      .setDateInterval(AggregateByDateUnit.DAY)
       .build();
     final AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluationResult =
       reportClient.evaluateMapReport(reportData);
@@ -367,7 +367,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   @ParameterizedTest
   @MethodSource("groupByDateUnits")
   public void reportEvaluationMultiBucketsSpecificVersionGroupedByDifferentUnitsEmptyBucketBetweenTwoOthers(
-    final GroupByDateUnit groupByDateUnit
+    final AggregateByDateUnit groupByDateUnit
   ) {
     // given
     final OffsetDateTime beforeStart = OffsetDateTime.now();
@@ -438,7 +438,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
-      decisionDefinitionDto1, decisionDefinitionVersion1, GroupByDateUnit.AUTOMATIC
+      decisionDefinitionDto1, decisionDefinitionVersion1, AggregateByDateUnit.AUTOMATIC
     ).getResult();
 
     // then
@@ -465,7 +465,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
-      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, GroupByDateUnit.YEAR
+      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, AggregateByDateUnit.YEAR
     ).getResult();
 
     // then
@@ -493,7 +493,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
 
     // when
     final ReportMapResultDto result = evaluateDecisionInstanceFrequencyByEvaluationDate(
-      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, GroupByDateUnit.YEAR
+      decisionDefinitionDto1, ReportConstants.ALL_VERSIONS, AggregateByDateUnit.YEAR
     ).getResult();
 
     // then
@@ -521,7 +521,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setTenantIds(selectedTenants)
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-      .setDateInterval(GroupByDateUnit.HOUR)
+      .setDateInterval(AggregateByDateUnit.HOUR)
       .build();
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
 
@@ -554,7 +554,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
       .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
       .setDecisionDefinitionVersion(String.valueOf(decisionDefinitionDto.getVersion()))
       .setReportDataType(DecisionReportDataType.COUNT_DEC_INST_FREQ_GROUP_BY_EVALUATION_DATE_TIME)
-      .setDateInterval(GroupByDateUnit.HOUR)
+      .setDateInterval(AggregateByDateUnit.HOUR)
       .setFilter(createNumericInputVariableFilter(
         INPUT_AMOUNT_ID, FilterOperator.GREATER_THAN_EQUALS, String.valueOf(inputVariableValueToFilterFor)
       ))
@@ -589,10 +589,10 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
     assertThat(response.getStatus()).isEqualTo(Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
   }
 
-  private static GroupByDateUnit[] groupByDateUnits() {
-    return Arrays.stream(GroupByDateUnit.values())
-      .filter(v -> !v.equals(GroupByDateUnit.AUTOMATIC))
-      .toArray(GroupByDateUnit[]::new);
+  private static AggregateByDateUnit[] groupByDateUnits() {
+    return Arrays.stream(AggregateByDateUnit.values())
+      .filter(v -> !v.equals(AggregateByDateUnit.AUTOMATIC))
+      .toArray(AggregateByDateUnit[]::new);
   }
 
   @Test
@@ -615,7 +615,7 @@ public class CountDecisionInstanceFrequencyGroupByEvaluationDateIT extends Abstr
   private AuthorizedDecisionReportEvaluationResultDto<ReportMapResultDto> evaluateDecisionInstanceFrequencyByEvaluationDate(
     final DecisionDefinitionEngineDto decisionDefinitionDto,
     final String decisionDefinitionVersion,
-    final GroupByDateUnit groupByDateUnit) {
+    final AggregateByDateUnit groupByDateUnit) {
     DecisionReportDataDto reportData = DecisionReportDataBuilder.create()
       .setDecisionDefinitionKey(decisionDefinitionDto.getKey())
       .setDecisionDefinitionVersion(decisionDefinitionVersion)

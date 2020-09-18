@@ -12,7 +12,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
@@ -231,7 +231,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected ProcessReportDataDto createReportDataSortedDesc(final String definitionKey,
                                                             final String definitionVersion,
                                                             final ProcessReportDataType reportType,
-                                                            final GroupByDateUnit unit) {
+                                                            final AggregateByDateUnit unit) {
     return createReportData(
       definitionKey,
       definitionVersion,
@@ -244,7 +244,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected ProcessReportDataDto createReportData(final String definitionKey,
                                                   final String definitionVersion,
                                                   final ProcessReportDataType reportType,
-                                                  final GroupByDateUnit unit,
+                                                  final AggregateByDateUnit unit,
                                                   final ReportSortingDto sorting) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
       .setProcessDefinitionKey(definitionKey)
@@ -376,8 +376,8 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   // this method is used for the parameterized tests
   @SuppressWarnings("unused")
-  protected static Stream<GroupByDateUnit> staticGroupByDateUnits() {
-    return Arrays.stream(GroupByDateUnit.values()).filter(g -> !g.equals(GroupByDateUnit.AUTOMATIC));
+  protected static Stream<AggregateByDateUnit> staticGroupByDateUnits() {
+    return Arrays.stream(AggregateByDateUnit.values()).filter(g -> !g.equals(AggregateByDateUnit.AUTOMATIC));
   }
 
   protected void changeUserTaskClaimDate(final ProcessInstanceEngineDto processInstanceDto,

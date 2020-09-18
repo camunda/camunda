@@ -9,7 +9,7 @@ import com.google.common.collect.Lists;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessVisualization;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -32,8 +32,8 @@ public class TemplatedProcessReportDataBuilder {
   private List<String> tenantIds = Collections.singletonList(null);
   private String variableName;
   private VariableType variableType;
-  private GroupByDateUnit dateInterval;
-  private GroupByDateUnit groupByDateVariableUnit = new SingleReportConfigurationDto().getGroupByDateVariableUnit();
+  private AggregateByDateUnit dateInterval;
+  private AggregateByDateUnit groupByDateVariableUnit = new SingleReportConfigurationDto().getGroupByDateVariableUnit();
   private String startFlowNodeId;
   private String endFlowNodeId;
   private UserTaskDurationTime userTaskDurationTime = new SingleReportConfigurationDto().getUserTaskDurationTime();
@@ -793,7 +793,7 @@ public class TemplatedProcessReportDataBuilder {
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setDateInterval(GroupByDateUnit dateInterval) {
+  public TemplatedProcessReportDataBuilder setDateInterval(AggregateByDateUnit dateInterval) {
     this.dateInterval = dateInterval;
     return this;
   }
@@ -828,7 +828,7 @@ public class TemplatedProcessReportDataBuilder {
     return this;
   }
 
-  public TemplatedProcessReportDataBuilder setGroupByDateVariableUnit(final GroupByDateUnit groupByDateVariableUnit) {
+  public TemplatedProcessReportDataBuilder setGroupByDateVariableUnit(final AggregateByDateUnit groupByDateVariableUnit) {
     this.groupByDateVariableUnit = groupByDateVariableUnit;
     return this;
   }

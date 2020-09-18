@@ -7,7 +7,7 @@ package org.camunda.optimize.service.es.report.command.modules.group_by.process.
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.DateGroupByValueDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
@@ -61,8 +61,8 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
   public Optional<MinMaxStatDto> getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context,
                                                 final BoolQueryBuilder baseQuery) {
     if (context.getReportData().getGroupBy().getValue() instanceof DateGroupByValueDto) {
-      final GroupByDateUnit groupByDateUnit = getGroupByDateUnit(context.getReportData());
-      if (GroupByDateUnit.AUTOMATIC.equals(groupByDateUnit)) {
+      final AggregateByDateUnit groupByDateUnit = getGroupByDateUnit(context.getReportData());
+      if (AggregateByDateUnit.AUTOMATIC.equals(groupByDateUnit)) {
         return Optional.of(
           minMaxStatsService.getMinMaxDateRangeForNestedField(
             context,
@@ -83,7 +83,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<ProcessReportDataDto> context) {
-    final GroupByDateUnit unit = getGroupByDateUnit(context.getReportData());
+    final AggregateByDateUnit unit = getGroupByDateUnit(context.getReportData());
     final MinMaxStatDto stats = minMaxStatsService.getMinMaxDateRangeForNestedField(
       context,
       searchSourceBuilder.query(),
@@ -98,7 +98,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
       .dateField(getDateField())
       .minMaxStats(stats)
       .timezone(context.getTimezone())
-      .distributedBySubAggregation(distributedByPart.createAggregation(context))
+      .subAggregation(distributedByPart.createAggregation(context))
       .build();
 
     final Optional<AggregationBuilder> bucketLimitedHistogramAggregation =
@@ -207,7 +207,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
       .collect(Collectors.toList());
   }
 
-  private GroupByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
+  private AggregateByDateUnit getGroupByDateUnit(final ProcessReportDataDto processReportData) {
     return ((DateGroupByValueDto) processReportData.getGroupBy().getValue()).getUnit();
   }
 

@@ -10,7 +10,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.HyperMapResultEntryDto;
@@ -51,7 +51,7 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportData(processKey, "1", GroupByDateUnit.DAY);
+    final ProcessReportDataDto reportData = createReportData(processKey, "1", AggregateByDateUnit.DAY);
     reportData.setTenantIds(selectedTenants);
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
@@ -66,7 +66,7 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
     importAllEngineEntitiesFromScratch();
 
     // when
-    final ProcessReportDataDto reportData = createReportData(processDefinition, GroupByDateUnit.AUTOMATIC);
+    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.AUTOMATIC);
     final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
 
     // then
@@ -76,7 +76,7 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
   }
 
   protected ProcessReportDataDto createReportData(final ProcessDefinitionEngineDto processDefinition,
-                                                  final GroupByDateUnit groupByDateUnit) {
+                                                  final AggregateByDateUnit groupByDateUnit) {
     return createReportData(
       processDefinition.getKey(),
       String.valueOf(processDefinition.getVersion()),
@@ -85,17 +85,17 @@ public abstract class ModelElementDurationByModelElementDateByModelElementReport
   }
 
   protected ProcessReportDataDto createReportData(final String processDefinitionKey, final String version,
-                                                  final GroupByDateUnit groupByDateUnit) {
+                                                  final AggregateByDateUnit groupByDateUnit) {
     return createReportData(processDefinitionKey, ImmutableList.of(version), groupByDateUnit);
   }
 
   protected ProcessReportDataDto createGroupedByDayReport(final ProcessDefinitionEngineDto processDefinition) {
-    return createReportData(processDefinition, GroupByDateUnit.DAY);
+    return createReportData(processDefinition, AggregateByDateUnit.DAY);
   }
 
   protected abstract ProcessReportDataDto createReportData(final String processDefinitionKey,
                                                            final List<String> versions,
-                                                           final GroupByDateUnit groupByDateUnit);
+                                                           final AggregateByDateUnit groupByDateUnit);
 
   protected void assertLastValueEquals(final List<HyperMapResultEntryDto> resultData, final Double expected) {
     assertThat(resultData).last().extracting(HyperMapResultEntryDto::getValue)

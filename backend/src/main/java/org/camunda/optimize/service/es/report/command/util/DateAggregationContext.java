@@ -10,7 +10,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByType;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
@@ -30,7 +30,7 @@ public class DateAggregationContext {
 
   @NonNull
   @Setter
-  private GroupByDateUnit groupByDateUnit;
+  private AggregateByDateUnit groupByDateUnit;
   @NonNull
   private final String dateField;
   private final String runningDateReportEndDateField; // used for range filter aggregation in running date reports only
@@ -39,7 +39,7 @@ public class DateAggregationContext {
   @NonNull
   private final ZoneId timezone;
   @NonNull
-  private final AggregationBuilder distributedBySubAggregation;
+  private final AggregationBuilder subAggregation;
 
   private final String dateAggregationName;
 

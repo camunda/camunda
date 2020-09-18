@@ -6,14 +6,14 @@
 package org.camunda.optimize.dto.optimize.query.report.single.process.group.value;
 
 import lombok.Data;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 
 import java.util.Objects;
 
 @Data
 public class DateGroupByValueDto implements ProcessGroupByValueDto {
 
-  protected GroupByDateUnit unit;
+  protected AggregateByDateUnit unit;
 
   @Override
   public boolean isCombinable(Object o) {

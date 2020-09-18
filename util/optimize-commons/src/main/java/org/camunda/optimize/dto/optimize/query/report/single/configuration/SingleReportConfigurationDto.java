@@ -19,7 +19,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.custo
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
@@ -85,7 +85,10 @@ public class SingleReportConfigurationDto implements Combinable {
   private ProcessDistributedByDto<?> distributedBy = new ProcessDistributedByDto<>();
   @Builder.Default
   @NonNull
-  private GroupByDateUnit groupByDateVariableUnit = GroupByDateUnit.AUTOMATIC;
+  private AggregateByDateUnit groupByDateVariableUnit = AggregateByDateUnit.AUTOMATIC;
+  @Builder.Default
+  @NonNull
+  private AggregateByDateUnit distributeByDateVariableUnit = AggregateByDateUnit.AUTOMATIC;
   @Builder.Default
   private CustomBucketDto customBucket = CustomBucketDto.builder().build();
   @Builder.Default

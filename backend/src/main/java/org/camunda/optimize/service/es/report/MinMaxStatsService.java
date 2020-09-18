@@ -167,6 +167,17 @@ public class MinMaxStatsService {
     );
   }
 
+  public MinMaxStatDto getSingleFieldMinMaxStats(final QueryBuilder query,
+                                                 final String indexName,
+                                                 final String field,
+                                                 final String format,
+                                                 final String pathForNestedStatsAgg,
+                                                 final BoolQueryBuilder filterQueryToWrapStatsWith) {
+    return getCrossFieldMinMaxStats(
+      query, indexName, field, field, format, pathForNestedStatsAgg, filterQueryToWrapStatsWith
+    );
+  }
+
   private MinMaxStatDto getCrossFieldMinMaxStats(final QueryBuilder query,
                                                  final String indexName,
                                                  final String firstField,

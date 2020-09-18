@@ -15,7 +15,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_MONTH;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_WEEK;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_YEAR;
 
-public enum GroupByDateUnit {
+public enum AggregateByDateUnit {
   YEAR(DATE_UNIT_YEAR),
   MONTH(DATE_UNIT_MONTH),
   WEEK(DATE_UNIT_WEEK),
@@ -27,7 +27,7 @@ public enum GroupByDateUnit {
 
   private final String id;
 
-  GroupByDateUnit(final String id) {
+  AggregateByDateUnit(final String id) {
     this.id = id;
   }
 

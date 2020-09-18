@@ -9,7 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByEvaluationDateTimeDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByEvaluationDateTimeValueDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.service.es.filter.DecisionQueryFilterEnhancer;
@@ -51,13 +51,13 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<DecisionReportDataDto> context) {
-    final GroupByDateUnit unit = getGroupBy(context.getReportData()).getUnit();
+    final AggregateByDateUnit unit = getGroupBy(context.getReportData()).getUnit();
     return createAggregation(searchSourceBuilder, context, unit);
   }
 
   private List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                      final ExecutionContext<DecisionReportDataDto> context,
-                                                     final GroupByDateUnit unit) {
+                                                     final AggregateByDateUnit unit) {
     final MinMaxStatDto stats = minMaxStatsService.getMinMaxDateRange(
       context,
       searchSourceBuilder.query(),
@@ -70,7 +70,7 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
       .dateField(EVALUATION_DATE_TIME)
       .minMaxStats(stats)
       .timezone(context.getTimezone())
-      .distributedBySubAggregation(distributedByPart.createAggregation(context))
+      .subAggregation(distributedByPart.createAggregation(context))
       .decisionFilters(context.getReportData().getFilter())
       .decisionQueryFilterEnhancer(queryFilterEnhancer)
       .build();

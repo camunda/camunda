@@ -10,7 +10,7 @@ import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.definition.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.DecisionReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.result.raw.InputVariableEntry;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
@@ -195,8 +195,8 @@ public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
   }
 
   @SuppressWarnings("unused")
-  protected static Stream<GroupByDateUnit> staticGroupByDateUnits() {
-    return Arrays.stream(GroupByDateUnit.values()).filter(unit -> !GroupByDateUnit.AUTOMATIC.equals(unit));
+  protected static Stream<AggregateByDateUnit> staticGroupByDateUnits() {
+    return Arrays.stream(AggregateByDateUnit.values()).filter(unit -> !AggregateByDateUnit.AUTOMATIC.equals(unit));
   }
 
 }
