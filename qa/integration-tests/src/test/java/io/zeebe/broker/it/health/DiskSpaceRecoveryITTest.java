@@ -123,7 +123,7 @@ public class DiskSpaceRecoveryITTest {
     final var apiPort = zeebeBroker.getMappedPort(26500);
     final var containerIPAddress = zeebeBroker.getContainerIpAddress();
     return ZeebeClient.newClientBuilder()
-        .brokerContactPoint(containerIPAddress + ":" + apiPort)
+        .gatewayAddress(containerIPAddress + ":" + apiPort)
         .usePlaintext()
         .build();
   }

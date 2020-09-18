@@ -47,7 +47,7 @@ public final class RestoreTest {
       new GrpcClientRule(
           config ->
               config
-                  .brokerContactPoint(
+                  .gatewayAddress(
                       SocketUtil.toHostAndPortString(clusteringRule.getGatewayAddress()))
                   .defaultRequestTimeout(Duration.ofMinutes(1))
                   .usePlaintext());

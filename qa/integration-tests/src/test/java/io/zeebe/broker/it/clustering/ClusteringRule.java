@@ -378,7 +378,7 @@ public final class ClusteringRule extends ExternalResource {
         io.zeebe.util.SocketUtil.toHostAndPortString(
             gateway.getGatewayCfg().getNetwork().toSocketAddress());
     final ZeebeClientBuilder zeebeClientBuilder =
-        ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint);
+        ZeebeClient.newClientBuilder().gatewayAddress(contactPoint);
 
     clientConfigurator.accept(zeebeClientBuilder);
 
