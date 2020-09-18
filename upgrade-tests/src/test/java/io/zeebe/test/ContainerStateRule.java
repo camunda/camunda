@@ -78,7 +78,7 @@ class ContainerStateRule extends TestWatcher {
   }
 
   public ContainerStateRule broker(final String version, final String volumePath) {
-    this.brokerVersion = version;
+    brokerVersion = version;
     this.volumePath = volumePath;
     return this;
   }

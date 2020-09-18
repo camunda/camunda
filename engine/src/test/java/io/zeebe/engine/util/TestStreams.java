@@ -47,6 +47,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -234,6 +236,13 @@ public final class TestStreams {
   public void closeProcessor(final String streamName) throws Exception {
     streamContextMap.remove(streamName).close();
     LOG.info("Closed stream {}", streamName);
+  }
+
+  public StreamProcessor getStreamProcessor(final String streamName) {
+    return Optional.ofNullable(streamContextMap.get(streamName))
+        .map(c -> c.streamProcessor)
+        .orElseThrow(
+            () -> new NoSuchElementException("No stream processor found with name: " + streamName));
   }
 
   public long writeBatch(final String logName, final RecordToWrite[] recordToWrites) {

@@ -14,9 +14,11 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.UpgradeTestCase.TestCaseBuilder;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.util.FileUtil;
 import io.zeebe.util.VersionUtil;
 import io.zeebe.util.collection.Tuple;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Arrays;
@@ -25,7 +27,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.agrona.IoUtil;
-import org.assertj.core.util.Files;
+import org.awaitility.Awaitility;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -146,13 +149,54 @@ public class UpgradeTest {
                     new Tuple<>(parentWorkflow(), PROCESS_ID),
                     new Tuple<>(childWorkflow(), CHILD_PROCESS_ID))
                 .createInstance()
+                .beforeUpgrade(UpgradeTest::activateJob)
                 .afterUpgrade(
-                    (state, wfKey, key) -> {
-                      final var jobKey = activateJob(state);
-                      completeJob(state, wfKey, jobKey);
+                    (state, wfKey, jobKey) -> {
+                      state.client().newCompleteCommand(jobKey).send().join();
                       TestUtil.waitUntil(
                           () -> state.hasLogContaining(CHILD_PROCESS_ID, "COMPLETED"));
                     })
+                .done()
+          },
+          {
+            "parallel gateway",
+            scenario()
+                .deployWorkflow(
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .parallelGateway("fork")
+                        .serviceTask(TASK, t -> t.zeebeJobType(TASK))
+                        .parallelGateway("join")
+                        .moveToNode("fork")
+                        .sequenceFlowId("to-join")
+                        .connectTo("join")
+                        .endEvent()
+                        .done())
+                .createInstance()
+                .beforeUpgrade(UpgradeTest::activateJob)
+                .afterUpgrade(UpgradeTest::completeJob)
+                .done()
+          },
+          {
+            "exclusive gateway",
+            scenario()
+                .deployWorkflow(
+                    Bpmn.createExecutableProcess(PROCESS_ID)
+                        .startEvent()
+                        .exclusiveGateway()
+                        .sequenceFlowId("s1")
+                        .conditionExpression("x > 5")
+                        .serviceTask(TASK, t -> t.zeebeJobType(TASK))
+                        .endEvent()
+                        .moveToLastExclusiveGateway()
+                        .sequenceFlowId("s2")
+                        .defaultFlow()
+                        .serviceTask("other-task", t -> t.zeebeJobType("other-task"))
+                        .endEvent()
+                        .done())
+                .createInstance(Map.of("x", 10))
+                .beforeUpgrade(UpgradeTest::activateJob)
+                .afterUpgrade(UpgradeTest::completeJob)
                 .done()
           }
         });
@@ -180,6 +224,7 @@ public class UpgradeTest {
     upgradeZeebe(false);
   }
 
+  @Ignore("https://github.com/zeebe-io/zeebe/issues/5385")
   @Test
   public void upgradeWithoutSnapshot() {
     upgradeZeebe(true);
@@ -195,9 +240,24 @@ public class UpgradeTest {
     state.close();
     final File snapshot = new File(tmpFolder.getRoot(), "raft-partition/partitions/1/snapshots/");
 
-    assertThat(snapshot).exists();
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(snapshot)
+                    .describedAs("Expected that a snapshot is created")
+                    .exists()
+                    .isNotEmptyDirectory());
+
     if (deleteSnapshot) {
-      Files.delete(snapshot);
+
+      try {
+        FileUtil.deleteFolder(snapshot.toPath());
+      } catch (final IOException e) {
+        e.printStackTrace();
+      }
+
+      assertThat(snapshot).describedAs("Expected that the snapshot is deleted").doesNotExist();
     }
 
     // then
@@ -253,6 +313,7 @@ public class UpgradeTest {
         .messageName(MESSAGE)
         .correlationKey("123")
         .timeToLive(Duration.ofMinutes(5))
+        .variables(Map.of("x", 1))
         .send()
         .join();
 
