@@ -26,6 +26,17 @@ test('create a collection and entities inside it', async (t) => {
   await t.expect(e.collectionTitle.visible).ok();
   await t.expect(e.collectionTitle.textContent).contains('Test Collection');
 
+  await t.click(e.sourcesTab);
+
+  await t.click(e.addButton);
+  const definitionName = 'Invoice Receipt with alternative correlation variable';
+  await t.typeText(e.typeaheadInput, definitionName, {replace: true});
+  await t.click(e.typeaheadOption(definitionName));
+  await t.click(e.checkbox('Select All'));
+  await t.click(e.confirmModalButton);
+
+  await t.click(e.entitiesTab);
+
   await t.click(e.createNewMenu);
 
   await t.expect(e.createNewMenu.textContent).notContains('New Collection');
@@ -33,6 +44,10 @@ test('create a collection and entities inside it', async (t) => {
   await t.expect(e.createNewMenu.textContent).contains('New Report');
 
   await t.click(e.option('New Dashboard'));
+  await t.click(Homepage.templateModalProcessField);
+  await t.click(Homepage.option('Invoice Receipt with alternative correlation variable'));
+  await t.click(Homepage.modalConfirmbutton);
+
   await save(t);
   await t.click(e.collectionBreadcrumb);
 
@@ -68,8 +83,23 @@ test('copy a collection', async (t) => {
 test('user permissions', async (t) => {
   await createCollection(t);
 
+  await t.click(e.sourcesTab);
+
+  await t.click(e.addButton);
+  const definitionName = 'Invoice Receipt with alternative correlation variable';
+  await t.typeText(e.typeaheadInput, definitionName, {replace: true});
+  await t.click(e.typeaheadOption(definitionName));
+  await t.click(e.checkbox('Select All'));
+  await t.click(e.confirmModalButton);
+
+  await t.click(e.entitiesTab);
+
   await t.click(e.createNewMenu);
   await t.click(e.option('New Dashboard'));
+  await t.click(Homepage.templateModalProcessField);
+  await t.click(Homepage.option('Invoice Receipt with alternative correlation variable'));
+  await t.click(Homepage.modalConfirmbutton);
+
   await save(t);
   await t.click(e.collectionBreadcrumb);
 

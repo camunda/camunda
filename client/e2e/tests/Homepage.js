@@ -42,6 +42,10 @@ test('navigate to report view and edit pages', async (t) => {
 
 test('navigate to dashboard view and edit pages', async (t) => {
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
+  await t.click(e.templateModalProcessField);
+  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
+  await t.click(e.modalConfirmbutton);
+
   await save(t);
   await t.click(e.homepageLink);
 
@@ -90,6 +94,10 @@ test('complex Homepage actions', async (t) => {
   await t.expect(e.reportItem.textContent).contains('Monthly Sales');
 
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
+  await t.click(e.templateModalProcessField);
+  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
+  await t.click(e.modalConfirmbutton);
+
   await t.typeText(Dashboard.nameEditField, 'Sales Dashboard', {replace: true});
 
   await addReportToDashboard(t, 'Monthly Sales');
@@ -115,7 +123,23 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.createNewMenu).click(e.option('New Collection'));
   await t.typeText(e.modalNameInput, 'Marketing', {replace: true});
   await t.click(e.confirmButton);
+
+  await t.click(Collection.sourcesTab);
+
+  await t.click(Collection.addButton);
+  const collectionDefinitionName = 'Invoice Receipt with alternative correlation variable';
+  await t.typeText(Collection.typeaheadInput, collectionDefinitionName, {replace: true});
+  await t.click(Collection.typeaheadOption(collectionDefinitionName));
+  await t.click(Collection.checkbox('Select All'));
+  await t.click(Collection.confirmModalButton);
+
+  await t.click(Collection.entitiesTab);
+
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
+  await t.click(e.templateModalProcessField);
+  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
+  await t.click(e.modalConfirmbutton);
+
   await save(t);
 
   await t.click(e.breadcrumb('Marketing'));
@@ -162,6 +186,11 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.breadcrumb('Sales'));
 
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
+
+  await t.click(e.templateModalProcessField);
+  await t.click(e.option(definitionName));
+  await t.click(e.modalConfirmbutton);
+
   await t.typeText(Dashboard.nameEditField, 'Sales Dashboard', {replace: true});
   await addReportToDashboard(t, 'Incoming Leads');
   await addReportToDashboard(t, 'Sales Goal this Quarter');

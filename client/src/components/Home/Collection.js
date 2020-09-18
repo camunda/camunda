@@ -25,6 +25,7 @@ import AlertList from './AlertList';
 import SourcesList from './SourcesList';
 import CollectionModal from './modals/CollectionModal';
 import ReportTemplateModal from './modals/ReportTemplateModal';
+import DashboardTemplateModal from './modals/DashboardTemplateModal';
 
 import {formatLink, formatType, formatSubEntities} from './formatters';
 
@@ -36,6 +37,7 @@ export default withErrorHandling(
       collection: null,
       editingCollection: false,
       creatingProcessReport: false,
+      creatingDashboard: false,
       deleting: false,
       redirect: '',
       copying: null,
@@ -92,6 +94,7 @@ export default withErrorHandling(
         deleting,
         editingCollection,
         creatingProcessReport,
+        creatingDashboard,
         redirect,
         copying,
         entities,
@@ -162,6 +165,7 @@ export default withErrorHandling(
                     <CreateNewButton
                       collection={collection.id}
                       createProcessReport={() => this.setState({creatingProcessReport: true})}
+                      createDashboard={() => this.setState({creatingDashboard: true})}
                     />
                   )
                 }
@@ -301,6 +305,9 @@ export default withErrorHandling(
           />
           {creatingProcessReport && (
             <ReportTemplateModal onClose={() => this.setState({creatingProcessReport: false})} />
+          )}
+          {creatingDashboard && (
+            <DashboardTemplateModal onClose={() => this.setState({creatingDashboard: false})} />
           )}
         </div>
       );

@@ -40,3 +40,12 @@ it('should call the createProcessReport prop', () => {
 
   expect(spy).toHaveBeenCalled();
 });
+
+it('should call the createDashboard prop', () => {
+  const spy = jest.fn();
+  const node = shallow(<CreateNewButton createDashboard={spy} />);
+
+  node.find(Dropdown.Option).at(1).simulate('click');
+
+  expect(spy).toHaveBeenCalled();
+});

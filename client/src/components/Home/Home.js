@@ -19,6 +19,7 @@ import Copier from './Copier';
 import CreateNewButton from './CreateNewButton';
 import CollectionModal from './modals/CollectionModal';
 import ReportTemplateModal from './modals/ReportTemplateModal';
+import DashboardTemplateModal from './modals/DashboardTemplateModal';
 import {loadEntities} from './service';
 
 import {formatLink, formatType, formatSubEntities} from './formatters';
@@ -33,6 +34,7 @@ export class Home extends React.Component {
     redirect: null,
     creatingCollection: false,
     creatingProcessReport: false,
+    creatingDashboard: false,
     editingCollection: null,
     sorting: null,
     isLoading: true,
@@ -80,6 +82,7 @@ export class Home extends React.Component {
       copying,
       creatingCollection,
       creatingProcessReport,
+      creatingDashboard,
       editingCollection,
       redirect,
       sorting,
@@ -102,6 +105,7 @@ export class Home extends React.Component {
               <CreateNewButton
                 createCollection={this.startCreatingCollection}
                 createProcessReport={() => this.setState({creatingProcessReport: true})}
+                createDashboard={() => this.setState({creatingDashboard: true})}
               />
             }
             empty={t('home.empty')}
@@ -209,6 +213,9 @@ export class Home extends React.Component {
         )}
         {creatingProcessReport && (
           <ReportTemplateModal onClose={() => this.setState({creatingProcessReport: false})} />
+        )}
+        {creatingDashboard && (
+          <DashboardTemplateModal onClose={() => this.setState({creatingDashboard: false})} />
         )}
       </div>
     );

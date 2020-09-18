@@ -141,6 +141,9 @@ test('filters', async (t) => {
   await u.createNewDashboard(t);
   await u.addReportToDashboard(t, 'New Report');
 
+  await u.save(t);
+  await t.click(e.editButton);
+
   await t.click(e.filtersButton);
   await t.click(e.addFilterButton);
   await t.click(e.option('Instance State'));

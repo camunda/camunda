@@ -55,7 +55,11 @@ export class OptimizeReport extends React.Component {
   loadReport = (params) =>
     new Promise((resolve) => {
       this.props.mightFail(
-        this.props.loadReport(this.props.report.id, this.props.filter, params),
+        this.props.loadReport(
+          this.props.report.id ?? this.props.report.report,
+          this.props.filter,
+          params
+        ),
         (data) => this.setState({data}, resolve),
         async (e) => {
           const errorData = await e.json();

@@ -18,6 +18,7 @@ const props = {
   setAvailableFilters: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   reports: ['reportId'],
+  isNew: false,
 };
 
 jest.mock('./service', () => ({
@@ -63,6 +64,14 @@ it('should disable the variable option if there are no reports', () => {
 
   expect(node.find(Dropdown.Option).last()).not.toBeDisabled();
   node.setProps({reports: []});
+  expect(node.find(Dropdown.Option).last()).toBeDisabled();
+});
+
+it('should disable the variable option if there are unsaved reports', () => {
+  const node = shallow(<FiltersEdit {...props} />);
+
+  expect(node.find(Dropdown.Option).last()).not.toBeDisabled();
+  node.setProps({isNew: true});
   expect(node.find(Dropdown.Option).last()).toBeDisabled();
 });
 

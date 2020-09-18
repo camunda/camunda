@@ -10,7 +10,7 @@ import {shallow} from 'enzyme';
 import {DefinitionSelection, Button, BPMNDiagram, LabeledInput} from 'components';
 import {loadProcessDefinitionXml} from 'services';
 
-import {ReportTemplateModal} from './ReportTemplateModal';
+import {TemplateModal} from './TemplateModal';
 
 jest.mock('services', () => {
   return {
@@ -22,6 +22,11 @@ jest.mock('services', () => {
 const props = {
   onClose: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
+  entity: 'report',
+  templates: [
+    {name: 'blank'},
+    {name: 'heatmap', img: <img />, config: {view: {entity: 'flowNode', property: 'frequency'}}},
+  ],
 };
 
 beforeEach(() => {
@@ -29,14 +34,14 @@ beforeEach(() => {
 });
 
 it('should show a definition selection, and a list of templates', () => {
-  const node = shallow(<ReportTemplateModal {...props} />);
+  const node = shallow(<TemplateModal {...props} />);
 
   expect(node.find(DefinitionSelection)).toExist();
   expect(node.find('.templateContainer').find(Button).length).toBeGreaterThan(1);
 });
 
 it('should fetch and show the bpmn diagram when a definition is selected', () => {
-  const node = shallow(<ReportTemplateModal {...props} />);
+  const node = shallow(<TemplateModal {...props} />);
 
   node
     .find(DefinitionSelection)
@@ -50,7 +55,7 @@ it('should fetch and show the bpmn diagram when a definition is selected', () =>
 });
 
 it('should include the selected parameters in the link state when creating a report', () => {
-  const node = shallow(<ReportTemplateModal {...props} />);
+  const node = shallow(<TemplateModal {...props} />);
 
   node.find(DefinitionSelection).simulate('change', {
     key: 'processDefinition',
@@ -66,4 +71,29 @@ it('should include the selected parameters in the link state when creating a rep
 
   expect(node.find('.Button.primary').prop('disabled')).toBe(false);
   expect(node.find('.Button.primary').prop('to')).toMatchSnapshot();
+});
+
+it('should call the templateToState prop to determine link state', () => {
+  const spy = jest.fn().mockReturnValue({data: 'stateData'});
+  const node = shallow(<TemplateModal {...props} templateToState={spy} />);
+
+  node.find(DefinitionSelection).simulate('change', {
+    key: 'processDefinition',
+    versions: ['1'],
+    tenantIds: [null],
+    name: 'Process Definition Name',
+  });
+
+  runLastEffect();
+
+  expect(spy).toHaveBeenCalledWith({
+    name: 'New Report',
+    definitionKey: 'processDefinition',
+    definitionName: 'Process Definition Name',
+    template: undefined,
+    tenants: [null],
+    versions: ['1'],
+    xml: 'processXML',
+  });
+  expect(node.find('.confirm.Button').prop('to').state).toEqual({data: 'stateData'});
 });

@@ -151,6 +151,7 @@ export default class DashboardEdit extends React.Component {
 
   componentDidUpdate() {
     if (
+      this.state.reports.every(({id}) => id) &&
       deepEqual(this.state.reports, this.props.initialReports) &&
       deepEqual(this.state.availableFilters, this.props.initialAvailableFilters) &&
       this.state.name === this.props.name
@@ -202,6 +203,7 @@ export default class DashboardEdit extends React.Component {
             reports={reports?.map(({id}) => id).filter((id) => !!id)}
             availableFilters={availableFilters}
             setAvailableFilters={(availableFilters) => this.setState({availableFilters})}
+            isNew={isNew}
           />
         )}
         <div className="content" ref={this.contentContainer}>

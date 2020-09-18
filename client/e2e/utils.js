@@ -7,6 +7,7 @@
 import {Selector} from 'testcafe';
 
 import config from './config';
+import * as Homepage from './tests/Homepage.elements.js';
 
 let instanceCount = {
   Chrome: 0,
@@ -111,7 +112,10 @@ export async function gotoOverview(t) {
 
 export async function createNewDashboard(t) {
   await t.click('.CreateNewButton');
-  await t.click(Selector('a').withText('New Dashboard'));
+  await t.click(Selector('.DropdownOption').withText('New Dashboard'));
+  await t.click(Homepage.templateModalProcessField);
+  await t.click(Homepage.option('Invoice Receipt with alternative correlation variable'));
+  await t.click(Homepage.modalConfirmbutton);
 }
 
 export async function addReportToDashboard(t, name) {

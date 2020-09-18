@@ -17,7 +17,13 @@ import {t} from 'translation';
 
 import './FiltersEdit.scss';
 
-export function FiltersEdit({availableFilters, setAvailableFilters, reports = [], mightFail}) {
+export function FiltersEdit({
+  availableFilters,
+  setAvailableFilters,
+  reports = [],
+  isNew,
+  mightFail,
+}) {
   const [showVariableModal, setShowVariableModal] = useState(false);
   const [availableVariables, setAvailableVariables] = useState([]);
 
@@ -54,6 +60,8 @@ export function FiltersEdit({availableFilters, setAvailableFilters, reports = []
     setAvailableFilters(availableFilters.filter((_, idx) => idx !== idxToRemove));
   }
 
+  const disableVariableFilter = isNew || reports.length === 0;
+
   return (
     <div className="FiltersEdit">
       <h3>{t('dashboard.filter.info')}</h3>
@@ -85,7 +93,8 @@ export function FiltersEdit({availableFilters, setAvailableFilters, reports = []
               </Dropdown.Option>
             ))}
             <Dropdown.Option
-              disabled={reports.length === 0}
+              disabled={disableVariableFilter}
+              title={disableVariableFilter ? t('dashboard.filter.disabledVariable') : undefined}
               onClick={() => setShowVariableModal(true)}
             >
               {t('dashboard.filter.types.variable')}

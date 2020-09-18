@@ -10,9 +10,7 @@ exports[`should match snapshot 1`] = `
   <ForwardRef(DropdownOption)>
     New Collection
   </ForwardRef(DropdownOption)>
-  <ForwardRef(DropdownOption)
-    link="dashboard/new/edit"
-  >
+  <ForwardRef(DropdownOption)>
     New Dashboard
   </ForwardRef(DropdownOption)>
   <Submenu
@@ -42,9 +40,7 @@ exports[`should not show the collection option if it is in a collection 1`] = `
   main={true}
   primary={true}
 >
-  <ForwardRef(DropdownOption)
-    link="dashboard/new/edit"
-  >
+  <ForwardRef(DropdownOption)>
     New Dashboard
   </ForwardRef(DropdownOption)>
   <Submenu

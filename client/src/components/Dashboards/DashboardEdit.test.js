@@ -69,7 +69,7 @@ it('should react to layout changes', () => {
 });
 
 it('should have a toggleable Filters Edit section', () => {
-  const node = shallow(<DashboardEdit />);
+  const node = shallow(<DashboardEdit initialReports={[]} />);
 
   expect(node.find(FiltersEdit)).not.toExist();
 
