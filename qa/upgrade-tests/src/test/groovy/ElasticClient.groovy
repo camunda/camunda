@@ -111,13 +111,17 @@ class ElasticClient {
     println "Done creating snapshot repository on ${name} Elasticsearch!"
   }
 
-  def createSnapshot() {
+  def createSnapshot(Boolean waitForCompletion = true) {
     println "Creating snapshot on ${name} Elasticsearch..."
     client.snapshot().create(
-      new CreateSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, SNAPSHOT_NAME).waitForCompletion(true),
+      new CreateSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, SNAPSHOT_NAME).waitForCompletion(waitForCompletion),
       RequestOptions.DEFAULT
     )
-    println "Done creating snapshot on ${name} Elasticsearch!"
+    if (waitForCompletion) {
+      println "Done creating snapshot on ${name} Elasticsearch!"
+    } else {
+      println "Done starting asynchronous snapshot operation on ${name} Elasticsearch!"
+    }
   }
 
   def restoreSnapshot() {

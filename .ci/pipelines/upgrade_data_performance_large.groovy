@@ -54,7 +54,6 @@ spec:
     volumeMounts:
       - name: ssd-storage
         mountPath: /data
-        subPath: data
   containers:
   - name: maven
     image: ${MAVEN_DOCKER_IMAGE()}

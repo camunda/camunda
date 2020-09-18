@@ -50,9 +50,13 @@ class UpgradeEsSchemaTest {
       newElasticClient.restoreSnapshot()
       oldElasticClient.deleteSnapshot()
 
+      // start a new async snapshot operation to ensure the upgrade is resilient to concurrently running snapshots
+      newElasticClient.createSnapshot(false)
       // run the upgrade
       def optimizeUpgradeOutputWriter = new FileWriter("optimize-upgrade.log")
       newOptimize.runUpgrade().consumeProcessOutputStream(optimizeUpgradeOutputWriter)
+      // stop/delete async snapshot operation as upgrade completed already
+      newElasticClient.deleteSnapshot()
 
       // start new optimize
       def newOptimizeStartupOutputWriter = new FileWriter("optimize-startup.log")
@@ -98,16 +102,21 @@ class UpgradeEsSchemaTest {
 
       println "Asserting on startup and upgrade errors..."
       new File("optimize-upgrade.log").eachLine { line ->
-        def matcherWarn = line =~ /WARN/
+        // warns about snapshots in progress are fine
+        def matcherWarn = line =~ /WARN(?!.*snapshot_in_progress_exception.*)/
         def matcherError = line =~ /ERROR/
-        assertThat(matcherWarn.find()).withFailMessage("Upgrade log contained warn log: %s", line).isEqualTo(false)
-        assertThat(matcherError.find()).withFailMessage("Upgrade log contained error log: %s", line).isEqualTo(false)
+        assertThat(matcherWarn.find()).withFailMessage("Upgrade log contained warn log: %s", line)
+          .isFalse()
+        assertThat(matcherError.find()).withFailMessage("Upgrade log contained error log: %s", line)
+          .isFalse()
       }
       new File("optimize-startup.log").eachLine { line ->
         def matcherWarn = line =~ /WARN/
         def matcherError = line =~ /ERROR/
-        assertThat(matcherWarn.find()).withFailMessage("Startup log contained warn log: %s", line).isEqualTo(false)
-        assertThat(matcherError.find()).withFailMessage("Startup log contained error log: %s", line).isEqualTo(false)
+        assertThat(matcherWarn.find()).withFailMessage("Startup log contained warn log: %s", line)
+          .isFalse()
+        assertThat(matcherError.find()).withFailMessage("Startup log contained error log: %s", line)
+          .isFalse()
       }
       println "Finished asserting on startup and upgrade errors"
     } catch (Exception e) {
