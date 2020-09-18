@@ -4,12 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-/*
- * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH
- * under one or more contributor license agreements. Licensed under a commercial license.
- * You may not use this file except in compliance with the commercial license.
- */
-
 import React from 'react';
 import {
   render,
@@ -26,20 +20,10 @@ import SplitPane from 'modules/components/SplitPane';
 import {TopPanel} from './index';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
-import {
-  fetchWorkflowInstance,
-  fetchWorkflowInstanceIncidents,
-  fetchSequenceFlows,
-} from 'modules/api/instances';
-import {fetchEvents} from 'modules/api/events';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 jest.mock('modules/utils/bpmn');
-jest.mock('modules/api/instances');
-jest.mock('modules/api/diagram', () => ({
-  fetchWorkflowXML: jest.fn().mockImplementation(() => ''),
-}));
-jest.mock('modules/api/events');
-
 jest.mock('./InstanceHeader', () => {
   return {
     InstanceHeader: () => {
@@ -69,45 +53,58 @@ Wrapper.propTypes = {
 };
 
 describe('TopPanel', () => {
+  beforeEach(() => {
+    mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(''))
+      ),
+      rest.get('/api/workflow-instances/active_instance', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            id: 'instance_id',
+            state: 'ACTIVE',
+          })
+        )
+      ),
+      rest.get(
+        '/api/workflow-instances/instance_with_incident',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              id: 'instance_id',
+              state: 'INCIDENT',
+            })
+          )
+      ),
+      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+        res.once(ctx.json(mockIncidents))
+      ),
+      rest.get(
+        '/api/workflow-instances/:instanceId/sequence-flows',
+        (_, res, ctx) => res.once(ctx.json(mockSequenceFlows))
+      ),
+      rest.post('/api/events', (_, res, ctx) => res.once(ctx.json(mockEvents)))
+    );
+  });
+
   afterEach(() => {
     singleInstanceDiagram.reset();
     currentInstance.reset();
-    fetchWorkflowInstance.mockReset();
-    fetchWorkflowInstanceIncidents.mockReset();
-  });
-  beforeAll(() => {
-    fetchSequenceFlows.mockResolvedValue(mockSequenceFlows);
-    fetchEvents.mockResolvedValue(mockEvents);
-  });
-  afterAll(() => {
-    fetchSequenceFlows.mockReset();
-    fetchEvents.mockReset();
   });
 
   it('should render spinner while loading', async () => {
-    fetchWorkflowInstance.mockResolvedValueOnce({
-      id: 'instance_id',
-      state: 'ACTIVE',
-    });
-
     render(<TopPanel />, {wrapper: Wrapper});
 
-    currentInstance.init(1);
+    currentInstance.init('active_instance');
     singleInstanceDiagram.fetchWorkflowXml(1);
     expect(screen.getByTestId('spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.getByTestId('spinner'));
   });
 
   it('should render incident bar', async () => {
-    fetchWorkflowInstance.mockResolvedValueOnce({
-      id: 'instance_id',
-      state: 'INCIDENT',
-    });
-
-    fetchWorkflowInstanceIncidents.mockResolvedValueOnce(mockIncidents);
     render(<TopPanel />, {wrapper: Wrapper});
 
-    currentInstance.init(1);
+    currentInstance.init('instance_with_incident');
     await singleInstanceDiagram.fetchWorkflowXml(1);
     expect(
       await screen.findByText('There is 1 Incident in Instance 1.')

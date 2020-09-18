@@ -20,28 +20,20 @@ import {
   mockErrorResponse,
   mockEmptyResponse,
 } from './index.setup';
-
-const fetchMock = jest.spyOn(window, 'fetch');
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 const createWrapper = (historyMock = createMemoryHistory()) => ({children}) => (
   <Router history={historyMock}>{children}</Router>
 );
 
 describe('IncidentsByError', () => {
-  afterEach(() => {
-    fetchMock.mockClear();
-  });
-
-  afterAll(() => {
-    fetchMock.mockRestore();
-  });
-
   describe('Empty Panel', () => {
     it('should display skeleton when loading', async () => {
-      fetchMock.mockResolvedValueOnce(
-        Promise.resolve({
-          json: () => mockIncidentsByError,
-        })
+      mockServer.use(
+        rest.get('/api/incidents/byError', (_, res, ctx) =>
+          res.once(ctx.json(mockIncidentsByError))
+        )
       );
 
       render(<IncidentsByError />, {
@@ -54,10 +46,10 @@ describe('IncidentsByError', () => {
     });
 
     it('should display error message when api fails', async () => {
-      fetchMock.mockResolvedValueOnce(
-        Promise.resolve({
-          json: () => mockErrorResponse,
-        })
+      mockServer.use(
+        rest.get('/api/incidents/byError', (_, res, ctx) =>
+          res.once(ctx.json(mockErrorResponse))
+        )
       );
 
       render(<IncidentsByError />, {
@@ -72,10 +64,10 @@ describe('IncidentsByError', () => {
     });
 
     it('should display information message when there are no workflows', async () => {
-      fetchMock.mockResolvedValueOnce(
-        Promise.resolve({
-          json: () => mockEmptyResponse,
-        })
+      mockServer.use(
+        rest.get('/api/incidents/byError', (_, res, ctx) =>
+          res.once(ctx.json(mockEmptyResponse))
+        )
       );
 
       render(<IncidentsByError />, {
@@ -90,10 +82,10 @@ describe('IncidentsByError', () => {
 
   describe('Content', () => {
     it('should render incidents by error message', async () => {
-      fetchMock.mockResolvedValueOnce(
-        Promise.resolve({
-          json: () => mockIncidentsByError,
-        })
+      mockServer.use(
+        rest.get('/api/incidents/byError', (_, res, ctx) =>
+          res.once(ctx.json(mockIncidentsByError))
+        )
       );
 
       const historyMock = createMemoryHistory();

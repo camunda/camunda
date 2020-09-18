@@ -10,8 +10,6 @@ export const mockProps = {
   noWorkflowSelected: false,
   noVersionSelected: false,
   flowNodesStatistics: [],
-  definitions: {},
-  selectedFlowNodeId: '',
   onFlowNodeSelection: jest.fn(),
   workflowName: 'Workflow Name',
   expandState: EXPAND_STATE.EXPANDED,

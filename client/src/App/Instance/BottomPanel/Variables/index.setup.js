@@ -31,12 +31,4 @@ const mockVariables = [
   },
 ];
 
-const mockProps = {
-  editMode: '',
-  onVariableUpdate: jest.fn(),
-  isEditable: true,
-  setVariables: jest.fn(),
-  setEditMode: jest.fn(),
-};
-
-export {mockVariables, mockProps};
+export {mockVariables};

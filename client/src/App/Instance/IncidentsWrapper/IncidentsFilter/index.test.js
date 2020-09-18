@@ -15,17 +15,20 @@ import {
   mockIncidentsWithManyErrors,
 } from './index.setup';
 import {incidents as incidentsStore} from 'modules/stores/incidents';
-import {fetchWorkflowInstanceIncidents} from 'modules/api/instances';
-
-jest.mock('modules/api/instances');
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 describe('IncidentsFilter', () => {
   afterAll(() => {
-    fetchWorkflowInstanceIncidents.mockReset();
     incidentsStore.reset();
   });
   it('should render pills by incident type', async () => {
-    fetchWorkflowInstanceIncidents.mockResolvedValueOnce(mockIncidents);
+    mockServer.use(
+      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+        res.once(ctx.json(mockIncidents))
+      )
+    );
+
     await incidentsStore.fetchIncidents(1);
 
     render(<IncidentsFilter {...defaultProps} />);
@@ -40,7 +43,11 @@ describe('IncidentsFilter', () => {
   });
 
   it('should render pills by flow node', async () => {
-    fetchWorkflowInstanceIncidents.mockResolvedValueOnce(mockIncidents);
+    mockServer.use(
+      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+        res.once(ctx.json(mockIncidents))
+      )
+    );
     await incidentsStore.fetchIncidents(1);
 
     render(<IncidentsFilter {...defaultProps} />);
@@ -54,8 +61,10 @@ describe('IncidentsFilter', () => {
   });
 
   it('should show a more button', async () => {
-    fetchWorkflowInstanceIncidents.mockResolvedValueOnce(
-      mockIncidentsWithManyErrors
+    mockServer.use(
+      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+        res.once(ctx.json(mockIncidentsWithManyErrors))
+      )
     );
     await incidentsStore.fetchIncidents(1);
 
@@ -72,7 +81,11 @@ describe('IncidentsFilter', () => {
   });
 
   it('should disable/enable clear all button depending on selected pills', async () => {
-    fetchWorkflowInstanceIncidents.mockResolvedValueOnce(mockIncidents);
+    mockServer.use(
+      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+        res.once(ctx.json(mockIncidents))
+      )
+    );
     await incidentsStore.fetchIncidents(1);
 
     const {rerender} = render(<IncidentsFilter {...defaultProps} />);

@@ -17,19 +17,23 @@ import {createMemoryHistory} from 'history';
 import {MetricPanel} from './index';
 import PropTypes from 'prop-types';
 import {statistics} from 'modules/stores/statistics';
-
-jest.mock('modules/api/instances', () => ({
-  fetchWorkflowCoreStatistics: jest.fn().mockImplementation(() => ({
-    coreStatistics: {
-      running: 821,
-      active: 90,
-      withIncidents: 731,
-    },
-  })),
-}));
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 describe('<MetricPanel />', () => {
   beforeEach(() => {
+    mockServer.use(
+      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            running: 821,
+            active: 90,
+            withIncidents: 731,
+          })
+        )
+      )
+    );
+
     statistics.reset();
   });
 

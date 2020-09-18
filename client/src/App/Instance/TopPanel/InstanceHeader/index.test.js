@@ -19,10 +19,9 @@ import {InstanceHeader} from './index';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {variables} from 'modules/stores/variables';
 import PropTypes from 'prop-types';
-import {fetchWorkflowInstance, fetchVariables} from 'modules/api/instances';
 import {createInstance} from 'modules/testUtils';
-
-jest.mock('modules/api/instances');
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 const mockInstanceWithActiveOperation = Object.freeze(createInstance());
 const mockInstanceWithoutOperations = Object.freeze({
@@ -52,9 +51,12 @@ describe('InstanceHeader', () => {
   afterAll(resetMocks);
 
   it('should show skeleton before instance data is available', async () => {
-    fetchWorkflowInstance.mockImplementationOnce(
-      () => mockInstanceWithActiveOperation
+    mockServer.use(
+      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockInstanceWithActiveOperation))
+      )
     );
+
     render(<InstanceHeader />, {
       wrapper: Wrapper,
     });
@@ -69,8 +71,10 @@ describe('InstanceHeader', () => {
   });
 
   it('should render instance data', async () => {
-    fetchWorkflowInstance.mockImplementationOnce(
-      () => mockInstanceWithActiveOperation
+    mockServer.use(
+      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockInstanceWithActiveOperation))
+      )
     );
     render(<InstanceHeader />, {
       wrapper: Wrapper,
@@ -97,12 +101,18 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner based on instance having active operations', async () => {
-    fetchWorkflowInstance
-      .mockImplementationOnce(() => mockInstanceWithoutOperations)
-      .mockImplementationOnce(() => mockInstanceWithActiveOperation);
     render(<InstanceHeader />, {
       wrapper: Wrapper,
     });
+
+    mockServer.use(
+      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockInstanceWithoutOperations))
+      ),
+      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockInstanceWithActiveOperation))
+      )
+    );
 
     jest.useFakeTimers();
     currentInstance.init(mockInstanceWithoutOperations.id);
@@ -115,12 +125,16 @@ describe('InstanceHeader', () => {
     jest.advanceTimersByTime(5000);
 
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
+
+    jest.useRealTimers();
   });
 
   it('should show spinner when operation is applied', async () => {
     createMockDataManager();
-    fetchWorkflowInstance.mockImplementationOnce(
-      () => mockInstanceWithoutOperations
+    mockServer.use(
+      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockInstanceWithoutOperations))
+      )
     );
     render(<InstanceHeader />, {
       wrapper: Wrapper,
@@ -146,10 +160,20 @@ describe('InstanceHeader', () => {
       value: 'value',
       hasActiveOperation: false,
     };
-    fetchWorkflowInstance.mockImplementationOnce(
-      () => mockInstanceWithoutOperations
+
+    mockServer.use(
+      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+        res.once(ctx.json(mockInstanceWithoutOperations))
+      ),
+      rest.get(
+        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+        (_, res, ctx) => res.once(ctx.json([mockVariable]))
+      ),
+      rest.post(
+        '/api/workflow-instances/:instanceId/operation',
+        (_, res, ctx) => res.once(ctx.json(null))
+      )
     );
-    fetchVariables.mockImplementationOnce(() => [mockVariable]);
 
     render(<InstanceHeader />, {
       wrapper: Wrapper,

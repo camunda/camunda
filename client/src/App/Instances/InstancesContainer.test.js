@@ -104,7 +104,10 @@ describe('InstancesContainer', () => {
       // given
       const node = mount(
         <ProviderWrapper>
-          <InstancesContainerWrapped {...getRouterProps()} {...{dataManager}} />
+          <InstancesContainerWrapped
+            {...getRouterProps()}
+            dataManager={dataManager}
+          />
         </ProviderWrapper>
       );
 
@@ -131,7 +134,7 @@ describe('InstancesContainer', () => {
       node = mount(
         <ProviderWrapper>
           <InstancesContainerWrapped
-            {...{dataManager}}
+            dataManager={dataManager}
             {...getRouterProps(initialFilterUrl)}
           />
         </ProviderWrapper>
@@ -180,7 +183,7 @@ describe('InstancesContainer', () => {
       node = mount(
         <ProviderWrapper>
           <InstancesContainerWrapped
-            {...{dataManager}}
+            dataManager={dataManager}
             {...getRouterProps(mockFullFilterWithWorkflow)}
           />
         </ProviderWrapper>
@@ -212,7 +215,7 @@ describe('InstancesContainer', () => {
       node = mount(
         <ProviderWrapper>
           <InstancesContainerWrapped
-            {...{dataManager}}
+            dataManager={dataManager}
             {...getRouterProps(emptyFilters)}
           />
         </ProviderWrapper>
@@ -236,7 +239,7 @@ describe('InstancesContainer', () => {
       node = mount(
         <ProviderWrapper>
           <InstancesContainerWrapped
-            {...{dataManager}}
+            dataManager={dataManager}
             {...getRouterProps({
               active: true,
               incidents: true,
@@ -303,7 +306,7 @@ describe('InstancesContainer', () => {
       const node = mount(
         <ProviderWrapper>
           <InstancesContainerWrapped
-            {...{dataManager}}
+            dataManager={dataManager}
             {...getRouterProps(mockFullFilterWithWorkflow)}
           />
         </ProviderWrapper>
@@ -331,7 +334,10 @@ describe('InstancesContainer', () => {
     // given
     const node = mount(
       <ProviderWrapper>
-        <InstancesContainerWrapped {...{dataManager}} {...getRouterProps()} />
+        <InstancesContainerWrapped
+          dataManager={dataManager}
+          {...getRouterProps()}
+        />
       </ProviderWrapper>
     );
 
@@ -350,7 +356,10 @@ describe('InstancesContainer', () => {
   it('should render the Instances', () => {
     const node = mount(
       <ProviderWrapper>
-        <InstancesContainerWrapped {...{dataManager}} {...getRouterProps()} />
+        <InstancesContainerWrapped
+          dataManager={dataManager}
+          {...getRouterProps()}
+        />
       </ProviderWrapper>
     );
 
@@ -361,7 +370,10 @@ describe('InstancesContainer', () => {
     // given
     const node = mount(
       <ProviderWrapper>
-        <InstancesContainerWrapped {...{dataManager}} {...getRouterProps()} />
+        <InstancesContainerWrapped
+          dataManager={dataManager}
+          {...getRouterProps()}
+        />
       </ProviderWrapper>
     );
 
@@ -386,7 +398,7 @@ describe('InstancesContainer', () => {
     const node = mount(
       <ProviderWrapper>
         <InstancesContainerWrapped
-          {...{dataManager}}
+          dataManager={dataManager}
           {...getRouterProps(decodeFields(mockFullFilterWithoutWorkflow))}
         />
       </ProviderWrapper>
@@ -407,7 +419,7 @@ describe('InstancesContainer', () => {
     const node = mount(
       <ProviderWrapper>
         <InstancesContainerWrapped
-          {...{dataManager}}
+          dataManager={dataManager}
           {...getRouterProps(mockFullFilterWithWorkflow)}
         />
       </ProviderWrapper>
@@ -429,7 +441,7 @@ describe('InstancesContainer', () => {
     const node = mount(
       <ProviderWrapper>
         <InstancesContainerWrapped
-          {...{dataManager}}
+          dataManager={dataManager}
           {...getRouterProps({
             ...rest,
             version: 'all',
@@ -460,7 +472,10 @@ describe('InstancesContainer', () => {
 
       const node = mount(
         <ProviderWrapper>
-          <InstancesContainerWrapped {...{dataManager}} {...routerProps} />
+          <InstancesContainerWrapped
+            dataManager={dataManager}
+            {...routerProps}
+          />
         </ProviderWrapper>
       );
 
@@ -477,7 +492,10 @@ describe('InstancesContainer', () => {
 
       node.setProps({
         children: (
-          <InstancesContainerWrapped {...{dataManager}} {...newRouterProps} />
+          <InstancesContainerWrapped
+            dataManager={dataManager}
+            {...newRouterProps}
+          />
         ),
       });
 
@@ -503,7 +521,7 @@ describe('InstancesContainer', () => {
         mount(
           <ProviderWrapper>
             <InstancesContainerWrapped
-              {...{dataManager}}
+              dataManager={dataManager}
               {...noFilterRouterProps}
             />
           </ProviderWrapper>
@@ -530,7 +548,7 @@ describe('InstancesContainer', () => {
         const node = mount(
           <ProviderWrapper>
             <InstancesContainerWrapped
-              {...{dataManager}}
+              dataManager={dataManager}
               {...invalidFilterRouterProps}
             />
           </ProviderWrapper>
@@ -553,7 +571,7 @@ describe('InstancesContainer', () => {
         const node = mount(
           <ProviderWrapper>
             <InstancesContainerWrapped
-              {...{dataManager}}
+              dataManager={dataManager}
               {...getRouterProps({
                 ...mockFullFilterWithWorkflow,
                 workflow: 'x',
@@ -583,7 +601,7 @@ describe('InstancesContainer', () => {
         mount(
           <ProviderWrapper>
             <InstancesContainerWrapped
-              {...{dataManager}}
+              dataManager={dataManager}
               {...getRouterProps({
                 ...mockFullFilterWithWorkflow,
                 version: 'x',
@@ -610,7 +628,7 @@ describe('InstancesContainer', () => {
         const node = mount(
           <ProviderWrapper>
             <InstancesContainerWrapped
-              {...{dataManager}}
+              dataManager={dataManager}
               {...getRouterProps({
                 ...mockFullFilterWithWorkflow,
                 version: 'all',
@@ -640,7 +658,7 @@ describe('InstancesContainer', () => {
         const node = mount(
           <ProviderWrapper>
             <InstancesContainerWrapped
-              {...{dataManager}}
+              dataManager={dataManager}
               {...getRouterProps({
                 ...mockFullFilterWithoutWorkflow,
               })}
@@ -675,7 +693,7 @@ describe('InstancesContainer', () => {
         const node = mount(
           <ProviderWrapper>
             <InstancesContainerWrapped
-              {...{dataManager}}
+              dataManager={dataManager}
               {...getRouterProps(validFilterWithVersionAll)}
             />
           </ProviderWrapper>
@@ -700,7 +718,7 @@ describe('InstancesContainer', () => {
         const node = mount(
           <ProviderWrapper>
             <InstancesContainerWrapped
-              {...{dataManager}}
+              dataManager={dataManager}
               {...getRouterProps(mockFullFilterWithWorkflow)}
             />
           </ProviderWrapper>
@@ -730,7 +748,7 @@ describe('InstancesContainer', () => {
         const node = mount(
           <ProviderWrapper>
             <InstancesContainerWrapped
-              {...{dataManager}}
+              dataManager={dataManager}
               {...getRouterProps(mockFullFilterWithWorkflow)}
             />
           </ProviderWrapper>
@@ -761,7 +779,7 @@ describe('InstancesContainer', () => {
       const node = mount(
         <ProviderWrapper>
           <InstancesContainerWrapped
-            {...{dataManager}}
+            dataManager={dataManager}
             {...getRouterProps(mockFullFilterWithoutWorkflow)}
           />
         </ProviderWrapper>
@@ -792,7 +810,7 @@ describe('InstancesContainer', () => {
       const node = mount(
         <ProviderWrapper>
           <InstancesContainerWrapped
-            {...{dataManager}}
+            dataManager={dataManager}
             {...getRouterProps(mockFullFilterWithoutWorkflow)}
           />
         </ProviderWrapper>
@@ -819,7 +837,7 @@ describe('InstancesContainer', () => {
       const node = mount(
         <ProviderWrapper>
           <InstancesContainerWrapped
-            {...{dataManager}}
+            dataManager={dataManager}
             {...getRouterProps(mockFullFilterWithoutWorkflow)}
           />
         </ProviderWrapper>
@@ -842,7 +860,7 @@ describe('InstancesContainer', () => {
       const node = mount(
         <ProviderWrapper>
           <InstancesContainerWrapped
-            {...{dataManager}}
+            dataManager={dataManager}
             {...getRouterProps(INCIDENTS_FILTER)}
           />
         </ProviderWrapper>
@@ -865,7 +883,7 @@ describe('InstancesContainer', () => {
       const node = mount(
         <ProviderWrapper>
           <InstancesContainerWrapped
-            {...{dataManager}}
+            dataManager={dataManager}
             {...getRouterProps(filterWithCompleted)}
           />
         </ProviderWrapper>
@@ -888,7 +906,10 @@ describe('InstancesContainer', () => {
     it('should update state correctly on instances click', async () => {
       // given
       const node = mount(
-        <InstancesContainerWrapped {...{dataManager}} {...getRouterProps({})} />
+        <InstancesContainerWrapped
+          dataManager={dataManager}
+          {...getRouterProps({})}
+        />
       );
       await flushPromises();
       node.update();

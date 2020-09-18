@@ -36,7 +36,7 @@ class CurrentInstance {
   }
 
   setCurrentInstance = (currentInstance) => {
-    this.state = {instance: currentInstance};
+    this.state.instance = currentInstance;
   };
 
   get workflowTitle() {

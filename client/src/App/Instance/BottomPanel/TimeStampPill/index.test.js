@@ -10,16 +10,23 @@ import {TimeStampPill} from './index';
 import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
 import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 jest.mock('modules/utils/bpmn');
-jest.mock('modules/api/diagram', () => ({
-  fetchWorkflowXML: jest.fn().mockImplementation(() => ''),
-}));
-jest.mock('modules/api/activityInstances', () => ({
-  fetchActivityInstancesTree: jest.fn().mockImplementation(() => ({})),
-}));
 
 describe('TimeStampPill', () => {
+  beforeEach(() => {
+    mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(''))
+      ),
+      rest.post('/api/activity-instances', (_, res, ctx) =>
+        res.once(ctx.json({}))
+      )
+    );
+  });
+
   afterEach(() => {
     flowNodeTimeStamp.reset();
     singleInstanceDiagram.reset();

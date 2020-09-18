@@ -13,27 +13,10 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createMemoryHistory} from 'history';
 import PropTypes from 'prop-types';
 import {render, within, fireEvent, screen} from '@testing-library/react';
-import {location} from './index.setup';
+import {location, mockCollapsablePanelProps} from './index.setup';
 import {instances} from 'modules/stores/instances';
-import {
-  fetchWorkflowInstance,
-  fetchWorkflowCoreStatistics,
-} from 'modules/api/instances';
-
-// props mocks
-const mockCollapsablePanelProps = {
-  isFiltersCollapsed: false,
-  expandFilters: jest.fn(),
-};
-
-jest.mock('modules/api/instances');
-
-jest.mock('modules/api/header', () => ({
-  fetchUser: jest.fn().mockImplementation(() => ({
-    firstname: 'firstname',
-    lastname: 'lastname',
-  })),
-}));
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 // Header component fetches user information in the background, which is an async action and might complete after the tests finished.
 // Tests also depend on the statistics fetch to be completed, in order to test the results that are rendered in the screen.
@@ -58,24 +41,35 @@ describe('Header', () => {
     history: PropTypes.object,
   };
 
-  beforeAll(() => {
-    fetchWorkflowCoreStatistics.mockImplementation(() => ({
-      coreStatistics: {
-        running: 821,
-        active: 90,
-        withIncidents: 731,
-      },
-    }));
-  });
-
   beforeEach(() => {
+    mockServer.use(
+      rest.get('/api/authentications/user', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            firstname: 'firstname',
+            lastname: 'lastname',
+          })
+        )
+      ),
+      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            running: 821,
+            active: 90,
+            withIncidents: 731,
+          })
+        )
+      ),
+      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            id: 'first_instance_id',
+            state: 'ACTIVE',
+          })
+        )
+      )
+    );
     currentInstance.reset();
-  });
-  afterEach(() => {
-    fetchWorkflowInstance.mockReset();
-  });
-  afterAll(() => {
-    fetchWorkflowCoreStatistics.mockReset();
   });
 
   it('should render all header links', async () => {
@@ -186,11 +180,6 @@ describe('Header', () => {
   });
 
   it('should render instance details on instance view', async () => {
-    fetchWorkflowInstance.mockImplementationOnce(() => ({
-      id: 'first_instance_id',
-      state: 'ACTIVE',
-    }));
-
     const MOCK_INSTANCE_ID = 'first_instance_id';
 
     const mockProps = {
@@ -218,16 +207,6 @@ describe('Header', () => {
     const MOCK_FIRST_INSTANCE_ID = 'first_instance_id';
     const MOCK_SECOND_INSTANCE_ID = 'second_instance_id';
 
-    fetchWorkflowInstance
-      .mockImplementationOnce(() => ({
-        id: MOCK_FIRST_INSTANCE_ID,
-        state: 'ACTIVE',
-      }))
-      .mockImplementationOnce(() => ({
-        id: MOCK_SECOND_INSTANCE_ID,
-        state: 'ACTIVE',
-      }));
-
     const mockProps = {
       location: location.instance,
       ...mockCollapsablePanelProps,
@@ -241,11 +220,23 @@ describe('Header', () => {
       await screen.findByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)
     ).toBeInTheDocument();
 
+    mockServer.use(
+      rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            id: 'second_instance_id',
+            state: 'ACTIVE',
+          })
+        )
+      )
+    );
     jest.advanceTimersByTime(5000);
     expect(
       await screen.findByText(`Instance ${MOCK_SECOND_INSTANCE_ID}`)
     ).toBeInTheDocument();
     expect(screen.queryByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)).toBeNull();
+
+    jest.useRealTimers();
   });
 
   it('should go to the correct pages when clicking on header links', async () => {

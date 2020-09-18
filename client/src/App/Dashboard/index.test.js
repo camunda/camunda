@@ -9,13 +9,10 @@ import {render, screen} from '@testing-library/react';
 import {MemoryRouter} from 'react-router-dom';
 import {PAGE_TITLE} from 'modules/constants';
 import {statistics} from 'modules/stores/statistics';
-import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
-
 import {Dashboard} from './index';
-
 import PropTypes from 'prop-types';
-
-jest.mock('modules/api/instances');
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 const Wrapper = ({children}) => {
   return <MemoryRouter>{children} </MemoryRouter>;
@@ -30,17 +27,20 @@ describe('Dashboard', () => {
   beforeEach(() => {
     statistics.reset();
   });
-  afterEach(() => {
-    fetchWorkflowCoreStatistics.mockReset();
-  });
+
   it('should render', async () => {
-    fetchWorkflowCoreStatistics.mockResolvedValueOnce({
-      coreStatistics: {
-        running: 821,
-        active: 90,
-        withIncidents: 731,
-      },
-    });
+    mockServer.use(
+      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            running: 821,
+            active: 90,
+            withIncidents: 731,
+          })
+        )
+      )
+    );
+
     render(<Dashboard />, {wrapper: Wrapper});
 
     await statistics.fetchStatistics();
@@ -54,11 +54,16 @@ describe('Dashboard', () => {
   });
 
   it('should display error', async () => {
-    fetchWorkflowCoreStatistics.mockResolvedValueOnce({
-      coreStatistics: {
-        error: 'an error occured',
-      },
-    });
+    mockServer.use(
+      rest.get('/api/workflow-instances/core-statistics', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            error: 'an error occured',
+          })
+        )
+      )
+    );
+
     render(<Dashboard />, {wrapper: Wrapper});
 
     await statistics.fetchStatistics();

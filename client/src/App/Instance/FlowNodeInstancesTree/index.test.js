@@ -23,10 +23,10 @@ describe('<FlowNodeInstancesTree />', () => {
   beforeEach(async () => {
     mockServer.use(
       rest.get(`/api/workflow-instances/${instanceId}`, (_, res, ctx) =>
-        res(ctx.json(CURRENT_INSTANCE))
+        res.once(ctx.json(CURRENT_INSTANCE))
       ),
       rest.get(`/api/workflows/${workflowId}/xml`, (_, res, ctx) =>
-        res(ctx.text(DIAGRAM))
+        res.once(ctx.text(DIAGRAM))
       )
     );
 

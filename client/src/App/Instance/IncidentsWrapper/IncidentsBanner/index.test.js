@@ -12,15 +12,14 @@ import {MemoryRouter, Route} from 'react-router-dom';
 import {render, screen} from '@testing-library/react';
 import PropTypes from 'prop-types';
 import {incidents} from 'modules/stores/incidents';
-import {fetchWorkflowInstanceIncidents} from 'modules/api/instances';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 const mockProps = {
   onClick: jest.fn(),
   isArrowFlipped: false,
   expandState: 'DEFAULT',
 };
-
-jest.mock('modules/api/instances');
 
 const Wrapper = ({children}) => {
   return (
@@ -39,13 +38,17 @@ Wrapper.propTypes = {
 };
 
 describe('IncidentsBanner', () => {
-  afterEach(async () => {
-    fetchWorkflowInstanceIncidents.mockReset();
-  });
   it('should display incidents banner if banner is not collapsed', async () => {
-    fetchWorkflowInstanceIncidents.mockResolvedValueOnce({
-      count: 1,
-    });
+    mockServer.use(
+      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            count: 1,
+          })
+        )
+      )
+    );
+
     await incidents.fetchIncidents(1);
 
     render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
@@ -56,9 +59,16 @@ describe('IncidentsBanner', () => {
   });
 
   it('should not display incidents banner if panel is collapsed', async () => {
-    fetchWorkflowInstanceIncidents.mockResolvedValueOnce({
-      count: 1,
-    });
+    mockServer.use(
+      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            count: 1,
+          })
+        )
+      )
+    );
+
     await incidents.fetchIncidents(1);
 
     render(
@@ -72,9 +82,16 @@ describe('IncidentsBanner', () => {
   });
 
   it('should show the right text for more than 1 incident', async () => {
-    fetchWorkflowInstanceIncidents.mockResolvedValueOnce({
-      count: 2,
-    });
+    mockServer.use(
+      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+        res.once(
+          ctx.json({
+            count: 2,
+          })
+        )
+      )
+    );
+
     await incidents.fetchIncidents(1);
 
     render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});

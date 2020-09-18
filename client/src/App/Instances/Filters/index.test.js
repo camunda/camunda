@@ -15,7 +15,6 @@ import {
 } from 'modules/constants';
 import Button from 'modules/components/Button';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
-import * as api from 'modules/api/instances';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import Filters from './index';
@@ -34,17 +33,22 @@ import {
 import {DEBOUNCE_DELAY, ALL_VERSIONS_OPTION} from './constants';
 import {instancesDiagram} from 'modules/stores/instancesDiagram';
 import {getFlowNodeOptions} from './service';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 jest.mock('./constants');
 jest.mock('modules/utils/bpmn');
-jest.mock('modules/api/diagram', () => ({
-  fetchWorkflowXML: jest.fn().mockImplementation(() => ''),
-}));
-
-api.fetchGroupedWorkflows = mockResolvedAsyncFn(groupedWorkflowsMock);
 
 describe('Filters', () => {
-  beforeAll(async () => {
+  beforeEach(async () => {
+    mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(''))
+      ),
+      rest.get('/api/workflows/grouped', (_, res, ctx) =>
+        res.once(ctx.json(groupedWorkflowsMock))
+      )
+    );
     await instancesDiagram.fetchWorkflowXml(1);
   });
 

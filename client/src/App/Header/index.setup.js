@@ -4,10 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {createInstance} from 'modules/testUtils';
 import {PATHNAME} from './constants';
 
-export const location = {
+const location = {
   dashboard: {
     pathname: PATHNAME.DASHBOARD,
   },
@@ -19,4 +18,9 @@ export const location = {
   },
 };
 
-export const mockInstance = createInstance();
+const mockCollapsablePanelProps = {
+  isFiltersCollapsed: false,
+  expandFilters: jest.fn(),
+};
+
+export {location, mockCollapsablePanelProps};

@@ -5,13 +5,20 @@
  */
 
 import React from 'react';
-import {render, fireEvent, screen} from '@testing-library/react';
+import {
+  render,
+  fireEvent,
+  screen,
+  waitForElementToBeRemoved,
+  waitFor,
+} from '@testing-library/react';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
-import {fetchUser, logout} from 'modules/api/header';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
 
 import User from './index';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 const mockUser = {
   firstname: 'Franz',
@@ -22,19 +29,17 @@ const mockSsoUser = {
   lastname: 'Michael Jordan',
 };
 
-jest.mock('modules/api/header');
-
 describe('User', () => {
-  beforeEach(() => {
-    jest.resetAllMocks();
-  });
-
   afterEach(() => {
     clearStateLocally();
   });
 
   it('renders with locally stored User data', async () => {
-    fetchUser.mockResolvedValue({});
+    mockServer.use(
+      rest.get('/api/authentications/user', (_, res, ctx) =>
+        res.once(ctx.json({}))
+      )
+    );
     storeStateLocally({firstname: 'Sponge', lastname: 'Bob'});
 
     render(<User />, {
@@ -45,7 +50,11 @@ describe('User', () => {
   });
 
   it('renders with User data', async () => {
-    fetchUser.mockResolvedValue(mockUser);
+    mockServer.use(
+      rest.get('/api/authentications/user', (_, res, ctx) =>
+        res.once(ctx.json(mockUser))
+      )
+    );
 
     render(<User />, {
       wrapper: ThemeProvider,
@@ -55,17 +64,26 @@ describe('User', () => {
   });
 
   it('renders without User data', async () => {
-    fetchUser.mockRejectedValue({});
+    mockServer.use(
+      rest.get('/api/authentications/user', (_, res, ctx) =>
+        res.once(ctx.json(mockUser))
+      )
+    );
 
     render(<User />, {
       wrapper: ThemeProvider,
     });
 
     expect(await screen.findByTestId('username-skeleton')).toBeInTheDocument();
+    await waitForElementToBeRemoved(screen.getByTestId('username-skeleton'));
   });
 
   it('renders with SSO User data (firstname field is empty)', async () => {
-    fetchUser.mockResolvedValue(mockSsoUser);
+    mockServer.use(
+      rest.get('/api/authentications/user', (_, res, ctx) =>
+        res.once(ctx.json(mockSsoUser))
+      )
+    );
 
     render(<User />, {
       wrapper: ThemeProvider,
@@ -75,15 +93,22 @@ describe('User', () => {
   });
 
   it('should handle logout', async () => {
-    fetchUser.mockResolvedValue(mockUser);
+    mockServer.use(
+      rest.get('/api/authentications/user', (_, res, ctx) =>
+        res.once(ctx.json(mockUser))
+      ),
+      rest.post('/api/logout', (_, res, ctx) => res.once(ctx.json('')))
+    );
 
-    render(<User handleRedirect={() => {}} />, {
+    const mockHandleRedirect = jest.fn();
+
+    render(<User handleRedirect={mockHandleRedirect} />, {
       wrapper: ThemeProvider,
     });
 
     fireEvent.click(await screen.findByText('Franz Kafka'));
     fireEvent.click(await screen.findByText('Logout'));
 
-    expect(logout).toHaveBeenCalled();
+    await waitFor(() => expect(mockHandleRedirect).toHaveBeenCalled());
   });
 });

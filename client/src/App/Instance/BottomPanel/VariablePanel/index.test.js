@@ -14,6 +14,8 @@ import {variables} from 'modules/stores/variables';
 import {currentInstance} from 'modules/stores/currentInstance';
 import PropTypes from 'prop-types';
 import {MemoryRouter, Route} from 'react-router-dom';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 jest.mock('../Variables', () => {
   return {
@@ -23,16 +25,6 @@ jest.mock('../Variables', () => {
     },
   };
 });
-
-jest.mock('modules/api/instances', () => ({
-  fetchVariables: jest.fn().mockImplementation((param) => {
-    if (param.instanceId === 'invalid_instance')
-      return {error: 'An error occured'};
-    else {
-      return [];
-    }
-  }),
-}));
 
 const Wrapper = ({children}) => {
   return (
@@ -52,11 +44,23 @@ Wrapper.propTypes = {
 
 describe('VariablePanel', () => {
   beforeEach(() => {
+    mockServer.use(
+      rest.get(
+        '/api/workflow-instances/invalid_instance/variables?scopeId=:scopeId',
+        (_, res, ctx) => res.once(ctx.json({error: 'An error occured'}))
+      ),
+      rest.get(
+        '/api/workflow-instances/:instanceId/variables?scopeId=:scopeId',
+        (_, res, ctx) => res.once(ctx.json([]))
+      )
+    );
+
     currentInstance.setCurrentInstance({
       id: 'instance_id',
       state: 'ACTIVE',
     });
   });
+
   afterEach(() => {
     flowNodeInstance.reset();
     variables.reset();

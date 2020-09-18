@@ -14,11 +14,8 @@ import {testData, mockIncidents, mockResolvedIncidents} from './index.setup';
 import {Router, Route} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
 import {incidents} from 'modules/stores/incidents';
-import {fetchWorkflowInstanceIncidents} from 'modules/api/instances';
-
-jest.mock('modules/api/instances');
-
-jest.mock('modules/utils/bpmn');
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 jest.mock('react-transition-group', () => {
   const FakeTransition = jest.fn(({children}) => children);
@@ -63,11 +60,13 @@ Wrapper.propTypes = {
 
 describe('IncidentsWrapper', () => {
   beforeEach(async () => {
-    fetchWorkflowInstanceIncidents.mockResolvedValueOnce(mockIncidents);
+    mockServer.use(
+      rest.get('/api/workflow-instances/:instanceId/incidents', (_, res, ctx) =>
+        res.once(ctx.json(mockIncidents))
+      )
+    );
+
     await incidents.fetchIncidents(1);
-  });
-  afterAll(async () => {
-    fetchWorkflowInstanceIncidents.mockReset();
   });
 
   it('should render the IncidentsBanner', () => {
@@ -243,8 +242,11 @@ describe('IncidentsWrapper', () => {
       expect(screen.getAllByRole('row').length).toBe(3);
 
       // incident is resolved
-      fetchWorkflowInstanceIncidents.mockResolvedValueOnce(
-        mockResolvedIncidents
+      mockServer.use(
+        rest.get(
+          '/api/workflow-instances/:instanceId/incidents',
+          (_, res, ctx) => res.once(ctx.json(mockResolvedIncidents))
+        )
       );
 
       await incidents.fetchIncidents(1);

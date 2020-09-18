@@ -15,7 +15,7 @@ import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
 import {HashRouter as Router} from 'react-router-dom';
-import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
+import {flushPromises} from 'modules/testUtils';
 
 import {instances} from 'modules/stores/instances';
 
@@ -32,34 +32,39 @@ import {
 import ListPanel from './index';
 import List from './List';
 import ListFooter from './ListFooter';
-
-import * as api from 'modules/api/instances';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 jest.mock('modules/utils/bpmn');
-
-// api mocks
-api.fetchWorkflowInstances = mockResolvedAsyncFn([]);
 
 describe('ListPanel', () => {
   let Component, ComponentWithInstances, ComponentBeforeDataLoaded;
   let dataManager;
   beforeEach(() => {
     jest.clearAllMocks();
+
+    mockServer.use(
+      rest.get(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) => res.once(ctx.json([]))
+      )
+    );
+
     dataManager = createMockDataManager();
 
     Component = (
-      <ListPanel.WrappedComponent {...mockProps} {...{dataManager}} />
+      <ListPanel.WrappedComponent {...mockProps} dataManager={dataManager} />
     );
     ComponentWithInstances = (
       <ListPanel.WrappedComponent
         {...mockPropsWithInstances}
-        {...{dataManager}}
+        dataManager={dataManager}
       />
     );
     ComponentBeforeDataLoaded = (
       <ListPanel.WrappedComponent
         {...mockPropsBeforeDataLoaded}
-        {...{dataManager}}
+        dataManager={dataManager}
       />
     );
   });
@@ -149,7 +154,7 @@ describe('ListPanel', () => {
                 <InstancesPollProvider>
                   <ListPanel.WrappedComponent
                     {...mockPropsWithNoOperation}
-                    {...{dataManager}}
+                    dataManager={dataManager}
                   />
                 </InstancesPollProvider>
               </CollapsablePanelProvider>
@@ -191,10 +196,6 @@ describe('ListPanel', () => {
   });
 
   describe('polling for instances changes', () => {
-    beforeEach(() => {
-      api.fetchWorkflowInstances.mockClear();
-    });
-
     it('should not send ids for polling if no instances with active operations are displayed', async () => {
       const node = mount(
         <Router>
@@ -204,7 +205,7 @@ describe('ListPanel', () => {
                 <InstancesPollProvider>
                   <ListPanel.WrappedComponent
                     {...mockPropsWithNoOperation}
-                    {...{dataManager}}
+                    dataManager={dataManager}
                   />
                 </InstancesPollProvider>
               </CollapsablePanelProvider>
@@ -224,7 +225,7 @@ describe('ListPanel', () => {
       const node = shallow(
         <ListPanel.WrappedComponent
           {...{...mockPropsWithPoll, instances: [ACTIVE_INSTANCE]}}
-          {...{dataManager}}
+          dataManager={dataManager}
         />
       );
 
@@ -252,7 +253,7 @@ describe('ListPanel', () => {
                 <InstancesPollProvider>
                   <ListPanel.WrappedComponent
                     {...mockPropsWithPoll}
-                    {...{dataManager}}
+                    dataManager={dataManager}
                   />
                 </InstancesPollProvider>
               </CollapsablePanelProvider>
@@ -279,7 +280,10 @@ describe('ListPanel', () => {
 
     it('should not poll for instances with active operations that are no longer in view after collapsing', async () => {
       const node = shallow(
-        <ListPanel.WrappedComponent {...mockPropsWithPoll} {...{dataManager}} />
+        <ListPanel.WrappedComponent
+          {...mockPropsWithPoll}
+          dataManager={dataManager}
+        />
       );
 
       // when
@@ -297,7 +301,10 @@ describe('ListPanel', () => {
     // https://app.camunda.com/jira/browse/OPE-395
     it('should refetch instances when expanding the list panel', async () => {
       const node = shallow(
-        <ListPanel.WrappedComponent {...mockPropsWithPoll} {...{dataManager}} />
+        <ListPanel.WrappedComponent
+          {...mockPropsWithPoll}
+          dataManager={dataManager}
+        />
       );
 
       // when

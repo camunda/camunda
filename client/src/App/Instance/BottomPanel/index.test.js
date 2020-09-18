@@ -25,7 +25,7 @@ describe('BottomPanel', () => {
       )}
       {EXPAND_STATE.COLLAPSED === expandState && (
         <div {...props}>collapsed content</div>
-      )}{' '}
+      )}
     </>
   );
 

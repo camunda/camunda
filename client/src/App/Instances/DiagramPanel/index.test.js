@@ -25,13 +25,12 @@ import {
 import DiagramPanel from './index';
 import {instancesDiagram} from 'modules/stores/instancesDiagram';
 import PropTypes from 'prop-types';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 const DiagramPanelWrapped = DiagramPanel.WrappedComponent;
 
 jest.mock('modules/utils/bpmn');
-jest.mock('modules/api/diagram', () => ({
-  fetchWorkflowXML: jest.fn().mockImplementation(() => ''),
-}));
 
 const Wrapper = ({children}) => {
   return (
@@ -54,84 +53,90 @@ describe('DiagramPanel', () => {
     dataManager = createMockDataManager();
   });
 
+  beforeEach(() => {
+    mockServer.use(
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(''))
+      )
+    );
+  });
+
   afterEach(() => {
     instancesDiagram.reset();
   });
 
-  describe('DiagramPanel', () => {
-    it('should render header', async () => {
-      render(<DiagramPanelWrapped {...mockProps} {...{dataManager}} />, {
+  it('should render header', async () => {
+    render(<DiagramPanelWrapped {...mockProps} dataManager={dataManager} />, {
+      wrapper: Wrapper,
+    });
+    await instancesDiagram.fetchWorkflowXml(1);
+
+    expect(screen.getByText('Workflow Name')).toBeInTheDocument();
+  });
+
+  it('should show the loading indicator, when diagram is loading', async () => {
+    render(<DiagramPanelWrapped {...mockProps} dataManager={dataManager} />, {
+      wrapper: Wrapper,
+    });
+    instancesDiagram.fetchWorkflowXml(1);
+
+    expect(screen.getByTestId('spinner')).toBeInTheDocument();
+    expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
+
+    await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+  });
+
+  it('should show an empty state message when no workflow is selected', async () => {
+    render(
+      <DiagramPanelWrapped
+        {...mockPropsNoWorkflowSelected}
+        dataManager={dataManager}
+      />,
+      {
         wrapper: Wrapper,
-      });
-      await instancesDiagram.fetchWorkflowXml(1);
+      }
+    );
 
-      expect(screen.getByText('Workflow Name')).toBeInTheDocument();
-    });
+    expect(
+      screen.getByText('There is no Workflow selected.')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'To see a diagram, select a Workflow in the Filters panel.'
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
+  });
 
-    it('should show the loading indicator, when diagram is loading', async () => {
-      render(<DiagramPanelWrapped {...mockProps} {...{dataManager}} />, {
+  it('should show a message when no workflow version is selected', async () => {
+    render(
+      <DiagramPanelWrapped
+        {...mockPropsNoVersionSelected}
+        dataManager={dataManager}
+      />,
+      {
         wrapper: Wrapper,
-      });
-      instancesDiagram.fetchWorkflowXml(1);
+      }
+    );
 
-      expect(screen.getByTestId('spinner')).toBeInTheDocument();
-      expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'There is more than one version selected for Workflow "Workflow Name".'
+      )
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('To see a diagram, select a single version.')
+    ).toBeInTheDocument();
 
-      await waitForElementToBeRemoved(screen.getByTestId('spinner'));
+    expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
+  });
+
+  it('should render a diagram', async () => {
+    render(<DiagramPanelWrapped {...mockProps} dataManager={dataManager} />, {
+      wrapper: Wrapper,
     });
+    await instancesDiagram.fetchWorkflowXml(1);
 
-    it('should show an empty state message when no workflow is selected', async () => {
-      render(
-        <DiagramPanelWrapped
-          {...mockPropsNoWorkflowSelected}
-          {...{dataManager}}
-        />,
-        {
-          wrapper: Wrapper,
-        }
-      );
-
-      expect(
-        screen.getByText('There is no Workflow selected.')
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          'To see a diagram, select a Workflow in the Filters panel.'
-        )
-      ).toBeInTheDocument();
-      expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
-    });
-
-    it('should show a message when no workflow version is selected', async () => {
-      render(
-        <DiagramPanelWrapped
-          {...mockPropsNoVersionSelected}
-          {...{dataManager}}
-        />,
-        {
-          wrapper: Wrapper,
-        }
-      );
-
-      expect(
-        screen.getByText(
-          'There is more than one version selected for Workflow "Workflow Name".'
-        )
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText('To see a diagram, select a single version.')
-      ).toBeInTheDocument();
-
-      expect(screen.queryByTestId('diagram')).not.toBeInTheDocument();
-    });
-
-    it('should render a diagram', async () => {
-      render(<DiagramPanelWrapped {...mockProps} {...{dataManager}} />, {
-        wrapper: Wrapper,
-      });
-      await instancesDiagram.fetchWorkflowXml(1);
-
-      expect(screen.getByTestId('diagram')).toBeInTheDocument();
-    });
+    expect(screen.getByTestId('diagram')).toBeInTheDocument();
   });
 });

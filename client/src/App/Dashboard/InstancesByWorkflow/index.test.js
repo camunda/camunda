@@ -15,28 +15,20 @@ import {
   mockEmptyResponse,
   mockWithMultipleVersions,
 } from './index.setup';
-
-const fetchMock = jest.spyOn(window, 'fetch');
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 const createWrapper = (historyMock = createMemoryHistory()) => ({children}) => (
   <Router history={historyMock}>{children}</Router>
 );
 
 describe('InstancesByWorkflow', () => {
-  afterEach(() => {
-    fetchMock.mockClear();
-  });
-
-  afterAll(() => {
-    fetchMock.mockRestore();
-  });
-
   describe('Empty Panel', () => {
     it('should display skeleton when loading', async () => {
-      fetchMock.mockResolvedValueOnce(
-        Promise.resolve({
-          json: () => mockWithSingleVersion,
-        })
+      mockServer.use(
+        rest.get('/api/incidents/byWorkflow', (_, res, ctx) =>
+          res.once(ctx.json(mockWithSingleVersion))
+        )
       );
 
       render(<InstancesByWorkflow />, {
@@ -56,10 +48,10 @@ describe('InstancesByWorkflow', () => {
     });
 
     it('should display error message when api fails', async () => {
-      fetchMock.mockResolvedValueOnce(
-        Promise.resolve({
-          json: () => mockErrorResponse,
-        })
+      mockServer.use(
+        rest.get('/api/incidents/byWorkflow', (_, res, ctx) =>
+          res.once(ctx.json(mockErrorResponse))
+        )
       );
 
       render(<InstancesByWorkflow />, {
@@ -72,10 +64,10 @@ describe('InstancesByWorkflow', () => {
     });
 
     it('should display information message when there are no workflows', async () => {
-      fetchMock.mockResolvedValueOnce(
-        Promise.resolve({
-          json: () => mockEmptyResponse,
-        })
+      mockServer.use(
+        rest.get('/api/incidents/byWorkflow', (_, res, ctx) =>
+          res.once(ctx.json(mockEmptyResponse))
+        )
       );
 
       render(<InstancesByWorkflow />, {
@@ -90,10 +82,10 @@ describe('InstancesByWorkflow', () => {
 
   describe('Content', () => {
     it('should render items with more than one workflows versions', async () => {
-      fetchMock.mockResolvedValueOnce(
-        Promise.resolve({
-          json: () => mockWithMultipleVersions,
-        })
+      mockServer.use(
+        rest.get('/api/incidents/byWorkflow', (_, res, ctx) =>
+          res.once(ctx.json(mockWithMultipleVersions))
+        )
       );
 
       const historyMock = createMemoryHistory();
@@ -177,10 +169,10 @@ describe('InstancesByWorkflow', () => {
     });
 
     it('should render items with one workflow version', async () => {
-      fetchMock.mockResolvedValueOnce(
-        Promise.resolve({
-          json: () => mockWithSingleVersion,
-        })
+      mockServer.use(
+        rest.get('/api/incidents/byWorkflow', (_, res, ctx) =>
+          res.once(ctx.json(mockWithSingleVersion))
+        )
       );
 
       const historyMock = createMemoryHistory();
