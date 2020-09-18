@@ -28,6 +28,7 @@ export function TemplateModal({
   const [definition, setDefinition] = useState({definitionKey: '', versions: [], tenants: []});
   const [xml, setXml] = useState();
   const [template, setTemplate] = useState();
+  const [useCustomName, setUseCustomName] = useState(false);
 
   const {definitionKey, definitionName, versions, tenants} = definition;
 
@@ -56,7 +57,10 @@ export function TemplateModal({
                   type="text"
                   label={t(entity + '.addName')}
                   value={name}
-                  onChange={({target: {value}}) => setName(value)}
+                  onChange={({target: {value}}) => {
+                    setName(value);
+                    setUseCustomName(true);
+                  }}
                   autoComplete="off"
                 />
               </Form.Group>
@@ -87,7 +91,12 @@ export function TemplateModal({
               <Button
                 key={idx}
                 className={classnames({active: deepEqual(template, config), hasSubtitle})}
-                onClick={() => setTemplate(config)}
+                onClick={() => {
+                  setTemplate(config);
+                  if (!useCustomName) {
+                    setName(t(entity + '.templates.' + name));
+                  }
+                }}
               >
                 {img ? (
                   <img src={img} alt={t(entity + '.templates.' + name)} />

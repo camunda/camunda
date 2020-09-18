@@ -110,3 +110,20 @@ it('should show templates with subTitles', () => {
   expect(node.find('.templateContainer').find(Button)).toHaveClassName('hasSubtitle');
   expect(node.find('.subTitle')).toExist();
 });
+
+it('should use the template name as entity name', () => {
+  const node = shallow(<TemplateModal {...props} />);
+
+  node.find('.templateContainer').find(Button).at(1).simulate('click');
+
+  expect(node.find(LabeledInput)).toHaveValue('Heatmap: Flownode count');
+});
+
+it('should use a custom name if the user explicitely enters it', () => {
+  const node = shallow(<TemplateModal {...props} />);
+
+  node.find(LabeledInput).simulate('change', {target: {value: 'Template Report Name'}});
+  node.find('.templateContainer').find(Button).at(1).simulate('click');
+
+  expect(node.find(LabeledInput)).toHaveValue('Template Report Name');
+});
