@@ -150,8 +150,8 @@ public final class ExpressionProcessor {
         } catch (DateTimeParseException e) {
           throw new EvaluationException(
               String.format(
-                  "Expected result of the expression '%s' to be parsed to a duration, but was '%s'",
-                  expression.getExpression(), result.getString()),
+                  "Invalid duration format '%s' for expression '%s'",
+                  result.getString(), expression.getExpression()),
               e);
         }
       default:
@@ -183,7 +183,14 @@ public final class ExpressionProcessor {
       return result.getDateTime();
     }
     if (result.getType() == ResultType.STRING) {
-      return ZonedDateTime.parse(result.getString());
+      try {
+        return ZonedDateTime.parse(result.getString());
+      } catch (final DateTimeParseException e) {
+        throw new EvaluationException(
+            String.format(
+                "Invalid date-time format '%s' for expression '%s'",
+                result.getString(), expression.getExpression()));
+      }
     }
     final var expected = List.of(ResultType.DATE_TIME, ResultType.STRING);
     throw new EvaluationException(
