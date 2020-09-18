@@ -53,7 +53,7 @@ const Login: React.FC = () => {
               {submitting && (
                 <LoadingOverlay data-testid="login-loading-overlay" />
               )}
-              <FormContainer>
+              <FormContainer hasError={submitError !== undefined}>
                 <Logo />
                 <Title>Zeebe Tasklist</Title>
                 {submitError !== undefined && <Error>{submitError}</Error>}

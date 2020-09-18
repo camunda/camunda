@@ -5,6 +5,7 @@
  */
 
 import styled from 'styled-components';
+import {rgba} from 'polished';
 
 interface TRProps {
   hasNoBorder?: boolean;
@@ -20,7 +21,7 @@ const RowTH = styled.th`
   width: 198px;
   padding: 12px 20px;
   text-align: left;
-  color: ${({theme}) => theme.colors.text.button};
+  color: ${({theme}) => rgba(theme.colors.ui07, 0.9)};
 `;
 
 const ColumnTH = styled.th`
@@ -42,7 +43,7 @@ const TD = styled.td`
 
 const TR = styled.tr<TRProps>`
   ${({hasNoBorder, theme}) =>
-    !hasNoBorder && `border-bottom: 1px solid ${theme.colors.ui05}`};
+    !hasNoBorder && `border-bottom: 1px solid ${theme.colors.ui05};`}
 `;
 
 export {Table, RowTH, ColumnTH, TR, TD};

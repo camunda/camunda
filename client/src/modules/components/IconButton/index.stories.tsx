@@ -4,6 +4,8 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+/* istanbul ignore file */
+
 import React from 'react';
 import {IconButton} from './index';
 import {ReactComponent as PlusIcon} from 'modules/icons/plus.svg';
@@ -16,7 +18,7 @@ const Icon = styled(PlusIcon)`
 `;
 
 export default {
-  title: 'Icon Button',
+  title: 'modules/Icon Button',
   component: IconButton,
 };
 

@@ -18,7 +18,7 @@ import {
   UNCLAIM_TASK,
   UnclaimTaskVariables,
 } from 'modules/mutations/unclaim-task';
-import {Table, RowTH, TD, TR} from 'modules/components/Table/styled';
+import {Table, RowTH, TD, TR} from 'modules/components/Table';
 import {formatDate} from 'modules/utils/formatDate';
 import {TaskStates} from 'modules/constants/taskStates';
 import {Container, ClaimButton} from './styled';

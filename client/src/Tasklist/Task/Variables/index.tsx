@@ -16,8 +16,7 @@ import {
   GetTaskVariables,
   TaskVariablesQueryVariables,
 } from 'modules/queries/get-task-variables';
-
-import {Table, TD, TR} from 'modules/components/Table/styled';
+import {Table, TD, TR} from 'modules/components/Table';
 import {
   Container,
   Body,

@@ -4,11 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+/* istanbul ignore file */
+
 import React from 'react';
 import {Button} from './Button';
 
 export default {
-  title: 'Button',
+  title: 'modules/Button',
   component: Button,
 };
 

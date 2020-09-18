@@ -5,19 +5,44 @@
  */
 
 import styled from 'styled-components';
+import {rgba} from 'polished';
 import {ReactComponent} from 'modules/icons/logo.svg';
 
 const Button = styled.button`
   cursor: pointer;
-  color: ${({theme}) => theme.colors.text.button};
+  color: ${({theme}) => theme.colors.button.large.default.color};
   font-weight: 600;
   font-size: 18px;
   width: 340px;
   height: 48px;
-  background-color: ${({theme}) => theme.colors.ui05};
-  border: 1px solid ${({theme}) => theme.colors.ui03};
+  background-color: ${({theme}) =>
+    theme.colors.button.large.default.backgroundColor};
+  border: 1px solid ${({theme}) => theme.colors.button.large.default.border};
+  box-shadow: ${({theme}) => theme.shadows.button.large};
   border-radius: 3px;
   text-align: center;
+
+  &:hover {
+    background-color: ${({theme}) =>
+      theme.colors.button.large.hover.backgroundColor};
+    border: 1px solid ${({theme}) => theme.colors.button.large.hover.border};
+  }
+
+  &:active {
+    color: ${({theme}) => theme.colors.button.large.active.color};
+    background-color: ${({theme}) =>
+      theme.colors.button.large.active.backgroundColor};
+    border: 1px solid ${({theme}) => theme.colors.button.large.active.border};
+  }
+
+  &:disabled {
+    color: ${({theme}) => theme.colors.button.large.disabled.color};
+    background-color: ${({theme}) =>
+      theme.colors.button.large.disabled.backgroundColor};
+    border: 1px solid ${({theme}) => theme.colors.button.large.disabled.border};
+    box-shadow: none;
+    cursor: not-allowed;
+  }
 `;
 
 const Container = styled.main`
@@ -40,6 +65,7 @@ const Error = styled.span`
   font-size: 15px;
   text-align: left;
   font-weight: 500;
+  line-height: 15px;
 `;
 
 const Logo = styled(ReactComponent)`
@@ -60,13 +86,24 @@ const Input = styled.input`
   background-color: ${({theme}) => theme.colors.ui04};
   border: 1px solid ${({theme}) => theme.colors.ui05};
   padding: 12px 8px;
+  color: ${({theme}) => theme.colors.ui09};
 
   &::placeholder {
     font-style: italic;
+    color: ${({theme}) => rgba(theme.colors.ui06, 0.9)};
+  }
+
+  &:focus {
+    outline: none;
+    box-shadow: ${({theme}) => theme.shadows.fakeOutline};
+    transition: box-shadow 0.05s ease-out;
   }
 `;
 
-const FormContainer = styled.div`
+interface FormContainerProps {
+  hasError: boolean;
+}
+const FormContainer = styled.div<FormContainerProps>`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -77,7 +114,7 @@ const FormContainer = styled.div`
 
   & > ${Title} {
     margin-top: 12px;
-    margin-bottom: 78px;
+    margin-bottom: ${({hasError}) => (hasError ? 53 : 78)}px;
   }
 
   & > ${Error} {

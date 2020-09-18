@@ -11,7 +11,7 @@ import {Button} from 'modules/components/Button';
 import {ReactComponent as Warning} from 'modules/icons/warning.svg';
 import BasicTextareaAutosize from 'react-textarea-autosize';
 import {IconButton as BaseIconButton} from 'modules/components/IconButton';
-import {RowTH as BaseRowTH, ColumnTH} from 'modules/components/Table/styled';
+import {RowTH as BaseRowTH, ColumnTH} from 'modules/components/Table';
 
 const Container = styled.div`
   display: grid;
