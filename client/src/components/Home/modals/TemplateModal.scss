@@ -44,15 +44,18 @@
       .Button {
         display: block;
         width: 100%;
-        padding: 0;
+        padding: 1px;
         margin-bottom: 20px;
         background-color: white;
         text-align: left;
 
         &.active {
+          padding: 0;
+          border: 2px solid $blue-base-65;
+
           .name,
           .subTitle {
-            background-color: $silver-darken-94;
+            background-color: $blue-lighten-93;
           }
         }
 
