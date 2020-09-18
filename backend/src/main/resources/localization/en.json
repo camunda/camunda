@@ -504,7 +504,9 @@
     "templates": {
       "blank": "Blank Dashboard",
       "processPerformance": "Process performance overview",
+      "processPerformance_subTitle": "Process Trends and durations",
       "humanPerformance": "Human Task performance",
+      "humanPerformance_subTitle": "User task counts and durations",
       "totalInstances": "Total Instances",
       "avgDuration": "AVG Instance Duration",
       "instanceTrends": "Instance Trends",

@@ -83,10 +83,10 @@ export function TemplateModal({
         </div>
         <div className="configurationSelection">
           <div className="templateContainer">
-            {templates.map(({name, img, config}, idx) => (
+            {templates.map(({name, hasSubtitle, img, config}, idx) => (
               <Button
                 key={idx}
-                className={classnames({active: deepEqual(template, config)})}
+                className={classnames({active: deepEqual(template, config), hasSubtitle})}
                 onClick={() => setTemplate(config)}
               >
                 {img ? (
@@ -95,6 +95,9 @@ export function TemplateModal({
                   <div className="imgPlaceholder" />
                 )}
                 <div className="name">{t(entity + '.templates.' + name)}</div>
+                {hasSubtitle && (
+                  <div className="subTitle">{t(entity + '.templates.' + name + '_subTitle')}</div>
+                )}
               </Button>
             ))}
           </div>

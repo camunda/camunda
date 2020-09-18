@@ -504,7 +504,9 @@
     "templates": {
       "blank": "Leeres Dashboard",
       "processPerformance": "Prozessleistungsübersicht",
+      "processPerformance_subTitle": "Prozessentwicklungen und -Dauern",
       "humanPerformance": "Benutzeraufgabenübersicht",
+      "humanPerformance_subTitle": "Benutzeraufgabenanzahlen und -Dauern",
       "totalInstances": "Alle Instanzen",
       "avgDuration": "Durchschnittliche Instanzdauer",
       "instanceTrends": "Instanzentwicklungen",

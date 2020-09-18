@@ -97,3 +97,16 @@ it('should call the templateToState prop to determine link state', () => {
   });
   expect(node.find('.confirm.Button').prop('to').state).toEqual({data: 'stateData'});
 });
+
+it('should show templates with subTitles', () => {
+  const node = shallow(
+    <TemplateModal
+      {...props}
+      entity="dashboard"
+      templates={[{name: 'processPerformance', hasSubtitle: true}]}
+    />
+  );
+
+  expect(node.find('.templateContainer').find(Button)).toHaveClassName('hasSubtitle');
+  expect(node.find('.subTitle')).toExist();
+});

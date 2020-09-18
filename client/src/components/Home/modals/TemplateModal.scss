@@ -49,8 +49,27 @@
         background-color: white;
         text-align: left;
 
-        &.active .name {
-          background-color: $silver-darken-94;
+        &.active {
+          .name,
+          .subTitle {
+            background-color: $silver-darken-94;
+          }
+        }
+
+        &.hasSubtitle {
+          .name {
+            padding-top: 8px;
+            padding-bottom: 0;
+            height: 26px;
+          }
+
+          .subTitle {
+            color: $grey-base-40;
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 0 10px;
+            padding-bottom: 6px;
+          }
         }
 
         img,

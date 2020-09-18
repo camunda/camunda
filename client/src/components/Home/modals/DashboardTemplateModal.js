@@ -18,6 +18,7 @@ export default function DashboardTemplateModal({onClose}) {
     {name: 'blank'},
     {
       name: 'processPerformance',
+      hasSubtitle: true,
       img: processPerformance,
       config: [
         {
@@ -104,6 +105,7 @@ export default function DashboardTemplateModal({onClose}) {
     },
     {
       name: 'humanPerformance',
+      hasSubtitle: true,
       img: humanPerformance,
       config: [
         {
