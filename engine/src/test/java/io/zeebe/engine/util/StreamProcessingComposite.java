@@ -94,6 +94,10 @@ public class StreamProcessingComposite {
     }
   }
 
+  public StreamProcessor getStreamProcessor(final int partitionId) {
+    return streams.getStreamProcessor(getLogName(partitionId));
+  }
+
   public ZeebeState getZeebeState() {
     return zeebeState;
   }

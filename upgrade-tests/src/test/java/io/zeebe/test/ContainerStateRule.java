@@ -88,15 +88,21 @@ class ContainerStateRule extends TestWatcher {
     return this;
   }
 
-  public void start() {
+  public void start(final boolean enableDebug) {
     final String contactPoint;
     network = Network.newNetwork();
     broker =
         new ZeebeContainer("camunda/zeebe:" + brokerVersion)
             .withFileSystemBind(volumePath, "/usr/local/zeebe/data")
             .withEnv("ZEEBE_LOG_LEVEL", "DEBUG")
-            .withEnv("ZEEBE_DEBUG", "true")
+            .withEnv("ZEEBE_BROKER_DATA_SNAPSHOTPERIOD", "1m")
+            .withEnv("ZEEBE_BROKER_DATA_LOGINDEXDENSITY", "1")
             .withNetwork(network);
+
+    if (enableDebug) {
+      broker = broker.withEnv("ZEEBE_DEBUG", "true");
+    }
+
     Failsafe.with(CONTAINER_START_RETRY_POLICY).run(() -> broker.self().start());
 
     if (gatewayVersion == null) {
