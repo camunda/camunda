@@ -13,12 +13,14 @@ exports[`should pass an id for every entry to the typeahead 1`] = `
 >
   <ForwardRef(DropdownOption)
     key="foo"
+    title="Foo Definition"
     value="foo"
   >
     Foo Definition
   </ForwardRef(DropdownOption)>
   <ForwardRef(DropdownOption)
     key="bar"
+    title="Bar Definition"
     value="bar"
   >
     Bar Definition
