@@ -392,7 +392,7 @@
         <plugin>
           <groupId>org.codehaus.cargo</groupId>
           <artifactId>cargo-maven2-plugin</artifactId>
-          <version>1.8.0</version>
+          <version>1.8.1</version>
         </plugin>
         <plugin>
           <groupId>org.sonatype.plugins</groupId>
