@@ -25,12 +25,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.IDENTITY_LINK_OPERATION_ADD;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.IDENTITY_LINK_OPERATION_DELETE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_ADD;
+import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_OPERATION_DELETE;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 
 public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
@@ -348,7 +347,7 @@ public class UserTaskIdentityLinkImportIT extends AbstractUserTaskImportIT {
   @Test
   public void importIsNotAffectedByPagination() throws Exception {
     // given
-    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
+    engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
     engineIntegrationExtension.claimAllRunningUserTasks();
     importAllEngineEntitiesFromScratch();
 

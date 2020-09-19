@@ -13,7 +13,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.ser.std.DateSerializer;
 import com.fasterxml.jackson.databind.util.StdDateFormat;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +52,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.EngineUserDto;
+import org.camunda.optimize.rest.engine.dto.ExternalTaskEngineDto;
 import org.camunda.optimize.rest.engine.dto.GroupDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.engine.dto.TaskDto;
@@ -85,14 +85,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.OPTIMIZE_APPLICATION_RESOURCE_ID;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_APPLICATION;
 import static org.camunda.optimize.test.it.extension.MockServerUtil.MOCKSERVER_HOST;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
+import static org.camunda.optimize.util.BpmnModels.DEFAULT_TOPIC;
 import static org.camunda.optimize.util.DmnModels.createDefaultDmnModel;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -110,6 +112,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   public static final String DEFAULT_LASTNAME = "lastName";
   public static final String DEFAULT_FULLNAME = DEFAULT_FIRSTNAME + " " + DEFAULT_LASTNAME;
   public static final String KERMIT_GROUP_NAME = "anyGroupName";
+  private static final String DEFAULT_WORKER = "default worker";
 
   private static final Set<String> DEPLOYED_ENGINES = new HashSet<>(Collections.singleton("default"));
   private static final ObjectMapper OBJECT_MAPPER = createObjectMapper();
@@ -118,6 +121,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   private static final ClientAndServer mockServerClient = initMockServer();
   private static final int MAX_WAIT = 10;
   private static final String COUNT = "count";
+
 
   private final boolean shouldCleanEngine;
   @Getter
@@ -582,11 +586,10 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
       try (final CloseableHttpResponse response = HTTP_CLIENT.execute(get)) {
         String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
         // @formatter:off
-        final List<HistoricUserTaskInstanceDto> historicUserTaskInstanceDto = OBJECT_MAPPER.readValue(
+        return OBJECT_MAPPER.readValue(
           responseString,
           new TypeReference<List<HistoricUserTaskInstanceDto>>() {}
         );
-        return historicUserTaskInstanceDto;
         // @formatter:on
       } catch (IOException e) {
         throw new OptimizeIntegrationTestException(
@@ -927,7 +930,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     }
   }
 
-  private void executeJob(final String jobId) throws IOException {
+  @SneakyThrows
+  private void executeJob(final String jobId) {
     HttpPost executeJobRequest = new HttpPost(getExecuteJobUri(jobId));
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(executeJobRequest)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
@@ -996,6 +1000,26 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
 
   private String getProcessDefinitionUri() {
     return getEngineUrl() + "/process-definition";
+  }
+
+  private String getExternalTaskFetchAndLockUri() {
+    return getEngineUrl() + "/external-task/fetchAndLock";
+  }
+
+  private String getExternalTaskFailureUri(final String externalTaskId) {
+    return getEngineUrl() + "/external-task/" + externalTaskId + "/failure";
+  }
+
+  private String getExternalTaskCompleteUri(final String externalTaskId) {
+    return getEngineUrl() + "/external-task/" + externalTaskId + "/complete";
+  }
+
+  private String getExternalTaskUri() {
+    return getEngineUrl() + "/external-task/";
+  }
+
+  private String getExternalTaskRetriesUri() {
+    return getEngineUrl() + "/external-task/retries";
   }
 
   private String getDecisionDefinitionUri() {
@@ -1092,6 +1116,176 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
           log.error(message, e);
         }
       }
+    }
+  }
+
+  @SneakyThrows
+  public void failAllExternalTasks() {
+    final List<ExternalTaskEngineDto> externalTasks = fetchAndLockExternalTasks();
+    for (ExternalTaskEngineDto externalTask : externalTasks) {
+      HttpPost executeJobRequest = new HttpPost(getExternalTaskFailureUri(externalTask.getId()));
+      executeJobRequest.addHeader("Content-Type", "application/json");
+      executeJobRequest.setEntity(new StringEntity(
+        String.format(
+          "{\n" +
+            "\"workerId\": \"" + "%s" + "\",\n" +
+            "\"errorMessage\": \"" + "Should fail on purpose!" + "\",\n" +
+            "\"retries\": " + 0 + ",\n" +
+            "\"retryTimeout\": " + 10000 + "\n" +
+            "}",
+          DEFAULT_WORKER
+        )
+      ));
+      try (CloseableHttpResponse response = HTTP_CLIENT.execute(executeJobRequest)) {
+        if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+          throw new OptimizeIntegrationTestException(
+            String.format(
+              "Could not execute external task with id %s. Status-code: %s",
+              externalTask.getId(),
+              response.getStatusLine().getStatusCode()
+            )
+          );
+        }
+        log.debug("Failed external task with ID " + externalTask.getId());
+      }
+    }
+  }
+
+  @SneakyThrows
+  private List<ExternalTaskEngineDto> fetchAndLockExternalTasks() {
+    HttpPost post = new HttpPost(getExternalTaskFetchAndLockUri());
+    post.addHeader("Content-Type", "application/json");
+    post.setEntity(new StringEntity(
+      String.format(
+        "{\n" +
+          "\"workerId\": \"" + "%s" + "\",\n" +
+          "\"maxTasks\": " + 100 + ",\n" +
+          "\"topics\": [" + "{\"topicName\": \"%s\", \"lockDuration\": 1000000}" + "]\n" +
+          "}",
+        DEFAULT_WORKER,
+        DEFAULT_TOPIC
+      )
+    ));
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(post)) {
+      if (response.getStatusLine().getStatusCode() == Response.Status.OK.getStatusCode()) {
+        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+        return OBJECT_MAPPER.readValue(
+          responseString,
+          new TypeReference<List<ExternalTaskEngineDto>>() {
+          }
+        );
+      } else {
+        throw new OptimizeIntegrationTestException(
+          String.format(
+            "Could not fetch and lock external tasks. Status-code: %s",
+            response.getStatusLine().getStatusCode()
+          )
+        );
+      }
+    } catch (IOException e) {
+      String message = "Could not retrieve external tasks!";
+      log.error(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
+    }
+  }
+
+  public void completeAllExternalTasks() {
+    List<ExternalTaskEngineDto> externalTasks = getExternalTasks();
+    increaseRetry(externalTasks);
+    externalTasks.forEach(this::completeExternalTask);
+  }
+
+  @SneakyThrows
+  private void completeExternalTask(final ExternalTaskEngineDto externalTaskEngineDto) {
+    HttpPost post = new HttpPost(getExternalTaskCompleteUri(externalTaskEngineDto.getId()));
+    post.addHeader("Content-Type", "application/json");
+    post.setEntity(new StringEntity(
+      String.format(
+        "{\n" +
+          "\"workerId\": \"" + "%s" + "\"\n" +
+          "}",
+        DEFAULT_WORKER
+      )
+    ));
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(post)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+        throw new OptimizeIntegrationTestException(
+          String.format(
+            "Could not complete external task with id [%s]. Status-code: %s",
+            externalTaskEngineDto.getId(),
+            response.getStatusLine().getStatusCode()
+          )
+        );
+      }
+    } catch (IOException e) {
+      String message = "Could not complete external task!";
+      log.error(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
+    }
+  }
+
+  @SneakyThrows
+  private void increaseRetry(final List<ExternalTaskEngineDto> externalTasks) {
+    HttpPut put = new HttpPut(getExternalTaskRetriesUri());
+    put.addHeader("Content-Type", "application/json");
+    String commaSeparatedTaskIds = externalTasks.stream().map(ExternalTaskEngineDto::getId).collect(Collectors.joining(","));
+    put.setEntity(new StringEntity(
+      "{\n" +
+        "\"retries\": \"" + 1 + "\",\n" +
+        "\"externalTaskIds\": [" + commaSeparatedTaskIds + "]\n" +
+      "}"
+    ));
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(put)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+        throw new OptimizeIntegrationTestException(
+          String.format(
+            "Could not set retries for external tasks with ids [%s]. Status-code: %s",
+            commaSeparatedTaskIds,
+            response.getStatusLine().getStatusCode()
+          )
+        );
+      }
+    } catch (IOException e) {
+      String message = "Could not adjust retry of external tasks!";
+      log.error(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
+    }
+  }
+
+  @SneakyThrows
+  private List<ExternalTaskEngineDto> getExternalTasks() {
+    HttpRequestBase get = new HttpGet(getExternalTaskUri());
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      return OBJECT_MAPPER.readValue(
+        responseString,
+        new TypeReference<List<ExternalTaskEngineDto>>() {
+        }
+      );
+    } catch (IOException e) {
+      String message = "Could not retrieve all external tasks!";
+      log.error(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
+    }
+  }
+
+  @SneakyThrows
+  public void deleteProcessInstance(final String processInstanceId) {
+    HttpDelete delete = new HttpDelete(getGetProcessInstanceUri(processInstanceId));
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(delete)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+        throw new OptimizeIntegrationTestException(
+          String.format(
+            "Could not delete process instance with id [%s]. Status-code: %s",
+            processInstanceId,
+            response.getStatusLine().getStatusCode()
+          )
+        );
+      }
+    } catch (IOException e) {
+      String message = "Could not delete process instance!";
+      log.error(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
     }
   }
 
@@ -1227,7 +1421,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
       if (!parsed.containsKey(COUNT)) {
         throw new RuntimeException("Engine could not count PIs");
       }
-      if (Integer.valueOf(parsed.get(COUNT).toString()) != 0) {
+      if (Integer.parseInt(parsed.get(COUNT).toString()) != 0) {
         Thread.sleep(100);
         iterations = iterations + 1;
       } else {

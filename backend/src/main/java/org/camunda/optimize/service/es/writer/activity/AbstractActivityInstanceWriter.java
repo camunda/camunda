@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.writer;
+package org.camunda.optimize.service.es.writer.activity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
@@ -96,7 +96,6 @@ public abstract class AbstractActivityInstanceWriter {
         "Error while processing JSON for activity instances with ID [%s].",
         processInstanceId
       );
-      log.error(reason, e);
       throw new OptimizeRuntimeException(reason, e);
     }
   }

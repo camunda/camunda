@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 
 import static java.util.stream.Collectors.toList;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.hamcrest.CoreMatchers.is;

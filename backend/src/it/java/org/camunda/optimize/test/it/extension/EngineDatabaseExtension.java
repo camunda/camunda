@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.IDENTITY_LINK_TYPE_ASSIGNEE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.IDENTITY_LINK_TYPE_ASSIGNEE;
 
 /**
  * Engine Database Extension

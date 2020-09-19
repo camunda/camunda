@@ -25,7 +25,7 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
-import org.camunda.optimize.service.es.writer.RunningActivityInstanceWriter;
+import org.camunda.optimize.service.es.writer.activity.RunningActivityInstanceWriter;
 import org.camunda.optimize.service.events.ExternalEventService;
 import org.camunda.optimize.service.events.rollover.IndexRolloverService;
 import org.camunda.optimize.service.importing.EngineImportMediator;
