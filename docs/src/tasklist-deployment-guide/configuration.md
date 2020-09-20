@@ -8,9 +8,8 @@ with `zeebe.tasklist`. The following parts are configurable:
  * [Zeebe Broker connection](#zeebe-broker-connection)
  * [Zeebe Elasticsearch Exporter](#zeebe-elasticsearch-exporter)
  * [Authentication](authentication.md)
- * [Monitoring possibilities](#monitoring-tasklist)
+ * [Monitoring and health probes](#monitoring-and-health-probes)
  * [Logging configuration](#logging)
- * [Probes](#probes)
 
 # Configurations
 
@@ -87,35 +86,55 @@ zeebe.tasklist:
     prefix: zeebe-record
 ```
 
-# Monitoring Tasklist
+# Monitoring and health probes
 
 Tasklist includes [Spring Boot Actuator](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready) inside, that
-provides number of monitoring possibilities, e.g. health check (http://localhost:8080/actuator/health) and metrics (http://localhost:8080/actuator/prometheus) endpoints.
+provides number of monitoring possibilities., e.g. health check (http://localhost:8080/actuator/health) and metrics (http://localhost:8080/actuator/prometheus) endpoints.
 
-Main Actuator configuration parameters are the following:
-
-Name | Description | Default value
------|-------------|--------------
-management.endpoints.web.exposure.include | Spring boot [actuator endpoints](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-endpoints) to be exposed | health,prometheus
-management.metrics.export.prometheus.enabled | When true, Prometheus metrics are enabled | true
-
-## A snippet from application.yml
-
+Tasklist uses following Actuator configuration by default:
 ```yaml
-#Spring Boot Actuator endpoints to be exposed
+# enable health check and metrics endpoints
 management.endpoints.web.exposure.include: health,prometheus
-# Enable or disable metrics
-management.metrics.export.prometheus.enabled: false
+# enable Kubernetes health groups:
+# https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-kubernetes-probes
+management.health.probes.enabled: true
+```
+
+With this configuration following endpoints are available for use out of the box:
+
+```<server>:8080/actuator/prometheus``` Prometheus metrics
+
+```<server>:8080/actuator/health/liveness``` Liveness probe
+
+```<server>:8080/actuator/health/readiness``` Readiness probe
+
+## Example snippets to use Tasklist probes in Kubernetes:
+
+For details to set Kubernetes probes parameters see: [Kubernetes configure probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes)
+
+### Readiness probe as yaml config:
+```yaml
+readinessProbe:
+     httpGet:
+        path: /actuator/health/readiness
+        port: 8080
+     initialDelaySeconds: 30
+     periodSeconds: 30
+```
+### Liveness probe as yaml config:
+```yaml
+livenessProbe:
+     httpGet:
+        path: /actuator/health/liveness
+        port: 8080
+     initialDelaySeconds: 30
+     periodSeconds: 30
 ```
 
 # Logging
 
-Tasklist uses Log4j2 framework for logging. In distribution archive as well as inside a Docker image you can find two logging configuration files,
-that can be further adjusted to your needs.
-
-## Default logging configuration
-
-* `config/log4j2.xml` (applied by default)
+Tasklist uses Log4j2 framework for logging. In distribution archive as well as inside a Docker image `config/log4j2.xml` logging configuration files is included,
+that can be further adjusted to your needs:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -134,24 +153,22 @@ that can be further adjusted to your needs.
   <Loggers>
     <Logger name="io.zeebe.tasklist" level="info" />
     <Root level="info">
-      <AppenderRef ref="${env:Tasklist_LOG_APPENDER:-Console}"/>
+      <AppenderRef ref="${env:TASKLIST_LOG_APPENDER:-Console}"/>
     </Root>
   </Loggers>
 </Configuration>
 ```
+
+By default Console log appender will be used.
+
 ### JSON logging configuration
 
-This one is specifically configured for usage with Stackdriver in Google Cloud
-environment. The logs will be written in JSON format to make them better searchable in Google Cloud Logging UI.
-## Enable Logging configuration
-
-You can enable one of the logging configurations by setting the environment variable ```TASKLIST_LOG_APPENDER``` like this:
+You can choose to output logs in JSON format (Stackdriver compatible). To enable it, define
+the environment variable ```TASKLIST_LOG_APPENDER``` like this:
 
 ```sh
 TASKLIST_LOG_APPENDER=Stackdriver
 ```
-
-Default logging appender is Console.
 
 # An example of application.yml file
 
@@ -189,54 +206,6 @@ zeebe.tasklist:
     port: 9200
     # Index prefix, configured in Zeebe Elasticsearch exporter
     prefix: zeebe-record
-#Spring Boot Actuator endpoints to be exposed
-management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
-# Enable or disable metrics
-#management.metrics.export.prometheus.enabled: false
-```
-
-# Probes
-
-Tasklist provides liveness and readiness probes for using in cloud environment (Kubernetes).
-
-* Kubernetes uses liveness probes to know when to restart a container.
-* Kubernetes uses readiness probes to decide when the container is available for accepting traffic.
-
-See also: [Kubernetes configure startup probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/)
-
-A HTTP GET call to REST endpoint ```/actuator/health```can be used to make a liveness probe.
-To use this call make sure that the management health endpoint is enabled in configuration file (`application.yml`):
-
-```yaml
-management.endpoints.web.exposure.include: health
-```
-See also [Monitoring possibilities](#monitoring-Tasklist)
-
-A HTTP GET call to REST endpoint ```/api/check``` can be used to make a readiness probe.
-
-Any HTTP status code greater than or equal to 200 and less than 400 indicates success. Any other code indicates failure.
-
-In case you have Tasklist cluster and use dedicated Importer and/or Archiver nodes, you can use ```/actuator/health``` endpoint for both liveness and readiness probes for these nodes.
-
-## Example snippets to use Tasklist probes in Kubernetes:
-For details to set Kubernetes probes parameters see: [Kubernetes configure probes](https://kubernetes.io/docs/tasks/configure-pod-container/configure-liveness-readiness-startup-probes/#configure-probes)
-### Readiness probe as yaml config:
-```yaml
-readinessProbe:
-     httpGet:
-        path: /api/check
-        port: 8080
-     initialDelaySeconds: 30
-     periodSeconds: 30
-```
-### Liveness probe as yaml config:
-```yaml
-livenessProbe:
-     httpGet:
-        path: /actuator/health
-        port: 8080
-     initialDelaySeconds: 30
-     periodSeconds: 30
 ```
 
 
