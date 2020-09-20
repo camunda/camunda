@@ -25,13 +25,20 @@ import com.graphql.spring.boot.test.GraphQLResponse;
 import io.zeebe.tasklist.util.TasklistIntegrationTest;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.BiFunction;
 import org.json.JSONObject;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -43,9 +50,10 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.context.junit4.rules.SpringClassRule;
+import org.springframework.test.context.junit4.rules.SpringMethodRule;
 
-@RunWith(SpringRunner.class)
+@RunWith(Parameterized.class)
 @SpringBootTest(
     properties = {
       "zeebe.tasklist.auth0.clientId=1",
@@ -59,12 +67,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 @ActiveProfiles({"sso-auth", "test"})
 public class AuthenticationTest extends TasklistIntegrationTest {
 
+  @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
   private static final String CURRENT_USER_QUERY =
       "{currentUser{ username \n lastname \n firstname }}";
-
   private static final String COOKIE_KEY = "Cookie";
-
   private static final String TASKLIST_TESTUSER = "tasklist-testuser";
+  @Rule public final SpringMethodRule springMethodRule = new SpringMethodRule();
 
   @LocalServerPort int randomServerPort;
 
@@ -75,9 +83,21 @@ public class AuthenticationTest extends TasklistIntegrationTest {
   @MockBean AuthenticationController authenticationController;
 
   @Autowired private ObjectMapper objectMapper;
+  private final BiFunction<String, String, Tokens> orgExtractor;
+
+  public AuthenticationTest(BiFunction<String, String, Tokens> orgExtractor) {
+    this.orgExtractor = orgExtractor;
+  }
+
+  @Parameters
+  public static Collection<BiFunction<String, String, Tokens>> orgExtractors() {
+    return Arrays.asList(
+        (claimName, org) -> tokensWithOrgAsListFrom(claimName, org),
+        (claimName, org) -> tokensWithOrgAsMapFrom(claimName, org));
+  }
 
   @Before
-  public void setUp() throws Throwable {
+  public void setUp() {
     // mock building authorizeUrl
     final AuthorizeUrl mockedAuthorizedUrl = mock(AuthorizeUrl.class);
     given(authenticationController.buildAuthorizeUrl(isNotNull(), isNotNull(), isNotNull()))
@@ -115,7 +135,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
             ssoConfig.getBackendDomain());
     // Step 3 Call back uri with invalid userdata
     given(authenticationController.handle(isNotNull(), isNotNull()))
-        .willReturn(tokensFrom(ssoConfig.getClaimName(), "wrong-organization"));
+        .willReturn(orgExtractor.apply(ssoConfig.getClaimName(), "wrong-organization"));
 
     response = get(SSOWebSecurityConfig.CALLBACK_URI, cookies);
     assertThat(redirectLocationIn(response))
@@ -194,7 +214,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     // Step 3 Call back uri with valid userinfos
     // mock building tokens
     given(authenticationController.handle(isNotNull(), isNotNull()))
-        .willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
+        .willReturn(orgExtractor.apply(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
 
     response = get(SSOWebSecurityConfig.CALLBACK_URI, cookies);
     assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.GRAPHQL_URL));
@@ -226,39 +246,39 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     assertThat(response.getBody()).contains("No permission for Tasklist");
   }
 
-  protected void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
+  private void assertThatRequestIsRedirectedTo(ResponseEntity<?> response, String url) {
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FOUND);
     assertThat(redirectLocationIn(response)).isEqualTo(url);
   }
 
-  protected String redirectLocationIn(ResponseEntity<?> response) {
+  private String redirectLocationIn(ResponseEntity<?> response) {
     return response.getHeaders().getLocation().toString();
   }
 
-  protected ResponseEntity<String> get(String path) {
+  private ResponseEntity<String> get(String path) {
     return testRestTemplate.getForEntity(path, String.class, new HashMap<String, String>());
   }
 
-  protected ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
+  private ResponseEntity<String> get(String path, HttpEntity<?> requestEntity) {
     return testRestTemplate.exchange(path, HttpMethod.GET, requestEntity, String.class);
   }
 
-  protected String urlFor(String path) {
+  private String urlFor(String path) {
     return "http://localhost:" + randomServerPort + path;
   }
 
-  protected Tokens tokensFrom(String claim, String organization) {
-    final String emptyJSONEncoded = toEncodedToken(Collections.emptyMap());
+  private static Tokens tokensWithOrgAsListFrom(String claim, String organization) {
+    final String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
     final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
     final String accountData =
         toEncodedToken(
             asMap(
                 claim,
-                Arrays.asList(organization),
+                List.of(organization),
                 "exp",
                 expiresInSeconds,
                 "name",
-                TASKLIST_TESTUSER));
+                "tasklist-testuser"));
     return new Tokens(
         "accessToken",
         emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
@@ -267,15 +287,31 @@ public class AuthenticationTest extends TasklistIntegrationTest {
         5L);
   }
 
-  protected String toEncodedToken(Map<String, ?> map) {
+  private static Tokens tokensWithOrgAsMapFrom(String claim, String organization) {
+    final String emptyJSONEncoded = toEncodedToken(Collections.EMPTY_MAP);
+    final long expiresInSeconds = System.currentTimeMillis() / 1000 + 10000; // now + 10 seconds
+    final Map<String, Object> orgMap =
+        Map.of("id", organization, "roles", List.of("owner", "user"));
+    final String accountData =
+        toEncodedToken(
+            asMap(claim, List.of(orgMap), "exp", expiresInSeconds, "name", "tasklist-testuser"));
+    return new Tokens(
+        "accessToken",
+        emptyJSONEncoded + "." + accountData + "." + emptyJSONEncoded,
+        "refreshToken",
+        "type",
+        5L);
+  }
+
+  private static String toEncodedToken(Map<String, ?> map) {
     return toBase64(toJSON(map));
   }
 
-  protected String toBase64(String input) {
+  private static String toBase64(String input) {
     return new String(Base64.getEncoder().encode(input.getBytes()));
   }
 
-  protected String toJSON(Map<String, ?> map) {
+  private static String toJSON(Map<String, ?> map) {
     return new JSONObject(map).toString();
   }
 
@@ -297,7 +333,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     // Step 3 Call back uri with valid userinfos
     // mock building tokens
     given(authenticationController.handle(isNotNull(), isNotNull()))
-        .willReturn(tokensFrom(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
+        .willReturn(orgExtractor.apply(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
 
     get(SSOWebSecurityConfig.CALLBACK_URI, cookies);
     return cookies;
