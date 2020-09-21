@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Properties;
 
 public abstract class AbstractQueryPerformanceTest {
-
   protected static final String DEFAULT_USER = "demo";
 
   private static final String PROPERTY_LOCATION = "query-performance.properties";
