@@ -44,6 +44,8 @@ test('Instance with an incident - header and instance header', async (t) => {
   const withinInstanceHeader = within(screen.getByTestId('instance-header'));
 
   await t
+    .expect(withinInstanceHeader.getByTestId('INCIDENT-icon').exists)
+    .ok()
     .expect(withinInstanceHeader.getByText('processWithAnIncident').exists)
     .ok()
     .expect(withinInstanceHeader.getByText(instanceId).exists)
@@ -240,5 +242,40 @@ test('Instance with an incident - cancel an instance', async (t) => {
       within(screen.getByRole('banner')).getByTestId('state-icon-CANCELED')
         .exists
     )
+    .ok();
+});
+
+test('Instance without an incident', async (t) => {
+  const {
+    initialData: {instanceWithoutAnIncident},
+  } = t.fixtureCtx;
+
+  await t.navigateTo(
+    `${config.endpoint}/#/instances/${instanceWithoutAnIncident}`
+  );
+
+  await t
+    .expect(screen.queryByTestId('diagram').exists)
+    .ok()
+    .expect(screen.queryByTestId('incidents-banner').exists)
+    .notOk()
+    .expect(
+      within(screen.getByRole('banner')).getByTestId('state-icon-ACTIVE').exists
+    )
+    .ok()
+    .expect(
+      within(screen.getByRole('banner')).getByText(
+        `Instance ${instanceWithoutAnIncident}`
+      ).exists
+    )
+    .ok()
+    .expect(
+      within(screen.getByTestId('instance-header')).getByTestId('ACTIVE-icon')
+        .exists
+    )
+    .ok()
+    .expect(screen.getByText('Instance History').exists)
+    .ok()
+    .expect(screen.getByRole('button', {name: 'Add variable'}).exists)
     .ok();
 });
