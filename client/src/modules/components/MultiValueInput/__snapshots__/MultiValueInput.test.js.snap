@@ -1,0 +1,44 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="MultiValueInput"
+  onClick={[Function]}
+>
+  <ForwardRef(Input)
+    autoComplete="none"
+    onBlur={[Function]}
+    onChange={[Function]}
+    onKeyDown={[Function]}
+    value=""
+  />
+  <span
+    className="sizer"
+  />
+  <Tag
+    invalid={false}
+    key="0"
+    onRemove={[Function]}
+    title="1234"
+  >
+    1234
+  </Tag>
+  <Tag
+    invalid={true}
+    key="1"
+    onRemove={[Function]}
+    title="errorValue"
+  >
+    errorValue
+  </Tag>
+  <button
+    className="searchClear"
+    onKeyDown={[Function]}
+    onMouseDown={[Function]}
+  >
+    <Icon
+      type="clear"
+    />
+  </button>
+</div>
+`;

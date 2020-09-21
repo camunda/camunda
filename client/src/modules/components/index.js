@@ -49,3 +49,5 @@ export {ReportDetails} from './ReportDetails';
 export {InstanceCount} from './InstanceCount';
 export {DocsLink} from './DocsLink';
 export {Tabs} from './Tabs';
+export {Tag} from './Tag';
+export {MultiValueInput} from './MultiValueInput';
