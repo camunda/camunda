@@ -68,6 +68,7 @@ export function TemplateModal({
             <DefinitionSelection
               type="process"
               expanded
+              autofocus
               definitionKey={definitionKey}
               versions={versions}
               tenants={tenants}
