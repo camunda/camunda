@@ -84,7 +84,7 @@
     "jest-junit": "^11.1.0",
     "lint-staged": "^10.4.0",
     "prettier": "^2.1.2",
-    "testcafe": "^1.9.2",
+    "testcafe": "^1.9.3",
     "zeebe-node": "0.23.2"
   },
   "lint-staged": {
