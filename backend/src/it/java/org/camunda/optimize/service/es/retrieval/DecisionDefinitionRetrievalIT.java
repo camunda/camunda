@@ -15,12 +15,10 @@ import org.junit.jupiter.api.Test;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT {
 
@@ -38,7 +36,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     // when
     List<DecisionDefinitionOptimizeDto> definitions = definitionClient.getAllDecisionDefinitions();
 
-    assertThat(definitions.size(), is(11));
+    assertThat(definitions).hasSize(11);
   }
 
   @Test
@@ -59,10 +57,10 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
         .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getId(), is(decisionDefinitionEngineDto.getId()));
-    assertThat(definitions.get(0).getKey(), is(decisionDefinitionKey));
-    assertThat(definitions.get(0).getDmn10Xml(), nullValue());
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getId()).isEqualTo(decisionDefinitionEngineDto.getId());
+    assertThat(definitions.get(0).getKey()).isEqualTo(decisionDefinitionKey);
+    assertThat(definitions.get(0).getDmn10Xml()).isNull();
   }
 
   @Test
@@ -70,7 +68,8 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     // given
     final String decisionDefinitionKey = DECISION_DEFINITION_KEY + System.currentTimeMillis();
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionDefinitionKey);
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(modelInstance);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(
+      modelInstance);
 
     importAllEngineEntitiesFromScratch();
 
@@ -83,10 +82,10 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
         .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getId(), is(decisionDefinitionEngineDto.getId()));
-    assertThat(definitions.get(0).getKey(), is(decisionDefinitionKey));
-    assertThat(definitions.get(0).getDmn10Xml(), is(Dmn.convertToString(modelInstance)));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getId()).isEqualTo(decisionDefinitionEngineDto.getId());
+    assertThat(definitions.get(0).getKey()).isEqualTo(decisionDefinitionKey);
+    assertThat(definitions.get(0).getDmn10Xml()).isEqualTo(Dmn.convertToString(modelInstance));
   }
 
   @Test
@@ -110,8 +109,8 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
         .executeAndReturnList(DecisionDefinitionOptimizeDto.class, Response.Status.OK.getStatusCode());
 
     // then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getId(), is(decisionDefinitionEngineDto.getId()));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getId()).isEqualTo(decisionDefinitionEngineDto.getId());
   }
 
   @Test
@@ -119,16 +118,19 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     // given
     final String decisionDefinitionKey = DECISION_DEFINITION_KEY + System.currentTimeMillis();
     final DmnModelInstance modelInstance = createSimpleDmnModel(decisionDefinitionKey);
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(modelInstance);
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = engineIntegrationExtension.deployDecisionDefinition(
+      modelInstance);
 
     importAllEngineEntitiesFromScratch();
 
     // when
-    String actualXml = definitionClient.getDecisionDefinitionXml(decisionDefinitionEngineDto.getKey(),
-                                                                 decisionDefinitionEngineDto.getVersionAsString());
+    String actualXml = definitionClient.getDecisionDefinitionXml(
+      decisionDefinitionEngineDto.getKey(),
+      decisionDefinitionEngineDto.getVersionAsString()
+    );
 
     // then
-    assertThat(actualXml, is(Dmn.convertToString(modelInstance)));
+    assertThat(actualXml).isEqualTo(Dmn.convertToString(modelInstance));
   }
 
   @Test
@@ -148,10 +150,13 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     importAllEngineEntitiesFromScratch();
 
     // when
-    final String actualXml = definitionClient.getDecisionDefinitionXml(decisionDefinitionEngineDto1.getKey(), ALL_VERSIONS);
+    final String actualXml = definitionClient.getDecisionDefinitionXml(
+      decisionDefinitionEngineDto1.getKey(),
+      ALL_VERSIONS
+    );
 
     // then
-    assertThat(actualXml, is(Dmn.convertToString(modelInstance2)));
+    assertThat(actualXml).isEqualTo(Dmn.convertToString(modelInstance2));
   }
 
   @Test
@@ -176,7 +181,7 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
     String actualXml = definitionClient.getDecisionDefinitionXml(decisionDefinitionKey, ALL_VERSIONS);
 
     // then: we get the latest version xml
-    assertThat(actualXml, is(Dmn.convertToString(latestModelInstance)));
+    assertThat(actualXml).isEqualTo(Dmn.convertToString(latestModelInstance));
   }
 
 
@@ -186,7 +191,11 @@ public class DecisionDefinitionRetrievalIT extends AbstractDecisionDefinitionIT 
       .key("aDecDefKey")
       .version("aDevDefVersion")
       .build();
-    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(DECISION_DEFINITION_INDEX_NAME, "fooId", decisionDefinitionWithoutXml);
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      DECISION_DEFINITION_INDEX_NAME,
+      "fooId",
+      decisionDefinitionWithoutXml
+    );
   }
 
 }

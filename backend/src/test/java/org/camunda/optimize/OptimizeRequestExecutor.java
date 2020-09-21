@@ -742,6 +742,12 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetReadinessRequest() {
+    this.path = "/readyz";
+    this.method = GET;
+    return this;
+  }
+
   public OptimizeRequestExecutor buildGetUIConfigurationRequest() {
     this.path = "/ui-configuration";
     this.method = GET;

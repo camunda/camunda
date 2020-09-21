@@ -44,7 +44,8 @@ public class LicenseFilter implements Filter {
       "ui-configuration",
       "license/validate-and-store",
       "license/validate",
-      "status"
+      "status",
+      "readyz"
     );
 
 

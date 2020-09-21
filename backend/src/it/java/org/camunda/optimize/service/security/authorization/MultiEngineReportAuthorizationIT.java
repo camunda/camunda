@@ -24,7 +24,6 @@ import org.mockserver.integration.ClientAndServer;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
@@ -480,7 +479,4 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
     }
   }
 
-  private static final Stream<Integer> definitionType() {
-    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
-  }
 }

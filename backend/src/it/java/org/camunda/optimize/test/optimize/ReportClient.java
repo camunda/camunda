@@ -51,11 +51,10 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_PASSWORD;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ProcessReportDataBuilderHelper.createCombinedReportData;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 @AllArgsConstructor
 public class ReportClient {
@@ -395,7 +394,7 @@ public class ReportClient {
   private SingleProcessReportDefinitionDto getSingleProcessReportDefinitionDto(String reportId, String username,
                                                                                String password) {
     Response response = getSingleProcessReportRawResponse(reportId, username, password);
-    assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
     return response.readEntity(SingleProcessReportDefinitionDto.class);
   }
 

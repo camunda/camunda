@@ -14,7 +14,6 @@ import org.camunda.optimize.service.util.configuration.engine.EngineAuthenticati
 import org.camunda.optimize.service.util.configuration.engine.EngineConfiguration;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -24,6 +23,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
@@ -53,12 +53,6 @@ public class AbstractMultiEngineIT extends AbstractIT {
     configurationService = embeddedOptimizeExtension.getConfigurationService();
   }
 
-  @AfterEach
-  public void reset() {
-    configurationService.getConfiguredEngines().remove(SECOND_ENGINE_ALIAS);
-    embeddedOptimizeExtension.reloadConfiguration();
-  }
-
   @Override
   public EmbeddedOptimizeExtension getEmbeddedOptimizeExtension() {
     return embeddedOptimizeExtension;
@@ -66,6 +60,11 @@ public class AbstractMultiEngineIT extends AbstractIT {
 
   protected ClientAndServer useAndGetSecondaryEngineMockServer() {
     return useAndGetMockServerForEngine(secondaryEngineIntegrationExtension.getEngineName());
+  }
+
+  @SuppressWarnings("unused")
+  protected static Stream<Integer> definitionType() {
+    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
   }
 
   protected void finishAllUserTasksForAllEngines() {

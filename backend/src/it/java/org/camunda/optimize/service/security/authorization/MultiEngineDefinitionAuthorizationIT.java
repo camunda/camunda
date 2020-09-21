@@ -27,10 +27,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT {
 
-  private static final Stream<Integer> definitionType() {
-    return Stream.of(RESOURCE_TYPE_PROCESS_DEFINITION, RESOURCE_TYPE_DECISION_DEFINITION);
-  }
-
   public AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);
   public AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondaryEngineIntegrationExtension);
 

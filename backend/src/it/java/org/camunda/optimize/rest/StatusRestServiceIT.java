@@ -68,19 +68,15 @@ public class StatusRestServiceIT extends AbstractIT {
     assertThat(isImportingMap.get(DEFAULT_ENGINE_ALIAS)).isFalse();
   }
 
-  private static Stream<ErrorResponseMock> engineErrors() {
-    return MockServerUtil.engineMockedErrorResponses();
-  }
-
   @ParameterizedTest
   @MethodSource("engineErrors")
   public void connectionStatusFalseWhenVersionEndpointFails(ErrorResponseMock mockedResponse) {
     // given
-    final ClientAndServer esMockServer = useAndGetEngineMockServer();
+    final ClientAndServer engineMockServer = useAndGetEngineMockServer();
     final HttpRequest request = request()
       .withPath(".*" + EngineConstants.VERSION_ENDPOINT)
       .withMethod(GET);
-    mockedResponse.mock(request, Times.once(), esMockServer);
+    mockedResponse.mock(request, Times.once(), engineMockServer);
 
     // when
     final StatusWithProgressDto status = statusClient.getStatus();
@@ -89,6 +85,10 @@ public class StatusRestServiceIT extends AbstractIT {
     final Map<String, Boolean> connectionStatusMap = status.getConnectionStatus().getEngineConnections();
     assertThat(connectionStatusMap).isNotNull();
     assertThat(connectionStatusMap.get(DEFAULT_ENGINE_ALIAS)).isFalse();
+  }
+
+  private static Stream<ErrorResponseMock> engineErrors() {
+    return MockServerUtil.engineMockedErrorResponses();
   }
 
 }

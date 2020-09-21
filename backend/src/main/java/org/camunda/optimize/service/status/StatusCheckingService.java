@@ -57,6 +57,17 @@ public class StatusCheckingService {
     return status;
   }
 
+  public boolean isConnectedToEsAndAtLeastOneEngine() {
+    if (isConnectedToElasticSearch()) {
+      for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
+        if (isConnectedToEngine(engineContext)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   private boolean isConnectedToEngine(EngineContext engineContext) {
     boolean isConnected = false;
     try {

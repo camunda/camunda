@@ -12,7 +12,7 @@ def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) { return "docker.elastic
 ES_TEST_VERSION_POM_PROPERTY = "elasticsearch.test.version"
 CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
-static String queryPerformanceConfig(env, esVersion, camBpmVersion) {
+static String queryPerformanceConfig(esVersion, camBpmVersion) {
   return """
 metadata:
   labels:
@@ -285,7 +285,7 @@ pipeline {
           cloud 'optimize-ci'
           label "optimize-ci-build-${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
           defaultContainer 'jnlp'
-          yaml queryPerformanceConfig(env, env.ES_VERSION, env.CAMBPM_VERSION)
+          yaml queryPerformanceConfig(env.ES_VERSION, env.CAMBPM_VERSION)
         }
       }
       stages {
