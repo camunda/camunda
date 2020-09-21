@@ -1414,6 +1414,7 @@
         <sonar.cpd.exclusions>
           broker/src/main/java/io/zeebe/broker/system/configuration/backpressure/Gradient2Cfg.java,broker/src/main/java/io/zeebe/broker/system/configuration/backpressure/GradientCfg.java
         </sonar.cpd.exclusions>
+        <sonar.java.source>${version.java}</sonar.java.source>
       </properties>
       <build>
         <plugins>
