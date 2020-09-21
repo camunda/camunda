@@ -14,6 +14,6 @@
     "zeebe-node": "^0.24.0"
   },
   "dependencies": {
-    "@testing-library/testcafe": "^4.2.2"
+    "@testing-library/testcafe": "^4.2.3"
   }
 }

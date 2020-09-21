@@ -166,10 +166,10 @@
     dom-accessibility-api "^0.4.6"
     pretty-format "^25.5.0"
 
-"@testing-library/testcafe@^4.2.2":
-  version "4.2.2"
-  resolved "https://registry.yarnpkg.com/@testing-library/testcafe/-/testcafe-4.2.2.tgz#18c037523960fa7f67345b6ef6aeb2251d2ff1d3"
-  integrity sha512-zfeoWK5wLIKsJdLL4+Isyaj2rl5ZcFyxs74RRAv/v3AKpH7TXPenrtTb+pme0UTvAUukORujbWhrOFPfqYZSwA==
+"@testing-library/testcafe@^4.2.3":
+  version "4.2.3"
+  resolved "https://registry.yarnpkg.com/@testing-library/testcafe/-/testcafe-4.2.3.tgz#a46b8aea2b5eb8cbebaca5f8461a6f70296143b1"
+  integrity sha512-g1qRX5KQ2+TG/p63kRaoAZ9LTGqt8Qv1dJbOmySjax8Ik2ml1tU4hxu8PVay05LTLJgR59F0pX3sfIOHg5Hi6g==
   dependencies:
     "@testing-library/dom" "^7.2.2"
 
