@@ -114,7 +114,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
     final URI address;
 
     try {
-      address = new URI("zb://" + config.getBrokerContactPoint());
+      address = new URI("zb://" + config.getGatewayAddress());
     } catch (final URISyntaxException e) {
       throw new RuntimeException("Failed to parse broker contact point", e);
     }
