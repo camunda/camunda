@@ -44,6 +44,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   private String brokerContactPoint = "0.0.0.0:26500";
   private int jobWorkerMaxJobsActive = 32;
   private int numJobWorkerExecutionThreads = 1;
+  private float defaultJobWorkerMinJobsActiveRatio = 0.3f;
   private String defaultJobWorkerName = "default";
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
   private Duration defaultJobPollInterval = Duration.ofMillis(100);
@@ -67,6 +68,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public int getDefaultJobWorkerMaxJobsActive() {
     return jobWorkerMaxJobsActive;
+  }
+
+  @Override
+  public float getDefaultJobWorkerMinJobsActiveRatio() {
+    return defaultJobWorkerMinJobsActiveRatio;
   }
 
   @Override
@@ -133,6 +139,11 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
       defaultJobWorkerMaxJobsActive(
           Integer.parseInt(properties.getProperty(ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE)));
     }
+    if (properties.containsKey(ClientProperties.JOB_WORKER_MIN_JOBS_ACTIVE_RATIO)) {
+      defaultJobWorkerMinJobsActiveRatio(
+          Float.parseFloat(
+              properties.getProperty(ClientProperties.JOB_WORKER_MIN_JOBS_ACTIVE_RATIO)));
+    }
     if (properties.containsKey(ClientProperties.DEFAULT_JOB_WORKER_NAME)) {
       defaultJobWorkerName(properties.getProperty(ClientProperties.DEFAULT_JOB_WORKER_NAME));
     }
@@ -186,6 +197,12 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
   @Override
   public ZeebeClientBuilder defaultJobWorkerMaxJobsActive(final int maxJobsActive) {
     jobWorkerMaxJobsActive = maxJobsActive;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultJobWorkerMinJobsActiveRatio(final float minJobsActiveRatio) {
+    defaultJobWorkerMinJobsActiveRatio = minJobsActiveRatio;
     return this;
   }
 
@@ -291,6 +308,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
 
     appendProperty(sb, "brokerContactPoint", brokerContactPoint);
     appendProperty(sb, "jobWorkerMaxJobsActive", jobWorkerMaxJobsActive);
+    appendProperty(sb, "defaultJobWorkerMinJobsActiveRatio", defaultJobWorkerMinJobsActiveRatio);
     appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
     appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
     appendProperty(sb, "defaultJobTimeout", defaultJobTimeout);

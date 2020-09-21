@@ -128,6 +128,19 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 maxJobsActive(int maxJobsActive);
 
     /**
+     * Set the minimum number of jobs as a ratio of maxJobsActive.
+     *
+     * <p>When the number of active jobs drop below this threshold more jobs will be requested from
+     * the gateway. As long as more jobs are active, the job activation will be suspended. For
+     * instance, if maxJobsActive is 30 and minJobsActiveRatio is 0.3 the job activation will pause
+     * until less than 10 jobs are remaining.
+     *
+     * @param minJobsActiveRatio
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 minJobsActiveRatio(float minJobsActiveRatio);
+
+    /**
      * Set the maximal interval between polling for new jobs.
      *
      * <p>A job worker will automatically try to always activate new jobs after completing jobs. If
