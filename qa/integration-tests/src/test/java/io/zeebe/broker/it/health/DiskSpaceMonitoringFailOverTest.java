@@ -71,6 +71,9 @@ public class DiskSpaceMonitoringFailOverTest {
     clusteringRule.stopBrokerAndAwaitNewLeader(leaderId);
     final var newLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
 
+    // Force rescan of healthcheck
+    clusteringRule.getClock().addTime(Duration.ofSeconds(60));
+
     // then
     Awaitility.await()
         .timeout(Duration.ofSeconds(60))
