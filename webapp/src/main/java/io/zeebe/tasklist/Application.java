@@ -6,7 +6,9 @@
 package io.zeebe.tasklist;
 
 import io.zeebe.tasklist.data.DataGenerator;
+import io.zeebe.tasklist.webapp.security.TasklistURIs;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,19 +50,44 @@ public class Application {
     // versions of importer
     springApplication.setAddCommandLineProperties(true);
     if (!isOneAuthProfileActive(args)) {
-      springApplication.setAdditionalProfiles("auth");
+      springApplication.setAdditionalProfiles(TasklistURIs.AUTH_PROFILE);
     }
 
-    // GraphQL inspection tool is disabled by default
-    // Exception handler is enabled
-    springApplication.setDefaultProperties(
-        Map.of(
-            "graphql.playground.enabled",
-            "false",
-            "graphql.servlet.exception-handlers-enabled",
-            "true"));
+    setDefaultProperties(springApplication);
 
     springApplication.run(args);
+  }
+
+  private static void setDefaultProperties(final SpringApplication springApplication) {
+    final Map<String, Object> propsMap = new HashMap<>();
+    propsMap.putAll(getManagementProperties());
+    propsMap.putAll(getGraphqlProperties());
+    springApplication.setDefaultProperties(propsMap);
+  }
+
+  private static Map<String, Object> getGraphqlProperties() {
+    // GraphQL inspection tool is disabled by default
+    // Exception handler is enabled
+    return Map.of(
+        "graphql.playground.enabled", "false",
+        "graphql.servlet.exception-handlers-enabled", "true");
+  }
+
+  public static Map<String, Object> getManagementProperties() {
+    return Map.of(
+        // disable default health indicators:
+        // https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-health-indicators
+        "management.health.defaults.enabled", "false",
+
+        // enable Kubernetes health groups:
+        // https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-kubernetes-probes
+        "management.endpoint.health.probes.enabled", "true",
+
+        // enable health check and metrics endpoints
+        "management.endpoints.web.exposure.include", "health, prometheus",
+
+        // add custom check to standard readiness check
+        "management.endpoint.health.group.readiness.include", "readinessState,elsIndicesCheck");
   }
 
   protected static boolean isOneAuthProfileActive(String[] args) {

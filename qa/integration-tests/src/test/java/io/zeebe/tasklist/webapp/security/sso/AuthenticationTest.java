@@ -6,8 +6,14 @@
 package io.zeebe.tasklist.webapp.security.sso;
 
 import static io.zeebe.tasklist.util.CollectionUtil.asMap;
-import static io.zeebe.tasklist.webapp.security.WebSecurityConfig.X_CSRF_HEADER;
-import static io.zeebe.tasklist.webapp.security.WebSecurityConfig.X_CSRF_TOKEN;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.CALLBACK_URI;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.ROOT;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.X_CSRF_HEADER;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.X_CSRF_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNotNull;
@@ -23,6 +29,7 @@ import com.auth0.Tokens;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.graphql.spring.boot.test.GraphQLResponse;
 import io.zeebe.tasklist.util.TasklistIntegrationTest;
+import io.zeebe.tasklist.webapp.security.TasklistURIs;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
@@ -64,7 +71,7 @@ import org.springframework.test.context.junit4.rules.SpringMethodRule;
       "zeebe.tasklist.auth0.claimName=claimName"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles({"sso-auth", "test"})
+@ActiveProfiles({TasklistURIs.SSO_AUTH_PROFILE, "test"})
 public class AuthenticationTest extends TasklistIntegrationTest {
 
   @ClassRule public static final SpringClassRule SPRING_CLASS_RULE = new SpringClassRule();
@@ -112,7 +119,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
   @Test
   public void testLoginSuccess() throws Exception {
     final HttpEntity<?> cookies = loginWithSSO();
-    final ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT, cookies);
+    final ResponseEntity<String> response = get(ROOT, cookies);
 
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
   }
@@ -120,50 +127,46 @@ public class AuthenticationTest extends TasklistIntegrationTest {
   @Test
   public void testLoginFailedWithNoPermissions() throws Exception {
     // Step 1 try to access document root
-    ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
+    ResponseEntity<String> response = get(ROOT);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
-    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
     // Step 2 Get Login provider url
-    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE, cookies);
+    response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response))
         .contains(
             ssoConfig.getDomain(),
-            SSOWebSecurityConfig.CALLBACK_URI,
+            CALLBACK_URI,
             ssoConfig.getClientId(),
             ssoConfig.getBackendDomain());
     // Step 3 Call back uri with invalid userdata
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(orgExtractor.apply(ssoConfig.getClaimName(), "wrong-organization"));
 
-    response = get(SSOWebSecurityConfig.CALLBACK_URI, cookies);
+    response = get(CALLBACK_URI, cookies);
     assertThat(redirectLocationIn(response))
-        .contains(
-            ssoConfig.getDomain(),
-            "logout",
-            ssoConfig.getClientId(),
-            SSOWebSecurityConfig.NO_PERMISSION);
+        .contains(ssoConfig.getDomain(), "logout", ssoConfig.getClientId(), NO_PERMISSION);
 
-    response = get(SSOWebSecurityConfig.ROOT, cookies);
+    response = get(ROOT, cookies);
     // Check that access to url is not possible
-    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
   }
 
   @Test
   public void testLoginFailedWithOtherException() throws Exception {
     // Step 1 try to access document root
-    ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
+    ResponseEntity<String> response = get(ROOT);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
-    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
     // Step 2 Get Login provider url
-    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE, cookies);
+    response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response))
         .contains(
             ssoConfig.getDomain(),
-            SSOWebSecurityConfig.CALLBACK_URI,
+            CALLBACK_URI,
             ssoConfig.getClientId(),
             ssoConfig.getBackendDomain());
     // Step 3 Call back uri, but there is an IdentityVerificationException.
@@ -171,8 +174,8 @@ public class AuthenticationTest extends TasklistIntegrationTest {
         .when(authenticationController)
         .handle(any(), any());
 
-    response = get(SSOWebSecurityConfig.CALLBACK_URI, cookies);
-    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.NO_PERMISSION));
+    response = get(CALLBACK_URI, cookies);
+    assertThatRequestIsRedirectedTo(response, urlFor(NO_PERMISSION));
   }
 
   @Test
@@ -180,19 +183,15 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     // Step 1 Login
     final HttpEntity<?> cookies = loginWithSSO();
     // Step 3 Now we should have access to root
-    ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT, cookies);
+    ResponseEntity<String> response = get(ROOT, cookies);
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
     // Step 2 logout
-    response = get(SSOWebSecurityConfig.LOGOUT_RESOURCE, cookies);
+    response = get(LOGOUT_RESOURCE, cookies);
     assertThat(redirectLocationIn(response))
-        .contains(
-            ssoConfig.getDomain(),
-            "logout",
-            ssoConfig.getClientId(),
-            urlFor(SSOWebSecurityConfig.ROOT));
+        .contains(ssoConfig.getDomain(), "logout", ssoConfig.getClientId(), urlFor(ROOT));
     // Redirected to Login
-    response = get(SSOWebSecurityConfig.ROOT);
-    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
+    response = get(ROOT);
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
   }
 
   @Test
@@ -201,14 +200,14 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     ResponseEntity<String> response = getCurrentUserByGraphQL(new HttpEntity<>(new HttpHeaders()));
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
-    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
     // Step 2: Get Login provider url
-    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE, cookies);
+    response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response))
         .contains(
             ssoConfig.getDomain(),
-            SSOWebSecurityConfig.CALLBACK_URI,
+            CALLBACK_URI,
             ssoConfig.getClientId(),
             ssoConfig.getBackendDomain());
     // Step 3 Call back uri with valid userinfos
@@ -216,8 +215,8 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(orgExtractor.apply(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
 
-    response = get(SSOWebSecurityConfig.CALLBACK_URI, cookies);
-    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.GRAPHQL_URL));
+    response = get(CALLBACK_URI, cookies);
+    assertThatRequestIsRedirectedTo(response, urlFor(GRAPHQL_URL));
 
     // when
     final ResponseEntity<String> responseEntity = getCurrentUserByGraphQL(cookies);
@@ -233,7 +232,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
   private ResponseEntity<String> getCurrentUserByGraphQL(final HttpEntity<?> cookies) {
     final ResponseEntity<String> responseEntity =
         testRestTemplate.exchange(
-            SSOWebSecurityConfig.GRAPHQL_URL,
+            GRAPHQL_URL,
             HttpMethod.POST,
             prepareRequestWithCookies(cookies.getHeaders(), CURRENT_USER_QUERY),
             String.class);
@@ -242,7 +241,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
 
   @Test
   public void testAccessNoPermission() {
-    final ResponseEntity<String> response = get(SSOWebSecurityConfig.NO_PERMISSION);
+    final ResponseEntity<String> response = get(NO_PERMISSION);
     assertThat(response.getBody()).contains("No permission for Tasklist");
   }
 
@@ -317,17 +316,17 @@ public class AuthenticationTest extends TasklistIntegrationTest {
 
   private HttpEntity<?> loginWithSSO() throws IdentityVerificationException {
     // Step 1 try to access document root
-    ResponseEntity<String> response = get(SSOWebSecurityConfig.ROOT);
+    ResponseEntity<String> response = get(ROOT);
     final HttpEntity<?> cookies = httpEntityWithCookie(response);
 
-    assertThatRequestIsRedirectedTo(response, urlFor(SSOWebSecurityConfig.LOGIN_RESOURCE));
+    assertThatRequestIsRedirectedTo(response, urlFor(LOGIN_RESOURCE));
 
     // Step 2 Get Login provider url
-    response = get(SSOWebSecurityConfig.LOGIN_RESOURCE, cookies);
+    response = get(LOGIN_RESOURCE, cookies);
     assertThat(redirectLocationIn(response))
         .contains(
             ssoConfig.getDomain(),
-            SSOWebSecurityConfig.CALLBACK_URI,
+            CALLBACK_URI,
             ssoConfig.getClientId(),
             ssoConfig.getBackendDomain());
     // Step 3 Call back uri with valid userinfos
@@ -335,7 +334,7 @@ public class AuthenticationTest extends TasklistIntegrationTest {
     given(authenticationController.handle(isNotNull(), isNotNull()))
         .willReturn(orgExtractor.apply(ssoConfig.getClaimName(), ssoConfig.getOrganization()));
 
-    get(SSOWebSecurityConfig.CALLBACK_URI, cookies);
+    get(CALLBACK_URI, cookies);
     return cookies;
   }
 

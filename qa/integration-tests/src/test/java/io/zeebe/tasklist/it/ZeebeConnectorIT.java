@@ -7,6 +7,7 @@ package io.zeebe.tasklist.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.tasklist.management.HealthCheckTest.AddManagementPropertiesInitializer;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.util.ElasticsearchTestRule;
 import io.zeebe.tasklist.util.EmbeddedZeebeConfigurer;
@@ -14,7 +15,6 @@ import io.zeebe.tasklist.util.TasklistIntegrationTest;
 import io.zeebe.tasklist.util.TasklistZeebeRule;
 import io.zeebe.tasklist.util.TestApplication;
 import io.zeebe.tasklist.util.ZeebeClientRule;
-import io.zeebe.tasklist.webapp.rest.HealthCheckRestService;
 import io.zeebe.tasklist.zeebe.PartitionHolder;
 import io.zeebe.tasklist.zeebeimport.ZeebeImporter;
 import org.apache.http.HttpStatus;
@@ -30,6 +30,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ContextConfiguration;
 
 @SpringBootTest(
     classes = {TestApplication.class},
@@ -39,6 +40,7 @@ import org.springframework.http.ResponseEntity;
       TasklistProperties.PREFIX + ".zeebe.brokerContactPoint = localhost:55500"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ContextConfiguration(initializers = AddManagementPropertiesInitializer.class)
 public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   @Rule public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
@@ -78,7 +80,7 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
     // then 1
     // application context must be successfully started
-    testRequest(HealthCheckRestService.HEALTH_CHECK_URL);
+    testRequest("/actuator/health/liveness");
     // import is working fine
     zeebeImporter.performOneRoundOfImport();
     // partition list is empty

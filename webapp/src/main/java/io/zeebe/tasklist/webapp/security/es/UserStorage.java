@@ -5,6 +5,7 @@
  */
 package io.zeebe.tasklist.webapp.security.es;
 
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 
@@ -15,7 +16,6 @@ import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.util.ElasticsearchUtil;
 import io.zeebe.tasklist.webapp.es.reader.AbstractReader;
 import io.zeebe.tasklist.webapp.rest.exception.NotFoundException;
-import io.zeebe.tasklist.webapp.security.sso.SSOWebSecurityConfig;
 import java.io.IOException;
 import java.util.List;
 import org.elasticsearch.action.index.IndexRequest;
@@ -34,7 +34,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!" + SSOWebSecurityConfig.SSO_AUTH_PROFILE)
+@Profile("!" + SSO_AUTH_PROFILE)
 @DependsOn("schemaManager")
 public class UserStorage extends AbstractReader {
 

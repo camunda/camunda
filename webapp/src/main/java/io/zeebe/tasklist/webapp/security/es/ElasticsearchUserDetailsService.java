@@ -5,10 +5,11 @@
  */
 package io.zeebe.tasklist.webapp.security.es;
 
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
+
 import io.zeebe.tasklist.entities.UserEntity;
 import io.zeebe.tasklist.property.TasklistProperties;
 import io.zeebe.tasklist.webapp.rest.exception.NotFoundException;
-import io.zeebe.tasklist.webapp.security.sso.SSOWebSecurityConfig;
 import java.util.Arrays;
 import java.util.Collection;
 import org.slf4j.Logger;
@@ -27,7 +28,7 @@ import org.springframework.stereotype.Component;
 
 @Configuration
 @Component
-@Profile("!" + SSOWebSecurityConfig.SSO_AUTH_PROFILE)
+@Profile("!" + SSO_AUTH_PROFILE)
 public class ElasticsearchUserDetailsService implements UserDetailsService {
 
   private static final Logger LOGGER =

@@ -8,6 +8,7 @@ package io.zeebe.tasklist.es;
 import io.zeebe.tasklist.es.schema.indices.IndexDescriptor;
 import io.zeebe.tasklist.es.schema.templates.TemplateDescriptor;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
+import io.zeebe.tasklist.management.ElsIndicesCheck;
 import io.zeebe.tasklist.property.TasklistProperties;
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,6 +40,8 @@ public class ElasticsearchSchemaManager {
   @Autowired private List<IndexDescriptor> indexDescriptors;
   @Autowired private List<TemplateDescriptor> templateDescriptors;
 
+  @Autowired private ElsIndicesCheck elsIndicesCheck;
+
   @PostConstruct
   public void initializeSchema() {
     if (tasklistProperties.getElasticsearch().isCreateSchema() && !schemaAlreadyExists()) {
@@ -51,11 +54,8 @@ public class ElasticsearchSchemaManager {
     }
   }
 
-  public boolean schemaAlreadyExists() {
-    return indexDescriptors.stream().allMatch(i -> indexExists(i.getAlias()))
-        && templateDescriptors.stream()
-            .allMatch(
-                t -> templateExists(t.getTemplateName()) && indexExists(t.getMainIndexName()));
+  private boolean schemaAlreadyExists() {
+    return elsIndicesCheck.indicesArePresent();
   }
 
   public void createSchema() {

@@ -6,6 +6,7 @@
 package io.zeebe.tasklist.webapp.security.sso;
 
 import static io.zeebe.tasklist.util.CollectionUtil.map;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 
 import com.auth0.jwt.interfaces.Claim;
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
@@ -19,7 +20,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
+@Profile(SSO_AUTH_PROFILE)
 public class SSOUserReader implements UserReader {
 
   private static final String EMPTY = "";

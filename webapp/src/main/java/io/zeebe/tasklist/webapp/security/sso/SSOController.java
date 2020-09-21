@@ -5,6 +5,13 @@
  */
 package io.zeebe.tasklist.webapp.security.sso;
 
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.CALLBACK_URI;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.NO_PERMISSION;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.ROOT;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
+
 import com.auth0.AuthenticationController;
 import com.auth0.Tokens;
 import java.io.IOException;
@@ -24,7 +31,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-@Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
+@Profile(SSO_AUTH_PROFILE)
 public class SSOController {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(SSOController.class);
@@ -41,12 +48,12 @@ public class SSOController {
    * @return a redirect command to auth0 authorize url
    */
   @RequestMapping(
-      value = SSOWebSecurityConfig.LOGIN_RESOURCE,
+      value = LOGIN_RESOURCE,
       method = {RequestMethod.GET, RequestMethod.POST})
   public String login(final HttpServletRequest req, final HttpServletResponse res) {
     final String authorizeUrl =
         authenticationController
-            .buildAuthorizeUrl(req, res, getRedirectURI(req, SSOWebSecurityConfig.CALLBACK_URI))
+            .buildAuthorizeUrl(req, res, getRedirectURI(req, CALLBACK_URI))
             .withAudience(
                 String.format("https://%s/userinfo", config.getBackendDomain())) // get user profile
             .withScope("openid profile email") // which info we request
@@ -59,7 +66,7 @@ public class SSOController {
    * Logged in callback - Is called by auth0 with results of user authentication (GET) <br>
    * Redirects to root url if successful, otherwise it will redirected to an error url.
    */
-  @RequestMapping(value = SSOWebSecurityConfig.CALLBACK_URI, method = RequestMethod.GET)
+  @RequestMapping(value = CALLBACK_URI, method = RequestMethod.GET)
   public void loggedInCallback(final HttpServletRequest req, final HttpServletResponse res)
       throws ServletException, IOException {
     LOGGER.debug("Called back by auth0.");
@@ -73,7 +80,7 @@ public class SSOController {
       if (originalRequestUrl != null) {
         res.sendRedirect(originalRequestUrl.toString());
       } else {
-        res.sendRedirect(SSOWebSecurityConfig.ROOT);
+        res.sendRedirect(ROOT);
       }
     } catch (InsufficientAuthenticationException iae) {
       logoutAndRedirectToNoPermissionPage(req, res);
@@ -83,32 +90,32 @@ public class SSOController {
   }
 
   /** Is called when there was an in authentication or authorization */
-  @RequestMapping(value = SSOWebSecurityConfig.NO_PERMISSION)
+  @RequestMapping(value = NO_PERMISSION)
   @ResponseBody
   public String noPermissions() {
     return "No permission for Tasklist - Please check your Tasklist configuration or cloud configuration.";
   }
 
   /** Logout - Invalidates session and logout from auth0, after that redirects to root url. */
-  @RequestMapping(value = SSOWebSecurityConfig.LOGOUT_RESOURCE)
+  @RequestMapping(value = LOGOUT_RESOURCE)
   public void logout(HttpServletRequest req, HttpServletResponse res) throws IOException {
     LOGGER.debug("logout user");
     cleanup(req);
-    logoutFromAuth0(res, getRedirectURI(req, SSOWebSecurityConfig.ROOT));
+    logoutFromAuth0(res, getRedirectURI(req, ROOT));
   }
 
   protected void clearContextAndRedirectToNoPermission(
       HttpServletRequest req, HttpServletResponse res, Throwable t) throws IOException {
     LOGGER.error("Error in authentication callback: ", t);
     cleanup(req);
-    res.sendRedirect(SSOWebSecurityConfig.NO_PERMISSION);
+    res.sendRedirect(NO_PERMISSION);
   }
 
   protected void logoutAndRedirectToNoPermissionPage(
       HttpServletRequest req, HttpServletResponse res) throws IOException {
     LOGGER.error("User is authenticated but there are no permissions. Show noPermission message");
     cleanup(req);
-    logoutFromAuth0(res, getRedirectURI(req, SSOWebSecurityConfig.NO_PERMISSION));
+    logoutFromAuth0(res, getRedirectURI(req, NO_PERMISSION));
   }
 
   protected void cleanup(HttpServletRequest req) {

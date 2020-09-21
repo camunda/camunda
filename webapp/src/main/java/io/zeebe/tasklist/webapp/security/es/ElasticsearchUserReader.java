@@ -5,9 +5,10 @@
  */
 package io.zeebe.tasklist.webapp.security.es;
 
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
+
 import io.zeebe.tasklist.webapp.graphql.entity.UserDTO;
 import io.zeebe.tasklist.webapp.security.UserReader;
-import io.zeebe.tasklist.webapp.security.sso.SSOWebSecurityConfig;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -17,7 +18,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!" + SSOWebSecurityConfig.SSO_AUTH_PROFILE)
+@Profile("!" + SSO_AUTH_PROFILE)
 public class ElasticsearchUserReader implements UserReader {
 
   @Autowired private UserStorage userStorage;

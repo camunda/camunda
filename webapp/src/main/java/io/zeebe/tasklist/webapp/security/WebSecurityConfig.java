@@ -5,13 +5,21 @@
  */
 package io.zeebe.tasklist.webapp.security;
 
-import static io.zeebe.tasklist.webapp.rest.ClientConfigRestService.CLIENT_CONFIG_RESOURCE;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.AUTH_WHITELIST;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.ERROR_URL;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.RESPONSE_CHARACTER_ENCODING;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.X_CSRF_HEADER;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.X_CSRF_PARAM;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.X_CSRF_TOKEN;
 import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 import static org.springframework.http.HttpStatus.NO_CONTENT;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 import io.zeebe.tasklist.property.TasklistProperties;
-import io.zeebe.tasklist.webapp.rest.HealthCheckRestService;
 import java.io.IOException;
 import java.io.PrintWriter;
 import javax.json.Json;
@@ -36,26 +44,12 @@ import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-@Profile("auth")
+@Profile(TasklistURIs.AUTH_PROFILE)
 @EnableWebSecurity
 @Configuration
 @Component("webSecurityConfig")
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-  public static final String X_CSRF_PARAM = "X-CSRF-PARAM";
-  public static final String X_CSRF_HEADER = "X-CSRF-HEADER";
-  public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
-  public static final String COOKIE_JSESSIONID = "JSESSIONID";
-  public static final String LOGIN_RESOURCE = "/api/login";
-  public static final String LOGOUT_RESOURCE = "/api/logout";
-  public static final String ACTUATOR_ENDPOINTS = "/actuator/**";
-  private static final String RESPONSE_CHARACTER_ENCODING = "UTF-8";
-  private static final String[] AUTH_WHITELIST = {
-    "/webjars/**",
-    HealthCheckRestService.HEALTH_CHECK_URL,
-    ACTUATOR_ENDPOINTS,
-    CLIENT_CONFIG_RESOURCE
-  };
   // Used to store the CSRF Token in a cookie.
   private final CookieCsrfTokenRepository cookieCSRFTokenRepository =
       new CookieCsrfTokenRepository();
@@ -81,7 +75,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     http.authorizeRequests()
         .antMatchers(AUTH_WHITELIST)
         .permitAll()
-        .antMatchers("/graphql", "/api/**", "/error")
+        .antMatchers(GRAPHQL_URL, ERROR_URL)
         .authenticated()
         .and()
         .formLogin()

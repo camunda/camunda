@@ -5,6 +5,7 @@
  */
 package io.zeebe.tasklist.webapp.security.sso;
 
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import com.auth0.IdentityVerificationException;
@@ -26,7 +27,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.stereotype.Component;
 
-@Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
+@Profile(SSO_AUTH_PROFILE)
 @Component
 @Scope(SCOPE_PROTOTYPE)
 public class TokenAuthentication extends AbstractAuthenticationToken {

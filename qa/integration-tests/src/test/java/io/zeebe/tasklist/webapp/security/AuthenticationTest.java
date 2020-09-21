@@ -5,11 +5,11 @@
  */
 package io.zeebe.tasklist.webapp.security;
 
-import static io.zeebe.tasklist.webapp.security.WebSecurityConfig.COOKIE_JSESSIONID;
-import static io.zeebe.tasklist.webapp.security.WebSecurityConfig.LOGIN_RESOURCE;
-import static io.zeebe.tasklist.webapp.security.WebSecurityConfig.LOGOUT_RESOURCE;
-import static io.zeebe.tasklist.webapp.security.WebSecurityConfig.X_CSRF_HEADER;
-import static io.zeebe.tasklist.webapp.security.WebSecurityConfig.X_CSRF_TOKEN;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.COOKIE_JSESSIONID;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGOUT_RESOURCE;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.X_CSRF_HEADER;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.X_CSRF_TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
@@ -41,7 +41,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 /** This tests: authentication and security over GraphQL API /currentUser to get current user */
-@ActiveProfiles({"auth", "test"})
+@ActiveProfiles({TasklistURIs.AUTH_PROFILE, "test"})
 public class AuthenticationTest extends TasklistIntegrationTest {
 
   private static final String SET_COOKIE_HEADER = "Set-Cookie";

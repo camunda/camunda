@@ -5,10 +5,14 @@
  */
 package io.zeebe.tasklist.webapp.security.sso;
 
-import static io.zeebe.tasklist.webapp.rest.ClientConfigRestService.CLIENT_CONFIG_RESOURCE;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.AUTH_WHITELIST;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.ERROR_URL;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.GRAPHQL_URL;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.LOGIN_RESOURCE;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.ROOT_URL;
+import static io.zeebe.tasklist.webapp.security.TasklistURIs.SSO_AUTH_PROFILE;
 
 import com.auth0.AuthenticationController;
-import io.zeebe.tasklist.webapp.rest.HealthCheckRestService;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import javax.servlet.http.HttpServletRequest;
@@ -25,35 +29,14 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.stereotype.Component;
 
-@Profile(SSOWebSecurityConfig.SSO_AUTH_PROFILE)
+@Profile(SSO_AUTH_PROFILE)
 @Configuration
 @EnableWebSecurity
 @Component("webSecurityConfig")
 public class SSOWebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-  public static final String ROOT_URL = "/";
-  public static final String ERROR_URL = "/error";
-  public static final String GRAPHQL_URL = "/graphql";
-  public static final String ROOT = ROOT_URL;
-  public static final String SSO_AUTH_PROFILE = "sso-auth";
-  public static final String LOGIN_RESOURCE = "/api/login";
-  public static final String LOGOUT_RESOURCE = "/api/logout";
-  public static final String CALLBACK_URI = "/sso-callback";
-  public static final String NO_PERMISSION = "/noPermission";
-  public static final String ACTUATOR_ENDPOINTS = "/actuator/**";
   public static final String REQUESTED_URL = "requestedUrl";
   private static final Logger LOGGER = LoggerFactory.getLogger(SSOController.class);
-
-  private static final String[] AUTH_WHITELIST = {
-    "/webjars/**",
-    ERROR_URL,
-    CLIENT_CONFIG_RESOURCE,
-    HealthCheckRestService.HEALTH_CHECK_URL,
-    ACTUATOR_ENDPOINTS,
-    NO_PERMISSION,
-    LOGIN_RESOURCE,
-    LOGOUT_RESOURCE
-  };
   /**
    * Defines the domain which the user always sees<br>
    * auth0.com call it <b>Custom Domain</b>
