@@ -8,6 +8,7 @@ import React from 'react';
 import {shallow, mount} from 'enzyme';
 
 import {Dropdown, ActionItem} from 'components';
+import {showPrompt} from 'prompt';
 
 import {getVariableNames} from './service';
 
@@ -17,9 +18,14 @@ const props = {
   availableFilters: [],
   setAvailableFilters: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
-  reports: ['reportId'],
+  reports: [{id: 'reportId'}],
   isNew: false,
+  persistReports: jest.fn(),
 };
+
+jest.mock('prompt', () => ({
+  showPrompt: jest.fn().mockImplementation(async (config, cb) => await cb()),
+}));
 
 jest.mock('./service', () => ({
   getVariableNames: jest.fn(),
@@ -27,6 +33,7 @@ jest.mock('./service', () => ({
 
 beforeEach(() => {
   props.setAvailableFilters.mockClear();
+  props.persistReports.mockClear();
   getVariableNames.mockClear();
 });
 
@@ -67,12 +74,15 @@ it('should disable the variable option if there are no reports', () => {
   expect(node.find(Dropdown.Option).last()).toBeDisabled();
 });
 
-it('should disable the variable option if there are unsaved reports', () => {
-  const node = shallow(<FiltersEdit {...props} />);
+it('should show a prompt to save the dashboard when adding a variable filter on an unsaved dashboard', async () => {
+  const node = shallow(<FiltersEdit {...props} isNew />);
 
-  expect(node.find(Dropdown.Option).last()).not.toBeDisabled();
-  node.setProps({isNew: true});
-  expect(node.find(Dropdown.Option).last()).toBeDisabled();
+  node.find(Dropdown.Option).last().simulate('click');
+
+  await flushPromises();
+
+  expect(showPrompt).toHaveBeenCalledTimes(1);
+  expect(props.persistReports).toHaveBeenCalledTimes(1);
 });
 
 it('should fetch variable names', () => {

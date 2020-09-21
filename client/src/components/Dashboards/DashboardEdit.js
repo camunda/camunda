@@ -33,6 +33,7 @@ export default class DashboardEdit extends React.Component {
   }
 
   contentContainer = React.createRef();
+  waitingForDashboardSave = [];
 
   mousePosition = {x: 0, y: 0};
   mouseTracker = (evt) => {
@@ -149,7 +150,7 @@ export default class DashboardEdit extends React.Component {
     });
   };
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps) {
     if (
       this.state.reports.every(({id}) => id) &&
       deepEqual(this.state.reports, this.props.initialReports) &&
@@ -160,13 +161,36 @@ export default class DashboardEdit extends React.Component {
     } else {
       nowDirty(t('dashboard.label'), this.save);
     }
+
+    if (!deepEqual(prevProps.initialReports, this.props.initialReports)) {
+      // initial reports might change because of a save without leaving the edit mode
+      // This happens for example if the dashboard is saved for the variable filter
+      this.setState({reports: this.props.initialReports}, () => {
+        this.waitingForDashboardSave.forEach((resolve) => resolve());
+        this.waitingForDashboardSave.length = 0;
+      });
+      nowPristine();
+    }
   }
 
-  save = async () => {
-    const {name, reports, availableFilters} = this.state;
+  save = (stayInEditMode) => {
+    return new Promise((resolve) => {
+      const promises = [];
+      const {name, reports, availableFilters} = this.state;
 
-    nowPristine();
-    await this.props.saveChanges(name, reports, availableFilters);
+      nowPristine();
+      promises.push(this.props.saveChanges(name, reports, availableFilters, stayInEditMode));
+
+      if (stayInEditMode) {
+        promises.push(
+          new Promise((resolve) => {
+            this.waitingForDashboardSave.push(resolve);
+          })
+        );
+      }
+
+      Promise.all(promises).then(resolve);
+    });
   };
 
   render() {
@@ -200,7 +224,8 @@ export default class DashboardEdit extends React.Component {
         </div>
         {filtersShown && (
           <FiltersEdit
-            reports={reports?.map(({id}) => id).filter((id) => !!id)}
+            reports={reports?.filter(({id, report}) => !!id || !!report)}
+            persistReports={() => this.save(true)}
             availableFilters={availableFilters}
             setAvailableFilters={(availableFilters) => this.setState({availableFilters})}
             isNew={isNew}

@@ -502,6 +502,10 @@
     "enterFullscreen": "Enter Fullscreen",
     "leaveFullscreen": "Leave Fullscreen",
     "autoRefresh": "Auto Refresh",
+    "saveModal": {
+      "unsaved": "Unsaved Dashboard",
+      "text": "Save Dashboard to continue.\nSaving the Dashboard will save all the contained Reports."
+    },
     "templates": {
       "blank": "Blank Dashboard",
       "processPerformance": "Process performance overview",
@@ -536,7 +540,7 @@
       "viewLabel": "Filter Report data",
       "info": "Select filter types for use in the Dashboard",
       "notice": "Added options will be available for selection in the saved Dashboard.",
-      "disabledVariable": "Variable Filters are only available for saved Dashboards that contain at least one Report.",
+      "disabledVariable": "Variable Filters are only available for Dashboards that contain at least one Report.",
       "resetAll": "Reset all",
       "operatorLink": "Values linked by {operator} logic",
       "multiple": "multiple",
@@ -668,6 +672,7 @@
     "remove": "Remove",
     "removeEntity": "Remove {entity}",
     "save": "Save",
+    "saveContinue": "Save and Continue",
     "update": "Update",
     "apply": "Apply",
     "cancel": "Cancel",

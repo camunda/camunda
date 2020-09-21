@@ -67,7 +67,7 @@ export default function DashboardRenderer({
         return (
           <div
             className="grid-entry"
-            key={idx + '_' + report.id}
+            key={idx + '_' + (report.id || report.report?.name || report.configuration?.external)}
             data-grid={{
               x: report.position.x,
               y: report.position.y,

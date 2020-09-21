@@ -14,6 +14,7 @@ import {VariableFilter} from 'filter';
 import {withErrorHandling} from 'HOC';
 import {showError} from 'notifications';
 import {t} from 'translation';
+import {showPrompt} from 'prompt';
 
 import './FiltersEdit.scss';
 
@@ -21,15 +22,21 @@ export function FiltersEdit({
   availableFilters,
   setAvailableFilters,
   reports = [],
+  persistReports,
   isNew,
   mightFail,
 }) {
   const [showVariableModal, setShowVariableModal] = useState(false);
+  const [openVariableModalAfterReportUpdate, setOpenVariableModalAfterReportUpdate] = useState(
+    null
+  );
   const [availableVariables, setAvailableVariables] = useState([]);
+
+  const reportIds = reports.filter(({id}) => !!id).map(({id}) => id);
 
   useDeepCompareEffect(() => {
     mightFail(
-      getVariableNames(reports),
+      getVariableNames(reportIds),
       (availableVariables) => {
         setAvailableVariables(availableVariables);
         setAvailableFilters(
@@ -43,10 +50,15 @@ export function FiltersEdit({
             );
           })
         );
+        if (openVariableModalAfterReportUpdate) {
+          openVariableModalAfterReportUpdate();
+          setShowVariableModal(true);
+          setOpenVariableModalAfterReportUpdate(null);
+        }
       },
       showError
     );
-  }, [reports]);
+  }, [reportIds]);
 
   function addFilter(type) {
     setAvailableFilters([...availableFilters, {type}]);
@@ -60,7 +72,7 @@ export function FiltersEdit({
     setAvailableFilters(availableFilters.filter((_, idx) => idx !== idxToRemove));
   }
 
-  const disableVariableFilter = isNew || reports.length === 0;
+  const disableVariableFilter = reports.length === 0;
 
   return (
     <div className="FiltersEdit">
@@ -95,7 +107,25 @@ export function FiltersEdit({
             <Dropdown.Option
               disabled={disableVariableFilter}
               title={disableVariableFilter ? t('dashboard.filter.disabledVariable') : undefined}
-              onClick={() => setShowVariableModal(true)}
+              onClick={() => {
+                if (isNew) {
+                  showPrompt(
+                    {
+                      title: t('dashboard.saveModal.unsaved'),
+                      body: t('dashboard.saveModal.text'),
+                      yes: t('common.saveContinue'),
+                      no: t('common.cancel'),
+                    },
+                    () =>
+                      new Promise((resolve) => {
+                        setOpenVariableModalAfterReportUpdate(() => resolve);
+                        persistReports();
+                      })
+                  );
+                } else {
+                  setShowVariableModal(true);
+                }
+              }}
             >
               {t('dashboard.filter.types.variable')}
             </Dropdown.Option>
@@ -137,7 +167,7 @@ export function FiltersEdit({
           close={() => setShowVariableModal(false)}
           config={{
             getVariables: () => availableVariables,
-            getValues: (...args) => getVariableValues(reports, ...args),
+            getValues: (...args) => getVariableValues(reportIds, ...args),
           }}
           filterType="variable"
         />
