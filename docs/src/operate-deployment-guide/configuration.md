@@ -110,41 +110,37 @@ camunda.operate:
 Operate includes [Spring Boot Actuator](https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready) inside, that
 provides number of monitoring possibilities.
 
-Operate uses this default configuration:
+Operate uses following Actuator configuration by default:
 ```yaml
-# disable default health indicators:
-# https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-health-indicators
-management.health.defaults.enabled: false
 # enable health check and metrics endpoints
 management.endpoints.web.exposure.include: health,prometheus
 # enable Kubernetes health groups:
 # https://docs.spring.io/spring-boot/docs/current/reference/html/production-ready-features.html#production-ready-kubernetes-probes
 management.health.probes.enabled: true
-# add custom check to standard readiness check
-management.endpoint.health.group.readiness.include: readinessState,elsIndicesCheck
-# define 8081 as management port
-management.server.port: 8081
-# configure endpoints
-management.endpoints.web.base-path: /
-management.endpoints.web.path-mapping.prometheus: metrics
 ```
 
-With this configuration Operate provides endpoints:
+With this configuration following endpoints are available for use out of the box:
 
-```<server>:8081/metrics``` Prometheus metrics
+```<server>:8080/actuator/prometheus``` Prometheus metrics
 
-```<server>:8081/health/liveness``` Liveness probe
+```<server>:8080/actuator/health/liveness``` Liveness probe
 
-```<server>:8081/health/readiness``` Readiness probe
+```<server>:8080/actuator/health/readiness``` Readiness probe
+
+
+## Versions before 0.25.0
+
+In versions before 0.25.0 management endpoints look differently, therefore we recommend to reconfigure for next versions.
+
+|Name|Before 0.25.0| Starting with 0.25.0|
+|----|-------------|--------|
+|Readiness|/api/check|/actuator/health/readiness|
+|Liveness|/actuator/health|/actuator/health/liveness|
 
 # Logging
 
-Operate uses Log4j2 framework for logging. In distribution archive as well as inside a Docker image you can find two logging configuration files,
-that can be further adjusted to your needs.
-
-## Default logging configuration
-
-* `config/log4j2.xml` (applied by default)
+Operate uses Log4j2 framework for logging. In distribution archive as well as inside a Docker image `config/log4j2.xml` logging configuration files is included,
+that can be further adjusted to your needs:
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -168,19 +164,17 @@ that can be further adjusted to your needs.
   </Loggers>
 </Configuration>
 ```
+
+By default Console log appender will be used.
+
 ### JSON logging configuration
 
-This one is specifically configured for usage with Stackdriver in Google Cloud
-environment. The logs will be written in JSON format to make them better searchable in Google Cloud Logging UI.
-## Enable Logging configuration
-
-You can enable one of the logging configurations by setting the environment variable ```OPERATE_LOG_APPENDER``` like this:
+You can choose to output logs in JSON format (Stackdriver compatible). To enable it, define
+the environment variable ```OPERATE_LOG_APPENDER``` like this:
 
 ```sh
 OPERATE_LOG_APPENDER=Stackdriver
 ```
-
-Default logging appender is Console.
 
 # An example of application.yml file
 
@@ -218,8 +212,4 @@ camunda.operate:
     port: 9200
     # Index prefix, configured in Zeebe Elasticsearch exporter
     prefix: zeebe-record
-#Spring Boot Actuator endpoints to be exposed
-management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
-# Enable or disable metrics
-#management.metrics.export.prometheus.enabled: false
 ```
