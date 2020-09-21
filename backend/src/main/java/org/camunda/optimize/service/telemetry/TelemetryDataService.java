@@ -5,11 +5,17 @@
  */
 package org.camunda.optimize.service.telemetry;
 
+import com.google.common.collect.ImmutableSet;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.camunda.bpm.licensecheck.InvalidLicenseException;
+import org.camunda.bpm.licensecheck.LicenseKey;
+import org.camunda.bpm.licensecheck.LicenseKeyImpl;
 import org.camunda.optimize.dto.optimize.query.MetadataDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.DatabaseDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.InternalsDto;
+import org.camunda.optimize.dto.optimize.query.telemetry.LicenseKeyDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.ProductDto;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
@@ -20,8 +26,14 @@ import org.elasticsearch.client.RequestOptions;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.metadata.Version.VERSION;
@@ -31,6 +43,14 @@ import static org.camunda.optimize.service.metadata.Version.VERSION;
 @Slf4j
 public class TelemetryDataService {
   public static final String INFORMATION_UNAVAILABLE_STRING = "Unknown";
+  public static final String  OPTIMIZE_FEATURE = "optimize";
+  public static final String  CAMUNDA_BPM_FEATURE = "camundaBPM";
+  public static final String  CAWEMO_FEATURE = "cawemo";
+  public static final Set<String> FEATURE_NAMES = ImmutableSet.of(
+    OPTIMIZE_FEATURE,
+    CAMUNDA_BPM_FEATURE,
+    CAWEMO_FEATURE
+  );
 
   private final ElasticsearchMetadataService elasticsearchMetadataService;
   private final EngineContextFactory engineContextFactory;
@@ -54,14 +74,10 @@ public class TelemetryDataService {
   }
 
   private InternalsDto getInternalsData() {
-    final List<String> engineInstallationIDs = getEngineInstallationIds();
-    final String licenseKey =
-      Optional.ofNullable(licenseManager.getOptimizeLicense()).orElse(INFORMATION_UNAVAILABLE_STRING);
-
     return InternalsDto.builder()
-      .engineInstallationIds(engineInstallationIDs)
+      .engineInstallationIds(getEngineInstallationIds())
       .database(getDatabaseData())
-      .licenseKey(licenseKey)
+      .licenseKey(getLicenseKeyData())
       .build();
   }
 
@@ -87,6 +103,68 @@ public class TelemetryDataService {
     return DatabaseDto.builder()
       .version(esVersion)
       .build();
+  }
+
+  private LicenseKeyDto getLicenseKeyData() {
+    final Optional<LicenseKey> licenseKey = getLicenseKeyImpl();
+    final SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd");
+
+    final String customer = licenseKey.map(LicenseKey::getCustomerId).orElse(INFORMATION_UNAVAILABLE_STRING);
+    final String licenseType = licenseKey
+      .map(key -> key.getLicenseType().name())
+      .orElse(INFORMATION_UNAVAILABLE_STRING);
+    final String validUntil = licenseKey
+      .map(LicenseKey::getValidUntil)
+      .filter(Objects::nonNull)
+      .map(dateFormatter::format)
+      .orElse(INFORMATION_UNAVAILABLE_STRING);
+    final boolean isUnlimited = licenseKey.map(LicenseKey::isUnlimited).orElse(false);
+    final Map<String, String> features = licenseKey
+      .map(LicenseKey::getProperties)
+      .map(this::mapPropertiesToFeaturesMap)
+      .orElse(Collections.emptyMap());
+
+    return LicenseKeyDto.builder()
+      .customer(customer)
+      .type(licenseType)
+      .validUntil(validUntil)
+      .isUnlimited(isUnlimited)
+      .features(features)
+      .build();
+  }
+
+  private Optional<LicenseKey> getLicenseKeyImpl() {
+    Optional<LicenseKey> licenseKey = Optional.empty();
+    final String licenseKeyString = licenseManager.getOptimizeLicense();
+    if (StringUtils.isNotBlank(licenseKeyString)) {
+      try {
+        licenseKey = Optional.of(new LicenseKeyImpl(licenseManager.getOptimizeLicense()));
+      } catch (InvalidLicenseException e) {
+        log.info("Failed to retrieve LicenseKey information for telemetry data.");
+      }
+    }
+    return licenseKey;
+  }
+
+  private Map<String, String> mapPropertiesToFeaturesMap(final Map<String, String> properties) {
+    Map<String, String> features = getDefaultFeaturesMap();
+    FEATURE_NAMES.forEach(
+      featureName -> {
+        if (properties.containsKey(featureName)) {
+          features.put(featureName, properties.get(featureName));
+        }
+      }
+    );
+
+    return features;
+  }
+
+  private Map<String, String> getDefaultFeaturesMap() {
+    Map<String, String> features = new HashMap<>();
+    features.put(OPTIMIZE_FEATURE, "true");
+    features.put(CAMUNDA_BPM_FEATURE, "false");
+    features.put(CAWEMO_FEATURE, "false");
+    return features;
   }
 
 }

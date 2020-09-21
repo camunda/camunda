@@ -10,21 +10,17 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import lombok.NonNull;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode
 @Builder
 @Data
-public class InternalsDto implements OptimizeDto {
-  @NonNull
-  @Builder.Default
-  private List<String> engineInstallationIds = new ArrayList<>();
-  @NonNull
-  private final DatabaseDto database;
-  private final LicenseKeyDto licenseKey;
+public class LicenseKeyDto {
+  private final String customer;
+  private final String type;
+  private final String validUntil;
+  private final Boolean isUnlimited;
+  private final Map<String, String> features;
 }
