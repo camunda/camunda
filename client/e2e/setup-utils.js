@@ -37,17 +37,17 @@ async function createSingleInstance(processId, version) {
   return result.workflowInstanceKey;
 }
 
-function completeTask(taskType) {
-  zbc.createWorker(null, taskType, handler);
-}
-
-function handler(job, complete) {
-  // Task worker business logic goes here
-  const updateToBrokerVariables = {
-    updatedProperty: 'newValue',
-  };
-
-  complete(updateToBrokerVariables);
+function completeTask(taskType, shouldFail, variables) {
+  zbc.createWorker({
+    taskType,
+    taskHandler: (job, complete) => {
+      if (shouldFail) {
+        complete.failure('task failed');
+      } else {
+        complete.success(variables);
+      }
+    },
+  });
 }
 
 export {deploy, createInstances, completeTask, createSingleInstance};

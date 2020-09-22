@@ -69,16 +69,53 @@ test('Instance with an incident - header and instance header', async (t) => {
 
 test('Instance with an incident - history panel', async (t) => {
   const {
-    initialData: {instanceWithIncident},
+    initialData: {processWithMultipleTokens},
   } = t.fixtureCtx;
 
-  const instanceId = instanceWithIncident.workflowInstanceKey;
-
-  await t.navigateTo(`${config.endpoint}/#/instances/${instanceId}`);
-
+  await t.navigateTo(
+    `${config.endpoint}/#/instances/${processWithMultipleTokens}`
+  );
   await t.expect(screen.getByText('Instance History').exists).ok();
 
-  // TODO: OPE-1054
+  await t
+    .click(within(screen.getByTestId('diagram')).getByText(/Task A/))
+    .expect(
+      within(screen.getByTestId('popover')).getByText(
+        'To view metadata for any of these, select one instance in the Instance History.'
+      ).exists
+    )
+    .ok()
+    .expect(
+      screen.getByText(
+        'To view the variables, select a single Flow Node Instance in the Instance History.'
+      ).exists
+    )
+    .ok();
+
+  await t
+    .click(
+      within(screen.getByTestId('instance-history'))
+        .getAllByText(/Task A/)
+        .nth(0)
+    )
+    .expect(within(screen.getByTestId('popover')).getByText(/Task A/).exists)
+    .ok()
+    .expect(screen.getByText('The Flow Node has no variables.').exists)
+    .ok();
+
+  await t
+    .click(
+      within(screen.getByTestId('instance-history'))
+        .getAllByText(/Task A/)
+        .nth(0)
+    )
+    .expect(screen.queryByTestId('popover').exists)
+    .notOk()
+    .expect(
+      within(screen.getByTestId('variables-list')).getByText('shouldContinue')
+        .exists
+    )
+    .ok();
 });
 
 test('Instance with an incident - diagram', async (t) => {

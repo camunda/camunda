@@ -196,7 +196,7 @@ const Variables = observer(function Variables() {
       instance && isRunning({state: instance.state});
     return (
       <Styled.TableScroll>
-        <Table>
+        <Table data-test="variables-list">
           <Styled.THead>
             <TR>
               <TH>Variable</TH>
