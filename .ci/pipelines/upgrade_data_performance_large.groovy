@@ -362,6 +362,8 @@ pipeline {
                   chown -R 10000:1000 ./ssd-storage/
                 ''')
                 archiveArtifacts artifacts: 'ssd-storage/es-logs-*/*', onlyIfSuccessful: false
+                archiveArtifacts artifacts: 'qa/upgrade-tests/target/optimize-upgrade.log', onlyIfSuccessful: false
+                archiveArtifacts artifacts: 'qa/upgrade-tests/target/optimize-startup.log', onlyIfSuccessful: false
               }
             }
           }

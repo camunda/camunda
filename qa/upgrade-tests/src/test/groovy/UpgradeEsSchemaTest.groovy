@@ -53,13 +53,15 @@ class UpgradeEsSchemaTest {
       // start a new async snapshot operation to ensure the upgrade is resilient to concurrently running snapshots
       newElasticClient.createSnapshot(false)
       // run the upgrade
-      def optimizeUpgradeOutputWriter = new FileWriter("optimize-upgrade.log")
+      def upgradeLogPath = buildDir + "/optimize-upgrade.log"
+      def optimizeUpgradeOutputWriter = new FileWriter(upgradeLogPath)
       newOptimize.runUpgrade().consumeProcessOutputStream(optimizeUpgradeOutputWriter)
       // stop/delete async snapshot operation as upgrade completed already
       newElasticClient.deleteSnapshot()
 
       // start new optimize
-      def newOptimizeStartupOutputWriter = new FileWriter("optimize-startup.log")
+      def newOptimizeLogPath = buildDir + "/optimize-startup.log"
+      def newOptimizeStartupOutputWriter = new FileWriter(newOptimizeLogPath)
       newOptimize.start().consumeProcessOutputStream(newOptimizeStartupOutputWriter)
 
       newOptimize.waitForImportToFinish()
@@ -101,7 +103,7 @@ class UpgradeEsSchemaTest {
       println "Finished asserting expected instance data doc counts..."
 
       println "Asserting on startup and upgrade errors..."
-      new File("optimize-upgrade.log").eachLine { line ->
+      new File(upgradeLogPath).eachLine { line ->
         // warns about snapshots in progress are fine
         def matcherWarn = line =~ /WARN(?!.*snapshot_in_progress_exception.*)/
         def matcherError = line =~ /ERROR/
@@ -110,7 +112,7 @@ class UpgradeEsSchemaTest {
         assertThat(matcherError.find()).withFailMessage("Upgrade log contained error log: %s", line)
           .isFalse()
       }
-      new File("optimize-startup.log").eachLine { line ->
+      new File(newOptimizeLogPath).eachLine { line ->
         def matcherWarn = line =~ /WARN/
         def matcherError = line =~ /ERROR/
         assertThat(matcherWarn.find()).withFailMessage("Startup log contained warn log: %s", line)
