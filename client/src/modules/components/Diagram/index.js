@@ -7,7 +7,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
-import {flatMap} from 'lodash';
+import {flatMap, isEqual} from 'lodash';
 
 import {themed, Colors} from 'modules/theme';
 
@@ -75,9 +75,14 @@ class Diagram extends React.PureComponent {
     selectedFlowNodeId,
     processedSequenceFlows: prevSequenceFlows,
     expandState: prevExpandState,
+    selectableFlowNodes: prevSelectableFlowNodes,
   }) {
     const hasNewDefinitions = this.props.definitions !== prevDefinitions;
     const hasNewTheme = this.props.theme !== prevTheme;
+    const hasNewSelectableFlowNoes = !isEqual(
+      this.props.selectableFlowNodes,
+      prevSelectableFlowNodes
+    );
 
     const {
       expandState,
@@ -92,6 +97,10 @@ class Diagram extends React.PureComponent {
     }
 
     if (hasNewTheme || hasNewDefinitions) {
+      return this.resetViewer();
+    }
+
+    if (hasNewSelectableFlowNoes) {
       return this.resetViewer();
     }
 
