@@ -25,13 +25,11 @@ function createInstances(bpmnProcessId, version, numberOfInstances) {
   );
 }
 
-async function createSingleInstance(processId, version) {
+async function createSingleInstance(bpmnProcessId, version, variables) {
   const result = await zbc.createWorkflowInstance({
-    bpmnProcessId: processId,
-    version: version,
-    variables: {
-      testData: 'something',
-    },
+    bpmnProcessId,
+    version,
+    variables,
   });
 
   return result.workflowInstanceKey;

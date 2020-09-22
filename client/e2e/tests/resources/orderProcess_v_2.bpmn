@@ -4,8 +4,8 @@
     <bpmn:startEvent id="StartEvent_1" name="Order received">
       <bpmn:outgoing>SequenceFlow_0j6tsnn</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_0j6tsnn" sourceRef="StartEvent_1" targetRef="Task_1b1r7ow" />
-    <bpmn:serviceTask id="Task_1b1r7ow" name="Check payment">
+    <bpmn:sequenceFlow id="SequenceFlow_0j6tsnn" sourceRef="StartEvent_1" targetRef="checkPayment" />
+    <bpmn:serviceTask id="checkPayment" name="Check payment">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="checkPayment" />
         <zeebe:ioMapping>
@@ -17,7 +17,7 @@
       <bpmn:incoming>SequenceFlow_1q6ade7</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1s6g17c</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="Task_162x79i" name="Ship Articles">
+    <bpmn:serviceTask id="shipArticles" name="Ship Articles">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="shipArticles" />
       </bpmn:extensionElements>
@@ -27,7 +27,7 @@
     <bpmn:endEvent id="EndEvent_042s0oc">
       <bpmn:incoming>SequenceFlow_19klrd3</bpmn:incoming>
     </bpmn:endEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_19klrd3" sourceRef="Task_162x79i" targetRef="EndEvent_042s0oc" />
+    <bpmn:sequenceFlow id="SequenceFlow_19klrd3" sourceRef="shipArticles" targetRef="EndEvent_042s0oc" />
     <bpmn:serviceTask id="Task_1t0a4uy" name="Check order items">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="checkItems" />
@@ -45,7 +45,7 @@
       <bpmn:outgoing>SequenceFlow_11p0iy6</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_1fgekwd" sourceRef="Task_1t0a4uy" targetRef="ExclusiveGateway_0n882rg" />
-    <bpmn:sequenceFlow id="SequenceFlow_0drux68" name="OK" sourceRef="ExclusiveGateway_0n882rg" targetRef="Task_162x79i">
+    <bpmn:sequenceFlow id="SequenceFlow_0drux68" name="OK" sourceRef="ExclusiveGateway_0n882rg" targetRef="shipArticles">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=smthIsMissing = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:exclusiveGateway id="ExclusiveGateway_1qqmrb8" name="Payment OK?">
@@ -53,21 +53,21 @@
       <bpmn:outgoing>SequenceFlow_1dwqvrt</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_0jzbqu1</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="SequenceFlow_1s6g17c" sourceRef="Task_1b1r7ow" targetRef="ExclusiveGateway_1qqmrb8" />
+    <bpmn:sequenceFlow id="SequenceFlow_1s6g17c" sourceRef="checkPayment" targetRef="ExclusiveGateway_1qqmrb8" />
     <bpmn:sequenceFlow id="SequenceFlow_1dwqvrt" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="Task_1t0a4uy">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=paid = true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:serviceTask id="ServiceTask_00g0gy6" name="Request for payment">
+    <bpmn:serviceTask id="requestForPayment" name="Request for payment">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="requestPayment" />
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_0jzbqu1</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1q6ade7</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="SequenceFlow_0jzbqu1" name="Not paid" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="ServiceTask_00g0gy6">
+    <bpmn:sequenceFlow id="SequenceFlow_0jzbqu1" name="Not paid" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="requestForPayment">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=paid = false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_1q6ade7" sourceRef="ServiceTask_00g0gy6" targetRef="Task_1b1r7ow" />
+    <bpmn:sequenceFlow id="SequenceFlow_1q6ade7" sourceRef="requestForPayment" targetRef="checkPayment" />
     <bpmn:serviceTask id="ServiceTask_0fiiz29" name="Request from  warehouse">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="requestWarehouse" />
@@ -95,10 +95,10 @@
           <dc:Bounds x="-169.5" y="227" width="90" height="12" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ServiceTask_0c3g2sx_di" bpmnElement="Task_1b1r7ow">
+      <bpmndi:BPMNShape id="ServiceTask_0c3g2sx_di" bpmnElement="checkPayment">
         <dc:Bounds x="300" y="98" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_0k2efs8_di" bpmnElement="Task_162x79i">
+      <bpmndi:BPMNShape id="ServiceTask_0k2efs8_di" bpmnElement="shipArticles">
         <dc:Bounds x="895" y="98" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_042s0oc_di" bpmnElement="EndEvent_042s0oc">
@@ -157,7 +157,7 @@
           <dc:Bounds x="178" y="227" width="0" height="12" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ServiceTask_00g0gy6_di" bpmnElement="ServiceTask_00g0gy6">
+      <bpmndi:BPMNShape id="requestForPayment_di" bpmnElement="requestForPayment">
         <dc:Bounds x="444" y="260" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0jzbqu1_di" bpmnElement="SequenceFlow_0jzbqu1">

@@ -163,8 +163,8 @@ const Body = observer(function (props) {
               </Styled.InstanceAnchor>
             </TD>
             <TD>{`Version ${instance.workflowVersion}`}</TD>
-            <TD>{formatDate(instance.startDate)}</TD>
-            <TD>{formatDate(instance.endDate)}</TD>
+            <TD data-test="start-time">{formatDate(instance.startDate)}</TD>
+            <TD data-test="end-time">{formatDate(instance.endDate)}</TD>
             <TD>
               <Operations
                 instance={instance}

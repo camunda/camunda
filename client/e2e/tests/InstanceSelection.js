@@ -5,10 +5,10 @@
  */
 
 import {config} from '../config';
-import {setup} from './Dashboard.setup.js';
-import * as Elements from './InstancesSelection.elements.js';
+import {setup} from './InstanceSelection.setup.js';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
+import {screen, within} from '@testing-library/testcafe';
 import {DEFAULT_TIMEOUT} from './constants';
 
 fixture('Select Instances')
@@ -20,47 +20,130 @@ fixture('Select Instances')
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
     await t.maximizeWindow();
+    await t.navigateTo(`${config.endpoint}/#/instances`);
   });
 
-test('Selection of instances applied/removed on filter selection', async (t) => {
-  // open instances page, select the first instance on the instances table
+test('Selection of instances are removed on header navigation', async (t) => {
   await t
-    .navigateTo(`${config.endpoint}/#/instances`)
-    .click(Elements.instanceCheckbox.nth(0));
-
-  // When instance is selected, crate operation dropdown should be displayed
-  await t.expect(Elements.createOperationDropdown.exists).ok();
-
-  // click incidents link on header and see create operation dropdown is disappeared
-  await t
-    .click(Elements.headerLinkIncidents)
-    .expect(Elements.createOperationDropdown.exists)
-    .notOk();
-
-  // go back to instances, select the first instance on the instances table
-  await t
-    .click(Elements.headerLinkInstances)
-    .click(Elements.instanceCheckbox.nth(0));
-
-  // apply a filter from the filters panel and see create operation dropdown is disappeared
-  await t.typeText(Elements.errorMessageFilter, 'An error message');
-  await t.expect(Elements.createOperationDropdown.exists).notOk();
-
-  // remove filter, select first instance on the instances table
-  await t
-    .selectText(Elements.errorMessageFilter)
-    .pressKey('delete')
-    .click(Elements.instanceCheckbox.nth(0));
-
-  // go to next page on the instances table and see create operation dropdown is still there
-  await t
-    .click(Elements.nextPage)
-    .expect(Elements.createOperationDropdown.exists)
+    .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
     .ok();
 
-  // sort by workflow name on the instances table and see create operation dropdown is still there
   await t
-    .click(Elements.sortByWorkflowName)
-    .expect(Elements.createOperationDropdown.exists)
+    .click(screen.getByRole('listitem', {name: 'Incidents'}))
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
+    .notOk();
+
+  await t
+    .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
+    .ok();
+
+  await t
+    .click(screen.getByRole('listitem', {name: 'Running Instances'}))
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
+    .notOk();
+});
+
+test('Selection of instances are removed on filter selection', async (t) => {
+  // select instances
+  await t
+    .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
+    .ok();
+
+  // instances are not selected after selecting finished instances filter
+  await t
+    .click(screen.getByRole('checkbox', {name: 'Finished Instances'}))
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
+    .notOk();
+
+  // select instances
+  await t
+    .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
+    .ok();
+
+  // instances are not selected after applying instance id filter
+  const instanceId = await within(screen.getByTestId('instances-list'))
+    .getAllByRole('link', {name: /View instance/i})
+    .nth(0).innerText;
+
+  await t.typeText(
+    screen.getByRole('textbox', {
+      name: 'Instance Id(s) separated by space or comma',
+    }),
+    instanceId.toString(),
+    {
+      paste: true,
+    }
+  );
+
+  await t
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
+    .notOk();
+
+  // select instances
+  await t
+    .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
+    .ok();
+
+  // instances are not selected after applying error message filter
+  const errorMessage =
+    "failed to evaluate expression 'nonExistingClientId': no variable found for name 'nonExistingClientId'";
+  await t.typeText(
+    screen.getByRole('textbox', {name: /error message/i}),
+    errorMessage,
+    {
+      paste: true,
+    }
+  );
+
+  await t
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
+    .notOk();
+});
+
+test('Selection of instances are not removed on pagination', async (t) => {
+  await t
+    .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
+    .ok();
+
+  await t
+    .click(screen.getByRole('button', {name: 'Next page'}))
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
+    .ok();
+
+  await t
+    .click(screen.getByRole('button', {name: 'Sort by workflowName'}))
+    .expect(
+      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+    )
     .ok();
 });

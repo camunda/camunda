@@ -11,7 +11,6 @@ export async function setup() {
 
   const instanceWithoutAnIncident = await createSingleInstance(
     'orderProcess',
-    1,
     1
   );
 
