@@ -11,6 +11,8 @@ import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.rest.engine.dto.IncidentEngineDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedIncidentEngineImportMediator;
@@ -21,12 +23,14 @@ import org.mockserver.matchers.Times;
 import org.mockserver.model.HttpError;
 import org.mockserver.model.HttpRequest;
 
+import java.time.OffsetDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.stream.Collectors.toList;
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
 import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
@@ -167,6 +171,62 @@ public class IncidentImportIT extends AbstractImportIT {
   }
 
   @Test
+  @SneakyThrows
+  public void openIncidentsDontOverwriteResolvedOnes() {
+    // given
+    BpmnModelInstance incidentProcess = getExternalTaskProcess();
+    final ProcessInstanceEngineDto processInstanceWithIncident =
+      engineIntegrationExtension.deployAndStartProcess(incidentProcess);
+    engineIntegrationExtension.failAllExternalTasks();
+    manuallyAddAResolvedIncidentToElasticsearch(processInstanceWithIncident);
+
+    // when we import the open incident
+    importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then the open incident should not overwrite the existing resolved one
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .first()
+      .satisfies(processInstanceDto -> {
+        assertThat(processInstanceDto.getIncidents()).hasSize(1);
+        processInstanceDto.getIncidents().forEach(incident -> {
+          assertThat(incident.getEndTime()).isNotNull();
+          assertThat(incident.getIncidentType()).isEqualTo(IncidentType.FAILED_EXTERNAL_TASK);
+          assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.RESOLVED);
+        });
+      });
+  }
+
+  @Test
+  public void multipleProcessInstancesWithIncidents_incidentsAreImportedToCorrectInstance() {
+    // given
+    BpmnModelInstance incidentProcess = getExternalTaskProcess();
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      engineIntegrationExtension.deployAndStartProcess(incidentProcess);
+    engineIntegrationExtension.startProcessInstance(processInstanceEngineDto.getDefinitionId());
+    engineIntegrationExtension.failAllExternalTasks();
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(2)
+      .allSatisfy(processInstanceDto -> {
+        assertThat(processInstanceDto.getIncidents()).hasSize(1);
+        assertThat(processInstanceDto.getIncidents())
+          .flatExtracting(IncidentDto::getIncidentStatus)
+          .containsExactlyInAnyOrder(IncidentStatus.OPEN);
+      });
+  }
+
+  @Test
   public void adjustPageSize() {
     //given
     embeddedOptimizeExtension.getConfigurationService().setEngineImportIncidentMaxPageSize(1);
@@ -258,38 +318,61 @@ public class IncidentImportIT extends AbstractImportIT {
 
   @SneakyThrows
   private void importOpenIncidents() {
-    for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerFactory()
+    for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerManager()
       .getImportSchedulers()) {
-      final List<EngineImportMediator> sortedMediators = scheduler
+      final EngineImportMediator mediator = scheduler
         .getImportMediators()
         .stream()
         .filter(engineImportMediator -> OpenIncidentEngineImportMediator.class.equals(engineImportMediator.getClass()))
-        .collect(toList());
+        .findFirst()
+        .orElseThrow(() -> new OptimizeIntegrationTestException("Could not fine OpenIncidentEngineImportMediator!"));
 
-      for (EngineImportMediator sortedMediator : sortedMediators) {
-        // run and wait for each mediator to finish the import run to force a certain execution order
-        sortedMediator.runImport().get(10, TimeUnit.SECONDS);
-      }
+      mediator.runImport().get(10, TimeUnit.SECONDS);
     }
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   @SneakyThrows
   private void importResolvedIncidents() {
-    for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerFactory()
+    for (EngineImportScheduler scheduler : embeddedOptimizeExtension.getImportSchedulerManager()
       .getImportSchedulers()) {
-      final List<EngineImportMediator> sortedMediators = scheduler
+      final EngineImportMediator mediator = scheduler
         .getImportMediators()
         .stream()
         .filter(engineImportMediator -> CompletedIncidentEngineImportMediator.class.equals(engineImportMediator.getClass()))
-        .collect(toList());
+        .findFirst()
+        .orElseThrow(() -> new OptimizeIntegrationTestException("Could not fine CompletedIncidentEngineImportMediator!"));
 
-      for (EngineImportMediator sortedMediator : sortedMediators) {
-        // run and wait for each mediator to finish the import run to force a certain execution order
-        sortedMediator.runImport().get(10, TimeUnit.SECONDS);
-      }
+      mediator.runImport().get(10, TimeUnit.SECONDS);
     }
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+  }
+
+  private void manuallyAddAResolvedIncidentToElasticsearch(final ProcessInstanceEngineDto processInstanceWithIncident) {
+    final IncidentEngineDto incidentEngineDto = engineIntegrationExtension.getIncidents()
+      .stream()
+      .findFirst()
+      .orElseThrow(() -> new OptimizeIntegrationTestException("There should be at least one incident!"));
+
+    final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
+      .processDefinitionId(processInstanceWithIncident.getDefinitionId())
+      .processDefinitionKey(processInstanceWithIncident.getProcessDefinitionKey())
+      .processDefinitionVersion(processInstanceWithIncident.getProcessDefinitionVersion())
+      .processInstanceId(processInstanceWithIncident.getId())
+      .startDate(OffsetDateTime.now())
+      .endDate(OffsetDateTime.now())
+      .incidents(Collections.singletonList(new IncidentDto(
+        processInstanceWithIncident.getId(),
+        DEFAULT_ENGINE_ALIAS,
+        incidentEngineDto.getId(),
+        OffsetDateTime.now(),
+        OffsetDateTime.now(),
+        IncidentType.FAILED_EXTERNAL_TASK, SERVICE_TASK, SERVICE_TASK, "Foo bar", IncidentStatus.RESOLVED
+      )))
+      .build();
+    elasticSearchIntegrationTestExtension.addEntryToElasticsearch(
+      PROCESS_INSTANCE_INDEX_NAME, processInstanceWithIncident.getId(), procInst
+    );
   }
 
 }

@@ -21,7 +21,7 @@ public class CompletedIncidentWriter extends AbstractIncidentWriter {
 
   protected String createInlineUpdateScript() {
     // new import incidents should win over already
-    // import incidents, since those might be open incidents
+    // imported incidents, since those might be open incidents
     // @formatter:off
     return
       "def existingIncidentsById = ctx._source.incidents.stream().collect(Collectors.toMap(e -> e.id, e -> e, (e1, e2) -> e1));" +

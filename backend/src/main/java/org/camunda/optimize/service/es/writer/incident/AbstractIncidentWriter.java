@@ -43,9 +43,7 @@ public abstract class AbstractIncidentWriter {
   public List<ImportRequestDto> generateIncidentImports(List<IncidentDto> incidents) {
     Map<String, List<OptimizeDto>> processInstanceToEvents = new HashMap<>();
     for (IncidentDto e : incidents) {
-      if (!processInstanceToEvents.containsKey(e.getProcessInstanceId())) {
-        processInstanceToEvents.put(e.getProcessInstanceId(), new ArrayList<>());
-      }
+      processInstanceToEvents.putIfAbsent(e.getProcessInstanceId(), new ArrayList<>());
       processInstanceToEvents.get(e.getProcessInstanceId()).add(e);
     }
 
@@ -73,7 +71,11 @@ public abstract class AbstractIncidentWriter {
 
     try {
       params.put(INCIDENTS, incidents);
-      final Script updateScript = createDefaultScriptWithSpecificDtoParams(createInlineUpdateScript(), params, objectMapper);
+      final Script updateScript = createDefaultScriptWithSpecificDtoParams(
+        createInlineUpdateScript(),
+        params,
+        objectMapper
+      );
 
       final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
         .processInstanceId(processInstanceId)
@@ -89,7 +91,7 @@ public abstract class AbstractIncidentWriter {
         .retryOnConflict(NUMBER_OF_RETRIES_ON_CONFLICT);
     } catch (IOException e) {
       String reason = String.format(
-        "Error while processing JSON for incidents with ID [%s].",
+        "Error while processing JSON for incidents for process instance with ID [%s].",
         processInstanceId
       );
       log.error(reason, e);

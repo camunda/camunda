@@ -18,8 +18,6 @@ import java.util.List;
 @Slf4j
 public class CompletedIncidentImportService extends AbstractIncidentImportService {
 
-  protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
-  protected EngineContext engineContext;
   private final CompletedIncidentWriter completedIncidentWriter;
 
   public CompletedIncidentImportService(CompletedIncidentWriter completedIncidentWriter,

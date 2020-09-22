@@ -80,11 +80,10 @@ public class EngineImportIndexHandlerRegistry {
 
   public CompletedIncidentImportIndexHandler getCompletedIncidentImportIndexHandler(String engineAlias) {
     CompletedIncidentImportIndexHandler result = null;
-    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(
-      engineAlias);
+    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider =
+      engineImportIndexHandlerProviderMap.get(engineAlias);
     if (engineImportIndexHandlerProvider != null) {
-      result =
-        engineImportIndexHandlerProvider.getImportIndexHandler(CompletedIncidentImportIndexHandler.class);
+      result = engineImportIndexHandlerProvider.getImportIndexHandler(CompletedIncidentImportIndexHandler.class);
     }
     return result;
   }

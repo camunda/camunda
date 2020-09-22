@@ -54,6 +54,7 @@ import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.EngineUserDto;
 import org.camunda.optimize.rest.engine.dto.ExternalTaskEngineDto;
 import org.camunda.optimize.rest.engine.dto.GroupDto;
+import org.camunda.optimize.rest.engine.dto.IncidentEngineDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.engine.dto.TaskDto;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
@@ -978,6 +979,10 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return getEngineUrl() + "/process-definition/" + procDefId + "/start";
   }
 
+  private String getIncidentUri() {
+    return getEngineUrl() + "/incident";
+  }
+
   private String getHistoricGetProcessInstanceUri(String processInstanceId) {
     return getEngineUrl() + "/history/process-instance/" + processInstanceId;
   }
@@ -1003,11 +1008,11 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   private String getExternalTaskFetchAndLockUri() {
-    return getEngineUrl() + "/external-task/fetchAndLock";
+    return getExternalTaskUri() + "fetchAndLock";
   }
 
   private String getExternalTaskFailureUri(final String externalTaskId) {
-    return getEngineUrl() + "/external-task/" + externalTaskId + "/failure";
+    return getExternalTaskUri() + externalTaskId + "/failure";
   }
 
   private String getExternalTaskCompleteUri(final String externalTaskId) {
@@ -1019,7 +1024,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   private String getExternalTaskRetriesUri() {
-    return getEngineUrl() + "/external-task/retries";
+    return getExternalTaskUri() + "retries";
   }
 
   private String getDecisionDefinitionUri() {
@@ -1183,7 +1188,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
         );
       }
     } catch (IOException e) {
-      String message = "Could not retrieve external tasks!";
+      String message = "Could not fetch and lock external tasks!";
       log.error(message, e);
       throw new OptimizeIntegrationTestException(message, e);
     }
@@ -1264,6 +1269,23 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
       );
     } catch (IOException e) {
       String message = "Could not retrieve all external tasks!";
+      log.error(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
+    }
+  }
+
+  @SneakyThrows
+  public List<IncidentEngineDto> getIncidents() {
+    HttpRequestBase get = new HttpGet(getIncidentUri());
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      return OBJECT_MAPPER.readValue(
+        responseString,
+        new TypeReference<List<IncidentEngineDto>>() {
+        }
+      );
+    } catch (IOException e) {
+      String message = "Could not retrieve incidents!";
       log.error(message, e);
       throw new OptimizeIntegrationTestException(message, e);
     }
