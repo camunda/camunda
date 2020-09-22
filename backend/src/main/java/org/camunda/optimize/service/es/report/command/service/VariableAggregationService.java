@@ -20,6 +20,7 @@ import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneId;
@@ -30,14 +31,18 @@ import static java.util.stream.Collectors.toMap;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.OPTIMIZE_DATE_FORMAT;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseNested;
 
 @RequiredArgsConstructor
 @Component
 public class VariableAggregationService {
 
-  private static final String VARIABLES_AGGREGATION = "variables";
-  private static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "inst_count";
+  public static final String NESTED_AGGREGATION = "nested";
+  public static final String VARIABLES_AGGREGATION = "variables";
+  public static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
+  public static final String FILTERED_INSTANCE_COUNT_AGGREGATION = "filteredInstCount";
+  public static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "inst_count";
+  public static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
+  public static final String RANGE_AGGREGATION = "rangeAggregation";
 
   private final ConfigurationService configurationService;
   private final NumberVariableAggregationService numberVariableAggregationService;
@@ -47,29 +52,22 @@ public class VariableAggregationService {
   public Optional<AggregationBuilder> createVariableSubAggregation(
     final VariableAggregationContext context) {
     context.setVariableRangeMinMaxStats(getVariableMinMaxStats(context));
-    Optional<AggregationBuilder> aggregationBuilder = Optional.empty();
     switch (context.getVariableType()) {
       case STRING:
       case BOOLEAN:
-        aggregationBuilder = Optional.of(AggregationBuilders
-                                           .terms(VARIABLES_AGGREGATION)
-                                           .size(configurationService.getEsAggregationBucketLimit())
-                                           .field(context.getNestedVariableValueFieldLabel()));
-        break;
+        return Optional.of(AggregationBuilders
+                             .terms(VARIABLES_AGGREGATION)
+                             .size(configurationService.getEsAggregationBucketLimit())
+                             .field(context.getNestedVariableValueFieldLabel())
+                             .subAggregation(context.getSubAggregation()));
       case DATE:
-        aggregationBuilder = createDateVariableAggregation(context);
-        break;
+        return createDateVariableAggregation(context);
       default:
         if (VariableType.getNumericTypes().contains(context.getVariableType())) {
-          aggregationBuilder =
-            numberVariableAggregationService.createNumberVariableAggregation(context);
+          return numberVariableAggregationService.createNumberVariableAggregation(context);
         }
+        return Optional.empty();
     }
-
-    final AggregationBuilder nestedSubAggregation = reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
-      .subAggregation(context.getSubAggregation());
-
-    return aggregationBuilder.map(builder -> builder.subAggregation(nestedSubAggregation));
   }
 
   private Optional<AggregationBuilder> createDateVariableAggregation(
@@ -83,7 +81,7 @@ public class VariableAggregationService {
       .dateAggregationName(VARIABLES_AGGREGATION)
       .build();
 
-    return dateAggregationService.createProcessDateVariableAggregation(dateAggContext);
+    return dateAggregationService.createDateVariableAggregation(dateAggContext);
   }
 
   public Map<String, Aggregations> retrieveResultBucketMap(final Filter filteredParentAgg,
@@ -108,6 +106,11 @@ public class VariableAggregationService {
           ));
     }
     return bucketAggregations;
+  }
+
+  public Aggregations retrieveSubAggregationFromBucketMapEntry(Map.Entry<String, Aggregations> bucketMapEntry) {
+    ReverseNested reverseNested = bucketMapEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
+    return reverseNested == null ? bucketMapEntry.getValue() : reverseNested.getAggregations();
   }
 
   private MinMaxStatDto getVariableMinMaxStats(final VariableAggregationContext context) {

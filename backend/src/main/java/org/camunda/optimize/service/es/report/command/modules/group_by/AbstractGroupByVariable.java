@@ -37,6 +37,13 @@ import java.util.Optional;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.GroupByResult;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.FILTERED_INSTANCE_COUNT_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.FILTERED_VARIABLES_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.MISSING_VARIABLES_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.NESTED_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.RANGE_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLES_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLES_INSTANCE_COUNT_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
@@ -47,14 +54,6 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseN
 
 @RequiredArgsConstructor
 public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> extends GroupByPart<Data> {
-
-  private static final String NESTED_AGGREGATION = "nested";
-  private static final String VARIABLES_AGGREGATION = "variables";
-  private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
-  private static final String FILTERED_INSTANCE_COUNT_AGGREGATION = "filteredInstCount";
-  private static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "inst_count";
-  private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
-  public static final String RANGE_AGGREGATION = "rangeAggregation";
 
   private final VariableAggregationService variableAggregationService;
 
@@ -107,7 +106,9 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
       .customBucketDto(context.getReportData().getConfiguration().getCustomBucket())
       .dateUnit(getGroupByDateUnit(context))
       .baseQueryForMinMaxStats(searchSourceBuilder.query())
-      .subAggregation(distributedByPart.createAggregation(context))
+      .subAggregation(
+        reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
+          .subAggregation(distributedByPart.createAggregation(context)))
       .combinedRangeMinMaxStats(context.getCombinedRangeMinMaxStats().orElse(null))
       .build();
 
@@ -175,11 +176,10 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
 
     final List<GroupByResult> groupedData = new ArrayList<>();
     for (Map.Entry<String, Aggregations> keyToAggregationEntry : bucketAggregations.entrySet()) {
-      final ReverseNested reverseNested = keyToAggregationEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
       final List<DistributedByResult> distribution =
         distributedByPart.retrieveResult(
           response,
-          reverseNested == null ? keyToAggregationEntry.getValue() : reverseNested.getAggregations(),
+          variableAggregationService.retrieveSubAggregationFromBucketMapEntry(keyToAggregationEntry),
           context
         );
       groupedData.add(GroupByResult.createGroupByResult(keyToAggregationEntry.getKey(), distribution));

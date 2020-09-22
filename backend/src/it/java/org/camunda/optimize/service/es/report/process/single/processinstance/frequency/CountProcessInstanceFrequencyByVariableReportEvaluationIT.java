@@ -1147,6 +1147,8 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
 
     assertThat(startOfFirstBucket).isBeforeOrEqualTo(firstTruncatedDateVariableValue);
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
+    assertThat(result.getData().stream().mapToDouble(MapResultEntryDto::getValue).sum())
+      .isEqualTo(3.0); // each instance falls into one bucket
   }
 
   @SneakyThrows

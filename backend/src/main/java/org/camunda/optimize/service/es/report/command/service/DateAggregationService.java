@@ -60,6 +60,7 @@ import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 public class DateAggregationService {
 
   private static final String DATE_AGGREGATION = "dateAggregation";
+  public static final String AUTOMATIC_DATE_REVERSE_AGGREGATION = "reverseAggForAutomatic";
 
   private final DateTimeFormatter dateTimeFormatter;
   private final ConfigurationService configurationService;
@@ -94,7 +95,7 @@ public class DateAggregationService {
     return Optional.of(createFilterLimitedModelElementDateHistogramWithSubAggregation(context));
   }
 
-  public Optional<AggregationBuilder> createProcessDateVariableAggregation(final DateAggregationContext context) {
+  public Optional<AggregationBuilder> createDateVariableAggregation(final DateAggregationContext context) {
     if (context.getMinMaxStats().isEmpty()) {
       // no instances present
       return Optional.empty();
@@ -103,11 +104,11 @@ public class DateAggregationService {
     if (AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
       return createAutomaticIntervalAggregationOrFallbackToMonth(
         context,
-        this::createDateHistogramAggregation
+        this::createDateHistogramWithSubAggregation
       );
     }
 
-    return Optional.of(createDateHistogramAggregation(context));
+    return Optional.of(createDateHistogramWithSubAggregation(context));
   }
 
   public Optional<AggregationBuilder> createDecisionEvaluationDateAggregation(final DateAggregationContext context) {
@@ -185,6 +186,17 @@ public class DateAggregationService {
       .timeZone(context.getTimezone());
   }
 
+  private DateHistogramAggregationBuilder createDateHistogramWithSubAggregation(final DateAggregationContext context) {
+    return AggregationBuilders
+      .dateHistogram(context.getDateAggregationName().orElse(DATE_AGGREGATION))
+      .order(BucketOrder.key(false))
+      .field(context.getDateField())
+      .dateHistogramInterval(mapToDateHistogramInterval(context.getGroupByDateUnit()))
+      .format(OPTIMIZE_DATE_FORMAT)
+      .timeZone(context.getTimezone())
+      .subAggregation(context.getSubAggregation());
+  }
+
   private AggregationBuilder createRunningDateFilterAggregations(final DateAggregationContext context) {
     final AggregateByDateUnit unit = context.getGroupByDateUnit();
     final ZonedDateTime startOfFirstBucket = truncateToUnit(
@@ -238,7 +250,11 @@ public class DateAggregationService {
       createAutomaticIntervalAggregationWithSubAggregation(context);
 
     if (automaticIntervalAggregation.isPresent()) {
-      return automaticIntervalAggregation;
+      return Optional.of(
+        wrapWithFilterLimitedParentAggregation(
+          boolQuery().filter(matchAllQuery()),
+          automaticIntervalAggregation.get().subAggregation(context.getSubAggregation())
+        ));
     }
 
     // automatic interval not possible, return default aggregation with unit month instead
@@ -281,12 +297,7 @@ public class DateAggregationService {
       start = nextStart;
       bucketCount++;
     } while (start.isBefore(max));
-    return Optional.of(
-      wrapWithFilterLimitedParentAggregation(
-        boolQuery().filter(matchAllQuery()),
-        rangeAgg.subAggregation(context.getSubAggregation())
-      )
-    );
+    return Optional.of(rangeAgg);
   }
 
   private AggregationBuilder createFilterLimitedDecisionDateHistogramWithSubAggregation(final DateAggregationContext context) {

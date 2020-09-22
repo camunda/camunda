@@ -576,13 +576,12 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
           assertThat(resultEntries.get(0))
             .extracting(MapResultEntryDto::getKey)
             .isEqualTo(localDateTimeToString(dateVariableValue.toZonedDateTime()));
-          // TODO below assertions fail due to OPT-4269, add once resolved
-//          assertThat(resultEntries.get(0))
-//            .extracting(MapResultEntryDto::getValue)
-//            .isEqualTo(1000.);
-//          assertThat(resultEntries.get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1))
-//            .extracting(MapResultEntryDto::getValue)
-//            .isEqualTo(2000.);
+          assertThat(resultEntries.get(0))
+            .extracting(MapResultEntryDto::getValue)
+            .isEqualTo(1000.);
+          assertThat(resultEntries.get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1))
+            .extracting(MapResultEntryDto::getValue)
+            .isEqualTo(2000.);
         });
   }
 

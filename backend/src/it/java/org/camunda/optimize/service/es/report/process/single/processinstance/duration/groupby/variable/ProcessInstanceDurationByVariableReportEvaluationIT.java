@@ -50,6 +50,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -1629,6 +1630,8 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
     // then
     assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getInstanceCount()).isEqualTo(numberOfInstances);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(numberOfInstances);
     List<MapResultEntryDto> resultData = result.getData();
     assertThat(resultData).isNotNull();
     assertThat(resultData).hasSize(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
@@ -1639,11 +1642,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     final OffsetDateTime startOfLastBucket = OffsetDateTime.from(
       formatter.parse(resultData.get(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1).getKey()));
     final OffsetDateTime firstTruncatedDateVariableValue = dateVariableValue.plusMinutes(numberOfInstances)
-      .truncatedTo(ChronoUnit.MILLIS);
+      .truncatedTo(MILLIS);
     final OffsetDateTime lastTruncatedDateVariableValue = dateVariableValue.truncatedTo(ChronoUnit.MILLIS);
 
     assertThat(startOfFirstBucket).isBeforeOrEqualTo(firstTruncatedDateVariableValue);
     assertThat(startOfLastBucket).isAfterOrEqualTo(lastTruncatedDateVariableValue);
+    assertThat(result.getData())
+      .extracting(MapResultEntryDto::getValue)
+      .filteredOn(Objects::nonNull)
+      .containsExactly(1000., 1000., 1000.); // each instance with duration 1000. falls into one bucket
   }
 
   @SneakyThrows

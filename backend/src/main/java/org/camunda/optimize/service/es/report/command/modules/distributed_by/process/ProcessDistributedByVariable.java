@@ -24,7 +24,6 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 import org.elasticsearch.search.aggregations.bucket.filter.ParsedFilter;
 import org.elasticsearch.search.aggregations.bucket.nested.Nested;
 import org.elasticsearch.search.aggregations.bucket.nested.ParsedNested;
-import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
 import org.elasticsearch.search.aggregations.bucket.terms.ParsedStringTerms;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
@@ -42,10 +41,16 @@ import static java.util.stream.Collectors.toSet;
 import static org.camunda.optimize.dto.optimize.ReportConstants.MISSING_VARIABLE_KEY;
 import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_DURATION_PROPERTY;
 import static org.camunda.optimize.dto.optimize.ReportConstants.VIEW_FREQUENCY_PROPERTY;
-import static org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createDistributedByResult;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createResultWithEmptyValue;
 import static org.camunda.optimize.service.es.report.command.modules.result.CompositeCommandResult.DistributedByResult.createResultWithZeroValue;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.FILTERED_INSTANCE_COUNT_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.FILTERED_VARIABLES_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.MISSING_VARIABLES_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.NESTED_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.RANGE_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLES_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.VARIABLES_INSTANCE_COUNT_AGGREGATION;
 import static org.camunda.optimize.service.es.report.command.util.FilterLimitedAggregationUtil.FILTER_LIMITED_AGGREGATION;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.VARIABLES;
 import static org.camunda.optimize.service.util.ProcessVariableHelper.createFilterForUndefinedOrNullQueryBuilder;
@@ -65,12 +70,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseN
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 @RequiredArgsConstructor
 public class ProcessDistributedByVariable extends ProcessDistributedByPart {
-  private static final String NESTED_AGGREGATION = "nested";
-  private static final String VARIABLES_AGGREGATION = "variables";
-  private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
-  private static final String FILTERED_INSTANCE_COUNT_AGGREGATION = "filteredInstCount";
-  private static final String VARIABLES_INSTANCE_COUNT_AGGREGATION = "inst_count";
-  private static final String MISSING_VARIABLES_AGGREGATION = "missingVariables";
+
   private static final String PARENT_FILTER_AGGREGATION = "matchAllFilter";
 
   private final DateAggregationService dateAggregationService;
@@ -94,7 +94,9 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
       .customBucketDto(context.getReportData().getConfiguration().getDistributeByCustomBucket())
       .dateUnit(getDistributeByDateUnit(context))
       .baseQueryForMinMaxStats(context.getDistributedByMinMaxBaseQuery())
-      .subAggregation(viewPart.createAggregation(context))
+      .subAggregation(
+        reverseNested(VARIABLES_INSTANCE_COUNT_AGGREGATION)
+          .subAggregation(viewPart.createAggregation(context)))
       .combinedRangeMinMaxStats(context.getCombinedRangeMinMaxStats().orElse(null))
       .build();
 
@@ -166,10 +168,9 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
     List<CompositeCommandResult.DistributedByResult> distributedByResults = new ArrayList<>();
 
     for (Map.Entry<String, Aggregations> keyToAggregationEntry : bucketAggregations.entrySet()) {
-      ReverseNested reverseNested = keyToAggregationEntry.getValue().get(VARIABLES_INSTANCE_COUNT_AGGREGATION);
       final CompositeCommandResult.ViewResult viewResult = viewPart.retrieveResult(
         response,
-        reverseNested == null ? keyToAggregationEntry.getValue() : reverseNested.getAggregations(),
+        variableAggregationService.retrieveSubAggregationFromBucketMapEntry(keyToAggregationEntry),
         context
       );
       distributedByResults.add(createDistributedByResult(keyToAggregationEntry.getKey(), null, viewResult));

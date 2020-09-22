@@ -21,7 +21,7 @@ import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 import java.util.Optional;
 
-import static org.camunda.optimize.service.es.report.command.modules.group_by.AbstractGroupByVariable.RANGE_AGGREGATION;
+import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
@@ -61,7 +61,7 @@ public class NumberVariableAggregationService {
         );
       rangeAgg.addRange(range);
     }
-    return Optional.of(rangeAgg);
+    return Optional.of(rangeAgg.subAggregation(context.getSubAggregation()));
   }
 
   private Double getIntervalUnit(final VariableAggregationContext context,
