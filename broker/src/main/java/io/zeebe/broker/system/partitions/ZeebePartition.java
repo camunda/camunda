@@ -63,6 +63,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -105,6 +106,9 @@ public final class ZeebePartition extends Actor
   private final RaftPartitionHealth raftPartitionHealth;
   private final ZeebePartitionHealth zeebePartitionHealth;
   private long term;
+  private boolean isPaused;
+  private AsyncSnapshotDirector asyncSnapshotDirector;
+  private StreamProcessor streamProcessor;
 
   public ZeebePartition(
       final BrokerInfo localBroker,
@@ -454,13 +458,16 @@ public final class ZeebePartition extends Actor
   }
 
   private void installProcessingPartition(final CompletableActorFuture<Void> installFuture) {
-    final StreamProcessor streamProcessor = createStreamProcessor(zeebeDb);
+    streamProcessor = createStreamProcessor(zeebeDb);
     addClosingStep("stream processor", streamProcessor);
     streamProcessor
         .openAsync()
         .onComplete(
             (value, processorFail) -> {
               if (processorFail == null) {
+                if (isPaused) {
+                  streamProcessor.pauseProcessing();
+                }
                 registerHealthComponent(streamProcessor.getName(), streamProcessor);
                 final DataCfg dataCfg = brokerCfg.getData();
                 installSnapshotDirector(streamProcessor, dataCfg)
@@ -525,7 +532,7 @@ public final class ZeebePartition extends Actor
   private ActorFuture<Void> installSnapshotDirector(
       final StreamProcessor streamProcessor, final DataCfg dataCfg) {
     final Duration snapshotPeriod = dataCfg.getSnapshotPeriod();
-    final var asyncSnapshotDirector =
+    asyncSnapshotDirector =
         new AsyncSnapshotDirector(
             localBroker.getNodeId(),
             streamProcessor,
@@ -668,6 +675,9 @@ public final class ZeebePartition extends Actor
     // - first, it is called by one of the transitionTo...() methods
     // - then it is called by onActorClosing()
 
+    streamProcessor = null;
+    asyncSnapshotDirector = null;
+
     final var closingStepsInReverseOrder = new ArrayList<>(closingSteps);
     Collections.reverse(closingStepsInReverseOrder);
 
@@ -778,6 +788,55 @@ public final class ZeebePartition extends Actor
           criticalComponentsHealthMonitor.removeComponent(name);
           return CompletableActorFuture.completed(null);
         });
+  }
+
+  public ActorFuture<Void> pauseProcessing() {
+    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    actor.call(
+        () -> {
+          isPaused = true;
+          if (streamProcessor != null) {
+            streamProcessor.pauseProcessing().onComplete(completed);
+          } else {
+            completed.complete(null);
+          }
+        });
+    return completed;
+  }
+
+  public void resumeProcessing() {
+    actor.call(
+        () -> {
+          isPaused = false;
+          if (streamProcessor != null) {
+            streamProcessor.resumeProcessing();
+          }
+        });
+  }
+
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  public PersistedSnapshotStore getSnapshotStore() {
+    return atomixRaftPartition.getServer().getPersistedSnapshotStore();
+  }
+
+  public void triggerSnapshot() {
+    actor.call(
+        () -> {
+          if (asyncSnapshotDirector != null) {
+            asyncSnapshotDirector.forceSnapshot();
+          }
+        });
+  }
+
+  public ActorFuture<Optional<StreamProcessor>> getStreamProcessor() {
+    return actor.call(() -> Optional.ofNullable(streamProcessor));
+  }
+
+  public ActorFuture<Optional<AsyncSnapshotDirector>> getAsyncSnapshotDirector() {
+    return actor.call(() -> Optional.ofNullable(asyncSnapshotDirector));
   }
 
   private static final class ClosingStep {

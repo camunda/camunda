@@ -355,7 +355,11 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     actor.run(() -> this.failureListener = failureListener);
   }
 
-  private enum Phase {
+  public ActorFuture<Phase> getCurrentPhase() {
+    return actor.call(() -> phase);
+  }
+
+  public enum Phase {
     REPROCESSING,
     PROCESSING,
     PAUSED,
