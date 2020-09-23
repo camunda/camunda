@@ -180,12 +180,12 @@ public final class Broker implements AutoCloseable {
     }
     startContext.addStep("cluster services", () -> atomix.start().join());
     startContext.addStep("topology manager", () -> topologyManagerStep(clusterCfg, localBroker));
+    startContext.addStep("Upgrade manager", this::addBrokerAdminService);
     startContext.addStep("metric's server", () -> monitoringServerStep(networkCfg, localBroker));
     startContext.addStep(
         "leader management request handler", () -> managementRequestStep(localBroker));
     startContext.addStep(
         "zeebe partitions", () -> partitionsStep(brokerCfg, clusterCfg, localBroker));
-    startContext.addStep("Upgrade manager", this::addBrokerAdminService);
 
     return startContext;
   }
@@ -298,7 +298,11 @@ public final class Broker implements AutoCloseable {
     final SocketBindingCfg monitoringApi = networkCfg.getMonitoringApi();
     final BrokerHttpServer httpServer =
         new BrokerHttpServer(
-            monitoringApi.getHost(), monitoringApi.getPort(), METRICS_REGISTRY, healthCheckService);
+            monitoringApi.getHost(),
+            monitoringApi.getPort(),
+            METRICS_REGISTRY,
+            healthCheckService,
+            brokerAdminService);
     return () -> {
       httpServer.close();
       healthCheckService.close();

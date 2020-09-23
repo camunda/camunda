@@ -12,6 +12,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.prometheus.client.CollectorRegistry;
+import io.zeebe.broker.system.management.BrokerAdminService;
 import io.zeebe.util.CloseableSilently;
 
 public final class BrokerHttpServer implements CloseableSilently {
@@ -19,12 +20,15 @@ public final class BrokerHttpServer implements CloseableSilently {
   private final NioEventLoopGroup bossGroup;
   private final NioEventLoopGroup workerGroup;
   private final Channel channel;
+  private final BrokerAdminService brokerAdminService;
 
   public BrokerHttpServer(
       final String host,
       final int port,
       final CollectorRegistry metricsRegistry,
-      final BrokerHealthCheckService brokerHealthCheckService) {
+      final BrokerHealthCheckService brokerHealthCheckService,
+      final BrokerAdminService brokerAdminService) {
+    this.brokerAdminService = brokerAdminService;
     bossGroup = new NioEventLoopGroup(1);
     workerGroup = new NioEventLoopGroup();
 
@@ -33,7 +37,8 @@ public final class BrokerHttpServer implements CloseableSilently {
             .group(bossGroup, workerGroup)
             .channel(NioServerSocketChannel.class)
             .childHandler(
-                new BrokerHttpServerInitializer(metricsRegistry, brokerHealthCheckService))
+                new BrokerHttpServerInitializer(
+                    metricsRegistry, brokerHealthCheckService, this.brokerAdminService))
             .bind(host, port)
             .syncUninterruptibly()
             .channel();
