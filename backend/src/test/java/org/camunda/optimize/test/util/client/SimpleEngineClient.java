@@ -44,9 +44,10 @@ import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
+import org.camunda.optimize.test.util.client.dto.IncidentDto;
 import org.camunda.optimize.test.util.client.dto.MessageCorrelationDto;
 import org.camunda.optimize.test.util.client.dto.TaskDto;
-import org.camunda.optimize.test.util.client.dto.VariableValue;
+import org.camunda.optimize.test.util.client.dto.VariableValueDto;
 import org.elasticsearch.common.io.Streams;
 
 import javax.ws.rs.core.Response;
@@ -88,9 +89,9 @@ public class SimpleEngineClient {
   private static final Set<String> STANDARD_GROUPS = ImmutableSet.of("accounting", "management", "sales");
   public static final String DELAY_VARIABLE_NAME = "delay";
 
-  private CloseableHttpClient client;
-  private String engineRestEndpoint;
-  private ObjectMapper objectMapper = new ObjectMapper();
+  private final CloseableHttpClient client;
+  private final String engineRestEndpoint;
+  private final ObjectMapper objectMapper = new ObjectMapper();
 
   public SimpleEngineClient(String engineRestEndpoint) {
     this.engineRestEndpoint = engineRestEndpoint;
@@ -119,7 +120,7 @@ public class SimpleEngineClient {
     final HttpPost createTenantPost = new HttpPost(engineRestEndpoint + "/tenant/create");
     createTenantPost.setEntity(new StringEntity("{\"id\": \"" + tenantId + "\", \"name\": \"" + tenantId + "\"}"));
     createTenantPost.addHeader("Content-Type", "application/json");
-    try (CloseableHttpResponse tenantCreatedResponse = client.execute(createTenantPost)) {
+    try (CloseableHttpResponse ignored = client.execute(createTenantPost)) {
       log.info("Created tenant {}.", tenantId);
     }
   }
@@ -153,7 +154,7 @@ public class SimpleEngineClient {
     }
   }
 
-  public void grantGroupOptimizeAllDefinitionAndAllTenantsAuthorization(final String groupId) {
+  private void grantGroupOptimizeAllDefinitionAndAllTenantsAuthorization(final String groupId) {
     createGrantAllOfTypeGroupAuthorization(RESOURCE_TYPE_APPLICATION, groupId);
     createGrantAllOfTypeGroupAuthorization(RESOURCE_TYPE_PROCESS_DEFINITION, groupId);
     createGrantAllOfTypeGroupAuthorization(RESOURCE_TYPE_DECISION_DEFINITION, groupId);
@@ -206,10 +207,18 @@ public class SimpleEngineClient {
   public Optional<Boolean> getProcessInstanceDelayVariable(String procInstId) {
     HttpGet get =
       new HttpGet(engineRestEndpoint + "/process-instance/" + procInstId + "/variables/" + DELAY_VARIABLE_NAME);
-    VariableValue variable = new VariableValue();
+    VariableValueDto variable = new VariableValueDto();
     try (CloseableHttpResponse response = client.execute(get)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
+        log.debug(String.format(
+          "No variable [%s] found for process instance with ID [%s]",
+          DELAY_VARIABLE_NAME,
+          procInstId
+        ));
+        return Optional.empty();
+      }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      variable = objectMapper.readValue(responseString, VariableValue.class);
+      variable = objectMapper.readValue(responseString, VariableValueDto.class);
     } catch (IOException e) {
       log.error("Error while trying to fetch the variable!!", e);
     }
@@ -678,6 +687,95 @@ public class SimpleEngineClient {
   }
 
   @SneakyThrows
+  public List<IncidentDto> getFirst100Incidents() {
+    HttpRequestBase get = new HttpGet(getIncidentUri());
+    URI uri = null;
+    try {
+      uri = new URIBuilder(get.getURI())
+        .addParameter("maxSize", "100")
+        // sort by incident ID to randomize the selection. Otherwise, we would get the latest
+        // incidents first which would result in a very unequal distribution across processes.
+        .addParameter("sortBy", "incidentId")
+        .addParameter("sortOrder", "desc")
+        .build();
+    } catch (URISyntaxException e) {
+      throw new OptimizeRuntimeException("Could not build uri!", e);
+    }
+    get.setURI(uri);
+    try (CloseableHttpResponse response = client.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      return objectMapper.readValue(
+        responseString,
+        new TypeReference<List<IncidentDto>>() {
+        }
+      );
+    } catch (IOException e) {
+      String message = "Could not retrieve incidents!";
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  @SneakyThrows
+  public void addVariableToProcessInstance(final String processInstanceId, final String variableName,
+                                           final VariableValueDto variableValueDto) {
+    HttpPut put = new HttpPut(getAddVariableToProcessInstanceUri(processInstanceId, variableName));
+    put.addHeader("Content-Type", "application/json");
+    put.setEntity(new StringEntity(objectMapper.writeValueAsString(variableValueDto)));
+    try (CloseableHttpResponse response = client.execute(put)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+        throw new OptimizeRuntimeException(
+          String.format(
+            "Could not add variable [%s] to process instance with id [%s]. \n " +
+              "Status-code: %s \n Error message: %s",
+            variableName, processInstanceId,
+            response.getStatusLine().getStatusCode(),
+            EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8)
+          )
+        );
+      }
+    } catch (IOException e) {
+      String message = String.format("Could not add variable to process instance with id [%s]", processInstanceId);
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  @SneakyThrows
+  public void increaseRetry(final List<String> processInstanceIds) {
+    HttpPost httpPost = new HttpPost(getJobRetriesUri());
+    httpPost.addHeader("Content-Type", "application/json");
+    String commaSeparatedIds = processInstanceIds.stream().map(id -> "\"" + id + "\"").collect(Collectors.joining(","));
+    // @formatter:off
+    httpPost.setEntity(new StringEntity(
+      "{\n" +
+        "\"retries\": " + 1 + ",\n" +
+        "\"jobQuery\": {" +
+            "\"processInstanceIds\": [" + commaSeparatedIds + "] \n" +
+          "}" +
+        "}"
+    ));
+    // @formatter:on
+    try (CloseableHttpResponse response = client.execute(httpPost)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
+        throw new OptimizeRuntimeException(
+          String.format(
+            "Could not increase retries for process instances with ids [%s]. \n " +
+              "Status-code: %s \n Error message: %s",
+            commaSeparatedIds,
+            response.getStatusLine().getStatusCode(),
+            EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8)
+          )
+        );
+      }
+    } catch (IOException e) {
+      String message = "Could not increment retry of process instances!";
+      log.error(message, e);
+      throw new OptimizeRuntimeException(message, e);
+    }
+  }
+
+  @SneakyThrows
   private String serializeDateTimeToUrlEncodedString(final OffsetDateTime createdAfter) {
     return URLEncoder.encode(DATE_TIME_FORMATTER.format(createdAfter), StandardCharsets.UTF_8.name());
   }
@@ -721,6 +819,14 @@ public class SimpleEngineClient {
     }
   }
 
+  private String getIncidentUri() {
+    return engineRestEndpoint + "/incident";
+  }
+
+  private String getJobRetriesUri() {
+    return engineRestEndpoint + "/job/retries";
+  }
+
   private String getStartProcessInstanceUri(String procDefId) {
     return engineRestEndpoint + "/process-definition/" + procDefId + "/start";
   }
@@ -730,7 +836,16 @@ public class SimpleEngineClient {
   }
 
   private String getSuspendProcessInstanceUri(final String processInstanceId) {
-    return engineRestEndpoint + "/process-instance/" + processInstanceId + "/suspended";
+    return getBaseProcessInstanceUri() + "/" + processInstanceId + "/suspended";
+  }
+
+  private String getBaseProcessInstanceUri() {
+    return engineRestEndpoint + "/process-instance";
+  }
+
+  private String getAddVariableToProcessInstanceUri(final String processInstanceId,
+                                                    final String variableName) {
+    return getBaseProcessInstanceUri() + "/" + processInstanceId + "/variables/" + variableName;
   }
 
   private String getTaskListCreatedAfterUri(final String processDefinitionId, long limit,

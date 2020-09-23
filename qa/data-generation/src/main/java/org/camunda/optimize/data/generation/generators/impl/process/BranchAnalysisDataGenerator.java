@@ -30,12 +30,6 @@ public class BranchAnalysisDataGenerator extends ProcessDataGenerator {
   }
 
   @Override
-  public void run() {
-
-    super.run();
-  }
-
-  @Override
   protected void deployAdditionalDiagrams() {
     super.deployAdditionalDiagrams();
     BpmnModelInstance bpmnModelInstance =

@@ -95,9 +95,11 @@ Available processes are:
 * ProcessRequest  
 * ReviewCase  
 * TransshipmentArrangement  
+* IncidentProcess
+* LeadQualificationWithIncident
 
 * specify **decision definitions** and number of versions to deploy (default value includes all of 
-the 6 decisions, so an example value is displayed)  List comma-separated definitions specifying the 
+the 6 decisions, so an example value is displayed).  List comma-separated definitions specifying the 
 number of versions to deploy after a colon. A random number of versions are deployed if the number 
 is not specified explicitly.
 
@@ -137,3 +139,10 @@ InvoiceWithAlternativeCorrelationVariable - This process can be correlated, but 
 ### Analysis testing
 AnalysisTesting process contains outlier instances and is suitable to test branch and outlier 
 analysis (e.g. in the E2E tests)
+
+### Incident testing
+The following processes will create incident data:
+```
+IncidentProcess
+LeadQualificationWithIncident
+```

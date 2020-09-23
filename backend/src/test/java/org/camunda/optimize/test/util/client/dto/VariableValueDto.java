@@ -5,16 +5,17 @@
  */
 package org.camunda.optimize.test.util.client.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 
-import java.util.HashMap;
-import java.util.Map;
-
+@AllArgsConstructor
+@NoArgsConstructor
 @Data
-public class MessageCorrelationDto {
+public class VariableValueDto {
 
-  private String messageName;
-  private boolean all;
-  Map<String, VariableValueDto> processVariables = new HashMap<>();
+  private Object value;
+  private VariableType type;
 
 }

@@ -12,11 +12,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class DocumentCheckHandlingDataGenerator extends ProcessDataGenerator {
+public class IncidentProcessDataGenerator extends ProcessDataGenerator {
 
-  private static final String DIAGRAM = "/diagrams/process/document-check-handling.bpmn";
+  private static final String DIAGRAM = "/diagrams/process/incident-process.bpmn";
 
-  public DocumentCheckHandlingDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
+  public IncidentProcessDataGenerator(SimpleEngineClient engineClient, Integer nVersions) {
     super(engineClient, nVersions);
   }
 
@@ -26,9 +26,17 @@ public class DocumentCheckHandlingDataGenerator extends ProcessDataGenerator {
 
   @Override
   protected Map<String, Object> createVariables() {
+    String[] incidentType = new String[]{"noIncident", "incidentToBeResolved", "incident"};
     Map<String, Object> variables = new HashMap<>();
-    variables.put("approved", ThreadLocalRandom.current().nextDouble());
+    variables.put(
+      "incidentType",
+      incidentType[ThreadLocalRandom.current().nextInt(0, incidentType.length)]
+    );
     return variables;
   }
 
+  @Override
+  protected boolean createsIncidents() {
+    return true;
+  }
 }
