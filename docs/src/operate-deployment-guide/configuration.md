@@ -21,6 +21,9 @@ with `camunda.operate`. The following parts are configurable:
 Operate stores and reads data in/from Elasticsearch.
 
 ## Settings to connect
+Operate supports [basic authentication](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/setting-up-authentication.html) for elasticsearch.
+Set the appropriate username/password combination in the configuration to use it.
+
 Either set `host` and `port` (deprecated) or `url` (recommended)
 
 Name | Description | Default value
@@ -29,6 +32,8 @@ camunda.operate.elasticsearch.clusterName | Clustername of Elasticsearch | elast
 camunda.operate.elasticsearch.host | Hostname where Elasticsearch is running | localhost
 camunda.operate.elasticsearch.port | Port of Elasticsearch REST API | 9200
 camunda.operate.elasticsearch.url | URL of Elasticsearch REST API | http://localhost:9200
+camunda.operate.elasticsearch.username | Username to access Elasticsearch REST API | -
+camunda.operate.elasticsearch.password | Password to access Elasticsearch REST API | -
 
 ## A snippet from application.yml:
 
@@ -75,6 +80,8 @@ camunda.operate.zeebeElasticsearch.host | Hostname where Elasticsearch is runnin
 camunda.operate.zeebeElasticsearch.port | Port of Elasticsearch REST API | 9200
 camunda.operate.zeebeElasticsearch.url | URL of Elasticsearch REST API | http://localhost:9200
 camunda.operate.zeebeElasticsearch.prefix | Index prefix as configured in Zeebe Elasticsearch exporter | zeebe-record
+camunda.operate.zeebeElasticsearch.username | Username to access Elasticsearch REST API | -
+camunda.operate.zeebeElasticsearch.password | Password to access Elasticsearch REST API | -
 
 ## A snippet from application.yml:
 
