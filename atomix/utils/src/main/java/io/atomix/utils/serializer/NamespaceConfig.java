@@ -22,7 +22,7 @@ import java.util.List;
 
 /** Namespace configuration. */
 public class NamespaceConfig implements Config {
-  private String name = Namespace.NO_NAME;
+  private String name = NamespaceImpl.NO_NAME;
   private boolean registrationRequired = true;
   private boolean compatible = false;
   private List<NamespaceTypeConfig> types = new ArrayList<>();

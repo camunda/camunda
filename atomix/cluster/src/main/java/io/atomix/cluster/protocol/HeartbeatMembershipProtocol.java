@@ -34,7 +34,9 @@ import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.event.AbstractListenerManager;
 import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.Namespace;
+import io.atomix.utils.serializer.FallbackNamespace;
+import io.atomix.utils.serializer.NamespaceImpl;
+import io.atomix.utils.serializer.NamespaceImpl.Builder;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
 import java.util.Collection;
@@ -63,14 +65,8 @@ public class HeartbeatMembershipProtocol
   private static final Logger LOGGER = LoggerFactory.getLogger(HeartbeatMembershipProtocol.class);
   private static final String HEARTBEAT_MESSAGE = "atomix-cluster-membership";
   private static final Serializer SERIALIZER =
-      Serializer.using(
-          Namespace.builder()
-              .register(Namespaces.BASIC)
-              .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-              .register(MemberId.class)
-              .register(GossipMember.class)
-              .register(new AddressSerializer(), Address.class)
-              .build("ClusterMembershipService"));
+      Serializer.using(new FallbackNamespace(buildNamespace().name("ClusterMembershipService")));
+
   private final HeartbeatMembershipProtocolConfig config;
   private volatile NodeDiscoveryService discoveryService;
   private volatile BootstrapService bootstrapService;
@@ -89,6 +85,15 @@ public class HeartbeatMembershipProtocol
 
   public HeartbeatMembershipProtocol(final HeartbeatMembershipProtocolConfig config) {
     this.config = config;
+  }
+
+  private static Builder buildNamespace() {
+    return new NamespaceImpl.Builder()
+        .register(Namespaces.BASIC)
+        .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
+        .register(MemberId.class)
+        .register(GossipMember.class)
+        .register(new AddressSerializer(), Address.class);
   }
 
   /**
