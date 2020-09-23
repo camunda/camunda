@@ -55,7 +55,7 @@ public final class PartitionStatus {
     return role;
   }
 
-  public long getProcessedPosition() {
+  public Long getProcessedPosition() {
     return processedPosition;
   }
 

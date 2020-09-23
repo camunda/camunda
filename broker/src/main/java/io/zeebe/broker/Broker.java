@@ -190,6 +190,7 @@ public final class Broker implements AutoCloseable {
     final var adminService = new BrokerAdminServiceImpl(partitions);
     scheduleActor(adminService);
     brokerAdminService = adminService;
+    springBrokerBridge.registerBrokerAdminServiceSupplier(this::getBrokerAdminService);
     return adminService;
   }
 
@@ -340,6 +341,7 @@ public final class Broker implements AutoCloseable {
             scheduleActor(zeebePartition);
             healthCheckService.registerMonitoredPartition(
                 owningPartition.id().id(), zeebePartition);
+            partitions.add(zeebePartition);
             return zeebePartition;
           });
     }

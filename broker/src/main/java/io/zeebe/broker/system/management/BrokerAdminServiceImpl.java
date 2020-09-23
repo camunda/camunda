@@ -131,7 +131,7 @@ public class BrokerAdminServiceImpl extends Actor implements BrokerAdminService 
                     getProcessedPositionInSnapshot(partition)
                         .onComplete(
                             (processedPositionInSnapshot, posInSnapshotError) -> {
-                              if (posInSnapshotError == null) {
+                              if (posInSnapshotError != null) {
                                 partitionStatus.completeExceptionally(posInSnapshotError);
                                 return;
                               }
