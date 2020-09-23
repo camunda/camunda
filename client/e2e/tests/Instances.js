@@ -8,6 +8,7 @@ import {config} from '../config';
 import {setup} from './Instances.setup.js';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
+import {getPathname} from './utils/getPathname';
 import {screen, within} from '@testing-library/testcafe';
 import {DEFAULT_TIMEOUT} from './constants';
 
@@ -74,4 +75,66 @@ test('Instances Page Initial Load', async (t) => {
       ).exists
     )
     .ok();
+});
+
+test('Select flow node in diagram', async (t) => {
+  const {initialData} = t.fixtureCtx;
+  const instance = initialData.instanceWithoutAnIncident;
+
+  await t.click(screen.getByRole('listitem', {name: 'Running Instances'}));
+
+  // Filter by Instance ID
+  await t.typeText(
+    screen.getByRole('textbox', {
+      name: 'Instance Id(s) separated by space or comma',
+    }),
+    instance.workflowInstanceKey,
+    {paste: true}
+  );
+
+  const workflowCombobox = screen.getByRole('combobox', {
+    name: 'Workflow',
+  });
+
+  // Select "Order Process"
+  await t.click(workflowCombobox).click(
+    within(workflowCombobox).getByRole('option', {
+      name: 'Order process',
+    })
+  );
+
+  // Select "Ship Articles" flow node
+  const shipArticlesTaskId = 'shipArticles';
+  await t
+    .click(within(screen.getByTestId('diagram')).getByText('Ship Articles'))
+    .expect(screen.getByRole('combobox', {name: 'Flow Node'}).value)
+    .eql(shipArticlesTaskId)
+    .expect(
+      screen.queryByText('There are no instances matching this filter set.')
+        .exists
+    )
+    .ok()
+    .expect(getPathname())
+    .eql(
+      `#/instances?filter={${encodeURI(
+        `"active":true,"incidents":true,"ids":"${instance.workflowInstanceKey}","version":"1","workflow":"orderProcess","activityId":"${shipArticlesTaskId}"`
+      )}}&name=${encodeURI('"Order process"')}`
+    );
+
+  // Select "Check Payment" flow node
+  const checkPaymentTaskId = 'checkPayment';
+  await t
+    .click(within(screen.getByTestId('diagram')).getByText('Check payment'))
+    .expect(screen.getByRole('combobox', {name: 'Flow Node'}).value)
+    .eql(checkPaymentTaskId)
+    .expect(
+      within(screen.getByTestId('instances-list')).getAllByRole('row').count
+    )
+    .eql(1)
+    .expect(getPathname())
+    .eql(
+      `#/instances?filter={${encodeURI(
+        `"active":true,"incidents":true,"ids":"${instance.workflowInstanceKey}","version":"1","workflow":"orderProcess","activityId":"${checkPaymentTaskId}"`
+      )}}&name=${encodeURI('"Order process"')}`
+    );
 });
