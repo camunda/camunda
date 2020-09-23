@@ -73,7 +73,7 @@ test('Instance with an incident - history panel', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `${config.endpoint}/#/instances/${processWithMultipleTokens}`
+    `${config.endpoint}/#/instances/${processWithMultipleTokens.workflowInstanceKey}`
   );
   await t.expect(screen.getByText('Instance History').exists).ok();
 
@@ -554,7 +554,7 @@ test('Instance without an incident', async (t) => {
   } = t.fixtureCtx;
 
   await t.navigateTo(
-    `${config.endpoint}/#/instances/${instanceWithoutAnIncident}`
+    `${config.endpoint}/#/instances/${instanceWithoutAnIncident.workflowInstanceKey}`
   );
 
   await t
@@ -568,7 +568,7 @@ test('Instance without an incident', async (t) => {
     .ok()
     .expect(
       within(screen.getByRole('banner')).getByText(
-        `Instance ${instanceWithoutAnIncident}`
+        `Instance ${instanceWithoutAnIncident.workflowInstanceKey}`
       ).exists
     )
     .ok()

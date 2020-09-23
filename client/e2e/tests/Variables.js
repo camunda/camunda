@@ -20,12 +20,14 @@ fixture('Add/Edit Variables')
   })
   .beforeEach(async (t) => {
     const {
-      initialData: {instanceId},
+      initialData: {instance},
     } = t.fixtureCtx;
 
     await t.useRole(demoUser);
     await t.maximizeWindow();
-    await t.navigateTo(`${config.endpoint}/#/instances/${instanceId}`);
+    await t.navigateTo(
+      `${config.endpoint}/#/instances/${instance.workflowInstanceKey}`
+    );
   });
 
 test('Validations for add/edit variable works correctly', async (t) => {
@@ -142,7 +144,7 @@ test('Validations for add/edit variable works correctly', async (t) => {
 
 test('Edit variables', async (t) => {
   const {
-    initialData: {instanceId},
+    initialData: {instance},
   } = t.fixtureCtx;
 
   // open single instance page, after clicking the edit variable button see that save variable button is disabled.
@@ -188,14 +190,16 @@ test('Edit variables', async (t) => {
 
   // refresh the page and see the variable is still there.
   await t
-    .navigateTo(`${config.endpoint}/#/instances/${instanceId}`)
+    .navigateTo(
+      `${config.endpoint}/#/instances/${instance.workflowInstanceKey}`
+    )
     .expect(Selector('[data-test="testData"]').exists)
     .ok();
 });
 
 test('Add variables', async (t) => {
   const {
-    initialData: {instanceId},
+    initialData: {instance},
   } = t.fixtureCtx;
   // open single instance page, click add new variable button and see that save variable button is disabled.
   await t
@@ -255,7 +259,9 @@ test('Add variables', async (t) => {
 
   // refresh the page and see the variable is still there.
   await t
-    .navigateTo(`${config.endpoint}/#/instances/${instanceId}`)
+    .navigateTo(
+      `${config.endpoint}/#/instances/${instance.workflowInstanceKey}`
+    )
     .expect(screen.getByRole('cell', {name: 'secondTestKey'}).exists)
     .ok()
     .expect(screen.getByRole('cell', {name: '"secondTestValue"'}).exists)
@@ -270,13 +276,13 @@ test('Add variables', async (t) => {
       screen.getByRole('textbox', {
         name: /instance id\(s\) separated by space or comma/i,
       }),
-      instanceId
+      instance.workflowInstanceKey
     );
 
   await t
     .expect(
       within(screen.getByTestId('instances-list')).queryByRole('cell', {
-        name: `View instance ${instanceId}`,
+        name: `View instance ${instance.workflowInstanceKey}`,
       }).exists
     )
     .ok();

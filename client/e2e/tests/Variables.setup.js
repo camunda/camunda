@@ -8,8 +8,8 @@ import {deploy, createSingleInstance} from '../setup-utils';
 
 export async function setup() {
   await deploy(['./tests/resources/onlyIncidentsProcess_v_1.bpmn']);
-  const instanceId = await createSingleInstance('onlyIncidentsProcess', 1, {
+  const instance = await createSingleInstance('onlyIncidentsProcess', 1, {
     testData: 'something',
   });
-  return {instanceId};
+  return {instance};
 }

@@ -6,33 +6,33 @@
 
 const ZB = require('zeebe-node');
 const zbc = new ZB.ZBClient({
-  onReady: () => console.log(`Connected!`),
-  onConnectionError: () => console.log(`Disconnected!`),
+  onReady: () => console.log('zeebe-node connected!'),
+  onConnectionError: () => console.log('zeebe-node disconnected!'),
 }); // localhost:26500 || ZEEBE_GATEWAY_ADDRESS
 
 function deploy(processNames) {
   return zbc.deployWorkflow(processNames);
 }
 
-function createInstances(bpmnProcessId, version, numberOfInstances) {
-  return Promise.all(
-    [...new Array(numberOfInstances)].map(() =>
-      zbc.createWorkflowInstance({
+async function createInstances(bpmnProcessId, version, numberOfInstances) {
+  let instances = [];
+  for (let i = 0; i < numberOfInstances; i++) {
+    instances.push(
+      await zbc.createWorkflowInstance({
         bpmnProcessId,
         version,
       })
-    )
-  );
+    );
+  }
+  return instances;
 }
 
-async function createSingleInstance(bpmnProcessId, version, variables) {
-  const result = await zbc.createWorkflowInstance({
-    bpmnProcessId,
+function createSingleInstance(processId, version, variables) {
+  return zbc.createWorkflowInstance({
+    bpmnProcessId: processId,
     version,
     variables,
   });
-
-  return result.workflowInstanceKey;
 }
 
 function completeTask(taskType, shouldFail, variables) {

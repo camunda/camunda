@@ -203,14 +203,14 @@ test('Error Message filter', async (t) => {
 
 test('End Date filter', async (t) => {
   const {
-    initialData: {instanceToCancel: instanceId},
+    initialData: {instanceToCancel},
   } = t.fixtureCtx;
 
   await t.typeText(
     screen.getByRole('textbox', {
       name: 'Instance Id(s) separated by space or comma',
     }),
-    instanceId,
+    instanceToCancel.workflowInstanceKey,
     {
       paste: true,
     }
@@ -348,14 +348,14 @@ test('Variable filter', async (t) => {
 
 test('Operation ID filter', async (t) => {
   const {
-    initialData: {instanceToCancelForOperations: instanceId},
+    initialData: {instanceToCancelForOperations},
   } = t.fixtureCtx;
 
   await t.typeText(
     screen.getByRole('textbox', {
       name: 'Instance Id(s) separated by space or comma',
     }),
-    instanceId,
+    instanceToCancelForOperations.workflowInstanceKey,
     {
       paste: true,
     }

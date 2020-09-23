@@ -175,7 +175,10 @@ const Body = observer(function (props) {
                   title={`Select instance ${instance.id}`}
                 />
 
-                <StateIcon state={instance.state} />
+                <StateIcon
+                  state={instance.state}
+                  data-test={`${instance.state}-icon-${instance.id}`}
+                />
                 <Styled.WorkflowName>
                   {getWorkflowName(instance)}
                 </Styled.WorkflowName>

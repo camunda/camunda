@@ -25,9 +25,9 @@ fixture('Operations')
     await t.click(screen.getByTestId('header-link-instances'));
   });
 
-test('Cancel single instance ', async (t) => {
+test('Retry and Cancel single instance ', async (t) => {
   const {initialData} = t.fixtureCtx;
-  const [instance] = initialData.instancesToCancel;
+  const instance = initialData.singleOperationInstance;
 
   // filter by instance id
   await t.typeText(
@@ -44,6 +44,17 @@ test('Cancel single instance ', async (t) => {
       within(screen.getByTestId('instances-list')).getAllByRole('row').count
     )
     .eql(1);
+
+  // retry single instance using operation button
+  await t.click(
+    screen.getByRole('button', {
+      name: `Retry Instance ${instance.workflowInstanceKey}`,
+    })
+  );
+
+  // expect spinner to show and disappear
+  await t.expect(screen.getByTestId('operation-spinner').exists).ok();
+  await t.expect(screen.queryByTestId('operation-spinner').exists).notOk();
 
   // cancel single instance using operation button
   await t.click(
@@ -99,9 +110,15 @@ test('Cancel single instance ', async (t) => {
     within(screen.getByTestId('instances-list')).getAllByRole('row').nth(0)
   );
   await t
-    .expect(instanceRow.getByTestId('CANCELED-icon').exists)
+    .expect(
+      instanceRow.getByTestId(`CANCELED-icon-${instance.workflowInstanceKey}`)
+        .exists
+    )
     .ok()
-    .expect(instanceRow.queryByTestId('ACTIVE-icon').exists)
+    .expect(
+      instanceRow.queryByTestId(`ACTIVE-icon-${instance.workflowInstanceKey}`)
+        .exists
+    )
     .notOk()
     .expect(instanceRow.getByText(instance.bpmnProcessId).exists)
     .ok()
@@ -109,9 +126,12 @@ test('Cancel single instance ', async (t) => {
     .ok();
 });
 
-test('Retry multiple instances ', async (t) => {
+test('Retry and cancel multiple instances ', async (t) => {
   const {initialData} = t.fixtureCtx;
-  const instances = initialData.instancesToRetry.slice(0, 5);
+  const instances = initialData.batchOperationInstances.slice(0, 5);
+  const instancesListItems = within(
+    screen.getByTestId('operations-list')
+  ).getAllByRole('listitem');
 
   // filter by instance ids
   await t.typeText(
@@ -151,21 +171,20 @@ test('Retry multiple instances ', async (t) => {
     .expect(screen.findByTestId('operations-list').visible)
     .ok();
 
-  // get first item in operation panel
-  const operationItem = within(screen.getByTestId('operations-list'))
-    .getAllByRole('listitem')
-    .nth(0);
-  const operationId = await within(operationItem).getByTestId('operation-id')
-    .innerText;
-
   // expect first operation item to have progress bar
-  await t.expect(within(operationItem).getByTestId('progress-bar').exists).ok();
+  await t
+    .expect(
+      within(instancesListItems.nth(0)).getByTestId('progress-bar').exists
+    )
+    .ok();
 
   // wait for instance to finish in operation list (end time is present, progess bar gone)
   await t
-    .expect(within(operationItem).queryByText(DATE_REGEX).exists)
+    .expect(within(instancesListItems.nth(0)).queryByText(DATE_REGEX).exists)
     .ok()
-    .expect(within(operationItem).queryByTestId('progress-bar').exists)
+    .expect(
+      within(instancesListItems.nth(0)).queryByTestId('progress-bar').exists
+    )
     .notOk();
 
   // reset filters
@@ -176,7 +195,11 @@ test('Retry multiple instances ', async (t) => {
 
   // select all instances from operation
   await t
-    .click(within(operationItem).getByText('5 Instances'))
+    .click(
+      within(instancesListItems.nth(0)).getByText(
+        `${instances.length} Instances`
+      )
+    )
     .expect(within(instancesList).getAllByRole('row').count)
     .eql(instances.length)
     .expect(
@@ -184,7 +207,10 @@ test('Retry multiple instances ', async (t) => {
         name: 'Operation Id',
       }).value
     )
-    .eql(operationId);
+    .eql(
+      await within(instancesListItems.nth(0)).getByTestId('operation-id')
+        .innerText
+    );
 
   // check if all instances are shown
   await Promise.all(
@@ -195,6 +221,45 @@ test('Retry multiple instances ', async (t) => {
             within(instancesList).getByText(instance.workflowInstanceKey).exists
           )
           .ok()
+    )
+  );
+
+  await t.click(
+    screen.getByRole('checkbox', {
+      name: 'Select all instances',
+    })
+  );
+
+  await t.click(
+    screen.getByRole('button', {
+      name: `Apply Operation on ${instances.length} Instances...`,
+    })
+  );
+
+  await t
+    .click(
+      within(screen.getByTestId('menu')).getByRole('button', {name: 'Cancel'})
+    )
+    .click(screen.getByRole('button', {name: 'Apply'}))
+    .expect(screen.findByTestId('operations-list').visible)
+    .ok();
+
+  // expect first operation item to have progress bar
+  await t
+    .expect(
+      within(instancesListItems.nth(0)).getByTestId('progress-bar').exists
+    )
+    .ok();
+
+  // expect cancel icon to show for each instance
+  await Promise.all(
+    instances.map(async (instance) =>
+      t
+        .expect(
+          screen.queryByTestId(`CANCELED-icon-${instance.workflowInstanceKey}`)
+            .exists
+        )
+        .ok({timeout: 30000})
     )
   );
 });

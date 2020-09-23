@@ -55,15 +55,23 @@ test('Instances Page Initial Load', async (t) => {
     screen.getByRole('textbox', {
       name: /instance id\(s\) separated by space or comma/i,
     }),
-    `${initialData.instanceWithoutAnIncident}, ${initialData.instanceWithAnIncident}`
+    `${initialData.instanceWithoutAnIncident.workflowInstanceKey}, ${initialData.instanceWithAnIncident.workflowInstanceKey}`
   );
 
   const withinInstancesList = within(screen.getByTestId('instances-list'));
   await t.expect(withinInstancesList.getAllByRole('row').count).eql(2);
 
   await t
-    .expect(withinInstancesList.getByTestId('INCIDENT-icon').exists)
+    .expect(
+      withinInstancesList.getByTestId(
+        `INCIDENT-icon-${initialData.instanceWithAnIncident.workflowInstanceKey}`
+      ).exists
+    )
     .ok()
-    .expect(withinInstancesList.getByTestId('ACTIVE-icon').exists)
+    .expect(
+      withinInstancesList.getByTestId(
+        `ACTIVE-icon-${initialData.instanceWithoutAnIncident.workflowInstanceKey}`
+      ).exists
+    )
     .ok();
 });

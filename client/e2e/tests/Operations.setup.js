@@ -4,26 +4,20 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {deploy, createInstances} from '../setup-utils';
+import {deploy, createInstances, createSingleInstance} from '../setup-utils';
 
 async function setup() {
   await deploy([
-    './tests/resources/operationsProcess_v_1.bpmn',
-    './tests/resources/operationsProcess_v_2.bpmn',
+    './tests/resources/operationsProcessA.bpmn',
+    './tests/resources/operationsProcessB.bpmn',
   ]);
 
-  const instancesToCancel = await createInstances(
-    'operationsProcess_v_1',
-    1,
-    1
-  );
-  const instancesToRetry = await createInstances(
-    'operationsProcess_v_2',
-    1,
-    10
-  );
+  const [singleOperationInstance, batchOperationInstances] = await Promise.all([
+    createSingleInstance('operationsProcessA', 1),
+    createInstances('operationsProcessB', 1, 10),
+  ]);
 
-  return {instancesToCancel, instancesToRetry};
+  return {singleOperationInstance, batchOperationInstances};
 }
 
 export {setup};
