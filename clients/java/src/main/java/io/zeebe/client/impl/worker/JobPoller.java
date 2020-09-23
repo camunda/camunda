@@ -15,8 +15,6 @@
  */
 package io.zeebe.client.impl.worker;
 
-import io.grpc.Status;
-import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.JsonMapper;
 import io.zeebe.client.api.response.ActivatedJob;
@@ -45,9 +43,9 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
 
   private Consumer<ActivatedJob> jobConsumer;
   private IntConsumer doneCallback;
+  private Consumer<Throwable> errorCallback;
   private int activatedJobs;
   private BooleanSupplier openSupplier;
-  private StatusRuntimeException statusRuntimeException;
 
   public JobPoller(
       final GatewayStub gatewayStub,
@@ -66,16 +64,27 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
     activatedJobs = 0;
   }
 
+  /**
+   * Poll for available jobs. Jobs returned by zeebe are activated.
+   *
+   * @param maxJobsToActivate maximum number of jobs to activate
+   * @param jobConsumer consumes each activated job individually
+   * @param doneCallback consumes the number of jobs activated
+   * @param errorCallback consumes thrown error
+   * @param openSupplier supplies whether the consumer is open
+   */
   public void poll(
       final int maxJobsToActivate,
       final Consumer<ActivatedJob> jobConsumer,
       final IntConsumer doneCallback,
+      final Consumer<Throwable> errorCallback,
       final BooleanSupplier openSupplier) {
     reset();
 
     requestBuilder.setMaxJobsToActivate(maxJobsToActivate);
     this.jobConsumer = jobConsumer;
     this.doneCallback = doneCallback;
+    this.errorCallback = errorCallback;
     this.openSupplier = openSupplier;
 
     poll();
@@ -105,30 +114,18 @@ public final class JobPoller implements StreamObserver<ActivateJobsResponse> {
     if (retryPredicate.test(throwable)) {
       poll();
     } else {
-      try {
-        if (openSupplier.getAsBoolean()) {
-          logError(throwable);
+      if (openSupplier.getAsBoolean()) {
+        try {
+          LOG.warn(
+              "Failed to activated jobs for worker {} and job type {}",
+              requestBuilder.getWorker(),
+              requestBuilder.getType(),
+              throwable);
+        } finally {
+          errorCallback.accept(throwable);
         }
-      } finally {
-        pollingDone();
       }
     }
-  }
-
-  private void logError(final Throwable throwable) {
-    if (throwable instanceof StatusRuntimeException) {
-      statusRuntimeException = (StatusRuntimeException) throwable;
-      if (statusRuntimeException.getStatus() == Status.RESOURCE_EXHAUSTED) {
-        // do not log RESOURCE EXHAUSTED exceptions
-        return;
-      }
-    }
-
-    LOG.warn(
-        "Failed to activated jobs for worker {} and job type {}",
-        requestBuilder.getWorker(),
-        requestBuilder.getType(),
-        throwable);
   }
 
   @Override

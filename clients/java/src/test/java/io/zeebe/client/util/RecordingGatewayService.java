@@ -66,6 +66,8 @@ public final class RecordingGatewayService extends GatewayImplBase {
 
   private final Map<Class<? extends GeneratedMessageV3>, RequestHandler> requestHandlers =
       new HashMap<>();
+  private final Map<Class<? extends GeneratedMessageV3>, Supplier<Throwable>> errorHandlers =
+      new HashMap<>();
 
   public RecordingGatewayService() {
     addRequestHandler(TopologyRequest.class, r -> TopologyResponse.getDefaultInstance());
@@ -192,7 +194,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
 
   @Override
   public void throwError(
-      ThrowErrorRequest request, StreamObserver<ThrowErrorResponse> responseObserver) {
+      final ThrowErrorRequest request, final StreamObserver<ThrowErrorResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -305,6 +307,10 @@ public final class RecordingGatewayService extends GatewayImplBase {
             ActivateJobsResponse.newBuilder().addAllJobs(Arrays.asList(activatedJobs)).build());
   }
 
+  public void onActivateJobsRequest(final Throwable error) {
+    addRequestHandler(ActivateJobsRequest.class, () -> error);
+  }
+
   public void onSetVariablesRequest(final long key) {
     addRequestHandler(
         SetVariablesRequest.class,
@@ -334,9 +340,17 @@ public final class RecordingGatewayService extends GatewayImplBase {
     return getRequest(requests.size() - 1);
   }
 
-  public void addRequestHandler(
-      final Class<? extends GeneratedMessageV3> requestClass, final RequestHandler requestHandler) {
+  public <T extends GeneratedMessageV3> void addRequestHandler(
+      final Class<T> requestClass,
+      final RequestHandler<T, ? extends GeneratedMessageV3> requestHandler) {
+    errorHandlers.remove(requestClass);
     requestHandlers.put(requestClass, requestHandler);
+  }
+
+  public void addRequestHandler(
+      final Class<? extends GeneratedMessageV3> requestClass, final Supplier<Throwable> thrower) {
+    requestHandlers.remove(requestClass);
+    errorHandlers.put(requestClass, thrower);
   }
 
   @SuppressWarnings("unchecked")
@@ -344,22 +358,22 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final RequestT request, final StreamObserver<ResponseT> responseObserver) {
     requests.add(request);
     try {
-      final ResponseT response = (ResponseT) getRequestHandler(request).handle(request);
-      responseObserver.onNext(response);
-      responseObserver.onCompleted();
+      final Class<? extends GeneratedMessageV3> requestType = request.getClass();
+      if (requestHandlers.containsKey(requestType)) {
+        final ResponseT response = (ResponseT) requestHandlers.get(requestType).handle(request);
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+      } else if (errorHandlers.containsKey(requestType)) {
+        final Throwable error = errorHandlers.get(requestType).get();
+        responseObserver.onError(Status.fromThrowable(error).asRuntimeException());
+      } else {
+        throw new IllegalStateException(
+            "No request or error handler found for request class: " + requestType);
+      }
+
     } catch (final Exception e) {
       responseObserver.onError(convertThrowable(e));
     }
-  }
-
-  private RequestHandler getRequestHandler(final GeneratedMessageV3 request) {
-    final RequestHandler requestHandler = requestHandlers.get(request.getClass());
-    if (requestHandler == null) {
-      throw new IllegalStateException(
-          "No request handler found for request class: " + request.getClass());
-    }
-
-    return requestHandler;
   }
 
   @FunctionalInterface

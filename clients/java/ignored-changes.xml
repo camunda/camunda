@@ -17,4 +17,19 @@
     <method>io.zeebe.client.api.JsonMapper getJsonMapper()</method>
     <differenceType>7012</differenceType>
   </difference>
+  <difference>
+    <className>io/zeebe/client/api/worker/JobWorkerBuilderStep1$JobWorkerBuilderStep3</className>
+    <differenceType>7012</differenceType>
+    <method>io.zeebe.client.api.worker.JobWorkerBuilderStep1$JobWorkerBuilderStep3 backoffSupplier(io.zeebe.client.api.worker.BackoffSupplier)</method>
+  </difference>
+  <difference>
+    <className>io/zeebe/client/impl/worker/JobPoller</className>
+    <differenceType>7004</differenceType>
+    <method>void poll(int, java.util.function.Consumer, java.util.function.IntConsumer, java.util.function.BooleanSupplier)</method>
+  </difference>
+  <difference>
+    <className>io/zeebe/client/impl/worker/JobWorkerImpl</className>
+    <differenceType>7004</differenceType>
+    <method>JobWorkerImpl(int, java.util.concurrent.ScheduledExecutorService, java.time.Duration, io.zeebe.client.impl.worker.JobRunnableFactory, io.zeebe.client.impl.worker.JobPoller)</method>
+  </difference>
 </differences>

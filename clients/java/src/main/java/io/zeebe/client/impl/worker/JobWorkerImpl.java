@@ -16,11 +16,12 @@
 package io.zeebe.client.impl.worker;
 
 import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.client.api.worker.BackoffSupplier;
 import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.client.impl.Loggers;
 import java.io.Closeable;
 import java.time.Duration;
-import java.util.concurrent.ExecutorService;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -28,6 +29,23 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.slf4j.Logger;
 
+/**
+ * The job worker wants to have enough jobs to work on. Most of this class' implementation deals
+ * with the scheduling of polling for new jobs.
+ *
+ * <p>In order to get an initial set of jobs to work on, the job worker will schedule a first poll
+ * on construction. If a poll does not provide any new jobs, another poll is scheduled with a delay
+ * using the {@code pollInterval}.
+ *
+ * <p>If a poll successfully provides jobs, the worker submits each job to the job handler. Every
+ * time a job is completed, the worker checks if it still has enough jobs to work on. If not, it
+ * will poll for new jobs. To determine what is considered enough jobs it compares its number of
+ * {@code remainingJobs} with the {@code activationThreshold}.
+ *
+ * <p>If a poll fails with an error response, a retry is scheduled with a delay using the {@code
+ * retryDelaySupplier} to ask for a new {@code pollInterval}. By default this retry delay supplier
+ * is the {@link ExponentialBackoff}.
+ */
 public final class JobWorkerImpl implements JobWorker, Closeable {
 
   private static final Logger LOG = Loggers.JOB_WORKER_LOGGER;
@@ -38,31 +56,38 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
   private final AtomicInteger remainingJobs;
 
   // job execution facilities
-  private final ExecutorService executor;
-  private final JobRunnableFactory jobRunnableFactory;
+  private final ScheduledExecutorService executor;
+  private final JobRunnableFactory jobHandlerFactory;
+  private final long initialPollInterval;
+  private final BackoffSupplier backoffSupplier;
 
   // state synchronization
   private final AtomicBoolean acquiringJobs = new AtomicBoolean(true);
-  private final AtomicReference<JobPoller> jobPoller;
+  private final AtomicReference<JobPoller> claimableJobPoller;
+  private final AtomicBoolean isPollScheduled = new AtomicBoolean(false);
+
+  private long pollInterval;
 
   public JobWorkerImpl(
       final int maxJobsActive,
       final ScheduledExecutorService executor,
       final Duration pollInterval,
-      final JobRunnableFactory jobRunnableFactory,
-      final JobPoller jobPoller) {
-
+      final JobRunnableFactory jobHandlerFactory,
+      final JobPoller jobPoller,
+      final BackoffSupplier backoffSupplier) {
     this.maxJobsActive = maxJobsActive;
     activationThreshold = Math.round(maxJobsActive * 0.3f);
     remainingJobs = new AtomicInteger(0);
 
     this.executor = executor;
-    this.jobRunnableFactory = jobRunnableFactory;
+    this.jobHandlerFactory = jobHandlerFactory;
+    initialPollInterval = pollInterval.toMillis();
+    this.backoffSupplier = backoffSupplier;
 
-    this.jobPoller = new AtomicReference<>(jobPoller);
+    claimableJobPoller = new AtomicReference<>(jobPoller);
+    this.pollInterval = initialPollInterval;
 
-    executor.scheduleWithFixedDelay(
-        this::tryActivateJobs, 0, pollInterval.toMillis(), TimeUnit.MILLISECONDS);
+    schedulePoll();
   }
 
   @Override
@@ -72,7 +97,7 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
 
   @Override
   public boolean isClosed() {
-    return !isOpen() && jobPoller.get() != null && remainingJobs.get() <= 0;
+    return !isOpen() && claimableJobPoller.get() != null && remainingJobs.get() <= 0;
   }
 
   @Override
@@ -80,52 +105,91 @@ public final class JobWorkerImpl implements JobWorker, Closeable {
     acquiringJobs.set(false);
   }
 
-  private void tryActivateJobs() {
-    final int remainingJobs = this.remainingJobs.get();
-    if (shouldActivateJobs(remainingJobs)) {
-      activateJobs();
+  /**
+   * Schedules a poll for jobs with a delay of {@code pollInterval}. Does not schedule twice if a
+   * poll is already scheduled.
+   */
+  private void schedulePoll() {
+    if (isPollScheduled.compareAndSet(false, true)) {
+      executor.schedule(this::onScheduledPoll, pollInterval, TimeUnit.MILLISECONDS);
     }
   }
 
-  private void activateJobs() {
-    final JobPoller jobPoller = this.jobPoller.getAndSet(null);
-    if (jobPoller != null) {
-      // check the condition again within the critical section
-      // to avoid race conditions that would let us exceed the buffer size
-      final int currentRemainingJobs = remainingJobs.get();
-      if (shouldActivateJobs(currentRemainingJobs)) {
-        final int maxActivatedJobs = maxJobsActive - currentRemainingJobs;
-        try {
-          jobPoller.poll(
-              maxActivatedJobs,
-              this::submitJob,
-              activatedJobs -> {
-                remainingJobs.addAndGet(activatedJobs);
-                this.jobPoller.set(jobPoller);
-              },
-              this::isOpen);
-        } catch (final Exception e) {
-          LOG.warn("Failed to activate jobs", e);
-          this.jobPoller.set(jobPoller);
-        }
-      } else {
-        this.jobPoller.set(jobPoller);
-      }
+  /** Frees up the scheduler and polls for new jobs. */
+  private void onScheduledPoll() {
+    isPollScheduled.set(false);
+    final int actualRemainingJobs = remainingJobs.get();
+    if (shouldPoll(actualRemainingJobs)) {
+      poll();
     }
   }
 
-  private boolean shouldActivateJobs(final int remainingJobs) {
+  private boolean shouldPoll(final int remainingJobs) {
     return acquiringJobs.get() && remainingJobs <= activationThreshold;
   }
 
-  private void submitJob(final ActivatedJob job) {
-    executor.execute(jobRunnableFactory.create(job, this::jobHandlerFinished));
+  private void poll() {
+    tryClaimJobPoller()
+        .ifPresent(
+            jobPoller -> {
+              // check the condition again within the critical section
+              // to avoid race conditions that would let us exceed the buffer size
+              final int actualRemainingJobs = remainingJobs.get();
+              if (shouldPoll(actualRemainingJobs)) {
+                final int maxJobsToActivate = maxJobsActive - actualRemainingJobs;
+                try {
+                  jobPoller.poll(
+                      maxJobsToActivate,
+                      this::handleJob,
+                      activatedJobs -> onPollSuccess(jobPoller, activatedJobs),
+                      error -> onPollError(jobPoller, error),
+                      this::isOpen);
+                } catch (final Exception e) {
+                  LOG.warn("Failed to activate jobs", e);
+                  releaseJobPoller(jobPoller);
+                }
+              } else {
+                releaseJobPoller(jobPoller);
+              }
+            });
   }
 
-  private void jobHandlerFinished() {
-    final int remainingJobs = this.remainingJobs.decrementAndGet();
-    if (shouldActivateJobs(remainingJobs)) {
-      activateJobs();
+  private Optional<JobPoller> tryClaimJobPoller() {
+    return Optional.ofNullable(claimableJobPoller.getAndSet(null));
+  }
+
+  private void releaseJobPoller(final JobPoller jobPoller) {
+    claimableJobPoller.set(jobPoller);
+  }
+
+  private void onPollSuccess(final JobPoller jobPoller, final int activatedJobs) {
+    remainingJobs.addAndGet(activatedJobs);
+    pollInterval = initialPollInterval;
+    releaseJobPoller(jobPoller);
+    if (activatedJobs == 0) {
+      schedulePoll();
+    }
+    // if jobs were activated, then successive polling happens due to handleJobFinished
+  }
+
+  private void onPollError(final JobPoller jobPoller, final Throwable error) {
+    pollInterval = backoffSupplier.supplyRetryDelay(pollInterval);
+    LOG.debug(
+        "Failed to activate jobs due to {}, delay retry for {} ms",
+        error.getMessage(),
+        pollInterval);
+    releaseJobPoller(jobPoller);
+    schedulePoll();
+  }
+
+  private void handleJob(final ActivatedJob job) {
+    executor.execute(jobHandlerFactory.create(job, this::handleJobFinished));
+  }
+
+  private void handleJobFinished() {
+    final int actualRemainingJobs = remainingJobs.decrementAndGet();
+    if (!isPollScheduled.get() && shouldPoll(actualRemainingJobs)) {
+      poll();
     }
   }
 }

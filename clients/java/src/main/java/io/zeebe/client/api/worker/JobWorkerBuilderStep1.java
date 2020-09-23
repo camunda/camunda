@@ -177,6 +177,21 @@ public interface JobWorkerBuilderStep1 {
     JobWorkerBuilderStep3 fetchVariables(String... fetchVariables);
 
     /**
+     * Sets the backoff supplier. The supplier is called to determine the retry delay after each
+     * failed request; the worker then waits until the returned delay has elapsed before sending the
+     * next request. Note that this is used <strong>only</strong> for the polling mechanism -
+     * failures in the {@link JobHandler} should be handled there, and retried there if need be.
+     *
+     * <p>By default, the supplier uses exponential back off, with an upper bound of 5 seconds. The
+     * exponential backoff can be easily configured using {@link
+     * BackoffSupplier#newBackoffBuilder()}.
+     *
+     * @param backoffSupplier supplies the retry delay after a failed request
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 backoffSupplier(BackoffSupplier backoffSupplier);
+
+    /**
      * Open the worker and start to work on available tasks.
      *
      * @return the worker
