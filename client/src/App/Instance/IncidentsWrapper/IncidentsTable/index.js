@@ -86,7 +86,7 @@ const IncidentsTable = observer(function IncidentsTable({incidents}) {
 
   return (
     <>
-      <Table>
+      <Table data-test="incidents-table">
         <THead>
           <TR>
             <Styled.FirstTH>

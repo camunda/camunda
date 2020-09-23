@@ -226,6 +226,272 @@ test('Instance with an incident - resolve an incident', async (t) => {
     .ok();
 });
 
+test('Instance with an incident - incident bar', async (t) => {
+  const {
+    initialData: {instanceWithIncidentForIncidentsBar},
+  } = t.fixtureCtx;
+
+  const instanceId = instanceWithIncidentForIncidentsBar.workflowInstanceKey;
+
+  await t.navigateTo(`${config.endpoint}/#/instances/${instanceId}`);
+
+  // click and expand incident bar
+  await t
+    .click(screen.getByRole('button', {name: /view 3 incidents in instance/i}))
+    .expect(screen.getByText(/incident type:/i).exists)
+    .ok()
+    .expect(screen.getByText(/flow node:/i).exists)
+    .ok();
+
+  const withinIncidentsTable = within(screen.getByTestId('incidents-table'));
+  const withinHistoryPanel = within(screen.getByTestId('instance-history'));
+  const withinVariablesTable = within(screen.getByTestId('variables-list'));
+
+  // should be ordered by incident type by default
+  await t
+    .expect(
+      within(withinIncidentsTable.getAllByRole('row').nth(1)).getByText(
+        /i\/o mapping error/i
+      ).exists
+    )
+    .ok()
+    .expect(
+      within(withinIncidentsTable.getAllByRole('row').nth(2)).getByText(
+        /extract value error/i
+      ).exists
+    )
+    .ok()
+    .expect(
+      within(withinIncidentsTable.getAllByRole('row').nth(3)).getByText(
+        /extract value error/i
+      ).exists
+    )
+    .ok();
+
+  // change the order of incident type
+  await t.click(screen.getByRole('button', {name: /sort by errortype/i}));
+
+  await t
+    .expect(
+      within(withinIncidentsTable.getAllByRole('row').nth(1)).getByText(
+        /extract value error/i
+      ).exists
+    )
+    .ok()
+    .expect(
+      within(withinIncidentsTable.getAllByRole('row').nth(2)).getByText(
+        /extract value error/i
+      ).exists
+    )
+    .ok()
+    .expect(
+      within(withinIncidentsTable.getAllByRole('row').nth(3)).getByText(
+        /i\/o mapping error/i
+      ).exists
+    )
+    .ok();
+
+  // order by workflow name
+  await t.click(screen.getByRole('button', {name: /sort by flownodename/i}));
+  await t
+    .expect(
+      within(withinIncidentsTable.getAllByRole('row').nth(1)).getByText(
+        'Where to go?'
+      ).exists
+    )
+    .ok()
+    .expect(
+      within(withinIncidentsTable.getAllByRole('row').nth(2)).getByText(
+        'Upper task'
+      ).exists
+    )
+    .ok()
+    .expect(
+      within(withinIncidentsTable.getAllByRole('row').nth(3)).getByText(
+        'message'
+      ).exists
+    )
+    .ok();
+
+  // change the order of workflow name
+  await t.click(screen.getByRole('button', {name: /sort by flownodename/i}));
+  await t
+    .expect(
+      within(withinIncidentsTable.getAllByRole('row').nth(1)).getByText(
+        'message'
+      ).exists
+    )
+    .ok()
+    .expect(
+      within(withinIncidentsTable.getAllByRole('row').nth(2)).getByText(
+        'Upper task'
+      ).exists
+    )
+    .ok()
+    .expect(
+      within(withinIncidentsTable.getAllByRole('row').nth(3)).getByText(
+        'Where to go?'
+      ).exists
+    )
+    .ok();
+
+  // filter by incident type pills
+  await t
+    .click(screen.getByRole('button', {name: /extract value error/i}))
+    .expect(withinIncidentsTable.getAllByRole('row').count)
+    .eql(3);
+
+  await t.click(screen.getByRole('button', {name: /extract value error/i})); // deselect pill
+
+  await t
+    .click(screen.getByRole('button', {name: /i\/o mapping error/i}))
+    .expect(withinIncidentsTable.getAllByRole('row').count)
+    .eql(2);
+
+  // clear filter pills
+  await t
+    .click(screen.getByRole('button', {name: /clear all/i}))
+    .expect(withinIncidentsTable.getAllByRole('row').count)
+    .eql(4);
+
+  // filter by flow node pills
+  await t
+    .click(screen.getByRole('button', {name: /where to go\? /i}))
+    .expect(withinIncidentsTable.getAllByRole('row').count)
+    .eql(2)
+    .click(screen.getByRole('button', {name: /message /i}))
+    .expect(withinIncidentsTable.getAllByRole('row').count)
+    .eql(3)
+    .click(screen.getByRole('button', {name: /upper task /i}))
+    .expect(withinIncidentsTable.getAllByRole('row').count)
+    .eql(4);
+
+  // clear filter pills
+  await t
+    .click(screen.getByRole('button', {name: /clear all/i}))
+    .expect(withinIncidentsTable.getAllByRole('row').count)
+    .eql(4);
+
+  // select a node from history panel, add variables to it, also see the variables when nodes are selected from the table inside the incident bar
+  await t.click(within(withinHistoryPanel.getByText(/where to go\?/i)));
+
+  await t
+    .click(screen.getByRole('button', {name: 'Add variable'}))
+    .typeText(screen.getByRole('textbox', {name: /variable/i}), 'goUp', {
+      paste: true,
+    })
+    .typeText(screen.getByRole('textbox', {name: /value/i}), '10', {
+      paste: true,
+    })
+    .click(screen.getByRole('button', {name: 'Save variable'}));
+
+  await t.click(within(withinHistoryPanel.getByText(/upper task/i)));
+
+  await t
+    .click(screen.getByRole('button', {name: 'Add variable'}))
+    .typeText(screen.getByRole('textbox', {name: /variable/i}), 'orderId', {
+      paste: true,
+    })
+    .typeText(screen.getByRole('textbox', {name: /value/i}), '123', {
+      paste: true,
+    })
+    .click(screen.getByRole('button', {name: 'Save variable'}));
+
+  await t.click(within(withinHistoryPanel.getByText(/message/i)));
+
+  await t
+    .click(screen.getByRole('button', {name: 'Add variable'}))
+    .typeText(screen.getByRole('textbox', {name: /variable/i}), 'clientId', {
+      paste: true,
+    })
+    .typeText(screen.getByRole('textbox', {name: /value/i}), '"test"', {
+      paste: true,
+    })
+    .click(screen.getByRole('button', {name: 'Save variable'}));
+
+  await t.expect(screen.queryByTestId('operation-spinner').exists).notOk();
+
+  // clear filters
+  await t
+    .click(screen.getByRole('button', {name: /clear all/i}))
+    .expect(withinIncidentsTable.getAllByRole('row').count)
+    .eql(4);
+
+  await t
+    .click(withinIncidentsTable.getByRole('row', {name: /Upper task/}))
+    .expect(withinVariablesTable.getAllByRole('row').count)
+    .eql(2)
+    .expect(withinVariablesTable.getByRole('cell', {name: /orderid/i}).exists)
+    .ok();
+
+  await t
+    .click(withinIncidentsTable.getByRole('row', {name: /Where to go\?/}))
+    .expect(withinVariablesTable.getAllByRole('row').count)
+    .eql(2)
+    .expect(withinVariablesTable.getByRole('cell', {name: /goUp/i}).exists)
+    .ok();
+
+  await t
+    .click(withinIncidentsTable.getByRole('row', {name: /message/}))
+    .expect(withinVariablesTable.getAllByRole('row').count)
+    .eql(2)
+    .expect(withinVariablesTable.getByRole('cell', {name: /clientId/i}).exists)
+    .ok();
+
+  // resolve one incident, see it disappears after resolving
+  await t
+    .click(
+      within(
+        withinIncidentsTable.getByRole('row', {name: /Upper task/})
+      ).getByRole('button', {name: 'Retry Incident'})
+    )
+    .expect(
+      within(
+        withinIncidentsTable.getByRole('row', {name: /Upper task/})
+      ).getByTestId('operation-spinner').exists
+    )
+    .ok();
+
+  await t
+    .expect(
+      within(withinIncidentsTable.queryByRole('row', {name: /Upper task/}))
+        .exists
+    )
+    .notOk();
+
+  // see incident bar disappears after all other incidents are resolved
+  await t
+    .click(
+      within(
+        withinIncidentsTable.getByRole('row', {name: /Where to go\?/})
+      ).getByRole('button', {name: 'Retry Incident'})
+    )
+    .click(
+      within(
+        withinIncidentsTable.getByRole('row', {name: /message/})
+      ).getByRole('button', {name: 'Retry Incident'})
+    );
+
+  await t
+    .expect(screen.queryByTestId('incidents-banner').exists)
+    .notOk()
+    .expect(screen.queryByTestId('incidents-table').exists)
+    .notOk();
+
+  await t
+    .expect(
+      within(screen.getByTestId('instance-header')).queryByTestId('ACTIVE-icon')
+        .exists
+    )
+    .ok();
+
+  await t
+    .expect(
+      within(screen.getByRole('banner')).getByTestId('state-icon-ACTIVE').exists
+    )
+    .ok();
+});
+
 test('Instance with an incident - cancel an instance', async (t) => {
   const {
     initialData: {instanceWithIncidentToCancel},

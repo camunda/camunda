@@ -19,7 +19,7 @@ export async function setup() {
     './tests/resources/processWithMultipleTokens.bpmn',
   ]);
 
-  const instances = await createInstances('processWithAnIncident', 1, 3);
+  const instances = await createInstances('processWithAnIncident', 1, 4);
   const instanceWithoutAnIncident = await createSingleInstance(
     'withoutIncidentsProcess',
     1
@@ -41,6 +41,7 @@ export async function setup() {
     instanceWithIncident: instances[0],
     instanceWithIncidentToCancel: instances[1],
     instanceWithIncidentToResolve: instances[2],
+    instanceWithIncidentForIncidentsBar: instances[3],
     instanceWithoutAnIncident,
     processWithMultipleTokens,
   };
