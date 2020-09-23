@@ -64,6 +64,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -106,6 +107,9 @@ public final class ZeebePartition extends Actor
   private final RaftPartitionHealth raftPartitionHealth;
   private final ZeebePartitionHealth zeebePartitionHealth;
   private long term;
+  private StreamProcessor streamProcessor;
+  private AsyncSnapshotDirector asyncSnapshotDirector;
+  private boolean isPaused;
 
   public ZeebePartition(
       final BrokerInfo localBroker,
@@ -452,7 +456,7 @@ public final class ZeebePartition extends Actor
   }
 
   private void installProcessingPartition(final CompletableActorFuture<Void> installFuture) {
-    final StreamProcessor streamProcessor = createStreamProcessor(zeebeDb);
+    streamProcessor = createStreamProcessor(zeebeDb);
     closeables.add(streamProcessor);
     streamProcessor
         .openAsync()
@@ -502,7 +506,7 @@ public final class ZeebePartition extends Actor
   private ActorFuture<Void> installSnapshotDirector(
       final StreamProcessor streamProcessor, final DataCfg dataCfg) {
     final Duration snapshotPeriod = dataCfg.getSnapshotPeriod();
-    final var asyncSnapshotDirector =
+    asyncSnapshotDirector =
         new AsyncSnapshotDirector(
             localBroker.getNodeId(),
             streamProcessor,
@@ -532,6 +536,10 @@ public final class ZeebePartition extends Actor
   }
 
   private CompletableActorFuture<Void> closePartition() {
+
+    streamProcessor = null;
+    asyncSnapshotDirector = null;
+
     Collections.reverse(closeables);
     final var closeActorsFuture = new CompletableActorFuture<Void>();
     stepByStepClosing(closeActorsFuture, closeables);
@@ -781,5 +789,54 @@ public final class ZeebePartition extends Actor
   @Override
   public void addFailureListener(final FailureListener failureListener) {
     actor.run(() -> this.failureListener = failureListener);
+  }
+
+  public ActorFuture<Void> pauseProcessing() {
+    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    actor.call(
+        () -> {
+          isPaused = true;
+          if (streamProcessor != null) {
+            streamProcessor.pauseProcessing().onComplete(completed);
+          } else {
+            completed.complete(null);
+          }
+        });
+    return completed;
+  }
+
+  public void resumeProcessing() {
+    actor.call(
+        () -> {
+          isPaused = false;
+          if (streamProcessor != null) {
+            streamProcessor.resumeProcessing();
+          }
+        });
+  }
+
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  public SnapshotStorage getSnapshotStore() {
+    return snapshotStorage;
+  }
+
+  public void triggerSnapshot() {
+    actor.call(
+        () -> {
+          if (asyncSnapshotDirector != null) {
+            asyncSnapshotDirector.forceSnapshot();
+          }
+        });
+  }
+
+  public ActorFuture<Optional<StreamProcessor>> getStreamProcessor() {
+    return actor.call(() -> Optional.ofNullable(streamProcessor));
+  }
+
+  public ActorFuture<Optional<AsyncSnapshotDirector>> getAsyncSnapshotDirector() {
+    return actor.call(() -> Optional.ofNullable(asyncSnapshotDirector));
   }
 }

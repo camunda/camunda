@@ -32,6 +32,8 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
+import io.zeebe.broker.system.management.BrokerAdminService;
+import io.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -93,6 +95,8 @@ public final class Broker implements AutoCloseable {
   private ServerTransport serverTransport;
   private BrokerHealthCheckService healthCheckService;
   private Map<Integer, ZeebeIndexAdapter> partitionIndexes;
+  private final List<ZeebePartition> partitions = new ArrayList<>();
+  private BrokerAdminService brokerAdminService;
 
   public Broker(final SystemContext systemContext) {
     this.brokerContext = systemContext;
@@ -181,8 +185,16 @@ public final class Broker implements AutoCloseable {
         "leader management request handler", () -> managementRequestStep(localBroker));
     startContext.addStep(
         "zeebe partitions", () -> partitionsStep(brokerCfg, clusterCfg, localBroker));
+    startContext.addStep("Upgrade manager", this::addBrokerAdminService);
 
     return startContext;
+  }
+
+  private AutoCloseable addBrokerAdminService() {
+    final var adminService = new BrokerAdminServiceImpl(partitions);
+    scheduleActor(adminService);
+    brokerAdminService = adminService;
+    return adminService;
   }
 
   private AutoCloseable actorSchedulerStep() {
@@ -340,6 +352,7 @@ public final class Broker implements AutoCloseable {
             scheduleActor(zeebePartition);
             healthCheckService.registerMonitoredPartition(
                 owningPartition.id().id(), zeebePartition);
+            partitions.add(zeebePartition);
             return zeebePartition;
           });
     }
@@ -415,5 +428,9 @@ public final class Broker implements AutoCloseable {
 
   public SystemContext getBrokerContext() {
     return brokerContext;
+  }
+
+  public BrokerAdminService getBrokerAdminService() {
+    return brokerAdminService;
   }
 }

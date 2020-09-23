@@ -49,6 +49,7 @@ public final class AsyncSnapshotDirector extends Actor {
   private Snapshot pendingSnapshot;
   private long lowerBoundSnapshotPosition;
   private boolean takingSnapshot;
+  private long processedPositionInLastCommittedSnapshot;
 
   public AsyncSnapshotDirector(
       final int nodeId,
@@ -62,6 +63,7 @@ public final class AsyncSnapshotDirector extends Actor {
     this.processorName = streamProcessor.getName();
     this.snapshotRate = snapshotRate;
     this.actorName = buildActorName(nodeId, "SnapshotDirector-" + logStream.getPartitionId());
+    processedPositionInLastCommittedSnapshot = StreamProcessor.UNSET_POSITION;
   }
 
   @Override
@@ -136,6 +138,14 @@ public final class AsyncSnapshotDirector extends Actor {
                 }));
 
     return future;
+  }
+
+  public ActorFuture<Long> getProcessedPositionInLastCommittedSnapshot() {
+    return actor.call(() -> processedPositionInLastCommittedSnapshot);
+  }
+
+  public void forceSnapshot() {
+    actor.call(this::prepareTakingSnapshot);
   }
 
   private void scheduleSnapshotOnRate() {
@@ -236,6 +246,7 @@ public final class AsyncSnapshotDirector extends Actor {
                 try {
                   snapshotController.commitSnapshot(pendingSnapshot);
                   snapshotController.replicateLatestSnapshot(actor::submit);
+                  processedPositionInLastCommittedSnapshot = lowerBoundSnapshotPosition;
 
                 } catch (final Exception ex) {
                   LOG.error(ERROR_MSG_MOVE_SNAPSHOT, ex);
