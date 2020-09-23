@@ -45,6 +45,7 @@ import io.zeebe.logstreams.storage.atomix.AtomixLogStorage;
 import io.zeebe.logstreams.storage.atomix.ZeebeIndexMapping;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.snapshots.broker.SnapshotStoreSupplier;
+import io.zeebe.snapshots.raft.PersistedSnapshotStore;
 import io.zeebe.util.health.CriticalComponentsHealthMonitor;
 import io.zeebe.util.health.FailureListener;
 import io.zeebe.util.health.HealthMonitor;
@@ -60,6 +61,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -104,6 +106,8 @@ public final class ZeebePartition extends Actor
   private long term;
   private StreamProcessor streamProcessor;
   private boolean diskSpaceAvailable;
+  private boolean isPaused;
+  private AsyncSnapshotDirector asyncSnapshotDirector;
 
   public ZeebePartition(
       final BrokerInfo localBroker,
@@ -470,7 +474,7 @@ public final class ZeebePartition extends Actor
         .onComplete(
             (value, processorFail) -> {
               if (processorFail == null) {
-                if (!diskSpaceAvailable) {
+                if (isPaused()) {
                   streamProcessor.pauseProcessing();
                 }
                 registerHealthComponent(streamProcessor.getName(), streamProcessor);
@@ -497,6 +501,10 @@ public final class ZeebePartition extends Actor
                 installFuture.completeExceptionally(processorFail);
               }
             });
+  }
+
+  private boolean isPaused() {
+    return !diskSpaceAvailable || isPaused;
   }
 
   private void installRocksDBMetricExporter(final ZeebeRocksDBMetricExporter metricExporter) {
@@ -537,7 +545,7 @@ public final class ZeebePartition extends Actor
   private ActorFuture<Void> installSnapshotDirector(
       final StreamProcessor streamProcessor, final DataCfg dataCfg) {
     final Duration snapshotPeriod = dataCfg.getSnapshotPeriod();
-    final var asyncSnapshotDirector =
+    asyncSnapshotDirector =
         new AsyncSnapshotDirector(
             localBroker.getNodeId(),
             streamProcessor,
@@ -663,6 +671,7 @@ public final class ZeebePartition extends Actor
     // - first, it is called by one of the transitionTo...() methods
     // - then it is called by onActorClosing()
     streamProcessor = null;
+    asyncSnapshotDirector = null;
 
     final var closingStepsInReverseOrder = new ArrayList<>(closingSteps);
     Collections.reverse(closingStepsInReverseOrder);
@@ -781,8 +790,32 @@ public final class ZeebePartition extends Actor
     actor.call(
         () -> {
           diskSpaceAvailable = true;
-          if (streamProcessor != null) {
+          if (streamProcessor != null && !isPaused()) {
             LOG.info("Disk space usage is below threshold. Resuming stream processor.");
+            streamProcessor.resumeProcessing();
+          }
+        });
+  }
+
+  public ActorFuture<Void> pauseProcessing() {
+    final CompletableActorFuture<Void> completed = new CompletableActorFuture<>();
+    actor.call(
+        () -> {
+          isPaused = true;
+          if (streamProcessor != null) {
+            streamProcessor.pauseProcessing().onComplete(completed);
+          } else {
+            completed.complete(null);
+          }
+        });
+    return completed;
+  }
+
+  public void resumeProcessing() {
+    actor.call(
+        () -> {
+          isPaused = false;
+          if (streamProcessor != null && !isPaused()) {
             streamProcessor.resumeProcessing();
           }
         });
@@ -798,6 +831,27 @@ public final class ZeebePartition extends Actor
           criticalComponentsHealthMonitor.removeComponent(name);
           return CompletableActorFuture.completed(null);
         });
+  }
+
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  public PersistedSnapshotStore getSnapshotStore() {
+    return atomixRaftPartition.getServer().getPersistedSnapshotStore();
+  }
+
+  public void triggerSnapshot() {
+    actor.call(
+        () -> {
+          if (asyncSnapshotDirector != null) {
+            asyncSnapshotDirector.forceSnapshot();
+          }
+        });
+  }
+
+  public ActorFuture<Optional<StreamProcessor>> getStreamProcessor() {
+    return actor.call(() -> Optional.ofNullable(streamProcessor));
   }
 
   private static final class ClosingStep {

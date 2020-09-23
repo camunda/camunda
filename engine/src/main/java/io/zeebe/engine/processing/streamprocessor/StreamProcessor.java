@@ -341,8 +341,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     return actor.call(() -> phase);
   }
 
-  public void pauseProcessing() {
-    actor.call(
+  public ActorFuture<Void> pauseProcessing() {
+    return actor.call(
         () ->
             recoverFuture.onComplete(
                 (v, t) -> {
@@ -370,7 +370,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
                 }));
   }
 
-  protected enum Phase {
+  public enum Phase {
     REPROCESSING,
     PROCESSING,
     FAILED,
