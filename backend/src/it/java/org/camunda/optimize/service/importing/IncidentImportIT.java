@@ -325,7 +325,7 @@ public class IncidentImportIT extends AbstractImportIT {
         .stream()
         .filter(engineImportMediator -> OpenIncidentEngineImportMediator.class.equals(engineImportMediator.getClass()))
         .findFirst()
-        .orElseThrow(() -> new OptimizeIntegrationTestException("Could not fine OpenIncidentEngineImportMediator!"));
+        .orElseThrow(() -> new OptimizeIntegrationTestException("Could not find OpenIncidentEngineImportMediator!"));
 
       mediator.runImport().get(10, TimeUnit.SECONDS);
     }
