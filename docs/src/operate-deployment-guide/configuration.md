@@ -21,12 +21,14 @@ with `camunda.operate`. The following parts are configurable:
 Operate stores and reads data in/from Elasticsearch.
 
 ## Settings to connect
+Either set `host` and `port` (deprecated) or `url` (recommended)
 
 Name | Description | Default value
 -----|-------------|--------------
 camunda.operate.elasticsearch.clusterName | Clustername of Elasticsearch | elasticsearch
 camunda.operate.elasticsearch.host | Hostname where Elasticsearch is running | localhost
 camunda.operate.elasticsearch.port | Port of Elasticsearch REST API | 9200
+camunda.operate.elasticsearch.url | URL of Elasticsearch REST API | http://localhost:9200
 
 ## A snippet from application.yml:
 
@@ -35,10 +37,8 @@ camunda.operate:
   elasticsearch:
     # Cluster name
     clusterName: elasticsearch
-    # Host
-    host: localhost
-    # Transport port
-    port: 9200
+    # Url
+    url: http://localhost:9200
 ```
 
 # Zeebe Broker Connection
@@ -66,12 +66,14 @@ Operate imports data from Elasticsearch indices created and filled in by [Zeebe 
 Therefore settings for this Elasticsearch connection must be defined and must correspond to the settings on Zeebe side.
 
 ## Settings to connect and import:
+Either set `host` and `port` (deprecated) or `url` (recommended)
 
 Name | Description | Default value
 -----|-------------|--------------
 camunda.operate.zeebeElasticsearch.clusterName | Cluster name of Elasticsearch | elasticsearch
 camunda.operate.zeebeElasticsearch.host | Hostname where Elasticsearch is running | localhost
 camunda.operate.zeebeElasticsearch.port | Port of Elasticsearch REST API | 9200
+camunda.operate.zeebeElasticsearch.url | URL of Elasticsearch REST API | http://localhost:9200
 camunda.operate.zeebeElasticsearch.prefix | Index prefix as configured in Zeebe Elasticsearch exporter | zeebe-record
 
 ## A snippet from application.yml:
@@ -81,10 +83,8 @@ camunda.operate:
   zeebeElasticsearch:
     # Cluster name
     clusterName: elasticsearch
-    # Host
-    host: localhost
-    # Transport port
-    port: 9200
+    # Url
+    url: http://localhost:9200
     # Index prefix, configured in Zeebe Elasticsearch exporter
     prefix: zeebe-record
 ```
@@ -194,10 +194,8 @@ camunda.operate:
   elasticsearch:
     # Cluster name
     clusterName: elasticsearch
-    # Host
-    host: localhost
-    # Transport port
-    port: 9200
+    # Url
+    url: http://localhost:9200
   # Zeebe instance
   zeebe:
     # Broker contact point
@@ -206,10 +204,8 @@ camunda.operate:
   zeebeElasticsearch:
     # Cluster name
     clusterName: elasticsearch
-    # Host
-    host: localhost
-    # Transport port
-    port: 9200
+    # Url
+    url: http://localhost:9200
     # Index prefix, configured in Zeebe Elasticsearch exporter
     prefix: zeebe-record
 ```
