@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.core.GenericType;
 import java.util.List;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.DECISION_DEFINITION_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.DECISION_DEFINITION_ENDPOINT;
 
 
 @Component

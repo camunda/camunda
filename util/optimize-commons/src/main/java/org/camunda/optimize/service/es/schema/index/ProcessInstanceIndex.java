@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
+import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
@@ -93,6 +94,16 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String CANDIDATE_GROUP_OPERATION_GROUP_ID = CandidateGroupOperationDto.Fields.groupId;
   public static final String CANDIDATE_GROUP_OPERATION_TYPE = CandidateGroupOperationDto.Fields.operationType;
   public static final String CANDIDATE_GROUP_OPERATION_TIMESTAMP = CandidateGroupOperationDto.Fields.timestamp;
+
+  public static final String INCIDENTS = ProcessInstanceDto.Fields.incidents;
+  private static final String INCIDENT_ID = IncidentDto.Fields.id;
+  private static final String INCIDENT_CREATE_TIME = IncidentDto.Fields.createTime;
+  private static final String INCIDENT_END_TIME = IncidentDto.Fields.endTime;
+  private static final String INCIDENT_INCIDENT_TYPE = IncidentDto.Fields.incidentType;
+  private static final String INCIDENT_ACTIVITY_ID = IncidentDto.Fields.activityId;
+  private static final String INCIDENT_FAILED_ACTIVITY_ID = IncidentDto.Fields.failedActivityId;
+  private static final String INCIDENT_MESSAGE = IncidentDto.Fields.incidentMessage;
+  private static final String INCIDENT_STATUS = IncidentDto.Fields.incidentStatus;
 
   @Setter
   private String indexName = ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
@@ -178,12 +189,18 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
               .startObject("properties");
                 addNestedVariableField(newBuilder)
               .endObject()
+            .endObject()
+            .startObject(INCIDENTS)
+              .field("type", "nested")
+              .startObject("properties");
+                addNestedIncidentField(newBuilder)
+              .endObject()
             .endObject();
     return newBuilder;
     // @formatter:on
   }
 
-  protected XContentBuilder addNestedEventField(XContentBuilder builder) throws IOException {
+  private XContentBuilder addNestedEventField(XContentBuilder builder) throws IOException {
     // @formatter:off
     return builder
       .startObject(EVENT_ID)
@@ -340,6 +357,40 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
       .endObject()
       ;
     return builder;
+    // @formatter:on
+  }
+
+  private XContentBuilder addNestedIncidentField(XContentBuilder builder) throws IOException {
+    // @formatter:off
+    return builder
+      .startObject(INCIDENT_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(INCIDENT_CREATE_TIME)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(INCIDENT_END_TIME)
+        .field("type", "date")
+        .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(INCIDENT_INCIDENT_TYPE)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(INCIDENT_ACTIVITY_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(INCIDENT_FAILED_ACTIVITY_ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(INCIDENT_MESSAGE)
+        .field("type", "text")
+        .field("index", true)
+      .endObject()
+      .startObject(INCIDENT_STATUS)
+        .field("type", "keyword")
+      .endObject()
+      ;
     // @formatter:on
   }
 

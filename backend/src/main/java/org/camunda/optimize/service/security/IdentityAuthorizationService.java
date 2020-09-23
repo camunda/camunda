@@ -19,10 +19,10 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.READ_HISTORY_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_GROUP;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.RESOURCE_TYPE_USER;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.READ_HISTORY_PERMISSION;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_GROUP;
+import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_USER;
 
 @Component
 public class IdentityAuthorizationService

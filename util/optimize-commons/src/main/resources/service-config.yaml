@@ -138,6 +138,9 @@ import:
     activity-instance:
       # Determines the page size for historic activity instance fetching.
       maxPageSize: 10000
+    incident:
+      # Determines the page size for historic incident fetching.
+      maxPageSize: 10000
     process-definition-xml:
       # Determines the page size for process definition xml model
       # fetching. Should be a low value, as large models will lead to

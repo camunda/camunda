@@ -18,7 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.PROCESS_DEFINITION_XML_ENDPOINT_TEMPLATE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.PROCESS_DEFINITION_XML_ENDPOINT_TEMPLATE;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)

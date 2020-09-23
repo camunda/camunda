@@ -41,7 +41,7 @@ public class IdentityLinkLogEngineImportMediatorFactory extends AbstractImportMe
       : Collections.emptyList();
   }
 
-  public IdentityLinkLogEngineImportMediator createIdentityLinkLogEngineImportMediator(
+  private IdentityLinkLogEngineImportMediator createIdentityLinkLogEngineImportMediator(
     final EngineContext engineContext) {
     final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
       beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);

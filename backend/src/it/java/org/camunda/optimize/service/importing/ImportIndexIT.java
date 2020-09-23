@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
+import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
@@ -58,15 +59,7 @@ public class ImportIndexIT extends AbstractImportIT {
   @SneakyThrows
   public void latestImportIndexAfterRestartOfOptimize() {
     // given
-    deployAndStartUserTaskProcess();
-    // we need finished ones
-    engineIntegrationExtension.finishAllRunningUserTasks();
-    // as well as running & suspended ones
-    final ProcessInstanceEngineDto processInstanceToSuspend = deployAndStartUserTaskProcess();
-    engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstanceToSuspend.getId());
-    deployAndStartSimpleServiceTask();
-    engineIntegrationExtension.deployAndStartDecisionDefinition();
-    engineIntegrationExtension.createTenant("id", "name");
+    deployAllPossibleEngineData();
 
     importAllEngineEntitiesFromScratch();
     embeddedOptimizeExtension.storeImportIndexesToElasticsearch();
@@ -142,5 +135,24 @@ public class ImportIndexIT extends AbstractImportIT {
     for (Long index : indexes) {
       assertThat(index, is(0L));
     }
+  }
+
+  private void deployAllPossibleEngineData() {
+    deployAndStartUserTaskProcess();
+    // we need finished ones
+    engineIntegrationExtension.finishAllRunningUserTasks();
+    // as well as running & suspended ones
+    final ProcessInstanceEngineDto processInstanceToSuspend = deployAndStartUserTaskProcess();
+    engineIntegrationExtension.suspendProcessInstanceByInstanceId(processInstanceToSuspend.getId());
+    deployAndStartSimpleServiceTask();
+    engineIntegrationExtension.deployAndStartDecisionDefinition();
+    engineIntegrationExtension.createTenant("id", "name");
+
+    // create incident data
+    engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    engineIntegrationExtension.failAllExternalTasks();
+    engineIntegrationExtension.completeAllExternalTasks();
+    engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    engineIntegrationExtension.failAllExternalTasks();
   }
 }

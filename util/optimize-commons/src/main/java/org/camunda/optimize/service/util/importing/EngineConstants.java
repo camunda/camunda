@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.util.configuration;
+package org.camunda.optimize.service.util.importing;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -29,6 +29,9 @@ public class EngineConstants {
   public static final String STARTED_AFTER = "startedAfter";
   public static final String STARTED_AT = "startedAt";
 
+  public static final String CREATED_AFTER = "createdAfter";
+  public static final String CREATED_AT = "createdAt";
+
   public static final String OCCURRED_AFTER = "occurredAfter";
   public static final String OCCURRED_AT = "occurredAt";
 
@@ -39,6 +42,8 @@ public class EngineConstants {
   public static final String VARIABLE_UPDATE_ENDPOINT = "/optimize/variable-update";
   public static final String COMPLETED_ACTIVITY_INSTANCE_ENDPOINT = "/optimize/activity-instance/completed";
   public static final String RUNNING_ACTIVITY_INSTANCE_ENDPOINT = "/optimize/activity-instance/running";
+  public static final String OPEN_INCIDENT_ENDPOINT = "/optimize/incident/open";
+  public static final String COMPLETED_INCIDENT_ENDPOINT = "/optimize/incident/completed";
   public static final String COMPLETED_PROCESS_INSTANCE_ENDPOINT = "/optimize/process-instance/completed";
   public static final String RUNNING_PROCESS_INSTANCE_ENDPOINT = "/optimize/process-instance/running";
   public static final String DECISION_INSTANCE_ENDPOINT = "/optimize/decision-instance";
@@ -101,5 +106,9 @@ public class EngineConstants {
   public static final String INCL_INSTANCES_IN_DEFINITION_SUSPENSION_FIELD = "includeProcessInstances";
   public static final String SUSPEND_VIA_BATCH_OPERATION_TYPE = "SuspendJob";
   public static final String ACTIVATE_VIA_BATCH_OPERATION_TYPE = "ActivateJob";
+
+  // incident type
+  public static final String FAILED_JOB_INCIDENT_TYPE = "failedJob";
+  public static final String FAILED_EXTERNAL_TASK_INCIDENT_TYPE = "failedExternalTask";
 
 }

@@ -7,7 +7,7 @@ package org.camunda.optimize.rest;
 
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
-import org.camunda.optimize.service.util.configuration.EngineConstants;
+import org.camunda.optimize.service.util.importing.EngineConstants;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.junit.jupiter.api.Test;

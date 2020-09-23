@@ -28,6 +28,7 @@ public class BpmnModels {
   public static final String TASK_ID_2 = "serviceTask2";
   public static final String MERGE_GATEWAY_ID = "mergeExclusiveGateway";
   public static final String END_EVENT_ID = "endEvent";
+  public static final String DEFAULT_TOPIC = "MyTopic";
 
 
   public static BpmnModelInstance getSimpleBpmnDiagram() {
@@ -138,6 +139,34 @@ public class BpmnModels {
         .serviceTask(TASK_ID_2)
         .camundaExpression("${true}")
         .connectTo(MERGE_GATEWAY_ID)
+      .done();
+    // @formatter:on
+  }
+
+  public static BpmnModelInstance getExternalTaskProcess() {
+    // @formatter:off
+    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+      .camundaVersionTag(VERSION_TAG)
+      .name(DEFAULT_PROCESS_ID)
+      .startEvent(START_EVENT)
+      .serviceTask(SERVICE_TASK)
+        .camundaExternalTask(DEFAULT_TOPIC)
+      .endEvent(END_EVENT)
+      .done();
+    // @formatter:on
+  }
+
+  public static BpmnModelInstance getTwoExternalTaskProcess() {
+    // @formatter:off
+    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+      .camundaVersionTag(VERSION_TAG)
+      .name(DEFAULT_PROCESS_ID)
+      .startEvent(START_EVENT)
+      .serviceTask(TASK_ID_1)
+        .camundaExternalTask(DEFAULT_TOPIC)
+      .serviceTask(TASK_ID_2)
+        .camundaExternalTask(DEFAULT_TOPIC)
+      .endEvent(END_EVENT)
       .done();
     // @formatter:on
   }

@@ -22,10 +22,10 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_GLOBAL;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstants.AUTHORIZATION_TYPE_REVOKE;
+import static org.camunda.optimize.service.util.importing.EngineConstants.ALL_RESOURCES_RESOURCE_ID;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GLOBAL;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.AUTHORIZATION_TYPE_REVOKE;
 
 public abstract class AbstractCachingAuthorizationService<T> implements SessionListener, ConfigurationReloadable {
   private static final int CACHE_MAXIMUM_SIZE = 1000;

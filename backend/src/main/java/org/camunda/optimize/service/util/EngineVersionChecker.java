@@ -12,7 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.engine.EngineVersionDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.util.configuration.EngineConstants;
+import org.camunda.optimize.service.util.importing.EngineConstants;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.core.Response;

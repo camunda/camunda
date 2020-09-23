@@ -19,7 +19,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstants.USER_VALIDATION_ENDPOINT;
+import static org.camunda.optimize.service.util.importing.EngineConstants.USER_VALIDATION_ENDPOINT;
 
 @RequiredArgsConstructor
 @Component

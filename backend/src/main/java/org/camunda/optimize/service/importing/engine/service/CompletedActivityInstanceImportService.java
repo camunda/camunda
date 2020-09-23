@@ -12,7 +12,7 @@ import org.camunda.optimize.service.CamundaEventImportService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedActivityInstanceElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.CompletedActivityInstanceWriter;
+import org.camunda.optimize.service.es.writer.activity.CompletedActivityInstanceWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +25,8 @@ public class CompletedActivityInstanceImportService implements ImportService<His
 
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   protected EngineContext engineContext;
-  private CompletedActivityInstanceWriter completedActivityInstanceWriter;
-  private CamundaEventImportService camundaEventService;
+  private final CompletedActivityInstanceWriter completedActivityInstanceWriter;
+  private final CamundaEventImportService camundaEventService;
 
   public CompletedActivityInstanceImportService(CompletedActivityInstanceWriter completedActivityInstanceWriter,
                                                 CamundaEventImportService camundaEventService,

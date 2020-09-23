@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
+import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
@@ -41,6 +42,8 @@ public class ProcessInstanceDto implements OptimizeDto {
   private List<UserTaskInstanceDto> userTasks = new ArrayList<>();
   @Builder.Default
   private List<SimpleProcessVariableDto> variables = new ArrayList<>();
+  @Builder.Default
+  private List<IncidentDto> incidents = new ArrayList<>();
   private String engine;
   private String tenantId;
 }
