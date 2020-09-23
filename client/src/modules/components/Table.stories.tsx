@@ -10,7 +10,7 @@ import React from 'react';
 import {Table, TR, ColumnTH, TD, RowTH} from './Table';
 
 export default {
-  title: 'modules/Table',
+  title: 'Components/Modules/Table',
 };
 
 const Default: React.FC = () => {

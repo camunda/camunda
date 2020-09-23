@@ -22,7 +22,7 @@ import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNo
 import {LoadingOverlay} from './LoadingOverlay';
 
 export default {
-  title: 'Login/Page States',
+  title: 'Pages States/Login',
 };
 
 const Default: React.FC = () => {

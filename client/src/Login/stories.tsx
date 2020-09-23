@@ -12,7 +12,7 @@ import {getCurrentCopyrightNoticeText} from 'modules/utils/getCurrentCopyrightNo
 import {LoadingOverlay} from './LoadingOverlay';
 
 export default {
-  title: 'Login/Components',
+  title: 'Components/Login',
 };
 
 const Button: React.FC = () => {

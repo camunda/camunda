@@ -7,7 +7,7 @@
 /* istanbul ignore file */
 
 import React from 'react';
-import {IconButton} from './index';
+import {IconButton as OriginalIconButton} from './index';
 import {ReactComponent as PlusIcon} from 'modules/icons/plus.svg';
 import styled from 'styled-components';
 
@@ -18,16 +18,16 @@ const Icon = styled(PlusIcon)`
 `;
 
 export default {
-  title: 'modules/Icon Button',
-  component: IconButton,
+  title: 'Components/Modules',
+  component: OriginalIconButton,
 };
 
-const Default: React.FC = () => {
+const IconButton: React.FC = () => {
   return (
-    <IconButton>
+    <OriginalIconButton>
       <Icon />
-    </IconButton>
+    </OriginalIconButton>
   );
 };
 
-export {Default};
+export {IconButton};

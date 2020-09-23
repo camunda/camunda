@@ -35,7 +35,7 @@ import {
 } from 'modules/queries/get-task-variables';
 
 export default {
-  title: 'Tasklist/Page States',
+  title: 'Pages States/Tasklist',
 };
 
 interface Props {
