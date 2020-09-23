@@ -83,7 +83,8 @@ public class StatusWebSocketIT extends AbstractIT {
     // when status socket connects
     connectStatusClientSocket(socket);
     // then the initial status is received
-    assertThat(socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS)).isTrue();
+    final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+    assertThat(initialStatusCorrectlyReceived).isTrue();
     assertThat(socket.getImportStatus()).isFalse();
 
     // then no update received as no import is running so no status change
@@ -101,7 +102,8 @@ public class StatusWebSocketIT extends AbstractIT {
     // when status socket connects
     connectStatusClientSocket(socket);
     // then the initial status is received
-    assertThat(socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS)).isTrue();
+    final boolean initialStatusCorrectlyReceived = socket.getInitialStatusReceivedLatch().await(1, TimeUnit.SECONDS);
+    assertThat(initialStatusCorrectlyReceived).isTrue();
     assertThat(socket.getImportStatus()).isTrue();
 
     // when another import cycle runs and the state doesn't change (still importing)

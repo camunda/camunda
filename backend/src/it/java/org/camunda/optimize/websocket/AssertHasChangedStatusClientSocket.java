@@ -12,7 +12,6 @@ import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 
 import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,7 +28,7 @@ import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.D
 @Slf4j
 @Getter
 public class AssertHasChangedStatusClientSocket {
-
+  
   private CountDownLatch initialStatusReceivedLatch = new CountDownLatch(1);
   private CountDownLatch receivedTwoUpdatesLatch = new CountDownLatch(2);
   private boolean importStatusChanged = false;
@@ -43,10 +42,9 @@ public class AssertHasChangedStatusClientSocket {
     StatusWithProgressDto statusDto = objectMapper.readValue(message, StatusWithProgressDto.class);
 
     assertThat(statusDto.getIsImporting()).isNotNull();
-    initialStatusReceivedLatch.countDown();
-
     importStatusChanged |= importStatus != null && statusDto.getIsImporting().get(DEFAULT_ENGINE_ALIAS) != importStatus;
     importStatus = statusDto.getIsImporting().get(DEFAULT_ENGINE_ALIAS);
+    initialStatusReceivedLatch.countDown();
     receivedTwoUpdatesLatch.countDown();
   }
 
