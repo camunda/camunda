@@ -106,7 +106,7 @@ exports[`should match snapshot 1`] = `
             "Order Accepted",
             "eventGroup",
             "order-service",
-            10,
+            "--",
           ],
           "props": Object {
             "className": "OrderAccepted disabled",

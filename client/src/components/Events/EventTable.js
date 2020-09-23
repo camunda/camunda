@@ -269,7 +269,7 @@ export default withErrorHandling(
                         eventLabel || eventName,
                         group,
                         source,
-                        count,
+                        count ?? '--',
                       ],
                       props: {
                         className: classnames(eventName, {

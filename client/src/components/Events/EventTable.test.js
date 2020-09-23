@@ -28,7 +28,7 @@ jest.mock('./service', () => ({
       source: 'order-service',
       eventName: 'OrderAccepted',
       eventLabel: 'Order Accepted',
-      count: 10,
+      count: null,
     },
   ]),
   isNonTimerEvent: jest.fn().mockReturnValue(false),
