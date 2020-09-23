@@ -5,9 +5,7 @@
  */
 
 import {
-  fetchWorkflowInstancesStatistics,
   fetchWorkflowInstancesByIds,
-  fetchWorkflowInstances,
   applyBatchOperation,
   applyOperation,
 } from 'modules/api/instances';
@@ -21,8 +19,6 @@ import Publisher from '../publisher';
 import Poll from '../poll';
 
 const {
-  LOAD_LIST_INSTANCES,
-  LOAD_STATE_STATISTICS,
   LOAD_BATCH_OPERATIONS,
   CREATE_BATCH_OPERATION,
   OPERATION_APPLIED,
@@ -71,18 +67,6 @@ export class DataManager {
       topic,
       () => apiCall(cachedParams),
       staticContent
-    );
-  };
-
-  getWorkflowInstances = (params) => {
-    this.fetchAndPublish(LOAD_LIST_INSTANCES, fetchWorkflowInstances, params);
-  };
-
-  getWorkflowInstancesStatistics = (params) => {
-    this.fetchAndPublish(
-      LOAD_STATE_STATISTICS,
-      fetchWorkflowInstancesStatistics,
-      params
     );
   };
 

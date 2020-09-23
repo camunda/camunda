@@ -5,15 +5,9 @@
  */
 
 import {createInstance, createOperation} from 'modules/testUtils';
-import {
-  EXPAND_STATE,
-  SORT_ORDER,
-  DEFAULT_SORTING,
-  DEFAULT_FILTER,
-} from 'modules/constants';
+import {EXPAND_STATE} from 'modules/constants';
 
 // mock props
-const onFirstElementChange = jest.fn();
 const INSTANCE = createInstance({
   id: '1',
   operations: [createOperation({state: 'FAILED'})],
@@ -25,44 +19,35 @@ export const ACTIVE_INSTANCE = createInstance({
   hasActiveOperation: true,
 });
 
-export const emptyList = {
-  data: [],
-  onSelectedInstancesUpdate: jest.fn(),
-  onEntriesPerPageChange: jest.fn(),
-  onSort: jest.fn(),
-  expandState: EXPAND_STATE.DEFAULT,
-  sorting: {sortBy: 'foo', sortOrder: SORT_ORDER.ASC},
-  isDataLoaded: true,
-};
-
 export const mockProps = {
   expandState: EXPAND_STATE.DEFAULT,
-  filter: DEFAULT_FILTER,
-  instancesLoaded: false,
   instances: [],
-  sorting: DEFAULT_SORTING,
-  onSort: jest.fn(),
-  firstElement: 0,
-  onFirstElementChange: onFirstElementChange,
+};
+
+export const mockPropsWithEmptyInstances = {
+  ...mockProps,
+  isInitialLoadComplete: true,
+  isLoading: false,
 };
 
 export const mockPropsBeforeDataLoaded = {
   ...mockProps,
-  instances: [],
-  initialLoad: true,
-  instancesLoaded: false,
+  isInitialLoadComplete: false,
+  isLoading: true,
 };
 
 export const mockPropsWithInstances = {
   ...mockProps,
   instances: [INSTANCE, ACTIVE_INSTANCE],
-  instancesLoaded: true,
+  isInitialLoadComplete: true,
+  isLoading: false,
 };
 
 export const mockPropsWithNoOperation = {
   ...mockProps,
   instances: [INSTANCE],
-  instancesLoaded: true,
+  isInitialLoadComplete: true,
+  isLoading: false,
 };
 
 export const mockPropsWithPoll = {

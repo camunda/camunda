@@ -41,6 +41,7 @@ import {
 import {parseQueryString} from 'modules/utils/filter';
 import {ALL_VERSIONS_OPTION, DEBOUNCE_DELAY} from './constants';
 import {instancesDiagram} from 'modules/stores/instancesDiagram';
+import {filters} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
 
 const Filters = observer(
@@ -64,12 +65,7 @@ const Filters = observer(
           value: PropTypes.string,
         }).isRequired,
       }).isRequired,
-      onFilterChange: PropTypes.func.isRequired,
-      onFilterReset: PropTypes.func.isRequired,
-      resetFilters: PropTypes.bool,
-      afterFilterReset: PropTypes.func,
       onInstanceClick: PropTypes.func,
-      groupedWorkflows: PropTypes.object,
       location: PropTypes.object,
     };
 
@@ -100,20 +96,7 @@ const Filters = observer(
     };
 
     componentDidUpdate = (prevProps) => {
-      const doResetFilterOperation =
-        this.props.resetFilters && this.props.afterFilterReset;
-
-      if (doResetFilterOperation) {
-        this.setFilterState(
-          DEFAULT_FILTER_CONTROLLED_VALUES,
-          this.props.afterFilterReset
-        );
-      }
-
-      if (
-        !isEqual(prevProps.filter, this.props.filter) ||
-        doResetFilterOperation
-      ) {
+      if (!isEqual(prevProps.filter, this.props.filter)) {
         this.setFilter(this.props.filter);
       }
     };
@@ -155,7 +138,10 @@ const Filters = observer(
     };
 
     propagateFilter = () => {
-      this.props.onFilterChange(sanitizeFilter(this.state.filter));
+      const sanitizedFilter = sanitizeFilter(this.state.filter);
+      if (!isEqual(filters.state.filter, sanitizedFilter)) {
+        filters.setFilter(sanitizedFilter);
+      }
     };
 
     setFilter(filter) {
@@ -185,7 +171,8 @@ const Filters = observer(
 
     handleWorkflowNameChange = (event) => {
       const {value} = event.target;
-      const currentWorkflow = this.props.groupedWorkflows[value];
+      const {groupedWorkflows} = filters.state;
+      const currentWorkflow = groupedWorkflows[value];
       const version = getLastVersionOfWorkflow(currentWorkflow);
       this.setFilterState(
         {workflow: value, version, activityId: ''},
@@ -225,12 +212,17 @@ const Filters = observer(
       this.resetTimer();
       this.setFilterState(
         {...DEFAULT_FILTER_CONTROLLED_VALUES, ...DEFAULT_FILTER},
-        this.props.onFilterReset
+        () => {
+          if (!isEqual(DEFAULT_FILTER, filters.state.filter)) {
+            filters.setFilter(DEFAULT_FILTER);
+          }
+        }
       );
     };
 
     getPlaceHolder(regular, preview) {
-      const isWorkflowDataLoaded = !isEmpty(this.props.groupedWorkflows);
+      const {groupedWorkflows} = filters.state;
+      const isWorkflowDataLoaded = !isEmpty(groupedWorkflows);
       if (preview && !isWorkflowDataLoaded) {
         return preview;
       } else {
@@ -256,16 +248,15 @@ const Filters = observer(
       } = this.state.filter;
 
       const {previewVersion, previewName} = this.state;
+      const {groupedWorkflows} = filters.state;
 
-      const isWorkflowsDataLoaded = !isEmpty(this.props.groupedWorkflows);
+      const isWorkflowsDataLoaded = !isEmpty(groupedWorkflows);
       const versionPlaceholder =
         previewVersion === 'all' ? `All versions` : `Version ${previewVersion}`;
       const workflowVersions =
         workflow !== '' && isWorkflowsDataLoaded
           ? addAllVersionsOption(
-              getOptionsForWorkflowVersion(
-                this.props.groupedWorkflows[workflow].workflows
-              )
+              getOptionsForWorkflowVersion(groupedWorkflows[workflow].workflows)
             )
           : [];
       const {selectableFlowNodes} = instancesDiagram;
@@ -279,7 +270,7 @@ const Filters = observer(
                 disabled={!isWorkflowsDataLoaded}
                 name="workflow"
                 placeholder={this.getPlaceHolder('Workflow', previewName)}
-                options={getOptionsForWorkflowName(this.props.groupedWorkflows)}
+                options={getOptionsForWorkflowName(groupedWorkflows)}
                 onChange={this.handleWorkflowNameChange}
               />
             </Styled.Field>

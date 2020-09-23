@@ -91,35 +91,6 @@ describe('DataManager', () => {
   });
 
   describe('API calls', () => {
-    describe('fetch workflow instances', () => {
-      it('should publish loading stats to topic', () => {
-        // when
-        dataManager.getWorkflowInstances(mockParams);
-
-        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
-          SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
-          instancesApi.fetchWorkflowInstances
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual(mockParams);
-      });
-    });
-    describe('fetch workflow instance statistics', () => {
-      it('should publish loading stats to topic', () => {
-        // when
-        dataManager.getWorkflowInstancesStatistics(mockParams);
-
-        // then
-        expect(fetchAndPublishSpy.mock.calls[0][0]).toBe(
-          SUBSCRIPTION_TOPIC.LOAD_STATE_STATISTICS
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][1]).toBe(
-          instancesApi.fetchWorkflowInstancesStatistics
-        );
-        expect(fetchAndPublishSpy.mock.calls[0][2]).toEqual(mockParams);
-      });
-    });
     describe('fetch workflow instances by Ids', () => {
       it('should publish loading states to topic', () => {
         // when

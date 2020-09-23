@@ -4,10 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, computed} from 'mobx';
+import {observable, decorate, action, computed, autorun} from 'mobx';
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
+import {isEmpty} from 'lodash';
+import {filters} from 'modules/stores/filters';
 
 const DEFAULT_STATE = {
   diagramModel: null,
@@ -18,6 +20,17 @@ const DEFAULT_STATE = {
 
 class InstancesDiagram {
   state = {...DEFAULT_STATE};
+  disposer = null;
+
+  init = () => {
+    this.disposer = autorun(() => {
+      if (!isEmpty(filters.workflow)) {
+        this.fetchWorkflowXml(filters.workflow.id);
+      } else {
+        this.resetDiagramModel();
+      }
+    });
+  };
 
   fetchWorkflowXml = async (workflowId) => {
     this.startLoading();
@@ -66,6 +79,10 @@ class InstancesDiagram {
 
   reset = () => {
     this.state = {...DEFAULT_STATE};
+
+    if (this.disposer !== null) {
+      this.disposer();
+    }
   };
 }
 

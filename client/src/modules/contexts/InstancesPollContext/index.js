@@ -8,23 +8,21 @@ import React, {useContext} from 'react';
 import PropTypes from 'prop-types';
 import {withData} from 'modules/DataManager';
 import {statistics} from 'modules/stores/statistics';
+import {filters} from 'modules/stores/filters';
+import {instances} from 'modules/stores/instances';
+import {workflowStatistics} from 'modules/stores/workflowStatistics';
 import {observer} from 'mobx-react';
 
 import {
   LOADING_STATE,
   SUBSCRIPTION_TOPIC,
   POLL_TOPICS,
+  DEFAULT_MAX_RESULTS,
 } from 'modules/constants';
 
 // Creates a context for polling for updates on instances with active operations
 const InstancesPollContext = React.createContext();
 const InstancesPollConsumer = InstancesPollContext.Consumer;
-
-function getCommonItems(list_1 = [], list_2 = []) {
-  return list_1.length < list_2.length
-    ? list_1.filter((item) => list_2.includes(item))
-    : list_2.filter((item) => list_1.includes(item));
-}
 
 const InstancesPollProviderComp = observer(
   class InstancesPollProviderComp extends React.Component {
@@ -109,39 +107,27 @@ const InstancesPollProviderComp = observer(
       );
     };
 
-    triggerDataUpdates(completedInstances) {
+    triggerDataUpdates() {
       const {
-        dataManager,
         filter: {workflow, version},
       } = this.props;
 
-      const completedIdsInSelections = getCommonItems([...this.state.complete]);
+      instances.refreshInstances({
+        ...filters.getFiltersPayload(),
+        sorting: filters.state.sorting,
+        firstResult: filters.firstElement,
+        maxResults: DEFAULT_MAX_RESULTS,
+      });
 
-      let updateParams = {
-        endpoints: [{name: SUBSCRIPTION_TOPIC.LOAD_LIST_INSTANCES}],
-        topic: SUBSCRIPTION_TOPIC.REFRESH_AFTER_OPERATION,
-      };
       statistics.fetchStatistics();
 
       if (workflow && version && version !== 'all') {
-        updateParams.endpoints = [
-          ...updateParams.endpoints,
-          SUBSCRIPTION_TOPIC.LOAD_STATE_STATISTICS,
-        ];
+        workflowStatistics.fetchWorkflowStatistics(filters.getFiltersPayload());
       }
-
-      if (Boolean(completedIdsInSelections.length)) {
-        updateParams.staticData = {
-          completedInstances,
-        };
-      }
-
-      dataManager.update(updateParams);
     }
 
     addIds = (ids) => {
       const {visibleIdsInListPanel} = this.props;
-
       this.setState((prevState) => {
         return {
           active: new Set(
@@ -155,7 +141,6 @@ const InstancesPollProviderComp = observer(
 
     addAllVisibleIds = (deselectedIds) => {
       const {visibleIdsInListPanel} = this.props;
-
       this.setState({
         active: new Set(
           Array.from(visibleIdsInListPanel).filter(

@@ -172,28 +172,4 @@ describe('OperationsPanel', () => {
       operationsTotalCount: 2,
     });
   });
-
-  it('should be able to handle instance click', () => {
-    // given
-    useBatchOperations.mockReturnValue({
-      batchOperations: [mockOperationRunning, mockOperationFinished],
-      requestBatchOperations: jest.fn(),
-    });
-
-    // when
-    const node = mountOperationsPanel();
-
-    const entry = node.find('[data-test="operations-entry"]');
-    const firstEntry = entry.at(0);
-    firstEntry.prop('onInstancesClick')('firstClick');
-
-    const secondEntry = entry.at(1);
-    secondEntry.prop('onInstancesClick')('secondClick');
-    node.update();
-
-    // then
-    expect(mockProps.onInstancesClick).toHaveBeenCalledTimes(2);
-    expect(mockProps.onInstancesClick).toBeCalledWith('firstClick');
-    expect(mockProps.onInstancesClick).toBeCalledWith('secondClick');
-  });
 });

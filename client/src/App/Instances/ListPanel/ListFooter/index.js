@@ -12,60 +12,51 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 import {instances} from 'modules/stores/instances';
 import {instanceSelection} from 'modules/stores/instanceSelection';
 
-import Paginator from './Paginator';
+import {Paginator} from './Paginator';
 import * as Styled from './styled';
 import CreateOperationDropdown from './CreateOperationDropdown';
+import {filters} from 'modules/stores/filters';
 
-const ListFooter = observer(
-  ({perPage, firstElement, onFirstElementChange, hasContent}) => {
-    const {filteredInstancesCount} = instances.state;
-    const selectedCount = instanceSelection.getSelectedInstanceCount();
+const ListFooter = observer(({hasContent}) => {
+  const {filteredInstancesCount} = instances.state;
+  const selectedCount = instanceSelection.getSelectedInstanceCount();
 
-    const getMaxPage = () => {
-      return Math.ceil(filteredInstancesCount / perPage);
-    };
+  const getMaxPage = () => {
+    return Math.ceil(filteredInstancesCount / filters.state.entriesPerPage);
+  };
 
-    const isPaginationRequired = () => {
-      return !(getMaxPage() === 1 || filteredInstancesCount === 0);
-    };
+  const isPaginationRequired = () => {
+    return !(getMaxPage() === 1 || filteredInstancesCount === 0);
+  };
 
-    return (
-      <Styled.Footer>
-        {hasContent && (
-          <>
-            <Styled.OperationButtonContainer>
-              {selectedCount > 0 && (
-                <CreateOperationDropdown
-                  label={`Apply Operation on ${pluralSuffix(
-                    selectedCount,
-                    'Instance'
-                  )}...`}
-                  selectedCount={selectedCount}
-                />
-              )}
-            </Styled.OperationButtonContainer>
-            <div>
-              {isPaginationRequired() ? (
-                <Paginator
-                  firstElement={firstElement}
-                  perPage={perPage}
-                  maxPage={getMaxPage()}
-                  onFirstElementChange={onFirstElementChange}
-                />
-              ) : null}
-            </div>
-          </>
-        )}
-        <Styled.Copyright />
-      </Styled.Footer>
-    );
-  }
-);
+  return (
+    <Styled.Footer>
+      {hasContent && (
+        <>
+          <Styled.OperationButtonContainer>
+            {selectedCount > 0 && (
+              <CreateOperationDropdown
+                label={`Apply Operation on ${pluralSuffix(
+                  selectedCount,
+                  'Instance'
+                )}...`}
+                selectedCount={selectedCount}
+              />
+            )}
+          </Styled.OperationButtonContainer>
+          <div>
+            {isPaginationRequired() ? (
+              <Paginator maxPage={getMaxPage()} />
+            ) : null}
+          </div>
+        </>
+      )}
+      <Styled.Copyright />
+    </Styled.Footer>
+  );
+});
 
 ListFooter.propTypes = {
-  onFirstElementChange: PropTypes.func.isRequired,
-  perPage: PropTypes.number.isRequired,
-  firstElement: PropTypes.number.isRequired,
   hasContent: PropTypes.bool.isRequired,
 };
 

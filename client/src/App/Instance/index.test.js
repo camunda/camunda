@@ -125,6 +125,7 @@ describe('Instance', () => {
       component.unmount();
       jest.advanceTimersByTime(5000);
       expect(fetchWorkflowInstance).toHaveBeenCalledTimes(3);
+      jest.useRealTimers();
     });
 
     it('should not poll for completed instances', async () => {
@@ -148,6 +149,7 @@ describe('Instance', () => {
 
       jest.advanceTimersByTime(5000);
       expect(fetchWorkflowInstance).toHaveBeenCalledTimes(1);
+      jest.useRealTimers();
     });
 
     it('should not poll for canceled instances', async () => {
@@ -172,6 +174,7 @@ describe('Instance', () => {
 
       jest.advanceTimersByTime(5000);
       expect(fetchWorkflowInstance).toHaveBeenCalledTimes(1);
+      jest.useRealTimers();
     });
   });
 });

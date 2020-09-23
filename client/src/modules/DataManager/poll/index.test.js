@@ -21,6 +21,10 @@ describe('Poll', () => {
     jest.clearAllTimers();
   });
 
+  afterAll(() => {
+    jest.useRealTimers();
+  });
+
   it('should register for polling', () => {
     // given
     const topicCallback = jest.fn();

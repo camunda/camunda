@@ -9,6 +9,7 @@ import {mount} from 'enzyme';
 
 import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {DataManagerProvider} from 'modules/DataManager';
+import {instances} from 'modules/stores/instances';
 
 import {
   mockResolvedAsyncFn,
@@ -56,6 +57,7 @@ describe('InstancesPollContext', () => {
 
   afterEach(() => {
     jest.clearAllTimers();
+    jest.useRealTimers();
   });
 
   it('should pass the right props to the wrapper component', () => {
@@ -218,7 +220,9 @@ describe('InstancesPollContext', () => {
     );
   });
 
-  it('should update when instances have completed operations', () => {
+  it('should refresh instances when instances have completed operations', () => {
+    const instancesSpy = jest.spyOn(instances, 'refreshInstances');
+
     const COMPLETED_OPERATION_INSTANCE = createInstance({
       id: '2',
       hasActiveOperation: false,
@@ -254,7 +258,7 @@ describe('InstancesPollContext', () => {
       },
     });
 
-    expect(dataManagerMock.update).toHaveBeenCalled();
+    expect(instancesSpy).toHaveBeenCalledTimes(1);
   });
 
   it('should clear polling on unmount', () => {

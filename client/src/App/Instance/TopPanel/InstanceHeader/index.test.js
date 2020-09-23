@@ -125,7 +125,6 @@ describe('InstanceHeader', () => {
     jest.advanceTimersByTime(5000);
 
     expect(await screen.findByTestId('operation-spinner')).toBeInTheDocument();
-
     jest.useRealTimers();
   });
 

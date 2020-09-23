@@ -4,9 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, computed, autorun} from 'mobx';
+import {observable, decorate, action, computed, autorun, observe} from 'mobx';
 import {instances} from 'modules/stores/instances';
+import {filters} from 'modules/stores/filters';
 import {INSTANCE_SELECTION_MODE} from 'modules/constants';
+import {isEqual} from 'lodash';
 
 const DEFAULT_STATE = {
   selectedInstanceIds: [],
@@ -16,13 +18,14 @@ const DEFAULT_STATE = {
 
 class InstanceSelection {
   state = {...DEFAULT_STATE};
-  disposer = null;
+  autorunDisposer = null;
+  observeDisposer = null;
 
   init() {
     const {selectionMode, selectedInstanceIds} = this.state;
     const {filteredInstancesCount} = instances.state;
 
-    this.disposer = autorun(() => {
+    this.autorunDisposer = autorun(() => {
       if (
         (selectionMode === INSTANCE_SELECTION_MODE.EXCLUDE &&
           selectedInstanceIds.length === 0) ||
@@ -34,6 +37,14 @@ class InstanceSelection {
         this.setAllChecked(true);
         this.setSelectedInstanceIds([]);
       }
+    });
+
+    this.observeDisposer = observe(filters.state, 'filter', (change) => {
+      if (isEqual(filters.state.filter, change.oldValue)) {
+        return;
+      }
+
+      this.resetState();
     });
   }
 
@@ -127,10 +138,17 @@ class InstanceSelection {
       : [];
   }
 
-  reset = () => {
+  resetState = () => {
     this.state = {...DEFAULT_STATE};
-    if (this.disposer !== null) {
-      this.disposer();
+  };
+
+  reset = () => {
+    this.resetState();
+    if (this.autorunDisposer !== null) {
+      this.autorunDisposer();
+    }
+    if (this.observeDisposer !== null) {
+      this.observeDisposer();
     }
   };
 }
@@ -142,7 +160,7 @@ decorate(InstanceSelection, {
   setSelectedInstanceIds: action,
   addToSelectedInstanceIds: action,
   removeFromSelectedInstanceIds: action,
-  reset: action,
+  resetState: action,
   selectedInstanceIds: computed,
   excludedInstanceIds: computed,
 });

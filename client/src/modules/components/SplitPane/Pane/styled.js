@@ -18,7 +18,6 @@ export const Pane = styled(
     'onAddToOpenSelection',
     'onAddNewSelection',
     'onAddToSelectionById',
-    'onSelectedInstancesUpdate',
     'onFlowNodeSelection',
   ])(Panel)
 )`

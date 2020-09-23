@@ -4,136 +4,81 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {Component} from 'react';
-import PropTypes from 'prop-types';
+import React, {useEffect} from 'react';
 
-import {
-  DEFAULT_FILTER,
-  DEFAULT_FILTER_CONTROLLED_VALUES,
-} from 'modules/constants';
+import {DEFAULT_FILTER_CONTROLLED_VALUES, PAGE_TITLE} from 'modules/constants';
 
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
 import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 
-import DiagramPanel from './DiagramPanel';
+import {DiagramPanel} from './DiagramPanel';
 import ListPanel from './ListPanel';
 import Filters from './Filters';
 import OperationsPanel from './OperationsPanel';
+import {filters} from 'modules/stores/filters';
+import {instances} from 'modules/stores/instances';
+import {workflowStatistics} from 'modules/stores/workflowStatistics';
+import {instanceSelection} from 'modules/stores/instanceSelection';
+import {instancesDiagram} from 'modules/stores/instancesDiagram';
 
-import {getWorkflowNameFromFilter} from './service';
-
+import {observer} from 'mobx-react';
 import * as Styled from './styled.js';
 
-class Instances extends Component {
-  static propTypes = {
-    filter: PropTypes.shape({
-      workflow: PropTypes.string,
-      version: PropTypes.string,
-      active: PropTypes.bool,
-      ids: PropTypes.string,
-      startDate: PropTypes.string,
-      endDate: PropTypes.string,
-      errorMessage: PropTypes.string,
-      incidents: PropTypes.bool,
-      canceled: PropTypes.bool,
-      completed: PropTypes.bool,
-      activityId: PropTypes.string,
-      variable: PropTypes.shape({
-        name: PropTypes.string,
-        value: PropTypes.string,
-      }),
-      batchOperationId: PropTypes.string,
-    }).isRequired,
-    resetFilters: PropTypes.bool,
-    afterFilterReset: PropTypes.func,
-    groupedWorkflows: PropTypes.object.isRequired,
-    workflowInstances: PropTypes.array.isRequired,
-    initialLoad: PropTypes.bool,
-    instancesLoaded: PropTypes.bool,
-    firstElement: PropTypes.number.isRequired,
-    onFirstElementChange: PropTypes.func.isRequired,
-    sorting: PropTypes.object.isRequired,
-    onSort: PropTypes.func.isRequired,
-    onFilterChange: PropTypes.func.isRequired,
-    onFilterReset: PropTypes.func.isRequired,
-    onFlowNodeSelection: PropTypes.func.isRequired,
-    statistics: PropTypes.array.isRequired,
-    onInstancesClick: PropTypes.func.isRequired,
-  };
+const Instances = observer((props) => {
+  const {workflowInstances, isInitialLoadComplete, isLoading} = instances.state;
+  useEffect(() => {
+    filters.init();
+    instanceSelection.init();
+    instancesDiagram.init();
+    workflowStatistics.init();
+    instances.init();
+    document.title = PAGE_TITLE.INSTANCES;
+    return () => {
+      filters.reset();
+      instanceSelection.reset();
+      instancesDiagram.reset();
+      workflowStatistics.reset();
+      instances.reset();
+    };
+  }, []);
 
-  render() {
-    const {
-      filter,
-      groupedWorkflows,
-      workflowInstances,
-      onFilterReset,
-      onFilterChange,
-      onFlowNodeSelection,
-      statistics,
-      onSort,
-      sorting,
-      firstElement,
-      onFirstElementChange,
-      resetFilters,
-      afterFilterReset,
-      initialLoad,
-      instancesLoaded,
-    } = this.props;
+  useEffect(() => {
+    const {history, location} = props;
+    filters.setUrlParameters(history, location);
+  }, [props]);
 
-    const workflowName = getWorkflowNameFromFilter({
-      filter,
-      groupedWorkflows,
-    });
-    return (
-      <InstancesPollProvider
-        visibleIdsInListPanel={workflowInstances.map(({id}) => id)}
-        filter={filter}
-      >
-        <Styled.Instances>
-          <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
-          <Styled.Content>
-            <Styled.FilterSection>
-              <Filters
-                groupedWorkflows={groupedWorkflows}
-                filter={{
-                  ...DEFAULT_FILTER_CONTROLLED_VALUES,
-                  ...filter,
-                }}
-                resetFilters={resetFilters}
-                afterFilterReset={afterFilterReset}
-                onFilterReset={() => onFilterReset(DEFAULT_FILTER)}
-                onFilterChange={onFilterChange}
-              />
-            </Styled.FilterSection>
-            <Styled.SplitPane
-              titles={{top: 'Workflow', bottom: 'Instances'}}
-              expandedPaneId="instancesExpandedPaneId"
-            >
-              <DiagramPanel
-                workflowName={workflowName}
-                onFlowNodeSelection={onFlowNodeSelection}
-                noWorkflowSelected={!filter.workflow}
-                noVersionSelected={filter.version === 'all'}
-                flowNodesStatistics={statistics}
-                activityId={filter.activityId}
-              />
-              <ListPanel
-                instances={workflowInstances}
-                initialLoad={initialLoad}
-                instancesLoaded={instancesLoaded}
-                filter={filter}
-                onSort={onSort}
-                sorting={sorting}
-                firstElement={firstElement}
-                onFirstElementChange={onFirstElementChange}
-              />
-            </Styled.SplitPane>
-          </Styled.Content>
-          <OperationsPanel onInstancesClick={this.props.onInstancesClick} />
-        </Styled.Instances>
-      </InstancesPollProvider>
-    );
-  }
-}
+  return (
+    <InstancesPollProvider
+      visibleIdsInListPanel={workflowInstances.map(({id}) => id)}
+      filter={filters.state.filter}
+    >
+      <Styled.Instances>
+        <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
+        <Styled.Content>
+          <Styled.FilterSection>
+            <Filters
+              filter={{
+                ...DEFAULT_FILTER_CONTROLLED_VALUES,
+                ...filters.decodedFilters,
+              }}
+            />
+          </Styled.FilterSection>
+          <Styled.SplitPane
+            titles={{top: 'Workflow', bottom: 'Instances'}}
+            expandedPaneId="instancesExpandedPaneId"
+          >
+            <DiagramPanel />
+            <ListPanel
+              instances={workflowInstances}
+              isInitialLoadComplete={isInitialLoadComplete}
+              isLoading={isLoading}
+            />
+          </Styled.SplitPane>
+        </Styled.Content>
+        <OperationsPanel />
+      </Styled.Instances>
+    </InstancesPollProvider>
+  );
+});
 
 export {Instances};

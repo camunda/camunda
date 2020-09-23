@@ -6,55 +6,26 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import {LOADING_STATE, EXPAND_STATE} from 'modules/constants';
+import {EXPAND_STATE} from 'modules/constants';
 import SplitPane from 'modules/components/SplitPane';
-import {withData} from 'modules/DataManager';
 import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 import Diagram from 'modules/components/Diagram';
 import * as Styled from './styled.js';
 import {instancesDiagram} from 'modules/stores/instancesDiagram';
+import {workflowStatistics} from 'modules/stores/workflowStatistics';
+import {filters} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
 
 const DiagramPanel = observer(
   class DiagramPanel extends React.Component {
     static propTypes = {
-      dataManager: PropTypes.object,
-      expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)).isRequired,
-      noWorkflowSelected: PropTypes.bool.isRequired,
-      noVersionSelected: PropTypes.bool.isRequired,
-      flowNodesStatistics: PropTypes.array,
-      onFlowNodeSelection: PropTypes.func,
-      workflowName: PropTypes.string,
-      activityId: PropTypes.string,
+      expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     };
-
-    constructor(props) {
-      super(props);
-
-      this.state = {
-        isLoading: '',
-      };
-      this.subscriptions = {
-        LOAD_STATE_STATISTICS: (response) => {
-          if (response.state === LOADING_STATE.LOADED) {
-            this.setState({isLoading: LOADING_STATE.LOADED});
-          }
-        },
-      };
-    }
-
-    componentDidMount() {
-      this.props.dataManager.subscribe(this.subscriptions);
-    }
-
-    componentWillUnmount() {
-      this.props.dataManager.unsubscribe(this.subscriptions);
-    }
 
     renderMessage = (type) => {
       const message = {
         NoWorkflow: `There is no Workflow selected.\n To see a diagram, select a Workflow in the Filters panel.`,
-        NoVersion: `There is more than one version selected for Workflow "${this.props.workflowName}".\n To see a diagram, select a single version.`,
+        NoVersion: `There is more than one version selected for Workflow "${filters.workflowName}".\n To see a diagram, select a single version.`,
       };
       return (
         <Styled.EmptyMessageWrapper>
@@ -65,46 +36,41 @@ const DiagramPanel = observer(
 
     render() {
       const {
-        noWorkflowSelected,
-        noVersionSelected,
-        onFlowNodeSelection,
-        flowNodesStatistics,
-        workflowName,
-        dataManager,
-        activityId,
-        ...paneProps
-      } = this.props;
-
-      const {
         isLoading: areStateDefinitionsLoading,
         diagramModel,
       } = instancesDiagram.state;
 
       const {selectableIds} = instancesDiagram;
-      const selectedFlowNodeId = selectableIds.includes(activityId)
-        ? activityId
+      const {filter} = filters.state;
+      const selectedFlowNodeId = selectableIds.includes(filter.activityId)
+        ? filter.activityId
         : undefined;
+      const {statistics} = workflowStatistics.state;
       return (
-        <SplitPane.Pane {...paneProps}>
+        <SplitPane.Pane {...this.props}>
           <Styled.PaneHeader>
-            <span data-test="instances-diagram-title">{workflowName}</span>
+            <span>{filters.workflowName}</span>
           </Styled.PaneHeader>
           <SplitPane.Pane.Body style={{position: 'relative'}}>
-            {(this.state.isLoading === LOADING_STATE.LOADING ||
-              areStateDefinitionsLoading) && (
+            {(workflowStatistics.isLoading || areStateDefinitionsLoading) && (
               <SpinnerSkeleton data-test="spinner" />
             )}
-            {noWorkflowSelected && this.renderMessage('NoWorkflow')}
-            {noVersionSelected
+            {filters.isNoWorkflowSelected && this.renderMessage('NoWorkflow')}
+            {filters.isNoVersionSelected
               ? this.renderMessage('NoVersion')
               : diagramModel?.definitions && (
                   <Diagram
                     definitions={diagramModel.definitions}
-                    onFlowNodeSelection={onFlowNodeSelection}
-                    flowNodesStatistics={flowNodesStatistics}
+                    onFlowNodeSelection={(activityId) => {
+                      filters.setFilter({
+                        ...filters.state.filter,
+                        activityId: activityId ? activityId : '',
+                      });
+                    }}
+                    flowNodesStatistics={statistics}
                     selectedFlowNodeId={selectedFlowNodeId}
                     selectableFlowNodes={selectableIds}
-                    expandState={paneProps.expandState}
+                    expandState={this.props.expandState}
                   />
                 )}
           </SplitPane.Pane.Body>
@@ -114,7 +80,4 @@ const DiagramPanel = observer(
   }
 );
 
-const WrappedDiagramPanel = withData(DiagramPanel);
-WrappedDiagramPanel.WrappedComponent = DiagramPanel;
-
-export default WrappedDiagramPanel;
+export {DiagramPanel};

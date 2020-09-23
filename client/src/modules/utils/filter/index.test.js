@@ -11,6 +11,8 @@ import {
   parseFilterForRequest,
   getFilterWithWorkflowIds,
   parseQueryString,
+  decodeFields,
+  getWorkflowByVersion,
 } from './index';
 
 import {DEFAULT_FILTER} from 'modules/constants';
@@ -394,6 +396,72 @@ describe('modules/utils/filter.js', () => {
         '4',
         '1',
       ]);
+    });
+  });
+
+  describe('decodeFields', () => {
+    it('should decode fields', () => {
+      const filter = {
+        active: true,
+        activityId: 'EndEvent_0crvjrk',
+        canceled: true,
+        completed: true,
+        endDate: '2020-12-12 12:12:12',
+        errorMessage: 'No%20more%20retries%20left.',
+        incidents: true,
+        startDate: '2020-12-12 12:12:12',
+        version: '1',
+        workflow: 'bigVarProcess',
+      };
+
+      expect(decodeFields(filter)).toEqual({
+        ...filter,
+        errorMessage: 'No more retries left.',
+      });
+    });
+  });
+
+  describe('getWorkflowByVersion', () => {
+    const workflow = {
+      bpmnProcessId: 'eventBasedGatewayProcess',
+      name: 'Event based gateway with timer start',
+      workflows: [
+        {
+          id: '2251799813688666',
+          name: 'Event based gateway with timer start',
+          version: 2,
+          bpmnProcessId: 'eventBasedGatewayProcess',
+        },
+        {
+          id: '2251799813685749',
+          name: 'Event based gateway with message start',
+          version: 1,
+          bpmnProcessId: 'eventBasedGatewayProcess',
+        },
+      ],
+    };
+
+    it('should return empty object if version or workflow is invalid', () => {
+      expect(getWorkflowByVersion(null, null)).toEqual({});
+      expect(getWorkflowByVersion(undefined, undefined)).toEqual({});
+      expect(getWorkflowByVersion('', '')).toEqual({});
+      expect(getWorkflowByVersion(workflow, 'all')).toEqual({});
+    });
+
+    it('should get workflow by version', () => {
+      expect(getWorkflowByVersion(workflow, 1)).toEqual({
+        id: '2251799813685749',
+        name: 'Event based gateway with message start',
+        version: 1,
+        bpmnProcessId: 'eventBasedGatewayProcess',
+      });
+
+      expect(getWorkflowByVersion(workflow, 2)).toEqual({
+        id: '2251799813688666',
+        name: 'Event based gateway with timer start',
+        version: 2,
+        bpmnProcessId: 'eventBasedGatewayProcess',
+      });
     });
   });
 });

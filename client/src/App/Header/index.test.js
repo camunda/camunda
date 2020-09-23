@@ -235,7 +235,6 @@ describe('Header', () => {
       await screen.findByText(`Instance ${MOCK_SECOND_INSTANCE_ID}`)
     ).toBeInTheDocument();
     expect(screen.queryByText(`Instance ${MOCK_FIRST_INSTANCE_ID}`)).toBeNull();
-
     jest.useRealTimers();
   });
 

@@ -4,19 +4,27 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import useFilterContext from 'modules/hooks/useFilterContext';
 import {instanceSelection} from 'modules/stores/instanceSelection';
+import {filters} from 'modules/stores/filters';
 import useDataManager from 'modules/hooks/useDataManager';
 import {useInstancesPollContext} from 'modules/contexts/InstancesPollContext';
+import {
+  parseFilterForRequest,
+  getFilterWithWorkflowIds,
+} from 'modules/utils/filter';
 
 export default function useOperationApply() {
-  const {query} = useFilterContext();
   const {selectedInstanceIds, excludedInstanceIds, reset} = instanceSelection;
   const {applyBatchOperation} = useDataManager();
   const {addAllVisibleIds, addIds} = useInstancesPollContext();
 
   return {
     applyBatchOperation: (operationType) => {
+      const {filter, groupedWorkflows} = filters.state;
+
+      const query = parseFilterForRequest(
+        getFilterWithWorkflowIds(filter, groupedWorkflows)
+      );
       const filterIds = query.ids || [];
 
       // if ids are selected, ignore ids from filter

@@ -8,49 +8,72 @@
 
 import useOperationApply from './useOperationApply';
 import {renderHook} from '@testing-library/react-hooks';
+import {createMemoryHistory} from 'history';
 
-import React from 'react';
-
-import FilterContext from 'modules/contexts/FilterContext';
 import {instanceSelection} from 'modules/stores/instanceSelection';
+import {filters} from 'modules/stores/filters';
 import {INSTANCE_SELECTION_MODE} from 'modules/constants';
 import {
   mockUseDataManager,
   mockData,
   mockUseInstancesPollContext,
 } from './useOperationApply.setup';
+import {
+  groupedWorkflowsMock,
+  mockWorkflowStatistics,
+  mockWorkflowInstances,
+} from 'modules/testUtils';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 const OPERATION_TYPE = 'DUMMY';
 
+jest.mock('modules/utils/bpmn');
 jest.mock('modules/hooks/useDataManager', () => () => mockUseDataManager);
 jest.mock('modules/contexts/InstancesPollContext', () => ({
   useInstancesPollContext: () => mockUseInstancesPollContext,
 }));
 
-function renderUseOperationApply({filterContext}) {
-  const {result} = renderHook(() => useOperationApply(), {
-    wrapper: ({children}) => (
-      <FilterContext.Provider value={filterContext}>
-        {children}
-      </FilterContext.Provider>
-    ),
-  });
+function renderUseOperationApply() {
+  const {result} = renderHook(() => useOperationApply());
 
   result.current.applyBatchOperation(OPERATION_TYPE);
 }
 
 describe('useOperationApply', () => {
-  beforeEach(() => {
-    jest.resetAllMocks();
+  const locationMock = {pathname: '/instances'};
+  const historyMock = createMemoryHistory();
+
+  beforeEach(async () => {
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      ),
+      rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
+        res.once(ctx.text(''))
+      ),
+      rest.get('/api/workflows/grouped', (_, res, ctx) =>
+        res.once(ctx.json(groupedWorkflowsMock))
+      ),
+      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowStatistics))
+      )
+    );
+
+    filters.setUrlParameters(historyMock, locationMock);
+    await filters.init();
   });
+
   afterEach(() => {
     instanceSelection.reset();
+    filters.reset();
   });
 
   it('should call apply (no filter, select all ids)', () => {
-    const {expectedQuery, ...context} = mockData.noFilterSelectAll;
+    const {expectedQuery} = mockData.noFilterSelectAll;
 
-    renderUseOperationApply(context);
+    renderUseOperationApply();
 
     expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
       OPERATION_TYPE,
@@ -59,9 +82,13 @@ describe('useOperationApply', () => {
   });
 
   it('should call apply (set id filter, select all ids)', () => {
-    const {expectedQuery, ...context} = mockData.setFilterSelectAll;
+    const {expectedQuery} = mockData.setFilterSelectAll;
+    filters.setFilter({
+      ...filters.state.filter,
+      ids: '1',
+    });
     instanceSelection.setAllChecked();
-    renderUseOperationApply(context);
+    renderUseOperationApply();
 
     expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
       OPERATION_TYPE,
@@ -70,10 +97,14 @@ describe('useOperationApply', () => {
   });
 
   it('should call apply (set id filter, select one id)', () => {
-    const {expectedQuery, ...context} = mockData.setFilterSelectOne;
+    const {expectedQuery} = mockData.setFilterSelectOne;
+    filters.setFilter({
+      ...filters.state.filter,
+      ids: '1, 2',
+    });
     instanceSelection.selectInstance('1');
 
-    renderUseOperationApply(context);
+    renderUseOperationApply();
 
     expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
       OPERATION_TYPE,
@@ -83,6 +114,10 @@ describe('useOperationApply', () => {
 
   it('should call apply (set id filter, exclude one id)', () => {
     const {expectedQuery, ...context} = mockData.setFilterExcludeOne;
+    filters.setFilter({
+      ...filters.state.filter,
+      ids: '1, 2',
+    });
     instanceSelection.setMode(INSTANCE_SELECTION_MODE.EXCLUDE);
     instanceSelection.selectInstance('1');
     renderUseOperationApply(context);
@@ -95,6 +130,11 @@ describe('useOperationApply', () => {
 
   it('should call apply (set workflow filter, select one)', () => {
     const {expectedQuery, ...context} = mockData.setWorkflowFilterSelectOne;
+    filters.setFilter({
+      ...filters.state.filter,
+      workflow: 'demoProcess',
+      version: '1',
+    });
     instanceSelection.selectInstance('1');
     renderUseOperationApply(context);
 

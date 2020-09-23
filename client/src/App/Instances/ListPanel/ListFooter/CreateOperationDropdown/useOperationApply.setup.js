@@ -17,9 +17,6 @@ export const mockUseDataManager = {
 export const mockData = {
   // in this case all instances are selected and no filter is set
   noFilterSelectAll: {
-    filterContext: {
-      query: baseQuery,
-    },
     expectedQuery: {
       ...baseQuery,
       ids: [],
@@ -28,12 +25,6 @@ export const mockData = {
   },
   // in this case all instances are selected and an id filter is set
   setFilterSelectAll: {
-    filterContext: {
-      query: {
-        ...baseQuery,
-        ids: ['1'],
-      },
-    },
     expectedQuery: {
       ...baseQuery,
       ids: ['1'],
@@ -42,12 +33,6 @@ export const mockData = {
   },
   // in this case one instance is selected and an id filter is set
   setFilterSelectOne: {
-    filterContext: {
-      query: {
-        ...baseQuery,
-        ids: ['1', '2'],
-      },
-    },
     expectedQuery: {
       ...baseQuery,
       ids: ['1'],
@@ -56,12 +41,6 @@ export const mockData = {
   },
   // in this case one instance is excluded and an id filter is set
   setFilterExcludeOne: {
-    filterContext: {
-      query: {
-        ...baseQuery,
-        ids: ['1', '2'],
-      },
-    },
     expectedQuery: {
       ...baseQuery,
       ids: ['1', '2'],
@@ -70,18 +49,11 @@ export const mockData = {
   },
   // in this case all instances are selected and a workflow filter is set
   setWorkflowFilterSelectOne: {
-    filterContext: {
-      query: {
-        ...baseQuery,
-        workflowIds: ['A'],
-        ids: [],
-      },
-    },
     expectedQuery: {
       ...baseQuery,
       ids: ['1'],
       excludeIds: [],
-      workflowIds: ['A'],
+      workflowIds: ['demoProcess1'],
     },
   },
 };

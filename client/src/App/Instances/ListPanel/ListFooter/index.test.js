@@ -8,6 +8,7 @@ import React from 'react';
 import {render, screen} from '@testing-library/react';
 
 import {instances} from 'modules/stores/instances';
+import {filters} from 'modules/stores/filters';
 
 import ListFooter from './index';
 import {instanceSelection} from 'modules/stores/instanceSelection';
@@ -21,18 +22,23 @@ jest.mock('./CreateOperationDropdown', () => ({label}) => (
 
 const defaultProps = {
   onFirstElementChange: jest.fn(),
-  perPage: 10,
-  firstElement: 0,
   dataManager: {},
   hasContent: true,
 };
 
 describe('ListFooter', () => {
+  beforeAll(() => {
+    filters.setEntriesPerPage(10);
+  });
+  afterAll(() => {
+    filters.reset();
+  });
   afterEach(() => {
     instanceSelection.reset();
   });
   it('should show pagination, copyright, no dropdown', () => {
     instances.setInstances({filteredInstancesCount: 11});
+
     render(<ListFooter {...defaultProps} />);
 
     const pageOneButton = screen.getByText(/^1$/i);

@@ -5,298 +5,123 @@
  */
 
 import React from 'react';
-import {mount} from 'enzyme';
+import {render, screen} from '@testing-library/react';
 import PropTypes from 'prop-types';
+import {Router, Route} from 'react-router-dom';
+import {createMemoryHistory} from 'history';
 
-import SplitPane from 'modules/components/SplitPane';
-import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
-import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
-import {flushPromises} from 'modules/testUtils';
 
-import {mockInstances, mockProps} from './index.setup';
 import {DataManagerProvider} from 'modules/DataManager';
+import {createMockDataManager} from 'modules/testHelpers/dataManager';
 
-import Filters from './Filters';
-import ListPanel from './ListPanel';
-import OperationsPanel from './OperationsPanel';
 import {Instances} from './index';
-
-// component mocks
-jest.mock(
-  './ListPanel',
-  () =>
-    function ListPanel(props) {
-      return <div />;
-    }
-);
-
-jest.mock(
-  './Filters',
-  () =>
-    function Filters(props) {
-      return <div />;
-    }
-);
-
-jest.mock(
-  './ListPanel/List',
-  () =>
-    function List(props) {
-      return <div />;
-    }
-);
-jest.mock(
-  './ListPanel/ListFooter',
-  () =>
-    function List(props) {
-      return <div />;
-    }
-);
-
-jest.mock(
-  './DiagramPanel',
-  () =>
-    function DiagramPanel(props) {
-      return <div />;
-    }
-);
-
-jest.mock(
-  'modules/components/Diagram',
-  () =>
-    function Diagram(props) {
-      return <div />;
-    }
-);
+import {
+  groupedWorkflowsMock,
+  mockWorkflowStatistics,
+  mockWorkflowXML,
+  mockWorkflowInstances,
+} from 'modules/testUtils';
+import {
+  fetchWorkflowInstances,
+  fetchGroupedWorkflows,
+  fetchWorkflowInstancesStatistics,
+  fetchWorkflowInstancesByIds,
+  fetchWorkflowCoreStatistics,
+} from 'modules/api/instances';
+import {fetchWorkflowXML} from 'modules/api/diagram';
 
 jest.mock('modules/utils/bpmn');
+jest.mock('modules/api/instances');
+jest.mock('modules/api/diagram');
 
-function ProviderWrapper(props) {
+const Wrapper = ({children}) => {
   return (
     <DataManagerProvider>
-      <ThemeProvider>
-        <CollapsablePanelProvider>{props.children}</CollapsablePanelProvider>
-      </ThemeProvider>
+      <CollapsablePanelProvider>
+        <Router
+          history={createMemoryHistory({
+            initialEntries: ['/instances'],
+          })}
+        >
+          <Route path="/instances">{children} </Route>
+        </Router>
+      </CollapsablePanelProvider>
     </DataManagerProvider>
   );
-}
+};
 
-ProviderWrapper.propTypes = {
+Wrapper.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node,
   ]),
+  initialRoute: PropTypes.string,
 };
 
 describe('Instances', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('should contain a VisuallyHiddenH1', () => {
-    // given
-    const node = mount(
-      <ProviderWrapper>
-        <Instances {...mockProps} />
-      </ProviderWrapper>
+  beforeAll(() => {
+    createMockDataManager();
+    fetchWorkflowInstances.mockImplementation(() => mockWorkflowInstances);
+    fetchWorkflowInstancesByIds.mockImplementation(() => mockWorkflowInstances);
+    fetchGroupedWorkflows.mockImplementation(() => groupedWorkflowsMock);
+    fetchWorkflowInstancesStatistics.mockImplementation(
+      () => mockWorkflowStatistics
     );
-
-    // then
-    expect(node.find(VisuallyHiddenH1)).toExist();
-    expect(node.find(VisuallyHiddenH1).text()).toEqual(
-      'Camunda Operate Instances'
-    );
+    fetchWorkflowXML.mockImplementation(() => mockWorkflowXML);
+    fetchWorkflowCoreStatistics.mockImplementation(() => ({
+      coreStatistics: {
+        running: 821,
+        active: 90,
+        withIncidents: 731,
+      },
+    }));
   });
 
-  describe('Filters', () => {
-    it('should render the Filters component', () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
-
-      // then
-      expect(node.find(Filters)).toExist();
+  it('should render title and document title', () => {
+    const mockHistory = createMemoryHistory({initialEntries: ['/instances']});
+    const mockLocation = {
+      search: '?filter={%22active%22:true,%22incidents%22:true}',
+    };
+    render(<Instances history={mockHistory} location={mockLocation} />, {
+      wrapper: Wrapper,
     });
 
-    it('should pass the right data to Filter', async () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
-
-      // when
-      await flushPromises();
-      node.update();
-
-      const FiltersNode = node.find(Filters);
-
-      // then
-      expect(FiltersNode.prop('groupedWorkflows')).toEqual(
-        mockProps.groupedWorkflows
-      );
-      expect(FiltersNode.prop('filter')).toEqual(mockProps.filter);
-    });
-
-    it('should handle the filter reset', () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
-
-      // when
-      node.find(Filters).prop('onFilterReset')();
-
-      // then
-      expect(mockProps.onFilterReset).toHaveBeenCalled();
-    });
-
-    it('should handle the filter change', () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
-      const FiltersNode = node.find(Filters);
-      const onFilterChange = FiltersNode.prop('onFilterChange');
-      const newFilterValue = {errorMessage: 'Lorem ipsum'};
-
-      // when
-      onFilterChange(newFilterValue);
-
-      // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith(newFilterValue);
-    });
+    expect(screen.getByText('Camunda Operate Instances')).toBeInTheDocument();
+    expect(document.title).toBe('Camunda Operate: Instances');
   });
 
-  describe('ListPanel', () => {
-    it('should render a ListPanel with the right data', () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
-
-      // then
-      expect(node.find(ListPanel)).toExist();
+  it('should render page components', () => {
+    const mockHistory = createMemoryHistory({initialEntries: ['/instances']});
+    const mockLocation = {
+      search: '?filter={%22active%22:true,%22incidents%22:true}',
+    };
+    render(<Instances history={mockHistory} location={mockLocation} />, {
+      wrapper: Wrapper,
     });
 
-    it('should pass the right data to ListPanel', () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
+    // diagram panel
+    expect(screen.getByRole('heading', {name: 'Workflow'})).toBeInTheDocument();
+    expect(
+      screen.getByText('There is no Workflow selected.')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'To see a diagram, select a Workflow in the Filters panel.'
+      )
+    ).toBeInTheDocument();
 
-      // when
-      node.update();
+    // filters panel
+    expect(screen.getByRole('heading', {name: /Filters/})).toBeInTheDocument();
 
-      // then
-      const ListPanelNode = node.find(ListPanel);
+    // instances table
+    expect(
+      screen.getByRole('heading', {name: 'Instances'})
+    ).toBeInTheDocument();
 
-      expect(ListPanelNode.prop('instances')).toBe(
-        mockInstances.workflowInstances
-      );
-
-      expect(ListPanelNode.prop('filter')).toBe(mockProps.filter);
-      expect(ListPanelNode.prop('sorting')).toBe(mockProps.sorting);
-      expect(ListPanelNode.prop('firstElement')).toBe(mockProps.firstElement);
-    });
-
-    it('should be able to handle sorting change', () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
-
-      // when
-      node.find(ListPanel).prop('onSort')('key');
-      node.update();
-
-      // then
-      expect(mockProps.onSort).toBeCalledWith('key');
-    });
-
-    it('should be able to handle first element change', () => {
-      const firstResultMock = 2;
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
-
-      // when
-      node.find(ListPanel).prop('onFirstElementChange')(firstResultMock);
-      node.update();
-
-      // then
-      expect(mockProps.onFirstElementChange).toBeCalledWith(firstResultMock);
-    });
-  });
-
-  describe('SplitPane', () => {
-    it('should render a SplitPane', () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
-
-      // then
-      const SplitPaneNode = node.find(SplitPane);
-      expect(SplitPaneNode).toExist();
-      // expect(node.find(SplitPane.Pane).length).toBe(2);
-    });
-  });
-
-  describe('InstancesPollProvider', () => {
-    it('should contain an InstancesPollProvider', () => {
-      // given
-      const node = mount(
-        <ProviderWrapper>
-          <Instances {...mockProps} />
-        </ProviderWrapper>
-      );
-      const InstancesPollProviderNode = node.find(InstancesPollProvider);
-      expect(InstancesPollProviderNode).toExist();
-
-      expect(InstancesPollProviderNode.props().visibleIdsInListPanel).toEqual(
-        mockProps.workflowInstances.map((x) => x.id)
-      );
-    });
-  });
-
-  it('should be able to handle instance click', () => {
-    // given
-    const node = mount(
-      <ProviderWrapper>
-        <Instances {...mockProps} />
-      </ProviderWrapper>
-    );
-
-    // when
-    node.find(OperationsPanel).prop('onInstancesClick')('key');
-    node.update();
-
-    // then
-    expect(mockProps.onInstancesClick).toBeCalledWith('key');
+    // operations
+    expect(
+      screen.getByRole('button', {name: /expand operations/i})
+    ).toBeInTheDocument();
   });
 });

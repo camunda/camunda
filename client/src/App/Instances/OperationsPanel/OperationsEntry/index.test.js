@@ -6,9 +6,10 @@
 
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-
+import {DEFAULT_FILTER_CONTROLLED_VALUES} from 'modules/constants';
 import {OPERATIONS, mockProps} from './index.setup';
 import OperationsEntry from './index';
+import {filters} from 'modules/stores/filters';
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
@@ -103,9 +104,17 @@ describe('OperationsEntry', () => {
       />
     );
 
+    expect(filters.state.filter).toEqual({});
+
     fireEvent.click(screen.getByText('3 Instances'));
-    expect(mockProps.onInstancesClick).toHaveBeenCalledWith(
-      'df325d44-6a4c-4428-b017-24f923f1d052'
-    );
+
+    expect(filters.state.filter).toEqual({
+      ...DEFAULT_FILTER_CONTROLLED_VALUES,
+      active: true,
+      incidents: true,
+      completed: true,
+      canceled: true,
+      batchOperationId: 'df325d44-6a4c-4428-b017-24f923f1d052',
+    });
   });
 });

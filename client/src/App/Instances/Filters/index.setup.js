@@ -6,40 +6,21 @@
 
 import {getFilterQueryString} from 'modules/utils/filter';
 
-import {
-  createFilter,
-  groupedWorkflowsMock as defaultGroupedWorkflowsMock,
-} from 'modules/testUtils';
+import {createFilter, groupedWorkflowsMock} from 'modules/testUtils';
 
-export const groupedWorkflowsMock = defaultGroupedWorkflowsMock;
-
-// transformed groupedWorkflowsMock in an object structure
-export const workflows = {
-  demoProcess: {
-    ...groupedWorkflowsMock[0],
-  },
-  orderProcess: {
-    ...groupedWorkflowsMock[1],
-  },
-};
-
-export const mockProps = {
-  onFilterChange: jest.fn(),
-  onFilterReset: jest.fn(),
+const mockProps = {
   location: {
     search: getFilterQueryString({}),
   },
 };
 
-export const mockPropsWithEmptyLocationSearch = {
-  onFilterChange: jest.fn(),
-  onFilterReset: jest.fn(),
+const mockPropsWithEmptyLocationSearch = {
   location: {
     search: '',
   },
 };
 
-export const COMPLETE_FILTER = {
+const COMPLETE_FILTER = {
   ...createFilter(),
   ids: '0000000000000001, 0000000000000002',
   errorMessage: 'This is an error message',
@@ -51,16 +32,25 @@ export const COMPLETE_FILTER = {
   batchOperationId: '8d5aeb73-193b-4bec-a237-8ff71ac1d713',
 };
 
-export const mockPropsWithDefaultFilter = {
+const mockPropsWithDefaultFilter = {
   ...mockProps,
   location: {
     search: getFilterQueryString({active: true, incidents: true}),
   },
 };
 
-export const mockPropsWithInitFilter = {
+const mockPropsWithInitFilter = {
   ...mockProps,
   location: {
     search: getFilterQueryString(COMPLETE_FILTER),
   },
+};
+
+export {
+  groupedWorkflowsMock,
+  mockProps,
+  mockPropsWithEmptyLocationSearch,
+  COMPLETE_FILTER,
+  mockPropsWithInitFilter,
+  mockPropsWithDefaultFilter,
 };

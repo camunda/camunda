@@ -14,7 +14,7 @@ import Authentication from './Authentication';
 import Header from './Header';
 import {Login} from './Login';
 import {Dashboard} from './Dashboard';
-import InstancesContainer from './Instances/InstancesContainer';
+import {Instances} from './Instances';
 import {Instance} from './Instance';
 import GlobalStyles from './GlobalStyles';
 import {DataManagerProvider} from 'modules/DataManager';
@@ -31,7 +31,7 @@ function App() {
               <Authentication>
                 <Header />
                 <Route exact path="/" component={Dashboard} />
-                <Route exact path="/instances" component={InstancesContainer} />
+                <Route exact path="/instances" component={Instances} />
                 <Route exact path="/instances/:id" component={Instance} />
               </Authentication>
             </Switch>

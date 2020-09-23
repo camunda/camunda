@@ -5,56 +5,114 @@
  */
 
 import React from 'react';
-import {shallow} from 'enzyme';
+import {render, screen, fireEvent} from '@testing-library/react';
+import {filters} from 'modules/stores/filters';
+import {instances} from 'modules/stores/instances';
 
-import Paginator from './index';
+import {Paginator} from './index';
 
-it('should show the first five pages when on first page', () => {
-  const node = shallow(
-    <Paginator
-      firstElement={0}
-      perPage={10}
-      maxPage={15}
-      onFirstElementChange={jest.fn()}
-    />
-  );
+describe('Paginator', () => {
+  afterEach(() => {
+    filters.reset();
+    instances.reset();
+  });
 
-  expect(node).toMatchSnapshot();
-});
+  it('should show the first five pages when on first page', () => {
+    filters.setEntriesPerPage(10);
+    filters.setPage(1);
+    instances.setInstances({filteredInstancesCount: 150});
 
-it('should show the last five pages when on last page', () => {
-  const node = shallow(
-    <Paginator
-      firstElement={94}
-      perPage={10}
-      maxPage={11}
-      onFirstElementChange={jest.fn()}
-    />
-  );
-  expect(node).toMatchSnapshot();
-});
+    render(<Paginator maxPage={15} />);
 
-it('should show ellipsis on both sides in the middle', () => {
-  const node = shallow(
-    <Paginator
-      firstElement={50}
-      perPage={5}
-      maxPage={20}
-      onFirstElementChange={jest.fn()}
-    />
-  );
-  expect(node).toMatchSnapshot();
-});
+    [1, 2, 3, 4, 5, 15].forEach((pageNumber) => {
+      expect(
+        screen.getByRole('button', {name: `Page ${pageNumber}`})
+      ).toBeInTheDocument();
+    });
 
-it('should not show ellipsis when first page is just barely out of range', () => {
-  const node = shallow(
-    <Paginator
-      firstElement={30}
-      perPage={10}
-      maxPage={10}
-      onFirstElementChange={jest.fn()}
-    />
-  );
+    expect(screen.getByText('…')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Page 6'})
+    ).not.toBeInTheDocument();
+  });
 
-  expect(node).toMatchSnapshot();
+  it('should show the last five pages when on last page', () => {
+    filters.setEntriesPerPage(10);
+    filters.setPage(15);
+    instances.setInstances({filteredInstancesCount: 150});
+
+    render(<Paginator maxPage={15} />);
+    [15, 14, 13, 12, 11, 1].forEach((pageNumber) => {
+      expect(
+        screen.getByRole('button', {name: `Page ${pageNumber}`})
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByText('…')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: 'Page 10'})
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show ellipsis on both sides in the middle', () => {
+    filters.setEntriesPerPage(5);
+    filters.setPage(10);
+    instances.setInstances({filteredInstancesCount: 150});
+
+    render(<Paginator maxPage={20} />);
+    expect(screen.getAllByText('…').length).toBe(2);
+  });
+
+  it('should not show ellipsis when first page is just barely out of range', () => {
+    filters.setEntriesPerPage(10);
+    filters.setPage(1);
+    instances.setInstances({filteredInstancesCount: 20});
+    render(<Paginator maxPage={2} />);
+    expect(screen.queryByText('…')).not.toBeInTheDocument();
+  });
+
+  it('should navigate between pages', () => {
+    filters.setEntriesPerPage(10);
+    filters.setPage(1);
+    instances.setInstances({filteredInstancesCount: 30});
+    render(<Paginator maxPage={3} />);
+
+    expect(screen.getByRole('button', {name: 'First page'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Previous page'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Last page'})).toBeEnabled();
+    expect(screen.getByRole('button', {name: 'Next page'})).toBeEnabled();
+    expect(filters.state.page).toBe(1);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
+    ['First page', 'Previous page', 'Last page', 'Next page'].forEach((name) =>
+      expect(screen.getByRole('button', {name})).toBeEnabled()
+    );
+    expect(filters.state.page).toBe(2);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Next page'}));
+    expect(screen.getByRole('button', {name: 'First page'})).toBeEnabled();
+    expect(screen.getByRole('button', {name: 'Previous page'})).toBeEnabled();
+    expect(screen.getByRole('button', {name: 'Last page'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Next page'})).toBeDisabled();
+    expect(filters.state.page).toBe(3);
+
+    fireEvent.click(screen.getByRole('button', {name: 'First page'}));
+    expect(screen.getByRole('button', {name: 'First page'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Previous page'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Last page'})).toBeEnabled();
+    expect(screen.getByRole('button', {name: 'Next page'})).toBeEnabled();
+    expect(filters.state.page).toBe(1);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Last page'}));
+    expect(screen.getByRole('button', {name: 'First page'})).toBeEnabled();
+    expect(screen.getByRole('button', {name: 'Previous page'})).toBeEnabled();
+    expect(screen.getByRole('button', {name: 'Last page'})).toBeDisabled();
+    expect(screen.getByRole('button', {name: 'Next page'})).toBeDisabled();
+    expect(filters.state.page).toBe(3);
+
+    fireEvent.click(screen.getByRole('button', {name: 'Previous page'}));
+    ['First page', 'Previous page', 'Last page', 'Next page'].forEach((name) =>
+      expect(screen.getByRole('button', {name})).toBeEnabled()
+    );
+    expect(filters.state.page).toBe(2);
+  });
 });

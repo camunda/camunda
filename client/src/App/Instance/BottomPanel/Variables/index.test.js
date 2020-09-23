@@ -346,7 +346,6 @@ describe('Variables', () => {
         ).queryByTestId('edit-variable-button'),
         {timeout: 5000}
       );
-
       jest.useRealTimers();
     });
 

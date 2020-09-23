@@ -7,12 +7,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {LinkButton} from 'modules/components/LinkButton';
-import {OPERATION_TYPE} from 'modules/constants';
+import {
+  OPERATION_TYPE,
+  DEFAULT_FILTER_CONTROLLED_VALUES,
+} from 'modules/constants';
 import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
 import {isBatchOperationRunning} from '../service';
 import ProgressBar from './ProgressBar';
+import {filters} from 'modules/stores/filters';
 
 const {
   UPDATE_VARIABLE,
@@ -26,7 +30,7 @@ const TYPE_LABELS = {
   [CANCEL_WORKFLOW_INSTANCE]: 'Cancel',
 };
 
-const OperationsEntry = ({batchOperation, onInstancesClick}) => {
+const OperationsEntry = ({batchOperation}) => {
   const {
     id,
     type,
@@ -35,6 +39,18 @@ const OperationsEntry = ({batchOperation, onInstancesClick}) => {
     operationsTotalCount,
     operationsFinishedCount,
   } = batchOperation;
+
+  const handleInstancesClick = (batchOperationId) => {
+    filters.setFilter({
+      ...DEFAULT_FILTER_CONTROLLED_VALUES,
+      active: true,
+      incidents: true,
+      completed: true,
+      canceled: true,
+      batchOperationId,
+    });
+  };
+
   return (
     <Styled.Entry isRunning={isBatchOperationRunning(batchOperation)}>
       <Styled.EntryStatus>
@@ -61,7 +77,7 @@ const OperationsEntry = ({batchOperation, onInstancesClick}) => {
         />
       )}
       <Styled.EntryDetails>
-        <LinkButton onClick={() => onInstancesClick(id)}>{`${pluralSuffix(
+        <LinkButton onClick={() => handleInstancesClick(id)}>{`${pluralSuffix(
           instancesCount,
           'Instance'
         )}`}</LinkButton>
@@ -80,7 +96,6 @@ OperationsEntry.propTypes = {
     operationsTotalCount: PropTypes.number.isRequired,
     operationsFinishedCount: PropTypes.number.isRequired,
   }).isRequired,
-  onInstancesClick: PropTypes.func.isRequired,
 };
 
 OperationsEntry.defaultProps = {};

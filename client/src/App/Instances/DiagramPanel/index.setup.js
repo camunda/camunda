@@ -6,22 +6,8 @@
 
 import {EXPAND_STATE} from 'modules/constants';
 
-export const mockProps = {
-  noWorkflowSelected: false,
-  noVersionSelected: false,
-  flowNodesStatistics: [],
-  onFlowNodeSelection: jest.fn(),
-  workflowName: 'Workflow Name',
+const mockProps = {
   expandState: EXPAND_STATE.EXPANDED,
 };
 
-export const mockPropsNoWorkflowSelected = {
-  ...mockProps,
-  noWorkflowSelected: true,
-  noVersionSelected: true,
-};
-
-export const mockPropsNoVersionSelected = {
-  ...mockProps,
-  noVersionSelected: true,
-};
+export {mockProps};

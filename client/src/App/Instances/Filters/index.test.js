@@ -7,6 +7,7 @@
 import React from 'react';
 import {shallow, mount} from 'enzyme';
 import {act} from 'react-dom/test-utils';
+import {createMemoryHistory} from 'history';
 
 import {
   FILTER_TYPES,
@@ -14,7 +15,11 @@ import {
   DEFAULT_FILTER_CONTROLLED_VALUES,
 } from 'modules/constants';
 import Button from 'modules/components/Button';
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import {
+  flushPromises,
+  mockWorkflowStatistics,
+  mockWorkflowInstances,
+} from 'modules/testUtils';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import Filters from './index';
@@ -22,7 +27,6 @@ import {FiltersPanel} from './FiltersPanel';
 import * as Styled from './styled';
 import {
   groupedWorkflowsMock,
-  workflows,
   mockProps,
   mockPropsWithEmptyLocationSearch,
   mockPropsWithInitFilter,
@@ -32,6 +36,7 @@ import {
 
 import {DEBOUNCE_DELAY, ALL_VERSIONS_OPTION} from './constants';
 import {instancesDiagram} from 'modules/stores/instancesDiagram';
+import {filters} from 'modules/stores/filters';
 import {getFlowNodeOptions} from './service';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
@@ -40,28 +45,42 @@ jest.mock('./constants');
 jest.mock('modules/utils/bpmn');
 
 describe('Filters', () => {
+  const locationMock = {pathname: '/instances'};
+  const historyMock = createMemoryHistory();
   beforeEach(async () => {
     mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      ),
       rest.get('/api/workflows/:workflowId/xml', (_, res, ctx) =>
         res.once(ctx.text(''))
       ),
       rest.get('/api/workflows/grouped', (_, res, ctx) =>
         res.once(ctx.json(groupedWorkflowsMock))
+      ),
+      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowStatistics))
       )
     );
-    await instancesDiagram.fetchWorkflowXml(1);
-  });
 
-  beforeEach(() => {
+    await instancesDiagram.fetchWorkflowXml(1);
+    filters.setUrlParameters(historyMock, locationMock);
+    await filters.init();
     jest.clearAllMocks();
     jest.clearAllTimers();
   });
 
+  afterEach(() => {
+    filters.reset();
+  });
+
   it('should render filters panel if no filter is applied in querystring', () => {
     // given
+
+    filters.setFilter(DEFAULT_FILTER_CONTROLLED_VALUES);
     const node = shallow(
       <Filters.WrappedComponent
-        groupedWorkflows={workflows}
         {...mockPropsWithEmptyLocationSearch}
         filter={DEFAULT_FILTER_CONTROLLED_VALUES}
       />
@@ -75,7 +94,6 @@ describe('Filters', () => {
     // given
     const node = shallow(
       <Filters.WrappedComponent
-        groupedWorkflows={workflows}
         {...mockProps}
         filter={DEFAULT_FILTER_CONTROLLED_VALUES}
       />
@@ -97,7 +115,6 @@ describe('Filters', () => {
     // given
     const node = shallow(
       <Filters.WrappedComponent
-        groupedWorkflows={workflows}
         {...mockPropsWithInitFilter}
         filter={COMPLETE_FILTER}
       />
@@ -132,7 +149,6 @@ describe('Filters', () => {
       <ThemeProvider>
         <CollapsablePanelProvider>
           <Filters.WrappedComponent
-            groupedWorkflows={workflows}
             {...mockProps}
             filter={DEFAULT_FILTER_CONTROLLED_VALUES}
           />
@@ -156,7 +172,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -175,10 +190,7 @@ describe('Filters', () => {
         expect(field.length).toEqual(1);
         expect(field.prop('placeholder')).toEqual('Error Message');
         expect(field.prop('value')).toEqual('');
-        expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-          errorMessage: 'asd',
-        });
-
+        expect(filters.state.filter.errorMessage).toBe('asd');
         done();
       }, DEBOUNCE_DELAY * 2);
     });
@@ -189,7 +201,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -200,11 +211,11 @@ describe('Filters', () => {
         .find(Styled.ValidationTextInput)
         .filterWhere((n) => n.props().name === 'errorMessage');
 
-      field.simulate('change', {target: {value: '', name: 'errorMessage'}});
+      field.simulate('change', {target: {value: 'test', name: 'errorMessage'}});
 
       setTimeout(() => {
         // then
-        expect(mockProps.onFilterChange).not.toHaveBeenCalled();
+        expect(filters.state.filter.errorMessage).not.toBe('test');
 
         done();
       }, DEBOUNCE_DELAY / 2);
@@ -214,7 +225,6 @@ describe('Filters', () => {
     it('should initialize the field with empty value', () => {
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -228,7 +238,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockPropsWithInitFilter}
               filter={COMPLETE_FILTER}
             />
@@ -247,7 +256,6 @@ describe('Filters', () => {
     it('should update state when input receives text', () => {
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -260,12 +268,11 @@ describe('Filters', () => {
       expect(node.state().filter.errorMessage).toEqual('error message');
     });
 
-    it('should call onFilterChange with the right error message', (done) => {
+    it('should set errorMessage filter value with the right error message', (done) => {
       // given
       const errorMessage = 'lorem ipsum';
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -280,25 +287,21 @@ describe('Filters', () => {
 
       setTimeout(() => {
         // then
-        expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-          errorMessage,
-        });
+        expect(filters.state.filter.errorMessage).toBe(errorMessage);
         done();
       }, DEBOUNCE_DELAY * 2);
     });
 
-    it('should call onFilterChange with empty object', (done) => {
+    it('should set errorMessage filter undefined when it is changed with empty value', (done) => {
       // given
       const emptyErrorMessage = '';
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
       );
       const instance = node.instance();
-
       //when
       instance.handleControlledInputChange({
         target: {value: emptyErrorMessage, name: 'errorMessage'},
@@ -306,8 +309,7 @@ describe('Filters', () => {
       instance.waitForTimer(instance.propagateFilter);
 
       setTimeout(() => {
-        // then
-        expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+        expect(filters.state.filter.errorMessage).toBe(undefined);
         done();
       }, DEBOUNCE_DELAY * 2);
     });
@@ -323,7 +325,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -347,15 +348,14 @@ describe('Filters', () => {
       expect(field.prop('placeholder')).toEqual(
         'Instance Id(s) separated by space or comma'
       );
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        [target.name]: target.value,
-      });
+
+      expect(filters.state.filter[target.name]).toBe(target.value);
+      jest.useRealTimers();
     });
 
     it('should initialize the field with empty value', () => {
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -367,7 +367,6 @@ describe('Filters', () => {
     it('should update state when input receives text', () => {
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -385,7 +384,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockPropsWithInitFilter}
               filter={{
                 ...DEFAULT_FILTER_CONTROLLED_VALUES,
@@ -404,12 +402,11 @@ describe('Filters', () => {
       expect(field.props().value).toEqual('0000000000000001, 0000000000000002');
     });
 
-    it('should call onFilterChange with the right instance ids', () => {
+    it('should set filter state with the right instance ids', () => {
       const instanceIds = '0000000000000001, 0000000000000002';
       // given
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -423,18 +420,15 @@ describe('Filters', () => {
       instance.propagateFilter();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        ids: instanceIds,
-      });
+      expect(filters.state.filter.ids).toBe(instanceIds);
     });
 
-    it('should call onFilterChange with an empty object', () => {
+    it('should set filter state with empty object', () => {
       // given
       // user blurs without writing
       const emptyInstanceIds = '';
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -448,7 +442,7 @@ describe('Filters', () => {
       instance.propagateFilter();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+      expect(filters.state.filter).toEqual({});
     });
   });
 
@@ -459,7 +453,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -478,7 +471,7 @@ describe('Filters', () => {
       expect(field.length).toEqual(1);
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow');
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+      expect(filters.state.filter).toEqual({});
     });
 
     it('should render the value from this.props.filter.workflow', () => {
@@ -486,7 +479,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockPropsWithInitFilter}
               filter={COMPLETE_FILTER}
             />
@@ -506,11 +498,7 @@ describe('Filters', () => {
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
-            <Filters.WrappedComponent
-              groupedWorkflows={workflows}
-              {...mockProps}
-              filter={COMPLETE_FILTER}
-            />
+            <Filters.WrappedComponent {...mockProps} filter={COMPLETE_FILTER} />
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
@@ -520,6 +508,8 @@ describe('Filters', () => {
         .filterWhere((n) => n.props().name === 'workflow');
 
       expect(field.props().options).toEqual([
+        {value: 'bigVarProcess', label: 'Big variable process'},
+        {value: 'eventBasedGatewayProcess', label: 'eventBasedGatewayProcess'},
         {value: 'demoProcess', label: 'New demo process'},
         {value: 'orderProcess', label: 'Order'},
       ]);
@@ -530,7 +520,6 @@ describe('Filters', () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -554,7 +543,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -573,7 +561,7 @@ describe('Filters', () => {
       expect(field.length).toEqual(1);
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow Version');
-      expect(mockProps.onFilterChange).toHaveBeenCalled();
+      expect(filters.state.filter.version).toBe('1');
     });
 
     it('should render the value from this.props.filter.version', () => {
@@ -581,7 +569,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockPropsWithInitFilter}
               filter={COMPLETE_FILTER}
             />{' '}
@@ -604,7 +591,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -625,7 +611,7 @@ describe('Filters', () => {
       expect(field.props().value).toEqual(
         String(groupedWorkflowsMock[0].workflows[0].version)
       );
-      expect(mockProps.onFilterChange.mock.calls[0][0].version).toEqual(
+      expect(filters.state.filter.version).toEqual(
         String(groupedWorkflowsMock[0].workflows[0].version)
       );
     });
@@ -636,7 +622,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -670,7 +655,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -703,7 +687,7 @@ describe('Filters', () => {
           .props().value
       ).toEqual(String(groupedWorkflowsMock[0].workflows[0].version));
       // should update the workflow in Instances
-      expect(mockProps.onFilterChange.mock.calls.length).toEqual(1);
+      expect(filters.state.filter.version).toBe('3');
     });
 
     it('should reset after a the workflowName field is also reseted ', async () => {
@@ -712,7 +696,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -748,11 +731,10 @@ describe('Filters', () => {
       ).toEqual('');
     });
 
-    it('should call onFilterChange when a workflow version is selected', async () => {
+    it('should set filter state when a workflow version is selected', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -764,17 +746,14 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        workflow: 'demoProcess',
-        version: '3',
-      });
+      expect(filters.state.filter.workflow).toBe('demoProcess');
+      expect(filters.state.filter.version).toBe('3');
     });
 
-    it('should call onFilterChange when all workflow versions are selected', async () => {
+    it('should set filter state when all workflow versions are selected', async () => {
       const workflowName = groupedWorkflowsMock[0].bpmnProcessId;
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -789,10 +768,8 @@ describe('Filters', () => {
         .handleWorkflowVersionChange({target: {value: ALL_VERSIONS_OPTION}});
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        version: ALL_VERSIONS_OPTION,
-        workflow: workflowName,
-      });
+      expect(filters.state.filter.workflow).toBe(workflowName);
+      expect(filters.state.filter.version).toBe(ALL_VERSIONS_OPTION);
     });
   });
 
@@ -803,7 +780,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -822,7 +798,7 @@ describe('Filters', () => {
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Flow Node');
       expect(field.props().disabled).toBe(true);
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+      expect(filters.state.filter).toEqual({});
     });
 
     it('should render the value from this.props.filter.activityId', () => {
@@ -830,7 +806,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockPropsWithInitFilter}
               filter={COMPLETE_FILTER}
             />
@@ -851,7 +826,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -888,7 +862,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -921,19 +894,31 @@ describe('Filters', () => {
       expect(field.props().value).toEqual('');
     });
 
-    it('should render selectable flow nodes', () => {
+    it('should render selectable flow nodes', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
+      filters.setFilter({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        workflow: 'demoProcess',
+        version: '2',
+      });
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
+              filter={{
+                ...DEFAULT_FILTER_CONTROLLED_VALUES,
+                workflow: 'demoProcess',
+                version: '2',
+              }}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
+
+      await flushPromises();
+      node.update();
+
       const workflowField = node
         .find(Styled.Select)
         .filterWhere((n) => n.props().name === 'workflow');
@@ -959,18 +944,28 @@ describe('Filters', () => {
       );
     });
 
-    it('should render the selectable flow nodes on the correct order', () => {
+    it('should render the selectable flow nodes on the correct order', async () => {
+      filters.setFilter({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        workflow: 'demoProcess',
+        version: '2',
+      });
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
+              filter={{
+                ...DEFAULT_FILTER_CONTROLLED_VALUES,
+                workflow: 'demoProcess',
+                version: '2',
+              }}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
+      await flushPromises();
+      node.update();
 
       const field = node
         .find(Styled.Select)
@@ -990,7 +985,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -1020,17 +1014,31 @@ describe('Filters', () => {
 
     it('should display a list of activity ids', async () => {
       // given
+
+      filters.setFilter({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        workflow: 'demoProcess',
+        version: '2',
+      });
+
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
-              filter={DEFAULT_FILTER_CONTROLLED_VALUES}
+              filter={{
+                ...DEFAULT_FILTER_CONTROLLED_VALUES,
+                workflow: 'demoProcess',
+                version: '2',
+              }}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
+
+      await flushPromises();
+      node.update();
+
       const field = node
         .find(Styled.Select)
         .filterWhere((n) => n.props().name === 'activityId');
@@ -1042,18 +1050,29 @@ describe('Filters', () => {
     it('should set the state on activityId selection', async () => {
       // given
 
-      const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const selectableFlowNodes = instancesDiagram.selectableFlowNodes;
-      const activityId = selectableFlowNodes[0].id;
+      filters.setFilter({
+        ...DEFAULT_FILTER_CONTROLLED_VALUES,
+        workflow: 'demoProcess',
+        version: '2',
+      });
 
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
-          filter={DEFAULT_FILTER_CONTROLLED_VALUES}
+          filter={{
+            ...DEFAULT_FILTER_CONTROLLED_VALUES,
+            workflow: 'demoProcess',
+            version: '2',
+          }}
         />
       );
 
+      await flushPromises();
+      node.update();
+
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const selectableFlowNodes = instancesDiagram.selectableFlowNodes;
+      const activityId = selectableFlowNodes[0].id;
       //when
       // select workflowName, the version is set to the latest
       node.instance().handleWorkflowNameChange({target: {value: value}});
@@ -1084,7 +1103,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -1108,9 +1126,8 @@ describe('Filters', () => {
         'Start Date yyyy-mm-dd hh:mm:ss'
       );
       expect(field.props().value).toEqual('');
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        startDate: '1084-10-08',
-      });
+      expect(filters.state.filter.startDate).toBe('1084-10-08');
+      jest.useRealTimers();
     });
 
     it('should be prefilled with the value from props.filter.startDate', async () => {
@@ -1118,7 +1135,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockPropsWithInitFilter}
               filter={COMPLETE_FILTER}
             />
@@ -1137,7 +1153,6 @@ describe('Filters', () => {
     it('should update the state with new value', async () => {
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -1155,7 +1170,6 @@ describe('Filters', () => {
     it('should update the filters in Instances page', async () => {
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -1170,16 +1184,12 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalled();
-      expect(mockProps.onFilterChange.mock.calls[0][0].startDate).toBe(
-        '2009-01-25'
-      );
+      expect(filters.state.filter.startDate).toBe('2009-01-25');
     });
 
     it('should send null values for empty start dates', async () => {
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -1194,7 +1204,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+      expect(filters.state.filter).toEqual({});
     });
   });
 
@@ -1208,7 +1218,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -1230,9 +1239,8 @@ describe('Filters', () => {
       expect(field.props().name).toEqual('endDate');
       expect(field.props().placeholder).toEqual('End Date yyyy-mm-dd hh:mm:ss');
       expect(field.props().value).toEqual('');
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        endDate: '1984-10-08',
-      });
+      expect(filters.state.filter.endDate).toBe('1984-10-08');
+      jest.useRealTimers();
     });
 
     it('should be prefilled with the value from props.filter.endDate', async () => {
@@ -1240,7 +1248,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockPropsWithInitFilter}
               filter={COMPLETE_FILTER}
             />
@@ -1254,14 +1261,13 @@ describe('Filters', () => {
         .filterWhere((n) => n.props().name === 'endDate');
 
       // then
-      expect(field.props().value).toEqual('2018-10-10');
+      expect(field.props().value).toBe('2018-10-10');
     });
 
     // change
     it('should update the state with new value', async () => {
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -1274,13 +1280,12 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(node.state().filter.endDate).toEqual('2009-01-25');
+      expect(node.state().filter.endDate).toBe('2009-01-25');
     });
 
     it('should update the filters in Instances page', async () => {
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -1295,10 +1300,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalled();
-      expect(mockProps.onFilterChange.mock.calls[0][0].endDate).toBe(
-        '2009-01-25'
-      );
+      expect(node.state().filter.endDate).toBe('2009-01-25');
     });
   });
 
@@ -1326,13 +1328,16 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
     });
 
     it('should call onFilterChange on valid variable', async () => {
@@ -1347,11 +1352,10 @@ describe('Filters', () => {
       });
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledTimes(1);
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({variable});
+      expect(filters.state.filter.variable).toEqual(variable);
     });
 
-    it('should call onFilterChange with empty object (on invalid JSON value)', async () => {
+    it('should set filter state with empty object (on invalid JSON value)', async () => {
       // given
       const variable = {name: 'variableName', value: '{{{{'};
 
@@ -1364,11 +1368,10 @@ describe('Filters', () => {
       });
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledTimes(1);
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+      expect(filters.state.filter).toEqual({});
     });
 
-    it('should call onFilterChange with empty object (on empty name)', async () => {
+    it('should set filter state with empty object (on empty name)', async () => {
       // given
       const variable = {name: '', value: '{"a": "b"}'};
 
@@ -1381,11 +1384,10 @@ describe('Filters', () => {
       });
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledTimes(1);
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+      expect(filters.state.filter).toEqual({});
     });
 
-    it('should call onFilterChange with empty object (on empty value)', async () => {
+    it('should set filter state with empty object (on empty value)', async () => {
       // given
       const variable = {name: 'myVariable', value: ''};
 
@@ -1398,11 +1400,10 @@ describe('Filters', () => {
       });
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledTimes(1);
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+      expect(filters.state.filter).toEqual({});
     });
 
-    it('should call onFilterChange with empty object (on empty name and value)', async () => {
+    it('should set filter state with empty object (on empty name and value)', async () => {
       // given
       const variable = {name: '', value: ''};
 
@@ -1413,8 +1414,7 @@ describe('Filters', () => {
       });
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledTimes(1);
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+      expect(filters.state.filter).toEqual({});
     });
   });
 
@@ -1424,25 +1424,15 @@ describe('Filters', () => {
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
-            <Filters.WrappedComponent
-              groupedWorkflows={workflows}
-              {...mockProps}
-              filter={COMPLETE_FILTER}
-            />
+            <Filters.WrappedComponent {...mockProps} filter={COMPLETE_FILTER} />
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
       const ResetButtonNode = node.find(Button);
-      const onClick = ResetButtonNode.props().onClick;
-
-      //when
-      onClick();
-
       // then
       expect(ResetButtonNode.text()).toBe('Reset Filters');
       expect(ResetButtonNode).toHaveLength(1);
       expect(ResetButtonNode.prop('disabled')).toBe(false);
-      expect(mockProps.onFilterReset).toHaveBeenCalled();
     });
 
     it('should render the disabled reset filters button', () => {
@@ -1451,7 +1441,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockPropsWithDefaultFilter}
               filter={{
                 ...DEFAULT_FILTER_CONTROLLED_VALUES,
@@ -1468,12 +1457,13 @@ describe('Filters', () => {
       expect(ResetButtonNode.prop('disabled')).toBe(true);
     });
 
-    it('should render the reset filters button after changing input', () => {
+    it('should render the reset filters button after changing input', async () => {
+      jest.useFakeTimers();
+
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={{...DEFAULT_FILTER_CONTROLLED_VALUES, ...DEFAULT_FILTER}}
             />
@@ -1487,12 +1477,17 @@ describe('Filters', () => {
       errorMessageInput.simulate('change', {
         target: {value: 'abc', name: 'errorMessage'},
       });
+      jest.advanceTimersByTime(DEBOUNCE_DELAY);
+      await flushPromises();
 
+      expect(filters.state.filter.errorMessage).toBe('abc');
       const ResetButtonNode = node.find(Button);
       ResetButtonNode.simulate('click');
 
       // then
-      expect(mockProps.onFilterReset).toHaveBeenCalled();
+      expect(filters.state.filter.errorMessage).toBe(undefined);
+
+      jest.useRealTimers();
     });
 
     it('should reset all fields', async () => {
@@ -1500,11 +1495,7 @@ describe('Filters', () => {
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
-            <Filters.WrappedComponent
-              groupedWorkflows={workflows}
-              {...mockProps}
-              filter={COMPLETE_FILTER}
-            />
+            <Filters.WrappedComponent {...mockProps} filter={COMPLETE_FILTER} />
           </CollapsablePanelProvider>
         </ThemeProvider>
       );
@@ -1529,41 +1520,21 @@ describe('Filters', () => {
       expect(node.find('input[name="name"]').get(0).props.value).toBe('');
       expect(node.find('input[name="value"]').get(0).props.value).toBe('');
     });
-
-    it('should call this.props.onFilterReset', async () => {
-      // given
-      const node = mount(
-        <ThemeProvider>
-          <CollapsablePanelProvider>
-            <Filters.WrappedComponent
-              groupedWorkflows={workflows}
-              {...mockProps}
-              filter={COMPLETE_FILTER}
-            />
-          </CollapsablePanelProvider>
-        </ThemeProvider>
-      );
-      const ResetButtonNode = node.find(Button);
-
-      //when
-      ResetButtonNode.simulate('click');
-      node.update();
-
-      // then
-      expect(mockProps.onFilterReset).toHaveBeenCalled();
-    });
   });
 
   describe('batchOperationId filter', () => {
-    it('should render a batchOperationId field', async () => {
+    beforeEach(() => {
       jest.useFakeTimers();
-
+    });
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+    it('should render a batchOperationId field', async () => {
       // given
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -1589,20 +1560,17 @@ describe('Filters', () => {
       expect(field.length).toEqual(1);
       expect(field.prop('placeholder')).toEqual('Operation Id');
       expect(field.prop('value')).toEqual('');
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        batchOperationId: '8d5aeb73-193b-4bec-a237-8ff71ac1d713',
-      });
+      expect(filters.state.filter.batchOperationId).toBe(
+        '8d5aeb73-193b-4bec-a237-8ff71ac1d713'
+      );
     });
 
-    it('should not call onFilterChange before debounce delay', async () => {
+    it('should not set batch operation id before debounce delay', async () => {
       // given
-      jest.useFakeTimers();
-
       const node = mount(
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockProps}
               filter={DEFAULT_FILTER_CONTROLLED_VALUES}
             />
@@ -1620,14 +1588,13 @@ describe('Filters', () => {
 
       await flushPromises();
 
-      expect(mockProps.onFilterChange).not.toHaveBeenCalled();
+      expect(filters.state.filter.batchOperationId).not.toBe('asd');
     });
 
     // test behaviour here
     it('should initialize the field with empty value', () => {
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -1641,7 +1608,6 @@ describe('Filters', () => {
         <ThemeProvider>
           <CollapsablePanelProvider>
             <Filters.WrappedComponent
-              groupedWorkflows={workflows}
               {...mockPropsWithInitFilter}
               filter={COMPLETE_FILTER}
             />
@@ -1662,7 +1628,6 @@ describe('Filters', () => {
     it('should update state when input receives text', () => {
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -1677,13 +1642,11 @@ describe('Filters', () => {
       );
     });
 
-    it('should call onFilterChange with the right batch operation id', async () => {
+    it('should set filter state with the right batch operation id', async () => {
       // given
-      jest.useFakeTimers();
       const batchOperationId = '8d5aeb73-193b-4bec-a237-8ff71ac1d713';
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -1701,18 +1664,14 @@ describe('Filters', () => {
       await flushPromises();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({
-        batchOperationId,
-      });
+      expect(filters.state.filter.batchOperationId).toBe(batchOperationId);
     });
 
-    it('should call onFilterChange with empty object', async () => {
+    it('should set filter state with empty object', async () => {
       // given
-      jest.useFakeTimers();
       const emptyBatchOperationId = '';
       const node = shallow(
         <Filters.WrappedComponent
-          groupedWorkflows={workflows}
           {...mockProps}
           filter={DEFAULT_FILTER_CONTROLLED_VALUES}
         />
@@ -1729,7 +1688,7 @@ describe('Filters', () => {
       await flushPromises();
 
       // then
-      expect(mockProps.onFilterChange).toHaveBeenCalledWith({});
+      expect(filters.state.filter).toEqual({});
     });
   });
 });

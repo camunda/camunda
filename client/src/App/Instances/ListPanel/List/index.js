@@ -13,7 +13,7 @@ import Operations from 'modules/components/Operations';
 import StateIcon from 'modules/components/StateIcon';
 import EmptyMessage from '../../EmptyMessage';
 
-import {EXPAND_STATE} from 'modules/constants';
+import {EXPAND_STATE, SORT_ORDER, DEFAULT_SORTING} from 'modules/constants';
 
 import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
@@ -23,84 +23,111 @@ import ListContext, {useListContext} from './ListContext';
 import BaseSkeleton from './Skeleton';
 import * as Styled from './styled';
 import {instanceSelection} from 'modules/stores/instanceSelection';
+import {filters} from 'modules/stores/filters';
 import {observer} from 'mobx-react';
 
 const {THead, TBody, TH, TR, TD} = Table;
 
-class List extends React.Component {
-  static propTypes = {
-    data: PropTypes.arrayOf(PropTypes.object).isRequired,
-    Overlay: PropTypes.oneOfType([PropTypes.func, PropTypes.bool]),
-    onEntriesPerPageChange: PropTypes.func.isRequired,
-    isDataLoaded: PropTypes.bool.isRequired,
-    filter: PropTypes.object,
-    sorting: PropTypes.object,
-    onSort: PropTypes.func,
-    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
-    onOperationButtonClick: PropTypes.func,
-    children: PropTypes.oneOfType([
-      PropTypes.arrayOf(PropTypes.node),
-      PropTypes.node,
-    ]),
-    rowsToDisplay: PropTypes.number,
-  };
+const List = observer(
+  class List extends React.Component {
+    static propTypes = {
+      data: PropTypes.arrayOf(PropTypes.object).isRequired,
+      Overlay: PropTypes.oneOfType([PropTypes.func, PropTypes.bool]),
+      isDataLoaded: PropTypes.bool.isRequired,
+      onSort: PropTypes.func,
+      expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
+      onOperationButtonClick: PropTypes.func,
+      children: PropTypes.oneOfType([
+        PropTypes.arrayOf(PropTypes.node),
+        PropTypes.node,
+      ]),
+    };
 
-  constructor(props) {
-    super(props);
-    this.containerRef = React.createRef();
-  }
+    constructor(props) {
+      super(props);
+      this.containerRef = React.createRef();
+    }
 
-  componentDidMount() {
-    this.recalculateHeight();
-  }
-
-  componentDidUpdate(prevProps) {
-    const {expandState} = this.props;
-
-    // only call recalculateHeight if the expandedId changes and the pane is not collapsed
-    if (
-      prevProps.expandState !== expandState &&
-      expandState !== EXPAND_STATE.COLLAPSED
-    ) {
+    componentDidMount() {
       this.recalculateHeight();
     }
-  }
 
-  recalculateHeight() {
-    if (this.containerRef.current) {
-      const rows = ~~(this.containerRef.current.clientHeight / 38) - 1;
-      this.props.onEntriesPerPageChange(rows);
+    componentDidUpdate(prevProps) {
+      const {expandState} = this.props;
+
+      // only call recalculateHeight if the expandedId changes and the pane is not collapsed
+      if (
+        prevProps.expandState !== expandState &&
+        expandState !== EXPAND_STATE.COLLAPSED
+      ) {
+        this.recalculateHeight();
+      }
+    }
+
+    recalculateHeight() {
+      if (this.containerRef.current?.clientHeight > 0) {
+        const rows = ~~(this.containerRef.current.clientHeight / 38) - 1;
+        filters.setEntriesPerPage(rows);
+      }
+    }
+
+    handleOperationButtonClick = (instance) => {
+      this.props.onOperationButtonClick(instance);
+    };
+
+    shouldResetSorting = ({
+      filter = filters.state.filter,
+      sorting = filters.state.sorting,
+    }) => {
+      const isFinishedInFilter = filter.canceled || filter.completed;
+
+      // reset sorting  by endDate when no finished filter is selected
+      return !isFinishedInFilter && sorting.sortBy === 'endDate';
+    };
+
+    handleSortingChange = (key) => {
+      const prevSorting = filters.state.sorting;
+
+      const sorting = {
+        sortBy: key,
+        sortOrder:
+          prevSorting.sortBy === key &&
+          prevSorting.sortOrder === SORT_ORDER.DESC
+            ? SORT_ORDER.ASC
+            : SORT_ORDER.DESC,
+      };
+
+      // check if sorting needs to be reset
+      if (this.shouldResetSorting({sorting: sorting})) {
+        return filters.setSorting(DEFAULT_SORTING);
+      }
+
+      return filters.setSorting(sorting);
+    };
+
+    render() {
+      return (
+        <Styled.List>
+          <Styled.TableContainer ref={this.containerRef}>
+            {this.props.Overlay && this.props.Overlay()}
+
+            <ListContext.Provider
+              value={{
+                data: this.props.data,
+                onSort: this.handleSortingChange,
+                rowsToDisplay: filters.state.entriesPerPage,
+                isDataLoaded: this.props.isDataLoaded,
+                handleOperationButtonClick: this.handleOperationButtonClick,
+              }}
+            >
+              <Table>{this.props.children}</Table>
+            </ListContext.Provider>
+          </Styled.TableContainer>
+        </Styled.List>
+      );
     }
   }
-
-  handleOperationButtonClick = (instance) => {
-    this.props.onOperationButtonClick(instance);
-  };
-
-  render() {
-    return (
-      <Styled.List>
-        <Styled.TableContainer ref={this.containerRef}>
-          {this.props.Overlay && this.props.Overlay()}
-
-          <ListContext.Provider
-            value={{
-              data: this.props.data,
-              filter: this.props.filter,
-              sorting: this.props.sorting,
-              onSort: this.props.onSort,
-              rowsToDisplay: this.props.rowsToDisplay,
-              isDataLoaded: this.props.isDataLoaded,
-              handleOperationButtonClick: this.handleOperationButtonClick,
-            }}
-          >
-            <Table>{this.props.children}</Table>
-          </ListContext.Provider>
-        </Styled.TableContainer>
-      </Styled.List>
-    );
-  }
-}
+);
 
 export default List;
 
@@ -180,8 +207,9 @@ const Body = observer(function (props) {
 });
 
 const Header = observer(function (props) {
-  const {data, filter, sorting, onSort, isDataLoaded} = useListContext();
+  const {data, onSort, isDataLoaded} = useListContext();
   const {isAllChecked} = instanceSelection.state;
+  const {filter, sorting} = filters.state;
 
   const isListEmpty = !isDataLoaded || data.length === 0;
   const listHasFinishedInstances = filter.canceled || filter.completed;

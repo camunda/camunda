@@ -10,7 +10,7 @@ import PropTypes from 'prop-types';
 import * as Styled from './styled.js';
 
 export default function PanelHeader(props) {
-  return <Styled.Header {...props} />;
+  return <Styled.Header role="heading" {...props} />;
 }
 
 PanelHeader.propTypes = {

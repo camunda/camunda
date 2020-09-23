@@ -18,11 +18,7 @@ import {hasBatchOperations} from './service';
 import OperationsEntry from './OperationsEntry';
 import Skeleton from './Skeleton';
 
-function OperationsPanel({
-  isOperationsCollapsed,
-  toggleOperations,
-  onInstancesClick,
-}) {
+function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
   const {
     batchOperations,
     requestBatchOperations,
@@ -62,7 +58,6 @@ function OperationsPanel({
         ) : hasBatchOperations(batchOperations) ? (
           batchOperations.map((batchOperation) => (
             <OperationsEntry
-              onInstancesClick={onInstancesClick}
               key={batchOperation.id}
               batchOperation={batchOperation}
               data-test="operations-entry"
@@ -80,7 +75,6 @@ OperationsPanel.propTypes = {
   isOperationsCollapsed: PropTypes.bool.isRequired,
   toggleOperations: PropTypes.func.isRequired,
   dataManager: PropTypes.object,
-  onInstancesClick: PropTypes.func.isRequired,
 };
 
 export default withCollapsablePanel(OperationsPanel);

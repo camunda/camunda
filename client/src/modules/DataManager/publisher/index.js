@@ -4,8 +4,6 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {instances} from 'modules/stores/instances';
-
 export default class Publisher {
   constructor(subscriptionTopics, loadingStates) {
     this.subscriptions = {};
@@ -55,24 +53,6 @@ export default class Publisher {
         } else {
           handle(value);
         }
-      });
-    }
-
-    if (topic === 'LOAD_LIST_INSTANCES' && value.state === 'LOADED') {
-      const {workflowInstances, totalCount} = value.response;
-      instances.setInstances({
-        workflowInstances,
-        filteredInstancesCount: totalCount,
-      });
-    }
-    if (topic === 'REFRESH_AFTER_OPERATION' && value.state === 'LOADED') {
-      const {
-        workflowInstances,
-        totalCount,
-      } = value.response.LOAD_LIST_INSTANCES;
-      instances.setInstances({
-        workflowInstances,
-        filteredInstancesCount: totalCount,
       });
     }
   }

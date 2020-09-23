@@ -7,7 +7,12 @@
 import {isValid, addDays, startOfDay, addMinutes, format} from 'date-fns';
 
 import {compactObject} from '../index';
-import {isValidJSON, trimValue, tryDecodeURIComponent} from 'modules/utils';
+import {
+  isValidJSON,
+  trimValue,
+  tryDecodeURIComponent,
+  tryDecodeURI,
+} from 'modules/utils';
 import {trimVariable} from 'modules/utils/variable';
 
 /**
@@ -155,7 +160,7 @@ export function parseFilterForRequest(filter) {
 }
 
 export function getWorkflowByVersion(workflow, version) {
-  if (!workflow || version === 'all') return {};
+  if (!workflow || !version || version === 'all') return {};
   return workflow.workflows.find((item) => {
     return String(item.version) === String(version);
   });
@@ -172,6 +177,18 @@ function trimmFilter(filter) {
   return newFilter;
 }
 
+const decodeFields = function (object) {
+  let result = {};
+
+  for (let key in object) {
+    const value = object[key];
+
+    result[key] = typeof value === 'string' ? tryDecodeURI(object[key]) : value;
+  }
+
+  return result;
+};
+
 /**
  * For using a filter in a request we replace filter.workflow & filter.version
  * with the corresponding workflowIds:[..] field
@@ -184,7 +201,7 @@ export function getFilterWithWorkflowIds(filter = {}, allWorkflows = {}) {
   let newFilter = {...otherFields};
 
   if (!Boolean(workflow) && !Boolean(version)) {
-    return otherFields;
+    return decodeFields(otherFields);
   }
 
   if (version === 'all') {
@@ -204,5 +221,7 @@ export function getFilterWithWorkflowIds(filter = {}, allWorkflows = {}) {
     }
   }
 
-  return {...newFilter};
+  return decodeFields({...newFilter});
 }
+
+export {decodeFields};
