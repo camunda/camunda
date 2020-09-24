@@ -15,7 +15,7 @@ fixture('Task Panel')
   .page(config.endpoint)
   .before(async () => {
     await setup();
-    await wait(20000);
+    await wait();
   })
 
   .beforeEach(async (t) => {
@@ -76,7 +76,7 @@ test('update task list according to user actions', async (t) => {
         'usertask_to_be_claimed',
       ).exists,
     )
-    .notOk({timeout: 20000});
+    .notOk();
 
   await t
     .click(withinExpandedPanel.getByRole('combobox'))
@@ -98,7 +98,7 @@ test('update task list according to user actions', async (t) => {
         'usertask_to_be_claimed',
       ).exists,
     )
-    .notOk({timeout: 20000});
+    .notOk();
 
   await t
     .click(withinExpandedPanel.getByRole('combobox'))

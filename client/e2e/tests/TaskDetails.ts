@@ -15,7 +15,7 @@ fixture('Task Details')
   .page(config.endpoint)
   .before(async () => {
     await setup();
-    await wait(20000);
+    await wait();
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
@@ -30,9 +30,7 @@ test('load task details when a task is selected', async (t) => {
     withinExpandedPanel.getAllByText('usertask_to_be_completed').nth(0),
   );
 
-  await t
-    .expect(screen.queryByTestId('details-table').exists)
-    .ok({timeout: 20000});
+  await t.expect(screen.queryByTestId('details-table').exists).ok();
 
   const withinDetailsTable = within(screen.getByTestId('details-table'));
 
@@ -80,9 +78,7 @@ test('claim and unclaim task', async (t) => {
     withinExpandedPanel.getAllByText('usertask_to_be_completed').nth(0),
   );
 
-  await t
-    .expect(screen.queryByTestId('details-table').exists)
-    .ok({timeout: 20000});
+  await t.expect(screen.queryByTestId('details-table').exists).ok();
 
   const withinDetailsTable = within(screen.getByTestId('details-table'));
   await t
@@ -115,9 +111,7 @@ test('complete task', async (t) => {
 
   await t.click(withinExpandedPanel.getByText('usertask_to_be_completed'));
 
-  await t
-    .expect(screen.queryByTestId('details-table').exists)
-    .ok({timeout: 20000});
+  await t.expect(screen.queryByTestId('details-table').exists).ok();
 
   const withinDetailsTable = within(screen.getByTestId('details-table'));
 
@@ -136,13 +130,11 @@ test('complete task', async (t) => {
 
   await t
     .expect(screen.getByText('Select a task to see the details.').exists)
-    .ok({timeout: 20000});
+    .ok();
 
   await t.navigateTo(currentUrl);
 
-  await t
-    .expect(screen.queryByTestId('details-table').exists)
-    .ok({timeout: 20000});
+  await t.expect(screen.queryByTestId('details-table').exists).ok();
 
   await t
     .expect(

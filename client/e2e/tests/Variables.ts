@@ -17,7 +17,7 @@ fixture('Variables')
   .page(config.endpoint)
   .before(async () => {
     await setup();
-    await wait(20000);
+    await wait();
   })
 
   .beforeEach(async (t) => {
@@ -52,9 +52,7 @@ test('display variables when task has variables', async (t) => {
 
 test.after(async (t) => {
   await t.click(screen.getByRole('button', {name: 'Unclaim'}));
-  await t
-    .expect(screen.getByRole('button', {name: 'Claim'}).exists)
-    .ok({timeout: 20000});
+  await t.expect(screen.getByRole('button', {name: 'Claim'}).exists).ok();
 })('new variable disappears after refresh', async (t) => {
   await t.click(
     within(screen.getByTestId('expanded-panel'))
@@ -117,7 +115,7 @@ test('new variable still exists after refresh if task is completed', async (t) =
 
   await t
     .expect(screen.getByText('Select a task to see the details.').exists)
-    .ok({timeout: 20000});
+    .ok();
 
   await t.navigateTo(currentUrl);
 
@@ -130,9 +128,7 @@ test('new variable still exists after refresh if task is completed', async (t) =
 
 test.after(async (t) => {
   await t.click(screen.getByRole('button', {name: 'Unclaim'}));
-  await t
-    .expect(screen.getByRole('button', {name: 'Claim'}).exists)
-    .ok({timeout: 20000});
+  await t.expect(screen.getByRole('button', {name: 'Claim'}).exists).ok();
 })('edited variable is not saved after refresh', async (t) => {
   await t.click(
     within(screen.getByTestId('expanded-panel'))
@@ -190,7 +186,7 @@ test('edited variable is saved after refresh if task is completed', async (t) =>
 
   await t
     .expect(screen.getByText('Select a task to see the details.').exists)
-    .ok({timeout: 20000});
+    .ok();
   await t.navigateTo(currentUrl);
   await t.expect(screen.getByText('"updatedValue"').exists).ok();
 });
