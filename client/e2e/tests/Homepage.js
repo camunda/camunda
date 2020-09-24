@@ -86,12 +86,12 @@ test('complex Homepage actions', async (t) => {
   await t.click(e.firstTypeaheadOption);
   await t.click(e.confirmButton);
 
-  await t.typeText(Report.nameEditField, 'Monthly Sales', {replace: true});
+  await t.typeText(Report.nameEditField, 'Monthly Sales From Marketing', {replace: true});
   await save(t);
   await t.click(e.homepageLink);
 
   await t.expect(e.reportItem.visible).ok();
-  await t.expect(e.reportItem.textContent).contains('Monthly Sales');
+  await t.expect(e.reportItem.textContent).contains('Monthly Sales From Marketing');
 
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
   await t.click(e.templateModalProcessField);
@@ -100,9 +100,9 @@ test('complex Homepage actions', async (t) => {
 
   await t.typeText(Dashboard.nameEditField, 'Sales Dashboard', {replace: true});
 
-  await addReportToDashboard(t, 'Monthly Sales');
+  await addReportToDashboard(t, 'Monthly Sales From Marketing');
   await addReportToDashboard(t, 'Invoice Evaluation Count');
-  await addReportToDashboard(t, 'Monthly Sales');
+  await addReportToDashboard(t, 'Monthly Sales From Marketing');
 
   await save(t);
   await t.click(e.homepageLink);
@@ -222,7 +222,7 @@ test('complex Homepage actions', async (t) => {
   await t.expect(e.dashboardItem.visible).ok();
   await t.expect(e.reportItem.exists).notOk();
 
-  await t.typeText(e.searchField, 'm', {replace: true});
+  await t.typeText(e.searchField, 'marketing', {replace: true});
   await t.expect(e.collectionItem.visible).ok();
   await t.expect(e.dashboardItem.exists).notOk();
   await t.expect(e.reportItem.visible).ok();
