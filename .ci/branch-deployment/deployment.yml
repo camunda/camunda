@@ -25,6 +25,8 @@ spec:
         branch: @BRANCH@
         changed: "@CHANGED@"
     spec:
+      imagePullSecrets:
+        - name: registry-camunda-cloud
       volumes:
       - name: configuration
         configMap:
@@ -82,7 +84,7 @@ spec:
             mountPath: /optimize/environment/OptimizeLicense.txt
             subPath: OptimizeLicense.txt
       - name: cambpm
-        image: camunda/camunda-bpm-platform:@CAMBPM_VERSION@
+        image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:@CAMBPM_VERSION@
         command: ["/camunda/configure-and-run.sh"]
         env:
         - name: JAVA_OPTS

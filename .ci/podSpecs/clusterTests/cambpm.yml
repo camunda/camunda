@@ -21,9 +21,11 @@ spec:
         - key: "agents-n1-standard-32-netssd-preempt"
           operator: "Exists"
           effect: "NoSchedule"
+      imagePullSecrets:
+        - name: registry-camunda-cloud
       containers:
         - name: cambpm
-          image: camunda/camunda-bpm-platform:${CAMBPM_VERSION}
+          image: registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${CAMBPM_VERSION}
           env:
             - name: JAVA_OPTS
               value: "-Xmx512m -XX:MaxMetaspaceSize=128m"

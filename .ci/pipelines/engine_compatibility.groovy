@@ -219,7 +219,6 @@ pipeline {
         gitCheckoutOptimize()
         script {
           env.ES_VERSION = readMavenPom().getProperties().getProperty(ES_TEST_VERSION_POM_PROPERTY)
-          env.CAMBPM_7_11_VERSION = getCamBpmVersion('engine-7.11')
           env.CAMBPM_7_12_VERSION = getCamBpmVersion('engine-7.12')
           env.CAMBPM_SNAPSHOT_VERSION = getCamBpmVersion('engine-snapshot')
         }
