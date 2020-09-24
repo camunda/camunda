@@ -25,6 +25,19 @@ zeebe.tasklist.elasticsearch.clusterName | Clustername of Elasticsearch | elasti
 zeebe.tasklist.elasticsearch.host | Hostname where Elasticsearch is running | localhost
 zeebe.tasklist.elasticsearch.port | Port of Elasticsearch REST API | 9200
 
+## Settings for shards and replicas
+
+Tasklist create a setting index template that Elasticsearch uses it for all tasklist indices.
+These settings can be changed.
+
+The settings are:
+
+Name|Description|Default value
+----|-----------|--------------
+zeebe.tasklist.elasticsearch.numberOfShards| How many shards Elasticsearch uses for all Tasklist indices| 1
+zeebe.tasklist.elasticsearch.numberOfReplicas| How many replicas Elasticsearch uses for all Tasklist indices| 0
+
+
 ## A snippet from application.yml:
 
 ```yaml

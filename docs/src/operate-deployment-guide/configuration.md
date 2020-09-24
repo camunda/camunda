@@ -28,6 +28,18 @@ camunda.operate.elasticsearch.clusterName | Clustername of Elasticsearch | elast
 camunda.operate.elasticsearch.host | Hostname where Elasticsearch is running | localhost
 camunda.operate.elasticsearch.port | Port of Elasticsearch REST API | 9200
 
+## Settings for shards and replicas
+
+Operate create a setting index template that Elasticsearch uses it for all operate indices.
+These settings can be changed.
+
+The settings are:
+
+Name|Description|Default value
+----|-----------|--------------
+camunda.operate.elasticsearch.numberOfShards| How many shards Elasticsearch uses for all Operate indices| 1
+camunda.operate.elasticsearch.numberOfReplicas| How many replicas Elasticsearch uses for all Operate indices| 0
+
 ## A snippet from application.yml:
 
 ```yaml
