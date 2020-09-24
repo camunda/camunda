@@ -26,7 +26,6 @@ class UpgradeDataTest {
     // license only needed for old Optimize as the new one would get it from elasticsearch
     oldOptimize.copyLicense(UpgradeDataTest.class.getResource("OptimizeLicense.txt").getPath())
     def newOptimize = new OptimizeWrapper(currentVersion, buildDir, newElasticPort)
-    def failed = false;
     try {
       // start old optimize and import data
       oldOptimize.start()
@@ -62,13 +61,12 @@ class UpgradeDataTest {
       newOptimize.stop()
     } catch (Exception e) {
       System.err.println e.getMessage()
-      failed = true
+      throw e
     } finally {
       oldElasticClient.close()
       newElasticClient.close()
       oldOptimize.stop()
       newOptimize.stop()
-      System.exit(failed ? 1 : 0)
     }
 
   }

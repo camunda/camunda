@@ -123,14 +123,13 @@ class UpgradeEsSchemaTest {
       println "Finished asserting on startup and upgrade errors"
     } catch (Exception e) {
       System.err.println e.getMessage()
-      System.exit(1)
+      throw e
     } finally {
       oldElasticClient.close()
       newElasticClient.close()
       oldOptimize.stop()
       newOptimize.stop()
     }
-    System.exit(0)
   }
 
 }
