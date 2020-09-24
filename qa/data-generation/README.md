@@ -108,6 +108,7 @@ mvn clean compile exec:java -Dexec.args="--decisionDefinitions DecideDish:10,Inv
 ```
 
 Available decisions are:
+* BerStatusDateInputDecision
 * DecideDish
 * ExampleDmn11
 * ExampleDmn12
