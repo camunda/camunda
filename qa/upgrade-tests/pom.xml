@@ -128,6 +128,7 @@
               <detachedMode>true</detachedMode>
               <removeVolumes>true</removeVolumes>
               <envVars>
+                <CAMBPM_VERSION>${camunda.engine.version}</CAMBPM_VERSION>
                 <NEW_ES_VERSION>${elasticsearch.version}</NEW_ES_VERSION>
                 <NEW_ES_PORT>${new.elasticsearch.port}</NEW_ES_PORT>
                 <OLD_ES_VERSION>${previous.optimize.elasticsearch.version}</OLD_ES_VERSION>
