@@ -984,9 +984,6 @@ public class RaftContext implements AutoCloseable {
           electionListeners.forEach(l -> l.accept(member));
         }
       }
-
-      this.lastVotedFor = null;
-      meta.storeVote(null);
     }
   }
 
