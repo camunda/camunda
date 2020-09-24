@@ -16,6 +16,11 @@ public class TestEnvironment {
   private static final String TEST_FORK_NUMBER_PROPERTY_NAME = "testForkNumber";
   private static final String TEST_MAVEN_ID_PROPERTY_NAME = "testMavenId";
 
+  /**
+   * Returns the test fork number
+   *
+   * @return test fork number
+   */
   public static int getTestForkNumber() {
     int testForkNumber = 0;
     try {
@@ -34,6 +39,12 @@ public class TestEnvironment {
     return testForkNumber;
   }
 
+  /**
+   * Returns the test maven ID that maps to a test stage in Jenkins (e.g. junit = 1; it = 2; junit8
+   * = 3
+   *
+   * @return test maven ID that maps to a test stage in Jenkins (e.g. junit = 1; it = 2; junit8 = 3
+   */
   public static int getTestMavenId() {
     int testMavenId = 0;
     try {
