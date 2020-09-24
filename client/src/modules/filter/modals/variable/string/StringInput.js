@@ -91,14 +91,14 @@ export default class StringInput extends React.Component {
     evt.preventDefault();
     const {filter, changeFilter, setValid} = this.props;
 
+    const containToEquality =
+      filter.operator.includes('contains') && !operator.includes('contains');
+    const equalityToContain =
+      !filter.operator.includes('contains') && operator.includes('contains');
+
     let newValues = filter.values;
-    if (filter.operator.includes('contains') && !operator.includes('contains')) {
-      // if we switch from contains to is
+    if (containToEquality || equalityToContain) {
       newValues = [];
-      setValid(false);
-    } else if (!filter.operator.includes('contains') && operator.includes('contains')) {
-      // if we switch from is to contains
-      newValues = ['']; // make sure we start with an empty input field
       setValid(false);
     }
 
@@ -162,17 +162,14 @@ export default class StringInput extends React.Component {
         </div>
         {operator.includes('contains') ? (
           <ValueListInput
-            className="valueFields"
             filter={{
               operator,
-              values: notNullValues.length ? notNullValues : [''],
+              values: notNullValues.length ? notNullValues : [],
               includeUndefined: values.includes(null),
             }}
             onChange={({operator, values, includeUndefined}) => {
               changeFilter({operator, values: includeUndefined ? [...values, null] : values});
-
-              const nonEmptyValues = values.filter((val) => val !== '');
-              setValid(includeUndefined || nonEmptyValues.length === values.length);
+              setValid(includeUndefined || values.length > 0);
             }}
             allowUndefined
             allowMultiple

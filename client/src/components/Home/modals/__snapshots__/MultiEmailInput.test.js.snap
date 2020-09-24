@@ -3,6 +3,12 @@
 exports[`should match snapshot 1`] = `
 <MultiValueInput
   disabled={false}
+  extraSeperators={
+    Array [
+      ",",
+      ";",
+    ]
+  }
   onAdd={[Function]}
   onClear={[Function]}
   onPaste={[Function]}

@@ -707,6 +707,7 @@
     "null": "null",
     "nullOrUndefined": "Null oder nicht definiert",
     "timeAt": "um",
+    "value": "Wert",
     "errors": {
       "inValidLink": "Dieser Link ist nicht gültig",
       "postiveNum": "Bitte einen positiven Zahlenwert eingeben"
@@ -878,8 +879,10 @@
           "false": "ist falsch",
           "isNullOrUndefined": "ist null oder nicht definiert"
         },
-        "enterValue": "Wert eingeben",
+        "enterValue": "Einen einzigen Wert eingeben",
+        "enterMultipleValues": "Mehrere Werte durch Trennen mit einem Leerzeichen eingeben",
         "addValue": "Wert hinzufügen",
+        "invalidInput": "Eingabe muss eine Zahl sein",
         "multiSelect": {
           "available": "Verfügbare Werte",
           "selected": "Ausgewählte Werte",

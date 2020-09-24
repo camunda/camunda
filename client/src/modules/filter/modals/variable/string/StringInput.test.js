@@ -91,7 +91,7 @@ it('should reset values when switching between operators types', () => {
     .at(2)
     .simulate('click', {preventDefault: () => {}});
 
-  const newFilter = {operator: 'contains', values: ['']};
+  const newFilter = {operator: 'contains', values: []};
   expect(props.changeFilter).toHaveBeenCalledWith(newFilter);
 
   node.setProps({filter: newFilter});

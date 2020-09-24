@@ -1,39 +1,15 @@
 .ValueListInput {
+  margin-bottom: 20px;
+
   .undefinedOption {
-    margin-bottom: 15px;
+    margin-top: 14px;
   }
 
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    width: 50%;
-    max-width: 90%;
-    text-align: center;
-
-    input[type='checkbox'] {
-      margin-right: 0.75em;
-    }
-    input[type='text'] {
-      width: 100%;
-    }
-  }
-
-  .valueListItem {
-    margin-bottom: 8px;
-    display: flex;
-  }
-
-  .removeItemButton {
-    border: 1px solid transparent;
-    border-radius: 1;
-  }
-
-  .valueListButton {
-    text-align: center;
-  }
-
-  .addValueButton {
+  .singeValueInput {
     width: 100%;
+  }
+
+  .Message.error {
+    margin-top: 5px;
   }
 }

@@ -33,11 +33,11 @@ it('should show placeholder when empty', () => {
 
 it('should invoke onAdd when adding a value', async () => {
   const spy = jest.fn();
-  const node = shallow(<MultiValueInput values={[]} onAdd={spy} />);
+  const node = shallow(<MultiValueInput values={[]} onAdd={spy} extraSeperators={[';']} />);
 
   node.find(Input).prop('onChange')({target: {value: 'test1'}});
   node.find(Input).simulate('keyDown', {
-    key: ',',
+    key: ';',
     preventDefault: jest.fn(),
   });
   expect(spy).toHaveBeenCalledWith('test1');

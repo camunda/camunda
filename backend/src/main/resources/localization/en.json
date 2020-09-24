@@ -707,6 +707,7 @@
     "null": "null",
     "nullOrUndefined": "Null or undefined",
     "timeAt": "at",
+    "value": "Value",
     "errors": {
       "inValidLink": "This link is not valid.",
       "postiveNum": "Please enter a positive numeric value"
@@ -878,8 +879,10 @@
           "false": "is false",
           "isNullOrUndefined": "is null or undefined"
         },
-        "enterValue": "Enter value",
+        "enterValue": "Add a single value",
+        "enterMultipleValues": "Add multiple values by separating with a space",
         "addValue": "Add Value",
+        "invalidInput": "Input must be a number",
         "multiSelect": {
           "available": "Available values",
           "selected": "Selected values",

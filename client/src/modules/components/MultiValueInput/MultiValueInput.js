@@ -17,6 +17,7 @@ export default function MultiValueInput({
   values,
   onRemove,
   onAdd,
+  extraSeperators = [],
   ...props
 }) {
   const [value, setValue] = useState('');
@@ -51,7 +52,7 @@ export default function MultiValueInput({
   }
 
   function handleKeyPress(evt) {
-    if (['Enter', ' ', 'Tab', ','].includes(evt.key)) {
+    if (['Enter', ' ', 'Tab', ...extraSeperators].includes(evt.key)) {
       if (value) {
         evt.preventDefault();
       }

@@ -7,12 +7,12 @@
 import React from 'react';
 
 import ValueListInput from './ValueListInput';
-import {Input, LabeledInput} from 'components';
+import {LabeledInput, MultiValueInput} from 'components';
 
 import {shallow} from 'enzyme';
 
 const props = {
-  filter: {operator: 'in', values: [''], includeUndefined: false},
+  filter: {operator: 'in', values: [], includeUndefined: false},
   allowMultiple: true,
   allowUndefined: true,
   onChange: jest.fn(),
@@ -22,51 +22,69 @@ beforeEach(() => {
   props.onChange.mockClear();
 });
 
-it('should store the input in the state value array at the correct position', () => {
-  const node = shallow(
-    <ValueListInput {...props} filter={{operator: 'in', values: ['value0', 'value1', 'value2']}} />
-  );
+it('should add a new value to the filter using the single input', () => {
+  const node = shallow(<ValueListInput {...props} allowMultiple={false} />);
 
-  node
-    .find(Input)
-    .at(1)
-    .simulate('change', {
-      target: {getAttribute: jest.fn().mockReturnValue(1), value: 'newValue'},
-    });
+  node.find('.singeValueInput').prop('onChange')({target: {value: 'newValue'}});
 
   expect(props.onChange).toHaveBeenCalledWith({
+    includeUndefined: false,
     operator: 'in',
-    values: ['value0', 'newValue', 'value2'],
+    values: ['newValue'],
   });
 });
 
-it('should display the possibility to add another value', () => {
-  const node = shallow(<ValueListInput {...props} />);
-
-  expect(node.find('.addValueButton')).toExist();
-});
-
-it('should add another value when clicking add another value button', () => {
+it('should add a new a value to the filter using the multi value input', () => {
   const node = shallow(<ValueListInput {...props} filter={{operator: 'in', values: ['1']}} />);
 
-  node.find('.addValueButton').simulate('click', {preventDefault: jest.fn()});
+  node.find(MultiValueInput).prop('onAdd')('newValue');
 
   expect(props.onChange).toHaveBeenCalledWith({
     operator: 'in',
-    values: ['1', ''],
+    values: ['1', 'newValue'],
   });
 });
 
-it('should not have the possibility to remove the value if there is only one value', () => {
-  const node = shallow(<ValueListInput {...props} />);
-
-  expect(node.find('.removeItemButton')).not.toExist();
-});
-
-it('should have the possibility to remove a value if there are multiple values', () => {
+it('should remove a value from the filter', () => {
   const node = shallow(<ValueListInput {...props} filter={{operator: 'in', values: ['1', '2']}} />);
 
-  expect(node.find('.removeItemButton').length).toBe(2);
+  node.find(MultiValueInput).prop('onRemove')('1', 0);
+
+  expect(props.onChange).toHaveBeenCalledWith({
+    operator: 'in',
+    values: ['2'],
+  });
+});
+
+it('should add multiple values at once using multiValueInput paste', () => {
+  const node = shallow(<ValueListInput {...props} />);
+
+  node.find(MultiValueInput).simulate('paste', {
+    preventDefault: jest.fn(),
+    clipboardData: {getData: () => `value1 value.2  value3`},
+  });
+
+  expect(props.onChange).toHaveBeenCalledWith({
+    includeUndefined: false,
+    operator: 'in',
+    values: ['value1', 'value.2', 'value3'],
+  });
+});
+
+it('use the passed isValid function to validate passed values to multiValueInput', () => {
+  const node = shallow(
+    <ValueListInput
+      {...props}
+      filter={{operator: 'in', values: [0, 1, 2]}}
+      isValid={(val) => (val < 2 ? true : false)}
+    />
+  );
+
+  expect(node.find(MultiValueInput).prop('values')).toEqual([
+    {invalid: false, value: 0},
+    {invalid: false, value: 1},
+    {invalid: true, value: 2},
+  ]);
 });
 
 it('should set includeUndefined to true when enabling the checkbox"', () => {

@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import update from 'immutability-helper';
 
 import {ButtonGroup, Button} from 'components';
 import {t} from 'translation';
@@ -13,38 +12,39 @@ import {t} from 'translation';
 import ValueListInput from '../ValueListInput';
 
 export default class NumberInput extends React.Component {
-  static defaultFilter = {operator: 'in', values: [''], includeUndefined: false};
+  static defaultFilter = {operator: 'in', values: [], includeUndefined: false};
 
   componentDidMount() {
-    if (this.props.filter.values.length === 0) {
-      this.addValue();
-    }
     this.props.setValid(this.selectionIsValid());
   }
 
-  setOperator = (operator) => (evt) => {
+  setOperator = (newOperator) => (evt) => {
     evt.preventDefault();
 
-    let {values, includeUndefined} = this.props.filter;
-    if (operator === '<' || operator === '>') {
-      values = [values[0]];
+    let {operator, values, includeUndefined} = this.props.filter;
+
+    const equalityToComparison = !['>', '<'].includes(operator) && ['>', '<'].includes(newOperator);
+    const comparisonToEquality = ['>', '<'].includes(operator) && !['>', '<'].includes(newOperator);
+
+    if (equalityToComparison || comparisonToEquality) {
+      values = equalityToComparison && values[0] ? [values[0]] : [];
       includeUndefined = false;
     }
 
-    this.props.changeFilter({operator, values, includeUndefined});
+    this.props.changeFilter({operator: newOperator, values, includeUndefined});
   };
 
   selectionIsValid = () => {
     const {values, includeUndefined} = this.props.filter;
-    const cleanedValues = cleanEmpty(values);
-    const allInputsValid = values.every(this.isValid);
 
-    return allInputsValid || (includeUndefined && (allInputsValid || !cleanedValues.length));
+    if (values.length === 0) {
+      return includeUndefined;
+    }
+
+    return values.every(this.isValid);
   };
 
   isValid = (value) => value.trim() && !isNaN(value.trim());
-
-  addValue = () => this.props.changeFilter(update(this.props.filter, {values: {$push: ['']}}));
 
   componentDidUpdate(prevProps) {
     if (prevProps.filter !== this.props.filter) {
@@ -54,7 +54,8 @@ export default class NumberInput extends React.Component {
 
   render() {
     const {filter, changeFilter} = this.props;
-    const {operator} = filter;
+    const {values, operator} = filter;
+    const hasInvalidValue = values.length > 0 && !this.selectionIsValid();
 
     return (
       <div className="NumberInput">
@@ -73,11 +74,12 @@ export default class NumberInput extends React.Component {
           </Button>
         </ButtonGroup>
         <ValueListInput
-          className="valueFields"
           filter={filter}
+          isValid={this.isValid}
           onChange={changeFilter}
           allowUndefined={operator === 'in' || operator === 'not in'}
           allowMultiple={operator !== '<' && operator !== '>'}
+          errorMessage={hasInvalidValue ? t('common.filter.variableModal.invalidInput') : undefined}
         />
       </div>
     );
@@ -94,7 +96,6 @@ export default class NumberInput extends React.Component {
   });
 
   static addFilter = (addFilter, type, variable, {operator, values, includeUndefined}) => {
-    const cleanedValues = cleanEmpty(values);
     addFilter({
       type,
       data: {
@@ -102,13 +103,9 @@ export default class NumberInput extends React.Component {
         type: variable.type,
         data: {
           operator,
-          values: includeUndefined ? [...cleanedValues, null] : cleanedValues,
+          values: includeUndefined ? [...values, null] : values,
         },
       },
     });
   };
-}
-
-function cleanEmpty(values) {
-  return values.filter((val) => val !== '');
 }

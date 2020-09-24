@@ -45,18 +45,12 @@ test('variable filter modal dependent on variable type', async (t) => {
   await t.takeElementScreenshot(Report.modalContainer, 'process/filter/variable-filter-string.png');
 
   await t.click(Filter.variableFilterOperatorButton('contains'));
-  await t.typeText(Filter.variableFilterValueInput, 'aSubString', {replace: true});
-  await t.click(Filter.addValueButton);
-  await t.typeText(Filter.variableFilterValueInput, 'anotherSubstring', {replace: true});
+  await t.typeText(Filter.variableFilterValueInput, 'aSubString anotherSubstring', {replace: true});
 
   await t.typeText(Filter.typeaheadInput, 'integerVar', {replace: true});
   await t.click(Filter.typeaheadOption('integerVar'));
 
-  await t.typeText(Filter.variableFilterValueInput, '14', {replace: true});
-  await t.click(Filter.addValueButton);
-  await t.typeText(Filter.variableFilterValueInput, '30', {replace: true});
-  await t.click(Filter.addValueButton);
-  await t.typeText(Filter.variableFilterValueInput, '100', {replace: true});
+  await t.typeText(Filter.variableFilterValueInput, '14 30 100', {replace: true});
 
   await t.takeElementScreenshot(
     Report.modalContainer,

@@ -20,10 +20,6 @@ beforeEach(() => {
   props.changeFilter.mockClear();
 });
 
-it('should be initialized with an empty variable value', () => {
-  expect(NumberInput.defaultFilter.values).toEqual(['']);
-});
-
 it('should remove all values except the first one if operator is "is less/greater than"', () => {
   const node = shallow(
     <NumberInput
