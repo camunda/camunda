@@ -12,7 +12,7 @@
   <packaging>war</packaging>
 
   <properties>
-    <camunda.engine.plugin.artifacts.version>${camunda.engine.version}</camunda.engine.plugin.artifacts.version>
+    <camunda.engine.plugin.artifacts.version>${camunda.engine.version}-ee</camunda.engine.plugin.artifacts.version>
     <failOnMissingWebXml>false</failOnMissingWebXml>
   </properties>
 

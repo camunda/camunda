@@ -228,24 +228,6 @@ pipeline {
     stage('IT') {
       failFast false
       parallel {
-        stage('IT 7.11') {
-          agent {
-            kubernetes {
-              cloud 'optimize-ci'
-              label "optimize-ci-build-it-7.11_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(10)}-${env.BUILD_ID}"
-              defaultContainer 'jnlp'
-              yaml integrationTestPodSpec(env.CAMBPM_7_11_VERSION, env.ES_VERSION)
-            }
-          }
-          steps {
-            integrationTestSteps('7.11')
-          }
-          post {
-            always {
-              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-            }
-          }
-        }
         stage('IT 7.12') {
           agent {
             kubernetes {
