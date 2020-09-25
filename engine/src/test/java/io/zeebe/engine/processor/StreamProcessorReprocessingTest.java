@@ -25,14 +25,19 @@ import io.zeebe.engine.util.StreamProcessorRule;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
+import io.zeebe.test.util.stream.StreamWrapper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.InOrder;
+import org.mockito.Mockito;
 import org.mockito.verification.VerificationWithTimeout;
 
 public final class StreamProcessorReprocessingTest {
@@ -424,5 +429,170 @@ public final class StreamProcessorReprocessingTest {
 
     assertThat(processedPositions).doesNotContain(snapshotPosition);
     assertThat(processedPositions).containsExactly(lastSourceEvent, lastEvent);
+  }
+
+  @Test
+  public void shouldStopProcessingWhenPaused() throws Exception {
+    // given - bunch of events to reprocess
+    IntStream.range(0, 5000)
+        .forEach(i -> streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, i));
+    final long sourceEvent = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeWorkflowInstanceEventWithSource(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1, sourceEvent);
+
+    Awaitility.await()
+        .until(
+            () ->
+                streamProcessorRule
+                    .events()
+                    .onlyWorkflowInstanceRecords()
+                    .withIntent(ELEMENT_ACTIVATED),
+            StreamWrapper::exists);
+
+    final var onRecoveredLatch = new CountDownLatch(1);
+    final var typedRecordProcessor = mock(TypedRecordProcessor.class);
+    final var streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor(
+            (processors, context) ->
+                processors
+                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
+                    .withListener(
+                        new StreamProcessorLifecycleAware() {
+                          @Override
+                          public void onRecovered(final ReadonlyProcessingContext context) {
+                            onRecoveredLatch.countDown();
+                          }
+                        }));
+
+    // when
+    streamProcessor.pauseProcessing();
+    final var success = onRecoveredLatch.await(15, TimeUnit.SECONDS);
+
+    // then
+    assertThat(success).isTrue();
+    Mockito.clearInvocations(typedRecordProcessor);
+    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 0xcafe);
+
+    verify(typedRecordProcessor, TIMEOUT.times(0))
+        .processRecord(anyLong(), any(), any(), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any(), any(), any());
+    verify(typedRecordProcessor, TIMEOUT.times(0)).processRecord(any(), any(), any());
+  }
+
+  @Test
+  public void shouldContinueToProcessWhenResumed() throws Exception {
+    // given - bunch of events to reprocess
+    IntStream.range(0, 5000)
+        .forEach(i -> streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, i));
+    final long sourceEvent = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeWorkflowInstanceEventWithSource(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1, sourceEvent);
+
+    Awaitility.await()
+        .until(
+            () ->
+                streamProcessorRule
+                    .events()
+                    .onlyWorkflowInstanceRecords()
+                    .withIntent(ELEMENT_ACTIVATED),
+            StreamWrapper::exists);
+
+    // when
+    final var countDownLatch = new CountDownLatch(1);
+    final var typedRecordProcessor = mock(TypedRecordProcessor.class);
+    final var streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor(
+            (processors, context) ->
+                processors
+                    .onEvent(ValueType.WORKFLOW_INSTANCE, ELEMENT_ACTIVATING, typedRecordProcessor)
+                    .withListener(
+                        new StreamProcessorLifecycleAware() {
+                          @Override
+                          public void onRecovered(final ReadonlyProcessingContext context) {
+                            countDownLatch.countDown();
+                          }
+                        }));
+    streamProcessor.pauseProcessing();
+    streamProcessor.resumeProcessing();
+    final var success = countDownLatch.await(15, TimeUnit.SECONDS);
+
+    // then
+    assertThat(success).isTrue();
+    Mockito.clearInvocations(typedRecordProcessor);
+    streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 0xcafe);
+
+    verify(typedRecordProcessor, TIMEOUT.times(1))
+        .processRecord(anyLong(), any(), any(), any(), any());
+  }
+
+  @Test
+  public void shouldCallOnPausedAfterOnRecovered() {
+    // given - bunch of events to reprocess
+    IntStream.range(0, 5000)
+        .forEach(i -> streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, i));
+    final long sourceEvent = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeWorkflowInstanceEventWithSource(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1, sourceEvent);
+
+    Awaitility.await()
+        .until(
+            () ->
+                streamProcessorRule
+                    .events()
+                    .onlyWorkflowInstanceRecords()
+                    .withIntent(ELEMENT_ACTIVATED),
+            StreamWrapper::exists);
+
+    // when
+    final var lifecycleAware = mock(StreamProcessorLifecycleAware.class);
+    final var streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor(
+            (processors, context) -> processors.withListener(lifecycleAware));
+    streamProcessor.pauseProcessing();
+    streamProcessor.resumeProcessing();
+
+    // then
+    final InOrder inOrder = inOrder(lifecycleAware);
+    // reprocessing
+    inOrder.verify(lifecycleAware, TIMEOUT.times(1)).onRecovered(any());
+    inOrder.verify(lifecycleAware, TIMEOUT.times(1)).onPaused();
+    inOrder.verify(lifecycleAware, TIMEOUT.times(1)).onResumed();
+    inOrder.verifyNoMoreInteractions();
+  }
+
+  @Test
+  public void shouldCallOnPausedBeforeOnResumedNoMatterWhenResumedWasCalled() {
+    // given - bunch of events to reprocess
+    IntStream.range(0, 5000)
+        .forEach(i -> streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, i));
+    final long sourceEvent = streamProcessorRule.writeWorkflowInstanceEvent(ELEMENT_ACTIVATING, 1);
+    streamProcessorRule.writeWorkflowInstanceEventWithSource(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, 1, sourceEvent);
+
+    Awaitility.await()
+        .until(
+            () ->
+                streamProcessorRule
+                    .events()
+                    .onlyWorkflowInstanceRecords()
+                    .withIntent(ELEMENT_ACTIVATED),
+            StreamWrapper::exists);
+
+    // when
+    final var lifecycleAware = mock(StreamProcessorLifecycleAware.class);
+    final var streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor(
+            (processors, context) -> processors.withListener(lifecycleAware));
+    streamProcessor.resumeProcessing();
+    streamProcessor.pauseProcessing();
+    streamProcessor.resumeProcessing();
+
+    // then
+    final InOrder inOrder = inOrder(lifecycleAware);
+    // reprocessing
+    inOrder.verify(lifecycleAware, TIMEOUT.times(1)).onRecovered(any());
+    inOrder.verify(lifecycleAware, TIMEOUT.times(1)).onPaused();
+    inOrder.verify(lifecycleAware, TIMEOUT.times(1)).onResumed();
+    inOrder.verifyNoMoreInteractions();
   }
 }

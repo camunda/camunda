@@ -712,6 +712,87 @@ public final class StreamProcessorTest {
     assertThat(onProcessedListener.lastProcessedRecord.getPosition()).isEqualTo(position);
   }
 
+  @Test
+  public void shouldNotifyLifecycleListenersOnPauseAndResume() throws InterruptedException {
+    // given
+    final CountDownLatch pauseLatch = new CountDownLatch(1);
+    final CountDownLatch resumeLatch = new CountDownLatch(1);
+    final StreamProcessor streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor(
+            (processors, state) ->
+                processors.withListener(
+                    new StreamProcessorLifecycleAware() {
+                      @Override
+                      public void onPaused() {
+                        pauseLatch.countDown();
+                      }
+
+                      @Override
+                      public void onResumed() {
+                        resumeLatch.countDown();
+                      }
+                    }));
+
+    // when
+    streamProcessor.pauseProcessing();
+    streamProcessor.resumeProcessing();
+
+    // then
+    pauseLatch.await();
+    resumeLatch.await();
+
+    assertThat(pauseLatch.getCount()).isEqualTo(0);
+    assertThat(resumeLatch.getCount()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldResumeProcessMoreRecordsAfterPause() throws InterruptedException {
+    // given
+    final var onProcessedListener = new AwaitableProcessedListener();
+    final CountDownLatch pauseLatch = new CountDownLatch(1);
+    final CountDownLatch resumeLatch = new CountDownLatch(1);
+    final TypedRecordProcessor<?> typedRecordProcessor = mock(TypedRecordProcessor.class);
+    final StreamProcessor streamProcessor =
+        streamProcessorRule.startTypedStreamProcessor(
+            (processors, state) ->
+                processors
+                    .onEvent(
+                        ValueType.WORKFLOW_INSTANCE,
+                        WorkflowInstanceIntent.ELEMENT_ACTIVATING,
+                        typedRecordProcessor)
+                    .withListener(
+                        new StreamProcessorLifecycleAware() {
+                          @Override
+                          public void onPaused() {
+                            pauseLatch.countDown();
+                          }
+
+                          @Override
+                          public void onResumed() {
+                            resumeLatch.countDown();
+                          }
+                        }),
+            onProcessedListener.expect(2));
+
+    streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+
+    // when
+    streamProcessor.pauseProcessing();
+    pauseLatch.await();
+
+    final long positionProcessedAfterResume =
+        streamProcessorRule.writeWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATING);
+
+    streamProcessor.resumeProcessing();
+    resumeLatch.await();
+
+    // then
+    assertThat(onProcessedListener.await()).isTrue();
+    Assertions.assertThat(
+            streamProcessorRule.getZeebeState().getLastSuccessfulProcessedRecordPosition())
+        .isEqualTo(positionProcessedAfterResume);
+  }
+
   /**
    * A simple listener which allows you to wait for specific amount of records to be processed.
    *
