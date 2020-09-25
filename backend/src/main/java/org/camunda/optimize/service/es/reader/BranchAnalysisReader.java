@@ -14,7 +14,6 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.bpm.model.bpmn.instance.FlowNode;
 import org.camunda.bpm.model.bpmn.instance.SequenceFlow;
 import org.camunda.optimize.dto.optimize.DefinitionType;
-import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisDto;
@@ -25,8 +24,6 @@ import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.filter.ProcessQueryFilterEnhancer;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
-import org.camunda.optimize.service.security.EngineDefinitionAuthorizationService;
-import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
@@ -35,7 +32,6 @@ import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.stereotype.Component;
 
-import javax.ws.rs.ForbiddenException;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.ZoneId;
@@ -60,21 +56,10 @@ public class BranchAnalysisReader {
 
   private final OptimizeElasticsearchClient esClient;
   private final DefinitionService definitionService;
-  private final EngineDefinitionAuthorizationService definitionAuthorizationService;
   private final ProcessQueryFilterEnhancer queryFilterEnhancer;
   private final ProcessDefinitionReader processDefinitionReader;
 
-  public BranchAnalysisDto branchAnalysis(final String userId,
-                                          final BranchAnalysisQueryDto request,
-                                          final ZoneId timezone) {
-    ValidationHelper.validate(request);
-    if (!definitionAuthorizationService.isAuthorizedToSeeProcessDefinition(
-      userId, IdentityType.USER, request.getProcessDefinitionKey(), request.getTenantIds()
-    )) {
-      throw new ForbiddenException(
-        "Current user is not authorized to access data of the provided process definition and tenant combination");
-    }
-
+  public BranchAnalysisDto branchAnalysis(final BranchAnalysisQueryDto request, final ZoneId timezone) {
     log.debug(
       "Performing branch analysis on process definition with key [{}] and versions [{}]",
       request.getProcessDefinitionKey(),

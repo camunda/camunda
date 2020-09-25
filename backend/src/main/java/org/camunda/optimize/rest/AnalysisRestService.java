@@ -15,8 +15,8 @@ import org.camunda.optimize.dto.optimize.rest.analysis.FlowNodeOutlierParameters
 import org.camunda.optimize.dto.optimize.rest.analysis.FlowNodeOutlierVariableParametersRestDto;
 import org.camunda.optimize.dto.optimize.rest.analysis.ProcessDefinitionParametersRestDto;
 import org.camunda.optimize.rest.providers.Secured;
+import org.camunda.optimize.service.BranchAnalysisService;
 import org.camunda.optimize.service.OutlierAnalysisService;
-import org.camunda.optimize.service.es.reader.BranchAnalysisReader;
 import org.camunda.optimize.service.export.CSVUtils;
 import org.camunda.optimize.service.security.SessionService;
 import org.springframework.stereotype.Component;
@@ -44,7 +44,7 @@ import static org.camunda.optimize.rest.util.TimeZoneUtil.extractTimezone;
 @Path("/analysis")
 public class AnalysisRestService {
 
-  private final BranchAnalysisReader branchAnalysisReader;
+  private final BranchAnalysisService branchAnalysisService;
   private final OutlierAnalysisService outlierAnalysisService;
   private final SessionService sessionService;
 
@@ -62,7 +62,7 @@ public class AnalysisRestService {
 
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
     final ZoneId timezone = extractTimezone(requestContext);
-    return branchAnalysisReader.branchAnalysis(userId, branchAnalysisDto, timezone);
+    return branchAnalysisService.branchAnalysis(userId, branchAnalysisDto, timezone);
   }
 
   @GET
