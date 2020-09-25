@@ -9,13 +9,12 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {config} from '../config';
 import {setup} from './InstancesTable.setup';
-import {DEFAULT_TIMEOUT} from './constants';
 
-fixture('IntancesTable')
+fixture('InstancesTable')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
-    await wait(DEFAULT_TIMEOUT);
+    await wait();
   })
 
   .beforeEach(async (t) => {

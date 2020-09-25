@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const wait = (ms) => {
+const wait = (ms = 20000) => {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });

@@ -9,13 +9,13 @@ import {setup} from './Instance.setup.js';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
-import {DATE_REGEX, DEFAULT_TIMEOUT} from './constants';
+import {DATE_REGEX} from './constants';
 
 fixture('Instance')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
-    await wait(DEFAULT_TIMEOUT);
+    await wait();
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);

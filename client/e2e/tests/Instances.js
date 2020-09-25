@@ -10,13 +10,12 @@ import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {getPathname} from './utils/getPathname';
 import {screen, within} from '@testing-library/testcafe';
-import {DEFAULT_TIMEOUT} from './constants';
 
 fixture('Instances')
   .page(config.endpoint)
   .before(async (ctx) => {
     ctx.initialData = await setup();
-    await wait(DEFAULT_TIMEOUT);
+    await wait();
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);

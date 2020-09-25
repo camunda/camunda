@@ -9,13 +9,12 @@ import {setup} from './Dashboard.setup.js';
 import {demoUser} from './utils/Roles';
 import {wait} from './utils/wait';
 import {screen, within} from '@testing-library/testcafe';
-import {DEFAULT_TIMEOUT} from './constants';
 
 fixture('Dashboard')
   .page(config.endpoint)
   .before(async () => {
     await setup();
-    await wait(DEFAULT_TIMEOUT);
+    await wait();
   })
   .beforeEach(async (t) => {
     await t.useRole(demoUser);
