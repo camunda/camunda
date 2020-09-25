@@ -10,20 +10,19 @@ import styled from 'styled-components';
 import {ReactComponent as LeftBar} from 'modules/icons/left-bar.svg';
 
 const ExpandedPanel = styled.div`
+  width: 478px;
   height: 100%;
 `;
 
 const CollapsedPanel = styled.div`
-  cursor: pointer;
+  width: 57px;
   height: 100%;
+  cursor: pointer;
 `;
 
 const Title = styled.div`
+  margin-top: 30px;
   transform: rotate(-90deg);
-  transform-origin: 0 0;
-  position: absolute;
-  top: 68px;
-  left: 16px;
   font-size: 15px;
   font-weight: bold;
   color: ${({theme}) => theme.colors.ui06};
@@ -46,14 +45,10 @@ const LeftIcon = styled(LeftBar)`
   color: ${({theme}) => theme.colors.ui06};
 `;
 
-interface ContainerProps {
-  isExpanded: boolean;
-}
-
-const Container = styled.div<ContainerProps>`
-  min-width: ${({isExpanded}) => (isExpanded ? '478px' : '57px')};
+const Container = styled.div`
+  width: fit-content;
   border: 1px solid ${({theme}) => theme.colors.ui05};
-  position: relative;
+  border-top-right-radius: 3px;
 `;
 
 export {

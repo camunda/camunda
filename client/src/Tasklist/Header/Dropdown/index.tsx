@@ -16,8 +16,12 @@ import {
   GetCurrentUser,
 } from 'modules/queries/get-current-user';
 
-const Dropdown: React.FC = () => {
-  const [isOpen, setIsOpen] = useState(false);
+interface Props {
+  isInitiallyOpen?: boolean;
+}
+
+const Dropdown: React.FC<Props> = ({isInitiallyOpen}) => {
+  const [isOpen, setIsOpen] = useState<boolean>(isInitiallyOpen ?? false);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const {data, loading} = useQuery<GetCurrentUser>(GET_CURRENT_USER);
 

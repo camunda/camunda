@@ -7,13 +7,12 @@
 /* istanbul ignore file */
 
 import styled from 'styled-components';
-import {Panel} from './Panel';
-import {CollapsablePanel} from './CollapsablePanel';
+import {Panel} from 'modules/components/Panel';
+import {CollapsablePanel} from 'modules/components/CollapsablePanel';
 
 const TasksPanel = styled(CollapsablePanel)`
   height: 100%;
   background-color: ${({theme}) => theme.colors.ui02};
-  border-top-right-radius: 3px;
 `;
 
 const Container = styled.main`

@@ -8,6 +8,7 @@ import styled from 'styled-components';
 
 const Container = styled.div`
   position: relative;
+  width: fit-content;
 `;
 interface ButtonProps {
   onKeyDown: (e: React.KeyboardEvent<Element>) => void;
@@ -29,21 +30,15 @@ const LabelWrapper = styled.div`
 `;
 
 const Menu = styled.ul`
-  /* Positioning */
   position: absolute;
-  right: 0;
-
-  /* Display & Box Model */
+  right: -8px;
   min-width: 186px;
   margin-top: 5px;
   padding-left: 0px;
   box-shadow: ${({theme}) => theme.shadows.dropdownMenu};
   border: 1px solid ${({theme}) => theme.colors.ui05};
   border-radius: 3px;
-
-  /* Color */
   background-color: ${({theme}) => theme.colors.ui02};
-  color: ${({theme}) => theme.colors.ui06};
 `;
 
 export {Container, Button, LabelWrapper, Menu};

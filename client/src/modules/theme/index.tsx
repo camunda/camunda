@@ -111,9 +111,6 @@ const theme = {
     link: {
       active: '#eaf3ff',
     },
-    input: {
-      placeholder: 'rgba(98, 98, 110, 0.9)',
-    },
   },
   shadows: {
     select: `0 2px 2px 0 ${rgba(palette.black, 0.08)}`,

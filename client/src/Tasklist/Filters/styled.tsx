@@ -6,29 +6,8 @@
 
 import styled from 'styled-components';
 
-import DownIcon from 'modules/icons/down.svg';
-
-const Select = styled.select`
-  width: 100%;
-  appearance: none;
-  border-radius: 3px;
-  box-shadow: ${({theme}) => theme.shadows.select};
-  border: solid 1px ${({theme}) => theme.colors.ui03};
-  font-size: 13px;
-  font-weight: 600;
-  color: ${({theme}) => theme.colors.ui07};
-  padding: 4px 8px;
-  background: ${({theme}) => theme.colors.ui01} url(${DownIcon}) no-repeat;
-  background-position: calc(100% - 5px) center;
-  outline: none;
-
-  &:focus {
-    box-shadow: ${({theme}) => theme.shadows.fakeOutline};
-  }
-`;
-
 const Container = styled.div`
   padding: 22px 20px 20px 20px;
 `;
 
-export {Select, Container};
+export {Container};

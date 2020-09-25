@@ -9,7 +9,8 @@ import {Form, Field} from 'react-final-form';
 import {useHistory} from 'react-router-dom';
 
 import {Pages} from 'modules/constants/pages';
-import {Select, Container} from './styled';
+import {Select} from 'modules/components/Select';
+import {Container} from './styled';
 import {OPTIONS} from './constants';
 import {getSearchParam} from 'modules/utils/getSearchParam';
 import {FilterValues} from 'modules/constants/filterValues';

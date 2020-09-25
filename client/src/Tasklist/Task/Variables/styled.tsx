@@ -5,6 +5,7 @@
  */
 
 import styled, {css} from 'styled-components';
+import {rgba} from 'polished';
 import {ReactComponent as CrossIcon} from 'modules/icons/cross.svg';
 import {ReactComponent as PlusIcon} from 'modules/icons/plus.svg';
 import {Button} from 'modules/components/Button';
@@ -12,6 +13,11 @@ import {ReactComponent as Warning} from 'modules/icons/warning.svg';
 import BasicTextareaAutosize from 'react-textarea-autosize';
 import {IconButton as BaseIconButton} from 'modules/components/IconButton';
 import {RowTH as BaseRowTH, ColumnTH} from 'modules/components/Table';
+
+const WarningIcon = styled(Warning)`
+  width: 16px;
+  margin-bottom: 1px;
+`;
 
 const Container = styled.div`
   display: grid;
@@ -50,14 +56,14 @@ const RowTH = styled(BaseRowTH)`
 const VariableNameTH = styled(ColumnTH)`
   position: sticky;
   top: 0;
-  background-color: ${({theme}) => theme.colors.white};
+  background-color: ${({theme}) => theme.colors.ui04};
   width: 207px;
 `;
 
 const VariableValueTH = styled(ColumnTH)`
   position: sticky;
   top: 0;
-  background-color: ${({theme}) => theme.colors.white};
+  background-color: ${({theme}) => theme.colors.ui04};
 `;
 
 const NameInputTD = styled.td`
@@ -70,13 +76,17 @@ const ValueInputTD = styled.td`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-right: 8px;
 `;
 
 const IconTD = styled.td`
   width: 69px;
   vertical-align: top;
   padding-top: 10px;
+  min-width: 104px;
+
+  & ${WarningIcon} {
+    margin-left: 14px;
+  }
 `;
 
 const CreateButton = styled(Button)`
@@ -102,30 +112,29 @@ const Plus = styled(PlusIcon)`
 const InputStyles = css`
   padding: 6px 13px 4px 8px;
   margin: 4px 0 4px 4px;
-
   border: 1px solid ${({theme}) => theme.colors.ui05};
   border-radius: 3px;
-
   background-color: ${({theme}) => theme.colors.ui04};
-  color: ${({theme}) => theme.colors.ui09};
-
+  color: ${({theme}) => theme.colors.ui07};
   font-family: IBMPlexSans;
   font-size: 14px;
   line-height: 18px;
+  outline: none;
 
   &::placeholder {
-    ${({theme}) => theme.colors.input.placeholder};
+    color: ${({theme}) => rgba(theme.colors.ui06, 0.9)};
     font-style: italic;
   }
-
-  outline: none;
 
   &:focus {
     box-shadow: ${({theme}) => theme.shadows.fakeOutline};
   }
 
   &[aria-invalid='true'] {
+    border: 1px solid ${({theme}) => theme.colors.red};
+
     :focus {
+      border: 1px solid ${({theme}) => theme.colors.ui05};
       box-shadow: ${({theme}) => theme.shadows.invalidInput};
     }
   }
@@ -145,19 +154,14 @@ const EditTextarea = styled(BasicTextareaAutosize)`
 `;
 
 const IconButton = styled(BaseIconButton)`
-  margin-right: 15px;
-  margin-left: 10px;
+  margin-right: 22px;
+  margin-left: 28px;
 `;
 
 const IconContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: flex-end;
-`;
-
-const WarningIcon = styled(Warning)`
-  width: 16px;
-  margin-bottom: 1px;
 `;
 
 export {

@@ -5,7 +5,7 @@
  */
 
 import React, {useState} from 'react';
-import {Panel} from '../Panel';
+import {Panel} from 'modules/components/Panel';
 import {
   ExpandedPanel,
   CollapsedPanel,
@@ -19,22 +19,33 @@ interface Props extends React.ComponentProps<typeof Panel> {
   children: React.ReactNode;
   title: string;
   className?: string;
+  isInitiallyCollapsed?: boolean;
 }
 
-const CollapsablePanel: React.FC<Props> = (props) => {
+const CollapsablePanel: React.FC<Props> = ({
+  isInitiallyCollapsed,
+  ...props
+}) => {
   const {title, children, className} = props;
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(isInitiallyCollapsed ?? false);
 
   return (
-    <Container isExpanded={isExpanded} className={className}>
-      {isExpanded ? (
+    <Container className={className}>
+      {isCollapsed ? (
+        <CollapsedPanel
+          data-testid="collapsed-panel"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+        >
+          <Title>{title}</Title>
+        </CollapsedPanel>
+      ) : (
         <ExpandedPanel data-testid="expanded-panel">
           <Panel
             {...props}
             Icon={
               <CollapseButton
                 data-testid="collapse-button"
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={() => setIsCollapsed(!isCollapsed)}
               >
                 <LeftIcon />
               </CollapseButton>
@@ -43,13 +54,6 @@ const CollapsablePanel: React.FC<Props> = (props) => {
             {children}
           </Panel>
         </ExpandedPanel>
-      ) : (
-        <CollapsedPanel
-          data-testid="collapsed-panel"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          <Title>{title}</Title>
-        </CollapsedPanel>
       )}
     </Container>
   );
