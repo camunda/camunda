@@ -15,4 +15,8 @@ public interface StreamProcessorLifecycleAware {
   default void onClose() {}
 
   default void onFailed() {}
+
+  default void onPaused() {}
+
+  default void onResumed() {}
 }
