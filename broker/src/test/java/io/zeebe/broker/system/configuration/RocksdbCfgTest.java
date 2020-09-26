@@ -28,4 +28,18 @@ public final class RocksdbCfgTest {
     assertThat(columnFamilyOptions).containsEntry("compaction_pri", "kOldestSmallestSeqFirst");
     assertThat(columnFamilyOptions).containsEntry("write_buffer_size", "67108864");
   }
+
+  @Test
+  public void shouldSetColumnFamilyOptionsConfigFromEnvironmentVariables() {
+    // given
+    environment.put("zeebe.broker.data.rocksdb.columnFamilyOptions.arena.block.size", "16777216");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("rocksdb-cfg", environment);
+    final var rocksdb = cfg.getData().getRocksdb();
+
+    // then keys should contain underscores
+    final var columnFamilyOptions = rocksdb.getColumnFamilyOptions();
+    assertThat(columnFamilyOptions).containsEntry("arena_block_size", "16777216");
+  }
 }

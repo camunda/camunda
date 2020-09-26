@@ -58,6 +58,7 @@ public final class DataCfg implements ConfigurationEntry {
       diskUsageReplicationWatermark = DISABLED_DISK_USAGE_WATERMARK;
       diskUsageCommandWatermark = DISABLED_DISK_USAGE_WATERMARK;
     }
+    rocksdb.init(globalConfig, brokerBase);
   }
 
   public List<String> getDirectories() {
