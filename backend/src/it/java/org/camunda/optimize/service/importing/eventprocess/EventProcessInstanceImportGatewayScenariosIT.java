@@ -53,7 +53,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, THIRD_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -96,7 +97,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, FOURTH_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -134,7 +136,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, FOURTH_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -173,7 +176,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, FIFTH_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -212,7 +216,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertActiveProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -260,7 +265,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, FOURTH_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -333,7 +339,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertActiveProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -391,7 +398,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, THIRD_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -437,7 +445,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, THIRD_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -483,7 +492,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, FOURTH_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -523,7 +533,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertCompletedProcessInstance(processInstanceDto, null, SECOND_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -558,7 +569,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertActiveProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -602,7 +614,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, FOURTH_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -655,7 +668,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, FOURTH_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,
@@ -697,7 +711,8 @@ public class EventProcessInstanceImportGatewayScenariosIT extends AbstractEventP
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertCompletedProcessInstance(processInstanceDto, FIRST_EVENT_DATETIME, FIFTH_EVENT_DATETIME);
         assertFlowNodeEventsForProcessInstance(
           processInstanceDto,

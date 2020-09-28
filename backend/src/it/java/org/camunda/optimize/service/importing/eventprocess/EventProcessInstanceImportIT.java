@@ -163,7 +163,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -256,7 +257,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -323,7 +325,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -391,7 +394,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -453,7 +457,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -528,7 +533,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(
@@ -587,7 +593,8 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .isEqualToIgnoringGivenFields(

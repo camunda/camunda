@@ -53,7 +53,8 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
@@ -91,7 +92,8 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
@@ -129,7 +131,8 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           tracingVariableKeyAndValue.getValue().toString(),
@@ -178,7 +181,8 @@ public class EventProcessInstanceImportVariableScenariosIT extends AbstractEvent
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),

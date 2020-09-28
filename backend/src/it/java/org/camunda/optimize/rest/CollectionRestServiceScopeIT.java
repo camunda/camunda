@@ -354,7 +354,8 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     assertThat(scope)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         scopeEntryDto -> assertThat(scopeEntryDto.getTenants())
           .extracting(TenantDto::getId)
           .containsExactly(null, tenant1)
@@ -386,7 +387,8 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     assertThat(scope)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         scopeEntryDto -> assertThat(scopeEntryDto.getTenants())
           .extracting(TenantDto::getId)
           .containsExactly((String) null)
@@ -432,7 +434,8 @@ public class CollectionRestServiceScopeIT extends AbstractIT {
 
     assertThat(scope)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         scopeEntryDto -> assertThat(scopeEntryDto.getTenants())
           .extracting(TenantDto::getId)
           .containsExactly(null, tenant1)

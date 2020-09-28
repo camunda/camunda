@@ -131,7 +131,8 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.state, PROCESS_INSTANCE_STATE_COMPLETED)
@@ -177,7 +178,8 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .extracting(ProcessInstanceDto::getEvents)
@@ -249,7 +251,8 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.state, PROCESS_INSTANCE_STATE_COMPLETED)
@@ -317,7 +320,8 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.state, PROCESS_INSTANCE_STATE_COMPLETED)

@@ -90,7 +90,8 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     // then
     assertThat(variableResponse)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(varName -> {
+      .singleElement()
+      .satisfies(varName -> {
         assertThat(varName.getId()).isNotNull();
         assertThat(varName.getName()).endsWith("2");
         assertThat(varName.getType()).isEqualTo(VariableType.STRING);
@@ -209,7 +210,8 @@ public abstract class DecisionVariableNameRetrievalIT extends AbstractDecisionDe
     // then
     assertThat(variableResponse)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(var -> assertThat(var.getName()).isEqualTo("expectedVar"));
+      .singleElement()
+      .satisfies(var -> assertThat(var.getName()).isEqualTo("expectedVar"));
   }
 
   @Test

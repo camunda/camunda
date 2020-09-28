@@ -27,7 +27,6 @@ public class BpmnModels {
   public static final String TASK_ID_1 = "serviceTask1";
   public static final String TASK_ID_2 = "serviceTask2";
   public static final String MERGE_GATEWAY_ID = "mergeExclusiveGateway";
-  public static final String END_EVENT_ID = "endEvent";
   public static final String DEFAULT_TOPIC = "MyTopic";
 
   private static final String END_EVENT_1 = "endEvent1";
@@ -136,7 +135,7 @@ public class BpmnModels {
         .serviceTask(TASK_ID_1)
         .camundaExpression("${true}")
       .exclusiveGateway(MERGE_GATEWAY_ID)
-        .endEvent(END_EVENT_ID)
+        .endEvent(END_EVENT)
       .moveToNode(SPLITTING_GATEWAY_ID)
         .condition("no", "${!goToTask1}")
         .serviceTask(TASK_ID_2)

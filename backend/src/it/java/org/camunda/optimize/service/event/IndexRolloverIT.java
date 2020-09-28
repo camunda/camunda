@@ -125,11 +125,14 @@ public class IndexRolloverIT extends AbstractIT {
       VARIABLE_UPDATE_INSTANCE_INDEX_NAME
     );
     assertThat(indicesWithExternalEventWriteAliasFirstRollover).hasSize(1)
-      .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+      .singleElement()
+      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
     assertThat(indicesWithCamundaActivityWriteAliasFirstRollover).hasSize(1)
-      .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+      .singleElement()
+      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
     assertThat(indicesWithVariableUpdateInstanceWriteAliasFirstRollover).hasSize(1)
-      .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+      .singleElement()
+      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
 
     assertThat(getAllStoredExternalEvents())
       .hasSize(NUMBER_OF_EVENTS_IN_BATCH);
@@ -158,11 +161,14 @@ public class IndexRolloverIT extends AbstractIT {
       VARIABLE_UPDATE_INSTANCE_INDEX_NAME
     );
     assertThat(indicesWithExternalEventWriteAliasSecondRollover).hasSize(1)
-      .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
+      .singleElement()
+      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
     assertThat(indicesWithCamundaActivityWriteAliasSecondRollover).hasSize(1)
-      .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
+      .singleElement()
+      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
     assertThat(indicesWithVariableUpdateInstanceWriteAliasSecondRollover).hasSize(1)
-      .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
+      .singleElement()
+      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_SECOND_ROLLOVER));
     assertThat(getAllStoredExternalEvents())
       .hasSize(NUMBER_OF_EVENTS_IN_BATCH * 2);
     // Over the two imports, we expect 3 activities to be imported in the first and 5 in the second
@@ -204,11 +210,14 @@ public class IndexRolloverIT extends AbstractIT {
 
     // then
     assertThat(indicesWithExternalEventWriteAlias).hasSize(1)
-      .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+      .singleElement()
+      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
     assertThat(indicesWithCamundaActivityWriteAlias).hasSize(1)
-      .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+      .singleElement()
+      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
     assertThat(indicesWithVariableUpdateInstanceWriteAlias).hasSize(1)
-      .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+      .singleElement()
+      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
   }
 
   @Test
@@ -267,9 +276,11 @@ public class IndexRolloverIT extends AbstractIT {
 
     // then
     assertThat(indicesWithFirstCamundaActivityWriteAlias).hasSize(1)
-      .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+      .singleElement()
+      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
     assertThat(indicesWithSecondCamundaActivityWriteAlias).hasSize(1)
-      .hasOnlyOneElementSatisfying(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
+      .singleElement()
+      .satisfies(indexName -> assertThat(indexName).contains(EXPECTED_SUFFIX_AFTER_FIRST_ROLLOVER));
   }
 
   private IndexRolloverService getEventIndexRolloverService() {

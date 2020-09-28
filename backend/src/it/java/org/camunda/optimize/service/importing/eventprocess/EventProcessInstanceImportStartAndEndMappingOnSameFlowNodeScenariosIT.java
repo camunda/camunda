@@ -133,7 +133,8 @@ public class EventProcessInstanceImportStartAndEndMappingOnSameFlowNodeScenarios
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(
+      .singleElement()
+      .satisfies(
         processInstanceDto -> {
           assertThat(processInstanceDto)
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.state, PROCESS_INSTANCE_STATE_COMPLETED)

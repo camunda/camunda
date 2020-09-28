@@ -71,7 +71,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto)
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .hasFieldOrPropertyWithValue(
@@ -138,7 +139,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto)
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .hasFieldOrPropertyWithValue(
@@ -205,7 +207,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto)
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .hasFieldOrPropertyWithValue(
@@ -277,7 +280,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto)
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .hasFieldOrPropertyWithValue(
@@ -358,7 +362,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .isEmpty();
@@ -437,7 +442,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates()).isEmpty();
         assertThat(processInstanceDto.getEvents())
           .satisfies(events -> assertThat(events)
@@ -510,7 +516,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto)
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .hasFieldOrPropertyWithValue(
@@ -577,7 +584,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto)
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .hasFieldOrPropertyWithValue(
@@ -644,7 +652,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto)
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .hasFieldOrPropertyWithValue(
@@ -716,7 +725,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto)
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .hasFieldOrPropertyWithValue(
@@ -793,7 +803,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .isEmpty();
@@ -870,7 +881,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates())
           // no pending updates should be present as all adjacent updates could get merged with an activity Instance
           .isEmpty();

@@ -31,7 +31,6 @@ import org.camunda.optimize.dto.optimize.query.entity.EntityDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityType;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecisionReportDefinitionDto;
@@ -72,7 +71,6 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.es.writer.CollectionWriter.DEFAULT_COLLECTION_NAME;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
-import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_LASTNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
@@ -783,7 +781,8 @@ public class CollectionHandlingIT extends AbstractIT {
     // then only original entities exist
     esMockServer.verify(requestMatcher, VerificationTimes.once());
     assertThat(getAllStoredCollections()).extracting(CollectionDefinitionDto::getId).containsExactly(collectionId);
-    assertThat(getAllStoredProcessReports()).extracting(SingleProcessReportDefinitionDto::getId).containsExactly(reportId);
+    assertThat(getAllStoredProcessReports()).extracting(SingleProcessReportDefinitionDto::getId)
+      .containsExactly(reportId);
     assertThat(getAllStoredDashboards()).extracting(DashboardDefinitionDto::getId).containsExactly(dashboardId);
     assertThat(getAllStoredAlerts()).extracting(AlertDefinitionDto::getId).containsExactly(alertId);
   }
@@ -834,10 +833,11 @@ public class CollectionHandlingIT extends AbstractIT {
       .hasSize(1)
       .extracting(AuthorizedReportDefinitionDto::getDefinitionDto)
       .extracting(r -> (CombinedReportDefinitionDto) r)
-      .hasOnlyOneElementSatisfying(r -> assertThat(r.getId()).isEqualTo(combinedReportId))
-      .extracting(CombinedReportDefinitionDto::getData)
-      .flatExtracting(CombinedReportDataDto::getReportIds)
-      .isEmpty();
+      .singleElement()
+      .satisfies(r -> {
+        assertThat(r.getId()).isEqualTo(combinedReportId);
+        assertThat(r.getData().getReportIds()).isEmpty();
+      });
     assertThat(collectionClient.getCollectionScope(collectionId)).isEmpty();
   }
 

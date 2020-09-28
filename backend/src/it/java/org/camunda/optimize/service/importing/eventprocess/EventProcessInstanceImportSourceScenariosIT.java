@@ -68,7 +68,8 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
@@ -191,7 +192,8 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
@@ -207,7 +209,8 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     // then
     final List<EventProcessInstanceDto> secondImportProcessInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(secondImportProcessInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           processInstanceEngineDto.getBusinessKey(),
@@ -239,7 +242,8 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> assertProcessInstance(
+      .singleElement()
+      .satisfies(processInstanceDto -> assertProcessInstance(
         processInstanceDto,
         processInstanceEngineDto.getBusinessKey(),
         Arrays.asList(BPMN_START_EVENT_ID, BPMN_END_EVENT_ID)
@@ -269,7 +273,8 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           firstInstance.getBusinessKey(),
@@ -307,7 +312,8 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           variableValue,
@@ -427,7 +433,8 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     // then only the instance with a business key present is saved
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+      .singleElement()
+      .satisfies(processInstanceDto -> {
         assertProcessInstance(
           processInstanceDto,
           instanceWithBusinessKey.getBusinessKey(),
@@ -477,7 +484,8 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> assertProcessInstance(
+      .singleElement()
+      .satisfies(processInstanceDto -> assertProcessInstance(
         processInstanceDto,
         secondProcessInstanceEngineDto.getBusinessKey(),
         Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
@@ -523,7 +531,8 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> assertProcessInstance(
+      .singleElement()
+      .satisfies(processInstanceDto -> assertProcessInstance(
         processInstanceDto,
         processInstanceEngineDto.getBusinessKey(),
         Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
@@ -593,7 +602,8 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
     // then
     final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
     assertThat(processInstances)
-      .hasOnlyOneElementSatisfying(processInstanceDto -> assertProcessInstance(
+      .singleElement()
+      .satisfies(processInstanceDto -> assertProcessInstance(
         processInstanceDto,
         processInstanceEngineDto.getBusinessKey(),
         Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE)

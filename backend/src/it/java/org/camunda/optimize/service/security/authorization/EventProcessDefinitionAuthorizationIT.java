@@ -484,7 +484,8 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     // then
     assertThat(definitionsWithVersionsAndTenants)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(tenantWithDefinitionsDto -> {
+      .singleElement()
+      .satisfies(tenantWithDefinitionsDto -> {
         assertThat(tenantWithDefinitionsDto)
           .hasFieldOrPropertyWithValue("id", null);
         assertThat(tenantWithDefinitionsDto.getDefinitions())
@@ -517,7 +518,8 @@ public class EventProcessDefinitionAuthorizationIT extends AbstractIT {
     // then
     assertThat(definitionsWithVersionsAndTenants)
       .hasSize(1)
-      .hasOnlyOneElementSatisfying(tenantWithDefinitionsDto -> {
+      .singleElement()
+      .satisfies(tenantWithDefinitionsDto -> {
         assertThat(tenantWithDefinitionsDto)
           .hasFieldOrPropertyWithValue("id", null);
         assertThat(tenantWithDefinitionsDto.getDefinitions())

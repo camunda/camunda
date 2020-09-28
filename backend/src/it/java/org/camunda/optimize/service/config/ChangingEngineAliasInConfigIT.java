@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_IDS;
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
-import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID;
+import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
 import static org.camunda.optimize.util.BpmnModels.TASK_ID_1;
 import static org.camunda.optimize.util.BpmnModels.TASK_ID_2;
@@ -120,7 +120,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
       Lists.newArrayList(ALL_VERSIONS),
       DEFAULT_TENANT_IDS,
       SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
+      END_EVENT
     );
 
     // then the analysis should be fine even if it would include a definition from a non existing engine alias

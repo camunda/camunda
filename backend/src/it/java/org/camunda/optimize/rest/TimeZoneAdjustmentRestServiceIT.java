@@ -73,7 +73,6 @@ import static org.camunda.optimize.test.util.DateModificationHelper.truncateToSt
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
-import static org.camunda.optimize.util.BpmnModels.END_EVENT_ID;
 import static org.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
 
 public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT {
@@ -914,7 +913,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
       Lists.newArrayList(String.valueOf(gatewayDefinition.getVersion())),
       Collections.singletonList(null),
       SPLITTING_GATEWAY_ID,
-      END_EVENT_ID
+      END_EVENT
     );
 
     List<ProcessFilterDto<?>> relativeStartDateFilter =
