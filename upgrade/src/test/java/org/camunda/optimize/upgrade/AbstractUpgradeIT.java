@@ -128,7 +128,7 @@ public abstract class AbstractUpgradeIT {
   }
 
   protected void cleanAllDataFromElasticsearch() {
-    prefixAwareClient.deleteIndexByRawIndexName("_all");
+    prefixAwareClient.deleteIndexByRawIndexNames("_all");
   }
 
   @SneakyThrows

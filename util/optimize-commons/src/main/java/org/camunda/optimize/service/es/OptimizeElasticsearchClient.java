@@ -222,30 +222,31 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
 
   public void deleteIndex(final IndexMappingCreator indexMappingCreator) {
     String indexName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMappingCreator);
-    deleteIndexByRawIndexName(indexName);
+    deleteIndexByRawIndexNames(indexName);
   }
 
   /**
    * Deletes an index and retries in recoverable situations (e.g. snapshot in progress).
    * This expects the plain index name to be provided, no automatic prefixing or other modifications will be applied.
    *
-   * @param indexName plain index name to delete
+   * @param indexNames plain index names to delete
    */
-  public void deleteIndexByRawIndexName(final String indexName) {
-    log.debug("Deleting index [{}].", indexName);
+  public void deleteIndexByRawIndexNames(final String... indexNames) {
+    final String indexNamesString = Arrays.toString(indexNames);
+    log.debug("Deleting indices [{}].", indexNamesString);
     try {
-      esClientSnapshotFailsafe("DeleteIndex: " + indexName)
-        .get(() -> highLevelClient.indices().delete(new DeleteIndexRequest(indexName), RequestOptions.DEFAULT));
+      esClientSnapshotFailsafe("DeleteIndex: " + indexNamesString)
+        .get(() -> highLevelClient.indices().delete(new DeleteIndexRequest(indexNames), RequestOptions.DEFAULT));
     } catch (FailsafeException failsafeException) {
       final Throwable cause = failsafeException.getCause();
       if (cause instanceof ElasticsearchStatusException) {
         throw (ElasticsearchStatusException) cause;
       } else {
-        String errorMessage = String.format("Could not delete index [%s]!", indexName);
+        String errorMessage = String.format("Could not delete index [%s]!", indexNamesString);
         throw new OptimizeRuntimeException(errorMessage, cause);
       }
     }
-    log.debug("Successfully deleted index [{}].", indexName);
+    log.debug("Successfully deleted index [{}].", indexNamesString);
   }
 
   private FailsafeExecutor<Object> esClientSnapshotFailsafe(final String operation) {

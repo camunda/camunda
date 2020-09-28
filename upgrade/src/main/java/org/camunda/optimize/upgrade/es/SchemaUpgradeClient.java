@@ -149,7 +149,7 @@ public class SchemaUpgradeClient {
 
   public void deleteIndex(final String indexName) {
     try {
-      elasticsearchClient.deleteIndexByRawIndexName(indexName);
+      elasticsearchClient.deleteIndexByRawIndexNames(indexName);
     } catch (Exception e) {
       String errorMessage = String.format("Could not delete index [%s]!", indexName);
       throw new UpgradeRuntimeException(errorMessage, e);

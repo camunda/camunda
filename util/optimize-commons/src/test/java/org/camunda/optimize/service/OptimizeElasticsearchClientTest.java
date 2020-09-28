@@ -56,7 +56,7 @@ public class OptimizeElasticsearchClientTest {
 
     // when the delete operation is executed
     final ScheduledExecutorService deleteIndexTask = Executors.newSingleThreadScheduledExecutor();
-    deleteIndexTask.execute(() -> underTest.deleteIndexByRawIndexName("index1"));
+    deleteIndexTask.execute(() -> underTest.deleteIndexByRawIndexNames("index1"));
 
     // and hit the client which failed
     verify(highLevelRestClient.indices(), timeout(100).atLeastOnce())

@@ -43,7 +43,6 @@ import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.es.ElasticsearchHighLevelRestClientBuilder;
 import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
-import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -725,43 +724,27 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public void deleteAllExternalEventIndices() {
-    final DeleteIndexRequest deleteEventIndicesRequest = new DeleteIndexRequest(
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(
       getIndexNameService().getOptimizeIndexAliasForIndex(EXTERNAL_EVENTS_INDEX_NAME + "_*")
     );
-
-    try {
-      getOptimizeElasticClient().getHighLevelClient()
-        .indices()
-        .delete(deleteEventIndicesRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not delete all external event indices.", e);
-    }
   }
 
   public void deleteCamundaEventIndicesAndEventCountsAndTraces() {
-    final DeleteIndexRequest deleteEventIndicesRequest = new DeleteIndexRequest(
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(
       getIndexNameService().getOptimizeIndexAliasForIndex(CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX + "*"),
       getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_SEQUENCE_COUNT_INDEX_PREFIX + "*"),
       getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_TRACE_STATE_INDEX_PREFIX + "*")
     );
-
-    try {
-      getOptimizeElasticClient().getHighLevelClient()
-        .indices()
-        .delete(deleteEventIndicesRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Could not delete all event indices.", e);
-    }
   }
 
   private void deleteAllEventProcessInstanceIndices() {
-    getOptimizeElasticClient().deleteIndexByRawIndexName(
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(
       getIndexNameService().getOptimizeIndexAliasForIndex(EVENT_PROCESS_INSTANCE_INDEX_PREFIX + "*")
     );
   }
 
   public void deleteAllVariableUpdateInstanceIndices() {
-    getOptimizeElasticClient().deleteIndexByRawIndexName(
+    getOptimizeElasticClient().deleteIndexByRawIndexNames(
       getIndexNameService().getOptimizeIndexAliasForIndex(VARIABLE_UPDATE_INSTANCE_INDEX_NAME + "*")
     );
   }

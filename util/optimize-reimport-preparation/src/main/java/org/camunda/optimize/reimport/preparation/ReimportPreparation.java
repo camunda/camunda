@@ -109,7 +109,7 @@ public class ReimportPreparation {
     log.info("Finished deleting event process indices and Camunda event data from Elasticsearch.");
 
     log.info("Deleting Camunda event count/trace indices from Elasticsearch...");
-    DYNAMIC_EVENT_TRACE_INDICES_TO_DELETE.forEach(index -> prefixAwareClient.deleteIndexByRawIndexName(
+    DYNAMIC_EVENT_TRACE_INDICES_TO_DELETE.forEach(index -> prefixAwareClient.deleteIndexByRawIndexNames(
       createIndexPatternExcludingExternalEventIndexVariant(prefixAwareClient, index)
     ));
     log.info("Finished Camunda event count/trace indices from Elasticsearch.");
