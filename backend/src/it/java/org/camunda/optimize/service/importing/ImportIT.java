@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.importing;
 
 import lombok.SneakyThrows;
+import org.awaitility.Awaitility;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
@@ -22,6 +23,7 @@ import org.mockserver.model.HttpRequest;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.GET;
@@ -87,8 +89,9 @@ public class ImportIT extends AbstractImportIT {
 
     // make sure fetching endpoint is called during import
     embeddedOptimizeExtension.startContinuousImportScheduling();
-    Thread.sleep(1000);
-    esMockServer.verify(importFetcherEndpointMatcher);
+    Awaitility.catchUncaughtExceptions()
+      .timeout(10, TimeUnit.SECONDS)
+      .untilAsserted(() -> esMockServer.verify(importFetcherEndpointMatcher));
 
     // endpoint no longer fails
     esMockServer.reset();
