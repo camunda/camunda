@@ -259,14 +259,14 @@ public class ElasticSearchSchemaManager {
                                                  final String defaultAliasName,
                                                  final Set<String> additionalAliases,
                                                  final Settings indexSettings) {
-    final String templateName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(mappingCreator);
+    final String templateName = indexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(mappingCreator);
     log.info("Creating or updating template with name {}", templateName);
 
     PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(templateName)
       .version(mappingCreator.getVersion())
       .mapping(mappingCreator.getSource())
       .settings(indexSettings)
-      .patterns(Collections.singletonList(templateName));
+      .patterns(Collections.singletonList(indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(mappingCreator)));
 
     additionalAliases.stream()
       .filter(aliasName -> !aliasName.equals(defaultAliasName))
