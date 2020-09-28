@@ -126,7 +126,8 @@ test('Retry and Cancel single instance ', async (t) => {
     .ok();
 });
 
-test('Retry and cancel multiple instances ', async (t) => {
+// This test was skipped, because of OPE-1098, please unskip, when the bug is fixed
+test.skip('Retry and cancel multiple instances ', async (t) => {
   const {initialData} = t.fixtureCtx;
   const instances = initialData.batchOperationInstances.slice(0, 5);
   const instancesListItems = within(
