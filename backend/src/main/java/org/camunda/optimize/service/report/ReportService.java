@@ -158,6 +158,10 @@ public class ReportService implements CollectionReferencingService {
       .collect(toList());
   }
 
+  public List<ReportDefinitionDto> getAllReportsForIds(final List<String> reportIds) {
+    return reportReader.getAllReportsForIdsOmitXml(reportIds);
+  }
+
   private IdDto copyAndMoveReport(final String reportId,
                                   final String userId,
                                   final String collectionId,

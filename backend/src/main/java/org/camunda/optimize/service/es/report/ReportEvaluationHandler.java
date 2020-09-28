@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.mapping;
@@ -131,7 +132,11 @@ public abstract class ReportEvaluationHandler {
       singleReportIds)
       .stream()
       .filter(reportDefinition -> getAuthorizedRole(userId, reportDefinition).isPresent())
-      .peek(reportDefinition -> addAdditionalFilters(userId, reportDefinition, evaluationInfo.getAdditionalFilters()))
+      .peek(reportDefinition -> addAdditionalFiltersForAuthorizedReport(
+        userId,
+        reportDefinition,
+        evaluationInfo.getAdditionalFilters()
+      ))
       .collect(Collectors.toList());
 
     if (foundSingleReports.size() != singleReportIds.size()) {
@@ -141,17 +146,63 @@ public abstract class ReportEvaluationHandler {
     return foundSingleReports;
   }
 
-  private void addAdditionalFilters(final String userId,
-                                    final ReportDefinitionDto<?> reportDefinitionDto,
-                                    final AdditionalProcessReportEvaluationFilterDto additionalFilters) {
+  /**
+   * Checks if the user is allowed to see the given report.
+   */
+  protected abstract Optional<RoleType> getAuthorizedRole(final String userId,
+                                                          final ReportDefinitionDto report);
+
+  private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final ReportEvaluationInfo evaluationInfo,
+                                                                    final RoleType currentUserRole) {
+    if (evaluationInfo.isSharedReport()) {
+      addAdditionalFiltersForReport(evaluationInfo.getReport(), evaluationInfo.getAdditionalFilters());
+    } else {
+      addAdditionalFiltersForAuthorizedReport(
+        evaluationInfo.getUserId(),
+        evaluationInfo.getReport(),
+        evaluationInfo.getAdditionalFilters()
+      );
+    }
+    try {
+      CommandContext<ReportDefinitionDto<?>> context = CommandContext.fromReportEvaluation(evaluationInfo);
+      return singleReportEvaluator.evaluate(context);
+    } catch (OptimizeException | OptimizeValidationException e) {
+      AuthorizedReportDefinitionDto authorizedReportDefinitionDto =
+        new AuthorizedReportDefinitionDto(evaluationInfo.getReport(), currentUserRole);
+      throw new ReportEvaluationException(authorizedReportDefinitionDto, e);
+    }
+  }
+
+  private void addAdditionalFiltersForAuthorizedReport(final String userId,
+                                                       final ReportDefinitionDto<?> reportDefinitionDto,
+                                                       final AdditionalProcessReportEvaluationFilterDto additionalFilters) {
+    addAdditionalFiltersForReport(
+      reportDefinitionDto,
+      additionalFilters,
+      () -> processVariableService.getVariableNamesForAuthorizedReports(
+        userId,
+        Collections.singletonList(reportDefinitionDto.getId())
+      )
+    );
+  }
+
+  private void addAdditionalFiltersForReport(final ReportDefinitionDto<?> reportDefinitionDto,
+                                             final AdditionalProcessReportEvaluationFilterDto additionalFilters) {
+    addAdditionalFiltersForReport(
+      reportDefinitionDto,
+      additionalFilters,
+      () -> processVariableService.getVariableNamesForReports(Collections.singletonList(reportDefinitionDto.getId()))
+    );
+  }
+
+  private void addAdditionalFiltersForReport(final ReportDefinitionDto<?> reportDefinitionDto,
+                                             final AdditionalProcessReportEvaluationFilterDto additionalFilters,
+                                             Supplier<List<ProcessVariableNameResponseDto>> varNameSupplier) {
     if (additionalFilters != null && !CollectionUtils.isEmpty(additionalFilters.getFilter())) {
       if (reportDefinitionDto instanceof SingleProcessReportDefinitionDto) {
         SingleProcessReportDefinitionDto definitionDto = (SingleProcessReportDefinitionDto) reportDefinitionDto;
         Map<VariableType, Set<String>> variableFiltersByTypeForReport =
-          processVariableService.getVariableNamesForReports(
-            userId,
-            Collections.singletonList(definitionDto.getId())
-          )
+          varNameSupplier.get()
             .stream()
             .collect(Collectors.groupingBy(
               ProcessVariableNameResponseDto::getType,
@@ -182,25 +233,6 @@ public abstract class ReportEvaluationHandler {
           reportDefinitionDto.getId()
         );
       }
-    }
-  }
-
-  /**
-   * Checks if the user is allowed to see the given report.
-   */
-  protected abstract Optional<RoleType> getAuthorizedRole(final String userId,
-                                                          final ReportDefinitionDto report);
-
-  private ReportEvaluationResult evaluateSingleReportWithErrorCheck(final ReportEvaluationInfo evaluationInfo,
-                                                                    final RoleType currentUserRole) {
-    addAdditionalFilters(evaluationInfo.getUserId(), evaluationInfo.getReport(), evaluationInfo.getAdditionalFilters());
-    try {
-      CommandContext<ReportDefinitionDto<?>> context = CommandContext.fromReportEvaluation(evaluationInfo);
-      return singleReportEvaluator.evaluate(context);
-    } catch (OptimizeException | OptimizeValidationException e) {
-      AuthorizedReportDefinitionDto authorizedReportDefinitionDto =
-        new AuthorizedReportDefinitionDto(evaluationInfo.getReport(), currentUserRole);
-      throw new ReportEvaluationException(authorizedReportDefinitionDto, e);
     }
   }
 

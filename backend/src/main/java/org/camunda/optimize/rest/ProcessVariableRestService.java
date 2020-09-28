@@ -50,7 +50,7 @@ public class ProcessVariableRestService {
   public List<ProcessVariableNameResponseDto> getVariableNamesForReports(@Context ContainerRequestContext requestContext,
                                                                          GetVariableNamesForReportsRequestDto requestDto) {
     String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    return processVariableService.getVariableNamesForReports(userId, requestDto.getReportIds());
+    return processVariableService.getVariableNamesForAuthorizedReports(userId, requestDto.getReportIds());
   }
 
   @POST

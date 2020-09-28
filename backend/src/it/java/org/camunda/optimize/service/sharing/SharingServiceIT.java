@@ -115,10 +115,65 @@ public class SharingServiceIT extends AbstractSharingIT {
   }
 
   @Test
-  public void individualReportShareCanBeEvaluatedWithAdditionalFilter() {
+  public void dashboardReportShareCanBeEvaluatedWithAdditionalFilter() {
     // given a report with a completed instance
     String reportId = createReportWithInstance();
     String dashboardId = addEmptyDashboardToOptimize();
+    addReportToDashboard(dashboardId, reportId);
+    String dashboardShareId = addShareForDashboard(dashboardId);
+
+    Response response = sharingClient.getDashboardShareResponse(dashboardId);
+    assertThat(response.getStatus()).isEqualTo(Response.Status.OK.getStatusCode());
+
+    // when no filters are applied
+    AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
+      evaluateDashboardReport(reportId, dashboardShareId);
+
+    // then all instances are included in response
+    assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(1L);
+    assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
+
+    // when running instance filter is applied
+    evaluationResult = evaluateDashboardReport(reportId, dashboardShareId, runningInstanceFilter());
+
+    // then instances is filtered from result
+    assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(0L);
+    assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
+
+    // when variable instance filter is applied that is not part of report
+    evaluationResult = evaluateDashboardReport(reportId, dashboardShareId, variableInFilter());
+
+    // then filter is ignored and instance is part of result
+    assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(1L);
+    assertThat(evaluationResult.getResult().getInstanceCountWithoutFilters()).isEqualTo(1L);
+  }
+
+  @Test
+  public void collectionSharedReportCanBeEvaluated() {
+    // given
+    final String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
+
+    String reportId = createReportWithInstance(DEFAULT_DEFINITION_KEY, collectionId);
+    String reportShareId = addShareForReport(reportId);
+
+    final AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto> evaluationResult =
+      embeddedOptimizeExtension.getRequestExecutor()
+        .buildEvaluateSharedReportRequest(reportShareId)
+        .withoutAuthentication()
+        .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {
+        });
+
+    assertThat(evaluationResult.getResult().getInstanceCount()).isEqualTo(1L);
+    assertThat(evaluationResult.getResult().getData()).hasSize(1);
+  }
+
+  @Test
+  public void collectionDashboardReportShareCanBeEvaluatedWithAdditionalFilter() {
+    // given
+    final String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
+
+    String reportId = createReportWithInstance(DEFAULT_DEFINITION_KEY, collectionId);
+    final String dashboardId = dashboardClient.createEmptyDashboard(collectionId);
     addReportToDashboard(dashboardId, reportId);
     String dashboardShareId = addShareForDashboard(dashboardId);
 
@@ -988,6 +1043,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     final AdditionalProcessReportEvaluationFilterDto filters) {
     return embeddedOptimizeExtension.getRequestExecutor()
       .buildEvaluateSharedDashboardReportRequest(dashboardShareId, rawDataReportId, paginationRequestDto, filters)
+      .withoutAuthentication()
       .execute(new TypeReference<AuthorizedProcessReportEvaluationResultDto<RawDataProcessReportResultDto>>() {
       });
   }

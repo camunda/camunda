@@ -715,11 +715,11 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildEvaluateSharedDashboardReportRequest(String dashboardShareId,
                                                                            String reportId,
                                                                            PaginationRequestDto paginationRequestDto,
-                                                                           AdditionalProcessReportEvaluationFilterDto filters) {
+                                                                           AdditionalProcessReportEvaluationFilterDto filterDto) {
     this.path = "share/dashboard/" + dashboardShareId + "/report/" + reportId + "/evaluate";
     this.method = POST;
     Optional.ofNullable(paginationRequestDto).ifPresent(pagination -> addQueryParams(extractPagination(pagination)));
-    Optional.ofNullable(filters).ifPresent(filterDto -> this.body = getBody(filterDto));
+    Optional.ofNullable(filterDto).ifPresent(filters -> this.body = getBody(filters));
     return this;
   }
 

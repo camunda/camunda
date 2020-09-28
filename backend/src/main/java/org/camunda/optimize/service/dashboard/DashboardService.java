@@ -350,15 +350,14 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       .map(ReportLocationDto::getId)
       .filter(IdGenerator::isValidId)
       .collect(Collectors.toList());
-    final Map<String, List<VariableType>> possibleVarTypesByName = processVariableService.getVariableNamesForReports(
-      userId,
-      reportIdsInDashboard
-    ).stream().collect(
-      Collectors.groupingBy(
-        ProcessVariableNameResponseDto::getName,
-        Collectors.mapping(ProcessVariableNameResponseDto::getType, Collectors.toList())
-      )
-    );
+    final Map<String, List<VariableType>> possibleVarTypesByName =
+      processVariableService.getVariableNamesForAuthorizedReports(userId, reportIdsInDashboard)
+        .stream().collect(
+        Collectors.groupingBy(
+          ProcessVariableNameResponseDto::getName,
+          Collectors.mapping(ProcessVariableNameResponseDto::getType, Collectors.toList())
+        )
+      );
 
     final List<DashboardFilterDto> invalidFilters = availableFilters.stream()
       .filter(isInvalidVariableFilter(possibleVarTypesByName))

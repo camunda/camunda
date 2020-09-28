@@ -184,11 +184,11 @@ public class SharingService implements ReportReferencingService, DashboardRefere
   public AuthorizedReportEvaluationResult evaluateReportShare(final String shareId, final ZoneId timezone,
                                                               final PaginationDto paginationDto) {
     Optional<ReportShareDto> optionalReportShare = sharingReader.getReportShare(shareId);
-
     return optionalReportShare
       .map(share -> evaluateReport(ReportEvaluationInfo.builder(share.getReportId())
                                      .timezone(timezone)
                                      .pagination(paginationDto)
+                                     .isSharedReport(true)
                                      .build()))
       .orElseThrow(
         () -> new OptimizeRuntimeException("share [" + shareId + "] does not exist or is of unsupported type"));
@@ -219,6 +219,7 @@ public class SharingService implements ReportReferencingService, DashboardRefere
         .timezone(timezone)
         .additionalFilters(reportEvaluationFilter)
         .pagination(paginationDto)
+        .isSharedReport(true)
         .build());
   }
 

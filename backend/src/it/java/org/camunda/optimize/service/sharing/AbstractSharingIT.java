@@ -41,10 +41,22 @@ public abstract class AbstractSharingIT extends AbstractIT {
     return createReportWithInstance("aProcess");
   }
 
-  protected String createReportWithInstance(String definitionKey) {
+  protected String createReportWithInstance(final String definitionKey) {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess(definitionKey);
     importAllEngineEntitiesFromScratch();
     return createReport(processInstance.getProcessDefinitionKey(), Collections.singletonList("ALL"));
+  }
+
+  protected String createReportWithInstance(String definitionKey, final String collectionId) {
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess(definitionKey);
+    importAllEngineEntitiesFromScratch();
+    SingleProcessReportDefinitionDto singleProcessReportDefinitionDto = createSingleProcessReport(
+      processInstance.getProcessDefinitionKey(),
+      Collections.singletonList("ALL"),
+      ProcessReportDataType.RAW_DATA
+    );
+    singleProcessReportDefinitionDto.setCollectionId(collectionId);
+    return reportClient.createSingleProcessReport(singleProcessReportDefinitionDto);
   }
 
   protected String createReport(String definitionKey, List<String> versions) {

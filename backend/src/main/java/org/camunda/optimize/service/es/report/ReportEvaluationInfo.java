@@ -32,6 +32,7 @@ public class ReportEvaluationInfo {
   private ZoneId timezone = ZoneId.systemDefault();
   private PaginationDto pagination;
   private boolean isExport;
+  private boolean isSharedReport;
 
   public void postFetchSavedReport(final ReportReader reportReader) {
     if (reportId != null) {
@@ -79,6 +80,11 @@ public class ReportEvaluationInfo {
 
     public ReportEvaluationInfoBuilder isExport(final boolean isExport) {
       this.reportEvaluationInfo.setExport(isExport);
+      return this;
+    }
+
+    public ReportEvaluationInfoBuilder isSharedReport(final boolean isSharedReport) {
+      this.reportEvaluationInfo.setSharedReport(isSharedReport);
       return this;
     }
 
