@@ -18,12 +18,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
-import java.util.Map;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
 import java.util.Properties;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public abstract class AbstractQueryPerformanceTest {
+  protected final Logger log = LoggerFactory.getLogger(getClass());
+
   protected static final String DEFAULT_USER = "demo";
 
   private static final String PROPERTY_LOCATION = "query-performance.properties";
@@ -44,30 +54,65 @@ public abstract class AbstractQueryPerformanceTest {
     testDisplayName = testInfo.getTestMethod().map(Method::getName).orElseGet(testInfo::getDisplayName);
   }
 
-  protected long getMaxAllowedQueryTime() {
+  protected static long getMaxAllowedQueryTime() {
     String maxQueryTimeString = PROPERTIES.getProperty("camunda.optimize.test.query.max.time.in.ms");
     return Long.parseLong(maxQueryTimeString);
   }
 
-  protected int getNumberOfEntities() {
+  protected static long getMaxAllowedQueryTimeWithWarmCaches() {
+    String maxQueryTimeString = PROPERTIES.getProperty("camunda.optimize.test.query.warm.cache.max.time.in.ms");
+    return Long.parseLong(maxQueryTimeString);
+  }
+
+  protected static int getNumberOfEntities() {
     String entityCountString = PROPERTIES.getProperty("camunda.optimize.test.query.entity.count");
     return Integer.parseInt(entityCountString);
   }
 
-  protected int getNumberOfEvents() {
+  protected static int getNumberOfEvents() {
     String eventCountString = PROPERTIES.getProperty("camunda.optimize.test.query.event.count");
     return Integer.parseInt(eventCountString);
   }
 
-  protected int getNumberOfDefinitions() {
+  protected static int getNumberOfDefinitions() {
     String definitionCountString = PROPERTIES.getProperty("camunda.optimize.test.query.definition.count");
     return Integer.parseInt(definitionCountString);
   }
 
-  protected int getNumberOfDefinitionVersions() {
+  protected static int getNumberOfDefinitionVersions() {
     String definitionVersionCountString =
       PROPERTIES.getProperty("camunda.optimize.test.query.definition.version.count");
     return Integer.parseInt(definitionVersionCountString);
+  }
+
+  protected <T> void assertThatListEndpointMaxAllowedQueryTimeIsMet(final int numberOfExpectedElements,
+                                                                    final Supplier<List<T>> elementFetcher) {
+    assertThatListEndpointMaxAllowedQueryTimeIsMet(numberOfExpectedElements, elementFetcher, null, getMaxAllowedQueryTime());
+  }
+
+  protected <T> void assertThatListEndpointMaxAllowedQueryTimeIsMetForWarmCaches(final int numberOfExpectedElements,
+                                                                                 final Supplier<List<T>> elementFetcher) {
+    assertThatListEndpointMaxAllowedQueryTimeIsMet(
+      numberOfExpectedElements, elementFetcher, null, getMaxAllowedQueryTimeWithWarmCaches()
+    );
+  }
+
+  protected <T> void assertThatListEndpointMaxAllowedQueryTimeIsMet(final int numberOfExpectedElements,
+                                                                    final Supplier<List<T>> elementFetcher,
+                                                                    final Consumer<List<T>> additionalAsserts,
+                                                                    final long maxAllowedQueryTime) {
+    final Instant start = Instant.now();
+    final List<T> elements = elementFetcher.get();
+    final Instant finish = Instant.now();
+    long responseTimeMs = Duration.between(start, finish).toMillis();
+
+    // then
+    assertThat(elements).hasSize(numberOfExpectedElements);
+    if (additionalAsserts != null) {
+      additionalAsserts.accept(elements);
+    }
+    log.info("{} query response time in ms: {}", getTestDisplayName(), responseTimeMs);
+    assertThat(responseTimeMs).isLessThanOrEqualTo(maxAllowedQueryTime);
   }
 
   protected static long getImportTimeout() {
@@ -110,11 +155,6 @@ public abstract class AbstractQueryPerformanceTest {
       .name(name)
       .dmn10Xml(Dmn.convertToString(DmnModels.createDefaultDmnModel()))
       .build();
-  }
-
-  protected void addToElasticsearch(final String indexName, final Map<String, Object> docsById) {
-    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(indexName, docsById);
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
 }

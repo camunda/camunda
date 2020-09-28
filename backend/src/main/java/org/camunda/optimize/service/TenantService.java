@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.service.es.reader.TenantReader;
 import org.camunda.optimize.service.security.TenantAuthorizationService;
+import org.camunda.optimize.service.util.configuration.CacheConfiguration;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.context.ApplicationContext;
@@ -31,7 +32,7 @@ public class TenantService implements ConfigurationReloadable {
   private final TenantReader tenantReader;
   private final TenantAuthorizationService tenantAuthorizationService;
   private final ConfigurationService configurationService;
-  private final LoadingCache<String, List<TenantDto>> tenantsCache;
+  private final LoadingCache<String, List<TenantDto>> tenantsReadCache;
 
   private List<TenantDto> configuredDefaultTenants;
 
@@ -47,12 +48,12 @@ public class TenantService implements ConfigurationReloadable {
     // this cache serves the purpose to reduce the frequency an actual read is triggered
     // as the tenant data is not changing very frequently the caching is a tradeoff to
     // reduce the latency of processing requests where multiple authorization checks are done in a short amount of time
-    // (mostly listing endpoints for reports and process/decision definitions.
-    // the cache time is still kept short to 1s assuming regular request won't exceed that time
-    // and to still have a recent state
-    tenantsCache = Caffeine.newBuilder()
+    // (mostly listing endpoints for reports and process/decision definitions)
+    final CacheConfiguration tenantCacheConfiguration = configurationService.getCaches().getTenants();
+    tenantsReadCache = Caffeine.newBuilder()
+      // as the cache holds only one entry being the global list of all tenants
       .maximumSize(1)
-      .expireAfterAccess(1, TimeUnit.SECONDS)
+      .expireAfterWrite(tenantCacheConfiguration.getDefaultTtlMillis(), TimeUnit.MILLISECONDS)
       .build(key -> fetchTenants());
   }
 
@@ -92,7 +93,7 @@ public class TenantService implements ConfigurationReloadable {
   }
 
   public List<TenantDto> getTenants() {
-    return tenantsCache.get("getTenants");
+    return tenantsReadCache.get("getTenants");
   }
 
   public boolean isMultiTenantEnvironment() {
@@ -120,6 +121,6 @@ public class TenantService implements ConfigurationReloadable {
   @Override
   public void reloadConfiguration(final ApplicationContext context) {
     initDefaultTenants();
-    tenantsCache.invalidateAll();
+    tenantsReadCache.invalidateAll();
   }
 }

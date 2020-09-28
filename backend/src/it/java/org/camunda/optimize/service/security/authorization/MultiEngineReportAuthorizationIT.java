@@ -214,14 +214,17 @@ public class MultiEngineReportAuthorizationIT extends AbstractMultiEngineIT {
 
     switch (definitionResourceType) {
       case RESOURCE_TYPE_PROCESS_DEFINITION:
-        deployAndStartProcessDefinitionForAllEngines(definitionKey, definitionKey, tenantId1, tenantId2);
+        // deploying with null tenants as tenants are not present in engine when using default engine tenants
+        deployAndStartProcessDefinitionForAllEngines(definitionKey, definitionKey, null, null);
         break;
       case RESOURCE_TYPE_DECISION_DEFINITION:
-        deployAndStartDecisionDefinitionForAllEngines(definitionKey, definitionKey, tenantId1, tenantId2);
+        // deploying with null tenants as tenants are not present in engine when using default engine tenants
+        deployAndStartDecisionDefinitionForAllEngines(definitionKey, definitionKey, null, null);
         break;
       default:
         throw new OptimizeIntegrationTestException("Unsupported resourceType: " + definitionResourceType);
     }
+
     importAllEngineEntitiesFromScratch();
 
     final SingleReportDataDto multiTenantReport = constructReportData(

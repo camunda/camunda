@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationParser.parseConfigFromLocations;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.AVAILABLE_LOCALES;
+import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.CACHES_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.EVENT_BASED_PROCESS_CONFIGURATION;
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.FALLBACK_LOCALE;
@@ -184,6 +185,8 @@ public class ConfigurationService {
   private EventBasedProcessConfiguration eventBasedProcessConfiguration;
 
   private TelemetryConfiguration telemetryConfiguration;
+
+  private GlobalCacheConfiguration caches;
 
   /**
    * This method is needed so jackson can deserialize/serialize
@@ -1029,4 +1032,12 @@ public class ConfigurationService {
     }
     return telemetryConfiguration;
   }
+
+  public GlobalCacheConfiguration getCaches() {
+    if (caches == null) {
+      caches = configJsonContext.read(CACHES_CONFIGURATION, GlobalCacheConfiguration.class);
+    }
+    return caches;
+  }
+
 }

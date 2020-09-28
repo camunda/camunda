@@ -34,14 +34,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EntitySorter;
-import org.camunda.optimize.service.es.schema.index.AlertIndex;
-import org.camunda.optimize.service.es.schema.index.CollectionIndex;
-import org.camunda.optimize.service.es.schema.index.DashboardIndex;
-import org.camunda.optimize.service.es.schema.index.DecisionDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.ProcessDefinitionIndex;
-import org.camunda.optimize.service.es.schema.index.report.CombinedReportIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -53,8 +45,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
-import java.time.Duration;
-import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -62,15 +52,23 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.entityType;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModified;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.lastModifier;
 import static org.camunda.optimize.dto.optimize.query.entity.EntityDto.Fields.name;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.ALERT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COLLECTION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TENANT_INDEX_NAME;
 
 @Slf4j
@@ -82,68 +80,57 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
   @BeforeEach
   public void init() {
     addTenantsToElasticsearch();
-    addProcessDefinitionToOptimize();
-    addDecisionDefinitionToOptimize();
   }
 
   @Test
   public void testQueryPerformance_getProcessReports() {
     // given
     final int numberOfReports = getNumberOfEntities();
+    addProcessDefinitionsToOptimize(numberOfReports);
     addSingleProcessReportsToOptimize(numberOfReports);
 
-    // when
-    final Instant start = Instant.now();
-    final List<ReportDefinitionDto> reportDefinitionDtos = embeddedOptimizeExtension.getRequestExecutor()
+    // when & then
+    final Supplier<List<ReportDefinitionDto>> reportSupplier = () -> embeddedOptimizeExtension.getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
-    final Instant finish = Instant.now();
-    long responseTimeMs = Duration.between(start, finish).toMillis();
+    assertThatListEndpointMaxAllowedQueryTimeIsMet(numberOfReports, reportSupplier);
 
-    // then
-    assertThat(reportDefinitionDtos).hasSize(numberOfReports);
-    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
-    assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+    // when caches are warm due to previous call, then
+    assertThatListEndpointMaxAllowedQueryTimeIsMetForWarmCaches(numberOfReports, reportSupplier);
   }
 
   @Test
   public void testQueryPerformance_getDecisionReports() {
     // given
     final int numberOfReports = getNumberOfEntities();
+    addDecisionDefinitionsToOptimize(numberOfReports);
     addSingleDecisionReportsToOptimize(numberOfReports);
 
-    // when
-    final Instant start = Instant.now();
-    final List<ReportDefinitionDto> reportDefinitionDtos = embeddedOptimizeExtension.getRequestExecutor()
+    // when & then
+    final Supplier<List<ReportDefinitionDto>> reportSupplier = () -> embeddedOptimizeExtension.getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
-    final Instant finish = Instant.now();
-    long responseTimeMs = Duration.between(start, finish).toMillis();
+    assertThatListEndpointMaxAllowedQueryTimeIsMet(numberOfReports, reportSupplier);
 
-    // then
-    assertThat(reportDefinitionDtos).hasSize(numberOfReports);
-    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
-    assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+    // when caches are warm due to previous call, then
+    assertThatListEndpointMaxAllowedQueryTimeIsMetForWarmCaches(numberOfReports, reportSupplier);
   }
 
   @Test
   public void testQueryPerformance_getCombinedReports() {
     // given
     final int numberOfReports = getNumberOfEntities();
+    addProcessDefinitionsToOptimize(numberOfReports);
     addCombinedReportsToOptimize(numberOfReports);
 
-    // when
-    final Instant start = Instant.now();
-    final List<ReportDefinitionDto> reportDefinitionDtos = embeddedOptimizeExtension.getRequestExecutor()
+    // when & then
+    final Supplier<List<ReportDefinitionDto>> reportSupplier = () -> embeddedOptimizeExtension.getRequestExecutor()
       .buildGetAllPrivateReportsRequest()
       .executeAndReturnList(ReportDefinitionDto.class, Response.Status.OK.getStatusCode());
-    final Instant finish = Instant.now();
-    long responseTimeMs = Duration.between(start, finish).toMillis();
+    assertThatListEndpointMaxAllowedQueryTimeIsMet(numberOfReports, reportSupplier);
 
-    // then
-    assertThat(reportDefinitionDtos).hasSize(numberOfReports);
-    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
-    assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+    // when caches are warm due to previous call, then
+    assertThatListEndpointMaxAllowedQueryTimeIsMetForWarmCaches(numberOfReports, reportSupplier);
   }
 
   @ParameterizedTest
@@ -157,24 +144,22 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     // if the overall number is not divisible by the number of entity type, we add some extra dashboards
     final int extraDashboardsToAdd = totalNumberOfEntities % numOfEntityTypes;
 
+    addProcessDefinitionsToOptimize(numOfEachEntityToAdd);
     addSingleProcessReportsToOptimize(numOfEachEntityToAdd);
+    addDecisionDefinitionsToOptimize(numOfEachEntityToAdd);
     addSingleDecisionReportsToOptimize(numOfEachEntityToAdd);
     addCombinedReportsToOptimize(numOfEachEntityToAdd);
     addDashboardsToOptimize(numOfEachEntityToAdd + extraDashboardsToAdd);
     addCollectionsToOptimize(numOfEachEntityToAdd);
 
-    // when
-    final Instant start = Instant.now();
-    final List<EntityDto> entityDtos = embeddedOptimizeExtension.getRequestExecutor()
+    // when & then
+    final Supplier<List<EntityDto>> reportSupplier = () -> embeddedOptimizeExtension.getRequestExecutor()
       .buildGetAllEntitiesRequest(entitySorter)
       .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
-    final Instant finish = Instant.now();
-    long responseTimeMs = Duration.between(start, finish).toMillis();
+    assertThatListEndpointMaxAllowedQueryTimeIsMet(totalNumberOfEntities, reportSupplier);
 
-    // then
-    assertThat(entityDtos).hasSize(totalNumberOfEntities);
-    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
-    assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+    // when caches are warm due to previous call, then
+    assertThatListEndpointMaxAllowedQueryTimeIsMetForWarmCaches(totalNumberOfEntities, reportSupplier);
   }
 
   @ParameterizedTest
@@ -189,23 +174,21 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     final int extraDashboardsToAdd = totalNumberOfEntities % numOfEntityTypesForCollection;
 
     final String collectionId = addCollectionToOptimize();
+    addProcessDefinitionsToOptimize(numOfEachEntityToAdd);
     addSingleProcessReportsToOptimize(numOfEachEntityToAdd, collectionId);
+    addDecisionDefinitionsToOptimize(numOfEachEntityToAdd);
     addSingleDecisionReportsToOptimize(numOfEachEntityToAdd, collectionId);
     addCombinedReportsToOptimize(numOfEachEntityToAdd, collectionId);
     addDashboardsToOptimize(numOfEachEntityToAdd + extraDashboardsToAdd, collectionId);
 
-    // when
-    final Instant start = Instant.now();
-    final List<EntityDto> entityDtos = embeddedOptimizeExtension.getRequestExecutor()
+    // when & then
+    final Supplier<List<EntityDto>> reportSupplier = () -> embeddedOptimizeExtension.getRequestExecutor()
       .buildGetCollectionEntitiesRequest(collectionId, entitySorter)
       .executeAndReturnList(EntityDto.class, Response.Status.OK.getStatusCode());
-    final Instant finish = Instant.now();
-    long responseTimeMs = Duration.between(start, finish).toMillis();
+    assertThatListEndpointMaxAllowedQueryTimeIsMet(totalNumberOfEntities, reportSupplier);
 
-    // then
-    assertThat(entityDtos).hasSize(totalNumberOfEntities);
-    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
-    assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+    // when caches are warm due to previous call, then
+    assertThatListEndpointMaxAllowedQueryTimeIsMetForWarmCaches(totalNumberOfEntities, reportSupplier);
   }
 
   @Test
@@ -214,21 +197,17 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     final int numberOfAlerts = getNumberOfEntities();
 
     final String collectionId = addCollectionToOptimize();
-    final List<String> reportIds = addSingleProcessReportsToOptimize(10, collectionId);
+    addProcessDefinitionsToOptimize(numberOfAlerts);
+    final List<String> reportIds = addSingleProcessReportsToOptimize(numberOfAlerts, collectionId);
     addAlertsToOptimize(numberOfAlerts, reportIds);
 
-    // when
-    final Instant start = Instant.now();
-    final List<AlertDefinitionDto> entityDtos = embeddedOptimizeExtension.getRequestExecutor()
-      .buildGetAlertsForCollectionRequest(collectionId)
-      .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode());
-    final Instant finish = Instant.now();
-    long responseTimeMs = Duration.between(start, finish).toMillis();
-
-    // then
-    assertThat(entityDtos).hasSize(numberOfAlerts);
-    log.info("{} query response time: {}", getTestDisplayName(), responseTimeMs);
-    assertThat(responseTimeMs).isLessThanOrEqualTo(getMaxAllowedQueryTime());
+    // when & then
+    assertThatListEndpointMaxAllowedQueryTimeIsMet(
+      numberOfAlerts,
+      () -> embeddedOptimizeExtension.getRequestExecutor()
+        .buildGetAlertsForCollectionRequest(collectionId)
+        .executeAndReturnList(AlertDefinitionDto.class, Response.Status.OK.getStatusCode())
+    );
   }
 
   private void addSingleProcessReportsToOptimize(final int numberOfReports) {
@@ -236,15 +215,15 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
   }
 
   private List<String> addSingleProcessReportsToOptimize(final int numberOfReports, final String collectionId) {
-    final ProcessReportDataDto processReportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setReportDataType(ProcessReportDataType.RAW_DATA)
-      .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
-      .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .build();
-
-    Map<String, Object> definitionsById = new HashMap<>();
+    final Map<String, Object> reportsById = new HashMap<>();
     IntStream.range(0, numberOfReports)
       .forEach(index -> {
+        final ProcessReportDataDto processReportData = TemplatedProcessReportDataBuilder.createReportData()
+          .setReportDataType(ProcessReportDataType.RAW_DATA)
+          .setProcessDefinitionKey(PROCESS_DEFINITION_KEY + "_" + index)
+          .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+          .build();
+
         final SingleProcessReportDefinitionDto definition = new SingleProcessReportDefinitionDto(processReportData);
         definition.setCollectionId(collectionId);
         definition.setName(IdGenerator.getNextId());
@@ -252,10 +231,11 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
         definition.setLastModifier(DEFAULT_USER);
         definition.setLastModified(OffsetDateTime.now());
         definition.setId(IdGenerator.getNextId());
-        definitionsById.put(definition.getId(), definition);
+        reportsById.put(definition.getId(), definition);
       });
-    addToElasticsearch(new SingleProcessReportIndex().getIndexName(), definitionsById);
-    return new ArrayList<>(definitionsById.keySet());
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(SINGLE_PROCESS_REPORT_INDEX_NAME, reportsById);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    return new ArrayList<>(reportsById.keySet());
   }
 
   private void addSingleDecisionReportsToOptimize(final int numberOfReports) {
@@ -263,22 +243,25 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
   }
 
   private void addSingleDecisionReportsToOptimize(final int numberOfReports, final String collectionId) {
-    final DecisionReportDataDto decisionReportData = DecisionReportDataBuilder.create()
-      .setReportDataType(DecisionReportDataType.RAW_DATA)
-      .setDecisionDefinitionKey(DECISION_DEFINITION_KEY)
-      .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .build();
-    final SingleDecisionReportDefinitionDto definition = new SingleDecisionReportDefinitionDto(decisionReportData);
-    definition.setCollectionId(collectionId);
-    definition.setName(IdGenerator.getNextId());
-    definition.setOwner(DEFAULT_USER);
-    definition.setLastModifier(DEFAULT_USER);
-    definition.setLastModified(OffsetDateTime.now());
-
-    Map<String, Object> definitionsById = new HashMap<>();
+    final Map<String, Object> reportsById = new HashMap<>();
     IntStream.range(0, numberOfReports)
-      .forEach(index -> definitionsById.put(IdGenerator.getNextId(), definition));
-    addToElasticsearch(new SingleDecisionReportIndex().getIndexName(), definitionsById);
+      .forEach(index -> {
+        final DecisionReportDataDto decisionReportData = DecisionReportDataBuilder.create()
+          .setReportDataType(DecisionReportDataType.RAW_DATA)
+          .setDecisionDefinitionKey(DECISION_DEFINITION_KEY + "_" + index)
+          .setDecisionDefinitionVersion(ReportConstants.ALL_VERSIONS)
+          .build();
+        final SingleDecisionReportDefinitionDto definition = new SingleDecisionReportDefinitionDto(decisionReportData);
+        definition.setCollectionId(collectionId);
+        definition.setName(IdGenerator.getNextId());
+        definition.setOwner(DEFAULT_USER);
+        definition.setLastModifier(DEFAULT_USER);
+        definition.setLastModified(OffsetDateTime.now());
+        definition.setId(IdGenerator.getNextId());
+        reportsById.put(definition.getId(), definition);
+      });
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(SINGLE_DECISION_REPORT_INDEX_NAME, reportsById);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void addCombinedReportsToOptimize(final int numberOfReports) {
@@ -298,10 +281,11 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     definition.setLastModifier(DEFAULT_USER);
     definition.setLastModified(OffsetDateTime.now());
 
-    Map<String, Object> definitionsById = new HashMap<>();
+    Map<String, Object> reportsById = new HashMap<>();
     IntStream.range(0, numberOfReports)
-      .forEach(index -> definitionsById.put(IdGenerator.getNextId(), definition));
-    addToElasticsearch(new CombinedReportIndex().getIndexName(), definitionsById);
+      .forEach(index -> reportsById.put(IdGenerator.getNextId(), definition));
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(COMBINED_REPORT_INDEX_NAME, reportsById);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void addDashboardsToOptimize(final int numOfDashboards) {
@@ -320,32 +304,37 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     definition.setLastModifier(DEFAULT_USER);
     definition.setLastModified(OffsetDateTime.now());
 
-    Map<String, Object> definitionsById = new HashMap<>();
+    Map<String, Object> dashboardsById = new HashMap<>();
     IntStream.range(0, numOfDashboards)
-      .forEach(index -> definitionsById.put(IdGenerator.getNextId(), definition));
-    addToElasticsearch(new DashboardIndex().getIndexName(), definitionsById);
+      .forEach(index -> dashboardsById.put(IdGenerator.getNextId(), definition));
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(DASHBOARD_INDEX_NAME, dashboardsById);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private String addCollectionToOptimize() {
     CollectionDataDto collectionData = createCollectionData();
-    CollectionDefinitionDto definition = createCollectionDefinition(collectionData);
-    addToElasticsearch(new CollectionIndex().getIndexName(), ImmutableMap.of(definition.getId(), definition));
-    return definition.getId();
+    CollectionDefinitionDto collection = createCollectionDefinition(collectionData);
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
+      COLLECTION_INDEX_NAME, ImmutableMap.of(collection.getId(), collection)
+    );
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+    return collection.getId();
   }
 
   private void addCollectionsToOptimize(final int numOfCollections) {
     CollectionDataDto collectionData = createCollectionData();
 
-    Map<String, Object> definitionsById = new HashMap<>();
+    Map<String, Object> collectionsById = new HashMap<>();
     IntStream.range(0, numOfCollections)
       .forEach(index -> {
         CollectionDefinitionDto definition = createCollectionDefinition(collectionData);
-        definitionsById.put(definition.getId(), definition);
+        collectionsById.put(definition.getId(), definition);
       });
-    addToElasticsearch(new CollectionIndex().getIndexName(), definitionsById);
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(COLLECTION_INDEX_NAME, collectionsById);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // We add up to one of each entity randomly to each collection we have created
-    for (String collectionId : definitionsById.keySet()) {
+    for (String collectionId : collectionsById.keySet()) {
       if (RandomUtils.nextBoolean()) {
         addSingleProcessReportsToOptimize(1, collectionId);
       }
@@ -368,34 +357,41 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     definition.setLastModifier(DEFAULT_USER);
     definition.setLastModified(OffsetDateTime.now());
 
-    Map<String, Object> definitionsById = new HashMap<>();
+    Map<String, Object> alertsById = new HashMap<>();
     IntStream.range(0, numberOfAlerts)
-      .forEach(index -> definitionsById.put(IdGenerator.getNextId(), definition));
-    addToElasticsearch(new AlertIndex().getIndexName(), definitionsById);
+      .forEach(index -> alertsById.put(IdGenerator.getNextId(), definition));
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(ALERT_INDEX_NAME, alertsById);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  private void addProcessDefinitionToOptimize() {
-    IntStream.rangeClosed(1, getNumberOfDefinitionVersions())
+  private void addProcessDefinitionsToOptimize(final int numberOfDefinitions) {
+    // creating as many definitions as we have entities
+    final Map<String, Object> definitionsById = new HashMap<>();
+    IntStream.rangeClosed(1, numberOfDefinitions)
       .mapToObj(String::valueOf)
-      .forEach(version -> {
-        final ProcessDefinitionOptimizeDto processDefinition = createProcessDefinition(version);
-        addToElasticsearch(
-          new ProcessDefinitionIndex().getIndexName(),
-          ImmutableMap.of(processDefinition.getId(), processDefinition)
-        );
-      });
+      .forEach(definitionNumber -> IntStream.rangeClosed(1, getNumberOfDefinitionVersions())
+        .mapToObj(String::valueOf)
+        .forEach(version -> {
+          final ProcessDefinitionOptimizeDto processDefinition = createProcessDefinition(definitionNumber, version);
+          definitionsById.put(processDefinition.getId(), processDefinition);
+        }));
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(PROCESS_DEFINITION_INDEX_NAME, definitionsById);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
-  private void addDecisionDefinitionToOptimize() {
-    IntStream.rangeClosed(1, getNumberOfDefinitionVersions())
+  private void addDecisionDefinitionsToOptimize(final int numberOfDefinitions) {
+    // creating as many definitions as we have entities
+    final Map<String, Object> definitionsById = new HashMap<>();
+    IntStream.rangeClosed(1, numberOfDefinitions)
       .mapToObj(String::valueOf)
-      .forEach(version -> {
-        final DecisionDefinitionOptimizeDto decisionDefinition = createDecisionDefinition(version);
-        addToElasticsearch(
-          new DecisionDefinitionIndex().getIndexName(),
-          ImmutableMap.of(decisionDefinition.getId(), decisionDefinition)
-        );
-      });
+      .forEach(definitionNumber -> IntStream.rangeClosed(1, getNumberOfDefinitionVersions())
+        .mapToObj(String::valueOf)
+        .forEach(version -> {
+          final DecisionDefinitionOptimizeDto decisionDefinition = createDecisionDefinition(definitionNumber, version);
+          definitionsById.put(decisionDefinition.getId(), decisionDefinition);
+        }));
+    elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(DECISION_DEFINITION_INDEX_NAME, definitionsById);
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private CollectionDataDto createCollectionData() {
@@ -422,12 +418,26 @@ public class OptimizeEntityQueryPerformanceTest extends AbstractQueryPerformance
     return definition;
   }
 
-  private static ProcessDefinitionOptimizeDto createProcessDefinition(final String version) {
-    return createProcessDefinition(PROCESS_DEFINITION_KEY, String.valueOf(version), null, "processName", DEFAULT_ENGINE_ALIAS);
+  private static ProcessDefinitionOptimizeDto createProcessDefinition(final String definitionNumber,
+                                                                      final String version) {
+    return createProcessDefinition(
+      PROCESS_DEFINITION_KEY + "_" + definitionNumber,
+      String.valueOf(version),
+      null,
+      "processName",
+      DEFAULT_ENGINE_ALIAS
+    );
   }
 
-  private static DecisionDefinitionOptimizeDto createDecisionDefinition(final String version) {
-    return createDecisionDefinition(DECISION_DEFINITION_KEY, String.valueOf(version), null, "decisionName", DEFAULT_ENGINE_ALIAS);
+  private static DecisionDefinitionOptimizeDto createDecisionDefinition(final String definitionNumber,
+                                                                        final String version) {
+    return createDecisionDefinition(
+      DECISION_DEFINITION_KEY + "_" + definitionNumber,
+      String.valueOf(version),
+      null,
+      "decisionName",
+      DEFAULT_ENGINE_ALIAS
+    );
   }
 
   private void addTenantsToElasticsearch() {

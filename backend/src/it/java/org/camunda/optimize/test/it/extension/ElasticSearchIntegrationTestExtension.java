@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.google.common.collect.Iterables;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.search.join.ScoreMode;
@@ -87,6 +88,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil.mapHits;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
@@ -270,19 +272,28 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
   }
 
   public void addEntriesToElasticsearch(String indexName, Map<String, Object> idToEntryMap) {
-    try {
-      final BulkRequest bulkRequest = new BulkRequest();
-      for (Map.Entry<String, Object> idAndObject : idToEntryMap.entrySet()) {
-        String json = OBJECT_MAPPER.writeValueAsString(idAndObject.getValue());
-        IndexRequest request = new IndexRequest(indexName)
-          .id(idAndObject.getKey())
-          .source(json, XContentType.JSON);
-        bulkRequest.add(request);
-      }
-      getOptimizeElasticClient().bulk(bulkRequest, RequestOptions.DEFAULT);
-    } catch (IOException e) {
-      throw new OptimizeIntegrationTestException("Unable to add an entries to elasticsearch", e);
-    }
+    StreamSupport.stream(Iterables.partition(idToEntryMap.entrySet(), 10_000).spliterator(), false)
+      .forEach(batch -> {
+        final BulkRequest bulkRequest = new BulkRequest();
+        for (Map.Entry<String, Object> idAndObject : batch) {
+          String json = writeJsonString(idAndObject);
+          IndexRequest request = new IndexRequest(indexName)
+            .id(idAndObject.getKey())
+            .source(json, XContentType.JSON);
+          bulkRequest.add(request);
+        }
+        executeBulk(bulkRequest);
+      });
+  }
+
+  @SneakyThrows
+  private void executeBulk(final BulkRequest bulkRequest) {
+    getOptimizeElasticClient().bulk(bulkRequest, RequestOptions.DEFAULT);
+  }
+
+  @SneakyThrows
+  private String writeJsonString(final Map.Entry<String, Object> idAndObject) {
+    return OBJECT_MAPPER.writeValueAsString(idAndObject.getValue());
   }
 
   public OffsetDateTime getLastProcessedEventTimestampForEventIndexSuffix(final String eventIndexSuffix) throws
