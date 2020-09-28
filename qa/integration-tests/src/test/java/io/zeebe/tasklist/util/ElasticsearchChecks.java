@@ -39,10 +39,14 @@ public class ElasticsearchChecks {
       "workflowInstanceIsCompletedCheck";
   public static final String WORKFLOW_INSTANCE_IS_CANCELED_CHECK =
       "workflowInstanceIsCanceledCheck";
+
   public static final String TASK_IS_CREATED_CHECK = "taskIsCreatedCheck";
   public static final String TASK_IS_ASSIGNED_CHECK = "taskIsAssignedCheck";
+
   public static final String TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK =
       "taskIsCreatedByFlowNodeBpmnIdCheck";
+  public static final String TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK =
+      "taskIsCanceledByFlowNodeBpmnIdCheck";
   public static final String TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK =
       "taskIsCompletedByFlowNodeBpmnIdCheck";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchChecks.class);
@@ -158,6 +162,38 @@ public class ElasticsearchChecks {
 
   /**
    * Checks whether the task for given args[0] workflowInstanceKey (Long) and given args[1]
+   * flowNodeBpmnId (String) exists and is in state CANCELED.
+   */
+  @Bean(name = TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK)
+  public TestCheck getTaskIsCanceledCheck() {
+    return new TestCheck() {
+      @Override
+      public String getName() {
+        return TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK;
+      }
+
+      @Override
+      public boolean test(final Object[] objects) {
+        assertThat(objects).hasSize(2);
+        assertThat(objects[0]).isInstanceOf(String.class);
+        assertThat(objects[1]).isInstanceOf(String.class);
+        final String workflowInstanceKey = (String) objects[0];
+        final String flowNodeBpmnId = (String) objects[1];
+        try {
+          final List<TaskEntity> taskEntity =
+              elasticsearchHelper.getTask(workflowInstanceKey, flowNodeBpmnId);
+          return taskEntity.stream()
+              .map(TaskEntity::getState)
+              .collect(Collectors.toList())
+              .contains(TaskState.CANCELED);
+        } catch (NotFoundException ex) {
+          return false;
+        }
+      }
+    };
+  }
+  /**
+   * Checks whether the task for given args[0] workflowInstanceKey (Long) and given args[1]
    * flowNodeBpmnId (String) exists and is in state COMPLETED.
    */
   @Bean(name = TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK)
@@ -205,10 +241,10 @@ public class ElasticsearchChecks {
       public boolean test(final Object[] objects) {
         assertThat(objects).hasSize(1);
         assertThat(objects[0]).isInstanceOf(String.class);
-        final String worklfowInstanceId = (String) objects[0];
+        final String workflowInstanceId = (String) objects[0];
         try {
           final WorkflowInstanceEntity wfiEntity =
-              elasticsearchHelper.getWorkflowInstance(worklfowInstanceId);
+              elasticsearchHelper.getWorkflowInstance(workflowInstanceId);
           return WorkflowInstanceState.COMPLETED.equals(wfiEntity.getState());
         } catch (NotFoundException ex) {
           return false;
@@ -232,10 +268,10 @@ public class ElasticsearchChecks {
       public boolean test(final Object[] objects) {
         assertThat(objects).hasSize(1);
         assertThat(objects[0]).isInstanceOf(String.class);
-        final String worklfowInstanceId = (String) objects[0];
+        final String workflowInstanceId = (String) objects[0];
         try {
           final WorkflowInstanceEntity wfiEntity =
-              elasticsearchHelper.getWorkflowInstance(worklfowInstanceId);
+              elasticsearchHelper.getWorkflowInstance(workflowInstanceId);
           return WorkflowInstanceState.CANCELED.equals(wfiEntity.getState());
         } catch (NotFoundException ex) {
           return false;

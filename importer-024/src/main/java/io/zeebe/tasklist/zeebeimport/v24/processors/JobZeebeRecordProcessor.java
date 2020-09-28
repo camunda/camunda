@@ -6,6 +6,7 @@
 package io.zeebe.tasklist.zeebeimport.v24.processors;
 
 import static io.zeebe.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
+import static io.zeebe.tasklist.zeebeimport.v24.record.Intent.CANCELED;
 import static io.zeebe.tasklist.zeebeimport.v24.record.Intent.COMPLETED;
 import static io.zeebe.tasklist.zeebeimport.v24.record.Intent.CREATED;
 
@@ -22,9 +23,7 @@ import io.zeebe.tasklist.zeebeimport.v24.record.value.JobRecordValueImpl;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.common.xcontent.XContentType;
@@ -38,14 +37,6 @@ public class JobZeebeRecordProcessor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JobZeebeRecordProcessor.class);
 
-  private static final Set<String> TASK_START_STATES = new HashSet<>();
-  private static final Set<String> TASK_FINISH_STATES = new HashSet<>();
-
-  static {
-    TASK_START_STATES.add(CREATED.name());
-    TASK_FINISH_STATES.add(COMPLETED.name());
-  }
-
   @Autowired private ObjectMapper objectMapper;
 
   @Autowired private TaskTemplate taskTemplate;
@@ -55,7 +46,6 @@ public class JobZeebeRecordProcessor {
   public void processJobRecord(Record record, BulkRequest bulkRequest) throws PersistenceException {
     final JobRecordValueImpl recordValue = (JobRecordValueImpl) record.getValue();
     if (recordValue.getType().equals(tasklistProperties.getImporter().getJobType())) {
-      // update variable
       bulkRequest.add(persistTask(record, recordValue));
     }
     // else skip task
@@ -73,15 +63,24 @@ public class JobZeebeRecordProcessor {
             .setWorkflowInstanceId(String.valueOf(recordValue.getWorkflowInstanceKey()))
             .setBpmnProcessId(recordValue.getBpmnProcessId())
             .setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
-    if (TASK_FINISH_STATES.contains(record.getIntent().name())) {
+    final String taskState = record.getIntent().name();
+    LOGGER.debug("JobState {}", taskState);
+    if (taskState.equals(CANCELED.name())) {
+      entity
+          .setState(TaskState.CANCELED)
+          .setCompletionTime(
+              DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    } else if (taskState.equals(COMPLETED.name())) {
       entity
           .setState(TaskState.COMPLETED)
           .setCompletionTime(
               DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
-    } else {
+    } else if (taskState.equals(CREATED.name())) {
       entity
           .setState(TaskState.CREATED)
           .setCreationTime(DateUtil.toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())));
+    } else {
+      LOGGER.warn(String.format("TaskState %s not supported", taskState));
     }
     return getTaskQuery(entity);
   }

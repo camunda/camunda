@@ -18,7 +18,8 @@ input TaskQuery {
 
 enum TaskState {
     CREATED,
-    COMPLETED
+    COMPLETED,
+    CANCELED
 }
 
 type Variable {

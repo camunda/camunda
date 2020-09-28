@@ -130,7 +130,7 @@ public class TaskReaderWriter {
   }
 
   private QueryBuilder buildQuery(TaskQueryDTO query) {
-    QueryBuilder stateQ = null;
+    QueryBuilder stateQ = boolQuery().mustNot(termQuery(TaskTemplate.STATE, TaskState.CANCELED));
     if (query.getState() != null) {
       stateQ = termQuery(TaskTemplate.STATE, query.getState());
     }

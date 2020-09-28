@@ -5,6 +5,7 @@
  */
 package io.zeebe.tasklist.graphql;
 
+import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -46,6 +47,10 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   @Autowired
   @Qualifier(TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCreatedCheck;
+
+  @Autowired
+  @Qualifier(TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK)
+  private TestCheck taskIsCanceledCheck;
 
   @Autowired private TaskMutationResolver taskMutationResolver;
 
@@ -100,6 +105,96 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
       assertEquals("0", response.get(taskJsonPath + ".variables.length()"));
     }
     assertSorting(response);
+  }
+
+  @Test
+  public void shouldNotReturnTasksForCancelledWorkflowInstances() throws IOException {
+    final String bpmnProcessId = "testProcess", flowNodeBpmnId = "taskA";
+
+    final GraphQLResponse response =
+        tester
+            .having()
+            .createAndDeploySimpleWorkflow(bpmnProcessId, flowNodeBpmnId)
+            .waitUntil()
+            .workflowIsDeployed()
+            .and()
+            .startWorkflowInstances(bpmnProcessId, 5)
+            .when()
+            .cancelWorkflowInstance()
+            .and()
+            .waitUntil()
+            .workflowInstanceIsCanceled()
+            .then()
+            .getAllTasks();
+
+    // then
+    assertTrue(response.isOk());
+    assertThat(response.get("$.data.tasks.length()")).isEqualTo("4");
+  }
+
+  @Test
+  public void shouldNotReturnCanceledTasksWithBoundaryEvents() throws IOException {
+    final String workflowId = "boundaryTimer", flowNowBPMNId = "noTimeToComplete";
+    final GraphQLResponse response =
+        tester
+            .having()
+            .deployWorkflow(workflowId + ".bpmn")
+            .waitUntil()
+            .workflowIsDeployed()
+            .and()
+            .startWorkflowInstance(workflowId)
+            .when()
+            .waitUntil()
+            .taskIsCanceled(flowNowBPMNId)
+            .then()
+            .getAllTasks();
+    assertThat(response.get("$.data.tasks.length()")).isEqualTo("0");
+  }
+
+  @Test
+  public void shouldNotReturnCanceledTasksInInterruptingBoundaryEvent() throws IOException {
+    final String workflowId = "interruptingBoundaryEvent", flowNodeBPMNId = "task1";
+    final GraphQLResponse response =
+        tester
+            .having()
+            .deployWorkflow(workflowId + "_v_2.bpmn")
+            .waitUntil()
+            .workflowIsDeployed()
+            .and()
+            .startWorkflowInstance(workflowId)
+            .when()
+            .waitUntil()
+            .taskIsCanceled(flowNodeBPMNId)
+            .then()
+            .getAllTasks();
+    assertThat(response.get("$.data.tasks.length()")).isEqualTo("1");
+    assertThat(response.get("$.data.tasks[0].name")).isEqualTo("Task 2");
+  }
+
+  @Test
+  public void shouldNotReturnCanceledTasksInEventSubprocess() throws IOException {
+    final GraphQLResponse response =
+        tester
+            .having()
+            .deployWorkflow("eventSubProcess_v_1.bpmn")
+            .waitUntil()
+            .workflowIsDeployed()
+            .and()
+            .startWorkflowInstance("eventSubprocessWorkflow")
+            .waitUntil()
+            .taskIsCreated("parentProcessTask")
+            .claimAndCompleteHumanTask("parentProcessTask")
+            .waitUntil()
+            .taskIsCreated("taskInSubprocess")
+            .waitUntil()
+            .taskIsCreated("subprocessTask")
+            .and()
+            .taskIsCanceled("subprocessTask")
+            .then()
+            .getAllTasks();
+    assertThat(response.get("$.data.tasks.length()")).isEqualTo("1");
+    assertThat(response.get("$.data.tasks[0].name")).isEqualTo("Parent process task");
+    assertThat(response.get("$.data.tasks[0].taskState")).isEqualTo("COMPLETED");
   }
 
   private void assertSorting(GraphQLResponse response) {
@@ -203,7 +298,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldReturnUnclaimedTasks() throws IOException {
+  public void shouldReturnUnclaimedTasks() {
     // when #1
     final List<TaskDTO> tasks =
         tester
@@ -433,7 +528,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   }
 
   @Test
-  public void shouldNotReturnTaskWithWrongId() throws IOException {
+  public void shouldNotReturnTaskWithWrongId() {
     final GraphQLResponse taskResponse =
         tester
             .having()

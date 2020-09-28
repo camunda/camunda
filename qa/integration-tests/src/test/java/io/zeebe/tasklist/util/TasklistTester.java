@@ -6,6 +6,7 @@
 package io.zeebe.tasklist.util;
 
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_ASSIGNED_CHECK;
+import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_INSTANCE_IS_CANCELED_CHECK;
@@ -31,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.IntStream;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
@@ -62,6 +64,10 @@ public class TasklistTester {
   @Autowired
   @Qualifier(TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK)
   private TestCheck taskIsCreatedCheck;
+
+  @Autowired
+  @Qualifier(TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK)
+  private TestCheck taskIsCanceledCheck;
 
   @Autowired
   @Qualifier(TASK_IS_COMPLETED_BY_FLOW_NODE_BPMN_ID_CHECK)
@@ -205,6 +211,11 @@ public class TasklistTester {
     return startWorkflowInstance(bpmnProcessId, null);
   }
 
+  public TasklistTester startWorkflowInstances(String bpmnProcessId, Integer numberOfInstances) {
+    IntStream.range(0, numberOfInstances).forEach(i -> startWorkflowInstance(bpmnProcessId));
+    return this;
+  }
+
   public TasklistTester startWorkflowInstance(String bpmnProcessId, String payload) {
     workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, bpmnProcessId, payload);
     return this;
@@ -233,6 +244,14 @@ public class TasklistTester {
         taskIsCreatedCheck, workflowInstanceId, flowNodeBpmnId);
     // update taskId
     resolveTaskId(flowNodeBpmnId, TaskState.CREATED);
+    return this;
+  }
+
+  public TasklistTester taskIsCanceled(String flowNodeBpmnId) {
+    elasticsearchTestRule.processAllRecordsAndWait(
+        taskIsCanceledCheck, workflowInstanceId, flowNodeBpmnId);
+    // update taskId
+    resolveTaskId(flowNodeBpmnId, TaskState.CANCELED);
     return this;
   }
 
@@ -319,7 +338,7 @@ public class TasklistTester {
   }
 
   public TasklistTester cancelWorkflowInstance() {
-    ZeebeTestUtil.cancelWorkflowInstance(zeebeClient, Long.valueOf(workflowInstanceId));
+    ZeebeTestUtil.cancelWorkflowInstance(zeebeClient, Long.parseLong(workflowInstanceId));
     return this;
   }
 
