@@ -29,12 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Lists.newArrayList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE;
 import static org.camunda.optimize.util.BpmnModels.TASK_ID_1;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsNull.notNullValue;
 
 public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -57,17 +54,18 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
 
     // then
     ProcessReportDataDto resultReportDataDto = evaluationResponse.getReportDefinition().getData();
-    assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
-    assertThat(resultReportDataDto.getDefinitionVersions(), contains(processInstanceDto.getProcessDefinitionVersion()));
-    assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
-    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
-    assertThat(resultReportDataDto.getGroupBy().getType(), is(ProcessGroupByType.NONE));
+    assertThat(resultReportDataDto.getProcessDefinitionKey()).isEqualTo(processInstanceDto.getProcessDefinitionKey());
+    assertThat(resultReportDataDto.getDefinitionVersions())
+      .containsExactly(processInstanceDto.getProcessDefinitionVersion());
+    assertThat(resultReportDataDto.getView()).isNotNull();
+    assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
+    assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
+    assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.NONE);
 
     final NumberResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getInstanceCount(), is(1L));
-    assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData(), is(1.));
+    assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).isEqualTo(1.);
   }
 
   @Test
@@ -84,7 +82,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(3.));
+    assertThat(result.getData()).isEqualTo(3.);
   }
 
   @Test
@@ -101,7 +99,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(2.));
+    assertThat(result.getData()).isEqualTo(2.);
   }
 
   @Test
@@ -122,7 +120,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is((double) selectedTenants.size()));
+    assertThat(result.getData()).isEqualTo((double) selectedTenants.size());
   }
 
   @Test
@@ -144,8 +142,8 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData(), is(0.));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).isEqualTo(0.);
 
     // when
     reportData = createReport(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
@@ -153,8 +151,8 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getData(), is(notNullValue()));
-    assertThat(result.getData(), is(1.));
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).isEqualTo(1.);
   }
 
   @Test
@@ -181,7 +179,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     NumberResultDto result = reportClient.evaluateNumberReport(reportData).getResult();
 
     // then
-    assertThat(result.getInstanceCount(), is(1L));
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
   }
 
 
@@ -196,7 +194,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -210,7 +208,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     Response response = reportClient.evaluateReportAndReturnResponse(dataDto);
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
   }
 
   @Test
@@ -230,9 +228,9 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
 
     // then
     final NumberResultDto resultDto = evaluationResponse.getResult();
-    assertThat(resultDto.getInstanceCount(), is(1L));
-    assertThat(resultDto.getData(), is(notNullValue()));
-    assertThat(resultDto.getData(), is(1.));
+    assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).isEqualTo(1.);
   }
 
   private ProcessReportDataDto createReport(String processDefinitionKey, String processDefinitionVersion) {

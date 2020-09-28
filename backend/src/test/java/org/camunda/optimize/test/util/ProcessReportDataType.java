@@ -82,7 +82,9 @@ public enum ProcessReportDataType {
   USER_TASK_DURATION_GROUP_BY_CANDIDATE,
   USER_TASK_DURATION_GROUP_BY_CANDIDATE_BY_USER_TASK,
 
-  VARIABLE_AGGREGATION_GROUP_BY_NONE;
+  VARIABLE_AGGREGATION_GROUP_BY_NONE,
+
+  INCIDENT_FREQUENCY_GROUP_BY_NONE;
 
   public static List<ProcessReportDataType> allDateReports() {
     return Arrays.stream(

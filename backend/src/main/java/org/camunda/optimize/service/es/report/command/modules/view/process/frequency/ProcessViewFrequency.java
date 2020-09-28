@@ -17,19 +17,19 @@ import org.elasticsearch.search.aggregations.bucket.filter.Filter;
 
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 
-public abstract class ProcessViewFrequencyCount extends ProcessViewPart {
-  private static final String COUNT_AGGREGATION = "_count";
+public abstract class ProcessViewFrequency extends ProcessViewPart {
+  private static final String FREQUENCY_AGGREGATION = "_frequency";
 
   @Override
   public AggregationBuilder createAggregation(final ExecutionContext<ProcessReportDataDto> context) {
-    return filter(COUNT_AGGREGATION, QueryBuilders.matchAllQuery());
+    return filter(FREQUENCY_AGGREGATION, QueryBuilders.matchAllQuery());
   }
 
   @Override
   public ViewResult retrieveResult(final SearchResponse response,
                                    final Aggregations aggs,
                                    final ExecutionContext<ProcessReportDataDto> context) {
-    final Filter count = aggs.get(COUNT_AGGREGATION);
+    final Filter count = aggs.get(FREQUENCY_AGGREGATION);
     return new ViewResult().setNumber((double) count.getDocCount());
   }
 }

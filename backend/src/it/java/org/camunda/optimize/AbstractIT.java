@@ -6,6 +6,7 @@
 package org.camunda.optimize;
 
 import org.camunda.optimize.test.engine.AuthorizationClient;
+import org.camunda.optimize.test.engine.IncidentClient;
 import org.camunda.optimize.test.engine.OutlierDistributionClient;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
@@ -87,6 +88,7 @@ public abstract class AbstractIT {
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
   protected OutlierDistributionClient outlierDistributionClient =
     new OutlierDistributionClient(engineIntegrationExtension);
+  protected IncidentClient incidentClient = new IncidentClient(engineIntegrationExtension);
 
   // optimize test helpers
   protected CollectionClient collectionClient = new CollectionClient(optimizeRequestExecutorSupplier);

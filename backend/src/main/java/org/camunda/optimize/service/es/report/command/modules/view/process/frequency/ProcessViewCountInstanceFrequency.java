@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessViewCountInstanceFrequency extends ProcessViewFrequencyCount {
+public class ProcessViewCountInstanceFrequency extends ProcessViewFrequency {
 
   @Override
   public void addViewAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {

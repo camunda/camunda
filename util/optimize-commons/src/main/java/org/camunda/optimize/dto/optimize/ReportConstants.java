@@ -23,6 +23,7 @@ public class ReportConstants {
   public static final String VIEW_USER_TASK_ENTITY = "userTask";
   public static final String VIEW_PROCESS_INSTANCE_ENTITY = "processInstance";
   public static final String VIEW_VARIABLE_ENTITY = "variable";
+  public static final String VIEW_INCIDENT_ENTITY = "incident";
 
   public static final String VIEW_FREQUENCY_PROPERTY = "frequency";
   public static final String VIEW_DURATION_PROPERTY = "duration";

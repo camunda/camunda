@@ -30,6 +30,9 @@ public class BpmnModels {
   public static final String END_EVENT_ID = "endEvent";
   public static final String DEFAULT_TOPIC = "MyTopic";
 
+  private static final String END_EVENT_1 = "endEvent1";
+  private static final String END_EVENT_2 = "endEvent2";
+
 
   public static BpmnModelInstance getSimpleBpmnDiagram() {
     return getSimpleBpmnDiagram(DEFAULT_PROCESS_ID, START_EVENT, END_EVENT);
@@ -167,6 +170,24 @@ public class BpmnModels {
       .serviceTask(TASK_ID_2)
         .camundaExternalTask(DEFAULT_TOPIC)
       .endEvent(END_EVENT)
+      .done();
+    // @formatter:on
+  }
+
+  public static BpmnModelInstance getTwoParallelExternalTaskProcess() {
+    // @formatter:off
+    return Bpmn.createExecutableProcess(DEFAULT_PROCESS_ID)
+      .camundaVersionTag(VERSION_TAG)
+      .name(DEFAULT_PROCESS_ID)
+      .startEvent(START_EVENT)
+      .parallelGateway(SPLITTING_GATEWAY_ID)
+        .serviceTask(TASK_ID_1)
+          .camundaExternalTask(DEFAULT_TOPIC)
+        .endEvent(END_EVENT_1)
+      .moveToNode(SPLITTING_GATEWAY_ID)
+        .serviceTask(TASK_ID_2)
+          .camundaExternalTask(DEFAULT_TOPIC)
+        .endEvent(END_EVENT_2)
       .done();
     // @formatter:on
   }

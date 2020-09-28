@@ -33,7 +33,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
-import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
 import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
@@ -43,9 +42,7 @@ public class IncidentImportIT extends AbstractImportIT {
   @Test
   public void openIncidentsAreImported() {
     // given
-    BpmnModelInstance incidentProcess = getExternalTaskProcess();
-    engineIntegrationExtension.deployAndStartProcess(incidentProcess);
-    engineIntegrationExtension.failAllExternalTasks();
+    incidentClient.deployAndStartProcessInstanceWithOpenIncident();
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -75,10 +72,7 @@ public class IncidentImportIT extends AbstractImportIT {
   @Test
   public void resolvedIncidentsAreImported() {
     // given
-    BpmnModelInstance incidentProcess = getExternalTaskProcess();
-    engineIntegrationExtension.deployAndStartProcess(incidentProcess);
-    engineIntegrationExtension.failAllExternalTasks();
-    engineIntegrationExtension.completeAllExternalTasks();
+    incidentClient.deployAndStartProcessInstanceWithResolvedIncident();
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -108,11 +102,7 @@ public class IncidentImportIT extends AbstractImportIT {
   @Test
   public void deletedIncidentsAreImported() {
     // given
-    BpmnModelInstance incidentProcess = getExternalTaskProcess();
-    final ProcessInstanceEngineDto processInstanceEngineDto =
-      engineIntegrationExtension.deployAndStartProcess(incidentProcess);
-    engineIntegrationExtension.failAllExternalTasks();
-    engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
+    incidentClient.deployAndStartProcessInstanceWithDeletedIncident();
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -174,10 +164,7 @@ public class IncidentImportIT extends AbstractImportIT {
   @SneakyThrows
   public void openIncidentsDontOverwriteResolvedOnes() {
     // given
-    BpmnModelInstance incidentProcess = getExternalTaskProcess();
-    final ProcessInstanceEngineDto processInstanceWithIncident =
-      engineIntegrationExtension.deployAndStartProcess(incidentProcess);
-    engineIntegrationExtension.failAllExternalTasks();
+    final ProcessInstanceEngineDto processInstanceWithIncident = incidentClient.deployAndStartProcessInstanceWithOpenIncident();
     manuallyAddAResolvedIncidentToElasticsearch(processInstanceWithIncident);
 
     // when we import the open incident
@@ -203,11 +190,8 @@ public class IncidentImportIT extends AbstractImportIT {
   @Test
   public void multipleProcessInstancesWithIncidents_incidentsAreImportedToCorrectInstance() {
     // given
-    BpmnModelInstance incidentProcess = getExternalTaskProcess();
-    final ProcessInstanceEngineDto processInstanceEngineDto =
-      engineIntegrationExtension.deployAndStartProcess(incidentProcess);
-    engineIntegrationExtension.startProcessInstance(processInstanceEngineDto.getDefinitionId());
-    engineIntegrationExtension.failAllExternalTasks();
+    final ProcessInstanceEngineDto processInstanceWithIncident = incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+    incidentClient.startProcessInstanceAndCreateOpenIncident(processInstanceWithIncident.getDefinitionId());
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -232,10 +216,9 @@ public class IncidentImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.getConfigurationService().setEngineImportIncidentMaxPageSize(1);
     BpmnModelInstance incidentProcess = getTwoExternalTaskProcess();
     final String definitionId = engineIntegrationExtension.deployProcessAndGetId(incidentProcess);
-    engineIntegrationExtension.startProcessInstance(definitionId);
-    engineIntegrationExtension.startProcessInstance(definitionId);
-    engineIntegrationExtension.startProcessInstance(definitionId);
-    engineIntegrationExtension.failAllExternalTasks();
+    incidentClient.startProcessInstanceAndCreateOpenIncident(definitionId);
+    incidentClient.startProcessInstanceAndCreateOpenIncident(definitionId);
+    incidentClient.startProcessInstanceAndCreateOpenIncident(definitionId);
 
     // when
     importAllEngineEntitiesFromScratch();
@@ -260,9 +243,7 @@ public class IncidentImportIT extends AbstractImportIT {
     assertThat(getIncidentCount()).isZero();
 
     // when updates to ES fails the first and succeeds the second time
-    BpmnModelInstance incidentProcess = getExternalTaskProcess();
-    engineIntegrationExtension.deployAndStartProcess(incidentProcess);
-    engineIntegrationExtension.failAllExternalTasks();
+    incidentClient.deployAndStartProcessInstanceWithOpenIncident();
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest processInstanceIndexMatcher = request()
       .withPath("/_bulk")
@@ -289,10 +270,7 @@ public class IncidentImportIT extends AbstractImportIT {
     assertThat(getIncidentCount()).isZero();
 
     // when updates to ES fails the first and succeeds the second time
-    BpmnModelInstance incidentProcess = getExternalTaskProcess();
-    engineIntegrationExtension.deployAndStartProcess(incidentProcess);
-    engineIntegrationExtension.failAllExternalTasks();
-    engineIntegrationExtension.completeAllExternalTasks();
+    incidentClient.deployAndStartProcessInstanceWithResolvedIncident();
     final ClientAndServer esMockServer = useAndGetElasticsearchMockServer();
     final HttpRequest processInstanceIndexMatcher = request()
       .withPath("/_bulk")

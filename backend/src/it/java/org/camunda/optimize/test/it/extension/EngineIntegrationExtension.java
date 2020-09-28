@@ -1124,9 +1124,13 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     }
   }
 
-  @SneakyThrows
   public void failAllExternalTasks() {
-    final List<ExternalTaskEngineDto> externalTasks = fetchAndLockExternalTasks();
+    failExternalTasks(null);
+  }
+
+  @SneakyThrows
+  public void failExternalTasks(final String processInstanceId) {
+    final List<ExternalTaskEngineDto> externalTasks = fetchAndLockExternalTasks(processInstanceId);
     for (ExternalTaskEngineDto externalTask : externalTasks) {
       HttpPost executeJobRequest = new HttpPost(getExternalTaskFailureUri(externalTask.getId()));
       executeJobRequest.addHeader("Content-Type", "application/json");
@@ -1157,19 +1161,27 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   @SneakyThrows
-  private List<ExternalTaskEngineDto> fetchAndLockExternalTasks() {
+  private List<ExternalTaskEngineDto> fetchAndLockExternalTasks(final String processInstanceId) {
     HttpPost post = new HttpPost(getExternalTaskFetchAndLockUri());
     post.addHeader("Content-Type", "application/json");
     post.setEntity(new StringEntity(
+      // @formatter:off
       String.format(
         "{\n" +
           "\"workerId\": \"" + "%s" + "\",\n" +
           "\"maxTasks\": " + 100 + ",\n" +
-          "\"topics\": [" + "{\"topicName\": \"%s\", \"lockDuration\": 1000000}" + "]\n" +
-          "}",
+          "\"topics\": [" +
+            "{\"" +
+              "topicName\": \"%s\", " +
+              "\"lockDuration\": 1000000," +
+              "\"processInstanceId\": " + processInstanceId +
+            "}" +
+          "]\n" +
+        "}",
         DEFAULT_WORKER,
         DEFAULT_TOPIC
       )
+      /// @formatter:on
     ));
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(post)) {
       if (response.getStatusLine().getStatusCode() == Response.Status.OK.getStatusCode()) {
@@ -1195,7 +1207,11 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   public void completeAllExternalTasks() {
-    List<ExternalTaskEngineDto> externalTasks = getExternalTasks();
+    completeExternalTasks(null);
+  }
+
+  public void completeExternalTasks(final String processInstanceId) {
+    List<ExternalTaskEngineDto> externalTasks = getExternalTasks(processInstanceId);
     increaseRetry(externalTasks);
     externalTasks.forEach(this::completeExternalTask);
   }
@@ -1258,8 +1274,19 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   @SneakyThrows
-  private List<ExternalTaskEngineDto> getExternalTasks() {
+  private List<ExternalTaskEngineDto> getExternalTasks(final String processInstanceId) {
     HttpRequestBase get = new HttpGet(getExternalTaskUri());
+    if (processInstanceId != null) {
+      URI uri = null;
+      try {
+        uri = new URIBuilder(get.getURI())
+          .addParameter("processInstanceId", processInstanceId)
+          .build();
+      } catch (URISyntaxException e) {
+        log.error("Could not build uri!", e);
+      }
+      get.setURI(uri);
+    }
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(get)) {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       return OBJECT_MAPPER.readValue(
