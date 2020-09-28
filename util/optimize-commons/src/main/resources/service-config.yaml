@@ -440,6 +440,8 @@ ui:
     pathToLogoIcon: 'logo/camunda_icon.svg'
     # a hex encoded color that should be used as background color for the header. Default color is white.
     backgroundColor: '#FFFFFF'
+  # If you have SSO enabled, you can set the property below to hide the logout option if it is not needed
+  logoutHidden: false
 
 eventBasedProcess:
   # A list of userIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.

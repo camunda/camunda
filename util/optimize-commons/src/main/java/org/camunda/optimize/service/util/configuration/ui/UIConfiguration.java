@@ -11,4 +11,5 @@ import lombok.Data;
 public class UIConfiguration {
 
   private HeaderCustomization header;
+  private boolean logoutHidden;
 }

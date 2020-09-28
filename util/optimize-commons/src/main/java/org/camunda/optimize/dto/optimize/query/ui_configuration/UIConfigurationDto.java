@@ -26,6 +26,7 @@ public class UIConfigurationDto {
   private String optimizeVersion;
   private Map<String, WebappsEndpointDto> webappsEndpoints;
   private List<String> webhooks;
+  private boolean logoutHidden;
 
   // mirrors SettingsDto
   private boolean metadataTelemetryEnabled;

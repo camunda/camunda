@@ -44,6 +44,7 @@ public class UIConfigurationService implements ConfigurationReloadable {
   public UIConfigurationDto getUIConfiguration() {
     UIConfigurationDto uiConfigurationDto = new UIConfigurationDto();
     uiConfigurationDto.setHeader(getHeaderCustomization());
+    uiConfigurationDto.setLogoutHidden(configurationService.getUiConfiguration().isLogoutHidden());
     uiConfigurationDto.setEmailEnabled(configurationService.getEmailEnabled());
     uiConfigurationDto.setSharingEnabled(configurationService.getSharingEnabled());
     uiConfigurationDto.setTenantsAvailable(tenantService.isMultiTenantEnvironment());

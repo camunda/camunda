@@ -41,6 +41,30 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
   }
 
   @Test
+  public void logoutHidden() {
+    //given
+    embeddedOptimizeExtension.getConfigurationService().getUiConfiguration().setLogoutHidden(true);
+
+    // when
+    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+
+    // then
+    assertThat(response.isLogoutHidden()).isTrue();
+  }
+
+  @Test
+  public void logoutVisible() {
+    //given
+    embeddedOptimizeExtension.getConfigurationService().getUiConfiguration().setLogoutHidden(false);
+
+    // when
+    UIConfigurationDto response = uiConfigurationClient.getUIConfiguration();
+
+    // then
+    assertThat(response.isLogoutHidden()).isFalse();
+  }
+
+  @Test
   public void sharingEnabled() {
     // given
     embeddedOptimizeExtension.getConfigurationService().setSharingEnabled(true);
@@ -112,6 +136,7 @@ public class UIConfigurationRestServiceIT extends AbstractIT {
     assertThat(defaultEndpoint).isNotNull();
     assertThat(defaultEndpoint.getEndpoint()).isEmpty();
   }
+
 
   @Test
   public void emailNotificationIsEnabled() {
