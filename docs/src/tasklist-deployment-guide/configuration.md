@@ -1,7 +1,7 @@
 # Introduction
 
 Tasklist is a Spring Boot application. That means all ways to [configure](https://docs.spring.io/spring-boot/docs/current/reference/html/spring-boot-features.html#boot-features-external-config)
-a Spring Boot application can be applied. By default the configuration for Tasklist is stored in a YAML file `application.yml`. All Tasklist related settings are prefixed
+a Spring Boot application can be applied. By default, the configuration for Tasklist is stored in a YAML file `application.yml`. All Tasklist related settings are prefixed
 with `zeebe.tasklist`. The following parts are configurable:
 
  * [Elasticsearch Connection](#elasticsearch)
@@ -18,12 +18,15 @@ with `zeebe.tasklist`. The following parts are configurable:
 Tasklist stores and reads data in/from Elasticsearch.
 
 ## Settings to connect
+Tasklist supports [basic authentication](https://www.elastic.co/guide/en/elasticsearch/reference/6.8/setting-up-authentication.html) for elasticsearch.
+Set the appropriate username/password combination in the configuration to use it.
 
 Name | Description | Default value
 -----|-------------|--------------
 zeebe.tasklist.elasticsearch.clusterName | Clustername of Elasticsearch | elasticsearch
-zeebe.tasklist.elasticsearch.host | Hostname where Elasticsearch is running | localhost
-zeebe.tasklist.elasticsearch.port | Port of Elasticsearch REST API | 9200
+zeebe.tasklist.elasticsearch.url | URL of Elasticsearch REST API  | http://localhost:9200
+zeebe.tasklist.elasticsearch.username | Username to access Elasticsearch REST API | -
+zeebe.tasklist.elasticsearch.password | Password to access Elasticsearch REST API | -
 
 ## A snippet from application.yml:
 
@@ -32,10 +35,8 @@ zeebe.tasklist:
   elasticsearch:
     # Cluster name
     clusterName: elasticsearch
-    # Host
-    host: localhost
-    # Transport port
-    port: 9200
+    # Url
+    url: http://localhost:9200
 ```
 
 # Zeebe Broker Connection
@@ -67,9 +68,10 @@ Therefore settings for this Elasticsearch connection must be defined and must co
 Name | Description | Default value
 -----|-------------|--------------
 zeebe.tasklist.zeebeElasticsearch.clusterName | Cluster name of Elasticsearch | elasticsearch
-zeebe.tasklist.zeebeElasticsearch.host | Hostname where Elasticsearch is running | localhost
-zeebe.tasklist.zeebeElasticsearch.port | Port of Elasticsearch REST API | 9200
+zeebe.tasklist.zeebeElasticsearch.url | URL of Elasticsearch REST API| http://localhost:9200
 zeebe.tasklist.zeebeElasticsearch.prefix | Index prefix as configured in Zeebe Elasticsearch exporter | zeebe-record
+zeebe.tasklist.zeebeElasticsearch.username | Username to access Elasticsearch REST API | -
+zeebe.tasklist.zeebeElasticsearch.password | Password to access Elasticsearch REST API | -
 
 ## A snippet from application.yml:
 
@@ -78,10 +80,8 @@ zeebe.tasklist:
   zeebeElasticsearch:
     # Cluster name
     clusterName: elasticsearch
-    # Host
-    host: localhost
-    # Transport port
-    port: 9200
+    # Url
+    url: http://localhost:9200
     # Index prefix, configured in Zeebe Elasticsearch exporter
     prefix: zeebe-record
 ```
@@ -188,10 +188,8 @@ zeebe.tasklist:
   elasticsearch:
     # Cluster name
     clusterName: elasticsearch
-    # Host
-    host: localhost
-    # Transport port
-    port: 9200
+    # Url
+    url: http://localhost:9200
   # Zeebe instance
   zeebe:
     # Broker contact point
@@ -200,10 +198,8 @@ zeebe.tasklist:
   zeebeElasticsearch:
     # Cluster name
     clusterName: elasticsearch
-    # Host
-    host: localhost
-    # Transport port
-    port: 9200
+    # Url
+    url: http://localhost:9200
     # Index prefix, configured in Zeebe Elasticsearch exporter
     prefix: zeebe-record
 ```
