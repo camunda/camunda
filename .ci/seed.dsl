@@ -104,7 +104,7 @@ multibranchPipelineJob('camunda-operate') {
       id 'camunda-operate'
       repoOwner githubOrga
       repository gitRepository
-      scanCredentialsId 'camunda-jenkins-github'
+      scanCredentialsId 'github-operate-app'
     }
   }
 
