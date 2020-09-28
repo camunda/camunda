@@ -203,7 +203,7 @@ public class ElasticSearchSchemaManager {
         .map(indexNameService::getOptimizeIndexAliasForIndex)
         .collect(toSet());
     final String defaultAliasName = indexNameService.getOptimizeIndexAliasForIndex(mapping.getIndexName());
-    final String indexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(mapping);
+    final String suffixedIndexName = indexNameService.getOptimizeIndexNameWithVersion(mapping);
     final Settings indexSettings = createIndexSettings(mapping);
 
     try {
@@ -213,21 +213,21 @@ public class ElasticSearchSchemaManager {
         createOrUpdateTemplateWithAliases(
           esClient, mapping, defaultAliasName, prefixedReadOnlyAliases, indexSettings
         );
-        createOptimizeIndexWithWriteAliasFromTemplate(esClient, indexName, defaultAliasName);
+        createOptimizeIndexWithWriteAliasFromTemplate(esClient, suffixedIndexName, defaultAliasName);
       } else {
         createOptimizeIndexFromRequest(
-          esClient, mapping, indexName, defaultAliasName, prefixedReadOnlyAliases, indexSettings
+          esClient, mapping, suffixedIndexName, defaultAliasName, prefixedReadOnlyAliases, indexSettings
         );
       }
     } catch (ElasticsearchStatusException e) {
       if (e.status() == RestStatus.BAD_REQUEST && e.getMessage().contains("resource_already_exists_exception")) {
-        log.debug("index {} already exists, updating mapping and dynamic settings.", indexName);
+        log.debug("index {} already exists, updating mapping and dynamic settings.", suffixedIndexName);
         updateDynamicSettingsAndMappings(esClient, mapping);
       } else {
         throw e;
       }
     } catch (Exception e) {
-      String message = String.format("Could not create Index [%s]", indexName);
+      String message = String.format("Could not create Index [%s]", suffixedIndexName);
       log.warn(message, e);
       throw new OptimizeRuntimeException(message, e);
     }
@@ -259,15 +259,14 @@ public class ElasticSearchSchemaManager {
                                                  final String defaultAliasName,
                                                  final Set<String> additionalAliases,
                                                  final Settings indexSettings) {
-    final String templateName = indexNameService.getOptimizeIndexNameForAliasAndVersion(mappingCreator);
+    final String templateName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(mappingCreator);
     log.info("Creating or updating template with name {}", templateName);
 
-    final String pattern = String.format("%s-%s", templateName, "*");
     PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(templateName)
       .version(mappingCreator.getVersion())
       .mapping(mappingCreator.getSource())
       .settings(indexSettings)
-      .patterns(Collections.singletonList(pattern));
+      .patterns(Collections.singletonList(templateName));
 
     additionalAliases.stream()
       .filter(aliasName -> !aliasName.equals(defaultAliasName))
@@ -380,11 +379,11 @@ public class ElasticSearchSchemaManager {
   }
 
   private void updateIndexDynamicSettingsAndMappings(RestHighLevelClient esClient, IndexMappingCreator indexMapping) {
-    final String indexName = indexNameService.getOptimizeIndexNameForAliasAndVersion(indexMapping);
+    final String indexName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMapping);
     try {
       final Settings indexSettings = buildDynamicSettings(configurationService);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
-      updateSettingsRequest.indices(indexName + "*");
+      updateSettingsRequest.indices(indexName);
       updateSettingsRequest.settings(indexSettings);
       esClient.indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -393,7 +392,7 @@ public class ElasticSearchSchemaManager {
     }
 
     try {
-      final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName + "*");
+      final PutMappingRequest putMappingRequest = new PutMappingRequest(indexName);
       putMappingRequest.source(indexMapping.getSource());
       esClient.indices().putMapping(putMappingRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {

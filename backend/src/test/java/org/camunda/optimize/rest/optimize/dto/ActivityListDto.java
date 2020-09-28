@@ -12,10 +12,12 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
 import java.util.Date;
 
-public class ActivityListDto implements Serializable,OptimizeDto {
+@Getter
+@Setter
+public class ActivityListDto implements Serializable, OptimizeDto {
 
-  @Getter @Setter protected String processDefinitionId;
-  @Getter @Setter protected Date processInstanceStartDate;
-  @Getter @Setter protected Date processInstanceEndDate;
-  @Getter @Setter protected String[] activityList;
+  protected String processDefinitionId;
+  protected Date processInstanceStartDate;
+  protected Date processInstanceEndDate;
+  protected String[] activityList;
 }

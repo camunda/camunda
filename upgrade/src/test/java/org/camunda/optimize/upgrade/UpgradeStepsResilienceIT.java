@@ -94,7 +94,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // given
     UpgradePlan upgradePlan = createDeleteIndexPlan();
 
-    final String versionedIndexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(TEST_INDEX_V2);
+    final String versionedIndexName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequestMatcher(versionedIndexName);
     esMockServer
       // respond with this error 2 times, afterwards the request will be forwarded to elastic again
@@ -121,7 +121,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // given
     UpgradePlan upgradePlan = createDeleteIndexPlan();
 
-    final String versionedIndexName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(TEST_INDEX_V2);
+    final String versionedIndexName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V2);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequestMatcher(versionedIndexName);
     esMockServer
       // respond with a different error
@@ -143,7 +143,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // given
     UpgradePlan upgradePlan = createUpdateIndexPlan();
 
-    final String oldIndexToDeleteName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(TEST_INDEX_V1);
+    final String oldIndexToDeleteName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequestMatcher(oldIndexToDeleteName);
     esMockServer
       // respond with this error 2 times, afterwards the request will be forwarded to elastic again
@@ -171,7 +171,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     // given
     UpgradePlan upgradePlan = createUpdateIndexPlan();
 
-    final String oldIndexToDeleteName = indexNameService.getVersionedOptimizeIndexNameForIndexMapping(TEST_INDEX_V1);
+    final String oldIndexToDeleteName = indexNameService.getOptimizeIndexNameWithVersion(TEST_INDEX_V1);
     final HttpRequest indexDeleteRequest = createIndexDeleteRequestMatcher(oldIndexToDeleteName);
     esMockServer
       // respond with a different error

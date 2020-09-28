@@ -209,8 +209,11 @@ public class EntitiesReader {
   }
 
   private long getDocCountForIndex(final Terms byIndexNameTerms, final IndexMappingCreator indexMapper) {
+    if (indexMapper.getCreateFromTemplate()) {
+      throw new OptimizeRuntimeException("Cannot fetch the document count for indices created from template");
+    }
     return Optional.ofNullable(byIndexNameTerms.getBucketByKey(
-      optimizeIndexNameService.getVersionedOptimizeIndexNameForIndexMapping(indexMapper)))
+      optimizeIndexNameService.getOptimizeIndexNameWithVersionWithoutSuffix(indexMapper)))
       .map(MultiBucketsAggregation.Bucket::getDocCount)
       .orElse(0L);
   }

@@ -117,7 +117,7 @@ public class ReimportPreparation {
 
   private static String createIndexPatternExcludingExternalEventIndexVariant(final OptimizeElasticsearchClient prefixAwareClient,
                                                                              final IndexMappingCreator index) {
-    return prefixAwareClient.getIndexNameService().createVersionedOptimizeIndexPattern(index)
+    return prefixAwareClient.getIndexNameService().getOptimizeIndexNameWithVersionWithWildcardSuffix(index)
       + ",-"
       + prefixAwareClient.getIndexNameService().getOptimizeIndexAliasForIndex(index.getIndexName())
       + EXTERNAL_EVENTS_INDEX_SUFFIX + "*";

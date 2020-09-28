@@ -646,7 +646,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
   private String getVersionedEventProcessInstanceIndexNameForPublishedStateId(final String eventProcessPublishStateId) {
     return elasticSearchIntegrationTestExtension.getOptimizeElasticClient()
       .getIndexNameService()
-      .getVersionedOptimizeIndexNameForIndexMapping(new EventProcessInstanceIndex(eventProcessPublishStateId));
+      .getOptimizeIndexNameWithVersion(new EventProcessInstanceIndex(eventProcessPublishStateId));
   }
 
   private String getOptimizeIndexAliasForIndexName(final String indexName) {

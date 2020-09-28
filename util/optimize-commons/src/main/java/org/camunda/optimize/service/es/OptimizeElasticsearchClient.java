@@ -150,7 +150,7 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
 
   public final boolean exists(final IndexMappingCreator indexMappingCreator) throws IOException {
     return highLevelClient.indices().exists(
-      new GetIndexRequest(indexNameService.getVersionedOptimizeIndexNameForIndexMapping(indexMappingCreator)),
+      new GetIndexRequest(indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMappingCreator)),
       RequestOptions.DEFAULT
     );
   }
@@ -221,7 +221,8 @@ public class OptimizeElasticsearchClient implements ConfigurationReloadable {
   }
 
   public void deleteIndex(final IndexMappingCreator indexMappingCreator) {
-    deleteIndexByRawIndexName(indexNameService.getVersionedOptimizeIndexNameForIndexMapping(indexMappingCreator));
+    String indexName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(indexMappingCreator);
+    deleteIndexByRawIndexName(indexName);
   }
 
   /**

@@ -158,17 +158,17 @@ public class SchemaUpgradeClient {
 
   public void createOrUpdateTemplateWithoutAliases(final IndexMappingCreator mappingCreator,
                                                    final String templateName) {
-    final String indexNameWithoutSuffix = getIndexNameService().getOptimizeIndexNameForAliasAndVersion(
-      mappingCreator);
+    final String indexNameWithoutSuffix = getIndexNameService()
+      .getOptimizeIndexNameWithVersionWithoutSuffix(mappingCreator);
     final Settings indexSettings = createIndexSettings(mappingCreator);
 
-    final String pattern = String.format("%s-%s", indexNameWithoutSuffix, "*");
     log.debug("creating or updating template with name {}", indexNameWithoutSuffix);
     PutIndexTemplateRequest templateRequest = new PutIndexTemplateRequest(indexNameWithoutSuffix)
       .version(mappingCreator.getVersion())
       .mapping(mappingCreator.getSource())
       .settings(indexSettings)
-      .patterns(Collections.singletonList(pattern));
+      .patterns(Collections.singletonList(getIndexNameService()
+                                            .getOptimizeIndexNameWithVersionWithWildcardSuffix(mappingCreator)));
 
     try {
       getPlainRestClient().indices().putTemplate(templateRequest, RequestOptions.DEFAULT);
@@ -316,7 +316,7 @@ public class SchemaUpgradeClient {
   }
 
   public void updateIndexDynamicSettingsAndMappings(final IndexMappingCreator indexMapping) {
-    final String indexName = getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(indexMapping);
+    final String indexName = getIndexNameService().getOptimizeIndexNameWithVersionForAllIndicesOf(indexMapping);
     try {
       final Settings indexSettings = buildDynamicSettings(configurationService);
       final UpdateSettingsRequest updateSettingsRequest = new UpdateSettingsRequest();
@@ -324,7 +324,7 @@ public class SchemaUpgradeClient {
       updateSettingsRequest.settings(indexSettings);
       getPlainRestClient().indices().putSettings(updateSettingsRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String message = String.format("Could not update index settings for index [%s].", indexMapping.getIndexName());
+      String message = String.format("Could not update index settings for index [%s].", indexName);
       throw new UpgradeRuntimeException(message, e);
     }
 
@@ -333,7 +333,7 @@ public class SchemaUpgradeClient {
       putMappingRequest.source(indexMapping.getSource());
       getPlainRestClient().indices().putMapping(putMappingRequest, RequestOptions.DEFAULT);
     } catch (IOException e) {
-      String message = String.format("Could not update index mappings for index [%s].", indexMapping.getIndexName());
+      String message = String.format("Could not update index mappings for index [%s].", indexName);
       throw new UpgradeRuntimeException(message, e);
     }
   }

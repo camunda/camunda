@@ -195,8 +195,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(emails).hasSize(1);
     assertThat(emails[0].getSubject()).isEqualTo("[Camunda-Optimize] - Report status");
     String content = emails[0].getContent().toString();
-    assertThat(content).contains(simpleAlert.getName());
     assertThat(content)
+      .contains(simpleAlert.getName())
       .contains(String.format(
         "http://localhost:%d/#/collection/%s/report/%s/",
         getOptimizeHttpPort(),

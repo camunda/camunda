@@ -90,7 +90,7 @@ public class ExternalEventWriter {
         false,
         // use wildcarded index name to catch all indices that exist after potential rollover
         esClient.getIndexNameService()
-          .createVersionedOptimizeIndexPattern(new EventIndex())
+          .getOptimizeIndexNameWithVersionWithWildcardSuffix(new EventIndex())
       );
     } finally {
       progressReporter.stop();

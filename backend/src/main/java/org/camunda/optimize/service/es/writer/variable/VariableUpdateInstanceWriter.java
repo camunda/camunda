@@ -71,7 +71,7 @@ public class VariableUpdateInstanceWriter {
       false,
       // use wildcarded index name to catch all indices that exist after potential rollover
       esClient.getIndexNameService()
-        .createVersionedOptimizeIndexPattern(new VariableUpdateInstanceIndex())
+        .getOptimizeIndexNameWithVersionWithWildcardSuffix(new VariableUpdateInstanceIndex())
     );
   }
 

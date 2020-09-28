@@ -52,12 +52,10 @@ public class EventProcessInstanceImportMediatorManager implements ConfigurationR
       .values()
       .stream()
       .filter(publishState -> !importMediators.containsKey(publishState.getId()))
-      .forEach(publishState -> {
-        importMediators.put(
-          publishState.getId(),
-          mediatorFactory.createEventProcessInstanceMediators(publishState)
-        );
-      });
+      .forEach(publishState -> importMediators.put(
+        publishState.getId(),
+        mediatorFactory.createEventProcessInstanceMediators(publishState)
+      ));
   }
 
   @Override

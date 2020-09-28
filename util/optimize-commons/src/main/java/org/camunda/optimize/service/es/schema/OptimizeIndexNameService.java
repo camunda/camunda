@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.schema;
 
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,23 +32,30 @@ public class OptimizeIndexNameService implements ConfigurationReloadable {
     return getOptimizeIndexAliasForIndexNameAndPrefix(index, indexPrefix);
   }
 
-  public String createVersionedOptimizeIndexPattern(final IndexMappingCreator indexMappingCreator) {
-    return getOptimizeIndexNameForAliasAndVersion(
-      getOptimizeIndexAliasForIndex(indexMappingCreator.getIndexName()),
-      String.valueOf(indexMappingCreator.getVersion())
-    )
+  /**
+   * This will suffix the indices that are created from templates with their initial suffix
+   */
+  public String getOptimizeIndexNameWithVersion(final IndexMappingCreator indexMappingCreator) {
+    return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator) + indexMappingCreator.getIndexNameInitialSuffix();
+  }
+
+  /**
+   * This will suffix the wildcard for any indices that get rolled over, which is not compatible with all ES APIs
+   */
+  public String getOptimizeIndexNameWithVersionForAllIndicesOf(final IndexMappingCreator indexMappingCreator) {
+    if (StringUtils.isNotEmpty(indexMappingCreator.getIndexNameInitialSuffix())) {
+      return getOptimizeIndexNameWithVersionWithWildcardSuffix(indexMappingCreator);
+    }
+    return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator);
+  }
+
+  public String getOptimizeIndexNameWithVersionWithWildcardSuffix(final IndexMappingCreator indexMappingCreator) {
+    return getOptimizeIndexNameWithVersionWithoutSuffix(indexMappingCreator)
       // match all indices of that version with this wildcard, which also catches potentially rolled over indices
       + "*";
   }
 
-  public String getVersionedOptimizeIndexNameForIndexMapping(final IndexMappingCreator indexMappingCreator) {
-    return getOptimizeIndexNameForAliasAndVersion(
-      getOptimizeIndexAliasForIndex(indexMappingCreator.getIndexName()),
-      String.valueOf(indexMappingCreator.getVersion())
-    ) + indexMappingCreator.getIndexNameInitialSuffix();
-  }
-
-  public String getOptimizeIndexNameForAliasAndVersion(final IndexMappingCreator indexMappingCreator) {
+  public String getOptimizeIndexNameWithVersionWithoutSuffix(final IndexMappingCreator indexMappingCreator) {
     return getOptimizeIndexNameForAliasAndVersion(
       getOptimizeIndexAliasForIndex(indexMappingCreator.getIndexName()),
       String.valueOf(indexMappingCreator.getVersion())

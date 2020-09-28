@@ -13,24 +13,13 @@ import org.camunda.optimize.upgrade.steps.UpgradeStep;
 
 @AllArgsConstructor
 public class DeleteIndexIfExistsStep implements UpgradeStep {
-  private final String aliasName;
-  private final int indexVersion;
 
-  public DeleteIndexIfExistsStep(final IndexMappingCreator index) {
-    this(index.getIndexName(), index.getVersion());
-  }
-
-  public DeleteIndexIfExistsStep(final IndexMappingCreator index, final Integer version) {
-    this.aliasName = index.getIndexName();
-    this.indexVersion = version;
-  }
+  private final IndexMappingCreator index;
 
   @Override
   public void execute(final SchemaUpgradeClient schemaUpgradeClient) {
     final OptimizeIndexNameService indexNameService = schemaUpgradeClient.getIndexNameService();
-    final String fullIndexName = OptimizeIndexNameService.getOptimizeIndexNameForAliasAndVersion(
-      indexNameService.getOptimizeIndexAliasForIndex(aliasName), String.valueOf(indexVersion)
-    );
+    final String fullIndexName = indexNameService.getOptimizeIndexNameWithVersionForAllIndicesOf(index);
     if (schemaUpgradeClient.indexExists(fullIndexName)) {
       schemaUpgradeClient.deleteIndex(fullIndexName);
     }

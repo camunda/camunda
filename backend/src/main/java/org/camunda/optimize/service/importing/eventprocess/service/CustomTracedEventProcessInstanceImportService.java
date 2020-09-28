@@ -38,7 +38,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 @Slf4j
 public class CustomTracedEventProcessInstanceImportService implements ImportService<CamundaActivityEventDto> {
 
-  public static final String EVENT_SOURCE_CAMUNDA = "camunda";
+  private static final String EVENT_SOURCE_CAMUNDA = "camunda";
 
   private final EventSourceEntryDto eventSource;
 

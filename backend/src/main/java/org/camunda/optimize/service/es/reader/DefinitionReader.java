@@ -742,7 +742,7 @@ public class DefinitionReader {
   }
 
   private String getOptimizeIndexNameForIndex(final DefaultIndexMappingCreator index) {
-    return esClient.getIndexNameService().getVersionedOptimizeIndexNameForIndexMapping(index);
+    return esClient.getIndexNameService().getOptimizeIndexNameWithVersion(index);
   }
 
   private String[] resolveIndexNameForType(final DefinitionType type) {
