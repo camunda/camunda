@@ -19,9 +19,9 @@ class UpgradeDataTest {
     CamBpmDataGenerator.generate()
     // clean new elastic and clean old elastic
     def oldElasticClient = new ElasticClient("old", oldElasticPort)
-    oldElasticClient.cleanIndices()
+    oldElasticClient.cleanIndicesAndTemplates()
     def newElasticClient = new ElasticClient("new", newElasticPort)
-    newElasticClient.cleanIndices()
+    newElasticClient.cleanIndicesAndTemplates()
     def oldOptimize = new OptimizeWrapper(previousVersion, buildDir, oldElasticPort)
     // license only needed for old Optimize as the new one would get it from elasticsearch
     oldOptimize.copyLicense(UpgradeDataTest.class.getResource("OptimizeLicense.txt").getPath())

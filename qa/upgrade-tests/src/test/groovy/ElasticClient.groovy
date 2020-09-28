@@ -14,6 +14,7 @@ import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest
+import org.elasticsearch.action.admin.indices.template.delete.DeleteIndexTemplateRequest
 import org.elasticsearch.action.search.SearchRequest
 import org.elasticsearch.client.RequestOptions
 import org.elasticsearch.client.RestClient
@@ -71,10 +72,11 @@ class ElasticClient {
     println "Successfully refreshed all indices of ${name} Elasticsearch!"
   }
 
-  def cleanIndices() {
-    println "Wiping all indices from ${name} Elasticsearch..."
+  def cleanIndicesAndTemplates() {
+    println "Wiping all indices & templates from ${name} Elasticsearch..."
     client.indices().delete(new DeleteIndexRequest("_all"), RequestOptions.DEFAULT)
-    println "Successfully wiped all indices from ${name} Elasticsearch!"
+    client.indices().deleteTemplate(new DeleteIndexTemplateRequest("*"), RequestOptions.DEFAULT)
+    println "Successfully wiped all indices & templates from ${name} Elasticsearch!"
   }
 
   def getSettings(String indexPattern = DEFAULT_OPTIMIZE_INDEX_PATTERN) {
@@ -114,7 +116,9 @@ class ElasticClient {
   def createSnapshot(Boolean waitForCompletion = true) {
     println "Creating snapshot on ${name} Elasticsearch..."
     client.snapshot().create(
-      new CreateSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, SNAPSHOT_NAME).waitForCompletion(waitForCompletion),
+      new CreateSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, SNAPSHOT_NAME)
+        .includeGlobalState(true)
+        .waitForCompletion(waitForCompletion),
       RequestOptions.DEFAULT
     )
     if (waitForCompletion) {
@@ -127,7 +131,9 @@ class ElasticClient {
   def restoreSnapshot() {
     println "Restoring snapshot on ${name} Elasticsearch..."
     client.snapshot().restore(
-      new RestoreSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, SNAPSHOT_NAME).waitForCompletion(true),
+      new RestoreSnapshotRequest(SNAPSHOT_REPOSITORY_NAME, SNAPSHOT_NAME)
+        .includeGlobalState(true)
+        .waitForCompletion(true),
       RequestOptions.DEFAULT
     )
     println "Done restoring snapshot on ${name} Elasticsearch!"

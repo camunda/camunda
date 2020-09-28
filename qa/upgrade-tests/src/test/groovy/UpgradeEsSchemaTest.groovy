@@ -20,9 +20,9 @@ class UpgradeEsSchemaTest {
                                              Integer newElasticPort) {
     // clean new elastic and clean old elastic
     def oldElasticClient = new ElasticClient("old", oldElasticPort)
-    oldElasticClient.cleanIndices()
+    oldElasticClient.cleanIndicesAndTemplates()
     def newElasticClient = new ElasticClient("new", newElasticPort)
-    newElasticClient.cleanIndices()
+    newElasticClient.cleanIndicesAndTemplates()
     def oldOptimize = new OptimizeWrapper(previousVersion, buildDir, oldElasticPort)
     def newOptimize = new OptimizeWrapper(currentVersion, buildDir, newElasticPort)
     try {
@@ -35,7 +35,7 @@ class UpgradeEsSchemaTest {
       def expectedAliases = newElasticClient.getAliases()
       def expectedTemplates = newElasticClient.getTemplates()
       newOptimize.stop()
-      newElasticClient.cleanIndices()
+      newElasticClient.cleanIndicesAndTemplates()
 
       // start old optimize to prepare for upgrade
       oldOptimize.start().consumeProcessOutput()
@@ -74,7 +74,7 @@ class UpgradeEsSchemaTest {
       assertThat(newElasticClient.getSettings()).isEqualTo(expectedSettings)
       assertThat(newElasticClient.getMappings()).isEqualTo(expectedMappings)
       assertThat(newElasticClient.getAliases()).isEqualTo(expectedAliases)
-      assertThat(newElasticClient.getTemplates()).isEqualTo(expectedTemplates)
+      assertThat(newElasticClient.getTemplates()).containsExactlyInAnyOrderElementsOf(expectedTemplates)
       println "Finished asserting expected index metadata!"
 
       println "Asserting expected instance data doc counts..."
