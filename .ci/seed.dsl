@@ -104,7 +104,7 @@ multibranchPipelineJob('zeebe-tasklist') {
       id 'zeebe-tasklist'
       repoOwner githubOrga
       repository gitRepository
-      scanCredentialsId 'camunda-jenkins-github'
+      scanCredentialsId 'github-zeebe-tasklist-app'
     }
   }
 
