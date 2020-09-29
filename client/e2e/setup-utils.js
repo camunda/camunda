@@ -14,17 +14,12 @@ function deploy(processNames) {
   return zbc.deployWorkflow(processNames);
 }
 
-async function createInstances(bpmnProcessId, version, numberOfInstances) {
-  let instances = [];
-  for (let i = 0; i < numberOfInstances; i++) {
-    instances.push(
-      await zbc.createWorkflowInstance({
-        bpmnProcessId,
-        version,
-      })
-    );
-  }
-  return instances;
+function createInstances(bpmnProcessId, version, numberOfInstances) {
+  return Promise.all(
+    [...new Array(numberOfInstances)].map(() =>
+      zbc.createWorkflowInstance({bpmnProcessId, version})
+    )
+  );
 }
 
 function createSingleInstance(processId, version, variables) {

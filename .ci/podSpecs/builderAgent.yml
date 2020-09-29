@@ -103,6 +103,8 @@ spec:
           value: io.zeebe.exporter.ElasticsearchExporter
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_BULK_SIZE
           value: 1
+        - name: ZEEBE_BROKER_BACKPRESSURE_ENABLED
+          value: false
       resources:
         limits:
           cpu: 4
