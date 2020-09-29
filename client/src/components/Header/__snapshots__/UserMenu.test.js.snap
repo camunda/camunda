@@ -1,0 +1,25 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`matches the snapshot 1`] = `
+<Dropdown
+  className="UserMenu"
+  label="userName"
+>
+  <ForwardRef(DropdownOption)
+    key="0"
+    title="Telemetry Settings"
+  >
+    Telemetry Settings
+  </ForwardRef(DropdownOption)>
+  <hr
+    key="1"
+  />
+  <ForwardRef(DropdownOption)
+    key="2"
+    onClick={[Function]}
+    title="Logout"
+  >
+    Logout
+  </ForwardRef(DropdownOption)>
+</Dropdown>
+`;

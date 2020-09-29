@@ -68,23 +68,6 @@ it('should show and hide the event based process nav item depending on authoriza
   expect(disabled.find('[linksTo="/eventBasedProcess/"]')).not.toExist();
 });
 
-it('should go to temporary logout route on logout', () => {
-  const node = shallow(<Header {...props} />);
-
-  node.find(Dropdown.Option).simulate('click');
-  expect(props.history.push).toHaveBeenCalledWith('/logout');
-});
-
-it('should show a Telemetry settings entry if the user is authorized', async () => {
-  const node = shallow(
-    <Header {...props} user={{name: 'Johnny Depp', authorizations: ['telemetry_administration']}} />
-  );
-
-  await runLastEffect();
-
-  expect(node.find('.userMenu [title="Telemetry Settings"]')).toExist();
-});
-
 it('should automatically open the telemetry settings modal if the settings are not confirmed', async () => {
   areSettingsManuallyConfirmed.mockReturnValueOnce(false);
   const node = shallow(

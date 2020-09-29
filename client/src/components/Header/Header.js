@@ -8,7 +8,6 @@ import React, {useState, useEffect} from 'react';
 import {Link, withRouter} from 'react-router-dom';
 import classnames from 'classnames';
 
-import {Dropdown} from 'components';
 import {t} from 'translation';
 import {getHeader, areSettingsManuallyConfirmed} from 'config';
 import {withErrorHandling, withUser} from 'HOC';
@@ -17,12 +16,13 @@ import {addNotification, showError} from 'notifications';
 import {TelemetrySettings} from './TelemetrySettings';
 import HeaderNav from './HeaderNav';
 import ChangeLog from './ChangeLog';
+import UserMenu from './UserMenu';
 
 import {isEventBasedProcessEnabled} from './service';
 
 import './Header.scss';
 
-export function Header({mightFail, location, noActions, user, history}) {
+export function Header({mightFail, location, noActions, user}) {
   const [config, setConfig] = useState({});
   const [showEventBased, setShowEventBased] = useState(false);
   const [telemetrySettingsOpen, setTelemetrySettingsOpen] = useState(false);
@@ -78,22 +78,7 @@ export function Header({mightFail, location, noActions, user, history}) {
             )}
           </HeaderNav>
           <ChangeLog />
-          <Dropdown className="userMenu" label={user?.name}>
-            {user?.authorizations.includes('telemetry_administration') && (
-              <>
-                <Dropdown.Option
-                  onClick={() => setTelemetrySettingsOpen(true)}
-                  title={t('navigation.telemetry')}
-                >
-                  {t('navigation.telemetry')}
-                </Dropdown.Option>
-                <hr />
-              </>
-            )}
-            <Dropdown.Option onClick={() => history.push('/logout')} title={t('navigation.logout')}>
-              {t('navigation.logout')}
-            </Dropdown.Option>
-          </Dropdown>
+          <UserMenu user={user} onTelemetryOpen={() => setTelemetrySettingsOpen(true)} />
         </>
       )}
       {telemetrySettingsOpen && (

@@ -1,0 +1,30 @@
+@import 'shared-styles/shared-styles.scss';
+
+.UserMenu {
+  &.Dropdown .activateButton {
+    border: none;
+    background-color: white;
+    height: 100%;
+    padding-top: 0;
+    padding-bottom: 0;
+    padding-left: 0;
+    font-size: 15px;
+    color: $grey-lighten-56;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+
+  &.userLabel {
+    align-self: center;
+    color: $grey-lighten-56;
+    font-weight: 500;
+    white-space: nowrap;
+    font-size: 15px;
+    vertical-align: middle;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid $silver-darken-80;
+  }
+}
