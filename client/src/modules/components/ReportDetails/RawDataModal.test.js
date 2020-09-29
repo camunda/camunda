@@ -36,14 +36,18 @@ it('should contain ReportRenderer', () => {
 it('evaluate the raw data of the report on mount', () => {
   shallow(<RawDataModal {...props} />);
   runLastEffect();
-  expect(evaluateReport).toHaveBeenCalledWith({
-    data: {
-      configuration: {
-        xml: 'xml data',
+  expect(evaluateReport).toHaveBeenCalledWith(
+    {
+      data: {
+        configuration: {
+          xml: 'xml data',
+        },
+        groupBy: {type: 'none', value: null},
+        view: {entity: null, property: 'rawData'},
+        visualization: 'table',
       },
-      groupBy: {type: 'none', value: null},
-      view: {entity: null, property: 'rawData'},
-      visualization: 'table',
     },
-  });
+    [],
+    undefined
+  );
 });
