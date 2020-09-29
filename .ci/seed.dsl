@@ -105,7 +105,7 @@ if (binding.variables.get("ENVIRONMENT") == "prod") {
         id 'optimize-repo'
         repoOwner githubOrga
         repository gitRepository
-        scanCredentialsId 'camunda-jenkins-github'
+        scanCredentialsId 'github-optimize-app'
         // Discover branches => All branches
         buildOriginBranch()
         // Discover pull requests from origin => The current pull request revision
