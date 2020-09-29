@@ -56,6 +56,13 @@
       <validValue name="LEADER">0</validValue>
       <validValue name="FOLLOWER">1</validValue>
     </enum>
+
+    <composite name="Version" description="Version information">
+      <type name="majorVersion" primitiveType="int32"/>
+      <type name="minorVersion" primitiveType="int32"/>
+      <type name="patchVersion" primitiveType="int32"/>
+    </composite>
+
   </types>
 
   <!-- L1 General Messages 0 - 99 -->
@@ -97,6 +104,7 @@
     <field name="intent" id="6" type="uint8"/>
     <!-- populated when RecordType is COMMAND_REJECTION -->
     <field name="rejectionType" id="7" type="RejectionType"/>
+    <field name="brokerVersion" id="9" type="Version" sinceVersion="2" presence="optional" />
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
     <data name="rejectionReason" id="8" type="varDataEncoding"/>
   </sbe:message>
