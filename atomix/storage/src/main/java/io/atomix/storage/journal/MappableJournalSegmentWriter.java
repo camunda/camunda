@@ -17,6 +17,7 @@
 package io.atomix.storage.journal;
 
 import io.atomix.storage.StorageException;
+import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.utils.serializer.Namespace;
 import java.io.IOException;
@@ -38,14 +39,28 @@ class MappableJournalSegmentWriter<E> implements JournalWriter<E> {
       final JournalSegment<E> segment,
       final int maxEntrySize,
       final JournalIndex index,
-      final Namespace namespace) {
+      final Namespace namespace,
+      final StorageLevel storageLevel) {
     this.channel = channel;
     this.segment = segment;
     this.maxEntrySize = maxEntrySize;
     this.index = index;
     this.namespace = namespace;
-    writer =
-        new FileChannelJournalSegmentWriter<>(channel, segment, maxEntrySize, index, namespace);
+
+    // todo: move this logic out of constructor
+    if (storageLevel == StorageLevel.MAPPED) {
+      final MappedByteBuffer buffer;
+      try {
+        buffer =
+            channel.map(FileChannel.MapMode.READ_WRITE, 0, segment.descriptor().maxSegmentSize());
+        writer = new MappedJournalSegmentWriter<>(buffer, segment, maxEntrySize, index, namespace);
+      } catch (final IOException e) {
+        throw new StorageException(e);
+      }
+    } else {
+      writer =
+          new FileChannelJournalSegmentWriter<>(channel, segment, maxEntrySize, index, namespace);
+    }
   }
 
   /**
@@ -75,18 +90,8 @@ class MappableJournalSegmentWriter<E> implements JournalWriter<E> {
   void unmap() {
     if (writer instanceof MappedJournalSegmentWriter) {
       final JournalWriter<E> writer = this.writer;
-      this.writer =
-          new FileChannelJournalSegmentWriter<>(channel, segment, maxEntrySize, index, namespace);
       writer.close();
     }
-  }
-
-  MappedByteBuffer buffer() {
-    final JournalWriter<E> writer = this.writer;
-    if (writer instanceof MappedJournalSegmentWriter) {
-      return ((MappedJournalSegmentWriter<E>) writer).buffer();
-    }
-    return null;
   }
 
   /**

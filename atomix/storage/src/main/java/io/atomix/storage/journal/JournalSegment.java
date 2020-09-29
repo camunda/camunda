@@ -26,7 +26,6 @@ import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.utils.serializer.Namespace;
 import java.io.File;
 import java.io.IOException;
-import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
@@ -66,7 +65,7 @@ public class JournalSegment<E> implements AutoCloseable {
     this.namespace = namespace;
     writer =
         new MappableJournalSegmentWriter<>(
-            openChannel(file.file()), this, maxEntrySize, index, namespace);
+            openChannel(file.file()), this, maxEntrySize, index, namespace, storageLevel);
   }
 
   private FileChannel openChannel(final File file) {
@@ -165,30 +164,30 @@ public class JournalSegment<E> implements AutoCloseable {
   /** Acquires a reference to the log segment. */
   void acquire() {
     if (references.getAndIncrement() == 0 && open) {
-      map();
+      //      map();
     }
   }
 
   /** Releases a reference to the log segment. */
   void release() {
     if (references.decrementAndGet() == 0 && open) {
-      unmap();
+      //      unmap();
     }
   }
 
   /** Maps the log segment into memory. */
   private void map() {
     if (storageLevel == StorageLevel.MAPPED) {
-      final MappedByteBuffer buffer = writer.map();
-      readers.forEach(reader -> reader.map(buffer));
+      writer.map();
+      readers.forEach(MappableJournalSegmentReader::map);
     }
   }
 
   /** Unmaps the log segment from memory. */
-  private void unmap() {
+  void unmap() {
     if (storageLevel == StorageLevel.MAPPED) {
       writer.unmap();
-      readers.forEach(reader -> reader.unmap());
+      readers.forEach(MappableJournalSegmentReader::unmap);
     }
   }
 
@@ -209,13 +208,10 @@ public class JournalSegment<E> implements AutoCloseable {
    */
   MappableJournalSegmentReader<E> createReader() {
     checkOpen();
+    final var channel = openChannel(file.file());
     final MappableJournalSegmentReader<E> reader =
         new MappableJournalSegmentReader<>(
-            openChannel(file.file()), this, maxEntrySize, index, namespace);
-    final MappedByteBuffer buffer = writer.buffer();
-    if (buffer != null) {
-      reader.map(buffer);
-    }
+            channel, this, maxEntrySize, index, namespace, storageLevel);
     readers.add(reader);
     return reader;
   }
@@ -246,9 +242,8 @@ public class JournalSegment<E> implements AutoCloseable {
   /** Closes the segment. */
   @Override
   public void close() {
-    unmap();
     writer.close();
-    readers.forEach(reader -> reader.close());
+    readers.forEach(MappableJournalSegmentReader::close);
     open = false;
   }
 

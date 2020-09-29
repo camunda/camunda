@@ -54,6 +54,7 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
   private final Namespace namespace;
   private final long firstIndex;
   private Indexed<E> lastEntry;
+  private boolean isOpen = true;
 
   MappedJournalSegmentWriter(
       final MappedByteBuffer buffer,
@@ -100,7 +101,6 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public <T extends E> Indexed<T> append(final T entry) {
     // Store the entry index.
     final long index = getNextIndex();
@@ -153,7 +153,6 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void append(final Indexed<E> entry) {
     final long nextIndex = getNextIndex();
 
@@ -227,7 +226,6 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void truncate(final long index) {
     // If the index is greater than or equal to the last index, skip the truncate.
     if (index >= getLastIndex()) {
@@ -264,11 +262,16 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
 
   @Override
   public void close() {
-    flush();
-    try {
-      BufferCleaner.freeBuffer(mappedBuffer);
-    } catch (final IOException e) {
-      throw new StorageException(e);
+    if (isOpen) {
+      flush();
+      try {
+        // fixme: can we replace this with agrona stuff?
+        BufferCleaner.freeBuffer(mappedBuffer);
+      } catch (final IOException e) {
+        throw new StorageException(e);
+      } finally {
+        isOpen = false;
+      }
     }
   }
 
