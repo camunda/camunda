@@ -9,7 +9,6 @@ package io.zeebe.broker.system;
 
 import static io.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
-import io.atomix.storage.StorageLevel;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
@@ -32,8 +31,6 @@ public final class SystemContext {
       "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
   private static final String SNAPSHOT_PERIOD_ERROR_MSG =
       "Snapshot period %s needs to be larger then or equals to one minute.";
-  private static final String MMAP_REPLICATION_ERROR_MSG =
-      "Using memory mapped storage level is currently unsafe with replication enabled; if you wish to use replication, set useMmap flag to false (e.g. ZEEBE_BROKER_DATA_USEMMAP=false)";
   private static final String MAX_BATCH_SIZE_ERROR_MSG =
       "Expected to have an append batch size maximum which is non negative and smaller then '%d', but was '%s'.";
 
@@ -86,13 +83,7 @@ public final class SystemContext {
           String.format(MAX_BATCH_SIZE_ERROR_MSG, Integer.MAX_VALUE, maxAppendBatchSize));
     }
 
-    final StorageLevel storageLevel = data.getAtomixStorageLevel();
     final int replicationFactor = cluster.getReplicationFactor();
-
-    if (storageLevel == StorageLevel.MAPPED && replicationFactor > 1) {
-      throw new IllegalStateException(MMAP_REPLICATION_ERROR_MSG);
-    }
-
     if (replicationFactor < 1 || replicationFactor > clusterSize) {
       throw new IllegalArgumentException(
           String.format(REPLICATION_FACTOR_ERROR_MSG, replicationFactor, clusterSize));
