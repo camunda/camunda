@@ -200,7 +200,8 @@ test('Error Message filter', async (t) => {
     .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
 });
 
-test('End Date filter', async (t) => {
+//https://jira.camunda.com/browse/OPE-1098
+test.skip('End Date filter', async (t) => {
   const {
     initialData: {instanceToCancel},
   } = t.fixtureCtx;
@@ -345,7 +346,8 @@ test('Variable filter', async (t) => {
     .eql(`#/instances?filter={${encodeURI(`"active":true,"incidents":true`)}}`);
 });
 
-test('Operation ID filter', async (t) => {
+//https://jira.camunda.com/browse/OPE-1098
+test.skip('Operation ID filter', async (t) => {
   const {
     initialData: {instanceToCancelForOperations},
   } = t.fixtureCtx;
