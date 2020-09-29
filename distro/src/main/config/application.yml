@@ -10,10 +10,8 @@ zeebe.tasklist:
   elasticsearch:
     # Cluster name
     clusterName: elasticsearch
-    # Host
-    host: localhost
-    # Transport port
-    port: 9200
+    # URL
+    url: http://localhost:9200
   # Zeebe instance
   zeebe:
     # Broker contact point
@@ -22,10 +20,8 @@ zeebe.tasklist:
   zeebeElasticsearch:
     # Cluster name
     clusterName: elasticsearch
-    # Host
-    host: localhost
-    # Transport port
-    port: 9200
+    # Url
+    url: http://localhost:9200
     # Index prefix, configured in Zeebe Elasticsearch exporter
     prefix: zeebe-record
 #Spring Boot Actuator endpoints to be exposed
