@@ -145,7 +145,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
         () -> {
           final var requestMap = partitionsRequestMap.get(partitionId);
           if (requestMap == null) {
-            LOG.error(
+            LOG.warn(
                 "Node is no longer leader for partition {}, tried to respond on request with id {}",
                 partitionId,
                 requestId);
