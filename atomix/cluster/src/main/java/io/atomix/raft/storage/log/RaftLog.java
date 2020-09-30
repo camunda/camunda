@@ -113,6 +113,10 @@ public class RaftLog extends DelegatingJournal<RaftLogEntry> {
     commitIndex = index;
   }
 
+  public boolean isFlushOnCommit() {
+    return journal.isFlushOnCommit();
+  }
+
   /** Raft log builder. */
   public static class Builder implements io.atomix.utils.Builder<RaftLog> {
 

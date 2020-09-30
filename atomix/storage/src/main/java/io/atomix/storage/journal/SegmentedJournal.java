@@ -225,6 +225,7 @@ public class SegmentedJournal<E> implements Journal<E> {
    * @param mode The mode in which to read entries.
    * @return The Raft log reader.
    */
+  @Override
   public SegmentedJournalReader<E> openReader(
       final long index, final SegmentedJournalReader.Mode mode) {
     final SegmentedJournalReader<E> reader = new SegmentedJournalReader<>(this, index, mode);
@@ -681,7 +682,7 @@ public class SegmentedJournal<E> implements Journal<E> {
    *
    * @return Indicates whether {@code flushOnCommit} is enabled for the log.
    */
-  boolean isFlushOnCommit() {
+  public boolean isFlushOnCommit() {
     return flushOnCommit;
   }
 

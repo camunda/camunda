@@ -82,9 +82,6 @@ public class SegmentedJournalWriter<E> implements JournalWriter<E> {
   public void commit(final long index) {
     if (index > journal.getCommitIndex()) {
       journal.setCommitIndex(index);
-      if (journal.isFlushOnCommit()) {
-        flush();
-      }
     }
   }
 
