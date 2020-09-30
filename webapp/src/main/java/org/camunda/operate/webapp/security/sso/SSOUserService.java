@@ -41,6 +41,7 @@ public class SSOUserService extends AbstractUserService {
     return new UserDto()
         .setFirstname(EMPTY)
         .setLastname(name)
+        .setUsername(tokenAuth.getName())
         .setCanLogout(false);
   }
 }

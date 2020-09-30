@@ -59,10 +59,11 @@ public class AuthenticationTest {
   private static final String SET_COOKIE_HEADER = "Set-Cookie";
   private static final String CURRENT_USER_URL = AUTHENTICATION_URL + USER_ENDPOINT;
 
-  @Autowired TestRestTemplate testRestTemplate;
+  @Autowired
+  private TestRestTemplate testRestTemplate;
 
   @Autowired
-  OperateProperties operateProperties;
+  private OperateProperties operateProperties;
 
   @ClassRule
   public static GenericContainer<?> ldapServer =
@@ -88,7 +89,7 @@ public class AuthenticationTest {
 
   @Test
   public void testLoginFailed() {
-    ResponseEntity<?> response = loginAs("amy","amy");
+    ResponseEntity<?> response = loginAs("amy", "amy");
     assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
   }
 
@@ -110,11 +111,13 @@ public class AuthenticationTest {
     // when
     UserDto userInfo = getCurrentUser(response);
     //then
-    assertThat(userInfo.getFirstname()).isEqualTo("");
-    assertThat(userInfo.getLastname()).isEqualTo("bender");
+    assertThat(userInfo.getUsername()).isEqualTo("bender");
+    assertThat(userInfo.getFirstname()).isEqualTo("Bender");
+    assertThat(userInfo.getLastname()).isEqualTo("Rodríguez");
+    assertThat(userInfo.isCanLogout()).isTrue();
   }
 
-  protected ResponseEntity<?> loginAs(String user, String password){
+  protected ResponseEntity<?> loginAs(String user, String password) {
     HttpHeaders headers = new HttpHeaders();
     headers.setContentType(APPLICATION_FORM_URLENCODED);
 
@@ -125,19 +128,19 @@ public class AuthenticationTest {
     return testRestTemplate.postForEntity(LOGIN_RESOURCE, new HttpEntity<>(body, headers), Void.class);
   }
 
-  protected ResponseEntity<?> logout(ResponseEntity<?> previousResponse){
+  protected ResponseEntity<?> logout(ResponseEntity<?> previousResponse) {
     HttpEntity<Map<String, String>> request = prepareRequestWithCookies(previousResponse);
     return testRestTemplate.postForEntity(LOGOUT_RESOURCE, request, String.class);
   }
 
-  protected UserDto getCurrentUser(ResponseEntity<?> previousResponse){
+  protected UserDto getCurrentUser(ResponseEntity<?> previousResponse) {
     final ResponseEntity<UserDto> responseEntity = testRestTemplate.exchange(CURRENT_USER_URL, HttpMethod.GET,
         prepareRequestWithCookies(previousResponse), UserDto.class);
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
     return responseEntity.getBody();
   }
 
-  protected void assertThatCookiesExists(ResponseEntity<?> response){
+  protected void assertThatCookiesExists(ResponseEntity<?> response) {
     assertThat(response.getHeaders()).containsKey(SET_COOKIE_HEADER);
     assertThat(response.getHeaders().get(SET_COOKIE_HEADER).get(0)).contains(COOKIE_JSESSIONID);
   }

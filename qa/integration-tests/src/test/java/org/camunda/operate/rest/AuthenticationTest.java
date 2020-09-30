@@ -148,8 +148,10 @@ public class AuthenticationTest {
 
     //then
     assertThat(responseEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+    assertThat(responseEntity.getBody().getUsername()).isEqualTo(USERNAME);
     assertThat(responseEntity.getBody().getFirstname()).isEqualTo(FIRSTNAME);
     assertThat(responseEntity.getBody().getLastname()).isEqualTo(LASTNAME);
+    assertThat(responseEntity.getBody().isCanLogout()).isTrue();
   }
 
   @Test

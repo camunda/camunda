@@ -22,6 +22,9 @@ public class LdapProperties {
   // Properties for specific LDAP service provided by Active Directory Server
   private String domain;
 
+  private String firstnameAttrName = "givenName";
+  private String lastnameAttrName = "sn";
+
   public String getBaseDn() {
     return baseDn;
   }
@@ -69,7 +72,7 @@ public class LdapProperties {
   }
 
   public String getUserDnPatterns() {
-    return userDnPatterns==null?"":userDnPatterns;
+    return userDnPatterns == null ? "" : userDnPatterns;
   }
 
   public void setUserDnPatterns(String userDnPatterns) {
@@ -80,4 +83,19 @@ public class LdapProperties {
 
   public void setDomain(String domain) { this.domain = domain; }
 
+  public String getFirstnameAttrName() {
+    return firstnameAttrName;
+  }
+
+  public void setFirstnameAttrName(final String firstnameAttrName) {
+    this.firstnameAttrName = firstnameAttrName;
+  }
+
+  public String getLastnameAttrName() {
+    return lastnameAttrName;
+  }
+
+  public void setLastnameAttrName(final String lastnameAttrName) {
+    this.lastnameAttrName = lastnameAttrName;
+  }
 }

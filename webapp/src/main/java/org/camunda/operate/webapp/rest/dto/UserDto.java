@@ -9,9 +9,19 @@ import org.camunda.operate.webapp.security.es.User;
 
 public class UserDto {
 
+  private String username;
   private String firstname;
   private String lastname;
   private boolean canLogout;
+
+  public String getUsername() {
+    return username;
+  }
+
+  public UserDto setUsername(final String username) {
+    this.username = username;
+    return this;
+  }
 
   public String getFirstname() {
     return firstname;
@@ -42,6 +52,7 @@ public class UserDto {
 
   public static UserDto fromUser(User userDetails) {
     return new UserDto()
+        .setUsername(userDetails.getUsername())
         .setFirstname(userDetails.getFirstname())
         .setLastname(userDetails.getLastname())
         .setCanLogout(userDetails.isCanLogout());

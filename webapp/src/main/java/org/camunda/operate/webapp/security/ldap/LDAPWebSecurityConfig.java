@@ -27,8 +27,11 @@ import javax.servlet.http.HttpServletResponse;
 import org.camunda.operate.property.LdapProperties;
 import org.camunda.operate.property.OperateProperties;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.core.support.LdapContextSource;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -174,4 +177,18 @@ public class LDAPWebSecurityConfig extends WebSecurityConfigurerAdapter {
             }
         };
     }
+
+  @Bean
+  public LdapContextSource contextSource() {
+    LdapContextSource contextSource = new LdapContextSource();
+    contextSource.setUrl(operateProperties.getLdap().getUrl());
+    contextSource.setUserDn(operateProperties.getLdap().getManagerDn());
+    contextSource.setPassword(operateProperties.getLdap().getManagerPassword());
+    return contextSource;
+  }
+
+  @Bean
+  public LdapTemplate ldapTemplate() {
+    return new LdapTemplate(contextSource());
+  }
 }
