@@ -161,7 +161,7 @@ export default withRouter(
     };
 
     checkSameConfiguration = ({groupBy, configuration}, data) => {
-      if (groupBy?.type === 'variable') {
+      if (groupBy?.type.toLowerCase().includes('variable')) {
         if (groupBy.value?.type === 'Date') {
           return (
             configuration?.groupByDateVariableUnit === data.configuration.groupByDateVariableUnit

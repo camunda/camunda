@@ -39,7 +39,7 @@ export default function BucketSize({
   );
 
   const isBucketableVariableReport =
-    groupBy?.type === 'variable' &&
+    groupBy?.type.toLowerCase().includes('variable') &&
     ['Integer', 'Double', 'Short', 'Long'].includes(groupBy.value?.type);
   const isGroupedByDuration = groupBy?.type === 'duration';
 

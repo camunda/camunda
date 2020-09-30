@@ -22,7 +22,8 @@ export default function DateVariableUnit({
     ? 'distributeByDateVariableUnit'
     : 'groupByDateVariableUnit';
 
-  const isGroupedByDateVariable = groupBy?.type === 'variable' && groupBy.value?.type === 'Date';
+  const isGroupedByDateVariable =
+    groupBy?.type.toLowerCase().includes('variable') && groupBy.value?.type === 'Date';
 
   if (isGroupedByDateVariable || isDistributedByVariable) {
     return (
