@@ -454,6 +454,8 @@ message PublishMessageRequest {
 
 ```protobuf
 message PublishMessageResponse {
+  // the unique ID of the message that was published
+  int64 key = 1;
 }
 ```
 

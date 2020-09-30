@@ -19,6 +19,7 @@ import io.zeebe.client.api.response.PublishMessageResponse;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.protocol.record.Assertions;
 import io.zeebe.protocol.record.Record;
+import io.zeebe.protocol.record.intent.MessageIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.protocol.record.value.VariableRecordValue;
@@ -173,5 +174,23 @@ public final class MessageCorrelationTest {
         .isInstanceOf(ClientException.class)
         .hasMessageContaining(
             "Expected to publish a new message with id 'foo', but a message with that id was already published");
+  }
+
+  @Test
+  public void shouldReturnTheMessageKey() {
+    // when
+    final PublishMessageResponse response =
+        CLIENT_RULE
+            .getClient()
+            .newPublishMessageCommand()
+            .messageName(MESSAGE_NAME)
+            .correlationKey(correlationValue)
+            .send()
+            .join();
+
+    // then
+    final var messagePublished =
+        RecordingExporter.messageRecords(MessageIntent.PUBLISHED).getFirst();
+    assertThat(response.getMessageKey()).isEqualTo(messagePublished.getKey());
   }
 }

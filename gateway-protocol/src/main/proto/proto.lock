@@ -432,7 +432,14 @@
             ]
           },
           {
-            "name": "PublishMessageResponse"
+            "name": "PublishMessageResponse",
+            "fields": [
+              {
+                "id": 1,
+                "name": "key",
+                "type": "int64"
+              }
+            ]
           },
           {
             "name": "ResolveIncidentRequest",

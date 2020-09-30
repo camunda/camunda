@@ -1,15 +1,5 @@
 <differences>
   <difference>
-    <className>io/zeebe/client/api/response/Topology</className>
-    <method>java.lang.String getGatewayVersion()</method>
-    <differenceType>7012</differenceType>
-  </difference>
-  <difference>
-    <className>io/zeebe/client/api/response/BrokerInfo</className>
-    <method>java.lang.String getVersion()</method>
-    <differenceType>7012</differenceType>
-  </difference>
-  <difference>
     <className>io/zeebe/client/api/command/ActivateJobsCommandStep1$ActivateJobsCommandStep3</className>
     <method>io.zeebe.client.api.command.ActivateJobsCommandStep1$ActivateJobsCommandStep3 timeout(long)</method>
     <differenceType>7002</differenceType>
@@ -27,6 +17,11 @@
     <className>io/zeebe/client/impl/ZeebeClientCredentials</className>
     <method>ZeebeClientCredentials(java.lang.String, long, java.lang.String, java.lang.String)</method>
     <differenceType>7004</differenceType>
+  </difference>
+  <difference>
+    <className>io/zeebe/client/api/**/*</className>
+    <method>*</method>
+    <differenceType>7012</differenceType>
   </difference>
   <difference>
     <className>io/zeebe/client/ZeebeClientBuilder</className>
