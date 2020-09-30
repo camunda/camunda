@@ -3,37 +3,32 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.event;
+package org.camunda.optimize.dto.optimize.query.event.process;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
+import java.io.Serializable;
 import java.time.OffsetDateTime;
 
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
+@Builder
 @FieldNameConstants
-@Builder(toBuilder = true)
-@Getter
-@ToString
-public class CamundaActivityEventDto implements OptimizeDto, EventProcessEventDto {
+public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
 
+  private String id;
   private String activityId;
-  private String activityName;
   private String activityType;
-  private String activityInstanceId;
-  private String processDefinitionKey;
   private String processInstanceId;
-  private String processDefinitionVersion;
-  private String processDefinitionName;
-  private String engine;
-  private String tenantId;
-  private OffsetDateTime timestamp;
-  private Long orderCounter;
+  private Long durationInMs;
+  private OffsetDateTime startDate;
+  private OffsetDateTime endDate;
+  private Boolean canceled;
 
 }

@@ -11,7 +11,7 @@ import org.camunda.optimize.dto.optimize.ImportRequestDto;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.elasticsearch.action.update.UpdateRequest;
@@ -77,7 +77,11 @@ public abstract class AbstractActivityInstanceWriter {
 
     try {
       params.put(EVENTS, simpleEvents);
-      final Script updateScript = createDefaultScriptWithSpecificDtoParams(createInlineUpdateScript(), params, objectMapper);
+      final Script updateScript = createDefaultScriptWithSpecificDtoParams(
+        createInlineUpdateScript(),
+        params,
+        objectMapper
+      );
 
       final ProcessInstanceDto procInst = ProcessInstanceDto.builder()
         .processInstanceId(processInstanceId)
@@ -112,6 +116,7 @@ public abstract class AbstractActivityInstanceWriter {
         .startDate(activity.getStartDate())
         .endDate(activity.getEndDate())
         .processInstanceId(activity.getProcessInstanceId())
+        .canceled(activity.getCanceled())
         .build()
       ).collect(Collectors.toList());
   }

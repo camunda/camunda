@@ -90,6 +90,7 @@ public class RunningActivityInstanceImportService implements ImportService<Histo
       .engineAlias(engineContext.getEngineAlias())
       .tenantId(engineEntity.getTenantId())
       .orderCounter(engineEntity.getSequenceCounter())
+      .canceled(engineEntity.getCanceled())
       .build();
   }
 

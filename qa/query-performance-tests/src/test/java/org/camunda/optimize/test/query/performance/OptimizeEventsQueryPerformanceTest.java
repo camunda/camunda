@@ -7,13 +7,13 @@ package org.camunda.optimize.test.query.performance;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.RandomUtils;
-import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
@@ -30,9 +30,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.eventName;
-import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.group;
-import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.source;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto.Fields.eventName;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto.Fields.group;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto.Fields.source;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
 @Slf4j

@@ -16,8 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Collections;
 import java.util.concurrent.CompletableFuture;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ExtendWith(MockitoExtension.class)
 public class EngineImportSchedulerTest {
@@ -45,7 +44,7 @@ public class EngineImportSchedulerTest {
     underTest.runImportRound();
 
     // then
-    assertThat(underTest.isImporting(), is(true));
+    assertThat(underTest.isImporting()).isTrue();
   }
 
 
@@ -65,7 +64,7 @@ public class EngineImportSchedulerTest {
     underTest.runImportRound();
 
     // then
-    assertThat(underTest.isImporting(), is(true));
+    assertThat(underTest.isImporting()).isTrue();
   }
 
   @Test
@@ -84,7 +83,7 @@ public class EngineImportSchedulerTest {
     underTest.runImportRound();
 
     // then
-    assertThat(underTest.isImporting(), is(false));
+    assertThat(underTest.isImporting()).isFalse();
   }
 
 }

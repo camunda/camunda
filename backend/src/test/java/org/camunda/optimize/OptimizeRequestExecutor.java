@@ -24,9 +24,9 @@ import org.camunda.optimize.dto.optimize.query.collection.PartialCollectionDefin
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.definition.AssigneeRequestDto;
 import org.camunda.optimize.dto.optimize.query.entity.EntityNameRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.SingleReportDefinitionDto;

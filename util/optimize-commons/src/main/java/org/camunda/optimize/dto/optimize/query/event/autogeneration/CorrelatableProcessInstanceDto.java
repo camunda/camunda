@@ -7,7 +7,7 @@ package org.camunda.optimize.dto.optimize.query.event.autogeneration;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
 import java.util.List;

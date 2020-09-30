@@ -5,10 +5,13 @@
  */
 package org.camunda.optimize.service.importing;
 
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameRequestDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableNameResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -51,6 +54,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_IN
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.START_EVENT;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
@@ -82,34 +86,34 @@ public class ProcessImportIT extends AbstractImportIT {
     assertThat(embeddedOptimizeExtension.getImportSchedulerManager().getImportSchedulers()).hasSizeGreaterThan(0);
     embeddedOptimizeExtension.getImportSchedulerManager().getImportSchedulers()
       .forEach(engineImportScheduler -> assertThat(engineImportScheduler.isScheduledToRun()).isFalse());
-    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 0L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 0L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
   }
 
   @Test
   public void allProcessDefinitionFieldDataIsAvailable() {
-    //given
+    // given
     deployAndStartSimpleServiceTask();
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
-    allEntriesInElasticsearchHaveAllData(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_NULLABLE_FIELDS);
+    // then
+    assertAllEntriesInElasticsearchHaveAllData(PROCESS_DEFINITION_INDEX_NAME, PROCESS_DEFINITION_NULLABLE_FIELDS);
   }
 
   @Test
   public void processDefinitionTenantIdIsImportedIfPresent() {
-    //given
+    // given
     final String tenantId = "reallyAwesomeTenantId";
     deployProcessDefinitionWithTenant(tenantId);
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
@@ -119,15 +123,15 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @Test
   public void processDefinitionDefaultEngineTenantIdIsApplied() {
-    //given
+    // given
     final String tenantId = "reallyAwesomeTenantId";
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
     deployAndStartSimpleServiceTask();
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
@@ -137,16 +141,16 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @Test
   public void processDefinitionEngineTenantIdIsPreferredOverDefaultTenantId() {
-    //given
+    // given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
     deployProcessDefinitionWithTenant(expectedTenantId);
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_DEFINITION_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
@@ -156,19 +160,104 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @Test
   public void allProcessInstanceDataIsAvailable() {
-    //given
+    // given
     deployAndStartSimpleServiceTask();
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
-    allEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    // then
+    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_NULLABLE_FIELDS);
+  }
+
+  @Test
+  public void canceledFlowNodesAreImportedWithCorrectValue() {
+    // given
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcess();
+    engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_1);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    final List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(allProcessInstances).hasSize(1);
+    assertThat(allProcessInstances.get(0).getEvents())
+      .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(START_EVENT, false),
+        Tuple.tuple(USER_TASK_1, true)
+      );
+  }
+
+  @Test
+  public void canceledFlowNodesAreUpdatedIfAlreadyImported() {
+    // given
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcess();
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(allProcessInstances).hasSize(1);
+    assertThat(allProcessInstances.get(0).getEvents())
+      .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(START_EVENT, false),
+        Tuple.tuple(USER_TASK_1, false)
+      );
+
+    // when
+    engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_1);
+    importAllEngineEntitiesFromLastIndex();
+
+    // then
+    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(allProcessInstances).hasSize(1);
+    assertThat(allProcessInstances.get(0).getEvents())
+      .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(START_EVENT, false),
+        Tuple.tuple(USER_TASK_1, true)
+      );
+  }
+
+  @Test
+  public void canceledFlowNodesByCanceledProcessInstanceAreUpdatedIfAlreadyImported() {
+    // given
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcess();
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    List<ProcessInstanceDto> allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(allProcessInstances).hasSize(1);
+    assertThat(allProcessInstances.get(0).getEvents())
+      .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(START_EVENT, false),
+        Tuple.tuple(USER_TASK_1, false)
+      );
+
+    // when the process instance is canceled
+    engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
+    importAllEngineEntitiesFromLastIndex();
+
+    // then
+    assertAllEntriesInElasticsearchHaveAllData(PROCESS_INSTANCE_INDEX_NAME, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    allProcessInstances = elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(allProcessInstances).hasSize(1);
+    assertThat(allProcessInstances.get(0).getEvents())
+      .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(START_EVENT, false),
+        Tuple.tuple(USER_TASK_1, true)
+      );
   }
 
   @Test
   public void importsAllDefinitionsEvenIfTotalAmountIsAboveMaxPageSize() {
-    //given
+    // given
     embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessDefinitionMaxPageSize(1);
     deploySimpleProcess();
     deploySimpleProcess();
@@ -190,14 +279,14 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @Test
   public void processInstanceTenantIdIsImportedIfPresent() {
-    //given
+    // given
     final String tenantId = "myTenant";
     deployAndStartSimpleServiceTaskWithTenant(tenantId);
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
@@ -207,15 +296,15 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @Test
   public void processInstanceDefaultEngineTenantIdIsApplied() {
-    //given
+    // given
     final String tenantId = "reallyAwesomeTenantId";
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(tenantId);
     deployAndStartSimpleServiceTask();
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
@@ -225,16 +314,16 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @Test
   public void processInstanceEngineTenantIdIsPreferredOverDefaultTenantId() {
-    //given
+    // given
     final String defaultTenantId = "reallyAwesomeTenantId";
     final String expectedTenantId = "evenMoreAwesomeTenantId";
     embeddedOptimizeExtension.getDefaultEngineConfiguration().getDefaultTenant().setId(defaultTenantId);
     deployAndStartSimpleServiceTaskWithTenant(expectedTenantId);
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     final SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
@@ -244,7 +333,7 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @Test
   public void failingJobDoesNotUpdateImportIndex() throws IOException {
-    //given
+    // given
     ProcessInstanceEngineDto dto1 = deployAndStartSimpleServiceTask();
     OffsetDateTime endTime = engineIntegrationExtension.getHistoricProcessInstance(dto1.getId()).getEndTime();
 
@@ -348,7 +437,7 @@ public class ProcessImportIT extends AbstractImportIT {
     deployAndStartUserTaskProcess();
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     for (SearchHit searchHitFields : idsResp.getHits()) {
@@ -382,7 +471,11 @@ public class ProcessImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 4L, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(
+      PROCESS_INSTANCE_INDEX_NAME,
+      4L,
+      PROCESS_INSTANCE_NULLABLE_FIELDS
+    );
   }
 
   @Test
@@ -411,13 +504,13 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @Test
   public void importRunningAndCompletedHistoricActivityInstances() {
-    //given
+    // given
     engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
@@ -428,15 +521,15 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @Test
   public void completedActivitiesOverwriteRunningActivities() {
-    //given
+    // given
     engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
 
-    //when
+    // when
     importAllEngineEntitiesFromScratch();
     engineIntegrationExtension.finishAllRunningUserTasks();
     importAllEngineEntitiesFromScratch();
 
-    //then
+    // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
@@ -448,11 +541,11 @@ public class ProcessImportIT extends AbstractImportIT {
 
   @Test
   public void runningActivitiesDoNotOverwriteCompletedActivities() {
-    //given
+    // given
     engineIntegrationExtension.deployAndStartProcess(getSimpleBpmnDiagram());
     importAllEngineEntitiesFromScratch();
 
-    //when
+    // when
     HistoricActivityInstanceEngineDto startEvent =
       engineIntegrationExtension.getHistoricActivityInstances()
         .stream()
@@ -464,7 +557,7 @@ public class ProcessImportIT extends AbstractImportIT {
     embeddedOptimizeExtension.importRunningActivityInstance(Collections.singletonList(startEvent));
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
-    //then
+    // then
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(PROCESS_INSTANCE_INDEX_NAME);
     assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(1L);
@@ -523,7 +616,11 @@ public class ProcessImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 4L, PROCESS_INSTANCE_NULLABLE_FIELDS);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(
+      PROCESS_INSTANCE_INDEX_NAME,
+      4L,
+      PROCESS_INSTANCE_NULLABLE_FIELDS
+    );
     embeddedOptimizeExtension.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(originalMaxPageSize);
   }
 

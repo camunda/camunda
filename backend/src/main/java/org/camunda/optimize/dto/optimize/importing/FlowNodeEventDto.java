@@ -35,4 +35,5 @@ public class FlowNodeEventDto implements Serializable, OptimizeDto {
   private String engineAlias;
   private String tenantId;
   private Long orderCounter;
+  private Boolean canceled;
 }

@@ -3,25 +3,21 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.event;
+package org.camunda.optimize.dto.optimize.query.event.process;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
-import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-import java.util.List;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.Set;
 
-@Builder
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
 @FieldNameConstants
-public class EventTraceStateDto implements OptimizeDto {
-
-  private String traceId;
-  private List<TracedEventDto> eventTrace;
-
+public class EventCorrelationStateDto {
+  private Map<MappedEventType, Set<String>> correlatedAsToFlowNodeInstanceIds = new EnumMap<>(MappedEventType.class);
 }

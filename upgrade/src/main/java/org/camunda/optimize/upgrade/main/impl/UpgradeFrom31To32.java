@@ -25,12 +25,12 @@ import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
-import org.elasticsearch.index.query.QueryBuilders;
 
 import java.util.Map;
 
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 
 public class UpgradeFrom31To32 extends UpgradeProcedure {
   public static final String FROM_VERSION = "3.1.0";
@@ -114,7 +114,7 @@ public class UpgradeFrom31To32 extends UpgradeProcedure {
 
     return new UpdateDataStep(
       reportIndexName,
-      QueryBuilders.matchAllQuery(),
+      matchAllQuery(),
       script,
       params
     );
@@ -149,7 +149,7 @@ public class UpgradeFrom31To32 extends UpgradeProcedure {
     //@formatter:off
     final String script = substitutor.replace(
         "def configuration = ctx._source.data.configuration;" +
-          "if(configuration.${oldDistributeByField} == null" +
+        "if(configuration.${oldDistributeByField} == null" +
           "|| \"${distributeByNone}\".equals(configuration.${oldDistributeByField})) {\n" +
           "configuration.${newDistributeByField} = params.${distributeByNone};\n" +
         "} else if(\"${distributedByUserTask}\".equals(configuration.${oldDistributeByField})){\n" +

@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 
 import java.util.Map;
 

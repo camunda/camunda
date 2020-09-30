@@ -95,6 +95,7 @@ public class CompletedActivityInstanceImportService implements ImportService<His
       .engineAlias(engineContext.getEngineAlias())
       .tenantId(engineEntity.getTenantId())
       .orderCounter(engineEntity.getSequenceCounter())
+      .canceled(engineEntity.getCanceled())
       .build();
   }
 

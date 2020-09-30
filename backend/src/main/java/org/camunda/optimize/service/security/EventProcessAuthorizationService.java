@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleDto;
 import org.camunda.optimize.service.EventProcessRoleService;
 import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;

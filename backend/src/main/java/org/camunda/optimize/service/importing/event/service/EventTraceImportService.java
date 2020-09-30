@@ -7,7 +7,7 @@ package org.camunda.optimize.service.importing.event.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.service.EventTraceStateService;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.importing.EventCountAndTracesImportJob;

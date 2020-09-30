@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.permutations;
 
 import com.google.common.collect.ImmutableList;
-import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.importing.EngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedActivityInstanceEngineImportMediator;

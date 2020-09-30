@@ -7,14 +7,13 @@ package org.camunda.optimize.rest.eventprocess;
 
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventSourceEntryResponseDto;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import javax.ws.rs.core.Response;

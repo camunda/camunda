@@ -5,8 +5,8 @@
  */
 package org.camunda.optimize.service.es.schema.index.events;
 
-import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceUpdateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceUpdateDto;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 

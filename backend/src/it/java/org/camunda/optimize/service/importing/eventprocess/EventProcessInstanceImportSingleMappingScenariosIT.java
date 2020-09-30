@@ -9,10 +9,10 @@ import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -144,7 +144,8 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.endDate, THIRD_EVENT_DATETIME)
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(events -> assertThat(events)
-              .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+              .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+                .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
               .extracting(
                 FlowNodeInstanceDto::getId,
                 FlowNodeInstanceDto::getActivityId,
@@ -264,7 +265,8 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.endDate, THIRD_EVENT_DATETIME)
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(events -> assertThat(events)
-              .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+              .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+                .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
               .extracting(
                 FlowNodeInstanceDto::getId,
                 FlowNodeInstanceDto::getActivityId,
@@ -333,7 +335,8 @@ public class EventProcessInstanceImportSingleMappingScenariosIT extends Abstract
             .hasFieldOrPropertyWithValue(ProcessInstanceDto.Fields.endDate, THIRD_EVENT_DATETIME)
             .extracting(ProcessInstanceDto::getEvents)
             .satisfies(events -> assertThat(events)
-              .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+              .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+                .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
               .extracting(
                 FlowNodeInstanceDto::getId,
                 FlowNodeInstanceDto::getActivityId,

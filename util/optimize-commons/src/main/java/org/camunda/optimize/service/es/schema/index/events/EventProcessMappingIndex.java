@@ -6,15 +6,14 @@
 package org.camunda.optimize.service.es.schema.index.events;
 
 import org.camunda.optimize.dto.optimize.IdentityDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.IndexableEventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 

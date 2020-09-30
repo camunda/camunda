@@ -11,8 +11,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.events;
 
-import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
 
 import java.util.List;
 

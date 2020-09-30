@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.UserTaskInstanceDto;
-import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -51,6 +51,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String ACTIVITY_DURATION = FlowNodeInstanceDto.Fields.durationInMs;
   public static final String ACTIVITY_START_DATE = FlowNodeInstanceDto.Fields.startDate;
   public static final String ACTIVITY_END_DATE = FlowNodeInstanceDto.Fields.endDate;
+  public static final String ACTIVITY_CANCELLED = FlowNodeInstanceDto.Fields.canceled;
 
   public static final String VARIABLES = ProcessInstanceDto.Fields.variables;
   public static final String VARIABLE_ID = SimpleProcessVariableDto.Fields.id;
@@ -225,6 +226,9 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
       .startObject(ACTIVITY_END_DATE)
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
+      .endObject()
+      .startObject(ACTIVITY_CANCELLED)
+        .field("type", "boolean")
       .endObject()
       ;
     // @formatter:on

@@ -3,29 +3,34 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.event;
+package org.camunda.optimize.dto.optimize.query.event.process;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.Setter;
+import lombok.ToString;
 import lombok.experimental.FieldNameConstants;
+import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-@Data
-@Builder
+import javax.validation.constraints.NotBlank;
+
+@Getter
+@Setter
+@ToString
+@EqualsAndHashCode
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@NoArgsConstructor
+@Builder(toBuilder = true)
 @FieldNameConstants
-public class EventCountDto {
+public class EventTypeDto implements OptimizeDto {
   private String group;
-  @NonNull
   private String source;
-  @NonNull
+  @NotBlank
   private String eventName;
+  @EqualsAndHashCode.Exclude
   private String eventLabel;
-  private Long count;
-  @Builder.Default
-  private boolean suggested = false;
-
 }

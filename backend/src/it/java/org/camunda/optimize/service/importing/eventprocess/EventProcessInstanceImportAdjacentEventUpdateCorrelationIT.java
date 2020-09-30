@@ -8,11 +8,11 @@ package org.camunda.optimize.service.importing.eventprocess;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.assertj.core.groups.Tuple;
-import org.camunda.optimize.dto.optimize.query.event.EventCorrelationStateDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.MappedEventType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventCorrelationStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.MappedEventType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -82,7 +82,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
             eventProcessInstanceDto -> {
               assertThat(eventProcessInstanceDto.getEvents())
                 .satisfies(flowNodeInstances -> assertThat(flowNodeInstances)
-                  .allSatisfy(flowNodeInstance -> assertThat(flowNodeInstance).hasNoNullFieldsOrProperties())
+                  .allSatisfy(flowNodeInstance -> assertThat(flowNodeInstance)
+                    .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
                   .extracting(
                     FlowNodeInstanceDto::getId,
                     FlowNodeInstanceDto::getActivityId,
@@ -150,7 +151,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
             eventProcessInstanceDto -> {
               assertThat(eventProcessInstanceDto.getEvents())
                 .satisfies(events -> assertThat(events)
-                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+                    .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
                   .extracting(
                     FlowNodeInstanceDto::getId,
                     FlowNodeInstanceDto::getActivityId,
@@ -218,7 +220,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
             eventProcessInstanceDto -> {
               assertThat(eventProcessInstanceDto.getEvents())
                 .satisfies(events -> assertThat(events)
-                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+                    .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
                   .extracting(
                     FlowNodeInstanceDto::getId,
                     FlowNodeInstanceDto::getActivityId,
@@ -289,7 +292,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           );
         assertThat(processInstanceDto.getEvents())
           .satisfies(events -> assertThat(events)
-            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+              .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
             .extracting(
               FlowNodeInstanceDto::getId,
               FlowNodeInstanceDto::getActivityId,
@@ -304,7 +308,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
                 SPLITTING_GATEWAY_ID + "_1",
                 SPLITTING_GATEWAY_ID,
                 FIRST_EVENT_DATETIME,
-                openingGatewayType.equalsIgnoreCase(EVENT_BASED_GATEWAY_TYPE) ? SECOND_EVENT_DATETIME : FIRST_EVENT_DATETIME
+                openingGatewayType.equalsIgnoreCase(EVENT_BASED_GATEWAY_TYPE) ? SECOND_EVENT_DATETIME :
+                  FIRST_EVENT_DATETIME
               ),
               Tuple.tuple(
                 secondEventId, USER_TASK_ID_ONE, SECOND_EVENT_DATETIME, updatedThirdEventTimestamp
@@ -369,7 +374,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           .isEmpty();
         assertThat(processInstanceDto.getEvents())
           .satisfies(events -> assertThat(events)
-            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+              .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
             .extracting(
               FlowNodeInstanceDto::getId,
               FlowNodeInstanceDto::getActivityId,
@@ -430,7 +436,10 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
     eventMappings.put(USER_TASK_ID_ONE, startMapping(SECOND_EVENT_NAME));
     eventMappings.put(BPMN_END_EVENT_ID, startMapping(THIRD_EVENT_NAME));
 
-    createAndPublishEventProcessMapping(eventMappings, createExclusiveGatewayProcessDefinitionWithConsecutiveGatewaysXml());
+    createAndPublishEventProcessMapping(
+      eventMappings,
+      createExclusiveGatewayProcessDefinitionWithConsecutiveGatewaysXml()
+    );
 
     // when
     executeImportCycle();
@@ -447,7 +456,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
         assertThat(processInstanceDto.getPendingFlowNodeInstanceUpdates()).isEmpty();
         assertThat(processInstanceDto.getEvents())
           .satisfies(events -> assertThat(events)
-            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+              .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
             .extracting(
               FlowNodeInstanceDto::getId,
               FlowNodeInstanceDto::getActivityId,
@@ -468,7 +478,10 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
                 MERGING_GATEWAY_ID + "_1", MERGING_GATEWAY_ID, updatedThirdEventTimestamp, updatedThirdEventTimestamp
               ),
               Tuple.tuple(
-                MERGING_GATEWAY_ID_TWO + "_1", MERGING_GATEWAY_ID_TWO, updatedThirdEventTimestamp, updatedThirdEventTimestamp
+                MERGING_GATEWAY_ID_TWO + "_1",
+                MERGING_GATEWAY_ID_TWO,
+                updatedThirdEventTimestamp,
+                updatedThirdEventTimestamp
               ),
               Tuple.tuple(
                 thirdEventId, BPMN_END_EVENT_ID, updatedThirdEventTimestamp, updatedThirdEventTimestamp
@@ -527,7 +540,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
             eventProcessInstanceDto -> {
               assertThat(eventProcessInstanceDto.getEvents())
                 .satisfies(events -> assertThat(events)
-                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+                    .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
                   .extracting(
                     FlowNodeInstanceDto::getId,
                     FlowNodeInstanceDto::getActivityId,
@@ -595,7 +609,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
             eventProcessInstanceDto -> {
               assertThat(eventProcessInstanceDto.getEvents())
                 .satisfies(events -> assertThat(events)
-                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+                    .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
                   .extracting(
                     FlowNodeInstanceDto::getId,
                     FlowNodeInstanceDto::getActivityId,
@@ -663,7 +678,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
             eventProcessInstanceDto -> {
               assertThat(eventProcessInstanceDto.getEvents())
                 .satisfies(events -> assertThat(events)
-                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+                  .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+                    .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
                   .extracting(
                     FlowNodeInstanceDto::getId,
                     FlowNodeInstanceDto::getActivityId,
@@ -734,7 +750,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           );
         assertThat(processInstanceDto.getEvents())
           .satisfies(events -> assertThat(events)
-            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+              .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
             .extracting(
               FlowNodeInstanceDto::getId,
               FlowNodeInstanceDto::getActivityId,
@@ -810,7 +827,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           .isEmpty();
         assertThat(processInstanceDto.getEvents())
           .satisfies(events -> assertThat(events)
-            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+              .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
             .extracting(
               FlowNodeInstanceDto::getId,
               FlowNodeInstanceDto::getActivityId,
@@ -888,7 +906,8 @@ public class EventProcessInstanceImportAdjacentEventUpdateCorrelationIT extends 
           .isEmpty();
         assertThat(processInstanceDto.getEvents())
           .satisfies(events -> assertThat(events)
-            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto).hasNoNullFieldsOrProperties())
+            .allSatisfy(simpleEventDto -> assertThat(simpleEventDto)
+              .hasNoNullFieldsOrPropertiesExcept(FlowNodeInstanceDto.Fields.canceled))
             .extracting(
               FlowNodeInstanceDto::getId,
               FlowNodeInstanceDto::getActivityId,

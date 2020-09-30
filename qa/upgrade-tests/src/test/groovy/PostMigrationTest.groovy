@@ -10,15 +10,14 @@ import org.camunda.optimize.dto.optimize.ReportConstants
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto
 import org.camunda.optimize.dto.optimize.query.entity.EntityDto
 import org.camunda.optimize.dto.optimize.query.entity.EntityType
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto
-import org.camunda.optimize.dto.optimize.query.event.EventProcessState
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessState
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedEvaluationResultDto
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameService
-import org.camunda.optimize.service.util.configuration.ConfigurationService
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder
 import org.camunda.optimize.test.optimize.*
 import org.camunda.optimize.test.util.ProcessReportDataType
@@ -28,7 +27,6 @@ import org.elasticsearch.action.admin.indices.refresh.RefreshRequest
 import org.elasticsearch.client.RequestOptions
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
-import org.springframework.context.support.ClassPathXmlApplicationContext
 
 import javax.ws.rs.core.Response
 import java.util.function.Function

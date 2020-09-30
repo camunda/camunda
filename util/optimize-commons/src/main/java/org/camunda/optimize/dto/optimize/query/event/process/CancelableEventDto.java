@@ -3,17 +3,20 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.event;
+package org.camunda.optimize.dto.optimize.query.event.process;
 
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
+@Getter
 @SuperBuilder
-public class OrderedEventDto extends EventDto {
+@EqualsAndHashCode(callSuper = true, onlyExplicitlyIncluded = true)
+@ToString(callSuper = true)
+public class CancelableEventDto extends EventDto {
 
-  private Long orderCounter;
+  @ToString.Include
+  private boolean canceled;
 
 }

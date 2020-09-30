@@ -6,10 +6,10 @@
 package org.camunda.optimize.service.importing.eventprocess.mediator;
 
 import lombok.RequiredArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.reader.BusinessKeyReader;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;

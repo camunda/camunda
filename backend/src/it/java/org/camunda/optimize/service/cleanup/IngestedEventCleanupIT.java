@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.cleanup;
 
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.service.util.configuration.cleanup.IngestedEventCleanupConfiguration;
 import org.junit.jupiter.api.BeforeEach;

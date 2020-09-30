@@ -6,14 +6,16 @@
 package org.camunda.optimize.service.importing.eventprocess;
 
 import lombok.SneakyThrows;
+import org.assertj.core.groups.Tuple;
 import org.assertj.core.util.Maps;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.reader.ElasticsearchReaderUtil;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
@@ -76,6 +78,43 @@ public class EventProcessInstanceImportSourceScenariosIT extends AbstractEventPr
           Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE, BPMN_END_EVENT_ID)
         );
       });
+  }
+
+  @Test
+  public void instancesAreGeneratedFromCamundaEventImportSourceWithCanceledActivities() {
+    // given
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartTwoUserTasksProcess();
+    engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_ID_ONE);
+    importEngineEntities();
+    publishEventMappingUsingProcessInstanceCamundaEvents(
+      processInstanceEngineDto,
+      createMappingsForEventProcess(
+        processInstanceEngineDto,
+        BPMN_START_EVENT_ID,
+        applyCamundaTaskStartEventSuffix(USER_TASK_ID_ONE),
+        BPMN_END_EVENT_ID
+      )
+    );
+
+    // when
+    executeImportCycle();
+
+    // then the user task is marked as cancelled
+    final List<EventProcessInstanceDto> processInstances = getEventProcessInstancesFromElasticsearch();
+    assertThat(processInstances)
+      .hasOnlyOneElementSatisfying(processInstanceDto -> {
+        assertProcessInstance(
+          processInstanceDto,
+          processInstanceEngineDto.getBusinessKey(),
+          Arrays.asList(BPMN_START_EVENT_ID, USER_TASK_ID_ONE)
+        );
+      });
+    assertThat(processInstances.get(0).getEvents())
+      .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(BPMN_START_EVENT_ID, false),
+        Tuple.tuple(USER_TASK_ID_ONE, true)
+      );
   }
 
   @Test

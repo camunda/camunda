@@ -9,7 +9,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.IdentityWithMetadataDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessRoleDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleDto;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldNameConstants

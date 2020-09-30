@@ -7,9 +7,9 @@ package org.camunda.optimize.service.security.event;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.rest.EventMappingCleanupRequestDto;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.util.IdGenerator;

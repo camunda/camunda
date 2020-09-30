@@ -3,16 +3,13 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.event;
+package org.camunda.optimize.dto.optimize.query.event.process;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum EventProcessState {
-  UNMAPPED,
-  MAPPED,
-  PUBLISH_PENDING,
-  PUBLISHED,
-  UNPUBLISHED_CHANGES,
+public enum EventSourceType {
+  EXTERNAL,
+  CAMUNDA,
   ;
 
   @JsonValue

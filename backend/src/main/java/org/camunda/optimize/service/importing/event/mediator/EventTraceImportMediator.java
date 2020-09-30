@@ -6,7 +6,7 @@
 package org.camunda.optimize.service.importing.event.mediator;
 
 import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.service.events.EventFetcherService;
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;

@@ -7,7 +7,7 @@ package org.camunda.optimize.service.cleanup;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessInstanceDto;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.cleanup.CleanupConfiguration;

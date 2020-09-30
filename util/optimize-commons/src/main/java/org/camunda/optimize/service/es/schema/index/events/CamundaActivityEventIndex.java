@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.es.schema.index.events;
 
-import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -33,6 +33,7 @@ public class CamundaActivityEventIndex extends DefaultIndexMappingCreator {
   public static final String TENANT_ID = CamundaActivityEventDto.Fields.tenantId;
   public static final String TIMESTAMP = CamundaActivityEventDto.Fields.timestamp;
   public static final String ORDER_COUNTER = CamundaActivityEventDto.Fields.orderCounter;
+  public static final String CANCELED = CamundaActivityEventDto.Fields.canceled;
 
   public static final int VERSION = 2;
 
@@ -102,6 +103,9 @@ public class CamundaActivityEventIndex extends DefaultIndexMappingCreator {
       .endObject()
       .startObject(ORDER_COUNTER)
         .field("type", "keyword")
+      .endObject()
+      .startObject(CANCELED)
+        .field("type", "boolean")
       .endObject()
       ;
     // @formatter:on

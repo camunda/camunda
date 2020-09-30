@@ -6,8 +6,8 @@
 package org.camunda.optimize.service.importing.eventprocess;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediator;
 import org.camunda.optimize.service.importing.eventprocess.mediator.EventProcessInstanceImportMediatorFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;

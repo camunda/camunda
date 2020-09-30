@@ -3,9 +3,8 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.event;
+package org.camunda.optimize.dto.optimize.query.event.sequence;
 
-import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,21 +12,16 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-import java.time.OffsetDateTime;
+import java.util.List;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @Builder
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 @FieldNameConstants
-public class FlowNodeInstanceUpdateDto implements OptimizeDto {
-  protected String sourceEventId;
-  protected String flowNodeId;
-  protected String flowNodeType;
-  protected MappedEventType mappedAs;
-  protected OffsetDateTime date;
+public class EventTraceStateDto implements OptimizeDto {
 
-  public String getId() {
-    return sourceEventId + ":" + flowNodeId;
-  }
+  private String traceId;
+  private List<TracedEventDto> eventTrace;
+
 }

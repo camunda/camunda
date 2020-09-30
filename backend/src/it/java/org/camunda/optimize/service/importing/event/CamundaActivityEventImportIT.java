@@ -6,8 +6,9 @@
 package org.camunda.optimize.service.importing.event;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.engine.ActivityTypes;
-import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
@@ -33,6 +34,7 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaProcessInstanceStartEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
+import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 
 public class CamundaActivityEventImportIT extends AbstractImportIT {
@@ -143,6 +145,68 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
       )
       .extracting(CamundaActivityEventDto.Fields.activityInstanceId)
       .contains(applyCamundaProcessInstanceStartEventSuffix(processInstanceEngineDto.getId()));
+    assertOrderCounters(storedEvents);
+  }
+
+  @Test
+  public void expectedEventsCreatedWithCorrectCancellationStateForCancelledActivity() throws IOException {
+    // given
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcess();
+    engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_1);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    List<CamundaActivityEventDto> storedEvents =
+      getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
+    assertThat(storedEvents)
+      .extracting(CamundaActivityEventDto.Fields.activityId, CamundaActivityEventDto.Fields.canceled)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(
+          applyCamundaProcessInstanceStartEventSuffix(processInstanceEngineDto.getProcessDefinitionKey()),
+          false
+        ),
+        Tuple.tuple(
+          applyCamundaProcessInstanceEndEventSuffix(processInstanceEngineDto.getProcessDefinitionKey()),
+          false
+        ),
+        Tuple.tuple(START_EVENT, false),
+        // the user task was cancelled
+        Tuple.tuple(applyCamundaTaskEndEventSuffix(USER_TASK_1), true),
+        Tuple.tuple(applyCamundaTaskStartEventSuffix(USER_TASK_1), true)
+      );
+    assertOrderCounters(storedEvents);
+  }
+
+  @Test
+  public void expectedEventsCreatedWithCorrectCancellationStateForCancelledProcessInstance() throws IOException {
+    // given
+    final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcess();
+    engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    List<CamundaActivityEventDto> storedEvents =
+      getSavedEventsForProcessDefinitionKey(processInstanceEngineDto.getProcessDefinitionKey());
+    assertThat(storedEvents)
+      .extracting(CamundaActivityEventDto.Fields.activityId, CamundaActivityEventDto.Fields.canceled)
+      .containsExactlyInAnyOrder(
+        Tuple.tuple(
+          applyCamundaProcessInstanceStartEventSuffix(processInstanceEngineDto.getProcessDefinitionKey()),
+          false
+        ),
+        Tuple.tuple(
+          applyCamundaProcessInstanceEndEventSuffix(processInstanceEngineDto.getProcessDefinitionKey()),
+          false
+        ),
+        Tuple.tuple(START_EVENT, false),
+        // the process was cancelled on the user task, so the task is cancelled
+        Tuple.tuple(applyCamundaTaskEndEventSuffix(USER_TASK_1), true),
+        Tuple.tuple(applyCamundaTaskStartEventSuffix(USER_TASK_1), true)
+      );
     assertOrderCounters(storedEvents);
   }
 

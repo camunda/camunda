@@ -5,7 +5,7 @@
  */
 package org.camunda.optimize.service.importing.eventprocess.handler;
 
-import org.camunda.optimize.dto.optimize.query.event.EventImportSourceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventImportSourceDto;
 import org.camunda.optimize.service.importing.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;

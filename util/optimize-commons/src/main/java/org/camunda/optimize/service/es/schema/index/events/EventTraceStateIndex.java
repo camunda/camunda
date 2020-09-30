@@ -5,8 +5,8 @@
  */
 package org.camunda.optimize.service.es.schema.index.events;
 
-import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
-import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;

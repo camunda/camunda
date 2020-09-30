@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.event;
+package org.camunda.optimize.dto.optimize.query.event.process;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -76,7 +76,7 @@ public class IndexableEventProcessPublishStateDto {
       .deleted(getDeleted())
       .mappings(
         Optional.ofNullable(this.mappings)
-          .map(mappings -> mappings.stream()
+          .map(mappingList -> mappingList.stream()
             .collect(Collectors.toMap(
               IndexableEventMappingDto::getFlowNodeId,
               mapping -> EventMappingDto.builder()

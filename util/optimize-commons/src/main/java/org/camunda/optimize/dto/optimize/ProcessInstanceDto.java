@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
-import org.camunda.optimize.dto.optimize.query.event.FlowNodeInstanceDto;
+import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
 import org.camunda.optimize.dto.optimize.query.variable.SimpleProcessVariableDto;
 
 import java.time.OffsetDateTime;

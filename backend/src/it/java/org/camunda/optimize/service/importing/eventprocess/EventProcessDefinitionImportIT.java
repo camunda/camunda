@@ -7,8 +7,8 @@ package org.camunda.optimize.service.importing.eventprocess;
 
 import com.google.common.collect.ImmutableMap;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.test.optimize.EventProcessClient;
 import org.junit.jupiter.api.Test;

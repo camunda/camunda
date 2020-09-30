@@ -7,7 +7,7 @@ package org.camunda.optimize.dto.optimize.rest.sorting;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.NoArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 
 import javax.ws.rs.BadRequestException;
@@ -17,10 +17,10 @@ import java.util.Optional;
 
 import static java.util.Comparator.naturalOrder;
 import static java.util.Comparator.nullsFirst;
-import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.count;
-import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.eventName;
-import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.group;
-import static org.camunda.optimize.dto.optimize.query.event.EventCountDto.Fields.source;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto.Fields.count;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto.Fields.eventName;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto.Fields.group;
+import static org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto.Fields.source;
 
 @NoArgsConstructor
 public class EventCountSorter extends Sorter<EventCountDto> {

@@ -17,10 +17,10 @@ import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.DefinitionType;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
-import org.camunda.optimize.dto.optimize.query.event.EventMappingDto;
-import org.camunda.optimize.dto.optimize.query.event.EventScopeType;
-import org.camunda.optimize.dto.optimize.query.event.EventSourceEntryDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
+import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
 import org.camunda.optimize.service.DefinitionService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.BpmnModelUtil;
@@ -102,7 +102,12 @@ public class CamundaEventModelBuilderService {
 
     for (EventTypeDto startEvent : startEvents) {
       if (generatedModelBuilder == null) {
-        nextBuilder = addStartEvent(startEvent, generateNodeId(startEvent), processBuilder, startEvents.indexOf(startEvent));
+        nextBuilder = addStartEvent(
+          startEvent,
+          generateNodeId(startEvent),
+          processBuilder,
+          startEvents.indexOf(startEvent)
+        );
       } else {
         nextBuilder = addIntermediateEvent(startEvent, generateNodeId(startEvent), generatedModelBuilder);
       }
@@ -201,7 +206,8 @@ public class CamundaEventModelBuilderService {
 
   private BpmnModelInstance getModelInstanceForSourceEntryDefinition(final EventSourceEntryDto sourceEntryDto) {
     final String definitionXml = getDefinition(sourceEntryDto)
-      .map(def -> ((ProcessDefinitionOptimizeDto) def).getBpmn20Xml())
+      .map(ProcessDefinitionOptimizeDto.class::cast)
+      .map(ProcessDefinitionOptimizeDto::getBpmn20Xml)
       .orElseThrow(() -> new OptimizeRuntimeException(String.format(
         "Process definition with definition key %s could not be loaded", sourceEntryDto.getProcessDefinitionKey())));
     return BpmnModelUtil.parseBpmnModel(definitionXml);

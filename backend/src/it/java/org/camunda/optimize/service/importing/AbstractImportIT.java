@@ -23,12 +23,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public abstract class AbstractImportIT extends AbstractIT {
 
@@ -37,23 +33,24 @@ public abstract class AbstractImportIT extends AbstractIT {
   public EngineDatabaseExtension engineDatabaseExtension =
     new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
-  protected void allEntriesInElasticsearchHaveAllData(String elasticsearchIndex, final Set<String> excludedFields) {
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, 1L, excludedFields);
+  protected void assertAllEntriesInElasticsearchHaveAllData(String elasticsearchIndex,
+                                                            final Set<String> excludedFields) {
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, 1L, excludedFields);
   }
 
 
-  protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
-                                                               final long count) {
-    allEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, count, Collections.emptySet());
+  protected void assertAllEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
+                                                                     final long count) {
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(elasticsearchIndex, count, Collections.emptySet());
   }
 
-  protected void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
-                                                               final long count,
-                                                               final Set<String> nullValueFields) {
+  protected void assertAllEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
+                                                                     final long count,
+                                                                     final Set<String> nullValueFields) {
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(elasticsearchIndex);
 
-    assertThat(idsResp.getHits().getTotalHits().value, is(count));
+    assertThat(idsResp.getHits().getTotalHits().value).isEqualTo(count);
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
       assertAllFieldsSet(nullValueFields, searchHit);
     }
@@ -62,14 +59,14 @@ public abstract class AbstractImportIT extends AbstractIT {
   protected void assertAllFieldsSet(final Set<String> nullValueFields, final SearchHit searchHit) {
     for (Map.Entry<String, Object> searchHitField : searchHit.getSourceAsMap().entrySet()) {
       if (nullValueFields.contains(searchHitField.getKey())) {
-        assertThat(searchHitField.getValue(), is(nullValue()));
+        assertThat(searchHitField.getValue()).isNull();
       } else {
         String errorMessage = "Something went wrong during fetching of field: " + searchHitField.getKey() +
           ". Should actually have a value!";
-        assertThat(errorMessage, searchHitField.getValue(), is(notNullValue()));
+        assertThat(searchHitField.getValue()).withFailMessage(errorMessage).isNotNull();
         if (searchHitField.getValue() instanceof String) {
           String value = (String) searchHitField.getValue();
-          assertThat(errorMessage, value.isEmpty(), is(false));
+          assertThat(value).withFailMessage(errorMessage).isNotEmpty();
         }
       }
     }
@@ -89,7 +86,10 @@ public abstract class AbstractImportIT extends AbstractIT {
   protected ProcessInstanceEngineDto deployAndStartUserTaskProcess() {
     Map<String, Object> variables = new HashMap<>();
     variables.put("aVariable", "aStringVariable");
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(BpmnModels.getSingleUserTaskDiagram(), variables);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(
+      BpmnModels.getSingleUserTaskDiagram(),
+      variables
+    );
   }
 
   @SuppressWarnings("unused")

@@ -7,9 +7,9 @@ package org.camunda.optimize.service.importing.event;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.AbstractIT;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;

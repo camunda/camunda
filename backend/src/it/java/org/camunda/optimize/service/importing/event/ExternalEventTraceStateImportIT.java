@@ -5,11 +5,11 @@
  */
 package org.camunda.optimize.service.importing.event;
 
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventSequenceCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTraceStateDto;
-import org.camunda.optimize.dto.optimize.query.event.EventTypeDto;
-import org.camunda.optimize.dto.optimize.query.event.TracedEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventSequenceCountDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventTraceStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.TracedEventDto;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventTraceStateIndex;

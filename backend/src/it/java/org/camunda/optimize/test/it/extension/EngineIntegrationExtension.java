@@ -552,6 +552,39 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     }
   }
 
+  @SneakyThrows
+  public void cancelActivityInstance(final String processInstanceId, final String activityId) {
+    final String activityInstanceId = getHistoricActivityInstances()
+      .stream()
+      .filter(inst -> inst.getActivityId().equalsIgnoreCase(activityId))
+      .findFirst().orElseThrow(() -> new OptimizeIntegrationTestException("No Activity Instances found!"))
+      .getId();
+    HttpPost cancelRequest = new HttpPost(getEngineUrl() + "/process-instance/" + processInstanceId + "/modification");
+    cancelRequest.setHeader("Content-type", "application/json");
+    cancelRequest.setEntity(new StringEntity(
+      "{\n" +
+        " \"skipCustomListeners\": true,\n" +
+        " \"skipIoMappings\": true,\n" +
+        " \"instructions\": [" +
+        "    {" +
+        "      \"type\": \"cancel\"," +
+        "      \"activityInstanceId\": \"" + activityInstanceId + "\"" +
+        "    }" +
+        "  ]\n" +
+        "}"
+    ));
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(cancelRequest)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+        throw new RuntimeException(
+          String.format(
+            "Could not cancel activity instance with ID %s from process instance with ID %s. Status-code: %s",
+            activityInstanceId, processInstanceId, response.getStatusLine().getStatusCode()
+          )
+        );
+      }
+    }
+  }
+
   public void deleteHistoricProcessInstance(String processInstanceId) {
     HttpDelete delete = new HttpDelete(getHistoricGetProcessInstanceUri(processInstanceId));
     try {

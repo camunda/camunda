@@ -6,8 +6,8 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.query.event.EventCountDto;
-import org.camunda.optimize.dto.optimize.query.event.EventCountRequestDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.events.EventCountService;

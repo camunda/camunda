@@ -6,8 +6,6 @@
 package org.camunda.optimize.upgrade.migrate31To32;
 
 import com.google.common.collect.Lists;
-import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
-import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.AbstractUpgradeIT;
 import org.camunda.optimize.upgrade.migrate31To32.indices.AlertIndexV3Old;
 import org.camunda.optimize.upgrade.migrate31To32.indices.SingleDecisionReportIndexV3Old;

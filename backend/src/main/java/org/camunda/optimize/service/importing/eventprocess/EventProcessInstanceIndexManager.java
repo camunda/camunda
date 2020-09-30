@@ -7,13 +7,14 @@ package org.camunda.optimize.service.importing.eventprocess;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessPublishStateDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessPublishStateDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.reader.EventProcessPublishStateReader;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 

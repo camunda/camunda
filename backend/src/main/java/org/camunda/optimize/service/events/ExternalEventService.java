@@ -7,7 +7,7 @@ package org.camunda.optimize.service.events;
 
 import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.service.es.reader.ExternalEventReader;
 import org.camunda.optimize.service.es.writer.ExternalEventWriter;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,7 @@ import java.util.Optional;
 
 @AllArgsConstructor
 @Component
-public class ExternalEventService implements EventFetcherService {
+public class ExternalEventService implements EventFetcherService<EventDto> {
 
   private final ExternalEventReader externalEventReader;
   private final ExternalEventWriter eventWriter;

@@ -7,9 +7,9 @@ package org.camunda.optimize.service.importing.eventprocess.mediator;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventDto;
-import org.camunda.optimize.dto.optimize.query.event.EventProcessEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EventProcessEventDto;
 import org.camunda.optimize.service.events.EventFetcherService;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.TimestampBasedImportMediator;
@@ -35,12 +35,12 @@ public class EventProcessInstanceImportMediator<T extends EventProcessEventDto>
 
   @Getter
   private final String publishedProcessStateId;
-  private final EventFetcherService eventFetcherService;
+  private final EventFetcherService<T> eventFetcherService;
   private final ConfigurationService configurationService;
 
   public EventProcessInstanceImportMediator(final String publishedProcessStateId,
                                             final EventProcessInstanceImportSourceIndexHandler importSourceIndexHandler,
-                                            final EventFetcherService eventFetcherService,
+                                            final EventFetcherService<T> eventFetcherService,
                                             final ImportService<T> eventProcessEventImportService,
                                             final ConfigurationService configurationService,
                                             final BackoffCalculator idleBackoffCalculator) {

@@ -13,7 +13,7 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.importing.FlowNodeEventDto;
-import org.camunda.optimize.dto.optimize.query.event.CamundaActivityEventDto;
+import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEventDto;
 import org.camunda.optimize.dto.optimize.query.variable.ProcessVariableDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.writer.BusinessKeyWriter;
@@ -63,8 +63,7 @@ public class CamundaEventImportService {
     return Collections.emptyList();
   }
 
-  public List<ImportRequestDto> generateCompletedCamundaActivityEventsImports(
-    List<FlowNodeEventDto> completedActivityInstances) {
+  public List<ImportRequestDto> generateCompletedCamundaActivityEventsImports(List<FlowNodeEventDto> completedActivityInstances) {
     final String engineAlias = completedActivityInstances.get(0).getEngineAlias();
     if (shouldImport(engineAlias)) {
       return generateCamundaActivityEventsImports(
@@ -150,6 +149,7 @@ public class CamundaEventImportService {
               .map(counter -> convertToOptimizeCounter(counter) + 1)
               .orElse(null)
           )
+          .canceled(flowNodeEventDto.getCanceled())
           .timestamp(flowNodeEventDto.getEndDate())
           .build()
       );
@@ -190,6 +190,7 @@ public class CamundaEventImportService {
       .orderCounter(
         Optional.ofNullable(flowNodeEventDto.getOrderCounter()).map(this::convertToOptimizeCounter).orElse(null)
       )
+      .canceled(flowNodeEventDto.getCanceled())
       .build();
   }
 

@@ -67,10 +67,10 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
-    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 1L);
-    allEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 1L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_INSTANCE_INDEX_NAME, 1L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(PROCESS_DEFINITION_INDEX_NAME, 1L);
   }
 
   @Test
@@ -79,7 +79,7 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 0L);
 
     // given failed ES update requests to store new definition
     engineIntegrationExtension.deployAndStartDecisionDefinition();
@@ -98,7 +98,7 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then the definition will be stored when update next works
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 1L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_INDEX_NAME, 1L);
     esMockServer.verify(definitionImportMatcher);
   }
 
@@ -108,7 +108,7 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 0L);
 
     // given failed ES update requests to store new instance
     engineIntegrationExtension.deployAndStartDecisionDefinition();
@@ -127,7 +127,7 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     // then the instance will be stored when update next works
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 1L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 1L);
     esMockServer.verify(instanceImportMatcher);
   }
 
@@ -141,7 +141,7 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     //then
-    allEntriesInElasticsearchHaveAllDataWithCount(
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(
       DECISION_DEFINITION_INDEX_NAME,
       2L,
       DECISION_DEFINITION_NULLABLE_FIELDS
@@ -312,7 +312,7 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromScratch();
 
     //then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
   }
 
   @Test
@@ -358,7 +358,7 @@ public class DecisionImportIT extends AbstractImportIT {
     importAllEngineEntitiesFromLastIndex();
 
     // then
-    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
+    assertAllEntriesInElasticsearchHaveAllDataWithCount(DECISION_INSTANCE_INDEX_NAME, 2L);
     embeddedOptimizeExtension.getConfigurationService().setEngineImportDecisionInstanceMaxPageSize(originalMaxPageSize);
   }
 
@@ -418,8 +418,8 @@ public class DecisionImportIT extends AbstractImportIT {
     }
   }
 
-  public void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
-                                                            final long count) {
+  public void assertAllEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchIndex,
+                                                                  final long count) {
     SearchResponse idsResp = elasticSearchIntegrationTestExtension
       .getSearchResponseForAllDocumentsOfIndex(elasticsearchIndex);
 
