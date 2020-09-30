@@ -138,7 +138,7 @@ public class ConfigurationServiceTest {
       Optional<Integer> containerHttpPort = underTest.getContainerHttpPort();
 
       // then
-      assertThat(containerHttpPort.isPresent()).isFalse();
+      assertThat(containerHttpPort).isNotPresent();
     }
   }
 
@@ -346,12 +346,13 @@ public class ConfigurationServiceTest {
         .collect(toList()))
       .contains(DEFAULT_FIRST_ES_PORT, DEFAULT_SECOND_ES_PORT);
     assertThat(underTest.getVariableImportPluginBasePackages()).contains("1", DEFAULT_PACKAGE_2, DEFAULT_PACKAGE_3);
-    assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds()).isEqualTo(Collections.emptyList());
+    assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds()).isEmpty();
+    assertThat(underTest.getEventBasedProcessConfiguration().getAuthorizedGroupIds()).isEmpty();
     // by default a secret will get generated, so it should neither be the custom secret value
     assertThat(underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken()).isNotEqualTo(SECRET);
     // nor should it be null
     assertThat(underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken()).isNotNull();
-    assertThat(underTest.getContainerAccessUrl().isPresent()).isFalse();
+    assertThat(underTest.getContainerAccessUrl()).isNotPresent();
   }
 
   private void assertThatVariablePlaceHoldersAreResolved(final ConfigurationService underTest) {
@@ -378,7 +379,7 @@ public class ConfigurationServiceTest {
       underTest.getEventBasedProcessConfiguration().getAuthorizedUserIds()).isEqualTo(ImmutableList.of("demo", "kermit"
     ));
     assertThat(underTest.getEventBasedProcessConfiguration().getEventIngestion().getAccessToken()).isEqualTo(SECRET);
-    assertThat(underTest.getContainerAccessUrl().get()).isEqualTo(ACCESS_URL);
+    assertThat(underTest.getContainerAccessUrl()).isPresent().get().isEqualTo(ACCESS_URL);
     assertThat(
       underTest.getSuperUserIds()).isEqualTo(ImmutableList.of("demo", "kermit"));
   }

@@ -35,6 +35,7 @@ import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.importing.eventprocess.AbstractEventProcessIT;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
+import org.camunda.optimize.service.util.configuration.EventBasedProcessConfiguration;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.junit.jupiter.api.BeforeAll;
@@ -73,6 +74,7 @@ import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.rest.RestTestUtil.getOffsetDiffInHours;
 import static org.camunda.optimize.rest.constants.RestConstants.X_OPTIMIZE_CLIENT_TIMEZONE;
 import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.DEFAULT_FULLNAME;
+import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createEventMappingsDto;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createMappedEventDto;
@@ -140,6 +142,74 @@ public class EventBasedProcessRestServiceIT extends AbstractEventProcessIT {
 
     // then
     assertThat(isEnabled).isFalse();
+  }
+
+  @Test
+  public void getIsEventBasedProcessEnabledWithUserNotAuthorizedButInAuthorizedGroup() {
+    // given only group authorization exists containing user
+    final EventBasedProcessConfiguration eventBasedProcessConfiguration =
+      embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration();
+    eventBasedProcessConfiguration.getAuthorizedUserIds().clear();
+
+    final String authorizedGroup = "senate";
+    authorizationClient.createGroupAndAddUser(authorizedGroup, DEFAULT_USERNAME);
+    eventBasedProcessConfiguration.setAuthorizedGroupIds(Collections.singletonList(authorizedGroup));
+
+    // when
+    boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
+
+    // then
+    assertThat(isEnabled).isTrue();
+  }
+
+  @Test
+  public void getIsEventBasedProcessEnabledWithNoAuthorizedUsersOrGroups() {
+    // given
+    final EventBasedProcessConfiguration eventBasedProcessConfiguration =
+      embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration();
+    eventBasedProcessConfiguration.getAuthorizedUserIds().clear();
+    eventBasedProcessConfiguration.getAuthorizedGroupIds().clear();
+
+    // when
+    boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
+
+    // then
+    assertThat(isEnabled).isFalse();
+  }
+
+  @Test
+  public void getIsEventBasedProcessEnabledWithUserInGroupNotAuthorized() {
+    // given user exists in group not authorized for access
+    final EventBasedProcessConfiguration eventBasedProcessConfiguration =
+      embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration();
+    eventBasedProcessConfiguration.getAuthorizedUserIds().clear();
+
+    final String authorizedGroup = "humans";
+    authorizationClient.createGroupAndAddUser(authorizedGroup, DEFAULT_USERNAME);
+    eventBasedProcessConfiguration.setAuthorizedGroupIds(Collections.singletonList("zombies"));
+
+    // when
+    boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
+
+    // then
+    assertThat(isEnabled).isFalse();
+  }
+
+  @Test
+  public void getIsEventBasedProcessEnabledWithAuthorizedUserAndInAuthorizedGroup() {
+    // given user is authorized and is in authorized group
+    final EventBasedProcessConfiguration eventBasedProcessConfiguration =
+      embeddedOptimizeExtension.getConfigurationService().getEventBasedProcessConfiguration();
+
+    final String authorizedGroup = "humans";
+    authorizationClient.createGroupAndAddUser(authorizedGroup, DEFAULT_USERNAME);
+    eventBasedProcessConfiguration.setAuthorizedGroupIds(Collections.singletonList(authorizedGroup));
+
+    // when
+    boolean isEnabled = eventProcessClient.getIsEventBasedProcessEnabled();
+
+    // then
+    assertThat(isEnabled).isTrue();
   }
 
   @ParameterizedTest

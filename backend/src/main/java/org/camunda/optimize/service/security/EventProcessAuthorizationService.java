@@ -30,7 +30,8 @@ public class EventProcessAuthorizationService {
   private final IdentityService identityService;
 
   public boolean hasEventProcessManagementAccess(@NonNull final String userId) {
-    return configurationService.getEventBasedProcessAccessUserIds().contains(userId);
+    return configurationService.getEventBasedProcessAccessUserIds().contains(userId) ||
+      isInGroupWithEventProcessManagementAccess(userId);
   }
 
   /**
@@ -74,6 +75,14 @@ public class EventProcessAuthorizationService {
     } else {
       return Optional.empty();
     }
+  }
+
+  private boolean isInGroupWithEventProcessManagementAccess(@NonNull final String userId) {
+    final List<String> authorizedGroupIds = configurationService.getEventBasedProcessAccessGroupIds();
+    return identityService.getAllGroupsOfUser(userId)
+      .stream()
+      .map(IdentityDto::getId)
+      .anyMatch(authorizedGroupIds::contains);
   }
 
 }

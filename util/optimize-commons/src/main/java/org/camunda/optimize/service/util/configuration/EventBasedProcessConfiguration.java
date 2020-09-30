@@ -19,6 +19,7 @@ import java.util.List;
 public class EventBasedProcessConfiguration {
 
   private List<String> authorizedUserIds;
+  private List<String> authorizedGroupIds;
   private EventImportConfiguration eventImport;
   private IngestionConfiguration eventIngestion;
   private EventIndexRolloverConfiguration eventIndexRollover;

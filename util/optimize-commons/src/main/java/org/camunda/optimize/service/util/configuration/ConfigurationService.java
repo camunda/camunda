@@ -1023,6 +1023,11 @@ public class ConfigurationService {
     return getEventBasedProcessConfiguration().getAuthorizedUserIds();
   }
 
+  @JsonIgnore
+  public List<String> getEventBasedProcessAccessGroupIds() {
+    return getEventBasedProcessConfiguration().getAuthorizedGroupIds();
+  }
+
   public TelemetryConfiguration getTelemetryConfiguration() {
     if (telemetryConfiguration == null) {
       telemetryConfiguration = configJsonContext.read(
