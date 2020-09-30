@@ -34,9 +34,6 @@ public class ProcessGroupByDtoCreator {
     return groupByDto;
   }
 
-  public static StartDateGroupByDto createGroupByStartDateDto() {
-    return createGroupByStartDateDto(null);
-  }
 
   public static EndDateGroupByDto createGroupByEndDateDto(AggregateByDateUnit dateInterval) {
     EndDateGroupByDto groupByDto = new EndDateGroupByDto();

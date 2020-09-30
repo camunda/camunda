@@ -750,7 +750,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setVariableName(variableName)
       .setVariableType(variableType)
       .build();

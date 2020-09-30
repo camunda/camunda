@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.date.distributedby.none;
+package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.groupby.date.distributedby.none;
 
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.Bpmn;
@@ -204,7 +204,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
       .createReportData()
       .setProcessDefinitionKey(key)
       .setProcessDefinitionVersion(version)
-      .setDateInterval(unit)
+      .setGroupByDateInterval(unit)
       .setReportDataType(getTestReportDataType())
       .build();
   }

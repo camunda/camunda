@@ -31,7 +31,6 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.LATEST_VERSION;
-import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -60,8 +59,9 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = reportClient.evaluateReport(
-        report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result =
+        reportClient.evaluateReport(
+          report);
 
       // then
       assertThat(result.getResult().getInstanceCount(), is(3L));
@@ -85,7 +85,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
       // when
       AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result =
         reportClient.evaluateReport(
-        report);
+          report);
 
       // then
       assertThat(result.getResult().getInstanceCount(), is(5L));
@@ -106,8 +106,9 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
     );
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = reportClient.evaluateReport(
-        report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result =
+        reportClient.evaluateReport(
+          report);
 
       // then
       assertThat(result.getResult().getInstanceCount(), is(1L));
@@ -120,8 +121,9 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
 
     for (ProcessReportDataDto report : allPossibleReports) {
       // when
-      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result = reportClient.evaluateReport(
-        report);
+      AuthorizedEvaluationResultDto<ProcessReportResultDto, SingleProcessReportDefinitionDto> result =
+        reportClient.evaluateReport(
+          report);
 
       // then
       assertThat(result.getResult().getInstanceCount(), is(4L));
@@ -158,7 +160,8 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
         .setProcessDefinitionVersions(definitionVersions)
         .setVariableName(VARIABLE_NAME)
         .setVariableType(VariableType.INTEGER)
-        .setDateInterval(AggregateByDateUnit.DAY)
+        .setGroupByDateInterval(AggregateByDateUnit.DAY)
+        .setDistributeByDateInterval(AggregateByDateUnit.DAY)
         .setUserTaskDurationTime(UserTaskDurationTime.TOTAL)
         .setStartFlowNodeId(START_EVENT)
         .setEndFlowNodeId(END_EVENT)
@@ -180,6 +183,7 @@ public class ProcessDefinitionVersionSelectionIT extends AbstractIT {
   }
 
   private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
-    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(DEFINITION_KEY));
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(BpmnModels.getSingleServiceTaskProcess(
+      DEFINITION_KEY));
   }
 }

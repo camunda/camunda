@@ -94,7 +94,7 @@ public abstract class AbstractProcessGroupByModelElementDate extends GroupByPart
     );
 
     final DateAggregationContext dateAggContext = DateAggregationContext.builder()
-      .groupByDateUnit(unit)
+      .aggregateByDateUnit(unit)
       .dateField(getDateField())
       .minMaxStats(stats)
       .timezone(context.getTimezone())

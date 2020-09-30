@@ -463,7 +463,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
       .createReportData()
       .setProcessDefinitionKey(TEST_PROCESS)
       .setProcessDefinitionVersion("1")
-      .setDateInterval(unit)
+      .setGroupByDateInterval(unit)
       .setReportDataType(reportDataType)
       .build();
     runningReportData.setFilter(filters);

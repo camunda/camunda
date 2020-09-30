@@ -104,7 +104,7 @@ public class ReportsGenerator {
         .setProcessDefinitionVersion(definition.getVersionAsString())
         .setVariableName(DOUBLE_VAR)
         .setVariableType(VariableType.DOUBLE)
-        .setDateInterval(AggregateByDateUnit.WEEK)
+        .setGroupByDateInterval(AggregateByDateUnit.WEEK)
         .setStartFlowNodeId(processPart.getStart())
         .setEndFlowNodeId(processPart.getEnd())
         .setFilter(createProcessFilter());

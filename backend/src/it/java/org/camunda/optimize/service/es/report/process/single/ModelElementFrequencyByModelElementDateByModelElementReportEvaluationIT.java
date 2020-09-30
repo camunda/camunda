@@ -146,7 +146,7 @@ public abstract class ModelElementFrequencyByModelElementDateByModelElementRepor
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setReportDataType(getReportDataType())
-      .setDateInterval(groupByDateUnit)
+      .setGroupByDateInterval(groupByDateUnit)
       .build();
   }
 

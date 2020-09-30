@@ -16,8 +16,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.distributed
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_ASSIGNEE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_CANDIDATE_GROUP;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_END_DATE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_FLOW_NODE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_NONE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_START_DATE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_USER_TASK;
 import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_VARIABLE;
 
@@ -32,7 +34,9 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_V
   @JsonSubTypes.Type(value = FlowNodeDistributedByDto.class, name = DISTRIBUTED_BY_FLOW_NODE),
   @JsonSubTypes.Type(value = AssigneeDistributedByDto.class, name = DISTRIBUTED_BY_ASSIGNEE),
   @JsonSubTypes.Type(value = CandidateGroupDistributedByDto.class, name = DISTRIBUTED_BY_CANDIDATE_GROUP),
-  @JsonSubTypes.Type(value = VariableDistributedByDto.class, name = DISTRIBUTED_BY_VARIABLE)
+  @JsonSubTypes.Type(value = VariableDistributedByDto.class, name = DISTRIBUTED_BY_VARIABLE),
+  @JsonSubTypes.Type(value = StartDateDistributedByDto.class, name = DISTRIBUTED_BY_START_DATE),
+  @JsonSubTypes.Type(value = EndDateDistributedByDto.class, name = DISTRIBUTED_BY_END_DATE)
 })
 @Data
 public class ProcessDistributedByDto<VALUE extends ProcessDistributedByValueDto> implements Combinable {

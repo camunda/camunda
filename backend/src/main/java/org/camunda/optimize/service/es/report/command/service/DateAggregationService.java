@@ -71,7 +71,7 @@ public class DateAggregationService {
       return Optional.empty();
     }
 
-    if (AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
+    if (AggregateByDateUnit.AUTOMATIC.equals(context.getAggregateByDateUnit())) {
       return createAutomaticIntervalAggregationOrFallbackToMonth(
         context,
         this::createFilterLimitedProcessDateHistogramWithSubAggregation
@@ -86,7 +86,7 @@ public class DateAggregationService {
       return Optional.empty();
     }
 
-    if (AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
+    if (AggregateByDateUnit.AUTOMATIC.equals(context.getAggregateByDateUnit())) {
       return createAutomaticIntervalAggregationOrFallbackToMonth(
         context,
         this::createFilterLimitedModelElementDateHistogramWithSubAggregation
@@ -101,7 +101,7 @@ public class DateAggregationService {
       return Optional.empty();
     }
 
-    if (AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
+    if (AggregateByDateUnit.AUTOMATIC.equals(context.getAggregateByDateUnit())) {
       return createAutomaticIntervalAggregationOrFallbackToMonth(
         context,
         this::createDateHistogramWithSubAggregation
@@ -117,7 +117,7 @@ public class DateAggregationService {
       return Optional.empty();
     }
 
-    if (AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())) {
+    if (AggregateByDateUnit.AUTOMATIC.equals(context.getAggregateByDateUnit())) {
       return createAutomaticIntervalAggregationOrFallbackToMonth(
         context,
         this::createFilterLimitedDecisionDateHistogramWithSubAggregation
@@ -132,9 +132,9 @@ public class DateAggregationService {
       return Optional.empty();
     }
 
-    if (AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())
+    if (AggregateByDateUnit.AUTOMATIC.equals(context.getAggregateByDateUnit())
       && !context.getMinMaxStats().isValidRange()) {
-      context.setGroupByDateUnit(AggregateByDateUnit.MONTH);
+      context.setAggregateByDateUnit(AggregateByDateUnit.MONTH);
     }
 
     return Optional.of(createRunningDateFilterAggregations(context));
@@ -181,7 +181,7 @@ public class DateAggregationService {
       .dateHistogram(context.getDateAggregationName().orElse(DATE_AGGREGATION))
       .order(BucketOrder.key(false))
       .field(context.getDateField())
-      .dateHistogramInterval(mapToDateHistogramInterval(context.getGroupByDateUnit()))
+      .dateHistogramInterval(mapToDateHistogramInterval(context.getAggregateByDateUnit()))
       .format(OPTIMIZE_DATE_FORMAT)
       .timeZone(context.getTimezone());
   }
@@ -191,21 +191,21 @@ public class DateAggregationService {
       .dateHistogram(context.getDateAggregationName().orElse(DATE_AGGREGATION))
       .order(BucketOrder.key(false))
       .field(context.getDateField())
-      .dateHistogramInterval(mapToDateHistogramInterval(context.getGroupByDateUnit()))
+      .dateHistogramInterval(mapToDateHistogramInterval(context.getAggregateByDateUnit()))
       .format(OPTIMIZE_DATE_FORMAT)
       .timeZone(context.getTimezone())
       .subAggregation(context.getSubAggregation());
   }
 
   private AggregationBuilder createRunningDateFilterAggregations(final DateAggregationContext context) {
-    final AggregateByDateUnit unit = context.getGroupByDateUnit();
+    final AggregateByDateUnit unit = context.getAggregateByDateUnit();
     final ZonedDateTime startOfFirstBucket = truncateToUnit(
       context.getEarliestDate(),
       unit
     );
-    final ZonedDateTime endOfLastBucket = AggregateByDateUnit.AUTOMATIC.equals(context.getGroupByDateUnit())
+    final ZonedDateTime endOfLastBucket = AggregateByDateUnit.AUTOMATIC.equals(context.getAggregateByDateUnit())
       ? context.getLatestDate()
-      : truncateToUnit(context.getLatestDate(), context.getGroupByDateUnit()).plus(
+      : truncateToUnit(context.getLatestDate(), context.getAggregateByDateUnit()).plus(
       1,
       mapToChronoUnit(unit)
     );
@@ -258,7 +258,7 @@ public class DateAggregationService {
     }
 
     // automatic interval not possible, return default aggregation with unit month instead
-    context.setGroupByDateUnit(AggregateByDateUnit.MONTH);
+    context.setAggregateByDateUnit(AggregateByDateUnit.MONTH);
     return Optional.of(defaultAggregationCreator.apply(context));
   }
 

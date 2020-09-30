@@ -163,7 +163,7 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
 
     // when
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(getTestReportDataType())
@@ -188,7 +188,7 @@ public class ProcessInstanceDurationByInstanceEndDateReportEvaluationIT
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(processDefinition.getVersionAsString())
       .setReportDataType(getTestReportDataType())

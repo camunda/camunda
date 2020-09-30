@@ -202,7 +202,7 @@ public class Generator {
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setVisualization(ProcessVisualization.BAR)
       .build();
     // here we want two of the same type to be combined in a combined report to follow

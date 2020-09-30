@@ -20,7 +20,7 @@ import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.
 
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-public class ProcessGroupByProcessInstanceStartDate extends ProcessGroupByProcessInstanceDate {
+public class ProcessGroupByProcessInstanceStartDate extends AbstractProcessGroupByProcessInstanceDate {
 
   protected ProcessGroupByProcessInstanceStartDate(final ConfigurationService configurationService,
                                                    final DateAggregationService dateAggregationService,

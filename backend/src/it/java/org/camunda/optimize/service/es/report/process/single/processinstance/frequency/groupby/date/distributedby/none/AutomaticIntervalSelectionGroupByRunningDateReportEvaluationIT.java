@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.date.distributedby.none;
+package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.groupby.date.distributedby.none;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -275,7 +275,7 @@ public class AutomaticIntervalSelectionGroupByRunningDateReportEvaluationIT exte
       .createReportData()
       .setProcessDefinitionKey(key)
       .setProcessDefinitionVersion(version)
-      .setDateInterval(AggregateByDateUnit.AUTOMATIC)
+      .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE)
       .build();
   }

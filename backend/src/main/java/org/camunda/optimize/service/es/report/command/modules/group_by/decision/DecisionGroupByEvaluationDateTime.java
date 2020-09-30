@@ -66,7 +66,7 @@ public class DecisionGroupByEvaluationDateTime extends GroupByPart<DecisionRepor
     );
 
     final DateAggregationContext dateAggContext = DateAggregationContext.builder()
-      .groupByDateUnit(unit)
+      .aggregateByDateUnit(unit)
       .dateField(EVALUATION_DATE_TIME)
       .minMaxStats(stats)
       .timezone(context.getTimezone())

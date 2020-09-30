@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.date.distributedby.none;
+package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.groupby.date.distributedby.none;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -89,7 +89,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
@@ -106,7 +106,10 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
-    assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(), is(AggregateByDateUnit.DAY));
+    assertThat(
+      ((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(),
+      is(AggregateByDateUnit.DAY)
+    );
 
     final ReportMapResultDto result = evaluationResponse.getResult();
     assertThat(result.getInstanceCount(), is(1L));
@@ -140,7 +143,10 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.PROCESS_INSTANCE));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.FREQUENCY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(getGroupByType()));
-    assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(), is(AggregateByDateUnit.DAY));
+    assertThat(
+      ((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit(),
+      is(AggregateByDateUnit.DAY)
+    );
 
     final ReportMapResultDto result = evaluationResponse.getResult();
     final List<MapResultEntryDto> resultData = result.getData();
@@ -166,7 +172,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
@@ -200,7 +206,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
@@ -241,7 +247,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
@@ -284,7 +290,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // when
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
@@ -314,7 +320,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
@@ -357,7 +363,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
@@ -428,7 +434,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
@@ -455,7 +461,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processKey)
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
       .setReportDataType(getTestReportDataType())
@@ -481,7 +487,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinition.getKey())
       .setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()))
       .setReportDataType(getTestReportDataType())
@@ -545,7 +551,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(getTestReportDataType())
@@ -560,7 +566,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .createReportData()
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
-      .setDateInterval(groupByDateUnit)
+      .setGroupByDateInterval(groupByDateUnit)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
       .build();
   }

@@ -83,7 +83,7 @@ public class ProcessGroupByProcessInstanceRunningDate extends GroupByPart<Proces
     );
 
     final DateAggregationContext dateAggContext = DateAggregationContext.builder()
-      .groupByDateUnit(getGroupByDateUnit(context.getReportData()))
+      .aggregateByDateUnit(getGroupByDateUnit(context.getReportData()))
       .minMaxStats(minMaxStats)
       .dateField(ProcessInstanceDto.Fields.startDate)
       .runningDateReportEndDateField(ProcessInstanceDto.Fields.endDate)

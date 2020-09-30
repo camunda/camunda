@@ -9,6 +9,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.filter.DecisionFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
@@ -30,7 +31,7 @@ public class DateAggregationContext {
 
   @NonNull
   @Setter
-  private AggregateByDateUnit groupByDateUnit;
+  private AggregateByDateUnit aggregateByDateUnit;
   @NonNull
   private final String dateField;
   private final String runningDateReportEndDateField; // used for range filter aggregation in running date reports only
@@ -47,6 +48,7 @@ public class DateAggregationContext {
   private final DecisionQueryFilterEnhancer decisionQueryFilterEnhancer;
 
   private final ProcessGroupByType processGroupByType;
+  private final DistributedByType distributedByType;
   private final List<ProcessFilterDto<?>> processFilters;
   private final ProcessQueryFilterEnhancer processQueryFilterEnhancer;
 
@@ -60,6 +62,14 @@ public class DateAggregationContext {
 
   public Optional<String> getDateAggregationName() {
     return Optional.ofNullable(dateAggregationName);
+  }
+
+  public boolean isStartDateAggregation() {
+    if (processGroupByType != null) {
+      return ProcessGroupByType.START_DATE.equals(processGroupByType);
+    } else {
+      return DistributedByType.START_DATE.equals(distributedByType);
+    }
   }
 
 }

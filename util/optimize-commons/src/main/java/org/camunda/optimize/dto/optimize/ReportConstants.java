@@ -78,6 +78,8 @@ public class ReportConstants {
   public static final String DISTRIBUTED_BY_ASSIGNEE = "assignee";
   public static final String DISTRIBUTED_BY_CANDIDATE_GROUP = "candidateGroup";
   public static final String DISTRIBUTED_BY_VARIABLE = "variable";
+  public static final String DISTRIBUTED_BY_START_DATE = "startDate";
+  public static final String DISTRIBUTED_BY_END_DATE = "endDate";
 
   public static final String RUNNING_FLOWNODE_EXECUTION_STATE = "running";
   public static final String COMPLETED_FLOWNODE_EXECUTION_STATE = "completed";

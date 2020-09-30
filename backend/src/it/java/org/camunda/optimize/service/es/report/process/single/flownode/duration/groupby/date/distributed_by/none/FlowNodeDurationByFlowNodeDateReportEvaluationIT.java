@@ -436,7 +436,7 @@ public abstract class FlowNodeDurationByFlowNodeDateReportEvaluationIT
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setReportDataType(getReportDataType())
-      .setDateInterval(groupByDateUnit)
+      .setGroupByDateInterval(groupByDateUnit)
       .build();
   }
 

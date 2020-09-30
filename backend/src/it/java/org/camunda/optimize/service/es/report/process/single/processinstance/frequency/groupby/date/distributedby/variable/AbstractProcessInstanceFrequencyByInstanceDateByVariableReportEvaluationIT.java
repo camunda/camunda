@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.date.distributedby.variable;
+package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.groupby.date.distributedby.variable;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -807,10 +807,10 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
                                                 final String variableName,
                                                 final AggregateByDateUnit groupByDateUnit) {
     return TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(groupByDateUnit)
+      .setReportDataType(getTestReportDataType())
+      .setGroupByDateInterval(groupByDateUnit)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setReportDataType(getTestReportDataType())
       .setVariableType(variableType)
       .setVariableName(variableName)
       .build();

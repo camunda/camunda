@@ -60,7 +60,7 @@ public class DateHistogramBucketLimiterUtil {
     List<QueryBuilder> filters = limitFilterQuery.filter();
 
     final ZonedDateTime newLimitedStartDate = getNewLimitedStartDate(
-      mapToChronoUnit(context.getGroupByDateUnit()),
+      mapToChronoUnit(context.getAggregateByDateUnit()),
       esBucketLimit,
       context.getLatestDate()
     );
@@ -88,7 +88,7 @@ public class DateHistogramBucketLimiterUtil {
 
     final List<DateFilterDataDto<?>> limitedFilters = limitDateFiltersOrCreateDefaultFilter(
       evaluationDateFilter,
-      context.getGroupByDateUnit(),
+      context.getAggregateByDateUnit(),
       esBucketLimit,
       context.getLatestDate(),
       context.getTimezone()
@@ -115,23 +115,20 @@ public class DateHistogramBucketLimiterUtil {
     final DateAggregationContext context,
     final DateTimeFormatter dateTimeFormatter,
     final int esBucketLimit) {
-    switch (context.getProcessGroupByType()) {
-      case START_DATE:
-        return extendBoundsAndCreateProcessStartDateHistogramBucketLimitingFilterFor(
-          dateHistogramAggregation,
-          context,
-          dateTimeFormatter,
-          esBucketLimit
-        );
-      case END_DATE:
-        return extendBoundsAndCreateProcessEndDateHistogramBucketLimitingFilterFor(
-          dateHistogramAggregation,
-          context,
-          dateTimeFormatter,
-          esBucketLimit
-        );
-      default:
-        throw new IllegalStateException("Unsupported process groupBy type: " + context.getProcessGroupByType());
+    if (context.isStartDateAggregation()) {
+      return extendBoundsAndCreateProcessStartDateHistogramBucketLimitingFilterFor(
+        dateHistogramAggregation,
+        context,
+        dateTimeFormatter,
+        esBucketLimit
+      );
+    } else {
+      return extendBoundsAndCreateProcessEndDateHistogramBucketLimitingFilterFor(
+        dateHistogramAggregation,
+        context,
+        dateTimeFormatter,
+        esBucketLimit
+      );
     }
   }
 
@@ -155,7 +152,7 @@ public class DateHistogramBucketLimiterUtil {
     if (!endDateFilters.isEmpty() && startDateFilters.isEmpty()) {
       limitFilterQuery = createDateHistogramBucketLimitingFilter(
         endDateFilters,
-        context.getGroupByDateUnit(),
+        context.getAggregateByDateUnit(),
         esBucketLimit,
         queryFilterEnhancer.getEndDateQueryFilter(),
         context.getTimezone()
@@ -165,7 +162,7 @@ public class DateHistogramBucketLimiterUtil {
       // dateHistogram bounds extended
       final List<DateFilterDataDto<?>> limitedFilters = limitDateFiltersOrCreateDefaultFilter(
         startDateFilters,
-        context.getGroupByDateUnit(),
+        context.getAggregateByDateUnit(),
         esBucketLimit,
         context.getLatestDate(),
         context.getTimezone()
@@ -208,7 +205,7 @@ public class DateHistogramBucketLimiterUtil {
     if (endDateFilters.isEmpty() && !startDateFilters.isEmpty()) {
       limitFilterQuery = createDateHistogramBucketLimitingFilter(
         startDateFilters,
-        context.getGroupByDateUnit(),
+        context.getAggregateByDateUnit(),
         esBucketLimit,
         queryFilterEnhancer.getStartDateQueryFilter(),
         context.getTimezone()
@@ -218,7 +215,7 @@ public class DateHistogramBucketLimiterUtil {
       // dateHistogram bounds extended
       final List<DateFilterDataDto<?>> limitedFilters = limitDateFiltersOrCreateDefaultFilter(
         endDateFilters,
-        context.getGroupByDateUnit(),
+        context.getAggregateByDateUnit(),
         esBucketLimit,
         context.getLatestDate(),
         context.getTimezone()

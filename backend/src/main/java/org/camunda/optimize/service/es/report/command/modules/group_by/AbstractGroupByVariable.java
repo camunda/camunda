@@ -95,6 +95,9 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
   @Override
   public List<AggregationBuilder> createAggregation(final SearchSourceBuilder searchSourceBuilder,
                                                     final ExecutionContext<Data> context) {
+    // base query used for distrBy date reports
+    context.setDistributedByMinMaxBaseQuery(searchSourceBuilder.query());
+
     final VariableAggregationContext varAggContext = VariableAggregationContext.builder()
       .variableName(getVariableName(context))
       .variableType(getVariableType(context))
@@ -173,6 +176,12 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
         getVariableType(context),
         context.getTimezone()
       );
+
+    // enrich context with complete set of distributed by keys
+    distributedByPart.enrichContextWithAllExpectedDistributedByKeys(
+      context,
+      filteredParentAgg.getAggregations()
+    );
 
     final List<GroupByResult> groupedData = new ArrayList<>();
     for (Map.Entry<String, Aggregations> keyToAggregationEntry : bucketAggregations.entrySet()) {

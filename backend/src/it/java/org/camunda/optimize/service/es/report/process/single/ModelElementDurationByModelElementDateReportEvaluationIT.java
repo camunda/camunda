@@ -404,7 +404,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersions(versions)
       .setReportDataType(getReportDataType())
-      .setDateInterval(groupByDateUnit)
+      .setGroupByDateInterval(groupByDateUnit)
       .build();
   }
 

@@ -73,7 +73,7 @@ public class VariableAggregationService {
   private Optional<AggregationBuilder> createDateVariableAggregation(
     final VariableAggregationContext context) {
     final DateAggregationContext dateAggContext = DateAggregationContext.builder()
-      .groupByDateUnit(context.getDateUnit())
+      .aggregateByDateUnit(context.getDateUnit())
       .dateField(context.getNestedVariableValueFieldLabel())
       .minMaxStats(context.getVariableRangeMinMaxStats())
       .timezone(context.getTimezone())

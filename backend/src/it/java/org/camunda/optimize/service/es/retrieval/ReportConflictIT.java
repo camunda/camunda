@@ -75,7 +75,7 @@ public class ReportConflictIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(firstSingleReport.getData().getProcessDefinitionKey())
       .setProcessDefinitionVersions(firstSingleReport.getData().getDefinitionVersions())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
     reportUpdate.setData(groupByStartDateReport);
@@ -141,7 +141,7 @@ public class ReportConflictIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(singleReport.getData().getProcessDefinitionKey())
       .setProcessDefinitionVersions(singleReport.getData().getDefinitionVersions())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(ProcessReportDataType.PROC_INST_DUR_GROUP_BY_START_DATE)
       .build();
     reportUpdate.setData(groupByStartDateReport);

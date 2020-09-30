@@ -227,7 +227,7 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setFilter(testExecutionStateFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
@@ -281,7 +281,7 @@ public class ProcessInstanceDurationByInstanceStartDateReportEvaluationIT
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setFilter(testExecutionStateFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();

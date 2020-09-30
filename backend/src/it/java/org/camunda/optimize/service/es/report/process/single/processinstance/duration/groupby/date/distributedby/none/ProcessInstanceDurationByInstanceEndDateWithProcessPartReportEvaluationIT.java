@@ -77,7 +77,7 @@ public class ProcessInstanceDurationByInstanceEndDateWithProcessPartReportEvalua
       .setStartFlowNodeId(START_EVENT)
       .setEndFlowNodeId(END_EVENT)
       .setReportDataType(getTestReportDataType())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setFilter(endDateFilterDto)
       .build();
     final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();

@@ -876,7 +876,7 @@ public abstract class UserTaskDurationByUserTaskDateByAssigneeReportEvaluationIT
       .setProcessDefinitionVersions(versions)
       .setUserTaskDurationTime(getUserTaskDurationTime())
       .setReportDataType(getReportDataType())
-      .setDateInterval(groupByDateUnit)
+      .setGroupByDateInterval(groupByDateUnit)
       .build();
   }
 

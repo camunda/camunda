@@ -185,7 +185,7 @@ public class InstanceCountIT extends AbstractProcessDefinitionIT {
       .createReportData()
       .setProcessDefinitionKey(TEST_PROCESS)
       .setProcessDefinitionVersion("1")
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setReportDataType(reportDataType)
       .build();
     reportDefinitionDto.setData(runningReportData);

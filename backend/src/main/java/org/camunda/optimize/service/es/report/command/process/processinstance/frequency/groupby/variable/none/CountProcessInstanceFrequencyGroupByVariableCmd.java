@@ -3,9 +3,8 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.command.process.processinstance.duration.groupby.variable;
+package org.camunda.optimize.service.es.report.command.process.processinstance.frequency.groupby.variable.none;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportEvaluationResult;
 import org.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.service.es.report.command.CommandContext;
@@ -14,14 +13,14 @@ import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecu
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
 import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByVariable;
-import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewInstanceDurationOnProcessPart;
+import org.camunda.optimize.service.es.report.command.modules.view.process.frequency.ProcessViewCountInstanceFrequency;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessMapReportResult;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ProcessInstanceDurationOnProcessPartGroupByVariableCmd extends ProcessCmd<ReportMapResultDto> {
+public class CountProcessInstanceFrequencyGroupByVariableCmd extends ProcessCmd<ReportMapResultDto> {
 
-  public ProcessInstanceDurationOnProcessPartGroupByVariableCmd(final ReportCmdExecutionPlanBuilder builder) {
+  public CountProcessInstanceFrequencyGroupByVariableCmd(final ReportCmdExecutionPlanBuilder builder) {
     super(builder);
   }
 
@@ -29,7 +28,7 @@ public class ProcessInstanceDurationOnProcessPartGroupByVariableCmd extends Proc
   protected ProcessReportCmdExecutionPlan<ReportMapResultDto> buildExecutionPlan(final ReportCmdExecutionPlanBuilder builder) {
     return builder.createExecutionPlan()
       .processCommand()
-      .view(ProcessViewInstanceDurationOnProcessPart.class)
+      .view(ProcessViewCountInstanceFrequency.class)
       .groupBy(ProcessGroupByVariable.class)
       .distributedBy(ProcessDistributedByNone.class)
       .resultAsMap()
@@ -37,8 +36,8 @@ public class ProcessInstanceDurationOnProcessPartGroupByVariableCmd extends Proc
   }
 
   @Override
-  public ReportEvaluationResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
-    final ReportMapResultDto evaluate = this.executionPlan.evaluate(commandContext);
+  public SingleProcessMapReportResult evaluate(final CommandContext<SingleProcessReportDefinitionDto> commandContext) {
+    final ReportMapResultDto evaluate = executionPlan.evaluate(commandContext);
     return new SingleProcessMapReportResult(evaluate, commandContext.getReportDefinition());
   }
 

@@ -42,7 +42,7 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INS
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 
 @RequiredArgsConstructor
-public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<ProcessReportDataDto> {
+public abstract class AbstractProcessGroupByProcessInstanceDate extends GroupByPart<ProcessReportDataDto> {
 
   protected final ConfigurationService configurationService;
   protected final DateAggregationService dateAggregationService;
@@ -89,7 +89,7 @@ public abstract class ProcessGroupByProcessInstanceDate extends GroupByPart<Proc
     final MinMaxStatDto stats = getMinMaxDateStats(context, searchSourceBuilder.query());
 
     final DateAggregationContext dateAggContext = DateAggregationContext.builder()
-      .groupByDateUnit(unit)
+      .aggregateByDateUnit(unit)
       .dateField(getDateField())
       .minMaxStats(stats)
       .timezone(context.getTimezone())

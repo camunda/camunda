@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.processinstance.frequency;
+package org.camunda.optimize.service.es.report.process.single.processinstance.frequency.groupby.variable.distributedby.none;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.SneakyThrows;
@@ -140,7 +140,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
   }
 
   @Test
-  public void otherProcessDefinitionsDoNoAffectResult() {
+  public void otherProcessDefinitionsDoNotAffectResult() {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("foo", "bar");

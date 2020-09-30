@@ -15,6 +15,7 @@ import org.camunda.optimize.service.es.report.command.CommandContext;
 import org.elasticsearch.index.query.QueryBuilder;
 
 import java.time.ZoneId;
+import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
@@ -30,14 +31,15 @@ public class ExecutionContext<ReportData extends SingleReportDataDto> {
   // used in the context of combined reports to establish identical bucket sizes/ranges across all single reports
   private MinMaxStatDto combinedRangeMinMaxStats;
 
-  // used for distributed by variable report which need to create minMaxStats based on the baseQuery
+  // used for distributed reports which need to create minMaxStats based on the baseQuery (eg for variable or date
+  // ranges)
   private QueryBuilder distributedByMinMaxBaseQuery;
 
   // used to ensure a complete list of distributedByResults (to include all keys, even if the result is empty)
   // e.g. used for groupBy usertask - distributedBy assignee reports, where it is possible that
   // a user has been assigned to one userTask but not another, yet we want the userId to appear
   // in all groupByResults (with 0 if they have not been assigned to said task)
-  private Set<String> allDistributedByKeys;
+  private Set<String> allDistributedByKeys = new HashSet<>();
 
   public <RD extends ReportDefinitionDto<ReportData>> ExecutionContext(final CommandContext<RD> commandContext) {
     this.reportData = commandContext.getReportDefinition().getData();

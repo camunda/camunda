@@ -103,7 +103,7 @@ public abstract class AbstractFilterIT extends AbstractIT {
       .createReportData()
       .setProcessDefinitionKey(key)
       .setProcessDefinitionVersion(version)
-      .setDateInterval(AggregateByDateUnit.AUTOMATIC)
+      .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
       .setReportDataType(type)
       .build();
   }

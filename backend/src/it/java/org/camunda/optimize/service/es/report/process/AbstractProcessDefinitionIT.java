@@ -250,7 +250,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .setProcessDefinitionKey(definitionKey)
       .setProcessDefinitionVersion(definitionVersion)
       .setReportDataType(reportType)
-      .setDateInterval(unit)
+      .setGroupByDateInterval(unit)
       .build();
     reportData.getConfiguration().setSorting(sorting);
     return reportData;

@@ -25,7 +25,6 @@ import java.util.List;
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
-import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -74,7 +73,7 @@ public class CollectionEntityDefinitionAuthorizationIT extends AbstractCollectio
       .createReportData()
       .setProcessDefinitionKey(processDefinitionEngineDto.getKey())
       .setProcessDefinitionVersion(processDefinitionEngineDto.getVersionAsString())
-      .setDateInterval(AggregateByDateUnit.AUTOMATIC)
+      .setGroupByDateInterval(AggregateByDateUnit.AUTOMATIC)
       .setReportDataType(ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
       .build();
 

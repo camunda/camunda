@@ -112,7 +112,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
@@ -155,7 +155,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setReportDataType(getTestReportDataType())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
 
     // when
@@ -235,7 +235,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(getTestReportDataType())
@@ -272,7 +272,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     // when
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(getTestReportDataType())
@@ -317,7 +317,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     aggregationTypes.forEach((AggregationType aggType) -> {
       // when
       final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-        .setDateInterval(AggregateByDateUnit.DAY)
+        .setGroupByDateInterval(AggregateByDateUnit.DAY)
         .setProcessDefinitionKey(processDefinitionKey)
         .setProcessDefinitionVersion(processDefinitionVersion)
         .setReportDataType(getTestReportDataType())
@@ -366,7 +366,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
 
     // when
     final ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder.createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processDefinitionKey)
       .setProcessDefinitionVersion(processDefinitionVersion)
       .setReportDataType(getTestReportDataType())
@@ -494,7 +494,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setFilter(testExecutionStateFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
@@ -544,7 +544,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionVersion(completeProcessInstanceDto.getProcessDefinitionVersion())
       .setProcessDefinitionKey(completeProcessInstanceDto.getProcessDefinitionKey())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setFilter(testExecutionStateFilter)
       .build();
     ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
@@ -595,7 +595,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
 
     ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
@@ -625,7 +625,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionKey(processKey)
       .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
-      .setDateInterval(AggregateByDateUnit.HOUR)
+      .setGroupByDateInterval(AggregateByDateUnit.HOUR)
       .build();
 
     reportData.setTenantIds(selectedTenants);
@@ -650,7 +650,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     // when
     ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
@@ -666,7 +666,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
     // when
     reportData = TemplatedProcessReportDataBuilder
       .createReportData()
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
       .setReportDataType(getTestReportDataType())
@@ -701,7 +701,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
     dataDto.getGroupBy().setType(null);
 
@@ -722,7 +722,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
     DateGroupByValueDto groupByValueDto = (DateGroupByValueDto) dataDto.getGroupBy().getValue();
     groupByValueDto.setUnit(null);
@@ -744,7 +744,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateReportEvaluat
       .setReportDataType(getTestReportDataType())
       .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
       .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
-      .setDateInterval(AggregateByDateUnit.DAY)
+      .setGroupByDateInterval(AggregateByDateUnit.DAY)
       .build();
     ProcessGroupByDto<?> groupByDate = dataDto.getGroupBy();
     groupByDate.setValue(null);
