@@ -55,7 +55,6 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   private long snapshotPosition = -1L;
   private ProcessingStateMachine processingStateMachine;
 
-  @SuppressWarnings("squid:S3077")
   private volatile Phase phase = Phase.REPROCESSING;
 
   private CompletableActorFuture<Void> openFuture;

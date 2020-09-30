@@ -19,6 +19,7 @@ import io.zeebe.engine.processing.message.command.SubscriptionCommandMessageHand
 import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
 import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
 import io.zeebe.engine.processing.streamprocessor.RecordValues;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processing.streamprocessor.TypedEventImpl;
 import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
@@ -219,6 +220,10 @@ public final class EngineRule extends ExternalResource {
 
   public ZeebeState getZeebeState() {
     return environmentRule.getZeebeState();
+  }
+
+  public StreamProcessor getStreamProcessor(final int partitionId) {
+    return environmentRule.getStreamProcessor(partitionId);
   }
 
   public DeploymentClient deployment() {
