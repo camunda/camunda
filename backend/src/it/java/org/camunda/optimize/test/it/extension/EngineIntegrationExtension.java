@@ -44,6 +44,7 @@ import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
+import org.camunda.optimize.dto.engine.HistoricIncidentEngineDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
 import org.camunda.optimize.dto.engine.TenantEngineDto;
@@ -54,13 +55,11 @@ import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.EngineUserDto;
 import org.camunda.optimize.rest.engine.dto.ExternalTaskEngineDto;
 import org.camunda.optimize.rest.engine.dto.GroupDto;
-import org.camunda.optimize.rest.engine.dto.IncidentEngineDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.rest.engine.dto.TaskDto;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
-import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeDeserializer;
 import org.camunda.optimize.service.util.mapper.CustomOffsetDateTimeSerializer;
 import org.camunda.optimize.test.engine.EnginePluginClient;
@@ -232,7 +231,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     completePost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(completePost)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
-        throw new RuntimeException(
+        throw new OptimizeIntegrationTestException(
           "Could not create user task! Status-code: " + response.getStatusLine().getStatusCode()
         );
       }
@@ -265,7 +264,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     addCandidateGroupPost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = httpClient.execute(addCandidateGroupPost)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
-        throw new RuntimeException(
+        throw new OptimizeIntegrationTestException(
           "Could not add candidate group! Status-code: " + response.getStatusLine().getStatusCode()
         );
       }
@@ -296,7 +295,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     addCandidateGroupPost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = httpClient.execute(addCandidateGroupPost)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
-        throw new RuntimeException(
+        throw new OptimizeIntegrationTestException(
           "Could not add candidate group! Status-code: " + response.getStatusLine().getStatusCode()
         );
       }
@@ -371,7 +370,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     claimPost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = authenticatingClient.execute(claimPost)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
-        throw new RuntimeException(
+        throw new OptimizeIntegrationTestException(
           "Could not unclaim user task! Status-code: " + response.getStatusLine().getStatusCode()
         );
       }
@@ -408,10 +407,10 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
         tasks = OBJECT_MAPPER.readValue(responseString, new TypeReference<List<TaskDto>>() {});
         // @formatter:on
       } catch (IOException e) {
-        throw new RuntimeException("Error while trying to finish the user task!!");
+        throw new OptimizeIntegrationTestException("Error while trying to finish the user task!!");
       }
     } catch (URISyntaxException e) {
-      throw new RuntimeException("Error while trying to create task list url !!");
+      throw new OptimizeIntegrationTestException("Error while trying to create task list url !!");
     }
     return tasks;
   }
@@ -440,7 +439,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     claimPost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = authenticatingClient.execute(claimPost)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
-        throw new RuntimeException(
+        throw new OptimizeIntegrationTestException(
           "Could not claim user task! Status-code: " + response.getStatusLine().getStatusCode()
         );
       }
@@ -454,7 +453,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     completePost.addHeader("Content-Type", "application/json");
     try (CloseableHttpResponse response = authenticatingClient.execute(completePost)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
-        throw new RuntimeException(
+        throw new OptimizeIntegrationTestException(
           "Could not complete user task! Status-code: " + response.getStatusLine().getStatusCode()
         );
       }
@@ -486,7 +485,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
       assertThat(procDefs.size(), is(1));
       return procDefs.get(0).getId();
     } catch (IOException e) {
-      throw new OptimizeRuntimeException("Could not fetch the process definition!", e);
+      throw new OptimizeIntegrationTestException("Could not fetch the process definition!", e);
     }
   }
 
@@ -719,8 +718,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     try {
       CloseableHttpResponse response = HTTP_CLIENT.execute(deploymentRequest);
       if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
-        throw new RuntimeException("Something really bad happened during deployment, " +
-                                     "could not create a deployment!");
+        throw new OptimizeIntegrationTestException("Something really bad happened during deployment, " +
+                                                     "could not create a deployment!");
       }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       deployment = OBJECT_MAPPER.readValue(responseString, DeploymentDto.class);
@@ -814,7 +813,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     ));
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(suspendRequest)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
-        throw new RuntimeException(
+        throw new OptimizeIntegrationTestException(
           String.format(
             "Could not suspend or activate process instance with ID %s via batch. Status-code: %s",
             processInstanceId,
@@ -835,7 +834,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     suspendRequest.setEntity(entity);
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(suspendRequest)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
-        throw new RuntimeException(
+        throw new OptimizeIntegrationTestException(
           String.format(
             "Could not execute suspend operation on endpoint [%s] with parameters [%s]. Status-code: %s",
             suspensionUri,
@@ -870,7 +869,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
           if (response.getEntity() != null) {
             body = EntityUtils.toString(response.getEntity());
           }
-          throw new RuntimeException(
+          throw new OptimizeIntegrationTestException(
             "Could not start the decision definition instance. " +
               "Request: [" + post.toString() + "]. " +
               "Response: [" + body + "]"
@@ -880,7 +879,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     } catch (IOException e) {
       final String message = "Could not start the given decision model!";
       log.error(message, e);
-      throw new RuntimeException(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
     }
   }
 
@@ -906,7 +905,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     ));
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(getJobRequest)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
-        throw new RuntimeException(
+        throw new OptimizeIntegrationTestException(
           String.format(
             "Could not get job with jobDefinitionID %s. Status-code: %s",
             jobDefinitionId,
@@ -918,7 +917,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
 
       final JSONArray responseJsonArray = (JSONArray) JSONValue.parse(responseString);
       if (responseJsonArray.size() != 1) {
-        throw new RuntimeException(
+        throw new OptimizeIntegrationTestException(
           String.format(
             "Could not find unique job with jobDefinitionID %s. Found: %s",
             jobDefinitionId,
@@ -936,7 +935,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     HttpPost executeJobRequest = new HttpPost(getExecuteJobUri(jobId));
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(executeJobRequest)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
-        throw new RuntimeException(
+        throw new OptimizeIntegrationTestException(
           String.format(
             "Could not execute job with jobID %s. Status-code: %s",
             jobId,
@@ -979,8 +978,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return getEngineUrl() + "/process-definition/" + procDefId + "/start";
   }
 
-  private String getIncidentUri() {
-    return getEngineUrl() + "/incident";
+  private String getHistoricIncidentUri() {
+    return getEngineUrl() + "/history/incident";
   }
 
   private String getHistoricGetProcessInstanceUri(String processInstanceId) {
@@ -1111,7 +1110,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     } catch (IOException e) {
       String message = "Could not retrieve all process definitions!";
       log.error(message, e);
-      throw new RuntimeException(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
     } finally {
       if (response != null) {
         try {
@@ -1249,12 +1248,16 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   private void increaseRetry(final List<ExternalTaskEngineDto> externalTasks) {
     HttpPut put = new HttpPut(getExternalTaskRetriesUri());
     put.addHeader("Content-Type", "application/json");
-    String commaSeparatedTaskIds = externalTasks.stream().map(ExternalTaskEngineDto::getId).collect(Collectors.joining(","));
+    String commaSeparatedTaskIds = externalTasks.stream()
+      .map(ExternalTaskEngineDto::getId)
+      .collect(Collectors.joining(","));
+    // @formatter:off
     put.setEntity(new StringEntity(
       "{\n" +
         "\"retries\": \"" + 1 + "\",\n" +
         "\"externalTaskIds\": [" + commaSeparatedTaskIds + "]\n" +
       "}"
+    // @formatter:on
     ));
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(put)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
@@ -1302,17 +1305,17 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   @SneakyThrows
-  public List<IncidentEngineDto> getIncidents() {
-    HttpRequestBase get = new HttpGet(getIncidentUri());
+  public List<HistoricIncidentEngineDto> getHistoricIncidents() {
+    HttpRequestBase get = new HttpGet(getHistoricIncidentUri());
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(get)) {
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       return OBJECT_MAPPER.readValue(
         responseString,
-        new TypeReference<List<IncidentEngineDto>>() {
+        new TypeReference<List<HistoricIncidentEngineDto>>() {
         }
       );
     } catch (IOException e) {
-      String message = "Could not retrieve incidents!";
+      String message = "Could not retrieve historic incidents!";
       log.error(message, e);
       throw new OptimizeIntegrationTestException(message, e);
     }
@@ -1353,11 +1356,11 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
       }
     } catch (URISyntaxException e) {
       log.error("Could not build uri!", e);
-      throw new RuntimeException(e);
+      throw new OptimizeIntegrationTestException(e);
     } catch (IOException e) {
       String message = "Could not retrieve all process definitions!";
       log.error(message, e);
-      throw new RuntimeException(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
     }
   }
 
@@ -1386,7 +1389,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
           if (response.getEntity() != null) {
             body = EntityUtils.toString(response.getEntity());
           }
-          throw new RuntimeException(
+          throw new OptimizeIntegrationTestException(
             "Could not start the process instance. " +
               "Request: [" + post.toString() + "]. " +
               "Response: [" + body + "]"
@@ -1398,7 +1401,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     } catch (IOException e) {
       String message = "Could not start the given process model!";
       log.error(message, e);
-      throw new RuntimeException(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
     }
   }
 
@@ -1468,7 +1471,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
         }
       );
       if (!parsed.containsKey(COUNT)) {
-        throw new RuntimeException("Engine could not count PIs");
+        throw new OptimizeIntegrationTestException("Engine could not count PIs");
       }
       if (Integer.parseInt(parsed.get(COUNT).toString()) != 0) {
         Thread.sleep(100);
@@ -1744,7 +1747,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
           response.getStatusLine().getStatusCode(),
           responseErrorMessage
         );
-        throw new RuntimeException(exceptionMessage);
+        throw new OptimizeIntegrationTestException(exceptionMessage);
       }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       deployment = OBJECT_MAPPER.readValue(responseString, DeploymentDto.class);

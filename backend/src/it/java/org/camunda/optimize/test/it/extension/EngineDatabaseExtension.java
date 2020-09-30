@@ -606,6 +606,15 @@ public class EngineDatabaseExtension implements Extension {
     return result;
   }
 
+  @SneakyThrows
+  public void removeProcessInstanceIdFromAllHistoricIncidents() {
+    String sql = "UPDATE ACT_HI_INCIDENT " +
+      "SET PROC_INST_ID_ = NULL, ROOT_PROC_INST_ID_ = NULL";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.executeUpdate();
+    connection.commit();
+  }
+
   public int countDecisionDefinitions() throws SQLException {
     String sql = "select count(*) as total from act_re_decision_def;";
     ResultSet statement = connection.createStatement().executeQuery(sql);

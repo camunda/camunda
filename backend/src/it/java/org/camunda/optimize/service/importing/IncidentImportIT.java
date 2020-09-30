@@ -7,12 +7,12 @@ package org.camunda.optimize.service.importing;
 
 import lombok.SneakyThrows;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.HistoricIncidentEngineDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentDto;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
-import org.camunda.optimize.rest.engine.dto.IncidentEngineDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedIncidentEngineImportMediator;
@@ -288,6 +288,54 @@ public class IncidentImportIT extends AbstractImportIT {
     assertThat(getIncidentCount()).isEqualTo(1L);
   }
 
+  @Test
+  public void incidentWithoutProcessInstanceAssociationIsSkipped() {
+    // given an incident is created which is not associated with a process instance
+    incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+    // the missing process instance association can happen in two cases:
+    // 1. the engine history cleanup job is failing
+    // 2. the process has a timer start event that fails after continuing with
+    // the execution.
+    // Both cases require a job executor which we don't have in our test setup. Therefore,
+    // the process instance ID is removed manually to simulate those cases.
+    engineDatabaseExtension.removeProcessInstanceIdFromAllHistoricIncidents();
+    // and given an incident with a process instance id
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+
+    final List<HistoricIncidentEngineDto> historicIncidents = engineIntegrationExtension.getHistoricIncidents();
+    assertThat(historicIncidents)
+      .hasSize(2)
+      .extracting(HistoricIncidentEngineDto::getProcessInstanceId)
+      .containsExactlyInAnyOrder(null, processInstanceEngineDto.getId());
+
+    // when
+    importAllEngineEntitiesFromScratch();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
+
+    // then
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(2)
+      .flatExtracting(ProcessInstanceDto::getIncidents)
+      .hasSize(1)
+      .satisfies(incident ->
+                   assertThat(incident)
+                     .extracting(IncidentDto::getId)
+                     .containsExactly(getIncidentIdForIncidentWithProcessInstanceId(historicIncidents))
+      );
+  }
+
+  private String getIncidentIdForIncidentWithProcessInstanceId(final List<HistoricIncidentEngineDto> historicIncidents) {
+    return historicIncidents.stream()
+      .filter(i -> i.getProcessInstanceId() != null)
+      .findFirst()
+      .map(HistoricIncidentEngineDto::getId)
+      .orElseThrow(() ->
+                     new OptimizeIntegrationTestException("There should be one incident with a process instance id"));
+  }
+
   private long getIncidentCount() {
     final List<ProcessInstanceDto> storedProcessInstances =
       elasticSearchIntegrationTestExtension.getAllProcessInstances();
@@ -327,7 +375,7 @@ public class IncidentImportIT extends AbstractImportIT {
   }
 
   private void manuallyAddAResolvedIncidentToElasticsearch(final ProcessInstanceEngineDto processInstanceWithIncident) {
-    final IncidentEngineDto incidentEngineDto = engineIntegrationExtension.getIncidents()
+    final HistoricIncidentEngineDto incidentEngineDto = engineIntegrationExtension.getHistoricIncidents()
       .stream()
       .findFirst()
       .orElseThrow(() -> new OptimizeIntegrationTestException("There should be at least one incident!"));

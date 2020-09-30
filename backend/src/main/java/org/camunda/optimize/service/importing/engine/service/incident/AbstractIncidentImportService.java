@@ -53,14 +53,37 @@ public abstract class AbstractIncidentImportService implements ImportService<His
     elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
   }
 
-  private List<IncidentDto> mapEngineEntitiesToOptimizeEntities(List<HistoricIncidentEngineDto> engineEntities) {
-    return engineEntities
-      .stream().map(this::mapEngineEntityToOptimizeEntity)
+  private List<IncidentDto> mapEngineEntitiesToOptimizeEntities(List<HistoricIncidentEngineDto> engineIncidents) {
+    logIncidentsToBeSkipped(engineIncidents);
+    return engineIncidents
+      .stream()
+      .filter(this::containsProcessInstanceId)
+      .map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toList());
   }
 
   protected abstract ElasticsearchImportJob<IncidentDto> createElasticsearchImportJob(List<IncidentDto> incidents,
                                                                                       Runnable callback);
+
+  private void logIncidentsToBeSkipped(List<HistoricIncidentEngineDto> engineIncidents) {
+    List<String> incidentIdsWithoutProcessInstanceId = engineIncidents.stream()
+      .filter(incident -> !containsProcessInstanceId(incident))
+      .map(HistoricIncidentEngineDto::getId)
+      .collect(Collectors.toList());
+
+    if (!incidentIdsWithoutProcessInstanceId.isEmpty()) {
+      final String message = String.format(
+        "Incidents with ID's %s aren't associated with any process instance ID and will be skipped. Usually, that " +
+          "can happen if history cleanup job or a timer start event job run out of retries.",
+        incidentIdsWithoutProcessInstanceId
+      );
+      log.info(message);
+    }
+  }
+
+  private boolean containsProcessInstanceId(final HistoricIncidentEngineDto incident) {
+    return incident.getProcessInstanceId() != null;
+  }
 
   private IncidentDto mapEngineEntityToOptimizeEntity(final HistoricIncidentEngineDto engineEntity) {
     return new IncidentDto(
