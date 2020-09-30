@@ -21,7 +21,7 @@
     <dependency>
       <groupId>org.codehaus.groovy</groupId>
       <artifactId>groovy-all</artifactId>
-      <version>3.0.5</version>
+      <version>3.0.6</version>
       <type>pom</type>
       <scope>test</scope>
     </dependency>
@@ -107,7 +107,7 @@
           <dependency>
             <groupId>org.codehaus.groovy</groupId>
             <artifactId>groovy-all</artifactId>
-            <version>3.0.5</version>
+            <version>3.0.6</version>
             <type>pom</type>
           </dependency>
         </dependencies>
