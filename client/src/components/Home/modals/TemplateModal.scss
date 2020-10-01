@@ -6,6 +6,13 @@
     padding: 0;
   }
 
+  &.noProcess {
+    .DefinitionSelection,
+    .diagramArea {
+      visibility: hidden;
+    }
+  }
+
   .definitionSelection {
     padding: 20px 40px;
     flex: 1;

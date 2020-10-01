@@ -15,6 +15,8 @@ import durationImg from './images/duration.svg';
 import tableImg from './images/table.svg';
 import chartImg from './images/chart.svg';
 
+import './ReportTemplateModal.scss';
+
 export default function ReportTemplateModal({onClose}) {
   const templates = [
     {name: 'blank'},
@@ -73,6 +75,7 @@ export default function ReportTemplateModal({onClose}) {
 
   return (
     <TemplateModal
+      className="ReportTemplateModal"
       onClose={onClose}
       templates={templates}
       entity="report"

@@ -44,8 +44,6 @@ test('create a collection and entities inside it', async (t) => {
   await t.expect(e.createNewMenu.textContent).contains('New Report');
 
   await t.click(e.option('New Dashboard'));
-  await t.click(Homepage.templateModalProcessField);
-  await t.click(Homepage.option('Invoice Receipt with alternative correlation variable'));
   await t.click(Homepage.modalConfirmbutton);
 
   await save(t);
@@ -96,8 +94,6 @@ test('user permissions', async (t) => {
 
   await t.click(e.createNewMenu);
   await t.click(e.option('New Dashboard'));
-  await t.click(Homepage.templateModalProcessField);
-  await t.click(Homepage.option('Invoice Receipt with alternative correlation variable'));
   await t.click(Homepage.modalConfirmbutton);
 
   await save(t);

@@ -1,0 +1,8 @@
+.ReportTemplateModal {
+  &.TemplateModal.noProcess {
+    .DefinitionSelection,
+    .diagramArea {
+      visibility: visible;
+    }
+  }
+}

@@ -42,8 +42,6 @@ test('navigate to report view and edit pages', async (t) => {
 
 test('navigate to dashboard view and edit pages', async (t) => {
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
-  await t.click(e.templateModalProcessField);
-  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
   await t.click(e.modalConfirmbutton);
 
   await save(t);
@@ -94,8 +92,6 @@ test('complex Homepage actions', async (t) => {
   await t.expect(e.reportItem.textContent).contains('Monthly Sales From Marketing');
 
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
-  await t.click(e.templateModalProcessField);
-  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
   await t.click(e.modalConfirmbutton);
 
   await t.typeText(Dashboard.nameEditField, 'Sales Dashboard', {replace: true});
@@ -136,8 +132,6 @@ test('complex Homepage actions', async (t) => {
   await t.click(Collection.entitiesTab);
 
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
-  await t.click(e.templateModalProcessField);
-  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
   await t.click(e.modalConfirmbutton);
 
   await save(t);
@@ -187,8 +181,6 @@ test('complex Homepage actions', async (t) => {
 
   await t.click(e.createNewMenu).click(e.option('New Dashboard'));
 
-  await t.click(e.templateModalProcessField);
-  await t.click(e.option(definitionName));
   await t.click(e.modalConfirmbutton);
 
   await t.typeText(Dashboard.nameEditField, 'Sales Dashboard', {replace: true});

@@ -22,6 +22,7 @@ export function TemplateModal({
   mightFail,
   templates,
   entity,
+  className,
   templateToState = (data) => data,
 }) {
   const [name, setName] = useState(t(entity + '.new'));
@@ -45,8 +46,15 @@ export function TemplateModal({
     }
   }, [definition, mightFail]);
 
+  const validSelection = name && ((xml && definitionKey) || !template);
+
   return (
-    <Modal open size="max" onClose={onClose} className="TemplateModal">
+    <Modal
+      open
+      size="max"
+      onClose={onClose}
+      className={classnames('TemplateModal', className, {noProcess: !template})}
+    >
       <Modal.Header>{t(entity + '.createNew')}</Modal.Header>
       <Modal.Content>
         <div className="definitionSelection">
@@ -119,7 +127,7 @@ export function TemplateModal({
         </Button>
         <Link
           className="Button main primary confirm"
-          disabled={!name || !xml || !definitionKey}
+          disabled={!validSelection}
           to={{
             pathname: entity + '/new/edit',
             state: templateToState({
