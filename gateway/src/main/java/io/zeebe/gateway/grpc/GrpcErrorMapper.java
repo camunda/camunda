@@ -17,6 +17,7 @@ import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.BrokerRejectionException;
 import io.zeebe.gateway.cmd.InvalidBrokerRequestArgumentException;
 import io.zeebe.gateway.cmd.PartitionNotFoundException;
+import io.zeebe.gateway.impl.broker.RequestRetriesExhaustedException;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.msgpack.MsgpackPropertyException;
@@ -77,6 +78,10 @@ public final class GrpcErrorMapper {
     } else if (error instanceof PartitionNotFoundException) {
       builder.setCode(Code.NOT_FOUND_VALUE).setMessage(error.getMessage());
       logger.debug("Expected to handle gRPC request, but request could not be delivered", error);
+    } else if (error instanceof RequestRetriesExhaustedException) {
+      builder.setCode(Code.RESOURCE_EXHAUSTED_VALUE).setMessage(error.getMessage());
+      Loggers.GATEWAY_LOGGER.trace(
+          "Expected to handle gRPC request, but all retries have been exhausted", error);
     } else {
       builder
           .setCode(Code.INTERNAL_VALUE)
