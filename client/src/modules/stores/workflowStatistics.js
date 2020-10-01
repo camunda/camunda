@@ -4,10 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {observable, decorate, action, reaction, observe} from 'mobx';
+import {observable, decorate, action, reaction, observe, autorun} from 'mobx';
 import {fetchWorkflowInstancesStatistics} from 'modules/api/instances';
 import {filters} from 'modules/stores/filters';
 import {instancesDiagram} from 'modules/stores/instancesDiagram';
+import {instances} from 'modules/stores/instances';
 import {isEmpty, isEqual} from 'lodash';
 
 const DEFAULT_STATE = {
@@ -21,6 +22,7 @@ class WorkflowStatistics {
   disposer = null;
   diagramReactionDisposer = null;
   filterObserveDisposer = null;
+  completedOperationsDisposer = null;
 
   init = () => {
     this.diagramReactionDisposer = reaction(
@@ -44,6 +46,14 @@ class WorkflowStatistics {
         filters.state.filter.version === change.oldValue.version
       ) {
         this.fetchWorkflowStatistics(filters.getFiltersPayload());
+      }
+    });
+
+    this.completedOperationsDisposer = autorun(() => {
+      if (instances.state.instancesWithCompletedOperations.length > 0) {
+        if (filters.isSingleWorkflowSelected) {
+          this.fetchWorkflowStatistics(filters.getFiltersPayload());
+        }
       }
     });
   };
@@ -75,12 +85,9 @@ class WorkflowStatistics {
   reset = () => {
     this.resetState();
 
-    if (this.diagramReactionDisposer !== null) {
-      this.diagramReactionDisposer();
-    }
-    if (this.filterObserveDisposer !== null) {
-      this.filterObserveDisposer();
-    }
+    this.diagramReactionDisposer?.(); // eslint-disable-line no-unused-expressions
+    this.filterObserveDisposer?.(); // eslint-disable-line no-unused-expressions
+    this.completedOperationsDisposer?.(); // eslint-disable-line no-unused-expressions
   };
 }
 

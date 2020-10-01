@@ -7,16 +7,15 @@
 import {instanceSelection} from 'modules/stores/instanceSelection';
 import {filters} from 'modules/stores/filters';
 import useDataManager from 'modules/hooks/useDataManager';
-import {useInstancesPollContext} from 'modules/contexts/InstancesPollContext';
 import {
   parseFilterForRequest,
   getFilterWithWorkflowIds,
 } from 'modules/utils/filter';
+import {instances} from 'modules/stores/instances';
 
 export default function useOperationApply() {
   const {selectedInstanceIds, excludedInstanceIds, reset} = instanceSelection;
   const {applyBatchOperation} = useDataManager();
-  const {addAllVisibleIds, addIds} = useInstancesPollContext();
 
   return {
     applyBatchOperation: (operationType) => {
@@ -33,9 +32,12 @@ export default function useOperationApply() {
         selectedInstanceIds.length > 0 ? selectedInstanceIds : filterIds;
 
       if (selectedInstanceIds.length > 0) {
-        addIds(selectedInstanceIds);
+        instances.addInstancesWithActiveOperations({ids: selectedInstanceIds});
       } else {
-        addAllVisibleIds(excludedInstanceIds);
+        instances.addInstancesWithActiveOperations({
+          ids: excludedInstanceIds,
+          shouldPollAllVisibleIds: true,
+        });
       }
 
       applyBatchOperation(operationType, {

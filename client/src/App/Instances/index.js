@@ -9,10 +9,9 @@ import React, {useEffect} from 'react';
 import {DEFAULT_FILTER_CONTROLLED_VALUES, PAGE_TITLE} from 'modules/constants';
 
 import VisuallyHiddenH1 from 'modules/components/VisuallyHiddenH1';
-import {InstancesPollProvider} from 'modules/contexts/InstancesPollContext';
 
 import {DiagramPanel} from './DiagramPanel';
-import ListPanel from './ListPanel';
+import {ListPanel} from './ListPanel';
 import Filters from './Filters';
 import OperationsPanel from './OperationsPanel';
 import {filters} from 'modules/stores/filters';
@@ -25,7 +24,6 @@ import {observer} from 'mobx-react';
 import * as Styled from './styled.js';
 
 const Instances = observer((props) => {
-  const {workflowInstances, isInitialLoadComplete, isLoading} = instances.state;
   useEffect(() => {
     filters.init();
     instanceSelection.init();
@@ -48,36 +46,27 @@ const Instances = observer((props) => {
   }, [props]);
 
   return (
-    <InstancesPollProvider
-      visibleIdsInListPanel={workflowInstances.map(({id}) => id)}
-      filter={filters.state.filter}
-    >
-      <Styled.Instances>
-        <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
-        <Styled.Content>
-          <Styled.FilterSection>
-            <Filters
-              filter={{
-                ...DEFAULT_FILTER_CONTROLLED_VALUES,
-                ...filters.decodedFilters,
-              }}
-            />
-          </Styled.FilterSection>
-          <Styled.SplitPane
-            titles={{top: 'Workflow', bottom: 'Instances'}}
-            expandedPaneId="instancesExpandedPaneId"
-          >
-            <DiagramPanel />
-            <ListPanel
-              instances={workflowInstances}
-              isInitialLoadComplete={isInitialLoadComplete}
-              isLoading={isLoading}
-            />
-          </Styled.SplitPane>
-        </Styled.Content>
-        <OperationsPanel />
-      </Styled.Instances>
-    </InstancesPollProvider>
+    <Styled.Instances>
+      <VisuallyHiddenH1>Camunda Operate Instances</VisuallyHiddenH1>
+      <Styled.Content>
+        <Styled.FilterSection>
+          <Filters
+            filter={{
+              ...DEFAULT_FILTER_CONTROLLED_VALUES,
+              ...filters.decodedFilters,
+            }}
+          />
+        </Styled.FilterSection>
+        <Styled.SplitPane
+          titles={{top: 'Workflow', bottom: 'Instances'}}
+          expandedPaneId="instancesExpandedPaneId"
+        >
+          <DiagramPanel />
+          <ListPanel />
+        </Styled.SplitPane>
+      </Styled.Content>
+      <OperationsPanel />
+    </Styled.Instances>
   );
 });
 

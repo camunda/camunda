@@ -12,6 +12,7 @@ import {createMemoryHistory} from 'history';
 import {groupedWorkflowsMock} from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
+import {waitFor} from '@testing-library/react';
 
 const mockWorkflowInstances = {
   workflowInstances: [
@@ -149,16 +150,292 @@ describe('stores/instances', () => {
       workflowInstances: [],
       isLoading: false,
       isInitialLoadComplete: false,
+      instancesWithActiveOperations: [],
+      instancesWithCompletedOperations: [],
     });
   });
 
-  it('should get workflow instance ids', async () => {
+  it('should get visible ids in list panel', async () => {
     await instances.fetchInstances({});
 
-    expect(instances.workflowInstanceIds).toEqual([
+    expect(instances.visibleIdsInListPanel).toEqual([
       'instance_id_1',
       'instance_id_2',
     ]);
+  });
+
+  it('should get areWorkflowInstancesEmpty', async () => {
+    await instances.fetchInstances({});
+    expect(instances.areWorkflowInstancesEmpty).toBe(false);
+
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) =>
+          res.once(ctx.json({workflowInstances: [], totalCount: 0}))
+      )
+    );
+
+    await instances.fetchInstances({});
+    expect(instances.areWorkflowInstancesEmpty).toBe(true);
+  });
+
+  it('should add instances with active operations', async () => {
+    await instances.fetchInstances({});
+
+    instances.addInstancesWithActiveOperations({ids: ['instance_id_1']});
+    expect(instances.state.instancesWithActiveOperations).toEqual([
+      'instance_id_1',
+    ]);
+
+    instances.addInstancesWithActiveOperations({
+      ids: ['non_existing_instance_id'],
+    });
+    expect(instances.state.instancesWithActiveOperations).toEqual([
+      'instance_id_1',
+    ]);
+
+    instances.addInstancesWithActiveOperations({
+      ids: [],
+      shouldPollAllVisibleIds: true,
+    });
+    expect(instances.state.instancesWithActiveOperations).toEqual([
+      'instance_id_1',
+      'instance_id_2',
+    ]);
+
+    instances.addInstancesWithActiveOperations({
+      ids: ['instance_id_1'],
+      shouldPollAllVisibleIds: true,
+    });
+    expect(instances.state.instancesWithActiveOperations).toEqual([
+      'instance_id_2',
+    ]);
+
+    instances.addInstancesWithActiveOperations({
+      ids: ['non_existing_instance_id'],
+      shouldPollAllVisibleIds: true,
+    });
+    expect(instances.state.instancesWithActiveOperations).toEqual([
+      'instance_id_1',
+      'instance_id_2',
+    ]);
+  });
+
+  it('should set instances with active operations', () => {
+    expect(instances.state.instancesWithActiveOperations).toEqual([]);
+    instances.setInstancesWithActiveOperations([
+      {id: '1', hasActiveOperation: true},
+      {id: '2', hasActiveOperation: false},
+    ]);
+    expect(instances.state.instancesWithActiveOperations).toEqual(['1']);
+  });
+
+  it('should set/reset instances with completed operations', () => {
+    expect(instances.state.instancesWithCompletedOperations).toEqual([]);
+    instances.setInstancesWithCompletedOperations([
+      {id: '1', hasActiveOperation: true},
+      {id: '2', hasActiveOperation: false},
+    ]);
+    expect(instances.state.instancesWithCompletedOperations).toEqual(['2']);
+    instances.resetInstancesWithCompletedOperations();
+    expect(instances.state.instancesWithCompletedOperations).toEqual([]);
+  });
+
+  it('should refresh instances and reset instances with completed operations every time there is an instance with completed operation', async () => {
+    instances.init();
+
+    await waitFor(() =>
+      expect(instances.state.workflowInstances.length).toBe(2)
+    );
+    expect(instances.state.instancesWithCompletedOperations).toEqual([]);
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              workflowInstances: [
+                {
+                  id: 'instance_id_1',
+                  state: 'ACTIVE',
+                },
+                {
+                  id: 'instance_id_2',
+                  state: 'ACTIVE',
+                },
+                {
+                  id: 'instance_id_3',
+                  state: 'ACTIVE',
+                },
+              ],
+              totalCount: 100,
+            })
+          )
+      )
+    );
+    instances.setInstancesWithCompletedOperations([
+      {id: 'instance_id_1', hasActiveOperation: true},
+      {id: 'instance_id_2', hasActiveOperation: false},
+    ]);
+    await waitFor(() =>
+      expect(instances.state.workflowInstances.length).toBe(3)
+    );
+
+    expect(instances.state.instancesWithCompletedOperations).toEqual([]);
+  });
+
+  it('should poll instances by id when there are instances with active operations', async () => {
+    instances.init();
+
+    await waitFor(() =>
+      expect(instances.state.workflowInstances.length).toBe(2)
+    );
+    expect(instances.state.instancesWithActiveOperations).toEqual([]);
+    jest.useFakeTimers();
+    mockServer.use(
+      // mock for fetching instances when there is an active operation
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=2',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              workflowInstances: [
+                {id: 'instance_id_1', hasActiveOperation: true},
+                {id: 'instance_id_2', hasActiveOperation: false},
+              ],
+              totalCount: 100,
+            })
+          )
+      ),
+      // mock for refreshing instances when an instance operation is completed
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=50',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              workflowInstances: [
+                {id: 'instance_id_1', hasActiveOperation: true},
+                {id: 'instance_id_2', hasActiveOperation: false},
+              ],
+              totalCount: 100,
+            })
+          )
+      ),
+      // mock for fetching instances when there is an active operation
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=1',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              workflowInstances: [
+                {id: 'instance_id_1', hasActiveOperation: false},
+              ],
+              totalCount: 100,
+            })
+          )
+      ),
+      // mock for refreshing instances when an instance operation is completed
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=50',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
+    instances.setInstancesWithActiveOperations([
+      {id: 'instance_id_1', hasActiveOperation: true},
+      {id: 'instance_id_2', hasActiveOperation: true},
+    ]);
+    jest.runOnlyPendingTimers();
+    await waitFor(() => {
+      expect(instances.state.instancesWithActiveOperations).toEqual([
+        'instance_id_1',
+      ]);
+    });
+    jest.runOnlyPendingTimers();
+    await waitFor(() => {
+      expect(instances.state.instancesWithActiveOperations).toEqual([]);
+      expect(instances.state.workflowInstances).toEqual(
+        mockWorkflowInstances.workflowInstances
+      );
+    });
+
+    jest.useRealTimers();
+  });
+
+  it('should set instances with active operations every time instances are fetched', async () => {
+    instances.init();
+
+    await waitFor(() =>
+      expect(instances.state.workflowInstances).toEqual(
+        mockWorkflowInstances.workflowInstances
+      )
+    );
+    expect(instances.state.instancesWithActiveOperations).toEqual([]);
+
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              workflowInstances: [
+                {id: 'instance_id_1', hasActiveOperation: true},
+                {id: 'instance_id_2', hasActiveOperation: false},
+              ],
+              totalCount: 100,
+            })
+          )
+      ),
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              workflowInstances: [
+                {id: 'instance_id_1', hasActiveOperation: false},
+                {id: 'instance_id_2', hasActiveOperation: true},
+              ],
+              totalCount: 100,
+            })
+          )
+      ),
+
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) =>
+          res.once(
+            ctx.json({
+              workflowInstances: [
+                {id: 'instance_id_1', hasActiveOperation: false},
+                {id: 'instance_id_2', hasActiveOperation: false},
+              ],
+              totalCount: 100,
+            })
+          )
+      )
+    );
+
+    await instances.fetchInstances({});
+
+    await waitFor(() => {
+      expect(instances.state.instancesWithActiveOperations).toEqual([
+        'instance_id_1',
+      ]);
+    });
+
+    await instances.fetchInstances({});
+
+    await waitFor(() => {
+      expect(instances.state.instancesWithActiveOperations).toEqual([
+        'instance_id_2',
+      ]);
+    });
+
+    await instances.fetchInstances({});
+
+    await waitFor(() => {
+      expect(instances.state.instancesWithActiveOperations).toEqual([]);
+    });
   });
 
   describe('fetch instances autorun', () => {

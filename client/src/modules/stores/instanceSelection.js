@@ -144,12 +144,9 @@ class InstanceSelection {
 
   reset = () => {
     this.resetState();
-    if (this.autorunDisposer !== null) {
-      this.autorunDisposer();
-    }
-    if (this.observeDisposer !== null) {
-      this.observeDisposer();
-    }
+
+    this.autorunDisposer?.(); // eslint-disable-line no-unused-expressions
+    this.observeDisposer?.(); // eslint-disable-line no-unused-expressions
   };
 }
 

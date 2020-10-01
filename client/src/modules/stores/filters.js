@@ -165,6 +165,11 @@ class Filters {
     return !this.state.filter?.workflow;
   }
 
+  get isSingleWorkflowSelected() {
+    const {workflow, version} = this.state.filter;
+    return workflow !== undefined && version !== undefined && version !== 'all';
+  }
+
   get workflow() {
     const {groupedWorkflows, filter} = this.state;
     return getWorkflowByVersion(
@@ -184,12 +189,8 @@ class Filters {
   reset = () => {
     this.state = {...DEFAULT_STATE};
 
-    if (this.filterObserveDisposer !== null) {
-      this.filterObserveDisposer();
-    }
-    if (this.locationReactionDisposer !== null) {
-      this.locationReactionDisposer();
-    }
+    this.filterObserveDisposer?.(); // eslint-disable-line no-unused-expressions
+    this.locationReactionDisposer?.(); // eslint-disable-line no-unused-expressions
   };
 }
 
@@ -210,6 +211,7 @@ decorate(Filters, {
   setGroupedWorkflows: action,
   completeInitialLoad: action,
   setUrlParameters: action,
+  isSingleWorkflowSelected: computed,
 });
 
 export const filters = new Filters();

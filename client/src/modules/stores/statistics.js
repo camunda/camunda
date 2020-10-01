@@ -7,6 +7,7 @@
 import {observable, decorate, action, autorun} from 'mobx';
 import {fetchWorkflowCoreStatistics} from 'modules/api/instances';
 import {currentInstance} from 'modules/stores/currentInstance';
+import {instances} from 'modules/stores/instances';
 
 const DEFAULT_STATE = {
   running: 0,
@@ -18,17 +19,24 @@ const DEFAULT_STATE = {
 
 class Statistics {
   state = {...DEFAULT_STATE};
-  disposer = null;
+  pollingDisposer = null;
+  fetchStatisticsDisposer = null;
   init() {
     this.fetchStatistics();
 
-    this.disposer = autorun(() => {
+    this.pollingDisposer = autorun(() => {
       if (currentInstance.state.instance != null) {
         if (this.intervalId === null) {
           this.startPolling();
         }
       } else {
         this.stopPolling();
+      }
+    });
+
+    this.fetchStatisticsDisposer = autorun(() => {
+      if (instances.state.instancesWithCompletedOperations.length > 0) {
+        this.fetchStatistics();
       }
     });
   }
@@ -84,9 +92,9 @@ class Statistics {
 
   reset = () => {
     this.state = {...DEFAULT_STATE};
-    if (this.disposer !== null) {
-      this.disposer();
-    }
+
+    this.pollingDisposer?.(); // eslint-disable-line no-unused-expressions
+    this.fetchStatisticsDisposer?.(); // eslint-disable-line no-unused-expressions
   };
 }
 

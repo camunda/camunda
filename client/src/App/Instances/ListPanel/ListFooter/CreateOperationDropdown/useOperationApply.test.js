@@ -8,16 +8,14 @@
 
 import useOperationApply from './useOperationApply';
 import {renderHook} from '@testing-library/react-hooks';
+import {waitFor} from '@testing-library/react';
 import {createMemoryHistory} from 'history';
 
 import {instanceSelection} from 'modules/stores/instanceSelection';
 import {filters} from 'modules/stores/filters';
+import {instances} from 'modules/stores/instances';
 import {INSTANCE_SELECTION_MODE} from 'modules/constants';
-import {
-  mockUseDataManager,
-  mockData,
-  mockUseInstancesPollContext,
-} from './useOperationApply.setup';
+import {mockUseDataManager, mockData} from './useOperationApply.setup';
 import {
   groupedWorkflowsMock,
   mockWorkflowStatistics,
@@ -30,9 +28,6 @@ const OPERATION_TYPE = 'DUMMY';
 
 jest.mock('modules/utils/bpmn');
 jest.mock('modules/hooks/useDataManager', () => () => mockUseDataManager);
-jest.mock('modules/contexts/InstancesPollContext', () => ({
-  useInstancesPollContext: () => mockUseInstancesPollContext,
-}));
 
 function renderUseOperationApply() {
   const {result} = renderHook(() => useOperationApply());
@@ -63,11 +58,13 @@ describe('useOperationApply', () => {
 
     filters.setUrlParameters(historyMock, locationMock);
     await filters.init();
+    instances.init();
   });
 
   afterEach(() => {
     instanceSelection.reset();
     filters.reset();
+    instances.reset();
   });
 
   it('should call apply (no filter, select all ids)', () => {
@@ -87,6 +84,14 @@ describe('useOperationApply', () => {
       ...filters.state.filter,
       ids: '1',
     });
+
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
+
     instanceSelection.setAllChecked();
     renderUseOperationApply();
 
@@ -104,6 +109,12 @@ describe('useOperationApply', () => {
     });
     instanceSelection.selectInstance('1');
 
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
     renderUseOperationApply();
 
     expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
@@ -120,6 +131,14 @@ describe('useOperationApply', () => {
     });
     instanceSelection.setMode(INSTANCE_SELECTION_MODE.EXCLUDE);
     instanceSelection.selectInstance('1');
+
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
+
     renderUseOperationApply(context);
 
     expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
@@ -135,6 +154,14 @@ describe('useOperationApply', () => {
       workflow: 'demoProcess',
       version: '1',
     });
+
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
+
     instanceSelection.selectInstance('1');
     renderUseOperationApply(context);
 
@@ -144,20 +171,69 @@ describe('useOperationApply', () => {
     );
   });
 
-  it('should poll all visible instances', () => {
+  it('should poll all visible instances', async () => {
     const {expectedQuery, ...context} = mockData.setFilterSelectAll;
+    instanceSelection.setMode(INSTANCE_SELECTION_MODE.ALL);
 
+    await waitFor(() =>
+      expect(instances.state.workflowInstances.length).toBe(2)
+    );
+
+    jest.useFakeTimers();
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=2',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      ),
+      rest.post(
+        '/api/workflow-instances?firstResult=:firstResult&maxResults=50',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
     renderUseOperationApply(context);
 
-    expect(mockUseInstancesPollContext.addAllVisibleIds).toHaveBeenCalled();
+    expect(instances.state.instancesWithActiveOperations).toEqual([
+      '2251799813685594',
+      '2251799813685596',
+    ]);
+
+    jest.advanceTimersByTime(5000);
+
+    await waitFor(() =>
+      expect(instances.state.instancesWithActiveOperations).toEqual([])
+    );
+    jest.useRealTimers();
   });
 
-  it('should poll the selected instances', () => {
+  it('should poll the selected instances', async () => {
     const {expectedQuery, ...context} = mockData.setWorkflowFilterSelectOne;
-    instanceSelection.selectInstance('1');
+    instanceSelection.selectInstance('2251799813685594');
 
+    await waitFor(() =>
+      expect(instances.state.workflowInstances.length).toBe(2)
+    );
+
+    jest.useFakeTimers();
     renderUseOperationApply(context);
 
-    expect(mockUseInstancesPollContext.addIds).toHaveBeenCalled();
+    expect(instances.state.instancesWithActiveOperations).toEqual([
+      '2251799813685594',
+    ]);
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances?firstResult=0&maxResults=1',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      ),
+      rest.post(
+        '/api/workflow-instances?firstResult=0&maxResults=50',
+        (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
+      )
+    );
+    jest.advanceTimersByTime(5000);
+
+    await waitFor(() =>
+      expect(instances.state.instancesWithActiveOperations).toEqual([])
+    );
+    jest.useRealTimers();
   });
 });

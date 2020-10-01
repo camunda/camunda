@@ -57,8 +57,3 @@ export const mockData = {
     },
   },
 };
-
-export const mockUseInstancesPollContext = {
-  addAllVisibleIds: jest.fn(),
-  addIds: jest.fn(),
-};

@@ -80,9 +80,7 @@ class InstancesDiagram {
   reset = () => {
     this.state = {...DEFAULT_STATE};
 
-    if (this.disposer !== null) {
-      this.disposer();
-    }
+    this.disposer?.(); // eslint-disable-line no-unused-expressions
   };
 }
 

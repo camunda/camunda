@@ -16,6 +16,7 @@ import {
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {waitFor} from '@testing-library/react';
+import {instances} from './instances';
 
 describe('stores/workflowStatistics', () => {
   afterEach(() => {
@@ -78,8 +79,6 @@ describe('stores/workflowStatistics', () => {
     expect(workflowStatistics.state.isLoading).toBe(true);
     await waitFor(() => expect(workflowStatistics.state.isLoading).toBe(false));
 
-    expect(workflowStatistics.state.isLoading).toBe(false);
-    expect(workflowStatistics.state.isLoading).toBe(false);
     expect(workflowStatistics.state.statistics).toEqual([
       {
         activityId: 'ServiceTask_0kt6c5i',
@@ -186,6 +185,49 @@ describe('stores/workflowStatistics', () => {
     filters.setFilter({
       errorMessage: 'bigVarProcess',
     });
+
+    await waitFor(() =>
+      expect(workflowStatistics.state.statistics).toEqual([])
+    );
+  });
+
+  it('should fetch workflow statistics depending on completed operations', async () => {
+    filters.setUrlParameters(createMemoryHistory(), {pathname: '/instances'});
+    await filters.init();
+    workflowStatistics.init();
+
+    filters.setFilter({workflow: 'bigVarProcess', version: '1'});
+
+    expect(workflowStatistics.state.statistics).toEqual([]);
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
+        res.once(ctx.json(mockWorkflowStatistics))
+      )
+    );
+    instances.setInstancesWithCompletedOperations([
+      {id: '1', hasActiveOperations: false},
+      {id: '2', hasActiveOperations: false},
+    ]);
+
+    await waitFor(() =>
+      expect(workflowStatistics.state.statistics).toEqual(
+        mockWorkflowStatistics
+      )
+    );
+  });
+
+  it('should not fetch workflow statistics depending on completed operations if workflow and version filter does not exist', async () => {
+    filters.setUrlParameters(createMemoryHistory(), {pathname: '/instances'});
+    await filters.init();
+    workflowStatistics.init();
+
+    expect(workflowStatistics.state.statistics).toEqual([]);
+
+    instances.setInstancesWithCompletedOperations([
+      {id: '1', hasActiveOperations: false},
+      {id: '2', hasActiveOperations: false},
+    ]);
 
     await waitFor(() =>
       expect(workflowStatistics.state.statistics).toEqual([])
