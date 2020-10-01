@@ -18,18 +18,20 @@ export default function HyperReportRenderer({report, ...rest}) {
     ...report,
   };
 
-  const colors = ColorPicker.getColors(report.result.data[0].value.length);
+  const firstEntryResult = report.result.data[0].value.filter(isVisible(report));
+
+  const colors = ColorPicker.getColors(firstEntryResult.length);
 
   convertedReport.combined = true;
   convertedReport.data = {
     configuration: report.data.configuration,
-    reports: report.result.data[0].value.map(({key}, i) => ({id: key, color: colors[i]})),
+    reports: firstEntryResult.map(({key}, i) => ({id: key, color: colors[i]})),
     visualization: getVisualization(report.data.visualization),
   };
 
   const newResultData = {};
 
-  formatResult(report.data, report.result.data[0].value).forEach(({key, label}) => {
+  formatResult(report.data, firstEntryResult).forEach(({key, label}) => {
     newResultData[key] = {
       combined: false,
       id: key,
@@ -83,4 +85,20 @@ function formatResult(data, result) {
   }
 
   return result;
+}
+
+function isVisible(report) {
+  const {distributedBy, hiddenNodes} = report.data.configuration;
+
+  return ({key}) => {
+    if (
+      ['flowNode', 'userTask'].includes(distributedBy.type) &&
+      hiddenNodes.active &&
+      hiddenNodes.keys.includes(key)
+    ) {
+      return false;
+    }
+
+    return true;
+  };
 }

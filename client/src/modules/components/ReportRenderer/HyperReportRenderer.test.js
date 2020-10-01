@@ -26,7 +26,10 @@ it('should convert a hypermap to a combined report', () => {
             type: 'assignee',
           },
           visualization: 'bar',
-          configuration: {distributedBy: {type: 'userTask', value: null}},
+          configuration: {
+            distributedBy: {type: 'userTask', value: null},
+            hiddenNodes: {active: true, keys: ['taskId3']},
+          },
         },
         result: {
           data: [
