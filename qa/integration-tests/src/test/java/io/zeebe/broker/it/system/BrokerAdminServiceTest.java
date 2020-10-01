@@ -9,9 +9,11 @@ package io.zeebe.broker.it.system;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.raft.RaftServer.Role;
+import io.zeebe.broker.Broker;
+import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.system.management.BrokerAdminService;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.engine.processing.streamprocessor.StreamProcessor.Phase;
 import org.awaitility.Awaitility;
 import org.junit.Before;
@@ -22,24 +24,59 @@ import org.junit.rules.Timeout;
 
 public class BrokerAdminServiceTest {
   private final Timeout testTimeout = Timeout.seconds(60);
-  private final EmbeddedBrokerRule embeddedBrokerRule =
-      new EmbeddedBrokerRule(
+  private final ClusteringRule clusteringRule =
+      new ClusteringRule(
+          1,
+          3,
+          3,
           cfg -> {
             cfg.getData().setLogIndexDensity(1);
-            cfg.getCluster().setPartitionsCount(2);
           });
-  private final GrpcClientRule clientRule = new GrpcClientRule(embeddedBrokerRule);
+  private final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(testTimeout).around(embeddedBrokerRule).around(clientRule);
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
-  private BrokerAdminService brokerAdminService;
+  private BrokerAdminService leaderAdminService;
+  private Broker leader;
 
   @Before
   public void before() {
-    final var broker = embeddedBrokerRule.getBroker();
-    brokerAdminService = broker.getBrokerAdminService();
+    leader = clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId());
+    leaderAdminService = leader.getBrokerAdminService();
+  }
+
+  @Test
+  public void shouldReportPartitionStatus() {
+    // given
+    final var followers =
+        clusteringRule.getOtherBrokerObjects(clusteringRule.getLeaderForPartition(1).getNodeId());
+
+    // when
+    final var followerStatus =
+        followers.stream()
+            .map(Broker::getBrokerAdminService)
+            .map(BrokerAdminService::getPartitionStatus)
+            .map(status -> status.get(1));
+
+    final var leaderStatus = leaderAdminService.getPartitionStatus().get(1);
+
+    // then
+    followerStatus.forEach(
+        partitionStatus -> {
+          assertThat(partitionStatus.getRole()).isEqualTo(Role.FOLLOWER);
+          assertThat(partitionStatus.getProcessedPosition()).isNull();
+          assertThat(partitionStatus.getSnapshotId()).isNull();
+          assertThat(partitionStatus.getProcessedPositionInSnapshot()).isNull();
+          assertThat(partitionStatus.getStreamProcessorPhase()).isNull();
+        });
+
+    assertThat(leaderStatus.getRole()).isEqualTo(Role.LEADER);
+    assertThat(leaderStatus.getProcessedPosition()).isEqualTo(-1);
+    assertThat(leaderStatus.getSnapshotId()).isNull();
+    assertThat(leaderStatus.getProcessedPositionInSnapshot()).isNull();
+    assertThat(leaderStatus.getStreamProcessorPhase()).isEqualTo(Phase.PROCESSING);
   }
 
   @Test
@@ -48,10 +85,10 @@ public class BrokerAdminServiceTest {
     clientRule.createSingleJob("test");
 
     // when
-    brokerAdminService.takeSnapshot();
+    leaderAdminService.takeSnapshot();
 
     // then
-    waitForSnapshotAtBroker(brokerAdminService);
+    waitForSnapshotAtBroker(leaderAdminService);
   }
 
   @Test
@@ -60,10 +97,10 @@ public class BrokerAdminServiceTest {
     clientRule.createSingleJob("test");
 
     // when
-    brokerAdminService.pauseStreamProcessing();
+    leaderAdminService.pauseStreamProcessing();
 
     // then
-    assertStreamProcessorPhase(brokerAdminService, Phase.PAUSED);
+    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
   }
 
   @Test
@@ -72,12 +109,12 @@ public class BrokerAdminServiceTest {
     clientRule.createSingleJob("test");
 
     // when
-    brokerAdminService.pauseStreamProcessing();
-    assertStreamProcessorPhase(brokerAdminService, Phase.PAUSED);
-    brokerAdminService.resumeStreamProcessing();
+    leaderAdminService.pauseStreamProcessing();
+    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
+    leaderAdminService.resumeStreamProcessing();
 
     // then
-    assertStreamProcessorPhase(brokerAdminService, Phase.PROCESSING);
+    assertStreamProcessorPhase(leaderAdminService, Phase.PROCESSING);
   }
 
   @Test
@@ -86,13 +123,13 @@ public class BrokerAdminServiceTest {
     clientRule.createSingleJob("test");
 
     // when
-    brokerAdminService.prepareForUpgrade();
+    leaderAdminService.prepareForUpgrade();
 
     // then
-    waitForSnapshotAtBroker(brokerAdminService);
+    waitForSnapshotAtBroker(leaderAdminService);
 
-    assertStreamProcessorPhase(brokerAdminService, Phase.PAUSED);
-    assertProcessedPositionIsInSnapshot(brokerAdminService);
+    assertStreamProcessorPhase(leaderAdminService, Phase.PAUSED);
+    assertProcessedPositionIsInSnapshot(leaderAdminService);
   }
 
   private void assertStreamProcessorPhase(
