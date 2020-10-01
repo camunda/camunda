@@ -16,6 +16,8 @@
 
 .DashboardView {
   height: inherit;
+  display: flex;
+  flex-direction: column;
 
   > .content {
     height: calc(100% - 75px);
