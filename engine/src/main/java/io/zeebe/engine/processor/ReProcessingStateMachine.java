@@ -71,10 +71,10 @@ public final class ReProcessingStateMachine {
   private static final Logger LOG = Loggers.PROCESSOR_LOGGER;
   private static final String ERROR_MESSAGE_ON_EVENT_FAILED_SKIP_EVENT =
       "Expected to find event processor for event '{}', but caught an exception. Skip this event.";
-  private static final String ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT =
-      "Expected to find last source event position '%d', but last position was '%d'. Failed to reprocess on processor";
+  private static final String ERROR_MESSAGE_REPROCESSING_NO_FOLLOW_UP_EVENT =
+      "Expected to find last follow-up event position '%d', but last position was '%d'. Failed to reprocess on processor";
   private static final String ERROR_MESSAGE_REPROCESSING_NO_NEXT_EVENT =
-      "Expected to find last source event position '%d', but found no next event. Failed to reprocess on processor";
+      "Expected to find last follow-up event position '%d', but found no next event. Failed to reprocess on processor";
   private static final String LOG_STMT_REPROCESSING_FINISHED =
       "Processor finished reprocessing at event position {}";
   private static final String LOG_STMT_FAILED_ON_PROCESSING =
@@ -95,7 +95,7 @@ public final class ReProcessingStateMachine {
 
   private final EventFilter eventFilter;
   private final LogStreamReader logStreamReader;
-  private final TypedStreamWriter noopstreamWriter = new NoopTypedStreamWriter();
+  private final ReprocessingStreamWriter reprocessingStreamWriter = new ReprocessingStreamWriter();
   private final TypedResponseWriter noopResponseWriter = new NoopResponseWriter();
 
   private final DbContext dbContext;
@@ -107,27 +107,32 @@ public final class ReProcessingStateMachine {
   // current iteration
   private long lastSourceEventPosition;
   private ActorFuture<Void> recoveryFuture;
+  private long lastFollowUpEventPosition;
+  private long snapshotPosition;
+
   private LoggedEvent currentEvent;
   private TypedRecordProcessor eventProcessor;
   private ZeebeDbTransaction zeebeDbTransaction;
 
   public ReProcessingStateMachine(final ProcessingContext context) {
-    this.actor = context.getActor();
-    this.eventFilter = context.getEventFilter();
-    this.logStreamReader = context.getLogStreamReader();
-    this.recordValues = context.getRecordValues();
-    this.recordProcessorMap = context.getRecordProcessorMap();
-    this.dbContext = context.getDbContext();
-    this.zeebeState = context.getZeebeState();
-    this.abortCondition = context.getAbortCondition();
-    this.typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
+    actor = context.getActor();
+    eventFilter = context.getEventFilter();
+    logStreamReader = context.getLogStreamReader();
+    recordValues = context.getRecordValues();
+    recordProcessorMap = context.getRecordProcessorMap();
+    dbContext = context.getDbContext();
+    zeebeState = context.getZeebeState();
+    abortCondition = context.getAbortCondition();
+    typedEvent = new TypedEventImpl(context.getLogStream().getPartitionId());
 
-    this.updateStateRetryStrategy = new EndlessRetryStrategy(actor);
-    this.processRetryStrategy = new EndlessRetryStrategy(actor);
+    updateStateRetryStrategy = new EndlessRetryStrategy(actor);
+    processRetryStrategy = new EndlessRetryStrategy(actor);
   }
 
   ActorFuture<Void> startRecover(final long snapshotPosition) {
     recoveryFuture = new CompletableActorFuture<>();
+
+    this.snapshotPosition = snapshotPosition;
 
     LOG.trace("Start scanning the log for error events.");
     lastSourceEventPosition = scanLog(snapshotPosition);
@@ -179,8 +184,13 @@ public final class ReProcessingStateMachine {
         }
 
         final long sourceEventPosition = newEvent.getSourceEventPosition();
-        if (sourceEventPosition > 0 && sourceEventPosition > lastSourceEventPosition) {
-          lastSourceEventPosition = sourceEventPosition;
+        if (sourceEventPosition > 0) {
+          if (sourceEventPosition > lastSourceEventPosition) {
+            lastSourceEventPosition = sourceEventPosition;
+          }
+          if (currentPosition > lastFollowUpEventPosition) {
+            lastFollowUpEventPosition = currentPosition;
+          }
         }
       }
 
@@ -194,15 +204,15 @@ public final class ReProcessingStateMachine {
   private void readNextEvent() {
     if (!logStreamReader.hasNext()) {
       throw new IllegalStateException(
-          String.format(ERROR_MESSAGE_REPROCESSING_NO_NEXT_EVENT, lastSourceEventPosition));
+          String.format(ERROR_MESSAGE_REPROCESSING_NO_NEXT_EVENT, lastFollowUpEventPosition));
     }
 
     currentEvent = logStreamReader.next();
-    if (currentEvent.getPosition() > lastSourceEventPosition) {
+    if (currentEvent.getPosition() > lastFollowUpEventPosition) {
       throw new IllegalStateException(
           String.format(
-              ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT,
-              lastSourceEventPosition,
+              ERROR_MESSAGE_REPROCESSING_NO_FOLLOW_UP_EVENT,
+              lastFollowUpEventPosition,
               currentEvent.getPosition()));
     }
   }
@@ -244,7 +254,16 @@ public final class ReProcessingStateMachine {
         recordValues.readRecordValue(currentEvent, metadata.getValueType());
     typedEvent.wrap(currentEvent, metadata, value);
 
-    processUntilDone(currentEvent.getPosition(), typedEvent);
+    verifyRecordMatchesToReprocessing(typedEvent);
+
+    if (currentEvent.getPosition() <= lastSourceEventPosition) {
+      // don't reprocess records after the last source event
+      reprocessingStreamWriter.configureSourceContext(currentEvent.getPosition());
+      processUntilDone(currentEvent.getPosition(), typedEvent);
+
+    } else {
+      onRecordReprocessed(currentEvent);
+    }
   }
 
   private void processUntilDone(final long position, final TypedRecord<?> currentEvent) {
@@ -288,7 +307,7 @@ public final class ReProcessingStateMachine {
                   position,
                   typedEvent,
                   noopResponseWriter,
-                  noopstreamWriter,
+                  reprocessingStreamWriter,
                   NOOP_SIDE_EFFECT_CONSUMER);
             }
             zeebeState.markAsProcessed(position);
@@ -317,8 +336,17 @@ public final class ReProcessingStateMachine {
   }
 
   private void onRecordReprocessed(final LoggedEvent currentEvent) {
-    if (currentEvent.getPosition() == lastSourceEventPosition) {
+    reprocessingStreamWriter.removeRecord(
+        currentEvent.getKey(), currentEvent.getSourceEventPosition());
+
+    // do reprocessing until the last source event but read until the last follow-up event to check
+    // for inconsistent reprocessing records
+    if (currentEvent.getPosition() >= lastFollowUpEventPosition) {
       LOG.info(LOG_STMT_REPROCESSING_FINISHED, currentEvent.getPosition());
+
+      // reset the position to the first event where the processing should start
+      logStreamReader.seekToNextEvent(lastSourceEventPosition);
+
       onRecovered();
     } else {
       actor.submit(this::reprocessNextEvent);
@@ -328,5 +356,55 @@ public final class ReProcessingStateMachine {
   private void onRecovered() {
     recoveryFuture.complete(null);
     failedEventPositions.clear();
+  }
+
+  private void verifyRecordMatchesToReprocessing(final TypedRecord<?> currentEvent) {
+
+    if (currentEvent.getSourceRecordPosition() < 0
+        || currentEvent.getSourceRecordPosition() <= snapshotPosition) {
+      // ignore commands (i.e. no source currentEvent position) and records that are not produced by
+      // the reprocessing (i.e. the source currentEvent is already compacted)
+      return;
+    }
+
+    // if a record is not written to the log stream then the state could be corrupted
+    reprocessingStreamWriter.getRecords().stream()
+        .filter(record -> record.getSourceRecordPosition() < currentEvent.getSourceRecordPosition())
+        .findFirst()
+        .ifPresent(
+            missingRecordOnLogStream -> {
+              throw new InconsistentReprocessingException(
+                  "Records were created on reprocessing but not written on the log stream.",
+                  typedEvent,
+                  missingRecordOnLogStream);
+            });
+
+    // If the record was not written on reprocessing then the next record may have a different key,
+    // or the state is corrupted. But since the source record position can be wrong (#5420), we can
+    // not fail the reprocessing at the moment.
+
+    reprocessingStreamWriter.getRecords().stream()
+        .filter(
+            record -> record.getSourceRecordPosition() == currentEvent.getSourceRecordPosition())
+        .findFirst()
+        .ifPresent(
+            reprocessingRecord -> {
+
+              // compare the key and the intent of the record with the record that was written on
+              // reprocessing
+              if (reprocessingRecord.getKey() != currentEvent.getKey()) {
+                throw new InconsistentReprocessingException(
+                    "The key of the record on the log stream doesn't match to the record from reprocessing.",
+                    typedEvent,
+                    reprocessingRecord);
+              }
+
+              if (reprocessingRecord.getIntent() != currentEvent.getIntent()) {
+                throw new InconsistentReprocessingException(
+                    "The intent of the record on the log stream doesn't match to the record from reprocessing.",
+                    typedEvent,
+                    reprocessingRecord);
+              }
+            });
   }
 }

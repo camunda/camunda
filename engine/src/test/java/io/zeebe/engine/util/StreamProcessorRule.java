@@ -146,6 +146,10 @@ public final class StreamProcessorRule implements TestRule {
     return getStateSnapshotController(startPartitionId);
   }
 
+  public StreamProcessor getStreamProcessor(final int partitionId) {
+    return streamProcessingComposite.getStreamProcessor(partitionId);
+  }
+
   public CommandResponseWriter getCommandResponseWriter() {
     return streams.getMockedResponseWriter();
   }

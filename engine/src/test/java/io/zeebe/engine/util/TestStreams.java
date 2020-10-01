@@ -53,6 +53,8 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -265,6 +267,13 @@ public final class TestStreams {
     LOG.info("Closed stream {}", streamName);
   }
 
+  public StreamProcessor getStreamProcessor(final String streamName) {
+    return Optional.ofNullable(streamContextMap.get(streamName))
+        .map(c -> c.streamProcessor)
+        .orElseThrow(
+            () -> new NoSuchElementException("No stream processor found with name: " + streamName));
+  }
+
   public long writeBatch(final String logName, final RecordToWrite[] recordToWrites) {
     final SynchronousLogStream logStream = getLogStream(logName);
     final LogStreamBatchWriter logStreamBatchWriter = logStream.newLogStreamBatchWriter();
@@ -290,7 +299,7 @@ public final class TestStreams {
     private long sourceRecordPosition = -1;
 
     public FluentLogWriter(final LogStreamRecordWriter logStreamRecordWriter) {
-      this.writer = logStreamRecordWriter;
+      writer = logStreamRecordWriter;
 
       metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
     }
@@ -305,12 +314,12 @@ public final class TestStreams {
     }
 
     public FluentLogWriter intent(final Intent intent) {
-      this.metadata.intent(intent);
+      metadata.intent(intent);
       return this;
     }
 
     public FluentLogWriter requestId(final long requestId) {
-      this.metadata.requestId(requestId);
+      metadata.requestId(requestId);
       return this;
     }
 
@@ -320,12 +329,12 @@ public final class TestStreams {
     }
 
     public FluentLogWriter requestStreamId(final int requestStreamId) {
-      this.metadata.requestStreamId(requestStreamId);
+      metadata.requestStreamId(requestStreamId);
       return this;
     }
 
     public FluentLogWriter recordType(final RecordType recordType) {
-      this.metadata.recordType(recordType);
+      metadata.recordType(recordType);
       return this;
     }
 
@@ -340,8 +349,8 @@ public final class TestStreams {
         throw new RuntimeException("No event type registered for getValue " + event.getClass());
       }
 
-      this.metadata.valueType(eventType);
-      this.value = event;
+      metadata.valueType(eventType);
+      value = event;
       return this;
     }
 
