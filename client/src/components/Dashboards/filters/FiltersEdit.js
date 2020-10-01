@@ -23,7 +23,6 @@ export function FiltersEdit({
   setAvailableFilters,
   reports = [],
   persistReports,
-  isNew,
   mightFail,
 }) {
   const [showVariableModal, setShowVariableModal] = useState(false);
@@ -33,6 +32,7 @@ export function FiltersEdit({
   const [availableVariables, setAvailableVariables] = useState([]);
 
   const reportIds = reports.filter(({id}) => !!id).map(({id}) => id);
+  const hasUnsavedReports = reports.some(({id, report}) => report && !id);
 
   useDeepCompareEffect(() => {
     mightFail(
@@ -108,7 +108,7 @@ export function FiltersEdit({
               disabled={disableVariableFilter}
               title={disableVariableFilter ? t('dashboard.filter.disabledVariable') : undefined}
               onClick={() => {
-                if (isNew) {
+                if (hasUnsavedReports) {
                   showPrompt(
                     {
                       title: t('dashboard.saveModal.unsaved'),

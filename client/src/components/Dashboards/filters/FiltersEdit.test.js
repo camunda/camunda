@@ -19,7 +19,6 @@ const props = {
   setAvailableFilters: jest.fn(),
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
   reports: [{id: 'reportId'}],
-  isNew: false,
   persistReports: jest.fn(),
 };
 
@@ -74,8 +73,10 @@ it('should disable the variable option if there are no reports', () => {
   expect(node.find(Dropdown.Option).last()).toBeDisabled();
 });
 
-it('should show a prompt to save the dashboard when adding a variable filter on an unsaved dashboard', async () => {
-  const node = shallow(<FiltersEdit {...props} isNew />);
+it('should show a prompt to save the dashboard when adding a variable filter on a dashboard with unsaved reports', async () => {
+  const node = shallow(
+    <FiltersEdit {...props} reports={[{id: 'reportId'}, {report: {name: 'unsaved report'}}]} />
+  );
 
   node.find(Dropdown.Option).last().simulate('click');
 

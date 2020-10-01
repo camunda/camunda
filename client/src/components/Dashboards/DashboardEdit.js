@@ -228,7 +228,6 @@ export default class DashboardEdit extends React.Component {
             persistReports={() => this.save(true)}
             availableFilters={availableFilters}
             setAvailableFilters={(availableFilters) => this.setState({availableFilters})}
-            isNew={isNew}
           />
         )}
         <div className="content" ref={this.contentContainer}>
