@@ -8,9 +8,7 @@ package org.camunda.operate.webapp.security.ldap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.webapp.rest.AuthenticationRestService.AUTHENTICATION_URL;
 import static org.camunda.operate.webapp.rest.AuthenticationRestService.USER_ENDPOINT;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.LOGIN_RESOURCE;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.X_CSRF_HEADER;
-import static org.camunda.operate.webapp.security.WebSecurityConfig.X_CSRF_TOKEN;
+import static org.camunda.operate.webapp.security.OperateURIs.*;
 import static org.springframework.http.MediaType.APPLICATION_FORM_URLENCODED;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 
