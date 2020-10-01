@@ -145,7 +145,7 @@ public class LongPollingActivateJobsTest {
     for (int i = 0; i < count; i++) {
       final ZeebeClient client =
           ZeebeClient.newClientBuilder()
-              .brokerContactPoint(SocketUtil.toHostAndPortString(BROKER_RULE.getGatewayAddress()))
+              .gatewayAddress(SocketUtil.toHostAndPortString(BROKER_RULE.getGatewayAddress()))
               .usePlaintext()
               .build();
 

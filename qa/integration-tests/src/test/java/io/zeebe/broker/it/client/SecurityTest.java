@@ -31,7 +31,7 @@ public final class SecurityTest {
       new GrpcClientRule(
           cfg ->
               configureClientForTls(
-                  cfg.brokerContactPoint(
+                  cfg.gatewayAddress(
                       SocketUtil.toHostAndPortString(clusteringRule.getGatewayAddress()))));
 
   @Rule

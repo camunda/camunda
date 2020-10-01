@@ -242,7 +242,7 @@ public final class OAuthCredentialsProviderTest {
     Environment.system().put(OAUTH_ENV_AUTHORIZATION_SERVER, authorizationServerUrl);
     mockCredentials(ACCESS_TOKEN, contactPointHost);
 
-    builder.usePlaintext().brokerContactPoint(contactPointHost + ":26500").build().close();
+    builder.usePlaintext().gatewayAddress(contactPointHost + ":26500").build().close();
 
     // when
     client = new ZeebeClientImpl(builder, serverRule.getChannel());

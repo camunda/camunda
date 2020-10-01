@@ -160,8 +160,7 @@ public class ResponsiveHealthIndicatorTest {
 
     // then
     assertThat(actualZeebeClient).isNotNull();
-    assertThat(actualZeebeClient.getConfiguration().getBrokerContactPoint())
-        .isEqualTo("testhost:1234");
+    assertThat(actualZeebeClient.getConfiguration().getGatewayAddress()).isEqualTo("testhost:1234");
     assertThat(actualZeebeClient.getConfiguration().isPlaintextConnectionEnabled()).isTrue();
   }
 
@@ -180,7 +179,7 @@ public class ResponsiveHealthIndicatorTest {
     final ZeebeClient actual = ResponsiveHealthIndicator.createZeebeClient(TEST_CFG, TEST_DURATION);
 
     // then
-    assertThat(actual.getConfiguration().getBrokerContactPoint()).isEqualTo("testhost:1234");
+    assertThat(actual.getConfiguration().getGatewayAddress()).isEqualTo("testhost:1234");
   }
 
   @Test

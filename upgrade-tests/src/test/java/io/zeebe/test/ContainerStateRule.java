@@ -118,7 +118,7 @@ class ContainerStateRule extends TestWatcher {
       contactPoint = gateway.getExternalGatewayAddress();
     }
 
-    client = ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint).usePlaintext().build();
+    client = ZeebeClient.newClientBuilder().gatewayAddress(contactPoint).usePlaintext().build();
   }
 
   private void log(final String type, final String log) {

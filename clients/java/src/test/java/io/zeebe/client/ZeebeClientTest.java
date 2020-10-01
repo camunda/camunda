@@ -51,7 +51,7 @@ public final class ZeebeClientTest extends ClientTest {
       final ZeebeClientConfiguration configuration = client.getConfiguration();
 
       // then
-      assertThat(configuration.getBrokerContactPoint()).isEqualTo("0.0.0.0:26500");
+      assertThat(configuration.getGatewayAddress()).isEqualTo("0.0.0.0:26500");
       assertThat(configuration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(32);
       assertThat(configuration.getNumJobWorkerExecutionThreads()).isEqualTo(1);
       assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("default");
@@ -178,27 +178,12 @@ public final class ZeebeClientTest extends ClientTest {
     // given
     final String gatewayAddress = "localhost:26500";
     try (final ZeebeClient client =
-        ZeebeClient.newClientBuilder().gatewayAddress(gatewayAddress).build()) {
+        ZeebeClient.newClientBuilder().brokerContactPoint(gatewayAddress).build()) {
       // when
       final ZeebeClientConfiguration configuration = client.getConfiguration();
       // then
       assertThat(configuration.getGatewayAddress())
           .isEqualTo(configuration.getBrokerContactPoint())
-          .isEqualTo(gatewayAddress);
-    }
-  }
-
-  @Test
-  public void shouldGatewayAddressReturnsTheSameAsBrokerContactPoint() {
-    // given
-    final String gatewayAddress = "localhost:26500";
-    try (final ZeebeClient client =
-        ZeebeClient.newClientBuilder().brokerContactPoint(gatewayAddress).build()) {
-      // when
-      final ZeebeClientConfiguration configuration = client.getConfiguration();
-      // then
-      assertThat(configuration.getBrokerContactPoint())
-          .isEqualTo(configuration.getGatewayAddress())
           .isEqualTo(gatewayAddress);
     }
   }
