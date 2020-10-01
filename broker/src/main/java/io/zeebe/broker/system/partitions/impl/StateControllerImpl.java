@@ -85,8 +85,8 @@ public class StateControllerImpl implements StateController, PersistedSnapshotLi
     final var optionalIndexed = entrySupplier.getIndexedEntry(snapshotPosition);
     if (optionalIndexed.isEmpty()) {
       LOG.warn(
-          "Failed to take snapshot. Expected to find an indexed entry for given snapshot position {}, but found no matching indexed entry which contains this position.",
-          lowerBoundSnapshotPosition);
+          "Failed to take snapshot. Expected to find an indexed entry for determined snapshot position {}, but found no matching indexed entry which contains this position.",
+          snapshotPosition);
       return Optional.empty();
     }
 
