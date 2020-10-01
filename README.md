@@ -3,6 +3,13 @@
 
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-distribution/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-distribution)
 
+**What  is Zeebe**
+Zeebe is a workflow engine for microservices orchestration.
+
+This write-up will help you understand exactly what Zeebe is and how it might be relevant to you. We’ll start with a short introduction of Zeebe and the problem it solves, and then we’ll go into a lot more detail.
+
+We’ll use the word “workflow” throughout the write-up, and depending on your background, you might not be familiar with the word in the context of microservices. When we say “workflow”, all we mean is “a sequence of tasks that allows us to achieve some goal.” “Workflow” could be used synonymously with “business process” or “process.”
+
 Zeebe provides visibility into and control over business processes that span multiple microservices.
 
 **Why Zeebe?**
