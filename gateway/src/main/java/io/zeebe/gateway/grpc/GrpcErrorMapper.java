@@ -80,6 +80,10 @@ public final class GrpcErrorMapper {
       logger.debug("Expected to handle gRPC request, but request could not be delivered", error);
     } else if (error instanceof RequestRetriesExhaustedException) {
       builder.setCode(Code.RESOURCE_EXHAUSTED_VALUE).setMessage(error.getMessage());
+
+      // this error occurs when all partitions have exhausted for requests which have no fixed
+      // partitions - it will then also occur when back pressure kicks in, leading to a large burst
+      // of error logs that is, in fact, expected
       Loggers.GATEWAY_LOGGER.trace(
           "Expected to handle gRPC request, but all retries have been exhausted", error);
     } else {
