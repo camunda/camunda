@@ -9,8 +9,9 @@ import {get, post} from 'request';
 export async function evaluateEntity(id, type, params = {}) {
   let response;
 
+  const request = type === 'dashboard' ? get : post;
   try {
-    response = await get(`api/share/${type}/${id}/evaluate`, params);
+    response = await request(`api/share/${type}/${id}/evaluate`, params);
   } catch (e) {
     return (await e.json()).reportDefinition;
   }
