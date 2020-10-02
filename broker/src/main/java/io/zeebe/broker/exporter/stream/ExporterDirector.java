@@ -463,7 +463,7 @@ public final class ExporterDirector extends Actor {
     }
 
     private void updateExporterLastExportedRecordPosition(final long eventPosition) {
-      state.setPosition(getId(), eventPosition);
+      state.setPositionIfGreater(getId(), eventPosition);
       metrics.setLastUpdatedExportedPosition(getId(), eventPosition);
       position = eventPosition;
     }
