@@ -69,7 +69,7 @@ public abstract class AbstractImportMediatorPermutationsIT {
 
       for (EngineImportMediator sortedMediator : sortedMediators) {
         // run and wait for each mediator to finish the import run to force a certain execution order
-        sortedMediator.runImport().get(10, TimeUnit.SECONDS);
+        sortedMediator.runImport().get(30, TimeUnit.SECONDS);
       }
     }
   }
