@@ -417,6 +417,27 @@ public final class ExporterDirectorTest {
   }
 
   @Test
+  public void shouldNotUpdatePositionToSmallerValue() throws Exception {
+    // given
+    final CountDownLatch latch = new CountDownLatch(1);
+    final var controlledTestExporter = exporters.get(0);
+    controlledTestExporter.onOpen(c -> latch.countDown());
+    startExporterDirector(exporterDescriptors);
+    latch.await();
+    exporters.get(0).getController().updateLastExportedRecordPosition(1);
+    final var firstPosition =
+        Awaitility.await()
+            .until(() -> rule.getExportersState().getPosition("exporter-1"), (pos) -> pos > -1);
+
+    // when
+    exporters.get(0).getController().updateLastExportedRecordPosition(-1);
+
+    // then
+    final var secondPosition = rule.getExportersState().getPosition("exporter-1");
+    assertThat(secondPosition).isEqualTo(firstPosition);
+  }
+
+  @Test
   public void shouldUpdateLastExportedPositionOnClose() throws Exception {
     // given
     startExporterDirector(exporterDescriptors);
