@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import io.zeebe.engine.processor.CommandResponseWriter;
 import io.zeebe.engine.processor.ReadonlyProcessingContext;
 import io.zeebe.engine.processor.RecordValues;
+import io.zeebe.engine.processor.StreamProcessor;
 import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
 import io.zeebe.engine.processor.TypedEventImpl;
 import io.zeebe.engine.processor.workflow.EngineProcessors;
@@ -227,6 +228,10 @@ public final class EngineRule extends ExternalResource {
 
   public ZeebeState getZeebeState() {
     return environmentRule.getZeebeState();
+  }
+
+  public StreamProcessor getStreamProcessor(final int partitionId) {
+    return environmentRule.getStreamProcessor(partitionId);
   }
 
   public DeploymentClient deployment() {
