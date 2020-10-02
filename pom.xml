@@ -29,7 +29,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <version.zeebe>0.25.0-alpha2</version.zeebe>
-
+    <version.log4j>2.13.3</version.log4j>
     <version.elasticsearch>6.8.12</version.elasticsearch>
     <version.spring.boot>2.3.4.RELEASE</version.spring.boot>
     <version.junit>4.13</version.junit>
@@ -94,6 +94,13 @@
         <version>${version.elasticsearch}</version>
       </dependency>
       <!-- END -->
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${version.log4j}</version>
+        <type>test-jar</type>
+      </dependency>
 
       <dependency>
         <groupId>org.glassfish</groupId>
