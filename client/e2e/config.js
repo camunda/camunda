@@ -10,10 +10,6 @@ const config = {
     username: 'demo',
     password: 'demo',
   },
-  window: {
-    width: 1920,
-    height: 950,
-  },
 };
 
 export {config};
