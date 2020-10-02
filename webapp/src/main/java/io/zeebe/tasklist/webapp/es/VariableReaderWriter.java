@@ -31,6 +31,7 @@ import io.zeebe.tasklist.webapp.graphql.entity.VariableDTO;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -320,16 +321,19 @@ public class VariableReaderWriter {
 
     final List<List<VariableDTO>> response = new ArrayList<>();
     for (GetVariablesRequest req : requests) {
+      List<VariableDTO> vars = new ArrayList<>();
       switch (req.getState()) {
         case CREATED:
-          response.add(varsForActive.getOrDefault(req.getTaskId(), new ArrayList<>()));
+          vars = varsForActive.getOrDefault(req.getTaskId(), new ArrayList<>());
           break;
         case COMPLETED:
-          response.add(varsForCompleted.getOrDefault(req.getTaskId(), new ArrayList<>()));
+          vars = varsForCompleted.getOrDefault(req.getTaskId(), new ArrayList<>());
           break;
         default:
           break;
       }
+      vars.sort(Comparator.comparing(VariableDTO::getName));
+      response.add(vars);
     }
     return response;
   }

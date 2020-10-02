@@ -202,6 +202,7 @@ public class VariableIT extends TasklistZeebeIntegrationTest {
           .isEqualTo("7");
       assertThat(Arrays.asList(response.get(taskJsonPath + ".variables", Object[].class)))
           .extracting(o -> ((Map) o).get("name"))
+          .isSorted()
           .containsExactlyInAnyOrder(
               "processVar", "clients", "client", "loopCounter", "taskVar", "result", "results");
     }
