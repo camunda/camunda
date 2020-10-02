@@ -1,7 +1,7 @@
 @import 'shared-styles/shared-styles.scss';
 
 .Tag {
-  padding: 2px 0 0 9px;
+  padding-left: 9px;
   font-size: 0.875em;
   white-space: nowrap;
   border-radius: 11px;
@@ -14,6 +14,7 @@
     white-space: nowrap;
     text-overflow: ellipsis;
     overflow: hidden;
+    padding-top: 1px;
   }
 
   &.invalid {

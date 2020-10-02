@@ -2,7 +2,7 @@
 
 .MultiValueInput {
   border: 1px solid #bbb;
-  padding: 6px 10px 0px;
+  padding: 5px 10px 0px;
   border-radius: 3px;
   position: relative;
   display: flex;
@@ -33,14 +33,14 @@
   .Tag {
     display: flex;
     margin-right: 6px;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
     order: 1;
   }
 
   .Input {
     border: none;
     padding: 0;
-    margin-bottom: 6px;
+    margin-bottom: 5px;
     max-width: 100%;
     order: 2;
 
