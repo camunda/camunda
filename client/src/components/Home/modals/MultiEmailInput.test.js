@@ -68,7 +68,7 @@ it('should clear all emails when MultiValueInput is cleared', () => {
     clipboardData: {getData: () => `email1@test.com;email2@test.com email3@test.com`},
   });
 
-  node.find('MultiValueInput').prop('onClear')();
+  node.find(MultiValueInput).prop('onClear')();
 
   expect(props.onChange).toHaveBeenCalledWith([], true);
 });

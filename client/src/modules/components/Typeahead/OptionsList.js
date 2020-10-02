@@ -5,9 +5,13 @@
  */
 
 import React, {useState, useEffect, useCallback} from 'react';
+
 import {t} from 'translation';
 import {Dropdown, LoadingIndicator} from 'components';
+
 import {highlightText} from './service';
+
+import './OptionsList.scss';
 
 export default function OptionsList({
   loading,

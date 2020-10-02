@@ -105,6 +105,7 @@
       "manager-description": "Full rights editing Collection and Users",
       "existing-user-error": "A user with this id already exists",
       "existing-group-error": "A group with this id already exists",
+      "existing-identity": "A user or a group with this id already exists",
       "inCollection": "in this collection",
       "missingAuthorizationsWarning": "Some data may be hidden from users due to missing authorizations.",
       "deleteWarning": "The '{name}' {type} will be removed from the Collection."

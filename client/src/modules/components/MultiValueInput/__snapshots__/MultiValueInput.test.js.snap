@@ -19,9 +19,9 @@ exports[`should match snapshot 1`] = `
     invalid={false}
     key="0"
     onRemove={[Function]}
-    title="1234"
+    title="1234 label"
   >
-    1234
+    1234 label
   </Tag>
   <Tag
     invalid={true}

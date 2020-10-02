@@ -15,7 +15,7 @@ it('should match snapshot', () => {
   const node = shallow(
     <MultiValueInput
       values={[
-        {value: '1234', invalid: false},
+        {value: '1234', label: '1234 label', invalid: false},
         {value: 'errorValue', invalid: true},
       ]}
     />
@@ -67,4 +67,17 @@ it('should invoke onRemove when removing a value', async () => {
   });
 
   expect(spy).toHaveBeenCalledWith('test2', 1);
+});
+
+it('should disable adding by keyboard key if specified', async () => {
+  const spy = jest.fn();
+  const node = shallow(<MultiValueInput values={[]} onAdd={spy} disableAddByKeyboard />);
+
+  node.find(Input).prop('onChange')({target: {value: 'test1'}});
+  node.find(Input).simulate('keyDown', {
+    key: ' ',
+    preventDefault: jest.fn(),
+  });
+
+  expect(spy).not.toHaveBeenCalledWith('test1');
 });

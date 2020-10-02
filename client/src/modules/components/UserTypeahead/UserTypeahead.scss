@@ -1,17 +1,20 @@
-.UserTypeahead .DropdownOption .subTexts {
-  display: block;
-  font-size: 14px;
-  color: grey;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.UserTypeahead,
+.MultiUserTypeahead {
+  .DropdownOption .subTexts {
+    display: block;
+    font-size: 14px;
+    color: grey;
+    overflow: hidden;
+    text-overflow: ellipsis;
 
-  .subText {
-    &:after {
-      content: ' - ';
-    }
+    .subText {
+      &:after {
+        content: ' - ';
+      }
 
-    &:last-of-type:after {
-      content: '';
+      &:last-of-type:after {
+        content: '';
+      }
     }
   }
 }

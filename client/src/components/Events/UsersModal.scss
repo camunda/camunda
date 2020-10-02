@@ -1,28 +1,5 @@
-@import 'shared-styles/shared-styles.scss';
-
-.UsersModal {
-  .inputGroup {
-    display: flex;
-    align-items: flex-end;
-
-    .userTypeahead {
-      flex-grow: 1;
-      margin-right: 10px;
-    }
-  }
-
-  .description {
-    color: #717171;
-    margin-top: 0;
-    font-size: 0.875em;
-  }
-
-  .EntityList {
-    margin-top: 32px;
-
-    .content {
-      max-height: calc(100vh - 415px);
-      @include scrollable;
-    }
-  }
+.UsersModal .description {
+  color: #717171;
+  margin-top: 0;
+  font-size: 0.875em;
 }

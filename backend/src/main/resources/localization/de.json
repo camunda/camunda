@@ -105,6 +105,7 @@
       "manager-description": "Volle Rechte beim Bearbeiten von Sammlungen und Benutzern",
       "existing-user-error": "Ein Benutzer mit dieser ID existiert schon",
       "existing-group-error": "Eine Gruppe mit dieser ID existiert schon",
+      "existing-identity": "Ein Benutzer oder eine Gruppe mit dieser ID existiert schon",
       "inCollection": "in dieser Sammlung",
       "missingAuthorizationsWarning": "Einige Daten können aufgrund fehlender Berechtigungen für Benutzer ausgeblendet sein.",
       "deleteWarning": "'{name}' {type} wird von der Sammlung entfernt."

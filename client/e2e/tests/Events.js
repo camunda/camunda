@@ -88,7 +88,6 @@ test('add sources, map and publish a process', async (t) => {
   await t.click(e.optionsButton(e.usersTypeahead));
   await t.typeText(e.typeaheadInput(e.usersTypeahead), 'John', {replace: true});
   await t.click(e.typeaheadOption(e.usersTypeahead, 'John'));
-  await t.click(e.buttonWithText('Add'));
 
   await t.takeElementScreenshot(e.modalContainer.nth(1), 'event-based-processes/usersModal.png');
 

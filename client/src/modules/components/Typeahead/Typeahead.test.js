@@ -5,11 +5,11 @@
  */
 
 import React from 'react';
+import {shallow} from 'enzyme';
 
-import Typeahead from './Typeahead';
 import {Input} from 'components';
 
-import {shallow} from 'enzyme';
+import Typeahead from './Typeahead';
 
 it('should render an empty Input', () => {
   const node = shallow(<Typeahead />);

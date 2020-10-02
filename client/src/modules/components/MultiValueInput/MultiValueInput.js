@@ -4,25 +4,31 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import React, {useRef, useEffect, useState} from 'react';
+import React, {useRef, useEffect, useState, useImperativeHandle} from 'react';
 
 import {Input, Icon, Tag} from 'components';
 
 import './MultiValueInput.scss';
 
-export default function MultiValueInput({
-  children,
-  onClear,
-  placeholder,
-  values,
-  onRemove,
-  onAdd,
-  extraSeperators = [],
-  ...props
-}) {
+export default React.forwardRef(function MultiValueInput(
+  {
+    children,
+    onClear,
+    placeholder,
+    values = [],
+    onRemove,
+    onAdd,
+    onChange,
+    disableAddByKeyboard,
+    extraSeperators = [],
+    ...props
+  },
+  ref
+) {
   const [value, setValue] = useState('');
   const input = useRef();
   const sizer = useRef();
+  useImperativeHandle(ref, () => input.current);
 
   const empty = values.length === 0;
 
@@ -52,7 +58,7 @@ export default function MultiValueInput({
   }
 
   function handleKeyPress(evt) {
-    if (['Enter', ' ', 'Tab', ...extraSeperators].includes(evt.key)) {
+    if (!disableAddByKeyboard && ['Enter', ' ', 'Tab', ...extraSeperators].includes(evt.key)) {
       if (value) {
         evt.preventDefault();
       }
@@ -74,7 +80,12 @@ export default function MultiValueInput({
       {empty && value === '' && <span className="placeholder">{placeholder}</span>}
       <Input
         value={value}
-        onChange={(evt) => setValue(evt.target.value)}
+        onChange={({target: {value}}) => {
+          setValue(value);
+          if (onChange) {
+            onChange(value);
+          }
+        }}
         onKeyDown={handleKeyPress}
         ref={input}
         onBlur={addValue}
@@ -83,9 +94,9 @@ export default function MultiValueInput({
         {...props}
       />
       <span className="sizer" ref={sizer} />
-      {values.map(({value, invalid}, i) => (
-        <Tag key={i} invalid={invalid} title={value} onRemove={() => onRemove(value, i)}>
-          {value}
+      {values.map(({value, label, invalid}, i) => (
+        <Tag key={i} invalid={invalid} title={label || value} onRemove={() => onRemove(value, i)}>
+          {label || value}
         </Tag>
       ))}
       {!empty && (
@@ -95,4 +106,4 @@ export default function MultiValueInput({
       )}
     </div>
   );
-}
+});
