@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.incident;
+package org.camunda.optimize.service.es.report.process.single.incident.frequency;
 
 import org.camunda.optimize.dto.optimize.ReportConstants;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
@@ -40,13 +40,13 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
     return Stream.of(
       () -> incidentClient.deployAndStartProcessInstanceWithTwoOpenIncidents(),
       () -> incidentClient.deployAndStartProcessInstanceWithTwoResolvedIncidents(),
-      () -> incidentClient.startProcessInstanceWithDeletedResolvedIncidents()
+      () -> incidentClient.deployAndStartProcessInstanceWithDeletedResolvedIncidents()
     );
   }
 
   @ParameterizedTest
   @MethodSource("startInstanceWithDifferentIncidents")
-  public void twoOpenIncidentsInOneProcessInstance(Supplier<ProcessInstanceEngineDto> startAndReturnProcessInstanceWithTwoIncidents) {
+  public void twoIncidentsInOneProcessInstance(Supplier<ProcessInstanceEngineDto> startAndReturnProcessInstanceWithTwoIncidents) {
     // given
     final ProcessInstanceEngineDto processInstance = startAndReturnProcessInstanceWithTwoIncidents.get();
     importAllEngineEntitiesFromScratch();
@@ -198,6 +198,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
       engineIntegrationExtension.deployAndStartProcess(getTwoExternalTaskProcess());
     engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
     engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
     final ProcessInstanceEngineDto processInstanceEngineDto2 =
       engineIntegrationExtension.startProcessInstance(processInstanceEngineDto.getDefinitionId());
     engineIntegrationExtension.failExternalTasks(processInstanceEngineDto2.getId());

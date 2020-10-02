@@ -10,6 +10,7 @@ import org.camunda.optimize.test.engine.IncidentClient;
 import org.camunda.optimize.test.engine.OutlierDistributionClient;
 import org.camunda.optimize.test.it.extension.ElasticSearchIntegrationTestExtension;
 import org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension;
+import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.optimize.AlertClient;
@@ -49,6 +50,10 @@ public abstract class AbstractIT {
   @RegisterExtension
   @Order(3)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension = new EmbeddedOptimizeExtension();
+  @RegisterExtension
+  @Order(4)
+  public EngineDatabaseExtension engineDatabaseExtension =
+    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   private final Supplier<OptimizeRequestExecutor> optimizeRequestExecutorSupplier =
     () -> getEmbeddedOptimizeExtension().getRequestExecutor();
@@ -88,7 +93,7 @@ public abstract class AbstractIT {
   protected AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
   protected OutlierDistributionClient outlierDistributionClient =
     new OutlierDistributionClient(engineIntegrationExtension);
-  protected IncidentClient incidentClient = new IncidentClient(engineIntegrationExtension);
+  protected IncidentClient incidentClient = new IncidentClient(engineIntegrationExtension, engineDatabaseExtension);
 
   // optimize test helpers
   protected CollectionClient collectionClient = new CollectionClient(optimizeRequestExecutorSupplier);

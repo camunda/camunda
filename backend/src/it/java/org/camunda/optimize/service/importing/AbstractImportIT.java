@@ -8,14 +8,11 @@ package org.camunda.optimize.service.importing;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.it.extension.ErrorResponseMock;
 import org.camunda.optimize.test.it.extension.MockServerUtil;
 import org.camunda.optimize.util.BpmnModels;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -27,11 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public abstract class AbstractImportIT extends AbstractIT {
-
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   protected void assertAllEntriesInElasticsearchHaveAllData(String elasticsearchIndex,
                                                             final Set<String> excludedFields) {
@@ -92,7 +84,6 @@ public abstract class AbstractImportIT extends AbstractIT {
     );
   }
 
-  @SuppressWarnings("unused")
   protected static Stream<ErrorResponseMock> engineErrors() {
     return MockServerUtil.engineMockedErrorResponses();
   }

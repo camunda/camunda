@@ -82,6 +82,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -1156,10 +1157,6 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     }
   }
 
-  public void failAllExternalTasks() {
-    failExternalTasks(null);
-  }
-
   @SneakyThrows
   public void failExternalTasks(final String processInstanceId) {
     final List<ExternalTaskEngineDto> externalTasks = fetchAndLockExternalTasks(processInstanceId);
@@ -1205,8 +1202,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
           "\"topics\": [" +
             "{\"" +
               "topicName\": \"%s\", " +
-              "\"lockDuration\": 1000000," +
-              "\"processInstanceId\": " + processInstanceId +
+              "\"lockDuration\": 1000000" +
             "}" +
           "]\n" +
         "}",
@@ -1218,11 +1214,14 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(post)) {
       if (response.getStatusLine().getStatusCode() == Response.Status.OK.getStatusCode()) {
         String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-        return OBJECT_MAPPER.readValue(
-          responseString,
-          new TypeReference<List<ExternalTaskEngineDto>>() {
-          }
-        );
+        // @formatter:off
+        final List<ExternalTaskEngineDto> externalTaskEngineDtos =
+          OBJECT_MAPPER.readValue(responseString, new TypeReference<List<ExternalTaskEngineDto>>() {});
+        // @formatter:on
+        return externalTaskEngineDtos
+          .stream()
+          .filter(task -> Objects.equals(task.getProcessInstanceId(), processInstanceId))
+          .collect(Collectors.toList());
       } else {
         throw new OptimizeIntegrationTestException(
           String.format(
@@ -1236,10 +1235,6 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
       log.error(message, e);
       throw new OptimizeIntegrationTestException(message, e);
     }
-  }
-
-  public void completeAllExternalTasks() {
-    completeExternalTasks(null);
   }
 
   public void completeExternalTasks(final String processInstanceId) {

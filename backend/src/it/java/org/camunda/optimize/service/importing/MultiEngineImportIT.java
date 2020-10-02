@@ -189,17 +189,18 @@ public class MultiEngineImportIT extends AbstractMultiEngineIT {
     deployAndStartDecisionDefinitionForAllEngines();
 
     // add incident data
-    engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
-    engineIntegrationExtension.failAllExternalTasks();
-    engineIntegrationExtension.completeAllExternalTasks();
-    engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
-    engineIntegrationExtension.failAllExternalTasks();
+    ProcessInstanceEngineDto processInstanceEngineDto =
+      engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
+    processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
 
-    secondaryEngineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
-    secondaryEngineIntegrationExtension.failAllExternalTasks();
-    secondaryEngineIntegrationExtension.completeAllExternalTasks();
-    secondaryEngineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
-    secondaryEngineIntegrationExtension.failAllExternalTasks();
+    processInstanceEngineDto = secondaryEngineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    secondaryEngineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    secondaryEngineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
+    processInstanceEngineDto = secondaryEngineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    secondaryEngineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
   }
 
   private void assertProcessInstanceImportResults(final List<ProcessInstanceDto> processInstances,

@@ -20,11 +20,8 @@ import org.camunda.optimize.dto.optimize.query.event.process.MappedEventType;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.optimize.EventProcessClient;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -46,11 +43,6 @@ import static org.camunda.optimize.service.events.CamundaEventService.EVENT_SOUR
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
 
 public class EventProcessPublishStateIT extends AbstractEventProcessIT {
-
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @ParameterizedTest
   @MethodSource("eventSourceEntryTypeCombinations")

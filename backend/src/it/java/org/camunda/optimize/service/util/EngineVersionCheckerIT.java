@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class EngineVersionCheckerIT extends AbstractIT {
 
   @RegisterExtension
-  @Order(4)
+  @Order(5)
   public EmbeddedOptimizeExtension embeddedOptimizeExtension2 =
     new EmbeddedOptimizeExtension("classpath:versionCheckContext.xml");
 

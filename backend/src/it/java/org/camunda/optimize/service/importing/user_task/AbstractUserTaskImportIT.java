@@ -12,10 +12,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.camunda.optimize.service.util.mapper.ObjectMapperFactory;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
@@ -25,11 +22,6 @@ import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
 public abstract class AbstractUserTaskImportIT extends AbstractIT {
 
   protected ObjectMapper objectMapper;
-
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @BeforeEach
   public void setUp() {

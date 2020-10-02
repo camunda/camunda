@@ -26,20 +26,16 @@ import org.camunda.optimize.service.alert.SyncListener;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.EmailAuthenticationConfiguration;
 import org.camunda.optimize.service.util.configuration.WebhookConfiguration;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.it.extension.IntegrationTestConfigurationUtil;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.camunda.optimize.util.BpmnModels;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.quartz.JobKey;
 import org.quartz.SchedulerException;
 
 import javax.ws.rs.core.Response;
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
@@ -68,11 +64,6 @@ import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnM
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
 
 public abstract class AbstractAlertIT extends AbstractIT {
-
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   protected void triggerAndCompleteCheckJob(String id) throws SchedulerException, InterruptedException {
     this.triggerAndCompleteJob(checkJobKey(id));
@@ -113,7 +104,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
     return OffsetDateTime.ofInstant(nextTimeReminderIsExecuted.toInstant(), ZoneId.systemDefault());
   }
 
-  protected ProcessInstanceEngineDto deployWithTimeShift(long daysToShift, long durationInSec) throws SQLException {
+  protected ProcessInstanceEngineDto deployWithTimeShift(long daysToShift, long durationInSec) {
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstance = engineIntegrationExtension.deployAndStartProcessWithVariables(
       getSimpleBpmnDiagram(),
@@ -127,7 +118,7 @@ public abstract class AbstractAlertIT extends AbstractIT {
   private void adjustProcessInstanceDates(String processInstanceId,
                                           OffsetDateTime startDate,
                                           long daysToShift,
-                                          long durationInSec) throws SQLException {
+                                          long durationInSec) {
     OffsetDateTime shiftedStartDate = startDate.plusDays(daysToShift);
     engineDatabaseExtension.changeProcessInstanceStartDate(processInstanceId, shiftedStartDate);
     engineDatabaseExtension.changeProcessInstanceEndDate(

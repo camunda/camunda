@@ -33,6 +33,7 @@ public class IncidentDto implements Serializable, OptimizeDto {
   protected String id;
   protected OffsetDateTime createTime;
   protected OffsetDateTime endTime;
+  protected Long durationInMs;
   protected IncidentType incidentType;
   protected String activityId;
   protected String failedActivityId;

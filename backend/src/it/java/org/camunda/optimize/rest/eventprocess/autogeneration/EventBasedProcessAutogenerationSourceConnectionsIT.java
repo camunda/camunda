@@ -19,11 +19,8 @@ import org.camunda.optimize.dto.optimize.rest.EventProcessMappingCreateRequestDt
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.BpmnModelUtil;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -55,11 +52,6 @@ import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EV
 
 // The tests in this class relate to the connections between sources
 public class EventBasedProcessAutogenerationSourceConnectionsIT extends AbstractEventProcessAutogenerationIT {
-
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   @BeforeEach
   public void init() {

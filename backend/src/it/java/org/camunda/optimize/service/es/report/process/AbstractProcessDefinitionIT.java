@@ -24,12 +24,9 @@ import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEval
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
-import org.junit.jupiter.api.Order;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import javax.ws.rs.core.Response;
 import java.sql.SQLException;
@@ -84,11 +81,6 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
     varNameToTypeMap.put("doubleVar", VariableType.DOUBLE);
     varNameToTypeMap.put("stringVar", VariableType.STRING);
   }
-
-  @RegisterExtension
-  @Order(4)
-  protected EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   protected ProcessInstanceEngineDto deployAndStartSimpleProcess() {
     return deployAndStartSimpleProcess(null);

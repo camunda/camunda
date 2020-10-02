@@ -15,12 +15,9 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapRes
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.dto.optimize.rest.report.CombinedProcessReportResultDataDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -38,11 +35,6 @@ import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public abstract class AbstractAutomaticIntervalSelectionGroupByProcessInstanceDateReportEvaluationIT
   extends AbstractIT {
-
-  @RegisterExtension
-  @Order(4)
-  protected EngineDatabaseExtension engineDatabaseExtension =
-    new EngineDatabaseExtension(engineIntegrationExtension.getEngineName());
 
   protected abstract void updateProcessInstanceDates(Map<String, OffsetDateTime> updates) throws SQLException;
 

@@ -16,8 +16,6 @@ import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleRestDto;
 import org.camunda.optimize.service.util.configuration.engine.IdentitySyncConfiguration;
 import org.camunda.optimize.test.engine.AuthorizationClient;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -36,11 +34,6 @@ import static org.camunda.optimize.test.it.extension.EngineIntegrationExtension.
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 
 public class SyncedIdentityCacheServiceIT extends AbstractIT {
-
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(
-    engineIntegrationExtension.getEngineName()
-  );
 
   public AuthorizationClient authorizationClient = new AuthorizationClient(engineIntegrationExtension);
 

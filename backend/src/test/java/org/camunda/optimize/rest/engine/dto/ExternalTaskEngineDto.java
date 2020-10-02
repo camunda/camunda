@@ -11,4 +11,5 @@ import lombok.Data;
 public class ExternalTaskEngineDto {
 
   protected String id;
+  protected String processInstanceId;
 }

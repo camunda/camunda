@@ -86,7 +86,8 @@ public enum ProcessReportDataType {
 
   VARIABLE_AGGREGATION_GROUP_BY_NONE,
 
-  INCIDENT_FREQUENCY_GROUP_BY_NONE;
+  INCIDENT_FREQUENCY_GROUP_BY_NONE,
+  INCIDENT_DURATION_GROUP_BY_NONE;
 
   public static List<ProcessReportDataType> allDateReports() {
     return Arrays.stream(

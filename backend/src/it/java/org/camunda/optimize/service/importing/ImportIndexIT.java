@@ -149,10 +149,11 @@ public class ImportIndexIT extends AbstractImportIT {
     engineIntegrationExtension.createTenant("id", "name");
 
     // create incident data
-    engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
-    engineIntegrationExtension.failAllExternalTasks();
-    engineIntegrationExtension.completeAllExternalTasks();
-    engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
-    engineIntegrationExtension.failAllExternalTasks();
+    ProcessInstanceEngineDto processInstanceEngineDto =
+      engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
+    processInstanceEngineDto = engineIntegrationExtension.deployAndStartProcess(getExternalTaskProcess());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
   }
 }

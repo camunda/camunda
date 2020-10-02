@@ -24,14 +24,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.group.NoneG
 import org.camunda.optimize.dto.optimize.rest.ProcessRawDataCsvExportRequestDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.util.ProcessReportDataType;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
-import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -53,12 +50,6 @@ public class ExportRestServiceIT extends AbstractIT {
 
   private static final String COLUMN_PROCESS_INSTANCE_ID = ProcessInstanceDto.Fields.processInstanceId;
   private static final String SAMPLE_PROCESS_DEFINITION_KEY = "some";
-
-  @RegisterExtension
-  @Order(4)
-  public EngineDatabaseExtension engineDatabaseExtension = new EngineDatabaseExtension(
-    engineIntegrationExtension.getEngineName()
-  );
 
   @Test
   public void exportWithoutAuthorization() {

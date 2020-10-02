@@ -16,6 +16,7 @@ import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.importing.engine.service.ImportService;
 
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -92,12 +93,20 @@ public abstract class AbstractIncidentImportService implements ImportService<His
       engineEntity.getId(),
       engineEntity.getCreateTime(),
       engineEntity.getEndTime(),
+      getDuration(engineEntity),
       IncidentType.valueOfId(engineEntity.getIncidentType()),
       engineEntity.getActivityId(),
       engineEntity.getFailedActivityId(),
       engineEntity.getIncidentMessage(),
       extractIncidentStatus(engineEntity)
     );
+  }
+
+  private Long getDuration(final HistoricIncidentEngineDto engineEntity) {
+    if (engineEntity.getCreateTime() != null && engineEntity.getEndTime() != null) {
+      return ChronoUnit.MILLIS.between(engineEntity.getCreateTime(), engineEntity.getEndTime());
+    }
+    return null;
   }
 
   private IncidentStatus extractIncidentStatus(final HistoricIncidentEngineDto engineEntity) {

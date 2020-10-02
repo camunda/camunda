@@ -133,15 +133,16 @@ public class IncidentImportIT extends AbstractImportIT {
   public void importOpenIncidentFirstAndThenResolveIt() {
     // given  one open incident is created
     BpmnModelInstance incidentProcess = getTwoExternalTaskProcess();
-    engineIntegrationExtension.deployAndStartProcess(incidentProcess);
-    engineIntegrationExtension.failAllExternalTasks();
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      engineIntegrationExtension.deployAndStartProcess(incidentProcess);
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
 
     importAllEngineEntitiesFromScratch();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when we resolve the open incident and create another incident
-    engineIntegrationExtension.completeAllExternalTasks();
-    engineIntegrationExtension.failAllExternalTasks();
+    engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
+    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
 
     importAllEngineEntitiesFromLastIndex();
     elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
@@ -164,7 +165,8 @@ public class IncidentImportIT extends AbstractImportIT {
   @SneakyThrows
   public void openIncidentsDontOverwriteResolvedOnes() {
     // given
-    final ProcessInstanceEngineDto processInstanceWithIncident = incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+    final ProcessInstanceEngineDto processInstanceWithIncident =
+      incidentClient.deployAndStartProcessInstanceWithOpenIncident();
     manuallyAddAResolvedIncidentToElasticsearch(processInstanceWithIncident);
 
     // when we import the open incident
@@ -190,7 +192,8 @@ public class IncidentImportIT extends AbstractImportIT {
   @Test
   public void multipleProcessInstancesWithIncidents_incidentsAreImportedToCorrectInstance() {
     // given
-    final ProcessInstanceEngineDto processInstanceWithIncident = incidentClient.deployAndStartProcessInstanceWithOpenIncident();
+    final ProcessInstanceEngineDto processInstanceWithIncident =
+      incidentClient.deployAndStartProcessInstanceWithOpenIncident();
     incidentClient.startProcessInstanceAndCreateOpenIncident(processInstanceWithIncident.getDefinitionId());
 
     // when
@@ -367,7 +370,8 @@ public class IncidentImportIT extends AbstractImportIT {
         .stream()
         .filter(engineImportMediator -> CompletedIncidentEngineImportMediator.class.equals(engineImportMediator.getClass()))
         .findFirst()
-        .orElseThrow(() -> new OptimizeIntegrationTestException("Could not find CompletedIncidentEngineImportMediator!"));
+        .orElseThrow(() ->
+                       new OptimizeIntegrationTestException("Could not find CompletedIncidentEngineImportMediator!"));
 
       mediator.runImport().get(10, TimeUnit.SECONDS);
     }
@@ -393,6 +397,7 @@ public class IncidentImportIT extends AbstractImportIT {
         incidentEngineDto.getId(),
         OffsetDateTime.now(),
         OffsetDateTime.now(),
+        10L,
         IncidentType.FAILED_EXTERNAL_TASK, SERVICE_TASK, SERVICE_TASK, "Foo bar", IncidentStatus.RESOLVED
       )))
       .build();
