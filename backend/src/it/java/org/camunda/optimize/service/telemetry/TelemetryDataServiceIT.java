@@ -154,7 +154,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
     assertThat(telemetryLicenseKey.getCustomer()).isEqualTo("schrottis inn");
     assertThat(telemetryLicenseKey.getType()).isEqualTo(OPTIMIZE.name());
     assertThat(telemetryLicenseKey.getValidUntil()).isEqualTo("9999-01-01");
-    assertThat(telemetryLicenseKey.getIsUnlimited()).isFalse();
+    assertThat(telemetryLicenseKey.isUnlimited()).isFalse();
     assertThat(telemetryLicenseKey.getFeatures().keySet()).hasSize(3).containsAll(FEATURE_NAMES);
     assertThat(telemetryLicenseKey.getFeatures())
       .containsExactlyInAnyOrderEntriesOf(
@@ -164,6 +164,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
           CAWEMO_FEATURE, "false"
         )
       );
+    assertThat(telemetryLicenseKey.getRaw()).isEqualTo("schrottis inn;9999-01-01");
   }
 
   @Test
@@ -185,11 +186,14 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
     assertThat(telemetryLicenseKey.getCustomer()).isEqualTo("Testaccount Camunda");
     assertThat(telemetryLicenseKey.getType()).isEqualTo(UNIFIED.name());
     assertThat(telemetryLicenseKey.getValidUntil()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
-    assertThat(telemetryLicenseKey.getIsUnlimited()).isTrue();
+    assertThat(telemetryLicenseKey.isUnlimited()).isTrue();
     assertThat(telemetryLicenseKey.getFeatures().keySet()).hasSize(3).containsAll(FEATURE_NAMES);
     assertThat(telemetryLicenseKey.getFeatures())
       .extractingByKeys(OPTIMIZE_FEATURE, CAWEMO_FEATURE, CAMUNDA_BPM_FEATURE)
       .containsOnly("true");
+    assertThat(telemetryLicenseKey.getRaw())
+      .isEqualTo(
+        "customer = Testaccount Camunda;expiryDate = unlimited;camundaBPM = true;optimize = true;cawemo = true;");
   }
 
   @Test
@@ -211,7 +215,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
     assertThat(telemetryLicenseKey.getCustomer()).isEqualTo("license generator test");
     assertThat(telemetryLicenseKey.getType()).isEqualTo(UNIFIED.name());
     assertThat(telemetryLicenseKey.getValidUntil()).isEqualTo("9999-01-01");
-    assertThat(telemetryLicenseKey.getIsUnlimited()).isFalse();
+    assertThat(telemetryLicenseKey.isUnlimited()).isFalse();
     assertThat(telemetryLicenseKey.getFeatures().keySet()).hasSize(3).containsAll(FEATURE_NAMES);
     assertThat(telemetryLicenseKey.getFeatures())
       .containsExactlyInAnyOrderEntriesOf(
@@ -221,6 +225,8 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
           CAWEMO_FEATURE, "false"
         )
       );
+    assertThat(telemetryLicenseKey.getRaw())
+      .isEqualTo("customer = license generator test;expiryDate = 9999-01-01;optimize = true;");
   }
 
   @Test
@@ -242,8 +248,9 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
       assertThat(telemetryLicenseKey.getCustomer()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
       assertThat(telemetryLicenseKey.getType()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
       assertThat(telemetryLicenseKey.getValidUntil()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
-      assertThat(telemetryLicenseKey.getIsUnlimited()).isFalse();
+      assertThat(telemetryLicenseKey.isUnlimited()).isFalse();
       assertThat(telemetryLicenseKey.getFeatures()).isEmpty();
+      assertThat(telemetryLicenseKey.getRaw()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
     } finally {
       initOptimizeLicense();
     }
@@ -271,7 +278,8 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
       licenseKeyImpl.getLicenseType().name(),
       Optional.ofNullable(licenseKeyImpl.getValidUntil()).map(Date::toString).orElse(INFORMATION_UNAVAILABLE_STRING),
       licenseKeyImpl.isUnlimited(),
-      features
+      features,
+      licenseKeyImpl.getLicenseBody()
     );
   }
 
@@ -281,7 +289,8 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
                                                    final String type,
                                                    final String validUntil,
                                                    final Boolean unlimited,
-                                                   final Map<String, String> features) {
+                                                   final Map<String, String> features,
+                                                   final String licenseKeyRaw) {
     final DatabaseDto databaseDto = DatabaseDto.builder()
       .version(databaseVersion)
       .vendor("elasticsearch")
@@ -291,8 +300,9 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
       .customer(customerName)
       .type(type)
       .validUntil(validUntil)
-      .isUnlimited(unlimited)
+      .unlimited(unlimited)
       .features(features)
+      .raw(licenseKeyRaw)
       .build();
 
     final InternalsDto internalsDto = InternalsDto.builder()

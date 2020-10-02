@@ -43,9 +43,9 @@ import static org.camunda.optimize.service.metadata.Version.VERSION;
 @Slf4j
 public class TelemetryDataService {
   public static final String INFORMATION_UNAVAILABLE_STRING = "Unknown";
-  public static final String  OPTIMIZE_FEATURE = "optimize";
-  public static final String  CAMUNDA_BPM_FEATURE = "camundaBPM";
-  public static final String  CAWEMO_FEATURE = "cawemo";
+  public static final String OPTIMIZE_FEATURE = "optimize";
+  public static final String CAMUNDA_BPM_FEATURE = "camundaBPM";
+  public static final String CAWEMO_FEATURE = "cawemo";
   public static final Set<String> FEATURE_NAMES = ImmutableSet.of(
     OPTIMIZE_FEATURE,
     CAMUNDA_BPM_FEATURE,
@@ -123,13 +123,15 @@ public class TelemetryDataService {
       .map(LicenseKey::getProperties)
       .map(this::mapPropertiesToFeaturesMap)
       .orElse(Collections.emptyMap());
+    final String raw = licenseKey.map(LicenseKey::getLicenseBody).orElse(INFORMATION_UNAVAILABLE_STRING);
 
     return LicenseKeyDto.builder()
       .customer(customer)
       .type(licenseType)
       .validUntil(validUntil)
-      .isUnlimited(isUnlimited)
+      .unlimited(isUnlimited)
       .features(features)
+      .raw(raw)
       .build();
   }
 
