@@ -591,3 +591,39 @@ export const mockWorkflowInstances = {
   ],
   totalCount: 912,
 };
+
+export const operations = [
+  {
+    id: '921455fd-849a-49c5-be17-c92eb6d9e946',
+    name: null,
+    type: 'CANCEL_WORKFLOW_INSTANCE',
+    startDate: '2020-09-30T06:02:32.748+0000',
+    endDate: '2020-09-29T15:38:34.372+0000',
+    instancesCount: 1,
+    operationsTotalCount: 1,
+    operationsFinishedCount: 0,
+    sortValues: ['9223372036854775807', '1601445752748'],
+  },
+  {
+    id: 'd116b2a3-eb19-47f1-85c0-60b3e1814aa2',
+    name: null,
+    type: 'CANCEL_WORKFLOW_INSTANCE',
+    startDate: '2020-09-29T15:37:20.187+0000',
+    endDate: '2020-09-29T15:38:34.372+0000',
+    instancesCount: 1,
+    operationsTotalCount: 1,
+    operationsFinishedCount: 1,
+    sortValues: ['1601393914372', '1601393840187'],
+  },
+  {
+    id: '68d41595-bbee-49d0-84c8-8713dc8584d5',
+    name: null,
+    type: 'CANCEL_WORKFLOW_INSTANCE',
+    startDate: '2020-09-29T15:37:16.052+0000',
+    endDate: '2020-09-29T15:38:22.227+0000',
+    instancesCount: 1,
+    operationsTotalCount: 1,
+    operationsFinishedCount: 1,
+    sortValues: ['1601393902227', '1601393836052'],
+  },
+];

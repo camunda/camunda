@@ -10,12 +10,12 @@ import useOperationApply from './useOperationApply';
 import {renderHook} from '@testing-library/react-hooks';
 import {waitFor} from '@testing-library/react';
 import {createMemoryHistory} from 'history';
-
 import {instanceSelection} from 'modules/stores/instanceSelection';
+import {operationsStore} from 'modules/stores/operations';
 import {filters} from 'modules/stores/filters';
 import {instances} from 'modules/stores/instances';
 import {INSTANCE_SELECTION_MODE} from 'modules/constants';
-import {mockUseDataManager, mockData} from './useOperationApply.setup';
+import {mockData} from './useOperationApply.setup';
 import {
   groupedWorkflowsMock,
   mockWorkflowStatistics,
@@ -23,11 +23,9 @@ import {
 } from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
+import {isEqual} from 'lodash';
 
 const OPERATION_TYPE = 'DUMMY';
-
-jest.mock('modules/utils/bpmn');
-jest.mock('modules/hooks/useDataManager', () => () => mockUseDataManager);
 
 function renderUseOperationApply() {
   const {result} = renderHook(() => useOperationApply());
@@ -53,6 +51,9 @@ describe('useOperationApply', () => {
       ),
       rest.post('/api/workflow-instances/statistics', (_, res, ctx) =>
         res.once(ctx.json(mockWorkflowStatistics))
+      ),
+      rest.post('/api/workflow-instances/batch-operation', (_, res, ctx) =>
+        res.once(ctx.json({}))
       )
     );
 
@@ -65,21 +66,39 @@ describe('useOperationApply', () => {
     instanceSelection.reset();
     filters.reset();
     instances.reset();
+    operationsStore.reset();
   });
 
-  it('should call apply (no filter, select all ids)', () => {
-    const {expectedQuery} = mockData.noFilterSelectAll;
+  it('should call apply (no filter, select all ids)', async () => {
+    const {mockOperationCreated, expectedQuery} = mockData.noFilterSelectAll;
 
+    mockServer.use(
+      rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
+        if (isEqual(req.body.query, expectedQuery)) {
+          return res.once(ctx.json(mockOperationCreated));
+        }
+      })
+    );
+
+    expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply();
 
-    expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE,
-      expectedQuery
+    await waitFor(() =>
+      expect(operationsStore.state.operations).toEqual([mockOperationCreated])
     );
   });
 
-  it('should call apply (set id filter, select all ids)', () => {
-    const {expectedQuery} = mockData.setFilterSelectAll;
+  it('should call apply (set id filter, select all ids)', async () => {
+    const {mockOperationCreated, expectedQuery} = mockData.setFilterSelectAll;
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
+        if (isEqual(req.body.query, expectedQuery)) {
+          return res.once(ctx.json(mockOperationCreated));
+        }
+      })
+    );
+
     filters.setFilter({
       ...filters.state.filter,
       ids: '1',
@@ -93,16 +112,26 @@ describe('useOperationApply', () => {
     );
 
     instanceSelection.setAllChecked();
+
+    expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply();
 
-    expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE,
-      expectedQuery
+    await waitFor(() =>
+      expect(operationsStore.state.operations).toEqual([mockOperationCreated])
     );
   });
 
-  it('should call apply (set id filter, select one id)', () => {
-    const {expectedQuery} = mockData.setFilterSelectOne;
+  it('should call apply (set id filter, select one id)', async () => {
+    const {mockOperationCreated, expectedQuery} = mockData.setFilterSelectOne;
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
+        if (isEqual(req.body.query, expectedQuery)) {
+          return res.once(ctx.json(mockOperationCreated));
+        }
+      })
+    );
+
     filters.setFilter({
       ...filters.state.filter,
       ids: '1, 2',
@@ -115,16 +144,29 @@ describe('useOperationApply', () => {
         (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
       )
     );
+    expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply();
 
-    expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE,
-      expectedQuery
+    await waitFor(() =>
+      expect(operationsStore.state.operations).toEqual([mockOperationCreated])
     );
   });
 
-  it('should call apply (set id filter, exclude one id)', () => {
-    const {expectedQuery, ...context} = mockData.setFilterExcludeOne;
+  it('should call apply (set id filter, exclude one id)', async () => {
+    const {
+      mockOperationCreated,
+      expectedQuery,
+      ...context
+    } = mockData.setFilterExcludeOne;
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
+        if (isEqual(req.body.query, expectedQuery)) {
+          return res.once(ctx.json(mockOperationCreated));
+        }
+      })
+    );
+
     filters.setFilter({
       ...filters.state.filter,
       ids: '1, 2',
@@ -139,16 +181,29 @@ describe('useOperationApply', () => {
       )
     );
 
+    expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply(context);
 
-    expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE,
-      expectedQuery
+    await waitFor(() =>
+      expect(operationsStore.state.operations).toEqual([mockOperationCreated])
     );
   });
 
-  it('should call apply (set workflow filter, select one)', () => {
-    const {expectedQuery, ...context} = mockData.setWorkflowFilterSelectOne;
+  it('should call apply (set workflow filter, select one)', async () => {
+    const {
+      mockOperationCreated,
+      expectedQuery,
+      ...context
+    } = mockData.setWorkflowFilterSelectOne;
+
+    mockServer.use(
+      rest.post('/api/workflow-instances/batch-operation', (req, res, ctx) => {
+        if (isEqual(req.body.query, expectedQuery)) {
+          return res.once(ctx.json(mockOperationCreated));
+        }
+      })
+    );
+
     filters.setFilter({
       ...filters.state.filter,
       workflow: 'demoProcess',
@@ -163,11 +218,12 @@ describe('useOperationApply', () => {
     );
 
     instanceSelection.selectInstance('1');
+
+    expect(operationsStore.state.operations).toEqual([]);
     renderUseOperationApply(context);
 
-    expect(mockUseDataManager.applyBatchOperation).toHaveBeenCalledWith(
-      OPERATION_TYPE,
-      expectedQuery
+    await waitFor(() =>
+      expect(operationsStore.state.operations).toEqual([mockOperationCreated])
     );
   });
 
@@ -197,7 +253,7 @@ describe('useOperationApply', () => {
       '2251799813685596',
     ]);
 
-    jest.advanceTimersByTime(5000);
+    jest.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(instances.state.instancesWithActiveOperations).toEqual([])
@@ -229,7 +285,7 @@ describe('useOperationApply', () => {
         (_, res, ctx) => res.once(ctx.json(mockWorkflowInstances))
       )
     );
-    jest.advanceTimersByTime(5000);
+    jest.runOnlyPendingTimers();
 
     await waitFor(() =>
       expect(instances.state.instancesWithActiveOperations).toEqual([])

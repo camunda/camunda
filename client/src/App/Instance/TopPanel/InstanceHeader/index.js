@@ -8,7 +8,7 @@ import React from 'react';
 
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
-import Operations from 'modules/components/Operations';
+import {Operations} from 'modules/components/Operations';
 import Skeleton from './Skeleton';
 import {observer} from 'mobx-react';
 import {currentInstance} from 'modules/stores/currentInstance';

@@ -13,8 +13,8 @@ export const OperationsList = themed(styled.ul`
   }
 
   li:last-child {
-    border-bottom: ${({isLoading}) =>
-      isLoading
+    border-bottom: ${({isInitialLoadComplete}) =>
+      !isInitialLoadComplete
         ? themeStyle({
             dark: `1px solid ${Colors.uiDark04}`,
             light: `1px solid ${Colors.uiLight05}`,

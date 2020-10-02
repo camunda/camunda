@@ -24,8 +24,10 @@ jest.mock('react-transition-group', () => {
   );
 
   jest.mock('modules/components/IncidentOperation', () => {
-    return function IncidentOperation() {
-      return <div />;
+    return {
+      IncidentOperation: () => {
+        return <div />;
+      },
     };
   });
 

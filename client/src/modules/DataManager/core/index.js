@@ -4,25 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {
-  fetchWorkflowInstancesByIds,
-  applyBatchOperation,
-  applyOperation,
-} from 'modules/api/instances';
-
-import {fetchBatchOperations} from 'modules/api/batchOperations';
+import {fetchWorkflowInstancesByIds} from 'modules/api/instances';
 
 import {LOADING_STATE, SUBSCRIPTION_TOPIC} from 'modules/constants';
 
 import RequestCache from '../cache';
 import Publisher from '../publisher';
 import Poll from '../poll';
-
-const {
-  LOAD_BATCH_OPERATIONS,
-  CREATE_BATCH_OPERATION,
-  OPERATION_APPLIED,
-} = SUBSCRIPTION_TOPIC;
 
 export class DataManager {
   constructor() {
@@ -44,23 +32,6 @@ export class DataManager {
     return this.publisher.subscriptions;
   };
 
-  /** Wrapped API calls */
-  applyOperation = (id, payload) => {
-    const typeStrings = payload.operationType.split('_');
-    const operationType = typeStrings[typeStrings.length - 1];
-
-    this.publisher.pubLoadingStates(
-      [`OPERATION_APPLIED_${operationType}_${id}`, OPERATION_APPLIED],
-      () => applyOperation(id, payload)
-    );
-  };
-
-  applyBatchOperation = async (operationType, query) => {
-    this.publisher.pubLoadingStates(CREATE_BATCH_OPERATION, () =>
-      applyBatchOperation(operationType, query)
-    );
-  };
-
   fetchAndPublish = (topic, apiCall, params, staticContent) => {
     const cachedParams = this.cache.update(topic, apiCall, params);
     this.publisher.pubLoadingStates(
@@ -72,10 +43,6 @@ export class DataManager {
 
   getWorkflowInstancesByIds = (params, topic) => {
     this.fetchAndPublish(topic, fetchWorkflowInstancesByIds, params);
-  };
-
-  getBatchOperations = (params) => {
-    this.fetchAndPublish(LOAD_BATCH_OPERATIONS, fetchBatchOperations, params);
   };
 
   /** Update Data */

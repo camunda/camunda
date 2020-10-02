@@ -11,44 +11,26 @@ import {
   waitForElementToBeRemoved,
   fireEvent,
 } from '@testing-library/react';
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
-import {DataManagerProvider} from 'modules/DataManager';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
 import {InstanceHeader} from './index';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {variables} from 'modules/stores/variables';
-import PropTypes from 'prop-types';
-import {createInstance} from 'modules/testUtils';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
-
-const mockInstanceWithActiveOperation = Object.freeze(createInstance());
-const mockInstanceWithoutOperations = Object.freeze({
-  ...mockInstanceWithActiveOperation,
-  hasActiveOperation: false,
-  operations: [],
-});
-
-const Wrapper = ({children}) => {
-  return <DataManagerProvider>{children}</DataManagerProvider>;
-};
-Wrapper.propTypes = {
-  children: PropTypes.oneOfType([
-    PropTypes.arrayOf(PropTypes.node),
-    PropTypes.node,
-  ]),
-};
-
-function resetMocks() {
-  variables.reset();
-  currentInstance.reset();
-  jest.clearAllMocks();
-}
+import {operationsStore} from 'modules/stores/operations';
+import {
+  mockInstanceWithActiveOperation,
+  mockInstanceWithoutOperations,
+  mockOperationCreated,
+} from './index.setup';
 
 describe('InstanceHeader', () => {
-  beforeEach(resetMocks);
-  afterAll(resetMocks);
+  afterEach(() => {
+    operationsStore.reset();
+    variables.reset();
+    currentInstance.reset();
+  });
 
   it('should show skeleton before instance data is available', async () => {
     mockServer.use(
@@ -57,9 +39,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<InstanceHeader />, {
-      wrapper: Wrapper,
-    });
+    render(<InstanceHeader />);
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
@@ -76,9 +56,7 @@ describe('InstanceHeader', () => {
         res.once(ctx.json(mockInstanceWithActiveOperation))
       )
     );
-    render(<InstanceHeader />, {
-      wrapper: Wrapper,
-    });
+    render(<InstanceHeader />);
 
     currentInstance.init(mockInstanceWithActiveOperation.id);
     await waitForElementToBeRemoved(
@@ -101,9 +79,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner based on instance having active operations', async () => {
-    render(<InstanceHeader />, {
-      wrapper: Wrapper,
-    });
+    render(<InstanceHeader />);
 
     mockServer.use(
       rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
@@ -129,15 +105,17 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner when operation is applied', async () => {
-    createMockDataManager();
     mockServer.use(
       rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
         res.once(ctx.json(mockInstanceWithoutOperations))
+      ),
+      rest.post(
+        '/api/workflow-instances/:instanceId/operation',
+        (_, res, ctx) => res.once(ctx.json(mockOperationCreated))
       )
     );
-    render(<InstanceHeader />, {
-      wrapper: Wrapper,
-    });
+
+    render(<InstanceHeader />);
 
     currentInstance.init(mockInstanceWithoutOperations.id);
     await waitForElementToBeRemoved(
@@ -174,9 +152,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<InstanceHeader />, {
-      wrapper: Wrapper,
-    });
+    render(<InstanceHeader />);
     currentInstance.init(mockInstanceWithActiveOperation.id);
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')

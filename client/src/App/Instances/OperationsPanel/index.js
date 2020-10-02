@@ -11,70 +11,69 @@ import {PANEL_POSITION} from 'modules/constants';
 import CollapsablePanel from 'modules/components/CollapsablePanel';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 
-import useBatchOperations from './useBatchOperations';
+import {operationsStore} from 'modules/stores/operations';
 import * as Styled from './styled';
 import * as CONSTANTS from './constants';
-import {hasBatchOperations} from './service';
+import {hasOperations} from './service';
 import OperationsEntry from './OperationsEntry';
 import Skeleton from './Skeleton';
+import {observer} from 'mobx-react';
 
-function OperationsPanel({isOperationsCollapsed, toggleOperations}) {
-  const {
-    batchOperations,
-    requestBatchOperations,
-    requestNextBatchOperations,
-    isLoading,
-  } = useBatchOperations();
+const OperationsPanel = observer(
+  ({isOperationsCollapsed, toggleOperations}) => {
+    const {operations, isInitialLoadComplete} = operationsStore.state;
 
-  useEffect(requestBatchOperations, []);
+    useEffect(() => {
+      operationsStore.init();
+      return operationsStore.reset;
+    }, []);
 
-  return (
-    <CollapsablePanel
-      label={CONSTANTS.OPERATIONS_LABEL}
-      panelPosition={PANEL_POSITION.RIGHT}
-      maxWidth={478}
-      isOverlay
-      isCollapsed={isOperationsCollapsed}
-      toggle={toggleOperations}
-      hasBackgroundColor
-      verticalLabelOffset={27}
-      scrollable={!isLoading}
-      onScroll={(event) => {
-        const {target} = event;
+    return (
+      <CollapsablePanel
+        label={CONSTANTS.OPERATIONS_LABEL}
+        panelPosition={PANEL_POSITION.RIGHT}
+        maxWidth={478}
+        isOverlay
+        isCollapsed={isOperationsCollapsed}
+        toggle={toggleOperations}
+        hasBackgroundColor
+        verticalLabelOffset={27}
+        scrollable={isInitialLoadComplete}
+        onScroll={(event) => {
+          const {target} = event;
 
-        if (
-          target.scrollHeight - target.clientHeight - target.scrollTop <= 0 &&
-          batchOperations.length > 0
-        ) {
-          requestNextBatchOperations(
-            batchOperations[batchOperations.length - 1].sortValues
-          );
-        }
-      }}
-    >
-      <Styled.OperationsList data-test="operations-list" isLoading={isLoading}>
-        {isLoading ? (
-          <Skeleton data-test="skeleton" />
-        ) : hasBatchOperations(batchOperations) ? (
-          batchOperations.map((batchOperation) => (
-            <OperationsEntry
-              key={batchOperation.id}
-              batchOperation={batchOperation}
-              data-test="operations-entry"
-            />
-          ))
-        ) : (
-          <Styled.EmptyMessage>{CONSTANTS.EMPTY_MESSAGE}</Styled.EmptyMessage>
-        )}
-      </Styled.OperationsList>
-    </CollapsablePanel>
-  );
-}
+          if (
+            target.scrollHeight - target.clientHeight - target.scrollTop <= 0 &&
+            operations.length > 0
+          ) {
+            operationsStore.fetchOperations(
+              operations[operations.length - 1].sortValues
+            );
+          }
+        }}
+      >
+        <Styled.OperationsList
+          data-test="operations-list"
+          isInitialLoadComplete={isInitialLoadComplete}
+        >
+          {!isInitialLoadComplete ? (
+            <Skeleton />
+          ) : hasOperations(operations) ? (
+            operations.map((operation) => (
+              <OperationsEntry key={operation.id} operation={operation} />
+            ))
+          ) : (
+            <Styled.EmptyMessage>{CONSTANTS.EMPTY_MESSAGE}</Styled.EmptyMessage>
+          )}
+        </Styled.OperationsList>
+      </CollapsablePanel>
+    );
+  }
+);
 
 OperationsPanel.propTypes = {
   isOperationsCollapsed: PropTypes.bool.isRequired,
   toggleOperations: PropTypes.func.isRequired,
-  dataManager: PropTypes.object,
 };
 
 export default withCollapsablePanel(OperationsPanel);

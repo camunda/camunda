@@ -40,9 +40,12 @@ function CollapsablePanel({
   useEffect(() => {
     if (prevIsCollapsed !== isCollapsed) {
       if (isCollapsed) {
-        setTimeout(() => expandButtonRef.current.focus(), TRANSITION_TIMEOUT);
+        setTimeout(() => expandButtonRef.current?.focus(), TRANSITION_TIMEOUT);
       } else {
-        setTimeout(() => collapseButtonRef.current.focus(), TRANSITION_TIMEOUT);
+        setTimeout(
+          () => collapseButtonRef.current?.focus(),
+          TRANSITION_TIMEOUT
+        );
       }
     }
   }, [isCollapsed, prevIsCollapsed]);

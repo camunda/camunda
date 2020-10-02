@@ -16,7 +16,7 @@ describe('OperationsEntry', () => {
     render(
       <OperationsEntry
         {...mockProps}
-        batchOperation={{
+        operation={{
           ...OPERATIONS.RETRY,
           instancesCount: 1,
         }}
@@ -33,7 +33,7 @@ describe('OperationsEntry', () => {
     render(
       <OperationsEntry
         {...mockProps}
-        batchOperation={{
+        operation={{
           ...OPERATIONS.CANCEL,
           instancesCount: 1,
         }}
@@ -51,7 +51,7 @@ describe('OperationsEntry', () => {
     render(
       <OperationsEntry
         {...mockProps}
-        batchOperation={{
+        operation={{
           ...OPERATIONS.EDIT,
           instancesCount: 1,
         }}
@@ -69,7 +69,7 @@ describe('OperationsEntry', () => {
     render(
       <OperationsEntry
         {...mockProps}
-        batchOperation={{
+        operation={{
           ...OPERATIONS.EDIT,
           instancesCount: 1,
         }}
@@ -83,7 +83,7 @@ describe('OperationsEntry', () => {
     render(
       <OperationsEntry
         {...mockProps}
-        batchOperation={{
+        operation={{
           ...OPERATIONS.EDIT,
           instancesCount: 3,
         }}
@@ -97,7 +97,7 @@ describe('OperationsEntry', () => {
     render(
       <OperationsEntry
         {...mockProps}
-        batchOperation={{
+        operation={{
           ...OPERATIONS.EDIT,
           instancesCount: 3,
         }}

@@ -4,14 +4,14 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-export function isBatchOperationRunning(batchOperation) {
-  return !!batchOperation && !batchOperation.endDate;
+export function isOperationRunning(operation) {
+  return !!operation && !operation.endDate;
 }
 
-export function hasRunningBatchOperations(batchOperations) {
-  return batchOperations.some(isBatchOperationRunning);
+export function hasRunningOperations(operations) {
+  return operations.some(isOperationRunning);
 }
 
-export function hasBatchOperations(batchOperations) {
-  return !!batchOperations && batchOperations.length > 0;
+export function hasOperations(operations) {
+  return !!operations && operations.length > 0;
 }

@@ -7,9 +7,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {isEqual} from 'lodash';
-import {withData} from 'modules/DataManager';
 import {OPERATION_TYPE, OPERATION_STATE} from 'modules/constants';
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
+import {operationsStore} from 'modules/stores/operations';
 
 import {
   getLatestOperation,
@@ -18,6 +18,7 @@ import {
 } from 'modules/utils/instance';
 
 import OperationItems from 'modules/components/OperationItems';
+import {OperationSpinner} from 'modules/components/OperationSpinner';
 
 import * as Styled from './styled';
 
@@ -27,7 +28,6 @@ class Operations extends React.Component {
     selected: PropTypes.bool,
     onButtonClick: PropTypes.func,
     forceSpinner: PropTypes.bool,
-    dataManager: PropTypes.object,
   };
 
   static defaultProps = {
@@ -67,7 +67,7 @@ class Operations extends React.Component {
   handleOnClick = async (operationType) => {
     this.setState({operationState: OPERATION_STATE.SCHEDULED});
 
-    this.props.dataManager.applyOperation(this.props.instance.id, {
+    operationsStore.applyOperation(this.props.instance.id, {
       operationType,
     });
     this.props.onButtonClick && this.props.onButtonClick(this.props.instance);
@@ -94,7 +94,7 @@ class Operations extends React.Component {
       <Styled.Operations>
         {(forceSpinner ||
           ACTIVE_OPERATION_STATES.includes(this.state.operationState)) && (
-          <Styled.OperationSpinner
+          <OperationSpinner
             selected={selected}
             title={`Instance ${instance.id} has scheduled Operations`}
             data-test="operation-spinner"
@@ -111,7 +111,4 @@ class Operations extends React.Component {
   }
 }
 
-const WrappedOperation = withData(Operations);
-WrappedOperation.WrappedComponent = Operations;
-WrappedOperation.Spinner = Styled.OperationSpinner;
-export default WrappedOperation;
+export {Operations};

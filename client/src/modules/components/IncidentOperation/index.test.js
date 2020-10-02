@@ -5,76 +5,55 @@
  */
 
 import React from 'react';
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {createIncident} from 'modules/testUtils';
-import {LOADING_STATE} from 'modules/constants';
-import IncidentOperation from './index';
+import {IncidentOperation} from './index';
 import {render, screen, fireEvent} from '@testing-library/react';
-
-jest.mock('modules/DataManager/core');
-jest.mock('modules/utils/bpmn');
-
-// mocking api
-
-const mockProps = {
-  incident: createIncident(),
-  onButtonClick: jest.fn(),
-  instanceId: 'instance_1',
-  showSpinner: false,
-};
+import {operationsStore} from 'modules/stores/operations';
+import {mockOperationCreated, mockProps} from './index.setup';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
 
 describe('IncidentOperation', () => {
-  let dataManager;
-
-  beforeEach(() => {
-    dataManager = createMockDataManager();
+  afterEach(() => {
+    operationsStore.reset();
   });
 
   it('should not render a spinner', () => {
-    render(
-      <IncidentOperation.WrappedComponent
-        {...mockProps}
-        dataManager={dataManager}
-      />
-    );
+    render(<IncidentOperation {...mockProps} />);
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
   });
+
   it('should render a spinner if it is forced', () => {
-    render(
-      <IncidentOperation.WrappedComponent
-        {...mockProps}
-        dataManager={dataManager}
-        showSpinner={true}
-      />
-    );
+    render(<IncidentOperation {...mockProps} showSpinner={true} />);
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
 
-  it('should render a spinner when instance operation is published', () => {
+  it('should render a spinner when instance operation is applied', async () => {
+    mockServer.use(
+      rest.post(
+        '/api/workflow-instances/:instanceId/operation',
+        (_, res, ctx) => res.once(ctx.json(mockOperationCreated))
+      )
+    );
+
     render(
-      <IncidentOperation.WrappedComponent
+      <IncidentOperation
         incident={createIncident()}
         instanceId={'instance_1'}
-        dataManager={dataManager}
       />
     );
-    var subscriptions = dataManager.subscriptions();
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
-    dataManager.publish({
-      subscription: subscriptions['OPERATION_APPLIED_INSTANCE_instance_1'],
-      state: LOADING_STATE.LOADING,
-    });
+    fireEvent.click(screen.getByRole('button', {name: 'Retry Incident'}));
 
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
 
   it('should render a spinner when retry button is clicked', () => {
     render(
-      <IncidentOperation.WrappedComponent
+      <IncidentOperation
         incident={createIncident()}
         instanceId={'instance_1'}
-        dataManager={dataManager}
       />
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();

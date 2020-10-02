@@ -6,7 +6,7 @@
 
 import {instanceSelection} from 'modules/stores/instanceSelection';
 import {filters} from 'modules/stores/filters';
-import useDataManager from 'modules/hooks/useDataManager';
+import {operationsStore} from 'modules/stores/operations';
 import {
   parseFilterForRequest,
   getFilterWithWorkflowIds,
@@ -15,7 +15,6 @@ import {instances} from 'modules/stores/instances';
 
 export default function useOperationApply() {
   const {selectedInstanceIds, excludedInstanceIds, reset} = instanceSelection;
-  const {applyBatchOperation} = useDataManager();
 
   return {
     applyBatchOperation: (operationType) => {
@@ -40,7 +39,7 @@ export default function useOperationApply() {
         });
       }
 
-      applyBatchOperation(operationType, {
+      operationsStore.applyBatchOperation(operationType, {
         ...query,
         ids,
         excludeIds: excludedInstanceIds,

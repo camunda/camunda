@@ -9,7 +9,7 @@ import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
-import Operations from 'modules/components/Operations';
+import {Operations} from 'modules/components/Operations';
 import StateIcon from 'modules/components/StateIcon';
 import EmptyMessage from '../../EmptyMessage';
 

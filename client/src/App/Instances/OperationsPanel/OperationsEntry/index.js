@@ -14,7 +14,7 @@ import {
 import {formatDate} from 'modules/utils/date';
 import * as Styled from './styled';
 import pluralSuffix from 'modules/utils/pluralSuffix';
-import {isBatchOperationRunning} from '../service';
+import {isOperationRunning} from '../service';
 import ProgressBar from './ProgressBar';
 import {filters} from 'modules/stores/filters';
 
@@ -30,7 +30,7 @@ const TYPE_LABELS = {
   [CANCEL_WORKFLOW_INSTANCE]: 'Cancel',
 };
 
-const OperationsEntry = ({batchOperation}) => {
+const OperationsEntry = ({operation}) => {
   const {
     id,
     type,
@@ -38,7 +38,7 @@ const OperationsEntry = ({batchOperation}) => {
     instancesCount,
     operationsTotalCount,
     operationsFinishedCount,
-  } = batchOperation;
+  } = operation;
 
   const handleInstancesClick = (batchOperationId) => {
     filters.setFilter({
@@ -52,7 +52,10 @@ const OperationsEntry = ({batchOperation}) => {
   };
 
   return (
-    <Styled.Entry isRunning={isBatchOperationRunning(batchOperation)}>
+    <Styled.Entry
+      isRunning={isOperationRunning(operation)}
+      data-test="operations-entry"
+    >
       <Styled.EntryStatus>
         <div>
           <Styled.Type>{TYPE_LABELS[type]}</Styled.Type>
@@ -88,7 +91,7 @@ const OperationsEntry = ({batchOperation}) => {
 };
 
 OperationsEntry.propTypes = {
-  batchOperation: PropTypes.shape({
+  operation: PropTypes.shape({
     id: PropTypes.string.isRequired,
     type: PropTypes.oneOf(Object.values(OPERATION_TYPE)).isRequired,
     endDate: PropTypes.string,

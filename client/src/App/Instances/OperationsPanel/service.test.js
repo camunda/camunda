@@ -5,35 +5,35 @@
  */
 
 import {
-  isBatchOperationRunning,
-  hasRunningBatchOperations,
-  hasBatchOperations,
+  isOperationRunning,
+  hasRunningOperations,
+  hasOperations,
 } from './service';
 import {mockOperationFinished, mockOperationRunning} from './index.setup';
 
-describe('isBatchOperationRunning', () => {
+describe('isOperationRunning', () => {
   it('should be true when operation is running', () => {
-    const isRunning = isBatchOperationRunning(mockOperationRunning);
+    const isRunning = isOperationRunning(mockOperationRunning);
 
     expect(isRunning).toBe(true);
   });
 
   it('should be false when operation is finished', () => {
-    const isRunning = isBatchOperationRunning(mockOperationFinished);
+    const isRunning = isOperationRunning(mockOperationFinished);
 
     expect(isRunning).toBe(false);
   });
 
   it('should be false when no param', () => {
-    const isRunning = isBatchOperationRunning();
+    const isRunning = isOperationRunning();
 
     expect(isRunning).toBe(false);
   });
 });
 
-describe('hasRunningBatchOperations', () => {
+describe('hasRunningOperations', () => {
   it('should be true if it contains running operation', () => {
-    const hasRunning = hasRunningBatchOperations([
+    const hasRunning = hasRunningOperations([
       mockOperationFinished,
       mockOperationRunning,
     ]);
@@ -42,7 +42,7 @@ describe('hasRunningBatchOperations', () => {
   });
 
   it('should be false if it only contains finished operations', () => {
-    const hasRunning = hasRunningBatchOperations([
+    const hasRunning = hasRunningOperations([
       mockOperationFinished,
       mockOperationFinished,
     ]);
@@ -51,27 +51,27 @@ describe('hasRunningBatchOperations', () => {
   });
 
   it('should be false if it does not contain anything', () => {
-    const hasRunning = hasRunningBatchOperations([]);
+    const hasRunning = hasRunningOperations([]);
 
     expect(hasRunning).toBe(false);
   });
 });
 
-describe('BatchOperations', () => {
+describe('Operations', () => {
   it('should be true if has operations', () => {
-    const result = hasBatchOperations([mockOperationRunning]);
+    const result = hasOperations([mockOperationRunning]);
 
     expect(result).toBe(true);
   });
 
   it('should be false if it is null', () => {
-    const result = hasBatchOperations(null);
+    const result = hasOperations(null);
 
     expect(result).toBe(false);
   });
 
   it('should be false if it does not contain anything', () => {
-    const result = hasBatchOperations([]);
+    const result = hasOperations([]);
 
     expect(result).toBe(false);
   });

@@ -11,7 +11,7 @@ import Table from 'modules/components/Table';
 import Button from 'modules/components/Button';
 import ColumnHeader from '../../../Instances/ListPanel/List/ColumnHeader';
 import {TransitionGroup} from 'modules/components/Transition';
-import IncidentOperation from 'modules/components/IncidentOperation';
+import {IncidentOperation} from 'modules/components/IncidentOperation';
 
 import {formatDate} from 'modules/utils/date';
 import {SORT_ORDER} from 'modules/constants';

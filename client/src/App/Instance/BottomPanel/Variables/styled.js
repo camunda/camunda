@@ -8,7 +8,7 @@ import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 import Panel from 'modules/components/Panel';
-import Operations from 'modules/components/Operations';
+import {OperationSpinner} from 'modules/components/OperationSpinner';
 import IconButton from 'modules/components/IconButton';
 import BasicInput from 'modules/components/Input';
 import BasicTextarea from 'modules/components/Textarea';
@@ -23,7 +23,7 @@ import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
 import EmptyPanelComponent from 'modules/components/EmptyPanel';
 import DefaultButton from 'modules/components/Button';
 
-export const Spinner = styled(Operations.Spinner)`
+export const Spinner = styled(OperationSpinner)`
   margin-top: 4px;
 `;
 

@@ -5,16 +5,15 @@
  */
 
 import React from 'react';
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {STATE, OPERATION_STATE} from 'modules/constants';
-import Operations from './index';
+import {Operations} from './index';
 import {render, screen, fireEvent} from '@testing-library/react';
 
 describe('Operations', () => {
   describe('Operation Buttons', () => {
     it('should render retry and cancel button if instance is running and has an incident', () => {
       render(
-        <Operations.WrappedComponent
+        <Operations
           instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
         />
       );
@@ -28,7 +27,7 @@ describe('Operations', () => {
     });
     it('should render only cancel button if instance is running and does not have an incident', () => {
       render(
-        <Operations.WrappedComponent
+        <Operations
           instance={{id: 'instance_1', state: STATE.ACTIVE, operations: []}}
         />
       );
@@ -42,7 +41,7 @@ describe('Operations', () => {
     });
     it('should not render retry and cancel buttons if instance is completed', () => {
       render(
-        <Operations.WrappedComponent
+        <Operations
           instance={{id: 'instance_1', state: STATE.COMPLETED, operations: []}}
         />
       );
@@ -56,7 +55,7 @@ describe('Operations', () => {
     });
     it('should not render retry and cancel buttons if instance is canceled', () => {
       render(
-        <Operations.WrappedComponent
+        <Operations
           instance={{id: 'instance_1', state: STATE.COMPLETED, operations: []}}
         />
       );
@@ -71,10 +70,9 @@ describe('Operations', () => {
 
     it('should display spinner after clicking retry button', () => {
       render(
-        <Operations.WrappedComponent
+        <Operations
           instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
           onButtonClick={jest.fn()}
-          dataManager={createMockDataManager()}
         />
       );
 
@@ -85,10 +83,9 @@ describe('Operations', () => {
 
     it('should display spinner after clicking cancel button', () => {
       render(
-        <Operations.WrappedComponent
+        <Operations
           instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
           onButtonClick={jest.fn()}
-          dataManager={createMockDataManager()}
         />
       );
 
@@ -100,7 +97,7 @@ describe('Operations', () => {
   describe('Spinner', () => {
     it('should not display spinner', () => {
       render(
-        <Operations.WrappedComponent
+        <Operations
           instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
         />
       );
@@ -109,7 +106,7 @@ describe('Operations', () => {
     });
     it('should display spinner if it is forced', () => {
       render(
-        <Operations.WrappedComponent
+        <Operations
           instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
           forceSpinner={true}
         />
@@ -120,7 +117,7 @@ describe('Operations', () => {
 
     it("should display spinner if incident's latest operation is scheduled, locked or sent", () => {
       const {rerender} = render(
-        <Operations.WrappedComponent
+        <Operations
           instance={{
             id: 'instance_1',
             state: STATE.INCIDENT,
@@ -132,7 +129,7 @@ describe('Operations', () => {
       expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 
       rerender(
-        <Operations.WrappedComponent
+        <Operations
           instance={{
             id: 'instance_1',
             state: STATE.INCIDENT,
@@ -143,7 +140,7 @@ describe('Operations', () => {
       expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
 
       rerender(
-        <Operations.WrappedComponent
+        <Operations
           instance={{
             id: 'instance_1',
             state: STATE.INCIDENT,
