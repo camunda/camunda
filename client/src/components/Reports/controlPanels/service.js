@@ -21,6 +21,10 @@ export function isDurationHeatmap({
   );
 }
 
-export function isProcessInstanceDuration({view}) {
-  return view && view.entity === 'processInstance' && view.property === 'duration';
+export function shouldShowProcessPart({configuration, view}) {
+  if (configuration?.distributedBy && configuration.distributedBy.type !== 'none') {
+    return false;
+  }
+
+  return view?.entity === 'processInstance' && view.property === 'duration';
 }
