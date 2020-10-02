@@ -10,8 +10,6 @@ import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {createIncident} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';
 import {SORT_ORDER} from 'modules/constants';
-import {DataManagerProvider} from 'modules/DataManager';
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import {Route, MemoryRouter} from 'react-router-dom';
 import {render, screen, within, fireEvent} from '@testing-library/react';
 import PropTypes from 'prop-types';
@@ -48,11 +46,9 @@ const mockProps = {
 const Wrapper = ({children}) => {
   return (
     <ThemeProvider>
-      <DataManagerProvider>
-        <MemoryRouter initialEntries={['/instances/1']}>
-          <Route path="/instances/:id">{children} </Route>
-        </MemoryRouter>
-      </DataManagerProvider>
+      <MemoryRouter initialEntries={['/instances/1']}>
+        <Route path="/instances/:id">{children} </Route>
+      </MemoryRouter>
     </ThemeProvider>
   );
 };
@@ -64,10 +60,6 @@ Wrapper.propTypes = {
 };
 
 describe('IncidentsTable', () => {
-  beforeEach(() => {
-    createMockDataManager();
-  });
-
   it('should render the right column headers', () => {
     render(<IncidentsTable {...mockProps} />, {wrapper: Wrapper});
 

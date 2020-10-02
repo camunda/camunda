@@ -22,7 +22,6 @@ jest.mock('./CreateOperationDropdown', () => ({label}) => (
 
 const defaultProps = {
   onFirstElementChange: jest.fn(),
-  dataManager: {},
   hasContent: true,
 };
 

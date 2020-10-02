@@ -7,8 +7,6 @@
 import React from 'react';
 import {render, screen} from '@testing-library/react';
 import BottomPanel from './index';
-import {DataManagerProvider} from 'modules/DataManager';
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
 import PropTypes from 'prop-types';
 import {EXPAND_STATE} from 'modules/constants';
 
@@ -34,15 +32,10 @@ describe('BottomPanel', () => {
   };
 
   it('should render default component', () => {
-    beforeAll(() => {
-      createMockDataManager();
-    });
     render(
-      <DataManagerProvider>
-        <BottomPanel expandState={EXPAND_STATE.DEFAULT}>
-          <ChildNode />
-        </BottomPanel>
-      </DataManagerProvider>
+      <BottomPanel expandState={EXPAND_STATE.DEFAULT}>
+        <ChildNode />
+      </BottomPanel>
     );
     expect(screen.getByText('Instance History')).toBeInTheDocument();
     expect(screen.getByText('Show End Time')).toBeInTheDocument();
@@ -51,29 +44,19 @@ describe('BottomPanel', () => {
   });
 
   it('should render expanded component', () => {
-    beforeAll(() => {
-      createMockDataManager();
-    });
     render(
-      <DataManagerProvider>
-        <BottomPanel expandState={EXPAND_STATE.EXPANDED}>
-          <ChildNode />
-        </BottomPanel>
-      </DataManagerProvider>
+      <BottomPanel expandState={EXPAND_STATE.EXPANDED}>
+        <ChildNode />
+      </BottomPanel>
     );
     expect(screen.getByText('expanded content')).toBeInTheDocument();
   });
 
   it('should render collapsed component', () => {
-    beforeAll(() => {
-      createMockDataManager();
-    });
     render(
-      <DataManagerProvider>
-        <BottomPanel expandState={EXPAND_STATE.COLLAPSED}>
-          <ChildNode />
-        </BottomPanel>
-      </DataManagerProvider>
+      <BottomPanel expandState={EXPAND_STATE.COLLAPSED}>
+        <ChildNode />
+      </BottomPanel>
     );
     expect(screen.getByText('collapsed content')).toBeInTheDocument();
   });

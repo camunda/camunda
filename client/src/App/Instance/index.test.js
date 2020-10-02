@@ -12,8 +12,6 @@ import {
   screen,
 } from '@testing-library/react';
 
-import {DataManagerProvider} from 'modules/DataManager';
-
 import {testData} from './index.setup';
 import {mockSequenceFlows, mockEvents} from './TopPanel/index.setup';
 import {mockSuccessResponseForActivityTree} from './FlowNodeInstanceLog/index.setup';
@@ -31,12 +29,27 @@ import {fetchEvents} from 'modules/api/events';
 
 import {fetchWorkflowXML} from 'modules/api/diagram';
 import {Instance} from './index';
+import PropTypes from 'prop-types';
 
 jest.mock('modules/utils/bpmn');
 jest.mock('modules/api/diagram');
 jest.mock('modules/api/events');
 jest.mock('modules/api/instances');
 jest.mock('modules/api/activityInstances');
+
+const Wrapper = ({children}) => {
+  return (
+    <MemoryRouter initialEntries={['/instances/1']}>
+      <Route path="/instances/:id">{children} </Route>
+    </MemoryRouter>
+  );
+};
+Wrapper.propTypes = {
+  children: PropTypes.oneOfType([
+    PropTypes.arrayOf(PropTypes.node),
+    PropTypes.node,
+  ]),
+};
 
 describe('Instance', () => {
   beforeAll(() => {
@@ -73,15 +86,8 @@ describe('Instance', () => {
     fetchWorkflowInstance.mockResolvedValueOnce(
       testData.fetch.onPageLoad.workflowInstance
     );
-    render(
-      <DataManagerProvider>
-        <MemoryRouter initialEntries={['/instances/1']}>
-          <Route path="/instances/:id">
-            <Instance />
-          </Route>
-        </MemoryRouter>
-      </DataManagerProvider>
-    );
+
+    render(<Instance />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
@@ -101,15 +107,9 @@ describe('Instance', () => {
       fetchWorkflowInstance.mockResolvedValue(
         testData.fetch.onPageLoad.workflowInstance
       );
-      const component = render(
-        <DataManagerProvider>
-          <MemoryRouter initialEntries={['/instances/1']}>
-            <Route path="/instances/:id">
-              <Instance />
-            </Route>
-          </MemoryRouter>
-        </DataManagerProvider>
-      );
+
+      const component = render(<Instance />, {wrapper: Wrapper});
+
       jest.useFakeTimers();
 
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));
@@ -133,13 +133,11 @@ describe('Instance', () => {
         testData.fetch.onPageLoad.workflowInstanceCompleted
       );
       render(
-        <DataManagerProvider>
-          <MemoryRouter initialEntries={['/instances/1']}>
-            <Route path="/instances/:id">
-              <Instance />
-            </Route>
-          </MemoryRouter>
-        </DataManagerProvider>
+        <MemoryRouter initialEntries={['/instances/1']}>
+          <Route path="/instances/:id">
+            <Instance />
+          </Route>
+        </MemoryRouter>
       );
       jest.useFakeTimers();
 
@@ -157,15 +155,8 @@ describe('Instance', () => {
         testData.fetch.onPageLoad.workflowInstanceCanceled
       );
 
-      render(
-        <DataManagerProvider>
-          <MemoryRouter initialEntries={['/instances/1']}>
-            <Route path="/instances/:id">
-              <Instance />
-            </Route>
-          </MemoryRouter>
-        </DataManagerProvider>
-      );
+      render(<Instance />, {wrapper: Wrapper});
+
       jest.useFakeTimers();
 
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));

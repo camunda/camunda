@@ -13,9 +13,6 @@ import {
 } from '@testing-library/react';
 import {createMemoryHistory} from 'history';
 
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
-import {DataManagerProvider} from 'modules/DataManager';
-
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
 import {groupedWorkflowsMock, mockWorkflowStatistics} from 'modules/testUtils';
@@ -40,9 +37,7 @@ describe('ListPanel', () => {
   const Wrapper = ({children}) => {
     return (
       <MemoryRouter>
-        <DataManagerProvider>
-          <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
-        </DataManagerProvider>
+        <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
       </MemoryRouter>
     );
   };
@@ -72,7 +67,6 @@ describe('ListPanel', () => {
     filters.setFilter(DEFAULT_FILTER);
     filters.setSorting(DEFAULT_SORTING);
     filters.setEntriesPerPage(10);
-    createMockDataManager();
   });
 
   afterEach(() => {

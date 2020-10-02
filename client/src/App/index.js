@@ -17,27 +17,24 @@ import {Dashboard} from './Dashboard';
 import {Instances} from './Instances';
 import {Instance} from './Instance';
 import GlobalStyles from './GlobalStyles';
-import {DataManagerProvider} from 'modules/DataManager';
 
 function App() {
   return (
     <ThemeProvider>
-      <DataManagerProvider>
-        <CollapsablePanelProvider>
-          <GlobalStyles />
-          <Router>
-            <Switch>
-              <Route path="/login" component={Login} />
-              <Authentication>
-                <Header />
-                <Route exact path="/" component={Dashboard} />
-                <Route exact path="/instances" component={Instances} />
-                <Route exact path="/instances/:id" component={Instance} />
-              </Authentication>
-            </Switch>
-          </Router>
-        </CollapsablePanelProvider>
-      </DataManagerProvider>
+      <CollapsablePanelProvider>
+        <GlobalStyles />
+        <Router>
+          <Switch>
+            <Route path="/login" component={Login} />
+            <Authentication>
+              <Header />
+              <Route exact path="/" component={Dashboard} />
+              <Route exact path="/instances" component={Instances} />
+              <Route exact path="/instances/:id" component={Instance} />
+            </Authentication>
+          </Switch>
+        </Router>
+      </CollapsablePanelProvider>
     </ThemeProvider>
   );
 }

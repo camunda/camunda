@@ -12,9 +12,6 @@ import {createMemoryHistory} from 'history';
 
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
-import {DataManagerProvider} from 'modules/DataManager';
-import {createMockDataManager} from 'modules/testHelpers/dataManager';
-
 import {Instances} from './index';
 import {
   groupedWorkflowsMock,
@@ -37,17 +34,15 @@ jest.mock('modules/api/diagram');
 
 const Wrapper = ({children}) => {
   return (
-    <DataManagerProvider>
-      <CollapsablePanelProvider>
-        <Router
-          history={createMemoryHistory({
-            initialEntries: ['/instances'],
-          })}
-        >
-          <Route path="/instances">{children} </Route>
-        </Router>
-      </CollapsablePanelProvider>
-    </DataManagerProvider>
+    <CollapsablePanelProvider>
+      <Router
+        history={createMemoryHistory({
+          initialEntries: ['/instances'],
+        })}
+      >
+        <Route path="/instances">{children} </Route>
+      </Router>
+    </CollapsablePanelProvider>
   );
 };
 
@@ -61,7 +56,6 @@ Wrapper.propTypes = {
 
 describe('Instances', () => {
   beforeAll(() => {
-    createMockDataManager();
     fetchWorkflowInstances.mockImplementation(() => mockWorkflowInstances);
     fetchWorkflowInstancesByIds.mockImplementation(() => mockWorkflowInstances);
     fetchGroupedWorkflows.mockImplementation(() => groupedWorkflowsMock);
