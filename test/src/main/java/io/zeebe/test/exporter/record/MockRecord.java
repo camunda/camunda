@@ -101,6 +101,11 @@ public class MockRecord extends ExporterMappedObject implements Record, Cloneabl
   }
 
   @Override
+  public String getBrokerVersion() {
+    return metadata.getBrokerVersion();
+  }
+
+  @Override
   public ValueType getValueType() {
     return metadata.getValueType();
   }

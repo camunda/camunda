@@ -22,6 +22,7 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
   private RejectionType rejectionType = RejectionType.NULL_VAL;
   private String rejectionReason = "";
   private ValueType valueType = ValueType.WORKFLOW_INSTANCE_CREATION;
+  private String brokerVersion = "";
 
   public MockRecordMetadata() {}
 
@@ -94,6 +95,14 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
     return this;
   }
 
+  public String getBrokerVersion() {
+    return brokerVersion;
+  }
+
+  public void setBrokerVersion(final String brokerVersion) {
+    this.brokerVersion = brokerVersion;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -102,7 +111,8 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
         getRecordType(),
         getRejectionType(),
         getRejectionReason(),
-        getValueType());
+        getValueType(),
+        getBrokerVersion());
   }
 
   @Override
@@ -120,7 +130,8 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
         && getRecordType() == metadata.getRecordType()
         && getRejectionType() == metadata.getRejectionType()
         && Objects.equals(getRejectionReason(), metadata.getRejectionReason())
-        && getValueType() == metadata.getValueType();
+        && getValueType() == metadata.getValueType()
+        && Objects.equals(getBrokerVersion(), metadata.getBrokerVersion());
   }
 
   @Override
@@ -145,6 +156,9 @@ public class MockRecordMetadata extends ExporterMappedObject implements Cloneabl
         + rejectionType
         + ", rejectionReason='"
         + rejectionReason
+        + '\''
+        + ", brokerVersion='"
+        + brokerVersion
         + '\''
         + ", valueType="
         + valueType
