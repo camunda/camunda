@@ -267,7 +267,10 @@ ui:
     backgroundColor: '#FFFFFF'
 
 eventBasedProcess:
+  # A list of userIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
   authorizedUserIds: []
+  # A list of groupIds that are authorized to manage (Create, Update, Publish & Delete) event based processes.
+  authorizedGroupIds: []
   eventImport:
     # Determines whether this Optimize instance performs event based process instance import.
     enabled: false
