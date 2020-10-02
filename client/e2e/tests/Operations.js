@@ -25,7 +25,8 @@ fixture('Operations')
     await t.click(screen.getByTestId('header-link-instances'));
   });
 
-test('Retry and Cancel single instance ', async (t) => {
+// This test was skipped, because of OPE-1098, please unskip, when the bug is fixed
+test.skip('Retry and Cancel single instance ', async (t) => {
   const {initialData} = t.fixtureCtx;
   const instance = initialData.singleOperationInstance;
 
