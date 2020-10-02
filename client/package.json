@@ -96,7 +96,7 @@
     "react-scripts": "3.4.3",
     "shelljs": "^0.8.4",
     "tarball-extract": "^0.0.6",
-    "testcafe": "^1.9.3",
+    "testcafe": "^1.9.4",
     "testcafe-browser-provider-browserstack": "^1.13.0",
     "tree-kill": "^1.2.2",
     "ws": "^7.3.1",
