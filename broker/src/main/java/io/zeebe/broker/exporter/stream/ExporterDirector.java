@@ -71,19 +71,19 @@ public final class ExporterDirector extends Actor {
   private boolean inExportingPhase;
 
   public ExporterDirector(final ExporterDirectorContext context) {
-    this.name = context.getName();
-    this.containers =
+    name = context.getName();
+    containers =
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
-    this.logStream = Objects.requireNonNull(context.getLogStream());
+    logStream = Objects.requireNonNull(context.getLogStream());
     final int partitionId = logStream.getPartitionId();
-    this.recordExporter = new RecordExporter(containers, partitionId);
-    this.exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
-    this.recordWrapStrategy = new EndlessRetryStrategy(actor);
+    recordExporter = new RecordExporter(containers, partitionId);
+    exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
+    recordWrapStrategy = new EndlessRetryStrategy(actor);
 
-    this.zeebeDb = context.getZeebeDb();
+    zeebeDb = context.getZeebeDb();
 
-    this.metrics = new ExporterMetrics(partitionId);
+    metrics = new ExporterMetrics(partitionId);
   }
 
   public ActorFuture<Void> startAsync(final ActorScheduler actorScheduler) {
@@ -170,7 +170,7 @@ public final class ExporterDirector extends Actor {
   }
 
   private void recoverFromSnapshot() {
-    this.state = new ExportersState(zeebeDb, zeebeDb.createContext());
+    state = new ExportersState(zeebeDb, zeebeDb.createContext());
 
     final long snapshotPosition = state.getLowestPosition();
     final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
@@ -423,6 +423,7 @@ public final class ExporterDirector extends Actor {
   }
 
   private class ExporterContainer implements Controller {
+
     private final ExporterContext context;
     private final Exporter exporter;
     private long position;
@@ -459,7 +460,7 @@ public final class ExporterDirector extends Actor {
     }
 
     private void updateExporterLastExportedRecordPosition(final long eventPosition) {
-      state.setPosition(getId(), eventPosition);
+      state.setPositionIfGreater(getId(), eventPosition);
       position = eventPosition;
     }
 
