@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 @ConfigurationProperties(OperateProperties.PREFIX)
-@PropertySource("classpath:version.properties")
+@PropertySource("classpath:operate-version.properties")
 public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
