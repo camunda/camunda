@@ -29,6 +29,8 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
+import io.zeebe.broker.system.management.BrokerAdminService;
+import io.zeebe.broker.system.management.BrokerAdminServiceImpl;
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
 import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -83,6 +85,8 @@ public final class Broker implements AutoCloseable {
   private BrokerHealthCheckService healthCheckService;
   private Map<Integer, ZeebeIndexAdapter> partitionIndexes;
   private final SpringBrokerBridge springBrokerBridge;
+  private final List<ZeebePartition> partitions = new ArrayList<>();
+  private BrokerAdminService brokerAdminService;
 
   public Broker(final SystemContext systemContext, final SpringBrokerBridge springBrokerBridge) {
     this.brokerContext = systemContext;
@@ -177,8 +181,17 @@ public final class Broker implements AutoCloseable {
         "leader management request handler", () -> managementRequestStep(localBroker));
     startContext.addStep(
         "zeebe partitions", () -> partitionsStep(brokerCfg, clusterCfg, localBroker));
+    startContext.addStep("Upgrade manager", this::addBrokerAdminService);
 
     return startContext;
+  }
+
+  private AutoCloseable addBrokerAdminService() {
+    final var adminService = new BrokerAdminServiceImpl(partitions);
+    scheduleActor(adminService);
+    brokerAdminService = adminService;
+    springBrokerBridge.registerBrokerAdminServiceSupplier(this::getBrokerAdminService);
+    return adminService;
   }
 
   private AutoCloseable actorSchedulerStep() {
@@ -328,6 +341,7 @@ public final class Broker implements AutoCloseable {
             scheduleActor(zeebePartition);
             healthCheckService.registerMonitoredPartition(
                 owningPartition.id().id(), zeebePartition);
+            partitions.add(zeebePartition);
             return zeebePartition;
           });
     }
@@ -403,5 +417,9 @@ public final class Broker implements AutoCloseable {
 
   public SystemContext getBrokerContext() {
     return brokerContext;
+  }
+
+  public BrokerAdminService getBrokerAdminService() {
+    return brokerAdminService;
   }
 }
