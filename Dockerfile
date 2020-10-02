@@ -29,6 +29,7 @@ FROM openjdk:11 as dev
 RUN echo "running DEV pre-install commands"
 RUN apt-get update
 RUN wget -O - https://github.com/jvm-profiling-tools/async-profiler/releases/download/v1.7.1/async-profiler-1.7.1-linux-x64.tar.gz | tar xzv
+RUN echo "Image dev created"
 
 # Building application image
 FROM ${APP_ENV} as app
