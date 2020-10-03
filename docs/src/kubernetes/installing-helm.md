@@ -41,10 +41,10 @@ Once this is done, we are ready to install any of the Helm Charts hosted in the 
 In this section we are going to install all the available Zeebe components inside a Kubernetes Cluster. Notice that this Kubernetes cluster can have already running services and Zeebe is going to installed just as another set of services. 
 
 ```
-> helm install --name <RELEASE NAME> zeebe/zeebe-full
+> helm install <RELEASE NAME> zeebe/zeebe-full
 ```
 
-> Note: change <RELEASE NAME> with a name of your choice
+> Note: change <RELEASE NAME> with a name of your choice or use `--generate-name` option instead
 > Notice that you can add the `-n` flag to specify in which Kubernetes namespace the components should be installed.
 
 Installing all the components in a cluster requires all the Docker images to be downloaded to the remote cluster, depending on which Cloud Provider you are using, the amount of time that it will take to fetch all the images will vary. 
@@ -84,7 +84,7 @@ Check that each Pod has at least 1/1 running instances. You can always tail the 
 
 In order to interact with the services inside the cluster you need to use `port-forward` to route traffic from your environment to the cluster. 
 ```
-> kubectl port-forward svc/<RELEASE NAME>-zeebe 26500:26500
+> kubectl port-forward svc/<RELEASE NAME>-zeebe-gateway 26500:26500
 ```
 
 Now you can connect and execute operations against your newly created Zeebe cluster. 
