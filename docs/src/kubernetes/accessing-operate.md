@@ -23,7 +23,7 @@ If you are running in Kubernetes KIND, you will need to `port-forward` to the In
 > kubectl port-forward svc/<RELEASE NAME>-nginx-ingress-controller 8080:80
 ```
 
-Then you should be able to access Operate pointing your broswer at [http://localhost:8080](http://localhost:8080/)
+Then you should be able to access Operate pointing your browser at [http://localhost:8080](http://localhost:8080/)
 
 ![Operate Login](/kubernetes/operate-login.png)
 
