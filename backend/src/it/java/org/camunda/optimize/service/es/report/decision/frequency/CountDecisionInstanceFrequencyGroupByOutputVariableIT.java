@@ -879,7 +879,7 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
   }
 
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void dateVariableGroupByWorksWithAllStaticUnits(final AggregateByDateUnit unit) {
     // given
     final int numberOfInstances = 3;

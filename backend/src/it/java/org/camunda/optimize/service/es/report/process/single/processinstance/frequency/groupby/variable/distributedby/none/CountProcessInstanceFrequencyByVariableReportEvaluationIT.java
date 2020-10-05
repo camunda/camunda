@@ -1060,7 +1060,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
 
   @SneakyThrows
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void groupByDateVariableWorksForAllStaticUnits(final AggregateByDateUnit unit) {
     // given
     final ChronoUnit chronoUnit = mapToChronoUnit(unit);

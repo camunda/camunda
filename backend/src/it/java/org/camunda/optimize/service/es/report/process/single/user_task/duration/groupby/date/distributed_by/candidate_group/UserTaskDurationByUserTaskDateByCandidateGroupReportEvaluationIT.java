@@ -394,7 +394,7 @@ public abstract class UserTaskDurationByUserTaskDateByCandidateGroupReportEvalua
   }
 
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void countGroupByDateUnit(final AggregateByDateUnit groupByDateUnit) {
     // given
     final ChronoUnit groupByUnitAsChrono = mapToChronoUnit(groupByDateUnit);

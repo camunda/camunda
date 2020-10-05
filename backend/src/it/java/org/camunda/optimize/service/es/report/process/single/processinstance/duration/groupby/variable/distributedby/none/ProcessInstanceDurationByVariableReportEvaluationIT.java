@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.variable;
+package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.variable.distributedby.none;
 
 import lombok.SneakyThrows;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -1549,7 +1549,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
 
   @SneakyThrows
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void groupByDateVariableWorksForAllStaticUnits(final AggregateByDateUnit unit) {
     // given
     final ChronoUnit chronoUnit = mapToChronoUnit(unit);

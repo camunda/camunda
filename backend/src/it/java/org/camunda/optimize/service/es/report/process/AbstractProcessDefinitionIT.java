@@ -368,7 +368,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
 
   // this method is used for the parameterized tests
   @SuppressWarnings("unused")
-  protected static Stream<AggregateByDateUnit> staticGroupByDateUnits() {
+  protected static Stream<AggregateByDateUnit> staticAggregateByDateUnits() {
     return Arrays.stream(AggregateByDateUnit.values()).filter(g -> !g.equals(AggregateByDateUnit.AUTOMATIC));
   }
 

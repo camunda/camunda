@@ -507,7 +507,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
 
   @SneakyThrows
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void distributeByDateVariableWorksForAllStaticUnits(final AggregateByDateUnit unit) {
     // given
     final ChronoUnit chronoUnit = mapToChronoUnit(unit);

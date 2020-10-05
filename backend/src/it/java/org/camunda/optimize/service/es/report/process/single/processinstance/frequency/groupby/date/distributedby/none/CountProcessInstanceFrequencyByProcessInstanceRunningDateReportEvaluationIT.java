@@ -62,7 +62,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
 
   @SneakyThrows
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void countRunningInstances_instancesFallIntoMultipleBuckets(final AggregateByDateUnit unit) {
     // given
     // first instance starts within a bucket (as opposed to on the "edge" of a bucket)
@@ -111,7 +111,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
 
   @SneakyThrows
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void countRunningInstances_runningInstancesOnly(final AggregateByDateUnit unit) {
     // given two running instances
     final Duration bucketWidth = mapToChronoUnit(unit).getDuration();
@@ -144,7 +144,7 @@ public class CountProcessInstanceFrequencyByProcessInstanceRunningDateReportEval
 
   @SneakyThrows
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void countRunningInstances_latestStartDateAfterLatestEndDate(final AggregateByDateUnit unit) {
     // given instances whose latest start date is after the latest end date
     final Duration bucketWidth = mapToChronoUnit(unit).getDuration();

@@ -766,7 +766,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
   }
 
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void groupedByStaticDateUnit(final AggregateByDateUnit unit) {
     // given
     List<ProcessInstanceEngineDto> processInstanceDtos = deployAndStartSimpleProcesses(5);

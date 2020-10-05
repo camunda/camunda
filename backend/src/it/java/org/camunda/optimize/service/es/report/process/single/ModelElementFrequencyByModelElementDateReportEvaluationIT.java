@@ -534,7 +534,7 @@ public abstract class ModelElementFrequencyByModelElementDateReportEvaluationIT 
   }
 
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void countGroupedByDateUnit(final AggregateByDateUnit groupByDateUnit) {
     // given
     final ChronoUnit groupByUnitAsChrono = mapToChronoUnit(groupByDateUnit);

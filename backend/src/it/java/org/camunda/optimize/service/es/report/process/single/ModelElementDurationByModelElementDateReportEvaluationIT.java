@@ -168,7 +168,7 @@ public abstract class ModelElementDurationByModelElementDateReportEvaluationIT
   }
 
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void groupedByDateUnit(final AggregateByDateUnit groupByDateUnit) {
     // given
     final ChronoUnit groupByUnitAsChrono = mapToChronoUnit(groupByDateUnit);

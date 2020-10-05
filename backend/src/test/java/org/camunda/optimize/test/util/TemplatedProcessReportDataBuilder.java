@@ -182,6 +182,34 @@ public class TemplatedProcessReportDataBuilder {
           .processPartEnd(endFlowNodeId)
           .build();
         break;
+      case PROC_INST_DUR_GROUP_BY_VARIABLE_BY_START_DATE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.START_DATE)
+          .distributeByDateInterval(distributeByDateInterval)
+          .visualization(ProcessVisualization.HEAT)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .variableName(variableName)
+          .variableType(variableType)
+          .build();
+        break;
+      case PROC_INST_DUR_GROUP_BY_VARIABLE_BY_END_DATE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.END_DATE)
+          .distributeByDateInterval(distributeByDateInterval)
+          .visualization(ProcessVisualization.HEAT)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .variableName(variableName)
+          .variableType(variableType)
+          .build();
+        break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_NONE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)

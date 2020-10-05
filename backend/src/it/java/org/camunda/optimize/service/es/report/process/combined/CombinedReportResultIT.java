@@ -104,7 +104,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
   }
 
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void dateVariableReports_staticIntervals_sameResultsAsSingleReportEvaluation(final AggregateByDateUnit unit) {
     // given
     final ChronoUnit chronoUnit = mapToChronoUnit(unit);
@@ -368,7 +368,7 @@ public class CombinedReportResultIT extends AbstractProcessDefinitionIT {
   }
 
   private static Stream<Pair<AggregateByDateUnit, List<SingleProcessReportDefinitionDto>>> staticIntervalDateReportCombinationsPerUnit() {
-    return staticGroupByDateUnits().flatMap(unit -> {
+    return staticAggregateByDateUnits().flatMap(unit -> {
       final SingleProcessReportDefinitionDto runningDateReport = createReport(
         COUNT_PROC_INST_FREQ_GROUP_BY_RUNNING_DATE,
         unit

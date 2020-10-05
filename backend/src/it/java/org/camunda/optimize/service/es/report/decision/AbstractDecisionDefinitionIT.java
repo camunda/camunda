@@ -187,7 +187,7 @@ public abstract class AbstractDecisionDefinitionIT extends AbstractIT {
   }
 
   @SuppressWarnings("unused")
-  protected static Stream<AggregateByDateUnit> staticGroupByDateUnits() {
+  protected static Stream<AggregateByDateUnit> staticAggregateByDateUnits() {
     return Arrays.stream(AggregateByDateUnit.values()).filter(unit -> !AggregateByDateUnit.AUTOMATIC.equals(unit));
   }
 

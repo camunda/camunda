@@ -378,7 +378,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByAssigneeReportEvaluationI
   }
 
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
+  @MethodSource("staticAggregateByDateUnits")
   public void countGroupByDateUnit(final AggregateByDateUnit groupByDateUnit) {
     // given
     final ChronoUnit groupByUnitAsChrono = mapToChronoUnit(groupByDateUnit);

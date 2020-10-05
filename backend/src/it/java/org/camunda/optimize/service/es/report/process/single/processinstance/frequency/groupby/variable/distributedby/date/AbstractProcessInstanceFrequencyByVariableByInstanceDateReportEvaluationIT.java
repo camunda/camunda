@@ -127,8 +127,8 @@ public abstract class AbstractProcessInstanceFrequencyByVariableByInstanceDateRe
 
   @SneakyThrows
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
-  public void countGroupedByStaticDateUnit_WithStringVariables(final AggregateByDateUnit unit) {
+  @MethodSource("staticAggregateByDateUnits")
+  public void distributeByStaticDateUnits_WithStringVariables(final AggregateByDateUnit unit) {
     // given
     final ProcessInstanceEngineDto procInst1 = deployAndStartSimpleProcessWithStringVariable();
     final OffsetDateTime startOfToday = dateFreezer().freezeDateAndReturn();
@@ -162,8 +162,8 @@ public abstract class AbstractProcessInstanceFrequencyByVariableByInstanceDateRe
 
   @SneakyThrows
   @ParameterizedTest
-  @MethodSource("staticGroupByDateUnits")
-  public void countGroupedByStaticDateUnit_WithNumberVariables(final AggregateByDateUnit unit) {
+  @MethodSource("staticAggregateByDateUnits")
+  public void distributeByStaticDateUnits_WithNumberVariables(final AggregateByDateUnit unit) {
     // given
     final ProcessInstanceEngineDto procInst1 = deployAndStartSimpleProcess(
       Collections.singletonMap(
