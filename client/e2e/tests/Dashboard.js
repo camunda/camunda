@@ -9,9 +9,38 @@ import config from '../config';
 import * as u from '../utils';
 
 import * as e from './Dashboard.elements.js';
+import * as Homepage from './Homepage.elements.js';
 import * as Filter from './Filter.elements.js';
 
 fixture('Dashboard').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
+
+test('create a dashboard and reports from a template', async (t) => {
+  await t.resizeWindow(1300, 750);
+  await t.click(Homepage.createNewMenu);
+  await t.click(Homepage.option('New Dashboard'));
+
+  await t.typeText(e.templateModalNameField, 'Dashboard from Template', {replace: true});
+  await t.click(e.templateOption('Process performance overview'));
+
+  await t.click(e.templateModalProcessField);
+  await t.click(e.option('Invoice Receipt with alternative correlation variable'));
+
+  await t.takeScreenshot('dashboard/dashboardTemplate.png', {fullPage: true});
+  await t.maximizeWindow();
+
+  await t.click(e.modalConfirmbutton);
+
+  await u.save(t);
+
+  await t.expect(e.dashboardName.textContent).eql('Dashboard from Template');
+  await t.expect(e.reportTile.nth(0).textContent).contains('Total Instances');
+  await t.expect(e.reportTile.nth(1).textContent).contains('AVG Instance Duration');
+
+  await u.gotoOverview(t);
+
+  await t.expect(Homepage.reportItem.visible).ok();
+  await t.expect(Homepage.dashboardItem.visible).ok();
+});
 
 test('create a report and add it to the Dashboard', async (t) => {
   await u.createNewReport(t);
