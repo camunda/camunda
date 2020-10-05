@@ -77,7 +77,7 @@ public class UpgradeStepsIT extends AbstractUpgradeIT {
     super.setUp();
 
     initSchema(Lists.newArrayList(METADATA_INDEX));
-    setMetadataIndexVersion(FROM_VERSION);
+    setMetadataVersion(FROM_VERSION);
   }
 
   @Test

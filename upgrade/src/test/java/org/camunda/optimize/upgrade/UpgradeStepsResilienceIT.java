@@ -76,7 +76,7 @@ public class UpgradeStepsResilienceIT extends AbstractUpgradeIT {
     cleanAllDataFromElasticsearch();
     createEmptyEnvConfig();
     initSchema(Lists.newArrayList(METADATA_INDEX));
-    setMetadataIndexVersion(FROM_VERSION);
+    setMetadataVersion(FROM_VERSION);
 
     prefixAwareClient.setSnapshotInProgressRetryDelaySeconds(1);
   }

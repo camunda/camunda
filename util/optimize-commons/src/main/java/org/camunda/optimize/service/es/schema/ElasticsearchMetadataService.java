@@ -72,6 +72,10 @@ public class ElasticsearchMetadataService {
     });
   }
 
+  public Optional<String> getSchemaVersion(final OptimizeElasticsearchClient esClient) {
+    return readMetadata(esClient).map(MetadataDto::getSchemaVersion);
+  }
+
   public Optional<MetadataDto> readMetadata(final OptimizeElasticsearchClient esClient) {
     Optional<MetadataDto> result = Optional.empty();
 

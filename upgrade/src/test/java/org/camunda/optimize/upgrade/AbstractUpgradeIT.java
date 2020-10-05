@@ -11,6 +11,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.DefaultIndexMappingCreator;
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
@@ -84,8 +85,13 @@ public abstract class AbstractUpgradeIT {
     elasticSearchSchemaManager.initializeSchema(prefixAwareClient);
   }
 
-  protected void setMetadataIndexVersion(String version) {
+  protected void setMetadataVersion(String version) {
     metadataService.upsertMetadata(prefixAwareClient, version);
+  }
+
+  protected String getMetadataVersion() {
+    return metadataService.getSchemaVersion(prefixAwareClient)
+      .orElseThrow(() -> new OptimizeIntegrationTestException("Could not obtain current schema version!"));
   }
 
   protected void createOptimizeIndexWithTypeAndVersion(DefaultIndexMappingCreator indexMapping,

@@ -16,8 +16,9 @@
   <logger name="org.camunda.optimize" level="${OPTIMIZE_LOG_LEVEL:-info}"/>
 
   <!-- Change the log level for the upgrade here. If provided, the environment variable will take precedence -->
-  <logger name="org.camunda.optimize.upgrade" level="${UPGRADE_LOG_LEVEL:-info}">
-    <appender-ref ref="UPGRADE"/>
+  <logger name="org.camunda.optimize.upgrade" level="${UPGRADE_LOG_LEVEL:-info}" additivity="false">
+    <appender-ref ref="UPGRADE"
+    />
   </logger>
 
   <!-- Change the log level for the communication to Elasticsearch here. If provided, the environment variable will take precedence -->

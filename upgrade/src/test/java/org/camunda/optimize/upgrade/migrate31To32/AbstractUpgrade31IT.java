@@ -31,6 +31,6 @@ public abstract class AbstractUpgrade31IT extends AbstractUpgradeIT {
         SINGLE_DECISION_REPORT_INDEX
       )
     );
-    setMetadataIndexVersion(FROM_VERSION);
+    setMetadataVersion(FROM_VERSION);
   }
 }

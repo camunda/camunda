@@ -25,7 +25,7 @@
   <logger name="org.camunda.optimize" level="info" />
 
   <!-- Change the log level for the upgrade here -->
-  <logger name="org.camunda.optimize.upgrade" level="info">
+  <logger name="org.camunda.optimize.upgrade" level="info" additivity="false">
     <appender-ref ref="UPGRADE"/>
   </logger>
 

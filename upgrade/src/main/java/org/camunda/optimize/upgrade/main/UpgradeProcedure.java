@@ -8,6 +8,8 @@ package org.camunda.optimize.upgrade.main;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.schema.ElasticsearchMetadataService;
+import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.plan.UpgradeExecutionDependencies;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
@@ -19,16 +21,19 @@ public abstract class UpgradeProcedure {
   @Getter
   protected final UpgradeExecutionDependencies upgradeDependencies;
   protected final OptimizeElasticsearchClient esClient;
-  private UpgradeValidationService upgradeValidationService;
+  protected final ElasticsearchMetadataService elasticsearchMetadataService;
+  protected final UpgradeValidationService upgradeValidationService;
 
   public UpgradeProcedure() {
-    this(UpgradeUtil.createUpgradeDependencies());
+    this(UpgradeUtil.createUpgradeDependencies(), new UpgradeValidationService());
   }
 
-  public UpgradeProcedure(UpgradeExecutionDependencies upgradeDependencies) {
+  public UpgradeProcedure(final UpgradeExecutionDependencies upgradeDependencies,
+                          final UpgradeValidationService upgradeValidationService) {
     this.upgradeDependencies = upgradeDependencies;
     this.esClient = upgradeDependencies.getEsClient();
-    this.upgradeValidationService = new UpgradeValidationService(upgradeDependencies.getMetadataService(), esClient);
+    this.elasticsearchMetadataService = upgradeDependencies.getMetadataService();
+    this.upgradeValidationService = upgradeValidationService;
   }
 
   public abstract String getInitialVersion();
@@ -36,25 +41,28 @@ public abstract class UpgradeProcedure {
   public abstract String getTargetVersion();
 
   public void performUpgrade() {
-    validateVersions();
+    final String schemaVersion = elasticsearchMetadataService.getSchemaVersion(esClient)
+      .orElseThrow(() -> new UpgradeRuntimeException("Can't determine current metadata version!"));
+    validateVersions(schemaVersion);
 
-    try {
-      UpgradePlan upgradePlan = buildUpgradePlan();
-      upgradePlan.execute();
-    } catch (Exception e) {
-      log.error("Error while executing upgrade from {} to {}", getInitialVersion(), getTargetVersion(), e);
-      System.exit(2);
+    if (!getTargetVersion().equals(schemaVersion)) {
+      try {
+        UpgradePlan upgradePlan = buildUpgradePlan();
+        upgradePlan.execute();
+      } catch (Exception e) {
+        log.error("Error while executing upgrade from {} to {}", getInitialVersion(), getTargetVersion(), e);
+        throw new UpgradeRuntimeException("Upgrade failed.", e);
+      }
+    } else {
+      log.info("Target schemaVersion is already present, no upgrade to perform.");
     }
   }
 
   protected abstract UpgradePlan buildUpgradePlan();
 
-  private void validateVersions() {
+  private void validateVersions(final String schemaVersion) {
     upgradeValidationService.validateESVersion(esClient, getTargetVersion());
-    upgradeValidationService.validateSchemaVersions(getInitialVersion(), getTargetVersion());
+    upgradeValidationService.validateSchemaVersions(schemaVersion, getInitialVersion(), getTargetVersion());
   }
 
-  void setUpgradeValidationService(final UpgradeValidationService upgradeValidationService) {
-    this.upgradeValidationService = upgradeValidationService;
-  }
 }
