@@ -354,6 +354,47 @@ public class CountDecisionInstanceFrequencyGroupByOutputVariableIT extends Abstr
   }
 
   @Test
+  public void reportEvaluationMultiBucket_numberVariable_notTooManyAutomaticBuckets() {
+    // given
+    // given
+    final String outputVarName = "outputVarName";
+    final String inputVarName = "inputVarName";
+
+    final DecisionDefinitionEngineDto decisionDefinitionDto = deploySimpleOutputDecisionDefinition(
+      outputVarName,
+      inputVarName,
+      "-",
+      DecisionTypeRef.DOUBLE
+    );
+
+    engineIntegrationExtension.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(inputVarName, 9100000000000000000.)
+    );
+    engineIntegrationExtension.startDecisionInstance(
+      decisionDefinitionDto.getId(),
+      Collections.singletonMap(inputVarName, -9200000000000000000.)
+    );
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final List<MapResultEntryDto> resultData = evaluateDecisionInstanceFrequencyByOutputVariable(
+      decisionDefinitionDto,
+      decisionDefinitionDto.getVersionAsString(),
+      outputVarName,
+      null,
+      VariableType.DOUBLE
+    ).getResult().getData();
+
+    // then the amount of buckets does not exceed NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION
+    // (a precaution to avoid too many buckets for distributed reports)
+    assertThat(resultData)
+      .isNotNull()
+      .isNotEmpty()
+      .hasSizeLessThanOrEqualTo(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
+  }
+
+  @Test
   public void reportEvaluationMultiBuckets_resultLimitedByConfig_booleanVariable() {
     // given
     DecisionDefinitionEngineDto decisionDefinitionDto1 = engineIntegrationExtension.deployDecisionDefinition();

@@ -543,7 +543,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_numberVariable_customBuckets() {
+  public void numberVariable_customBuckets() {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
@@ -588,7 +588,49 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_numberVariable_invalidBaseline_returnsEmptyResult() {
+  public void numberVariable_customBuckets_negativeValuesAndNegativeBaseline() {
+    // given
+    ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+      getSingleServiceTaskProcess());
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("foo", -100.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+    variables.put("foo", -200.0);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
+      .setVariableName("foo")
+      .setVariableType(VariableType.DOUBLE)
+      .build();
+    reportData.getConfiguration().getCustomBucket().setActive(true);
+    reportData.getConfiguration().getCustomBucket().setBaseline(-300.0);
+    reportData.getConfiguration().getCustomBucket().setBucketSize(null);
+
+    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(
+      reportData).getResult();
+
+    // then the correct baseline is used and both instances are included in the result
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2);
+    assertThat(resultDto.getIsComplete()).isTrue();
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData().get(0).getKey()).isEqualTo("-300.00");
+    assertThat(resultDto.getData()
+                 .stream()
+                 .map(MapResultEntryDto::getValue)
+                 .filter(Objects::nonNull)
+                 .collect(toList()))
+      .containsExactly(1000.0, 1000.0);
+  }
+
+  @Test
+  public void numberVariable_invalidBaseline_returnsEmptyResult() {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
@@ -621,7 +663,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_negativeNumberVariable_defaultBaselineWorks() {
+  public void negativeNumberVariable_defaultBaselineWorks() {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
@@ -654,7 +696,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
   }
 
   @Test
-  public void multipleBuckets_doubleVariable_bucketKeysHaveTwoDecimalPlaces() {
+  public void doubleVariable_bucketKeysHaveTwoDecimalPlaces() {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
@@ -683,6 +725,39 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT extends Abstrac
     assertThat(resultDto.getData())
       .extracting(MapResultEntryDto::getKey)
       .allMatch(key -> key.length() - key.indexOf(".") - 1 == 2); // key should have two chars after the decimal
+  }
+
+  @Test
+  public void numberVariable_largeValues_notTooManyAutomaticBuckets() {
+    // given
+    final ProcessDefinitionEngineDto processDefinitionDto =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleServiceTaskProcess());
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("longVar", 9100000000000000000L);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+    variables.put("longVar", -9200000000000000000L);
+    startProcessInstanceShiftedBySeconds(variables, processDefinitionDto.getId(), 1);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setReportDataType(PROC_INST_DUR_GROUP_BY_VARIABLE)
+      .setProcessDefinitionKey(processDefinitionDto.getKey())
+      .setProcessDefinitionVersion(String.valueOf(processDefinitionDto.getVersion()))
+      .setVariableName("longVar")
+      .setVariableType(VariableType.LONG)
+      .build();
+
+    final List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+
+    // then the amount of buckets does not exceed NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION
+    // (a precaution to avoid too many buckets for distributed reports)
+    assertThat(resultData)
+      .isNotNull()
+      .isNotEmpty()
+      .hasSizeLessThanOrEqualTo(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
   }
 
   @SneakyThrows

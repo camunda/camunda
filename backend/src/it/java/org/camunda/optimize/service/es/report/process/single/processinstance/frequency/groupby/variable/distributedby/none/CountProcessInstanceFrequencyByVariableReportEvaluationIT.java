@@ -317,7 +317,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
   }
 
   @Test
-  public void multipleBuckets_numberVariable_customBuckets() {
+  public void numberVariable_customBuckets() {
     // given
     final String varName = "doubleVar";
     Map<String, Object> variables = new HashMap<>();
@@ -553,7 +553,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
   }
 
   @Test
-  public void multipleBuckets_numberVariable_invalidBaseline_returnsEmptyResult() {
+  public void numberVariable_invalidBaseline_returnsEmptyResult() {
     // given
     final String varName = "doubleVar";
     Map<String, Object> variables = new HashMap<>();
@@ -584,7 +584,7 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
   }
 
   @Test
-  public void multipleBuckets_negativeNumberVariable_defaultBaselineWorks() {
+  public void numberVariable_negativeValues_defaultBaselineWorks() {
     // given
     final String varName = "intVar";
     Map<String, Object> variables = new HashMap<>();
@@ -613,7 +613,43 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
   }
 
   @Test
-  public void multipleBuckets_doubleVariable_bucketKeysHaveTwoDecimalPlaces() {
+  public void numberVariable_negativeValues_negativeBaseline() {
+    // given
+    final String varName = "intVar";
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(varName, -1);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+
+    variables.put(varName, -5);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when there is no baseline set
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      varName,
+      VariableType.INTEGER,
+      -10.0,
+      null
+    );
+    AuthorizedProcessReportEvaluationResultDto<ReportMapResultDto> evaluationResponse =
+      reportClient.evaluateMapReport(reportData);
+
+    // then the baseline is correct and the result includes all instances
+    final List<MapResultEntryDto> resultData = evaluationResponse.getResult().getData();
+    assertThat(resultData).isNotNull();
+    assertThat(resultData.get(0).getKey()).isEqualTo("-10");
+    assertThat(resultData.stream()
+                 .map(MapResultEntryDto::getValue)
+                 .filter(value -> value != 0.0)
+                 .collect(toList()))
+      .containsExactly(1.0, 1.0);
+  }
+
+  @Test
+  public void doubleVariable_bucketKeysHaveTwoDecimalPlaces() {
     // given
     final String varName = "doubleVar";
     Map<String, Object> variables = new HashMap<>();
@@ -641,6 +677,36 @@ public class CountProcessInstanceFrequencyByVariableReportEvaluationIT extends A
     assertThat(resultData)
       .extracting(MapResultEntryDto::getKey)
       .allMatch(key -> key.length() - key.indexOf(".") - 1 == 2); // key should have two chars after the decimal
+  }
+
+  @Test
+  public void numberVariable_largeValues_notTooManyAutomaticBuckets() {
+    // given
+    final String varName = "longVar";
+    Map<String, Object> variables = new HashMap<>();
+    variables.put(varName, 9100000000000000000L);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess(variables);
+
+    variables.put(varName, -9200000000000000000L);
+    engineIntegrationExtension.startProcessInstance(processInstanceDto.getDefinitionId(), variables);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      varName,
+      VariableType.LONG
+    );
+    final List<MapResultEntryDto> resultData = reportClient.evaluateMapReport(reportData).getResult().getData();
+
+    // then the amount of buckets does not exceed NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION
+    // (a precaution to avoid too many buckets for distributed reports)
+    assertThat(resultData)
+      .isNotNull()
+      .isNotEmpty()
+      .hasSizeLessThanOrEqualTo(NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION);
   }
 
   @Test

@@ -23,6 +23,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.service.VariableAggregationService.RANGE_AGGREGATION;
 import static org.camunda.optimize.service.util.RoundingUtil.roundDownToNearestPowerOfTen;
+import static org.camunda.optimize.service.util.RoundingUtil.roundUpToNearestPowerOfTen;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
 
 @RequiredArgsConstructor
@@ -42,7 +43,7 @@ public class NumberVariableAggregationService {
       return Optional.empty();
     }
 
-    final double unit = getIntervalUnit(context, min.get());
+    final double intervalSize = getIntervalSize(context, min.get());
     final double max = context.getMaxVariableValue();
     int numberOfBuckets = 0;
 
@@ -52,36 +53,36 @@ public class NumberVariableAggregationService {
 
     for (double start = min.get();
          start <= max && numberOfBuckets < configurationService.getEsAggregationBucketLimit();
-         start += unit, numberOfBuckets++) {
+         start += intervalSize, numberOfBuckets++) {
       RangeAggregator.Range range =
         new RangeAggregator.Range(
           getKeyForNumberBucket(context.getVariableType(), start),
           start,
-          start + unit
+          start + intervalSize
         );
       rangeAgg.addRange(range);
     }
     return Optional.of(rangeAgg.subAggregation(context.getSubAggregation()));
   }
 
-  private Double getIntervalUnit(final VariableAggregationContext context,
+  private Double getIntervalSize(final VariableAggregationContext context,
                                  final Double baseline) {
     final double maxVariableValue = context.getMaxVariableValue();
     final boolean customBucketsActive = context.getCustomBucketDto().isActive();
-    Double unit = context.getCustomBucketDto().getBucketSize();
-    if (!customBucketsActive || unit == null || unit <= 0) {
-      // if no valid unit is configured, calculate default automatic unit
-      unit =
-        (maxVariableValue - baseline)
+    Double intervalSize = context.getCustomBucketDto().getBucketSize();
+    if (!customBucketsActive || intervalSize == null || intervalSize <= 0) {
+      // if no valid bucketSize is configured, calculate default automatic bucketSize
+      intervalSize =
+        Math.abs(maxVariableValue - baseline)
           / (NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION - 1); // -1 because the end of the loop is
       // inclusive and would otherwise create 81 buckets
-      unit = unit == 0 ? 1 : roundDownToNearestPowerOfTen(unit);
+      intervalSize = intervalSize == 0 ? 1 : roundUpToNearestPowerOfTen(intervalSize);
     }
     if (!VariableType.DOUBLE.equals(context.getVariableType())) {
-      // round unit up if grouped by number variable without decimal point
-      unit = Math.ceil(unit);
+      // round bucketSize up if grouped by number variable without decimal point
+      intervalSize = Math.ceil(intervalSize);
     }
-    return unit;
+    return intervalSize;
   }
 
   private Optional<Double> getBaselineForNumberVariableAggregation(
