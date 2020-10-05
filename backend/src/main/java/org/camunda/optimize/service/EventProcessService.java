@@ -319,10 +319,10 @@ public class EventProcessService {
       );
     }
 
-    final boolean publishWasCancelledSuccessfully = eventProcessPublishStateWriter
+    final boolean publishWasCanceledSuccessfully = eventProcessPublishStateWriter
       .deleteAllEventProcessPublishStatesForEventProcessMappingId(eventProcessMappingId);
 
-    if (!publishWasCancelledSuccessfully) {
+    if (!publishWasCanceledSuccessfully) {
       final String message = String.format(
         "Cannot cancel publishing of an event based process with key [%s] as it is not published yet.",
         eventProcessMappingId

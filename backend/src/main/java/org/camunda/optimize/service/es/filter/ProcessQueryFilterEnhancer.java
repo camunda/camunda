@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.AssigneeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CandidateGroupFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
@@ -40,6 +41,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
   private final ProcessVariableQueryFilter variableQueryFilter;
   private final ExecutedFlowNodeQueryFilter executedFlowNodeQueryFilter;
   private final ExecutingFlowNodeQueryFilter executingFlowNodeQueryFilter;
+  private final CanceledFlowNodeQueryFilter canceledFlowNodeQueryFilter;
   private final DurationQueryFilter durationQueryFilter;
   private final RunningInstancesOnlyQueryFilter runningInstancesOnlyQueryFilter;
   private final CompletedInstancesOnlyQueryFilter completedInstancesOnlyQueryFilter;
@@ -63,6 +65,7 @@ public class ProcessQueryFilterEnhancer implements QueryFilterEnhancer<ProcessFi
         extractFilters(filters, ExecutingFlowNodeFilterDto.class),
         timezone
       );
+      canceledFlowNodeQueryFilter.addFilters(query, extractFilters(filters, CanceledFlowNodeFilterDto.class), timezone);
       durationQueryFilter.addFilters(query, extractFilters(filters, DurationFilterDto.class), timezone);
       runningInstancesOnlyQueryFilter.addFilters(
         query,

@@ -284,7 +284,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     // when
     executeImportCycle();
 
-    // then all flow nodes for the process are not cancelled
+    // then all flow nodes for the process are not canceled
     assertThat(getEventProcessInstancesFromElasticsearch())
       .singleElement()
       .satisfies(processInstanceDto -> {
@@ -301,7 +301,7 @@ public class EventProcessInstanceImportIT extends AbstractEventProcessIT {
     importEngineEntities();
     executeImportCycle();
 
-    // then the user task is marked as cancelled on the event process
+    // then the user task is marked as canceled on the event process
     assertThat(getEventProcessInstancesFromElasticsearch())
       .singleElement()
       .satisfies(processInstanceDto -> {

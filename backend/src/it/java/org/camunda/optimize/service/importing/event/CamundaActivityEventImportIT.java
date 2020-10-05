@@ -149,7 +149,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void expectedEventsCreatedWithCorrectCancellationStateForCancelledActivity() throws IOException {
+  public void expectedEventsCreatedWithCorrectCancellationStateForCanceledActivity() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcess();
     engineIntegrationExtension.cancelActivityInstance(processInstanceEngineDto.getId(), USER_TASK_1);
@@ -172,7 +172,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
           false
         ),
         Tuple.tuple(START_EVENT, false),
-        // the user task was cancelled
+        // the user task was canceled
         Tuple.tuple(applyCamundaTaskEndEventSuffix(USER_TASK_1), true),
         Tuple.tuple(applyCamundaTaskStartEventSuffix(USER_TASK_1), true)
       );
@@ -180,7 +180,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
   }
 
   @Test
-  public void expectedEventsCreatedWithCorrectCancellationStateForCancelledProcessInstance() throws IOException {
+  public void expectedEventsCreatedWithCorrectCancellationStateForCanceledProcessInstance() throws IOException {
     // given
     final ProcessInstanceEngineDto processInstanceEngineDto = deployAndStartUserTaskProcess();
     engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
@@ -203,7 +203,7 @@ public class CamundaActivityEventImportIT extends AbstractImportIT {
           false
         ),
         Tuple.tuple(START_EVENT, false),
-        // the process was cancelled on the user task, so the task is cancelled
+        // the process was canceled on the user task, so the task is canceled
         Tuple.tuple(applyCamundaTaskEndEventSuffix(USER_TASK_1), true),
         Tuple.tuple(applyCamundaTaskStartEventSuffix(USER_TASK_1), true)
       );

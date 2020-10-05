@@ -14,13 +14,10 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_2;
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
 
@@ -28,9 +25,11 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
   public void filterByOneFlowNode() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksProcessDefinition();
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto instanceEngineDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
-    ProcessInstanceEngineDto secondInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto secondInstanceEngineDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -43,20 +42,24 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
 
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executingFlowNodes);
     // then
-    assertThat(result.getData().size(), is(1));
-    assertThat(result.getData().get(0).getProcessInstanceId(), is(secondInstanceEngineDto.getId()));
+    assertThat(result.getData())
+      .singleElement()
+      .satisfies(data -> assertThat(data.getProcessInstanceId()).isEqualTo(secondInstanceEngineDto.getId()));
   }
 
   @Test
   public void filterMultipleProcessInstancesByOneFlowNode() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksProcessDefinition();
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto instanceEngineDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
-    ProcessInstanceEngineDto secondInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto secondInstanceEngineDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(secondInstanceEngineDto.getId());
-    ProcessInstanceEngineDto thirdInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto thirdInstanceEngineDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(thirdInstanceEngineDto.getId());
     engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     importAllEngineEntitiesFromScratch();
@@ -71,23 +74,32 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executedFlowNodes);
 
     // then
-    assertThat(result.getData().size(), is(2));
-    assertThat(result.getData().stream().map(RawDataProcessInstanceDto::getProcessInstanceId).collect(Collectors.toList()),
-               hasItems(secondInstanceEngineDto.getId(), thirdInstanceEngineDto.getId()));
+    assertThat(result.getInstanceCount()).isEqualTo(2);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(4);
+    assertThat(result.getData()).hasSize(2)
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+      .containsExactlyInAnyOrder(
+        secondInstanceEngineDto.getId(),
+        thirdInstanceEngineDto.getId()
+      );
   }
 
   @Test
   public void filterByMultipleAndCombinedFlowNodes() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksProcessDefinition();
-    ProcessInstanceEngineDto instanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto instanceEngineDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(instanceEngineDto.getId());
-    ProcessInstanceEngineDto secondInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto secondInstanceEngineDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(secondInstanceEngineDto.getId());
-    ProcessInstanceEngineDto thirdInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto thirdInstanceEngineDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.finishAllRunningUserTasks(thirdInstanceEngineDto.getId());
-    ProcessInstanceEngineDto fourthInstanceEngineDto = engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    ProcessInstanceEngineDto fourthInstanceEngineDto =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -100,9 +112,15 @@ public class ExecutingFlowNodeQueryFilterIT extends AbstractFilterIT {
     RawDataProcessReportResultDto result = evaluateReportWithFilter(processDefinition, executingFlowNodes);
 
     // then
-    assertThat(result.getData().size(), is(3));
-    assertThat(result.getData().stream().map(RawDataProcessInstanceDto::getProcessInstanceId).collect(Collectors.toList()),
-               hasItems(secondInstanceEngineDto.getId(), thirdInstanceEngineDto.getId(), fourthInstanceEngineDto.getId()));
+    assertThat(result.getInstanceCount()).isEqualTo(3);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(4);
+    assertThat(result.getData()).hasSize(3)
+      .extracting(RawDataProcessInstanceDto::getProcessInstanceId)
+      .containsExactlyInAnyOrder(
+        secondInstanceEngineDto.getId(),
+        thirdInstanceEngineDto.getId(),
+        fourthInstanceEngineDto.getId()
+      );
   }
 
 }

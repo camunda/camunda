@@ -112,9 +112,9 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
     final Map<String, List<EventDto>> eventsGroupedByTraceId = importedEvents.stream()
       .filter(eventDto -> eventMappingIdToEventMapping.containsKey(getMappingIdentifier(eventDto)))
       // For the same event id we want the last ingested event to win to allow updates.
-      // Cancelled flow nodes have the same timestamp, so we take the cancelled node as they can never be uncanceled
+      // Canceled flow nodes have the same timestamp, so we take the canceled node as they can never be uncanceled
       .sorted(Comparator.comparing(EventDto::getIngestionTimestamp)
-                .thenComparing(event -> getCancelledState(event).orElse(false))
+                .thenComparing(event -> getCanceledState(event).orElse(false))
                 .reversed())
       .distinct()
       .collect(groupingBy(EventDto::getTraceId));
@@ -174,7 +174,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
           .activityId(eventToFlowNodeMapping.getFlowNodeId())
           .activityType(eventToFlowNodeMapping.getFlowNodeType())
           .processInstanceId(processInstanceDto.getProcessInstanceId())
-          .canceled(getCancelledState(eventDto).orElse(null))
+          .canceled(getCanceledState(eventDto).orElse(null))
           .build();
 
         final EventMappingDto eventMapping = eventProcessPublishStateDto.getMappings()
@@ -210,7 +210,7 @@ public class EventProcessInstanceImportService implements ImportService<EventDto
       });
   }
 
-  private Optional<Boolean> getCancelledState(final EventDto eventDto) {
+  private Optional<Boolean> getCanceledState(final EventDto eventDto) {
     if (eventDto instanceof CancelableEventDto) {
       final CancelableEventDto cancelableEvent = (CancelableEventDto) eventDto;
       return Optional.of(cancelableEvent.isCanceled());

@@ -51,7 +51,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String ACTIVITY_DURATION = FlowNodeInstanceDto.Fields.durationInMs;
   public static final String ACTIVITY_START_DATE = FlowNodeInstanceDto.Fields.startDate;
   public static final String ACTIVITY_END_DATE = FlowNodeInstanceDto.Fields.endDate;
-  public static final String ACTIVITY_CANCELLED = FlowNodeInstanceDto.Fields.canceled;
+  public static final String ACTIVITY_CANCELED = FlowNodeInstanceDto.Fields.canceled;
 
   public static final String VARIABLES = ProcessInstanceDto.Fields.variables;
   public static final String VARIABLE_ID = SimpleProcessVariableDto.Fields.id;
@@ -228,7 +228,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
         .field("type", "date")
         .field("format", OPTIMIZE_DATE_FORMAT)
       .endObject()
-      .startObject(ACTIVITY_CANCELLED)
+      .startObject(ACTIVITY_CANCELED)
         .field("type", "boolean")
       .endObject()
       ;

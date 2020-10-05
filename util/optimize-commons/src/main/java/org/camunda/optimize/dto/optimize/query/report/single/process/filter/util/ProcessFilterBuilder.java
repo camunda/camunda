@@ -26,6 +26,10 @@ public class ProcessFilterBuilder {
     return ExecutingFlowNodeFilterBuilder.construct(this);
   }
 
+  public CanceledFlowNodeFilterBuilder canceledFlowNodes() {
+    return CanceledFlowNodeFilterBuilder.construct(this);
+  }
+
   public CanceledInstancesOnlyFilterBuilder canceledInstancesOnly() {
     return CanceledInstancesOnlyFilterBuilder.construct(this);
   }

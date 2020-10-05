@@ -21,11 +21,13 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.view.Decis
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutingFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutingFlowNodeFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
@@ -127,11 +129,15 @@ public class ValidationHelper {
           ExecutedFlowNodeFilterDto executedFlowNodeFilterDto = (ExecutedFlowNodeFilterDto) filterDto;
           ExecutedFlowNodeFilterDataDto flowNodeFilterData = executedFlowNodeFilterDto.getData();
           ensureNotEmpty("operator", flowNodeFilterData.getOperator());
-          ensureNotEmpty("value", flowNodeFilterData.getValues());
+          ensureNotEmpty("values", flowNodeFilterData.getValues());
         } else if (filterDto instanceof ExecutingFlowNodeFilterDto) {
           ExecutingFlowNodeFilterDto executingFlowNodeFilterDto = (ExecutingFlowNodeFilterDto) filterDto;
           ExecutingFlowNodeFilterDataDto flowNodeFilterData = executingFlowNodeFilterDto.getData();
-          ensureNotEmpty("value", flowNodeFilterData.getValues());
+          ensureNotEmpty("values", flowNodeFilterData.getValues());
+        } else if (filterDto instanceof CanceledFlowNodeFilterDto) {
+          CanceledFlowNodeFilterDto executingFlowNodeFilterDto = (CanceledFlowNodeFilterDto) filterDto;
+          CanceledFlowNodeFilterDataDto flowNodeFilterData = executingFlowNodeFilterDto.getData();
+          ensureNotEmpty("values", flowNodeFilterData.getValues());
         }
       }
     }

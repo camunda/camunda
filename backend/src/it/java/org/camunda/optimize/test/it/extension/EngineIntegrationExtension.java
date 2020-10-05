@@ -557,7 +557,8 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   public void cancelActivityInstance(final String processInstanceId, final String activityId) {
     final String activityInstanceId = getHistoricActivityInstances()
       .stream()
-      .filter(inst -> inst.getActivityId().equalsIgnoreCase(activityId))
+      .filter(inst -> inst.getProcessInstanceId().equalsIgnoreCase(processInstanceId)
+        && inst.getActivityId().equalsIgnoreCase(activityId))
       .findFirst().orElseThrow(() -> new OptimizeIntegrationTestException("No Activity Instances found!"))
       .getId();
     HttpPost cancelRequest = new HttpPost(getEngineUrl() + "/process-instance/" + processInstanceId + "/modification");
@@ -576,7 +577,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     ));
     try (CloseableHttpResponse response = HTTP_CLIENT.execute(cancelRequest)) {
       if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
-        throw new RuntimeException(
+        throw new OptimizeIntegrationTestException(
           String.format(
             "Could not cancel activity instance with ID %s from process instance with ID %s. Status-code: %s",
             activityInstanceId, processInstanceId, response.getStatusLine().getStatusCode()
