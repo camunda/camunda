@@ -71,14 +71,6 @@ exports[`matches the snapshot 1`] = `
     />
   </HeaderNav>
   <ChangeLogErrorHandler />
-  <withRouter(UserMenu)ErrorHandler
-    onTelemetryOpen={[Function]}
-    user={
-      Object {
-        "authorizations": Array [],
-        "name": "Hans Wurst",
-      }
-    }
-  />
+  <Component />
 </header>
 `;

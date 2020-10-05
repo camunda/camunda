@@ -7,12 +7,14 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import {isLogoutHidden} from 'config';
+import {isLogoutHidden, areSettingsManuallyConfirmed} from 'config';
 
+import {TelemetrySettings} from './TelemetrySettings';
 import {UserMenu} from './UserMenu';
 
 jest.mock('config', () => ({
   isLogoutHidden: jest.fn().mockReturnValue(false),
+  areSettingsManuallyConfirmed: jest.fn().mockReturnValue(true),
 }));
 
 const props = {
@@ -25,15 +27,6 @@ it('matches the snapshot', async () => {
   const node = shallow(<UserMenu {...props} />);
 
   expect(node).toMatchSnapshot();
-});
-
-it('should invoke onTelemetryOpen when clicking the telemetry option', async () => {
-  const spy = jest.fn();
-  const node = shallow(<UserMenu {...props} onTelemetryOpen={spy} />);
-
-  node.find('.UserMenu [title="Telemetry Settings"]').simulate('click');
-
-  expect(spy).toHaveBeenCalled();
 });
 
 it('should go to temporary logout route on logout', () => {
@@ -55,4 +48,21 @@ it('should hide logout button if specified by the ui config', async () => {
   runLastEffect();
 
   expect(node.find('.UserMenu [title="Logout"]')).not.toExist();
+});
+
+it('should automatically open the telemetry settings modal if the settings are not confirmed', async () => {
+  areSettingsManuallyConfirmed.mockReturnValueOnce(false);
+  const node = shallow(<UserMenu {...props} />);
+
+  await runLastEffect();
+
+  expect(node.find(TelemetrySettings).prop('open')).toBe(true);
+});
+
+it('should open telemetry settings modal when clicking the telemetry option', async () => {
+  const node = shallow(<UserMenu {...props} />);
+
+  node.find('.UserMenu [title="Telemetry Settings"]').simulate('click');
+
+  expect(node.find(TelemetrySettings).prop('open')).toBe(true);
 });

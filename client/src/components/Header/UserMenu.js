@@ -7,26 +7,40 @@
 import React, {useEffect, useState} from 'react';
 import {withRouter} from 'react-router-dom';
 
-import {withErrorHandling} from 'HOC';
+import {withErrorHandling, withUser} from 'HOC';
 import {Dropdown} from 'components';
 import {t} from 'translation';
-import {isLogoutHidden} from 'config';
+import {isLogoutHidden, areSettingsManuallyConfirmed} from 'config';
 import {showError} from 'notifications';
+
+import {TelemetrySettings} from './TelemetrySettings';
 
 import './UserMenu.scss';
 
-export function UserMenu({user, onTelemetryOpen, history, mightFail}) {
+export function UserMenu({user, history, mightFail}) {
   const [logoutHidden, setLogoutHidden] = useState(false);
+  const [telemetrySettingsOpen, setTelemetrySettingsOpen] = useState(false);
 
   useEffect(() => {
     mightFail(isLogoutHidden(), setLogoutHidden, showError);
-  }, [mightFail]);
+
+    // automatically open the telemetry settings if settings have not been confirmed
+    mightFail(areSettingsManuallyConfirmed(), (confirmed) => {
+      if (!confirmed && user?.authorizations.includes('telemetry_administration')) {
+        setTelemetrySettingsOpen(true);
+      }
+    });
+  }, [mightFail, user]);
 
   const options = [];
   const isTelemetryAdmin = user?.authorizations.includes('telemetry_administration');
   if (isTelemetryAdmin) {
     options.push(
-      <Dropdown.Option key={0} onClick={onTelemetryOpen} title={t('navigation.telemetry')}>
+      <Dropdown.Option
+        key="telemetry"
+        onClick={() => setTelemetrySettingsOpen(true)}
+        title={t('navigation.telemetry')}
+      >
         {t('navigation.telemetry')}
       </Dropdown.Option>
     );
@@ -34,11 +48,11 @@ export function UserMenu({user, onTelemetryOpen, history, mightFail}) {
 
   if (!logoutHidden) {
     if (isTelemetryAdmin) {
-      options.push([<hr key={1} />]);
+      options.push([<hr key="seperator" />]);
     }
     options.push(
       <Dropdown.Option
-        key={2}
+        key="logout"
         onClick={() => history.push('/logout')}
         title={t('navigation.logout')}
       >
@@ -52,10 +66,18 @@ export function UserMenu({user, onTelemetryOpen, history, mightFail}) {
   }
 
   return (
-    <Dropdown className="UserMenu" label={user?.name}>
-      {options}
-    </Dropdown>
+    <>
+      <Dropdown className="UserMenu" label={user?.name}>
+        {options}
+      </Dropdown>
+      {telemetrySettingsOpen && (
+        <TelemetrySettings
+          open={telemetrySettingsOpen}
+          onClose={() => setTelemetrySettingsOpen(false)}
+        />
+      )}
+    </>
   );
 }
 
-export default withErrorHandling(withRouter(UserMenu));
+export default withUser(withErrorHandling(withRouter(UserMenu)));
