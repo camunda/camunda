@@ -15,9 +15,12 @@ export default class NodeFilter extends React.Component {
   constructor(props) {
     super(props);
 
+    const {filterData} = this.props;
+
     this.state = {
-      selectedNodes: this.props.filterData ? this.props.filterData.data.values : [],
-      operator: this.props.filterData ? this.props.filterData.data.operator : 'in',
+      selectedNodes: filterData?.data.values ?? [],
+      operator: filterData?.data ? filterData?.data.operator : 'in',
+      type: filterData?.type ?? 'executedFlowNodes',
     };
   }
 
@@ -35,8 +38,7 @@ export default class NodeFilter extends React.Component {
 
   createFilter = () => {
     const values = this.state.selectedNodes.map((node) => node.id);
-    const {operator} = this.state;
-    const type = operator ? 'executedFlowNodes' : 'executingFlowNodes';
+    const {operator, type} = this.state;
     this.props.addFilter({type, data: {operator, values}});
   };
 
@@ -51,10 +53,10 @@ export default class NodeFilter extends React.Component {
   };
 
   render() {
-    const {selectedNodes, operator} = this.state;
+    const {selectedNodes, operator, type} = this.state;
     return (
       <Modal
-        open={true}
+        open
         onClose={this.props.close}
         onConfirm={this.isNodeSelected() ? this.createFilter : undefined}
         className="NodeFilter"
@@ -68,26 +70,32 @@ export default class NodeFilter extends React.Component {
         <Modal.Content className="modalContent">
           <div className="preview">
             <span>{t('common.filter.nodeModal.previewLabel')}</span>{' '}
-            <NodeListPreview nodes={selectedNodes} operator={operator} />
+            <NodeListPreview nodes={selectedNodes} operator={operator} type={type} />
           </div>
           <ButtonGroup>
             <Button
-              active={!this.state.operator}
-              onClick={() => this.setState({operator: undefined})}
+              active={type === 'executingFlowNodes'}
+              onClick={() => this.setState({operator: undefined, type: 'executingFlowNodes'})}
             >
               {t('common.filter.nodeModal.executing')}
             </Button>
             <Button
-              active={this.state.operator === 'in'}
-              onClick={() => this.setState({operator: 'in'})}
+              active={operator === 'in'}
+              onClick={() => this.setState({operator: 'in', type: 'executedFlowNodes'})}
             >
               {t('common.filter.nodeModal.executed')}
             </Button>
             <Button
-              active={this.state.operator === 'not in'}
-              onClick={() => this.setState({operator: 'not in'})}
+              active={operator === 'not in'}
+              onClick={() => this.setState({operator: 'not in', type: 'executedFlowNodes'})}
             >
               {t('common.filter.nodeModal.notExecuted')}
+            </Button>
+            <Button
+              active={type === 'canceledFlowNodes'}
+              onClick={() => this.setState({operator: undefined, type: 'canceledFlowNodes'})}
+            >
+              was cancelled or interrupted
             </Button>
           </ButtonGroup>
           {this.props.xml && (

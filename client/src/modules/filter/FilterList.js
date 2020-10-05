@@ -76,7 +76,9 @@ export default class FilterList extends React.Component {
               </ActionItem>
             </li>
           );
-        } else if (['executedFlowNodes', 'executingFlowNodes'].includes(filter.type)) {
+        } else if (
+          ['executedFlowNodes', 'executingFlowNodes', 'canceledFlowNodes'].includes(filter.type)
+        ) {
           const {values, operator} = filter.data;
           const flowNodeNames = this.props.flowNodeNames || {};
           const selectedNodes = values.map((id) => ({name: flowNodeNames[id], id}));
@@ -89,7 +91,7 @@ export default class FilterList extends React.Component {
                   this.props.deleteFilter(filter);
                 }}
               >
-                <NodeListPreview nodes={selectedNodes} operator={operator} />
+                <NodeListPreview nodes={selectedNodes} operator={operator} type={filter.type} />
               </ActionItem>
             </li>
           );

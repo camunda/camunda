@@ -825,16 +825,21 @@
           "less": "ist weniger als",
           "greater": "ist größer als",
           "is": "ist",
+          "was": "wurde",
+          "were": "wurden",
           "not": "ist nicht",
           "neither": "ist weder",
           "nor": "noch",
           "or": "oder",
+          "and": "und",
           "occurs": "ist",
           "contains": "enthält",
           "notContains": "enthält nicht"
         },
-        "executedFlowNode": "Ausgeführter Prozessknoten",
-        "executingFlowNode": "Prozessknoten in Ausführung"
+        "not": "Nicht ",
+        "executedFlowNodes": "Ausgeführt",
+        "canceledFlowNodes": "Abgebrochen oder unterbrochen",
+        "executingFlowNodes": "in Ausführung"
       },
       "modalHeader": "Füge {type} Filter hinzu",
       "addFilter": "Filter hinzufügen",
@@ -908,7 +913,7 @@
         "executed": "wurde ausgeführt",
         "notExecuted": "wurde nicht ausgeführt",
         "executing": "wartend oder in Ausführung",
-        "previewLabel": "Das ist der Filter, der gerade erstellt wird: "
+        "previewLabel": "Zeige Prozessinstanzen bei denen gilt: "
       },
       "assigneeModal": {
         "includeOnly": "Nur einschließen",

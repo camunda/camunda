@@ -20,5 +20,11 @@ exports[`should contain buttons to switch between executed and not executed mode
   >
     was not executed
   </ForwardRef(Button)>
+  <ForwardRef(Button)
+    active={false}
+    onClick={[Function]}
+  >
+    was cancelled or interrupted
+  </ForwardRef(Button)>
 </ButtonGroup>
 `;

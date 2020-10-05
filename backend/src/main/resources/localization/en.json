@@ -825,16 +825,21 @@
           "less": "is less than",
           "greater": "is greater than",
           "is": "is",
+          "was": "was",
+          "were": "were",
           "not": "is not",
           "neither": "is neither",
           "nor": "nor",
           "or": "or",
+          "and": "and",
           "occurs": "occurs",
           "contains": "contains",
           "notContains": "does not contain"
         },
-        "executedFlowNode": "Executed Flow Node",
-        "executingFlowNode": "Executing Flow Node"
+        "not": "Not ",
+        "executedFlowNodes": "Executed",
+        "canceledFlowNodes": "Cancelled or interrupted",
+        "executingFlowNodes": "Pending or Executing"
       },
       "modalHeader": "Add {type} Filter",
       "addFilter": "Add Filter",
@@ -908,7 +913,7 @@
         "executed": "was executed",
         "notExecuted": "was not executed",
         "executing": "pending or executing",
-        "previewLabel": "This is the filter you are about to create: "
+        "previewLabel": "Display process instances where: "
       },
       "assigneeModal": {
         "includeOnly": "Include only",

@@ -78,7 +78,7 @@ it('should create an executed node filter when operator is specified', () => {
   });
 });
 
-it('should create executing node filter when operator is undefined', () => {
+it('should set filter type depending on selected operation', () => {
   const spy = jest.fn();
   const node = shallow(<NodeFilter addFilter={spy} />);
 
@@ -97,6 +97,17 @@ it('should create executing node filter when operator is undefined', () => {
 
   expect(spy).toHaveBeenCalledWith({
     type: 'executingFlowNodes',
+    data: {
+      operator: undefined,
+      values: [flowNode1.id],
+    },
+  });
+
+  node.find(Button).at(3).simulate('click');
+  node.find('[primary]').simulate('click');
+
+  expect(spy).toHaveBeenCalledWith({
+    type: 'canceledFlowNodes',
     data: {
       operator: undefined,
       values: [flowNode1.id],
@@ -126,6 +137,7 @@ it('should create preview list of selected node', () => {
   expect(node.find('NodeListPreview').props()).toEqual({
     nodes: [{id: 'bar', name: 'foo'}],
     operator: 'in',
+    type: 'executedFlowNodes',
   });
 });
 

@@ -55,6 +55,7 @@ export default class Filter extends React.Component {
         return NodeDuration;
       case 'executedFlowNodes':
       case 'executingFlowNodes':
+      case 'canceledFlowNodes':
         return NodeFilter;
       case 'assignee':
       case 'candidateGroup':
