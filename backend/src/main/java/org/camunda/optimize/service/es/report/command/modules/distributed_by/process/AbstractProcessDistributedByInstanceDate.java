@@ -102,7 +102,11 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
   public abstract String getDateField();
 
   private AggregateByDateUnit getDistributedByDateUnit(final ProcessReportDataDto processReportData) {
-    return ((DateDistributedByValueDto) processReportData.getConfiguration().getDistributedBy().getValue()).getUnit();
+    return Optional.ofNullable(((DateDistributedByValueDto) processReportData.getConfiguration()
+      .getDistributedBy()
+      .getValue()))
+      .map(DateDistributedByValueDto::getUnit)
+      .orElse(AggregateByDateUnit.AUTOMATIC);
   }
 
   private MinMaxStatDto getMinMaxStats(final ExecutionContext<ProcessReportDataDto> context) {

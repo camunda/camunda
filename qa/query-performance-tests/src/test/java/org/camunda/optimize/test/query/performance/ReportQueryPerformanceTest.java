@@ -75,7 +75,7 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
     // given the report to evaluate
 
     // when
-    log.info("Evaluating report {}", report);
+    log.info("Evaluating report {}", getPrintableReportDetails(report));
     executeRequestAndAssertBelowMaxQueryTime(
       embeddedOptimizeExtension.getRequestExecutor().buildEvaluateSingleUnsavedReportRequest(report)
     );
@@ -92,7 +92,7 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
         // when
         final String reportId = saveReportResponse.readEntity(IdDto.class).getId();
 
-        log.info("Evaluating report with Id {}", reportId);
+        log.info("Evaluating report {}", getPrintableReportDetails(report));
         executeRequestAndAssertBelowMaxQueryTime(
           embeddedOptimizeExtension.getRequestExecutor().buildEvaluateSavedReportRequest(reportId)
         );
@@ -110,7 +110,7 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
       if (saveReportResponse.getStatus() == Response.Status.OK.getStatusCode()) {
         // when
         final String reportId = saveReportResponse.readEntity(IdDto.class).getId();
-        log.info("CSV export request for report with Id {}", reportId);
+        log.info("CSV export request for report {}", getPrintableReportDetails(report));
         executeRequestAndAssertBelowMaxQueryTime(
           embeddedOptimizeExtension.getRequestExecutor()
             .buildCsvExportRequest(reportId, IdGenerator.getNextId() + ".csv")
@@ -323,6 +323,13 @@ public class ReportQueryPerformanceTest extends AbstractQueryPerformanceTest {
       throw new TimeoutException("Import was not able to finish import in " + importTimeout + " hours!");
     }
     log.info("Finished importing engine data...");
+  }
+
+  private String getPrintableReportDetails(SingleReportDataDto report) {
+    return String.format(
+      "definitionKey=%s, definitionVersion=%s, tenants=%s, configuration=%s",
+      report.getDefinitionKey(), report.getDefinitionVersions(), report.getTenantIds(), report.createCommandKey()
+    );
   }
 
   private static Stream<SingleReportDataDto> getPossibleReports() {
