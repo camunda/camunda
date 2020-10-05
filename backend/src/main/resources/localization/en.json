@@ -430,7 +430,9 @@
       "nodeStatus": {
         "legend": "Flow Node Status",
         "running": "Running",
-        "completed": "Completed"
+        "completed": "Completed",
+        "canceled": "Cancelled or interrupted",
+        "all": "All states"
       },
       "visibleNodes": {
         "legend": "Customize Node Display",

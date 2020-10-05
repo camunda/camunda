@@ -430,7 +430,9 @@
       "nodeStatus": {
         "legend": "Prozessknoten-Status",
         "running": "In Ausführung",
-        "completed": "Abgeschlossen"
+        "completed": "Abgeschlossen",
+        "canceled": "Abgebrochen oder unterbrochen",
+        "all": "Alle Zustände"
       },
       "visibleNodes": {
         "legend": "Anzuzeigende Prozessknoten anpassen",

@@ -32,7 +32,8 @@ export default function NodeStatus({
         >
           <Select.Option value="running">{t('report.config.nodeStatus.running')}</Select.Option>
           <Select.Option value="completed">{t('report.config.nodeStatus.completed')}</Select.Option>
-          <Select.Option value="all">{t('common.all')}</Select.Option>
+          <Select.Option value="canceled">{t('report.config.nodeStatus.canceled')}</Select.Option>
+          <Select.Option value="all">{t('report.config.nodeStatus.all')}</Select.Option>
         </Select>
       </fieldset>
     );
