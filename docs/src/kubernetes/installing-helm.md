@@ -1,11 +1,11 @@
 ## Zeebe Helm Charts
 
-[Helm](https://github.com/helm/helm) is a package manager for Kubernetes resources. Helm allows us to install a set of components by just referencing a package name and it allows us to override configurations to accomodate these packages to different scenarios. Helm also provide dependency management between  charts, meaning that charts can depend on other charts allowing us to aggregate a set of components together that can be installed with a single command. 
+[Helm](https://github.com/helm/helm) is a package manager for Kubernetes resources. Helm allows us to install a set of components by just referencing a package name and it allows us to override configurations to accommodate these packages to different scenarios. Helm also provide dependency management between  charts, meaning that charts can depend on other charts allowing us to aggregate a set of components together that can be installed with a single command. 
 
 
 As part of the Zeebe project, we are providing 3 Zeebe Helm Charts: 
 - **Zeebe Cluster**: Deploys a Zeebe Cluster with 3 brokers using the camunda/zeebe docker image. This Chart depends on ElasticSearch Helm Chart and optionally on Kibana Helm Chart. This chart is hosted in the following repository, where you can find more information about its configuration: [http://github.com/zeebe-io/zeebe-cluster-helm/](http://github.com/zeebe-io/zeebe-cluster-helm/)
-- **Zeebe Operate**: Deploys Zeebe Operate which conects to an existing ElasticSearch. This chart source code can be located here: [http://github.com/zeebe-io/zeebe-operate-helm/](http://github.com/zeebe-io/zeebe-operate-helm/)
+- **Zeebe Operate**: Deploys Zeebe Operate which connects to an existing ElasticSearch. This chart source code can be located here: [http://github.com/zeebe-io/zeebe-operate-helm/](http://github.com/zeebe-io/zeebe-operate-helm/)
 - **Zeebe Full** (Parent): Deploys a Zeebe Cluster + Operate + Ingress Controller. This parent chart can be located here: [http://github.com/zeebe-io/zeebe-full-helm/](http://github.com/zeebe-io/zeebe-full-helm/)
 
 ![Charts](/kubernetes/zeebe-helm-charts.png)
@@ -27,7 +27,7 @@ This install Helm server side components in your cluster and it will enable the 
 
 ### Add Zeebe Helm Repository
 
-The next step is to add the Zeebe official Helm Chart repository to your installation. Once this is done, Helm will be able to fetch and install Charts hostested in [http://helm.zeebe.io](http://helm.zeebe.io).
+The next step is to add the Zeebe official Helm Chart repository to your installation. Once this is done, Helm will be able to fetch and install Charts hosted in [http://helm.zeebe.io](http://helm.zeebe.io).
 ```
 > helm repo add zeebe https://helm.zeebe.io
 > helm repo update
