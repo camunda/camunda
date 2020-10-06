@@ -14,28 +14,31 @@ import PropTypes from 'prop-types';
 
 import * as api from 'modules/api/header';
 import * as Styled from './styled';
+import {getUserName} from './service';
 
 User.propTypes = {
   handleRedirect: PropTypes.func,
 };
 
 export default function User({handleRedirect}) {
-  const {firstname, lastname} = getStateLocally();
+  const {firstname, lastname, username} = getStateLocally();
   const [user, setUser] = useState({
     firstname,
     lastname,
+    username,
   });
 
   useEffect(() => {
-    !(firstname || lastname) && getUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!firstname && !lastname && !username) {
+      getUser();
+    }
+  }, [firstname, lastname, username]);
 
   const getUser = async () => {
     try {
-      const {firstname, lastname} = await api.fetchUser();
-      setUser({firstname, lastname});
-      storeStateLocally({firstname, lastname});
+      const {firstname, lastname, username} = await api.fetchUser();
+      setUser({firstname, lastname, username});
+      storeStateLocally({firstname, lastname, username});
     } catch (e) {
       console.log('new user could not set');
     }
@@ -46,12 +49,13 @@ export default function User({handleRedirect}) {
     handleRedirect({forceRedirect: true});
   };
 
+  const userName = getUserName(user);
   return (
     <Styled.ProfileDropdown data-test="profile-dropdown">
       <ThemeConsumer>
         {({toggleTheme}) =>
-          user.firstname || user.lastname ? (
-            <Styled.Dropdown label={`${user.firstname} ${user.lastname}`}>
+          userName ? (
+            <Styled.Dropdown label={userName}>
               <Dropdown.Option
                 label="Toggle Theme"
                 data-test="toggle-theme-button"

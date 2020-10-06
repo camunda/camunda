@@ -33,8 +33,6 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
   private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
   private static final String ACT_ADMIN_ROLE = "ACTRADMIN";
   private static final String USER_ROLE = "USER";
-  private static final String USER_DEFAULT_FIRSTNAME = "Demo";
-  private static final String USER_DEFAULT_LASTNAME = "user";
 
   @Autowired
   private UserStorage userStorage;
@@ -65,9 +63,7 @@ public class ElasticSearchUserDetailsService implements UserDetailsService {
   private ElasticSearchUserDetailsService addUserWith(String username, String password, String role) {
     logger.info("Create user in ElasticSearch for username {}",username);
     String passwordEncoded = passwordEncoder.encode(password);
-    userStorage.create(UserEntity.from(username, passwordEncoded, role)
-      .setFirstname(USER_DEFAULT_FIRSTNAME)
-      .setLastname(USER_DEFAULT_LASTNAME));
+    userStorage.create(UserEntity.from(username, passwordEncoded, role));
     return this;
   }
   

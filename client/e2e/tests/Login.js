@@ -46,7 +46,7 @@ test('Log out', async (t) => {
     .click(screen.getByRole('button', 'Log in'));
 
   await t
-    .click(screen.getByRole('button', {name: 'Demo user'}))
+    .click(screen.getByRole('button', {name: /demo/i}))
     .click(screen.getByRole('button', {name: 'Logout'}));
 
   await t.expect(await getPathname()).eql('#/login');

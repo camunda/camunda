@@ -23,10 +23,17 @@ import {mockServer} from 'modules/mockServer';
 const mockUser = {
   firstname: 'Franz',
   lastname: 'Kafka',
+  username: 'franzkafka',
+};
+const mockUserWithOnlyUsername = {
+  firstname: null,
+  lastname: null,
+  username: 'franzkafka',
 };
 const mockSsoUser = {
   firstname: '',
   lastname: 'Michael Jordan',
+  username: 'michaeljordan',
 };
 
 describe('User', () => {
@@ -61,6 +68,20 @@ describe('User', () => {
     });
 
     expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
+  });
+
+  it('renders with username', async () => {
+    mockServer.use(
+      rest.get('/api/authentications/user', (_, res, ctx) =>
+        res.once(ctx.json(mockUserWithOnlyUsername))
+      )
+    );
+
+    render(<User />, {
+      wrapper: ThemeProvider,
+    });
+
+    expect(await screen.findByText('franzkafka')).toBeInTheDocument();
   });
 
   it('renders without User data', async () => {
