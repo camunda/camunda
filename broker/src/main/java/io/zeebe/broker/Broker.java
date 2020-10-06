@@ -190,7 +190,7 @@ public final class Broker implements AutoCloseable {
     startContext.addStep(
         "zeebe partitions", () -> partitionsStep(brokerCfg, clusterCfg, localBroker));
     startContext.addStep("register diskspace usage listeners", () -> addDiskSpaceUsageListeners());
-    startContext.addStep("Upgrade manager", this::addBrokerAdminService);
+    startContext.addStep("upgrade manager", this::addBrokerAdminService);
 
     return startContext;
   }

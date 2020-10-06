@@ -248,7 +248,7 @@ public final class ZeebePartition extends Actor
   }
 
   private void transitionToInactive(final CompletableActorFuture<Void> transitionComplete) {
-    zeebePartitionHealth.setHealthStatus(HealthStatus.UNHEALTHY);
+    zeebePartitionHealth.setServicesInstalled(false);
     closePartition()
         .onComplete(
             (nothing, error) -> {
@@ -752,7 +752,7 @@ public final class ZeebePartition extends Actor
   }
 
   private void onInstallFailure() {
-    zeebePartitionHealth.setHealthStatus(HealthStatus.UNHEALTHY);
+    zeebePartitionHealth.setServicesInstalled(false);
     if (atomixRaftPartition.getRole() == Role.LEADER) {
       LOG.info("Unexpected failures occurred when installing leader services, stepping down");
       atomixRaftPartition.stepDown();
@@ -760,7 +760,7 @@ public final class ZeebePartition extends Actor
   }
 
   private void onRecoveredInternal() {
-    zeebePartitionHealth.setHealthStatus(HealthStatus.HEALTHY);
+    zeebePartitionHealth.setServicesInstalled(true);
   }
 
   @Override
@@ -778,6 +778,7 @@ public final class ZeebePartition extends Actor
     actor.call(
         () -> {
           diskSpaceAvailable = false;
+          zeebePartitionHealth.setDiskSpaceAvailable(false);
           if (streamProcessor != null) {
             LOG.warn("Disk space usage is above threshold. Pausing stream processor.");
             streamProcessor.pauseProcessing();
@@ -790,6 +791,7 @@ public final class ZeebePartition extends Actor
     actor.call(
         () -> {
           diskSpaceAvailable = true;
+          zeebePartitionHealth.setDiskSpaceAvailable(false);
           if (streamProcessor != null && !isPaused()) {
             LOG.info("Disk space usage is below threshold. Resuming stream processor.");
             streamProcessor.resumeProcessing();

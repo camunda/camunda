@@ -324,7 +324,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     // If healthCheckTick was not invoked it indicates the actor is blocked in a runUntilDone loop.
     if (ActorClock.currentTimeMillis() - lastTickTime > HEALTH_CHECK_TICK_DURATION.toMillis() * 2) {
       return HealthStatus.UNHEALTHY;
-    } else if (phase == Phase.PAUSED || phase == Phase.FAILED) {
+    } else if (phase == Phase.FAILED) {
       return HealthStatus.UNHEALTHY;
     } else {
       return HealthStatus.HEALTHY;
