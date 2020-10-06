@@ -115,8 +115,6 @@ public class OperateTester {
   
   private boolean operationExecutorEnabled = true;
 
-  private Long jobKey;
-
   public OperateTester(ZeebeClient zeebeClient, MockMvcTestRule mockMvcTestRule, ElasticsearchTestRule elasticsearchTestRule) {
     this.zeebeClient = zeebeClient;
     this.mockMvcTestRule = mockMvcTestRule;
@@ -178,7 +176,7 @@ public class OperateTester {
   }
   
   public OperateTester failTask(String taskName, String errorMessage) {
-    jobKey = ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
+    ZeebeTestUtil.failTask(zeebeClient, taskName, UUID.randomUUID().toString(), 3,errorMessage);
     return this;
   }
   
@@ -201,9 +199,21 @@ public class OperateTester {
     elasticsearchTestRule.processAllRecordsAndWait(activityIsCompletedCheck, workflowInstanceKey,activityId);
     return this;
   }
+
+  public OperateTester activateJob(String type){
+    zeebeClient.newActivateJobsCommand()
+        .jobType(type)
+        .maxJobsToActivate(1)
+        .send();
+    return this;
+  }
   
   public OperateTester completeTask(String activityId) {
-    ZeebeTestUtil.completeTask(zeebeClient, activityId, TestUtil.createRandomString(10), null);
+    return completeTask(activityId, null);
+  }
+  
+  public OperateTester completeTask(String activityId,String payload) {
+    ZeebeTestUtil.completeTask(zeebeClient, activityId, TestUtil.createRandomString(10), payload);
     return activityIsCompleted(activityId);
   }
   

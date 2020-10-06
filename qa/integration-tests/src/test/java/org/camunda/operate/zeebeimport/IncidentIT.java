@@ -6,8 +6,8 @@
 package org.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
-
 import java.util.List;
 import java.util.Optional;
 
@@ -17,12 +17,30 @@ import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import org.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
+import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.internal.util.reflection.FieldSetter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.annotation.IfProfileValue;
 import org.springframework.test.web.servlet.MvcResult;
-
 import com.fasterxml.jackson.core.type.TypeReference;
+import org.springframework.util.unit.DataSize;
 
 public class IncidentIT extends OperateZeebeIntegrationTest {
+
+  @Autowired
+  private UpdateVariableHandler updateVariableHandler;
+
+  @Before
+  public void before() {
+    super.before();
+    try {
+      FieldSetter.setField(updateVariableHandler, UpdateVariableHandler.class.getDeclaredField("zeebeClient"), zeebeClient);
+    } catch (NoSuchFieldException e) {
+      fail("Failed to inject ZeebeClient into some of the beans");
+    }
+  }
 
   @Test
   public void testUnhandledErrorEventAsEndEvent() {
@@ -37,6 +55,35 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
     List<IncidentEntity> incidents = tester.getIncidents();
     assertThat(incidents.size()).isEqualTo(1);
     assertIncidentEntity(incidents.get(0), ErrorType.UNHANDLED_ERROR_EVENT, "Unhandled error event");
+  }
+
+  @Test
+  @IfProfileValue(name="spring.profiles.active", value="test") // Do not execute on 'old-zeebe' profile
+  public void testErrorMessageSizeExceeded() throws Exception {
+    // given
+    int variableCount = 4;
+    String largeValue = "\"" + "x".repeat((int) (DataSize.ofMegabytes(4).toBytes() / variableCount)) + "\"";
+
+    tester.deployWorkflow("single-task.bpmn")
+        .waitUntil().workflowIsDeployed()
+        .then()
+        .startWorkflowInstance("process", "{}")
+        .waitUntil().workflowInstanceIsStarted();
+
+    for(int i=0; i<variableCount; i++) {
+      tester.updateVariableOperation(Integer.toString(i), largeValue).waitUntil().operationIsCompleted();
+    }
+
+    // when
+    // ---
+    // Activation of the job tries to accumulate all variables in the process
+    // this triggers the incident, and the activate jobs command will not return a job
+    tester.activateJob("task")
+        .waitUntil().incidentIsActive();
+    // then
+    List<IncidentEntity> incidents = tester.getIncidents();
+    assertThat(incidents.size()).isEqualTo(1);
+    assertIncidentEntity(incidents.get(0), ErrorType.MESSAGE_SIZE_EXCEEDED, "Message size exceeded");
   }
 
   @Test
@@ -70,7 +117,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
 
     //when
     MvcResult mvcResult = getRequest(getIncidentsURL(workflowInstanceKey));
-    final IncidentResponseDto incidentResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<IncidentResponseDto>() {
+    final IncidentResponseDto incidentResponse = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {
     });
 
     //then

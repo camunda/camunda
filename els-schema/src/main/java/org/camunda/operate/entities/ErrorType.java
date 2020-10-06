@@ -16,7 +16,8 @@ public enum ErrorType {
   CONDITION_ERROR("Condition error"),
   EXTRACT_VALUE_ERROR("Extract value error"),
   CALLED_ELEMENT_ERROR("Called element error"),
-  UNHANDLED_ERROR_EVENT( "Unhandled error event");
+  UNHANDLED_ERROR_EVENT("Unhandled error event"),
+  MESSAGE_SIZE_EXCEEDED("Message size exceeded");
 
   private static final Logger logger = LoggerFactory.getLogger(ErrorType.class);
 
