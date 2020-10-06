@@ -5,11 +5,14 @@
  */
 
 import React from 'react';
+import classnames from 'classnames';
+
 import {Modal, ButtonGroup, Button, BPMNDiagram, ClickBehavior} from 'components';
+import {t} from 'translation';
+
+import NodeListPreview from './NodeListPreview';
 
 import './NodeFilter.scss';
-import {t} from 'translation';
-import NodeListPreview from './NodeListPreview';
 
 export default class NodeFilter extends React.Component {
   constructor(props) {
@@ -72,6 +75,9 @@ export default class NodeFilter extends React.Component {
             <span>{t('common.filter.nodeModal.previewLabel')}</span>{' '}
             <NodeListPreview nodes={selectedNodes} operator={operator} type={type} />
           </div>
+          <p className={classnames('note', {hidden: operator !== 'in'})}>
+            {t('common.filter.nodeModal.note')}
+          </p>
           <ButtonGroup>
             <Button
               active={type === 'executingFlowNodes'}

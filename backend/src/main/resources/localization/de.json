@@ -912,6 +912,7 @@
         "appliedTo": "Filter wird angewendet auf"
       },
       "nodeModal": {
+        "note": "Sowohl Ausgeführte als auch Ausführende Prozessknoten werden im Ergebnis zurückgegeben.",
         "executed": "wurde ausgeführt",
         "notExecuted": "wurde nicht ausgeführt",
         "executing": "wartend oder in Ausführung",
