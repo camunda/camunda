@@ -87,6 +87,38 @@ test('sharing', async (t) => {
   await t.expect(e.report.textContent).contains('Start Date');
 });
 
+test('sharing with filters', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Raw Data');
+  await u.save(t);
+  await u.gotoOverview(t);
+  await u.createNewDashboard(t);
+  await u.addReportToDashboard(t, 'New Report');
+
+  await t.click(e.filtersButton);
+  await t.click(e.addFilterButton);
+  await t.click(e.option('Instance State'));
+
+  await u.save(t);
+
+  await t.click(e.instanceStateFilter);
+  await t.click(e.switchElement('Suspended'));
+
+  await t.expect(e.shareButton.hasAttribute('disabled')).notOk();
+
+  await t.click(e.shareButton);
+  await t.click(e.shareSwitch);
+  await t.click(e.shareFilterCheckbox);
+
+  const shareUrl = await e.shareUrl.value;
+
+  await t.navigateTo(shareUrl);
+
+  await t.expect(e.report.visible).ok();
+  await t.expect(e.report.textContent).contains('No data to display');
+});
+
 test('remove a report from a dashboard', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
