@@ -19,7 +19,6 @@ package io.atomix.storage.journal;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.storage.journal.index.Position;
-import io.atomix.utils.memory.BufferCleaner;
 import io.atomix.utils.serializer.Namespace;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
@@ -30,6 +29,7 @@ import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.StandardOpenOption;
 import java.util.NoSuchElementException;
 import java.util.zip.CRC32;
+import org.agrona.BufferUtil;
 
 /**
  * Log segment reader.
@@ -159,8 +159,8 @@ class MappedJournalSegmentReader<E> implements JournalReader<E> {
 
   @Override
   public void close() {
+    BufferUtil.free(buffer);
     try {
-      BufferCleaner.freeBuffer(buffer);
       channel.close();
     } catch (final IOException e) {
       throw new StorageException(e);

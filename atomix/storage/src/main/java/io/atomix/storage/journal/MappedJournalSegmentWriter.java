@@ -19,7 +19,6 @@ package io.atomix.storage.journal;
 import com.esotericsoftware.kryo.KryoException;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.index.JournalIndex;
-import io.atomix.utils.memory.BufferCleaner;
 import io.atomix.utils.serializer.Namespace;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
@@ -30,6 +29,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.file.StandardOpenOption;
 import java.util.zip.CRC32;
+import org.agrona.BufferUtil;
 
 /**
  * Segment writer.
@@ -268,15 +268,13 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
   @Override
   public void close() {
     if (isOpen) {
+      isOpen = false;
       flush();
+      BufferUtil.free(buffer);
       try {
-        // fixme: can we replace this with agrona stuff?
-        BufferCleaner.freeBuffer(buffer);
         channel.close();
       } catch (final IOException e) {
         throw new StorageException(e);
-      } finally {
-        isOpen = false;
       }
     }
   }
