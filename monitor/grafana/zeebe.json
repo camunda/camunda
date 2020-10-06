@@ -83,7 +83,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1599223056776,
+  "iteration": 1601901661063,
   "links": [],
   "panels": [
     {
@@ -4469,7 +4469,7 @@
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 6
+            "y": 7
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4533,7 +4533,7 @@
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 6
+            "y": 7
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4597,7 +4597,7 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 13
+            "y": 14
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4643,6 +4643,106 @@
           "yBucketSize": null
         },
         {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "$DS_PROMETHEUS",
+          "description": "Shows the execution time of a process instance. This means the time (latency) between creating the instance and completing it.",
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 22
+          },
+          "hiddenSeries": false,
+          "id": 222,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "options": {
+            "dataLinks": []
+          },
+          "percentage": false,
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(zeebe_workflow_instance_execution_time_sum{namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) / sum(rate(zeebe_workflow_instance_execution_time_count{namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m]))",
+              "format": "heatmap",
+              "interval": "30s",
+              "intervalFactor": 1,
+              "legendFormat": "avg",
+              "refId": "A"
+            },
+            {
+              "expr": "histogram_quantile(0.99, sum(rate(zeebe_workflow_instance_execution_time_bucket{namespace=~\"$namespace\",pod=~\"$pod\", partition=~\"$partition\"}[1m])) by (le))",
+              "interval": "",
+              "legendFormat": "quantile-99th",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Processing Execution Time (avg)",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:201",
+              "format": "short",
+              "label": "seconds",
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:202",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
           "cards": {
             "cardPadding": null,
             "cardRound": null
@@ -4661,7 +4761,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 21
+            "y": 30
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -4725,7 +4825,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 21
+            "y": 30
           },
           "heatmap": {},
           "hideZeroBuckets": true,
@@ -9165,5 +9265,5 @@
   "variables": {
     "list": []
   },
-  "version": 15
+  "version": 16
 }
