@@ -7,6 +7,9 @@
  */
 package io.zeebe.broker.system.monitoring;
 
+import static io.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
@@ -23,27 +26,37 @@ import io.netty.handler.codec.http.QueryStringDecoder;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.system.management.BrokerAdminService;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 public final class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter {
 
   private static final String BROKER_READY_STATUS_URI = "/ready";
   private static final String METRICS_URI = "/metrics";
   private static final String BROKER_HEALTH_STATUS_URI = "/health";
+  private static final String PARTITION_STATUS_URI = "/partitions";
+  private static final String PARTITION_PAUSE_PROCESSING_URI = "/partitions/pauseProcessing";
+  private static final String PARTITION_RESUME_PROCESSING_URI = "/partitions/resumeProcessing";
+  private static final String PARTITION_TAKE_SNAPSHOT_URI = "/partitions/takeSnapshot";
+  private static final String PARTITION_PREPARE_UPGRADE_URI = "/partitions/prepareUpgrade";
 
   private final CollectorRegistry metricsRegistry;
   private final BrokerHealthCheckService brokerHealthCheckService;
+  private final BrokerAdminService brokerAdminService;
 
   public BrokerHttpServerHandler(
       final CollectorRegistry metricsRegistry,
-      final BrokerHealthCheckService brokerHealthCheckService) {
+      final BrokerHealthCheckService brokerHealthCheckService,
+      final BrokerAdminService brokerAdminService) {
     this.metricsRegistry = metricsRegistry;
     this.brokerHealthCheckService = brokerHealthCheckService;
+    this.brokerAdminService = brokerAdminService;
   }
 
   @Override
@@ -61,13 +74,13 @@ public final class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter 
       return;
     }
 
-    if (request.method() != HttpMethod.GET) {
+    final QueryStringDecoder queryStringDecoder = new QueryStringDecoder(request.uri());
+
+    if (!isRequestValid(request, queryStringDecoder.path())) {
       ctx.writeAndFlush(
           new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.METHOD_NOT_ALLOWED));
       return;
     }
-
-    final QueryStringDecoder queryStringDecoder = new QueryStringDecoder(request.uri());
 
     final DefaultFullHttpResponse response;
     if (BROKER_READY_STATUS_URI.equals(queryStringDecoder.path())) {
@@ -76,11 +89,34 @@ public final class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter 
       response = getMetrics(queryStringDecoder);
     } else if (BROKER_HEALTH_STATUS_URI.equals(queryStringDecoder.path())) {
       response = getHealthStatus();
+    } else if (PARTITION_STATUS_URI.equals(queryStringDecoder.path())) {
+      response = withExceptionHandling(this::getPartitionStatus);
+    } else if (PARTITION_PAUSE_PROCESSING_URI.equals(queryStringDecoder.path())) {
+      response = withExceptionHandling(this::pauseProcessing);
+    } else if (PARTITION_RESUME_PROCESSING_URI.equals(queryStringDecoder.path())) {
+      response = withExceptionHandling(this::resumeProcessing);
+    } else if (PARTITION_TAKE_SNAPSHOT_URI.equals(queryStringDecoder.path())) {
+      response = withExceptionHandling(this::takeSnapshot);
+    } else if (PARTITION_PREPARE_UPGRADE_URI.equals(queryStringDecoder.path())) {
+      response = withExceptionHandling(this::prepareUpgrade);
     } else {
       response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.NOT_FOUND);
     }
 
     ctx.writeAndFlush(response).addListener(ChannelFutureListener.CLOSE);
+  }
+
+  private boolean isRequestValid(final HttpRequest request, final String queryPath) {
+    return (request.method() == HttpMethod.GET
+            && (BROKER_READY_STATUS_URI.equals(queryPath)
+                || METRICS_URI.equals(queryPath)
+                || BROKER_HEALTH_STATUS_URI.equals(queryPath)
+                || PARTITION_STATUS_URI.equals(queryPath)))
+        || (request.method() == HttpMethod.POST
+            && (PARTITION_PAUSE_PROCESSING_URI.equals(queryPath)
+                || PARTITION_RESUME_PROCESSING_URI.equals(queryPath)
+                || PARTITION_PREPARE_UPGRADE_URI.equals(queryPath)
+                || PARTITION_TAKE_SNAPSHOT_URI.equals(queryPath)));
   }
 
   private DefaultFullHttpResponse getReadyStatus() {
@@ -105,6 +141,58 @@ public final class BrokerHttpServerHandler extends ChannelInboundHandlerAdapter 
           new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.SERVICE_UNAVAILABLE);
     }
     return response;
+  }
+
+  private DefaultFullHttpResponse getPartitionStatus() {
+    final var partitionStatus = brokerAdminService.getPartitionStatus();
+
+    final String jsonResponse;
+    try {
+      jsonResponse = getDefaultJsonObjectWriter().writeValueAsString(partitionStatus);
+    } catch (final JsonProcessingException e) {
+      Loggers.SYSTEM_LOGGER.warn("Failed to respond to partitionStatus request", e);
+      return new DefaultFullHttpResponse(
+          HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    final DefaultFullHttpResponse response =
+        new DefaultFullHttpResponse(
+            HttpVersion.HTTP_1_1,
+            HttpResponseStatus.OK,
+            Unpooled.wrappedBuffer(jsonResponse.getBytes()));
+    response.headers().set(HttpHeaderNames.CONTENT_TYPE, "application/json");
+
+    return response;
+  }
+
+  private DefaultFullHttpResponse pauseProcessing() {
+    brokerAdminService.pauseStreamProcessing();
+    return getPartitionStatus();
+  }
+
+  private DefaultFullHttpResponse resumeProcessing() {
+    brokerAdminService.resumeStreamProcessing();
+    return getPartitionStatus();
+  }
+
+  private DefaultFullHttpResponse takeSnapshot() {
+    brokerAdminService.takeSnapshot();
+    return getPartitionStatus();
+  }
+
+  private DefaultFullHttpResponse prepareUpgrade() {
+    brokerAdminService.prepareForUpgrade();
+    return getPartitionStatus();
+  }
+
+  private DefaultFullHttpResponse withExceptionHandling(
+      final Supplier<DefaultFullHttpResponse> requestHandler) {
+    try {
+      return requestHandler.get();
+    } catch (final Exception e) {
+      return new DefaultFullHttpResponse(
+          HttpVersion.HTTP_1_1, HttpResponseStatus.INTERNAL_SERVER_ERROR);
+    }
   }
 
   private DefaultFullHttpResponse getMetrics(final QueryStringDecoder queryStringDecoder) {

@@ -13,6 +13,7 @@ import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSen
 import io.zeebe.engine.state.message.MessageState;
 import io.zeebe.engine.state.message.MessageSubscriptionState;
 import io.zeebe.util.sched.ActorControl;
+import io.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
 
 public final class MessageObserver implements StreamProcessorLifecycleAware {
@@ -25,6 +26,11 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final MessageState messageState;
   private final MessageSubscriptionState subscriptionState;
+  private ActorControl actor;
+  private ScheduledTimer timeToLiveCheckerTimer;
+  private ScheduledTimer pendingSubscriptionCheckerTimer;
+  private MessageTimeToLiveChecker timeToLiveChecker;
+  private PendingMessageSubscriptionChecker pendingSubscriptionChecker;
 
   public MessageObserver(
       final MessageState messageState,
@@ -36,16 +42,37 @@ public final class MessageObserver implements StreamProcessorLifecycleAware {
   }
 
   @Override
-  public void onRecovered(ReadonlyProcessingContext context) {
-    final ActorControl actor = context.getActor();
+  public void onRecovered(final ReadonlyProcessingContext context) {
+    actor = context.getActor();
     // it is safe to reuse the write because we running in the same actor/thread
-    final MessageTimeToLiveChecker timeToLiveChecker =
-        new MessageTimeToLiveChecker(context.getLogStreamWriter(), messageState);
-    context.getActor().runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
+    timeToLiveChecker = new MessageTimeToLiveChecker(context.getLogStreamWriter(), messageState);
+    timeToLiveCheckerTimer =
+        actor.runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
 
-    final PendingMessageSubscriptionChecker pendingSubscriptionChecker =
+    pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
             subscriptionCommandSender, subscriptionState, SUBSCRIPTION_TIMEOUT.toMillis());
-    actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
+    pendingSubscriptionCheckerTimer =
+        actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
+  }
+
+  @Override
+  public void onPaused() {
+    if (timeToLiveCheckerTimer != null) {
+      timeToLiveCheckerTimer.cancel();
+      timeToLiveCheckerTimer = null;
+    }
+  }
+
+  @Override
+  public void onResumed() {
+    if (timeToLiveCheckerTimer == null) {
+      timeToLiveCheckerTimer =
+          actor.runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
+    }
+    if (pendingSubscriptionCheckerTimer == null) {
+      pendingSubscriptionCheckerTimer =
+          actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
+    }
   }
 }

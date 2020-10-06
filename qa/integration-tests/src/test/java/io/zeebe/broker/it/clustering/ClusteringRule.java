@@ -369,7 +369,7 @@ public final class ClusteringRule extends ExternalResource {
             () -> {
               try {
                 return client.newTopologyRequest().send().join();
-              } catch (Exception e) {
+              } catch (final Exception e) {
                 LOG.trace("Topology request failed: ", e);
                 return null;
               }

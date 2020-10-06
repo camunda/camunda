@@ -57,6 +57,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
   private final String actorName;
   private FailureListener failureListener;
   private volatile long lastTickTime;
+  private ActorFuture<Void> recoverFuture;
+  private boolean shouldProcess = true;
 
   protected StreamProcessor(final StreamProcessorBuilder processorBuilder) {
     this.actorScheduler = processorBuilder.getActorScheduler();
@@ -99,7 +101,8 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
       initProcessors();
 
-      processingStateMachine = new ProcessingStateMachine(processingContext, this::isOpened);
+      processingStateMachine =
+          new ProcessingStateMachine(processingContext, this::shouldProcessNext);
 
       healthCheckTick();
       openFuture.complete(null);
@@ -107,8 +110,7 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
       final ReProcessingStateMachine reProcessingStateMachine =
           new ReProcessingStateMachine(processingContext);
 
-      final ActorFuture<Void> recoverFuture =
-          reProcessingStateMachine.startRecover(snapshotPosition);
+      recoverFuture = reProcessingStateMachine.startRecover(snapshotPosition);
 
       actor.runOnCompletion(
           recoverFuture,
@@ -276,6 +278,10 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     }
   }
 
+  private boolean shouldProcessNext() {
+    return isOpened() && shouldProcess;
+  }
+
   public boolean isOpened() {
     return isOpened.get();
   }
@@ -294,6 +300,35 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
 
   public ActorFuture<Long> getLastWrittenPositionAsync() {
     return actor.call(processingStateMachine::getLastWrittenEventPosition);
+  }
+
+  public ActorFuture<Void> pauseProcessing() {
+    return actor.call(
+        () ->
+            recoverFuture.onComplete(
+                (v, t) -> {
+                  if (shouldProcess) {
+                    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onPaused);
+                    shouldProcess = false;
+                    phase = Phase.PAUSED;
+                    LOG.debug("Paused processing for partition {}", partitionId);
+                  }
+                }));
+  }
+
+  public void resumeProcessing() {
+    actor.call(
+        () ->
+            recoverFuture.onComplete(
+                (v, t) -> {
+                  if (!shouldProcess) {
+                    lifecycleAwareListeners.forEach(StreamProcessorLifecycleAware::onResumed);
+                    shouldProcess = true;
+                    phase = Phase.PROCESSING;
+                    actor.submit(processingStateMachine::readNextEvent);
+                    LOG.debug("Resumed processing for partition {}", partitionId);
+                  }
+                }));
   }
 
   @Override
@@ -319,9 +354,14 @@ public class StreamProcessor extends Actor implements HealthMonitorable {
     actor.run(() -> this.failureListener = failureListener);
   }
 
-  private enum Phase {
+  public ActorFuture<Phase> getCurrentPhase() {
+    return actor.call(() -> phase);
+  }
+
+  public enum Phase {
     REPROCESSING,
     PROCESSING,
+    PAUSED,
     FAILED
   }
 }

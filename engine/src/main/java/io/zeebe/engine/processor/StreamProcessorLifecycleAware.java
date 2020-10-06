@@ -13,4 +13,10 @@ public interface StreamProcessorLifecycleAware {
   default void onRecovered(final ReadonlyProcessingContext context) {}
 
   default void onClose() {}
+
+  default void onFailed() {}
+
+  default void onPaused() {}
+
+  default void onResumed() {}
 }
