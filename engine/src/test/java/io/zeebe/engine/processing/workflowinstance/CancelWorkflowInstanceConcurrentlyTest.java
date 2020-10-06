@@ -144,6 +144,7 @@ public final class CancelWorkflowInstanceConcurrentlyTest {
     createdJob =
         RecordingExporter.jobRecords(JobIntent.CREATED)
             .withWorkflowInstanceKey(workflowInstanceKey)
+            .limit(2)
             .withType(JOB_TYPE)
             .getFirst();
 
