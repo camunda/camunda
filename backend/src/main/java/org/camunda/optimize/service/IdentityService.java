@@ -227,10 +227,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
 
   public Optional<String> getIdentityNameById(final String identityId) {
     Optional<? extends IdentityWithMetadataDto> identityDto = getIdentityWithMetadataForId(identityId);
-    if (identityDto.isPresent()) {
-      return Optional.of(identityDto.get().getName());
-    }
-    return Optional.empty();
+    return identityDto.map(IdentityWithMetadataDto::getName);
   }
 
   private void initUserGroupCache() {

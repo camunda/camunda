@@ -60,7 +60,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionType);
-    collectionClient.addRoleToCollection(collectionId1, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId1, new CollectionRoleDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ));
@@ -89,7 +89,7 @@ public class CollectionReportsAuthorizationIT extends AbstractIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(typePair.get(0));
-    collectionClient.addRoleToCollection(collectionId1, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId1, new CollectionRoleDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ));

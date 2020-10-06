@@ -557,7 +557,7 @@ public class CollectionHandlingIT extends AbstractIT {
     engineIntegrationExtension.addUser("kermit", "kermit");
     engineIntegrationExtension.grantUserOptimizeAccess("kermit");
     String collectionId = collectionClient.createNewCollection();
-    collectionClient.addRoleToCollection(
+    collectionClient.addRolesToCollection(
       collectionId,
       new CollectionRoleDto(
         new IdentityDto("kermit", IdentityType.USER),

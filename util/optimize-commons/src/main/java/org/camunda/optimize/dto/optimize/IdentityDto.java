@@ -18,4 +18,5 @@ import lombok.experimental.FieldNameConstants;
 public class IdentityDto {
   private String id;
   private IdentityType type;
+
 }

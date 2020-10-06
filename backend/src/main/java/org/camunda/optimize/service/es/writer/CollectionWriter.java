@@ -371,23 +371,27 @@ public class CollectionWriter {
     return updateResponse;
   }
 
-  public CollectionRoleDto addRoleToCollection(String collectionId, CollectionRoleDto roleDto, String userId)
-    throws OptimizeCollectionConflictException {
-    log.debug("Adding role [{}] to collection with id [{}] in Elasticsearch.", roleDto.getId(), collectionId);
+  public void addRoleToCollection(String collectionId, List<CollectionRoleDto> rolesToAdd, String userId) {
+    log.debug("Adding roles {} to collection with id [{}] in Elasticsearch.", rolesToAdd, collectionId);
 
     try {
       final Map<String, Object> params = new HashMap<>();
-      params.put("roleDto", roleDto);
+      params.put("rolesToAdd", rolesToAdd);
       params.put("lastModifier", userId);
       params.put("lastModified", formatter.format(LocalDateUtil.getCurrentDateTime()));
 
       final Script addEntityScript = createDefaultScriptWithSpecificDtoParams(
         // @formatter:off
-        "boolean exists = ctx._source.data.roles.stream()" +
-          ".filter(dto -> dto.id.equals(params.roleDto.id))" +
-          ".findFirst().isPresent();" +
-        "if(!exists){ " +
-          "ctx._source.data.roles.add(params.roleDto); " +
+        "def newRoles = new ArrayList();" +
+        "for (roleToAdd in params.rolesToAdd) {" +
+          "boolean exists = ctx._source.data.roles.stream()" +
+            ".anyMatch(existingRole -> existingRole.id.equals(roleToAdd.id));" +
+          "if (!exists){ " +
+            "newRoles.add(roleToAdd); " +
+          "}" +
+        "}" +
+        "if (newRoles.size() == params.rolesToAdd.size()) {" +
+          "ctx._source.data.roles.addAll(newRoles); " +
           "ctx._source.lastModifier = params.lastModifier; " +
           "ctx._source.lastModified = params.lastModified; " +
         "} else {" +
@@ -407,12 +411,13 @@ public class CollectionWriter {
       );
 
       if (updateResponse.getResult().equals(DocWriteResponse.Result.NOOP)) {
-        final String message = String.format("Role resource for id [%s] already exists.", roleDto.getId());
+        final String message = String.format(
+          "One of the roles %s already exists in collection [%s].",
+          rolesToAdd, collectionId
+        );
         log.warn(message);
         throw new OptimizeCollectionConflictException(message);
       }
-
-      return roleDto;
     } catch (IOException e) {
       String errorMessage = String.format("Was not able to update collection with id [%s].", collectionId);
       log.error(errorMessage, e);

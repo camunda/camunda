@@ -25,15 +25,13 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toList;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.DECISION;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANTS;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 
 public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
@@ -76,7 +74,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
-    collectionClient.addRoleToCollection(collectionId1, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId1, new CollectionRoleDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ));
@@ -92,7 +90,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
       .collect(toList());
 
     // then
-    assertThat(allAlertIds, containsInAnyOrder(alertId1, alertId2, alertId3));
+    assertThat(allAlertIds).containsExactlyInAnyOrder(alertId1, alertId2, alertId3);
   }
 
   @ParameterizedTest
@@ -109,7 +107,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(typePair.get(0)));
-    collectionClient.addRoleToCollection(collectionId1, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId1, new CollectionRoleDto(
         new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER));
 
     // when
@@ -123,7 +121,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
       .collect(toList());
 
     // then
-    assertThat(allAlertIds, containsInAnyOrder(alertId1, alertId2));
+    assertThat(allAlertIds).containsExactlyInAnyOrder(alertId1, alertId2);
   }
 
   @ParameterizedTest
@@ -141,7 +139,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     Response response = collectionClient.getAlertsRequest(KERMIT_USER, KERMIT_USER, collectionId1).execute();
 
     // then
-    assertThat(response.getStatus(), is(Response.Status.FORBIDDEN.getStatusCode()));
+    assertThat(response.getStatus()).isEqualTo(Response.Status.FORBIDDEN.getStatusCode());
   }
 
   @ParameterizedTest(name = "viewers of a collection are not allowed to edit, delete or create alerts for reports of " +
@@ -156,7 +154,7 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
 
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
-    collectionClient.addRoleToCollection(collectionId, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId, new CollectionRoleDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.VIEWER
     ));
@@ -187,11 +185,11 @@ public class CollectionAlertAuthorizationIT extends AbstractAlertIT {
     authorizationClient.addKermitUserAndGrantAccessToOptimize();
     authorizationClient.addUserAndGrantOptimizeAccess(MISS_PIGGY_USER);
     authorizationClient.addGlobalAuthorizationForResource(definitionTypeToResourceType.get(definitionType));
-    collectionClient.addRoleToCollection(collectionId, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId, new CollectionRoleDto(
       new IdentityDto(KERMIT_USER, IdentityType.USER),
       RoleType.MANAGER
     ));
-    collectionClient.addRoleToCollection(collectionId, new CollectionRoleDto(
+    collectionClient.addRolesToCollection(collectionId, new CollectionRoleDto(
         new IdentityDto(MISS_PIGGY_USER, IdentityType.USER),
         RoleType.EDITOR
       ));

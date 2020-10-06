@@ -6,7 +6,6 @@
 package org.camunda.optimize.rest;
 
 import lombok.AllArgsConstructor;
-import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
@@ -26,12 +25,10 @@ import org.camunda.optimize.rest.mapper.CollectionRestMapper;
 import org.camunda.optimize.rest.mapper.EntityRestMapper;
 import org.camunda.optimize.rest.mapper.ReportRestMapper;
 import org.camunda.optimize.rest.providers.Secured;
-import org.camunda.optimize.service.IdentityService;
 import org.camunda.optimize.service.collection.CollectionEntityService;
 import org.camunda.optimize.service.collection.CollectionRoleService;
 import org.camunda.optimize.service.collection.CollectionScopeService;
 import org.camunda.optimize.service.collection.CollectionService;
-import org.camunda.optimize.service.exceptions.OptimizeUserOrGroupIdNotFoundException;
 import org.camunda.optimize.service.exceptions.conflict.OptimizeConflictException;
 import org.camunda.optimize.service.security.AuthorizedCollectionService;
 import org.camunda.optimize.service.security.SessionService;
@@ -65,7 +62,6 @@ public class CollectionRestService {
   private final AuthorizedCollectionService authorizedCollectionService;
   private final CollectionRoleService collectionRoleService;
   private final CollectionScopeService collectionScopeService;
-  private final IdentityService identityService;
   private final CollectionEntityService collectionEntityService;
   private final ReportRestMapper reportRestMapper;
   private final CollectionRestMapper collectionRestMapper;
@@ -214,25 +210,11 @@ public class CollectionRestService {
   @POST
   @Path("/{id}/role/")
   @Consumes(MediaType.APPLICATION_JSON)
-  @Produces(MediaType.APPLICATION_JSON)
-  public IdDto addRole(@Context ContainerRequestContext requestContext,
+  public void addRoles(@Context ContainerRequestContext requestContext,
                        @PathParam("id") String collectionId,
-                       @NotNull CollectionRoleDto roleDtoRequest) throws OptimizeConflictException {
+                       @NotNull List<CollectionRoleDto> rolesToAdd) {
     final String userId = sessionService.getRequestUserOrFailNotAuthorized(requestContext);
-    final IdentityDto requestIdentityDto = roleDtoRequest.getIdentity();
-    if (requestIdentityDto.getType() == null) {
-      final IdentityDto resolvedIdentityDto = identityService.getIdentityWithMetadataForId(requestIdentityDto.getId())
-        .orElseThrow(() -> new OptimizeUserOrGroupIdNotFoundException(
-          String.format("No user or group with ID %s exists in Optimize.", requestIdentityDto.getId())
-        ))
-        .toIdentityDto();
-      roleDtoRequest = new CollectionRoleDto(resolvedIdentityDto, roleDtoRequest.getRole());
-    }
-    identityService.validateUserAuthorizedToAccessRoleOrFail(userId, roleDtoRequest.getIdentity());
-    CollectionRoleDto collectionRoleDto = collectionRoleService.addRoleToCollection(
-      userId, collectionId, roleDtoRequest
-    );
-    return new IdDto(collectionRoleDto.getId());
+    collectionRoleService.addRolesToCollection(userId, collectionId, rolesToAdd);
   }
 
   @PUT

@@ -123,7 +123,7 @@ public abstract class AbstractCollectionRoleIT extends AbstractIT {
   }
 
   protected void addKermitGroupRoleToCollectionAsDefaultUser(final RoleType roleType, final String collectionId) {
-    collectionClient.addRoleToCollection(
+    collectionClient.addRolesToCollection(
       collectionId,
       new CollectionRoleDto(new IdentityDto(GROUP_ID, IdentityType.GROUP), roleType)
     );
@@ -132,7 +132,7 @@ public abstract class AbstractCollectionRoleIT extends AbstractIT {
   protected void addRoleToCollectionAsDefaultUser(final RoleType roleType,
                                                   final IdentityDto identityDto,
                                                   final String collectionId) {
-    collectionClient.addRoleToCollection(collectionId, new CollectionRoleDto(identityDto, roleType));
+    collectionClient.addRolesToCollection(collectionId, new CollectionRoleDto(identityDto, roleType));
   }
 
   @Data

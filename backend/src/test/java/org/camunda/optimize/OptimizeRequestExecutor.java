@@ -87,6 +87,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -558,11 +559,17 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildAddRoleToCollectionRequest(final String collectionId,
-                                                                 final CollectionRoleDto roleDto) {
+  public OptimizeRequestExecutor buildAddRolesToCollectionRequest(final String collectionId,
+                                                                  final CollectionRoleDto... roleToAdd) {
+    buildAddRolesToCollectionRequest(collectionId, Arrays.asList(roleToAdd));
+    return this;
+  }
+
+  private OptimizeRequestExecutor buildAddRolesToCollectionRequest(final String collectionId,
+                                                                   final List<CollectionRoleDto> rolesToAdd) {
     this.path = "collection/" + collectionId + "/role/";
     this.method = POST;
-    this.body = getBody(roleDto);
+    this.body = getBody(rolesToAdd);
     return this;
   }
 

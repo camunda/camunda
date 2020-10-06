@@ -289,18 +289,26 @@ public class CollectionClient {
     assertThat(response.getStatus()).isEqualTo(Response.Status.NO_CONTENT.getStatusCode());
   }
 
-  public IdDto addRoleToCollection(final String collectionId, final CollectionRoleDto roleDto) {
-    return addRoleToCollectionAsUser(collectionId, roleDto, DEFAULT_USERNAME, DEFAULT_USERNAME);
+  public void addRoleToCollectionAsUser(final String collectionId,
+                                        final CollectionRoleDto roleDto,
+                                        final String username,
+                                        final String password) {
+    addRolesToCollectionAsUser(collectionId, new CollectionRoleDto[]{roleDto}, username, password);
   }
 
-  public IdDto addRoleToCollectionAsUser(final String collectionId,
-                                         final CollectionRoleDto roleDto,
-                                         final String username,
-                                         final String password) {
-    return getRequestExecutor()
-      .buildAddRoleToCollectionRequest(collectionId, roleDto)
+  public void addRolesToCollection(final String collectionId,
+                                   final CollectionRoleDto... rolesToAdd) {
+    addRolesToCollectionAsUser(collectionId, rolesToAdd, DEFAULT_USERNAME, DEFAULT_USERNAME);
+  }
+
+  private void addRolesToCollectionAsUser(final String collectionId,
+                                          final CollectionRoleDto[] rolesToAdd,
+                                          final String username,
+                                          final String password) {
+    getRequestExecutor()
+      .buildAddRolesToCollectionRequest(collectionId, rolesToAdd)
       .withUserAuthentication(username, password)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   public void updateCollectionRoleAsUser(final String collectionId,

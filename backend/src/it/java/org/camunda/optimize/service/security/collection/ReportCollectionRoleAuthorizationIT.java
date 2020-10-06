@@ -980,9 +980,9 @@ public class ReportCollectionRoleAuthorizationIT extends AbstractCollectionRoleI
       kermitRoleType
     );
 
-    collectionClient.addRoleToCollection(collectionId, testGroupRole);
-    collectionClient.addRoleToCollection(collectionId, missPiggyUserRole);
-    collectionClient.addRoleToCollection(collectionId, kermitUserRole);
+    collectionClient.addRolesToCollection(collectionId, testGroupRole);
+    collectionClient.addRolesToCollection(collectionId, missPiggyUserRole);
+    collectionClient.addRolesToCollection(collectionId, kermitUserRole);
 
     return collectionId;
   }

@@ -42,7 +42,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.DefinitionType.PROCESS;
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
@@ -999,7 +998,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     engineIntegrationExtension.grantUserOptimizeAccess(KERMIT_USER);
 
     final String collectionId = collectionClient.createNewCollectionWithDefaultProcessScope();
-    collectionClient.addRoleToCollection(
+    collectionClient.addRolesToCollection(
       collectionId, new CollectionRoleDto(new IdentityDto(KERMIT_USER, IdentityType.USER), RoleType.VIEWER)
     );
     final String reportId =

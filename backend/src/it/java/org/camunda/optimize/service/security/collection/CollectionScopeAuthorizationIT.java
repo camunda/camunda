@@ -20,7 +20,6 @@ import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.RoleType;
 import org.camunda.optimize.dto.optimize.TenantDto;
 import org.camunda.optimize.dto.optimize.UserDto;
-import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionRoleDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import org.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryUpdateDto;
@@ -702,8 +701,8 @@ public class CollectionScopeAuthorizationIT extends AbstractIT {
                                                 final String collectionId) {
     embeddedOptimizeExtension
       .getRequestExecutor()
-      .buildAddRoleToCollectionRequest(collectionId, roleDto)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
+      .buildAddRolesToCollectionRequest(collectionId, roleDto)
+      .execute(Response.Status.NO_CONTENT.getStatusCode());
   }
 
   @Data

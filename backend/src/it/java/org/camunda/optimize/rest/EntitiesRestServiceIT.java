@@ -504,7 +504,7 @@ public class EntitiesRestServiceIT extends AbstractEntitiesRestServiceIT {
         : new IdentityDto(identityId, IdentityType.GROUP),
       RoleType.EDITOR
     );
-    collectionClient.addRoleToCollection(collectionId, roleDto);
+    collectionClient.addRolesToCollection(collectionId, roleDto);
   }
 
 }

@@ -27,19 +27,17 @@ public class CollectionRoleDto {
   private RoleType role;
 
   public CollectionRoleDto(final IdentityDto identity, final RoleType role) {
-    this.id = convertIdentityToRoleId(identity);
-    this.identity = identity;
+    setIdentity(identity);
     this.role = role;
-  }
-
-  public CollectionRoleDto(CollectionRoleDto oldRole) {
-    this.id = convertIdentityToRoleId(this.identity);
-    this.identity = new IdentityDto(oldRole.getIdentity().getId(), oldRole.getIdentity().getType());
-    this.role = oldRole.role;
   }
 
   public String getId() {
     return Optional.ofNullable(id).orElse(convertIdentityToRoleId(identity));
+  }
+
+  public void setIdentity(final IdentityDto identity) {
+    this.id = convertIdentityToRoleId(identity);
+    this.identity = identity;
   }
 
   private String convertIdentityToRoleId(final IdentityDto identity) {

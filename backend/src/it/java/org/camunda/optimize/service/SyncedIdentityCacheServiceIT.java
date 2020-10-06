@@ -326,13 +326,13 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
         RoleType.MANAGER
       );
 
-      collectionClient.addRoleToCollection(collectionId1, testGroupRole);
-      final IdDto testGroupBIdDto = collectionClient.addRoleToCollection(collectionId1, testGroupBRole);
-      collectionClient.addRoleToCollection(collectionId1, userKermitRole);
+      collectionClient.addRolesToCollection(collectionId1, testGroupRole);
+      collectionClient.addRolesToCollection(collectionId1, testGroupBRole);
+      collectionClient.addRolesToCollection(collectionId1, userKermitRole);
 
-      collectionClient.addRoleToCollection(collectionId2, testGroupRole);
-      collectionClient.addRoleToCollection(collectionId2, testGroupBRole);
-      collectionClient.addRoleToCollection(collectionId2, userKermitRole);
+      collectionClient.addRolesToCollection(collectionId2, testGroupRole);
+      collectionClient.addRolesToCollection(collectionId2, testGroupBRole);
+      collectionClient.addRolesToCollection(collectionId2, userKermitRole);
 
       // when users/groups are removed from identityCache
       authorizationClient.revokeSingleResourceAuthorizationsForGroup(
@@ -352,7 +352,10 @@ public class SyncedIdentityCacheServiceIT extends AbstractIT {
       List<IdDto> roleIds1 = collectionClient.getCollectionRoleIdDtos(collectionId1);
       List<IdDto> roleIds2 = collectionClient.getCollectionRoleIdDtos(collectionId2);
       assertThat(roleIds1).containsExactlyInAnyOrderElementsOf(roleIds2);
-      assertThat(roleIds1).containsExactlyInAnyOrder(testGroupBIdDto, new IdDto(userDemoRole.getId()));
+      assertThat(roleIds1).containsExactlyInAnyOrder(
+        new IdDto(testGroupBRole.getId()),
+        new IdDto(userDemoRole.getId())
+      );
     } finally {
       syncedIdentityCacheService.startSchedulingUserSync();
     }

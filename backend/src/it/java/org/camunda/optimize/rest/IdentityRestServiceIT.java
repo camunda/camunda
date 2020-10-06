@@ -296,7 +296,7 @@ public class IdentityRestServiceIT extends AbstractIT {
 
     String collectionId = collectionClient.createNewCollection();
     CollectionRoleDto roleDto = new CollectionRoleDto(expectedIdentity, RoleType.EDITOR);
-    collectionClient.addRoleToCollection(collectionId, roleDto);
+    collectionClient.addRolesToCollection(collectionId, roleDto);
 
     final HttpRequest engineAuthorizationsRequest = request()
       .withPath(engineIntegrationExtension.getEnginePath() + AUTHORIZATION_ENDPOINT);
