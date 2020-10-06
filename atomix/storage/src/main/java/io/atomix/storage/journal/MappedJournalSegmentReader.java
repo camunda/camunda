@@ -56,9 +56,7 @@ class MappedJournalSegmentReader<E> implements JournalReader<E> {
     this.index = index;
     this.namespace = namespace;
     this.segment = segment;
-    channel =
-        file.openChannel(
-            StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+    channel = file.openChannel(StandardOpenOption.READ);
     buffer = mapChannel(channel, segment);
     reset();
   }
