@@ -6,8 +6,21 @@
 
 import React from 'react';
 import {STATE, OPERATION_STATE} from 'modules/constants';
+import {filters} from 'modules/stores/filters';
+import {instances} from 'modules/stores/instances';
 import {Operations} from './index';
-import {render, screen, fireEvent} from '@testing-library/react';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  waitForElementToBeRemoved,
+} from '@testing-library/react';
+import {rest} from 'msw';
+import {mockServer} from 'modules/mockServer';
+import {INSTANCE, ACTIVE_INSTANCE, mockOperationCreated} from './index.setup';
+import {createMemoryHistory} from 'history';
+import {groupedWorkflowsMock} from 'modules/testUtils';
 
 describe('Operations', () => {
   describe('Operation Buttons', () => {
@@ -69,6 +82,13 @@ describe('Operations', () => {
     });
 
     it('should display spinner after clicking retry button', () => {
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances/:instanceId/operation',
+          (_, res, ctx) => res.once(ctx.json(mockOperationCreated))
+        )
+      );
+
       render(
         <Operations
           instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
@@ -82,6 +102,13 @@ describe('Operations', () => {
     });
 
     it('should display spinner after clicking cancel button', () => {
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances/:instanceId/operation',
+          (_, res, ctx) => res.once(ctx.json(mockOperationCreated))
+        )
+      );
+
       render(
         <Operations
           instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
@@ -149,6 +176,64 @@ describe('Operations', () => {
         />
       );
       expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
+    });
+
+    it('should display spinner if incident id is included in instances with active operations', async () => {
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+          (_, res, ctx) =>
+            res.once(
+              ctx.json({workflowInstances: [ACTIVE_INSTANCE], totalCount: 1})
+            )
+        ),
+        rest.get('/api/workflows/grouped', (_, res, ctx) =>
+          res.once(ctx.json(groupedWorkflowsMock))
+        )
+      );
+
+      filters.setUrlParameters(createMemoryHistory(), {pathname: '/instances'});
+      await filters.init();
+
+      render(
+        <Operations
+          instance={{
+            id: 'instance_1',
+            state: STATE.INCIDENT,
+            operations: [],
+          }}
+        />
+      );
+
+      expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
+
+      jest.useFakeTimers();
+      instances.init();
+
+      await waitFor(() =>
+        expect(screen.getByTestId('operation-spinner')).toBeInTheDocument()
+      );
+
+      mockServer.use(
+        rest.post(
+          '/api/workflow-instances?firstResult=:firstResult&maxResults=:maxResults',
+          (_, res, ctx) =>
+            res.once(ctx.json({workflowInstances: [INSTANCE], totalCount: 1}))
+        )
+      );
+
+      jest.runOnlyPendingTimers();
+
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('operation-spinner')
+        ).not.toBeInTheDocument()
+      );
+
+      instances.reset();
+      filters.reset();
+
+      jest.useRealTimers();
     });
   });
 });

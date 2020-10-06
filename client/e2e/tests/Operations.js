@@ -171,7 +171,9 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
     .notOk()
     .click(screen.getByRole('button', {name: 'Apply'}))
     .expect(screen.findByTestId('operations-list').visible)
-    .ok();
+    .ok()
+    .expect(screen.getAllByTitle(/has scheduled operations/i).count)
+    .eql(instances.length);
 
   // expect first operation item to have progress bar
   await t
@@ -244,7 +246,9 @@ test.skip('Retry and cancel multiple instances ', async (t) => {
     )
     .click(screen.getByRole('button', {name: 'Apply'}))
     .expect(screen.findByTestId('operations-list').visible)
-    .ok();
+    .ok()
+    .expect(screen.getAllByTitle(/has scheduled operations/i).count)
+    .eql(instances.length);
 
   // expect first operation item to have progress bar
   await t
