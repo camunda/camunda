@@ -18,7 +18,12 @@ package io.atomix.storage.journal;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import io.atomix.storage.StorageException;
 import java.io.File;
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 /**
  * Segment file utility.
@@ -90,5 +95,18 @@ public final class JournalSegmentFile {
    */
   public File file() {
     return file;
+  }
+
+  /** @return path to the segment file */
+  public Path toPath() {
+    return file.toPath();
+  }
+
+  FileChannel openChannel(final StandardOpenOption... options) {
+    try {
+      return FileChannel.open(toPath(), options);
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
   }
 }

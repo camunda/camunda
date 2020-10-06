@@ -199,15 +199,6 @@ public class SegmentedJournal<E> implements Journal<E> {
     return segments.tailMap(index).values();
   }
 
-  /**
-   * Returns the total size of the journal.
-   *
-   * @return the total size of the journal
-   */
-  public long size() {
-    return segments.values().stream().mapToLong(segment -> segment.size()).sum();
-  }
-
   @Override
   public SegmentedJournalWriter<E> writer() {
     return writer;

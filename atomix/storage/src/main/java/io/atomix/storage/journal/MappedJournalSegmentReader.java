@@ -25,6 +25,9 @@ import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
+import java.nio.file.StandardOpenOption;
 import java.util.NoSuchElementException;
 import java.util.zip.CRC32;
 
@@ -34,6 +37,7 @@ import java.util.zip.CRC32;
  * @author <a href="http://github.com/kuujo">Jordan Halterman</a>
  */
 class MappedJournalSegmentReader<E> implements JournalReader<E> {
+  private final FileChannel channel;
   private final MappedByteBuffer buffer;
   private final int maxEntrySize;
   private final JournalIndex index;
@@ -43,17 +47,29 @@ class MappedJournalSegmentReader<E> implements JournalReader<E> {
   private Indexed<E> nextEntry;
 
   MappedJournalSegmentReader(
-      final MappedByteBuffer buffer,
+      final JournalSegmentFile file,
       final JournalSegment<E> segment,
       final int maxEntrySize,
       final JournalIndex index,
       final Namespace namespace) {
-    this.buffer = buffer;
     this.maxEntrySize = maxEntrySize;
     this.index = index;
     this.namespace = namespace;
     this.segment = segment;
+    channel =
+        file.openChannel(
+            StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+    buffer = mapChannel(channel, segment);
     reset();
+  }
+
+  private static MappedByteBuffer mapChannel(
+      final FileChannel channel, final JournalSegment<?> segment) {
+    try {
+      return channel.map(MapMode.READ_ONLY, 0, segment.descriptor().maxSegmentSize());
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
   }
 
   @Override
@@ -147,9 +163,11 @@ class MappedJournalSegmentReader<E> implements JournalReader<E> {
   public void close() {
     try {
       BufferCleaner.freeBuffer(buffer);
+      channel.close();
     } catch (final IOException e) {
       throw new StorageException(e);
     }
+    segment.onReaderClosed(this);
   }
 
   /** Reads the next entry in the segment. */

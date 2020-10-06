@@ -26,6 +26,9 @@ import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileChannel.MapMode;
+import java.nio.file.StandardOpenOption;
 import java.util.zip.CRC32;
 
 /**
@@ -46,8 +49,8 @@ import java.util.zip.CRC32;
  */
 class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
 
-  private final MappedByteBuffer mappedBuffer;
-  private final ByteBuffer buffer;
+  private final FileChannel channel;
+  private final MappedByteBuffer buffer;
   private final JournalSegment<E> segment;
   private final int maxEntrySize;
   private final JournalIndex index;
@@ -57,28 +60,30 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
   private boolean isOpen = true;
 
   MappedJournalSegmentWriter(
-      final MappedByteBuffer buffer,
+      final JournalSegmentFile file,
       final JournalSegment<E> segment,
       final int maxEntrySize,
       final JournalIndex index,
       final Namespace namespace) {
-    mappedBuffer = buffer;
-    this.buffer = buffer.slice();
     this.segment = segment;
     this.maxEntrySize = maxEntrySize;
     this.index = index;
     this.namespace = namespace;
     firstIndex = segment.index();
+    channel =
+        file.openChannel(
+            StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
+    buffer = mapChannel(channel, segment);
     reset(0);
   }
 
-  /**
-   * Returns the mapped buffer underlying the segment writer.
-   *
-   * @return the mapped buffer underlying the segment writer
-   */
-  MappedByteBuffer buffer() {
-    return mappedBuffer;
+  private static MappedByteBuffer mapChannel(
+      final FileChannel channel, final JournalSegment<?> segment) {
+    try {
+      return channel.map(MapMode.READ_WRITE, 0, segment.descriptor().maxSegmentSize());
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
   }
 
   @Override
@@ -257,7 +262,7 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
 
   @Override
   public void flush() {
-    mappedBuffer.force();
+    buffer.force();
   }
 
   @Override
@@ -266,7 +271,8 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
       flush();
       try {
         // fixme: can we replace this with agrona stuff?
-        BufferCleaner.freeBuffer(mappedBuffer);
+        BufferCleaner.freeBuffer(buffer);
+        channel.close();
       } catch (final IOException e) {
         throw new StorageException(e);
       } finally {
