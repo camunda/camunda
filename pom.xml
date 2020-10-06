@@ -32,6 +32,7 @@
 
     <version.elasticsearch>6.8.9</version.elasticsearch>
     <version.spring.boot>2.3.3.RELEASE</version.spring.boot>
+    <version.log4j>2.13.3</version.log4j>
     <version.junit>4.13</version.junit>
     <version.javax.json>1.1.4</version.javax.json>
     <version.micrometer>1.5.1</version.micrometer>
@@ -97,6 +98,13 @@
         <version>${version.elasticsearch}</version>
       </dependency>
       <!-- END -->
+
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-core</artifactId>
+        <version>${version.log4j}</version>
+        <type>test-jar</type>
+      </dependency>
 
       <dependency>
         <groupId>org.glassfish</groupId>

@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Configuration
 @ConfigurationProperties(TasklistProperties.PREFIX)
-@PropertySource("classpath:version.properties")
+@PropertySource("classpath:tasklist-version.properties")
 public class TasklistProperties {
 
   public static final String PREFIX = "zeebe.tasklist";
@@ -39,10 +39,10 @@ public class TasklistProperties {
 
   private boolean enterprise = false;
 
-  @Value("${io.zeebe.tasklist.internal.schema.version}")
+  @Value("${zeebe.tasklist.internal.schema.version}")
   private String schemaVersion;
 
-  @Value("${io.zeebe.tasklist.internal.schema.previous_version}")
+  @Value("${zeebe.tasklist.internal.schema.previous_version}")
   private String previousSchemaVersion;
 
   @NestedConfigurationProperty

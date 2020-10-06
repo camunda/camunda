@@ -58,6 +58,11 @@
 			<artifactId>zeebe-client-java</artifactId>
 		</dependency>
 
+		<dependency>
+			<groupId>io.zeebe</groupId>
+			<artifactId>zeebe-util</artifactId>
+		</dependency>
+
 		<!-- https://mvnrepository.com/artifact/org.glassfish/javax.json -->
 		<dependency>
 			<groupId>org.glassfish</groupId>
@@ -79,6 +84,13 @@
 		<dependency>
 			<groupId>org.assertj</groupId>
 			<artifactId>assertj-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.logging.log4j</groupId>
+			<artifactId>log4j-core</artifactId>
+			<type>test-jar</type>
 			<scope>test</scope>
 		</dependency>
 
