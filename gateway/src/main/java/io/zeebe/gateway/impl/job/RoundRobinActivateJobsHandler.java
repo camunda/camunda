@@ -7,13 +7,11 @@
  */
 package io.zeebe.gateway.impl.job;
 
-import io.grpc.Status.Code;
-import io.grpc.StatusRuntimeException;
-import io.grpc.stub.StreamObserver;
-import io.zeebe.gateway.EndpointManager;
 import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.RequestMapper;
 import io.zeebe.gateway.ResponseMapper;
+import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.gateway.grpc.ServerStreamObserver;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.PartitionIdIterator;
 import io.zeebe.gateway.impl.broker.RequestDispatchStrategy;
@@ -23,6 +21,7 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.zeebe.protocol.record.ErrorCode;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
@@ -47,7 +46,7 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   @Override
   public void activateJobs(
       final ActivateJobsRequest request,
-      final StreamObserver<ActivateJobsResponse> responseObserver) {
+      final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
     final BrokerClusterState topology = brokerClient.getTopologyManager().getTopology();
     if (topology != null) {
       final int partitionsCount = topology.getPartitionsCount();
@@ -137,9 +136,10 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
                       response.getResponse().getTruncated(),
                       resourceExhaustedWasPresent);
                 } else {
-                  logErrorResponse(partitionIdIterator, jobType, error);
-
                   final boolean wasResourceExhausted = wasResourceExhausted(error);
+                  if (!wasResourceExhausted) {
+                    logErrorResponse(partitionIdIterator, jobType, error);
+                  }
 
                   activateJobs(
                       request,
@@ -159,20 +159,21 @@ public final class RoundRobinActivateJobsHandler implements ActivateJobsHandler 
   }
 
   private boolean wasResourceExhausted(final Throwable error) {
-    final StatusRuntimeException statusRuntimeException = EndpointManager.convertThrowable(error);
-    return statusRuntimeException.getStatus().getCode() == Code.RESOURCE_EXHAUSTED;
+    if (error instanceof BrokerErrorException) {
+      final BrokerErrorException brokerError = (BrokerErrorException) error;
+      return brokerError.getError().getCode() == ErrorCode.RESOURCE_EXHAUSTED;
+    }
+
+    return false;
   }
 
   private void logErrorResponse(
       final PartitionIdIterator partitionIdIterator, final String jobType, final Throwable error) {
-    final StatusRuntimeException statusRuntimeException = EndpointManager.convertThrowable(error);
-    if (statusRuntimeException.getStatus().getCode() != Code.RESOURCE_EXHAUSTED) {
-      Loggers.GATEWAY_LOGGER.warn(
-          "Failed to activate jobs for type {} from partition {}",
-          jobType,
-          partitionIdIterator.getCurrentPartitionId(),
-          error);
-    }
+    Loggers.GATEWAY_LOGGER.warn(
+        "Failed to activate jobs for type {} from partition {}",
+        jobType,
+        partitionIdIterator.getCurrentPartitionId(),
+        error);
   }
 
   private PartitionIdIterator partitionIdIteratorForType(

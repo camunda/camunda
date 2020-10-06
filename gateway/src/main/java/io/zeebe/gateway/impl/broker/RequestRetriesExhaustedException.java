@@ -9,7 +9,7 @@ package io.zeebe.gateway.impl.broker;
 
 import io.zeebe.gateway.cmd.ClientException;
 
-class RequestRetriesExhaustedException extends ClientException {
+public final class RequestRetriesExhaustedException extends ClientException {
 
   RequestRetriesExhaustedException() {
     super(

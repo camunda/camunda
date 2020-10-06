@@ -17,10 +17,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import io.grpc.Status.Code;
-import io.grpc.StatusRuntimeException;
+import io.grpc.StatusException;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.api.util.StubbedBrokerClient;
 import io.zeebe.gateway.api.util.StubbedBrokerClient.RequestHandler;
+import io.zeebe.gateway.grpc.ServerStreamObserver;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
@@ -84,7 +85,7 @@ public final class LongPollingActivateJobsTest {
     handler.activateJobs(request);
 
     // then
-    waitUntil(() -> request.hasScheduledTimer());
+    waitUntil(request::hasScheduledTimer);
     verify(request.getResponseObserver(), times(0)).onCompleted();
   }
 
@@ -97,7 +98,7 @@ public final class LongPollingActivateJobsTest {
     handler.activateJobs(request);
 
     // when
-    waitUntil(() -> request.hasScheduledTimer());
+    waitUntil(request::hasScheduledTimer);
     stub.addAvailableJobs(TYPE, 1);
     verify(responseSpy, times(0)).onCompleted();
     brokerClient.notifyJobsAvailable(TYPE);
@@ -126,7 +127,7 @@ public final class LongPollingActivateJobsTest {
     // when
     final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
     handler.activateJobs(request);
-    waitUntil(() -> request.hasScheduledTimer());
+    waitUntil(request::hasScheduledTimer);
 
     // then
     verify(stub, times(amount * partitionsCount)).handle(any());
@@ -165,9 +166,9 @@ public final class LongPollingActivateJobsTest {
 
     // when
     handler.activateJobs(longPollingRequest);
-    waitUntil(() -> longPollingRequest.hasScheduledTimer());
+    waitUntil(longPollingRequest::hasScheduledTimer);
     actorClock.addTime(Duration.ofMillis(LONG_POLLING_TIMEOUT));
-    waitUntil(() -> longPollingRequest.isTimedOut());
+    waitUntil(longPollingRequest::isTimedOut);
 
     // then
     verify(longPollingRequest.getResponseObserver(), times(1)).onCompleted();
@@ -179,7 +180,7 @@ public final class LongPollingActivateJobsTest {
     final List<LongPollingActivateJobsRequest> requests =
         activateJobsAndWaitUntilBlocked(FAILED_RESPONSE_THRESHOLD);
     actorClock.addTime(Duration.ofMillis(LONG_POLLING_TIMEOUT));
-    requests.forEach(request -> waitUntil(() -> request.isTimedOut()));
+    requests.forEach(request -> waitUntil(request::isTimedOut));
 
     // when
     final LongPollingActivateJobsRequest successRequest = getLongPollingActivateJobsRequest();
@@ -223,7 +224,7 @@ public final class LongPollingActivateJobsTest {
 
     final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
     handler.activateJobs(request);
-    waitUntil(() -> request.hasScheduledTimer());
+    waitUntil(request::hasScheduledTimer);
 
     // when
     actorClock.addTime(Duration.ofMillis(probeTimeout));
@@ -272,15 +273,15 @@ public final class LongPollingActivateJobsTest {
             .setMaxJobsToActivate(1)
             .setRequestTimeout(requestTimeout)
             .build();
-    final StreamObserver responseSpy = spy(StreamObserver.class);
+    final ServerStreamObserver<ActivateJobsResponse> responseSpy = spy(ServerStreamObserver.class);
 
     final LongPollingActivateJobsRequest longPollingRequest =
         new LongPollingActivateJobsRequest(request, responseSpy);
 
     handler.activateJobs(longPollingRequest);
-    waitUntil(() -> longPollingRequest.hasScheduledTimer());
+    waitUntil(longPollingRequest::hasScheduledTimer);
     actorClock.addTime(Duration.ofMillis(requestTimeout));
-    waitUntil(() -> longPollingRequest.isTimedOut());
+    waitUntil(longPollingRequest::isTimedOut);
 
     // then
     verify(longPollingRequest.getResponseObserver(), times(1)).onCompleted();
@@ -297,7 +298,7 @@ public final class LongPollingActivateJobsTest {
                 .setMaxJobsToActivate(1)
                 .setRequestTimeout(requestTimeout)
                 .build(),
-            spy(StreamObserver.class));
+            spy(ServerStreamObserver.class));
 
     final long longTimeout = 100000;
     final LongPollingActivateJobsRequest longRequest =
@@ -307,16 +308,16 @@ public final class LongPollingActivateJobsTest {
                 .setMaxJobsToActivate(1)
                 .setRequestTimeout(longTimeout)
                 .build(),
-            spy(StreamObserver.class));
+            spy(ServerStreamObserver.class));
 
     handler.activateJobs(shortRequest);
     handler.activateJobs(longRequest);
-    waitUntil(() -> shortRequest.hasScheduledTimer());
-    waitUntil(() -> longRequest.hasScheduledTimer());
+    waitUntil(shortRequest::hasScheduledTimer);
+    waitUntil(longRequest::hasScheduledTimer);
 
     // when
     actorClock.addTime(Duration.ofMillis(requestTimeout));
-    waitUntil(() -> shortRequest.isTimedOut());
+    waitUntil(shortRequest::isTimedOut);
     stub.addAvailableJobs(TYPE, 2);
     brokerClient.notifyJobsAvailable(TYPE);
 
@@ -336,7 +337,7 @@ public final class LongPollingActivateJobsTest {
                 .setMaxJobsToActivate(1)
                 .setRequestTimeout(-1)
                 .build(),
-            spy(StreamObserver.class));
+            spy(ServerStreamObserver.class));
 
     // when
     handler.activateJobs(request);
@@ -360,7 +361,7 @@ public final class LongPollingActivateJobsTest {
                 .setMaxJobsToActivate(15)
                 .setRequestTimeout(500)
                 .build(),
-            spy(StreamObserver.class));
+            spy(ServerStreamObserver.class));
 
     /* and a request handler that simulates the following:
         - on the first round no broker has any jobs
@@ -400,7 +401,7 @@ public final class LongPollingActivateJobsTest {
         });
     // when
     handler.activateJobs(request);
-    waitUntil(() -> request.isCompleted());
+    waitUntil(request::isCompleted);
 
     // then
     assertThat(request.isTimedOut()).isFalse();
@@ -424,7 +425,7 @@ public final class LongPollingActivateJobsTest {
                 .setMaxJobsToActivate(15)
                 .setRequestTimeout(500)
                 .build(),
-            spy(StreamObserver.class));
+            spy(ServerStreamObserver.class));
 
     brokerClient.registerHandler(
         BrokerActivateJobsRequest.class,
@@ -437,7 +438,7 @@ public final class LongPollingActivateJobsTest {
             final int partitionId = request.getPartitionId();
 
             if (partitionId == 4) {
-              return new BrokerErrorResponse(
+              return new BrokerErrorResponse<>(
                   new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure"));
             } else {
               return noJobsAvailableStub.handle(request);
@@ -454,9 +455,9 @@ public final class LongPollingActivateJobsTest {
     verify(request.getResponseObserver(), never()).onNext(Mockito.any());
     verify(request.getResponseObserver(), never()).onCompleted();
 
-    final StatusRuntimeException statusRuntimeException =
-        (StatusRuntimeException) throwableCaptor.getValue();
-    assertThat(statusRuntimeException.getStatus().getCode()).isEqualTo(Code.RESOURCE_EXHAUSTED);
+    assertThat(throwableCaptor.getValue()).isInstanceOf(StatusException.class);
+    final StatusException exception = (StatusException) throwableCaptor.getValue();
+    assertThat(exception.getStatus().getCode()).isEqualTo(Code.RESOURCE_EXHAUSTED);
   }
 
   @Test
@@ -469,7 +470,7 @@ public final class LongPollingActivateJobsTest {
                 .setMaxJobsToActivate(15)
                 .setRequestTimeout(500)
                 .build(),
-            spy(StreamObserver.class));
+            spy(ServerStreamObserver.class));
 
     brokerClient.registerHandler(
         BrokerActivateJobsRequest.class,
@@ -486,7 +487,7 @@ public final class LongPollingActivateJobsTest {
             final int partitionId = request.getPartitionId();
 
             if (partitionId == 4) {
-              return new BrokerErrorResponse(
+              return new BrokerErrorResponse<>(
                   new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "backpressure"));
             } else {
               return jobsAvailableStub.handle(request);
@@ -496,7 +497,7 @@ public final class LongPollingActivateJobsTest {
     // when
     handler.activateJobs(request);
 
-    waitUntil(() -> request.isCompleted());
+    waitUntil(request::isCompleted);
 
     // then
     assertThat(request.isTimedOut()).isFalse();
@@ -516,7 +517,7 @@ public final class LongPollingActivateJobsTest {
             i -> {
               final LongPollingActivateJobsRequest request = getLongPollingActivateJobsRequest();
               handler.activateJobs(request);
-              waitUntil(() -> request.hasScheduledTimer());
+              waitUntil(request::hasScheduledTimer);
               return request;
             })
         .collect(Collectors.toList());
@@ -533,7 +534,7 @@ public final class LongPollingActivateJobsTest {
             .setType(jobType)
             .setMaxJobsToActivate(maxJobsToActivate)
             .build();
-    final StreamObserver responseSpy = spy(StreamObserver.class);
+    final ServerStreamObserver<ActivateJobsResponse> responseSpy = spy(ServerStreamObserver.class);
 
     return new LongPollingActivateJobsRequest(request, responseSpy);
   }

@@ -155,7 +155,7 @@ public final class ResponseMapper {
   }
 
   @FunctionalInterface
-  public interface BrokerResponseMapper<BrokerResponseDto, GrpcResponse> {
-    GrpcResponse apply(long key, BrokerResponseDto responseDto);
+  public interface BrokerResponseMapper<BrokerResponseDto, GrpcResponseT> {
+    GrpcResponseT apply(long key, BrokerResponseDto responseDto);
   }
 }
