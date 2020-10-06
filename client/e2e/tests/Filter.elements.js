@@ -28,9 +28,7 @@ export const customDateInput = Selector('.unitSelection').find('input');
 export const durationFilterOperator = Selector('.DurationFilter .Select');
 export const durationFilterInput = Selector('.DurationFilter input[type="text"]');
 export const modalCancel = Selector('.Modal .Button').withText('Cancel');
-export const stringValues = Selector('.TypeaheadMultipleSelection__valueList');
-export const firstMultiSelectValue = Selector(
-  '.TypeaheadMultipleSelection__valueList .LabeledInput'
-);
+export const stringValues = Selector('.Checklist .itemsList');
+export const firstMultiSelectValue = Selector('.Checklist .itemsList .LabeledInput .label');
 export const multiSelectValue = (text) => firstMultiSelectValue.withText(text);
 export const confirmButton = Selector('.Modal .Modal__actions .primary');

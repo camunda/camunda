@@ -5,18 +5,12 @@
  */
 
 import React from 'react';
+
 import {t} from 'translation';
-import {TypeaheadMultipleSelection} from 'components';
+import {Checklist} from 'components';
 
 export default function BooleanInput({changeFilter, setValid, filter}) {
-  const toggleValue = (value, checked) => {
-    let newValues;
-    if (checked) {
-      newValues = filter.values.concat(value);
-    } else {
-      newValues = filter.values.filter((existingValue) => existingValue !== value);
-    }
-
+  const updateValues = (newValues) => {
     changeFilter({
       values: newValues,
     });
@@ -30,17 +24,18 @@ export default function BooleanInput({changeFilter, setValid, filter}) {
 
   return (
     <div className="BooleanInput">
-      <TypeaheadMultipleSelection
-        availableValues={[true, false, null]}
-        selectedValues={filter.values}
-        toggleValue={toggleValue}
-        format={formatValue}
-        labels={{
-          available: t('common.filter.variableModal.multiSelect.available'),
-          selected: t('common.filter.variableModal.multiSelect.selected'),
-          empty: t('common.filter.variableModal.multiSelect.empty'),
-        }}
-        hideSearch
+      <Checklist
+        selectedItems={filter.values}
+        allItems={[true, false, null]}
+        onChange={updateValues}
+        formatter={(values, selectedValues) =>
+          values.map((value) => ({
+            id: value,
+            label: formatValue(value),
+            checked: selectedValues.includes(value),
+          }))
+        }
+        headerHidden
       />
     </div>
   );

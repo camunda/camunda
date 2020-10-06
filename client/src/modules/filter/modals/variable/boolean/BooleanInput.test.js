@@ -19,16 +19,11 @@ it('should assume no value is selected per default', () => {
   expect(BooleanInput.defaultFilter.values).toEqual([]);
 });
 
-it('should add/remove values to the list of selected values', () => {
+it('should update filter selected values on Checklist change', () => {
   const spy = jest.fn();
   const node = shallow(<BooleanInput {...props} changeFilter={spy} />);
 
-  node.find('TypeaheadMultipleSelection').prop('toggleValue')(true, true);
+  node.find('Checklist').prop('onChange')([null, true]);
 
-  expect(spy).toHaveBeenCalledWith({values: [true]});
-
-  node.find('TypeaheadMultipleSelection').prop('toggleValue')(true, false);
-  node.find('TypeaheadMultipleSelection').prop('toggleValue')(null, true);
-
-  expect(spy).toHaveBeenCalledWith({values: [null]});
+  expect(spy).toHaveBeenCalledWith({values: [null, true]});
 });

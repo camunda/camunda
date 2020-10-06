@@ -1,50 +1,57 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`should hide selectAll if there is only one item 1`] = `
-<div
-  className="Checklist"
->
-  <div
-    className="itemsList"
-  >
-    <ForwardRef(LabeledInput)
-      checked={true}
-      key="id1"
-      onChange={[Function]}
-      type="checkbox"
-    />
-  </div>
-</div>
-`;
-
 exports[`should match snapshot 1`] = `
 <div
   className="Checklist"
 >
-  <ForwardRef(LabeledInput)
-    checked={false}
-    label="Select All"
-    onChange={[Function]}
-    type="checkbox"
-  />
+  <div
+    className="header"
+  >
+    <ForwardRef(LabeledInput)
+      checked={false}
+      className="selectAll"
+      label="Select All"
+      onChange={[Function]}
+      type="checkbox"
+    />
+    <ForwardRef(Input)
+      className="searchInput"
+      onChange={[Function]}
+      placeholder="Search for items"
+      type="text"
+      value=""
+    />
+    <Tag
+      onRemove={[Function]}
+    >
+      1
+       Selected
+    </Tag>
+  </div>
   <div
     className="itemsList"
   >
     <ForwardRef(LabeledInput)
       checked={true}
-      key="id1"
+      className="highlight"
+      key="item1"
+      label="item 1"
       onChange={[Function]}
       type="checkbox"
     />
     <ForwardRef(LabeledInput)
       checked={false}
-      key="id2"
+      className=""
+      key="item2"
+      label="item 2"
       onChange={[Function]}
       type="checkbox"
     />
     <ForwardRef(LabeledInput)
+      className=""
       disabled={true}
       key="id3"
+      label="unauthorized"
       onChange={[Function]}
       type="checkbox"
     />

@@ -52,7 +52,7 @@ it('should update selected tenants on itemList change', () => {
   const node = shallow(<EditSourceModal {...props} />);
 
   node
-    .find('ItemsList')
+    .find('Checklist')
     .props()
     .onChange([{id: null, name: 'Not defined'}]);
 
@@ -64,9 +64,9 @@ it('should update selected tenants on itemList change', () => {
 it('should not deselect unauthorized tenants', () => {
   const node = shallow(<EditSourceModal {...props} />);
 
-  node.find('ItemsList').props().onChange([]);
+  node.find('Checklist').props().onChange([]);
 
-  expect(node.find('ItemsList').props().selectedItems).toEqual([
+  expect(node.find('Checklist').props().selectedItems).toEqual([
     {id: '__unauthorizedTenantId__', name: 'unauthorizedTenant'},
   ]);
 });

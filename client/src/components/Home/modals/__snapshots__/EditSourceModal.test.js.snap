@@ -14,7 +14,7 @@ exports[`should match snapshot 1`] = `
     <Form>
       Tenants
       <FormGroup>
-        <ItemsList
+        <Checklist
           allItems={
             Array [
               Object {

@@ -6,14 +6,16 @@
 
 import React from 'react';
 import {withRouter} from 'react-router-dom';
-
-import {loadReports, getCollection} from 'services';
-import {TypeaheadMultipleSelection, Popover, ColorPicker} from 'components';
-import {Configuration} from './Configuration';
 import equal from 'deep-equal';
 
-import './CombinedReportPanel.scss';
+import {loadReports, getCollection} from 'services';
+import {Popover, ColorPicker} from 'components';
 import {t} from 'translation';
+
+import {Configuration} from './Configuration';
+import {TypeaheadMultipleSelection} from './TypeaheadMultipleSelection';
+
+import './CombinedReportPanel.scss';
 
 export default withRouter(
   class CombinedReportPanel extends React.Component {

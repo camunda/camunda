@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {shallow} from 'enzyme';
+
 import MultiDefinitionSource from './MultiDefinitionSource';
 
 const props = {
@@ -47,7 +48,7 @@ it('should invoke onChange with the selected source', () => {
   const node = shallow(<MultiDefinitionSource {...props} />);
 
   node
-    .find('ItemsList')
+    .find('Checklist')
     .props()
     .onChange([{key: 'invoiceClassification', type: 'decision'}]);
 

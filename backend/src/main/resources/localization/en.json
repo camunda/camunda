@@ -733,6 +733,7 @@
       "label-plural": "Flow Nodes"
     },
     "multiSelect": {
+      "selectAll": "Select all in view",
       "available": "Available items",
       "selected": "Selected items",
       "search": "Search for items",
@@ -897,8 +898,7 @@
         "addValue": "Add Value",
         "invalidInput": "Input must be a number",
         "multiSelect": {
-          "available": "Available values",
-          "selected": "Selected values",
+          "header": "Variable values",
           "search": "Search for values",
           "empty": "No values found"
         },

@@ -54,7 +54,7 @@ it('should invoke onChange with the selected source', () => {
   node.find('Typeahead').props().onChange(props.tenantsWithDefinitions[0].id);
 
   node
-    .find('ItemsList')
+    .find('Checklist')
     .props()
     .onChange([
       {
