@@ -5,6 +5,8 @@
  */
 package org.camunda.operate.webapp.security;
 
+import java.util.Set;
+
 public final class OperateURIs {
 
   // Used as constants class
@@ -29,6 +31,11 @@ public final class OperateURIs {
       X_CSRF_HEADER = "X-CSRF-HEADER",
       X_CSRF_TOKEN = "X-CSRF-TOKEN"
   ;
+
+   public static final String DEFAULT_AUTH = AUTH_PROFILE;
+   public static final Set<String> AUTH_PROFILES = Set.of(AUTH_PROFILE,
+                                                          LDAP_AUTH_PROFILE,
+                                                          SSO_AUTH_PROFILE);
 
    public static final String[] AUTH_WHITELIST = {
        "/swagger-resources",

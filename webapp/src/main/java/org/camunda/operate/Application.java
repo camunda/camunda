@@ -5,10 +5,9 @@
  */
 package org.camunda.operate;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.Set;
 import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.webapp.security.OperateURIs;
 import org.slf4j.Logger;
@@ -21,6 +20,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.core.env.ConfigurableEnvironment;
 
 @SpringBootApplication
 @ComponentScan(basePackages = "org.camunda.operate",
@@ -42,19 +42,24 @@ public class Application {
     System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
     final SpringApplication springApplication = new SpringApplication(Application.class);
     springApplication.setAddCommandLineProperties(true);
-
-    if(!isOneAuthProfileActive(args)) {
-      springApplication.setAdditionalProfiles(OperateURIs.AUTH_PROFILE);
-    }
     setDefaultProperties(springApplication);
-
+    setDeafultAuthProfile(springApplication);
     springApplication.run(args);
   }
 
+  private static void setDeafultAuthProfile(final SpringApplication springApplication) {
+    springApplication.addInitializers(configurableApplicationContext -> {
+      ConfigurableEnvironment env = configurableApplicationContext.getEnvironment();
+      Set<String> activeProfiles = Set.of(env.getActiveProfiles());
+      if (OperateURIs.AUTH_PROFILES.stream().noneMatch(p -> activeProfiles.contains(p))) {
+        env.addActiveProfile(OperateURIs.DEFAULT_AUTH);
+      }
+    });
+  }
+
   private static void setDefaultProperties(final SpringApplication springApplication) {
-    final Map<String, Object> propsMap = new HashMap<>();
-    propsMap.putAll(getManagementProperties());
-    springApplication.setDefaultProperties(propsMap);
+    final Map<String, Object> defaultsMap = new HashMap<>(getManagementProperties());
+    springApplication.setDefaultProperties(defaultsMap);
   }
 
   public static Map<String, Object> getManagementProperties() {
@@ -71,13 +76,6 @@ public class Application {
         //add custom check to standard readiness check
         "management.endpoint.health.group.readiness.include", "readinessState,elsIndicesCheck"
     );
-  }
-
-  protected static boolean isOneAuthProfileActive(String[] args) {
-    String profilesFromEnv = String.format("%s", System.getenv("SPRING_PROFILES_ACTIVE"));
-    String profilesFromArgs = String.join(",",Arrays.asList(args));
-    String profilesFromProperties = String.format("%s", System.getProperty("spring.profiles.active"));
-    return profilesFromArgs.contains("auth") || profilesFromEnv.contains("auth") || profilesFromProperties.contains("auth");
   }
 
   @Bean(name = "dataGenerator")
