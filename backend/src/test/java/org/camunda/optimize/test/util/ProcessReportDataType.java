@@ -90,7 +90,9 @@ public enum ProcessReportDataType {
 
   INCIDENT_FREQUENCY_GROUP_BY_NONE,
   INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE,
-  INCIDENT_DURATION_GROUP_BY_NONE;
+
+  INCIDENT_DURATION_GROUP_BY_NONE,
+  INCIDENT_DURATION_GROUP_BY_FLOW_NODE;
 
   public static List<ProcessReportDataType> allDateReports() {
     return Arrays.stream(

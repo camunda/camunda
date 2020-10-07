@@ -248,7 +248,7 @@ public class IncidentDataDeployer {
       if (durationInSec != null) {
         final OffsetDateTime endDate = creationDate.plusSeconds(durationInSec);
         incidentClient.changeIncidentCreationAndEndDateIfPresent(processInstanceId, creationDate, endDate);
-        DateCreationFreezer.dateFreezer(endDate.plusSeconds(durationInSec)).freezeDateAndReturn();
+        DateCreationFreezer.dateFreezer(creationDate.plusSeconds(durationInSec)).freezeDateAndReturn();
       }
     }
   }
