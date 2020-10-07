@@ -255,6 +255,8 @@
       "label": "View",
       "rawData": "Raw Data",
       "pi": "Process Instance",
+      "in": "Incident",
+      "resolutionDuration": "Resolution Duration",
       "fn": "Flow Node",
       "userTask": "User Task",
       "count": "Count",

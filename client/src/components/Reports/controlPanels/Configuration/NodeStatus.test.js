@@ -39,6 +39,21 @@ it('should render a status selection reports grouped by assignee', () => {
   expect(node).toMatchSnapshot();
 });
 
+it('should not render node status selection for incident reports', () => {
+  const node = shallow(
+    <NodeStatus
+      report={{
+        data: {
+          view: {entity: 'incident'},
+          groupBy: {type: 'flowNodes'},
+        },
+      }}
+    />
+  );
+
+  expect(node.find('.NodeStatus')).not.toExist();
+});
+
 it('should not crash when no groupBy is set (e.g. for combined reports)', () => {
   shallow(<NodeStatus report={{data: {}}} />);
 });

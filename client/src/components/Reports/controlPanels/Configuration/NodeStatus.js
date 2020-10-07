@@ -22,7 +22,9 @@ export default function NodeStatus({
     groupBy?.type
   );
 
-  if (isUserTaskDateReport || isFlowNodeDurationReport || hasAllowedGroupby) {
+  const hasAllowedView = view?.entity !== 'incident';
+
+  if (isUserTaskDateReport || isFlowNodeDurationReport || (hasAllowedGroupby && hasAllowedView)) {
     return (
       <fieldset className="NodeStatus">
         <legend>{t('report.config.nodeStatus.legend')}</legend>

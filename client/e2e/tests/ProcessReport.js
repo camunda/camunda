@@ -849,3 +849,25 @@ test('distribute by start/end date', async (t) => {
 
   await t.expect(e.reportChart.visible).ok();
 });
+
+test('incident reports', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Incident Process', 'All');
+  await u.selectView(t, 'Incident', 'Count');
+  await u.selectGroupby(t, 'None');
+
+  await t.expect(e.reportNumber.visible).ok();
+
+  await u.selectView(t, 'Incident', 'Resolution Duration');
+
+  await t.expect(e.reportNumber.visible).ok();
+
+  await u.selectGroupby(t, 'Flow Nodes');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.expect(e.reportChart.visible).ok();
+
+  await u.selectVisualization(t, 'Table');
+
+  await t.expect(e.reportRenderer.textContent).contains('Incident: Resolution Duration');
+});

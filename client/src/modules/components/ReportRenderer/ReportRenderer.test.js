@@ -335,3 +335,16 @@ describe('NoDataNotice', () => {
     expect(node.find(NoDataNotice)).toExist();
   });
 });
+
+it('should render NoDataNotice if the report has only empty values', () => {
+  const node = shallow(
+    <ReportRenderer
+      report={{
+        ...reportTemplate,
+        result: {type: 'map', instanceCount: 62, data: [{value: null}]},
+      }}
+    />
+  );
+
+  expect(node.find('NoDataNotice')).toExist();
+});

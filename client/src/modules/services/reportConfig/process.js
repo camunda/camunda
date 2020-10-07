@@ -22,6 +22,21 @@ export const view = [
     ],
   },
   {
+    key: 'in',
+    options: [
+      {
+        key: 'in_count',
+        group: 'in_count',
+        data: {property: 'frequency', entity: 'incident'},
+      },
+      {
+        key: 'in_resolutionDuration',
+        group: 'in_resolutionDuration',
+        data: {property: 'duration', entity: 'incident'},
+      },
+    ],
+  },
+  {
     key: 'fn',
     options: [
       {
@@ -135,6 +150,14 @@ export const combinations = {
     runningDate: ['table', 'chart'],
     variable: ['table', 'chart'],
     duration: ['table', 'chart'],
+  },
+  in_resolutionDuration: {
+    none: ['number'],
+    fn: ['table', 'chart', 'heat'],
+  },
+  in_count: {
+    none: ['number'],
+    fn: ['table', 'chart', 'heat'],
   },
   fn_duration: {
     fn: ['table', 'chart', 'heat'],
