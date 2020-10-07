@@ -18,11 +18,13 @@ export default function Number({report, formatter}) {
   const numberText = useRef();
 
   useEffect(() => {
-    fitty(numberText.current, {
-      minSize: 5,
-      maxSize: 64,
-    });
-  }, []);
+    if (numberText.current) {
+      fitty(numberText.current, {
+        minSize: 5,
+        maxSize: 64,
+      });
+    }
+  }, [targetValue]);
 
   if (targetValue && targetValue.active) {
     let min, max;
