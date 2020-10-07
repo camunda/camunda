@@ -179,8 +179,9 @@ public class IdentityRestServiceIT extends AbstractIT {
     // then
     assertThat(searchResult)
       // user is first as name and email contains baggins
+      // total count is 3 as there are two more identities (the baggins group & testUser2)
       .isEqualTo(new IdentitySearchResultDto(
-        1L, Lists.newArrayList(userIdentity)
+        3L, Lists.newArrayList(userIdentity)
       ));
   }
 

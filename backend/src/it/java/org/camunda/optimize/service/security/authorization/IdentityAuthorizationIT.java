@@ -43,11 +43,12 @@ public class IdentityAuthorizationIT extends AbstractIT {
     // when
     final IdentitySearchResultDto searchResult = identityClient.searchForIdentity("", KERMIT_USER, KERMIT_USER);
 
-    // then only return identities the current user has access to
+    // then only return identities the current user has access to are returned
+    // the total count however still reflects all users
     assertThat(searchResult)
       .isEqualTo(
         new IdentitySearchResultDto(
-          2L, Lists.newArrayList(userIdentity1, groupIdentity1)
+          4L, Lists.newArrayList(userIdentity1, groupIdentity1)
         ));
   }
 
@@ -115,8 +116,9 @@ public class IdentityAuthorizationIT extends AbstractIT {
     // then
     assertThat(searchResult)
       // user2 is still returned although being not the first internal search result based on sorting
+      // and total count however still reflects all users
       .isEqualTo(new IdentitySearchResultDto(
-        1L, Lists.newArrayList(user2)
+        3L, Lists.newArrayList(user2)
       ));
   }
 
@@ -149,8 +151,9 @@ public class IdentityAuthorizationIT extends AbstractIT {
     assertThat(searchResult)
       // user2 and user4 are still returned even though they are not in the first internal search result based on
       // sorting
+      // and total count however still reflects all users
       .isEqualTo(new IdentitySearchResultDto(
-        2L, Lists.newArrayList(user2, user4)
+        4L, Lists.newArrayList(user2, user4)
       ));
   }
 }

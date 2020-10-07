@@ -154,7 +154,7 @@ public class IdentityService implements ConfigurationReloadable, SessionListener
       filteredIdentities.addAll(filterIdentitySearchResultByUserAuthorizations(userId, result));
       result = syncedIdentityCache.searchIdentitiesAfter(searchString, maxResults, result);
     }
-    return new IdentitySearchResultDto(filteredIdentities.size(), filteredIdentities);
+    return new IdentitySearchResultDto(result.getTotal(), filteredIdentities);
   }
 
   private List<IdentityWithMetadataDto> filterIdentitySearchResultByUserAuthorizations(
