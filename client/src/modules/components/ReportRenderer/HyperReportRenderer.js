@@ -70,7 +70,11 @@ function formatResult(data, result) {
     configuration: {distributedBy, distributeByDateVariableUnit},
   } = data;
 
-  if (distributedBy.type === 'variable' && distributedBy.value.type === 'Date') {
+  const distributedByDateVar =
+    distributedBy.type === 'variable' && distributedBy.value.type === 'Date';
+  const distributedByDate = ['startDate', 'endDate'].includes(distributedBy.type);
+
+  if (distributedByDate || distributedByDateVar) {
     return formatReportResult(
       {
         ...data,

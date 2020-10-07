@@ -126,6 +126,21 @@ describe('process update', () => {
     );
 
     expect(changes.configuration.distributedBy).toEqual({$set: {type: 'none', value: null}});
+
+    changes = config.process.update(
+      'groupBy',
+      {type: 'duration'},
+      {
+        report: {
+          data: {
+            view: {entity: 'processInstance'},
+            configuration: {distributedBy: {type: 'startDate', value: {}}},
+          },
+        },
+      }
+    );
+
+    expect(changes.configuration.distributedBy).toEqual({$set: {type: 'none', value: null}});
   });
 
   it('should keep distributed by compatible when changing view', () => {

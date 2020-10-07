@@ -830,3 +830,22 @@ test('distribute by variable', async (t) => {
 
   await t.expect(e.reportRenderer.textContent).notContains('Misc');
 });
+
+test('distribute by start/end date', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
+  await u.selectView(t, 'Process Instance', 'Count');
+  await u.selectGroupby(t, 'Variable', 'invoiceCategory');
+  await u.selectVisualization(t, 'Bar Chart');
+
+  await t.click(e.configurationButton);
+  await t.click(e.distributedBySelect);
+  await t.click(e.configurationOption('Start Date'));
+  await t.click(e.submenuOption('month'));
+  await t.click(e.distributedBySelect);
+  await t.click(e.configurationOption('End Date'));
+  await t.click(e.submenuOption('automatic'));
+  await u.selectGroupby(t, 'Variable', 'boolVar');
+
+  await t.expect(e.reportChart.visible).ok();
+});

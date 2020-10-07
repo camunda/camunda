@@ -181,3 +181,33 @@ it('should reset process part if defined when selection an option', () => {
     true
   );
 });
+
+it('should invoke onChange with correct start date configuration', () => {
+  const spy = jest.fn();
+  const node = shallow(
+    <DistributedBy
+      mightFail={jest.fn().mockImplementation((data, cb) => cb(data))}
+      report={{
+        data: {
+          ...data,
+          view: {entity: 'processInstance'},
+          groupBy: {type: 'variable'},
+        },
+      }}
+      onChange={spy}
+    />
+  );
+  runLastEffect();
+
+  node.find(Select).prop('onChange')('startDate_month');
+
+  expect(spy).toHaveBeenCalledWith(
+    {
+      configuration: {
+        distributedBy: {$set: {type: 'startDate', value: {unit: 'month'}}},
+      },
+      visualization: {$set: 'bar'},
+    },
+    true
+  );
+});
