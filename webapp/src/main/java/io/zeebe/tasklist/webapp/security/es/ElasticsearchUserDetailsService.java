@@ -31,12 +31,13 @@ import org.springframework.stereotype.Component;
 @Profile("!" + SSO_AUTH_PROFILE)
 public class ElasticsearchUserDetailsService implements UserDetailsService {
 
+  static final String USER_ROLE = "USER";
+
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchUserDetailsService.class);
 
   private static final String ACT_USERNAME = "act", ACT_PASSWORD = ACT_USERNAME;
   private static final String ACT_ADMIN_ROLE = "ACTRADMIN";
-  private static final String USER_ROLE = "USER";
   private static final String USER_DEFAULT_FIRSTNAME = "Demo";
   private static final String USER_DEFAULT_LASTNAME = "User";
   @Autowired private UserStorage userStorage;
@@ -70,8 +71,7 @@ public class ElasticsearchUserDetailsService implements UserDetailsService {
     }
   }
 
-  private ElasticsearchUserDetailsService addUserWith(
-      String username, String password, String role) {
+  ElasticsearchUserDetailsService addUserWith(String username, String password, String role) {
     LOGGER.info("Create user in ElasticSearch for username {}", username);
     final String passwordEncoded = passwordEncoder.encode(password);
     userStorage.create(
