@@ -14,6 +14,7 @@ import org.camunda.optimize.dto.optimize.persistence.incident.IncidentStatus;
 import org.camunda.optimize.dto.optimize.persistence.incident.IncidentType;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
 import org.camunda.optimize.service.importing.engine.EngineImportScheduler;
 import org.camunda.optimize.service.importing.engine.mediator.CompletedIncidentEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.OpenIncidentEngineImportMediator;
@@ -30,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import static javax.ws.rs.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
@@ -47,7 +49,6 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -77,7 +78,6 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -107,7 +107,6 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -131,6 +130,41 @@ public class IncidentImportIT extends AbstractImportIT {
   }
 
   @Test
+  public void incidentsWithCustomTypeAreImported() {
+    // given
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
+      .startProcessInstance()
+        .withOpenIncidentOfCustomType("myCustomIncidentType")
+      .executeDeployment();
+    // @formatter:on
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<ProcessInstanceDto> storedProcessInstances =
+      elasticSearchIntegrationTestExtension.getAllProcessInstances();
+    assertThat(storedProcessInstances)
+      .hasSize(1)
+      .singleElement()
+      .satisfies(processInstanceDto -> {
+        assertThat(processInstanceDto.getIncidents()).hasSize(1);
+        processInstanceDto.getIncidents().forEach(incident -> {
+          assertThat(incident.getId()).isNotNull();
+          assertThat(incident.getCreateTime()).isNotNull();
+          assertThat(incident.getEndTime()).isNull();
+          assertThat(incident.getIncidentType().getId()).isEqualTo("myCustomIncidentType");
+          assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK_ID_1);
+          assertThat(incident.getFailedActivityId()).isNull();
+          assertThat(incident.getIncidentMessage()).isNotNull();
+          assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.OPEN);
+        });
+      });
+  }
+
+  @Test
   public void importOpenIncidentFirstAndThenResolveIt() {
     // given  one open incident is created
     BpmnModelInstance incidentProcess = getTwoExternalTaskProcess();
@@ -139,14 +173,12 @@ public class IncidentImportIT extends AbstractImportIT {
     engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
 
     importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // when we resolve the open incident and create another incident
     engineIntegrationExtension.completeExternalTasks(processInstanceEngineDto.getId());
     engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
 
     importAllEngineEntitiesFromLastIndex();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then there should be one complete one open incident
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -172,7 +204,6 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // when we import the open incident
     importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then the open incident should not overwrite the existing resolved one
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -199,7 +230,6 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -259,6 +289,7 @@ public class IncidentImportIT extends AbstractImportIT {
       .when(processInstanceIndexMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
     importOpenIncidents();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     esMockServer.verify(processInstanceIndexMatcher);
 
     // then the incident is stored after successful write
@@ -286,6 +317,7 @@ public class IncidentImportIT extends AbstractImportIT {
       .when(processInstanceIndexMatcher, Times.once())
       .error(HttpError.error().withDropConnection(true));
     importResolvedIncidents();
+    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
     esMockServer.verify(processInstanceIndexMatcher);
 
     // then the incident is stored after successful write
@@ -315,7 +347,6 @@ public class IncidentImportIT extends AbstractImportIT {
 
     // when
     importAllEngineEntitiesFromScratch();
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
 
     // then
     final List<ProcessInstanceDto> storedProcessInstances =
@@ -359,7 +390,6 @@ public class IncidentImportIT extends AbstractImportIT {
 
       mediator.runImport().get(10, TimeUnit.SECONDS);
     }
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   @SneakyThrows
@@ -376,7 +406,6 @@ public class IncidentImportIT extends AbstractImportIT {
 
       mediator.runImport().get(10, TimeUnit.SECONDS);
     }
-    elasticSearchIntegrationTestExtension.refreshAllOptimizeIndices();
   }
 
   private void manuallyAddAResolvedIncidentToElasticsearch(final ProcessInstanceEngineDto processInstanceWithIncident) {

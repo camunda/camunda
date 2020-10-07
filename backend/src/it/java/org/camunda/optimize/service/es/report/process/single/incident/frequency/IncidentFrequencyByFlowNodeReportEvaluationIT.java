@@ -109,6 +109,34 @@ public class IncidentFrequencyByFlowNodeReportEvaluationIT extends AbstractProce
   }
 
   @Test
+  public void customIncidentTypes() {
+    // given
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
+      .startProcessInstance()
+        .withOpenIncident()
+      .startProcessInstance()
+        .withOpenIncidentOfCustomType("myCustomIncidentType")
+      .executeDeployment();
+    // @formatter:on
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(IncidentDataDeployer.PROCESS_DEFINITION_KEY, "1");
+    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    MapResultAsserter.asserter()
+      .processInstanceCount(2L)
+      .isComplete(true)
+      .groupedByContains(END_EVENT, null, END_EVENT_NAME)
+      .groupedByContains(SERVICE_TASK_ID_1, 2., SERVICE_TASK_NAME_1)
+      .groupedByContains(START_EVENT, null, START_EVENT_NAME)
+      .doAssert(resultDto);
+  }
+
+  @Test
   public void incidentsForMultipleProcessInstances() {
     // given
     // @formatter:off

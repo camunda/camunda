@@ -116,6 +116,36 @@ public class IncidentDurationByFlowNodeReportEvaluationIT extends AbstractProces
   }
 
   @Test
+  public void customIncidentTypes() {
+    // given
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
+      .startProcessInstance()
+        .withResolvedIncident()
+        .withIncidentDurationInSec(1L)
+      .startProcessInstance()
+        .withOpenIncidentOfCustomType("myCustomIncidentType")
+        .withIncidentDurationInSec(3L)
+      .executeDeployment();
+    // @formatter:on
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(IncidentDataDeployer.PROCESS_DEFINITION_KEY, "1");
+    final ReportMapResultDto resultDto = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    MapResultAsserter.asserter()
+      .processInstanceCount(2L)
+      .isComplete(true)
+      .groupedByContains(END_EVENT, null, END_EVENT_NAME)
+      .groupedByContains(SERVICE_TASK_ID_1, 2000., SERVICE_TASK_NAME_1)
+      .groupedByContains(START_EVENT, null, START_EVENT_NAME)
+      .doAssert(resultDto);
+  }
+
+  @Test
   public void severalOpenIncidentsForMultipleProcessInstances() {
     // given
     // @formatter:off

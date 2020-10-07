@@ -33,7 +33,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.*;
+import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_DURATION_GROUP_BY_NONE;
@@ -92,6 +92,32 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
     assertThat(resultDto.getData())
       .isNotNull()
       .isEqualTo(1000.);
+  }
+
+  @Test
+  public void customIncidentTypes() {
+    // given
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
+      .startProcessInstance()
+        .withResolvedIncident()
+        .withIncidentDurationInSec(1L)
+      .startProcessInstance()
+        .withOpenIncidentOfCustomType("myCustomIncidentType")
+        .withIncidentDurationInSec(3L)
+      .executeDeployment();
+    // @formatter:on
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(IncidentDataDeployer.PROCESS_DEFINITION_KEY, "1");
+    final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).isEqualTo(2000.);
   }
 
   @Test

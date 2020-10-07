@@ -53,6 +53,7 @@ import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.EngineUserDto;
+import org.camunda.optimize.rest.engine.dto.ExecutionDto;
 import org.camunda.optimize.rest.engine.dto.ExternalTaskEngineDto;
 import org.camunda.optimize.rest.engine.dto.GroupDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -1017,6 +1018,14 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return getEngineUrl() + "/history/incident";
   }
 
+  private String getIncidentCreationUri(final String processInstanceId) {
+    return getEngineUrl() + "/execution/" + processInstanceId + "/create-incident";
+  }
+
+  private String getExecutionsForProcessInstanceUri(final String processInstanceId) {
+    return getEngineUrl() + "/execution?processInstanceId=" + processInstanceId;
+  }
+
   private String getHistoricGetProcessInstanceUri(String processInstanceId) {
     return getEngineUrl() + "/history/process-instance/" + processInstanceId;
   }
@@ -1345,6 +1354,75 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
       );
     } catch (IOException e) {
       String message = "Could not retrieve historic incidents!";
+      log.error(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
+    }
+  }
+
+  @SneakyThrows
+  public void createIncident(final String processInstanceId, final String customIncidentType) {
+    final List<ExecutionDto> executions = getExecutionsForProcessInstance(processInstanceId);
+    if (executions.size() == 1) {
+      // if it's just a single execution then execution == process instance
+      createIncidentForExecutionId(processInstanceId, customIncidentType);
+    } else {
+      // if there are external tasks or there's some other kind of scope in the process
+      // the process instance execution is not associated with an activity and, hence,
+      // we need to filter for the newly created execution that is.
+      executions.stream()
+        .filter(execution -> !execution.getId().equals(processInstanceId))
+        .forEach(
+          execution -> createIncidentForExecutionId(execution.getId(), customIncidentType)
+        );
+    }
+  }
+
+  @SneakyThrows
+  private List<ExecutionDto> getExecutionsForProcessInstance(final String processInstanceId) {
+    HttpRequestBase get = new HttpGet(getExecutionsForProcessInstanceUri(processInstanceId));
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(get)) {
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      return OBJECT_MAPPER.readValue(
+        responseString,
+        new TypeReference<List<ExecutionDto>>() {
+        }
+      );
+    } catch (IOException e) {
+      String message = "Could not retrieve executions for process instance!";
+      log.error(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
+    }
+  }
+
+  @SneakyThrows
+  private void createIncidentForExecutionId(final String executionId, final String customIncidentType) {
+    HttpPost post = new HttpPost(getIncidentCreationUri(executionId));
+    post.addHeader("Content-Type", "application/json");
+    post.setEntity(new StringEntity(
+      // @formatter:off
+      String.format(
+        "{\n" +
+          "\"incidentType\": \"" + "%s" + "\",\n" +
+          "\"configuration\": \"Some configuration\",\n" +
+          "\"message\": \"This incident is raised on purpose!\"\n" +
+        "}",
+        customIncidentType
+      )
+      // @formatter:on
+    ));
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(post)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
+        throw new OptimizeIntegrationTestException(
+          String.format(
+            "Could not create incident for execution with ID [%s]. \n Status-code: %s \n Response: %s",
+            executionId,
+            response.getStatusLine().getStatusCode(),
+            EntityUtils.toString(response.getEntity(), "UTF-8")
+          )
+        );
+      }
+    } catch (IOException e) {
+      String message = "Could not create incident for execution!";
       log.error(message, e);
       throw new OptimizeIntegrationTestException(message, e);
     }

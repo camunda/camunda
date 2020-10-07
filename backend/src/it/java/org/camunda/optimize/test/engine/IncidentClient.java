@@ -109,6 +109,14 @@ public class IncidentClient {
     return engineIntegrationExtension.startProcessInstance(processDefinitionId);
   }
 
+  public ProcessInstanceEngineDto startProcessInstanceWithCustomIncident(final String processDefinitionId,
+                                                                         final String customIncidentType) {
+    final ProcessInstanceEngineDto processInstanceEngineDto =
+      engineIntegrationExtension.startProcessInstance(processDefinitionId);
+    engineIntegrationExtension.createIncident(processInstanceEngineDto.getId(), customIncidentType);
+    return processInstanceEngineDto;
+  }
+
   public void createOpenIncident(final String processInstanceId) {
     engineIntegrationExtension.failExternalTasks(processInstanceId);
   }

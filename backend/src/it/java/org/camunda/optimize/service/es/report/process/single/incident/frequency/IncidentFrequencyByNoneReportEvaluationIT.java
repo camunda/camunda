@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResult
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
+import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -28,6 +29,7 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.ONE_TASK;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
@@ -71,6 +73,30 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
 
     final NumberResultDto resultDto = evaluationResponse.getResult();
     assertThat(resultDto.getInstanceCount()).isEqualTo(1L);
+    assertThat(resultDto.getData()).isNotNull();
+    assertThat(resultDto.getData()).isEqualTo(2.);
+  }
+
+  @Test
+  public void customIncidentTypes() {
+    // given
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
+      .startProcessInstance()
+        .withOpenIncident()
+      .startProcessInstance()
+        .withOpenIncidentOfCustomType("myCustomIncidentType")
+      .executeDeployment();
+    // @formatter:on
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(IncidentDataDeployer.PROCESS_DEFINITION_KEY, "1");
+    final NumberResultDto resultDto = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(resultDto.getInstanceCount()).isEqualTo(2L);
     assertThat(resultDto.getData()).isNotNull();
     assertThat(resultDto.getData()).isEqualTo(2.);
   }

@@ -79,13 +79,13 @@ public class IncidentDataDeployer {
   public static class InstanceStarterBuilder {
     final IncidentDataDeployer incidentDataDeployer;
 
-    public IncidentTypeDeciderBuilder startProcessInstance() {
-      return new IncidentTypeDeciderBuilder(incidentDataDeployer);
+    public IncidentStatusDeciderBuilder startProcessInstance() {
+      return new IncidentStatusDeciderBuilder(incidentDataDeployer);
     }
   }
 
   @AllArgsConstructor
-  public static class IncidentTypeDeciderBuilder {
+  public static class IncidentStatusDeciderBuilder {
     final IncidentDataDeployer incidentDataDeployer;
 
     public IncidentDurationDeploymentBuilder withOpenIncident() {
@@ -118,9 +118,15 @@ public class IncidentDataDeployer {
       incidentDataDeployer.incidentCreationHandlers.add(incidentCreationHandler);
       return new IncidentDataDeploymentExecutor(incidentDataDeployer);
     }
+
+    public IncidentDurationDeploymentBuilder withOpenIncidentOfCustomType(final String incidentType) {
+      CustomOpenIncidentTypeCreationHandler openIncidentCreationHandler =
+        new CustomOpenIncidentTypeCreationHandler(incidentDataDeployer.incidentClient, incidentType);
+      return new IncidentDurationDeploymentBuilder(incidentDataDeployer, openIncidentCreationHandler);
+    }
   }
 
-  public static class IncidentDurationDeploymentBuilder extends IncidentDataDeploymentExecutor{
+  public static class IncidentDurationDeploymentBuilder extends IncidentDataDeploymentExecutor {
     final IncidentCreationHandler incidentCreationHandler;
 
     public IncidentDurationDeploymentBuilder(final IncidentDataDeployer incidentDataDeployer,
@@ -140,8 +146,8 @@ public class IncidentDataDeployer {
   public static class IncidentDataDeploymentExecutor {
     final IncidentDataDeployer incidentDataDeployer;
 
-    public IncidentTypeDeciderBuilder startProcessInstance() {
-      return new IncidentTypeDeciderBuilder(incidentDataDeployer);
+    public IncidentStatusDeciderBuilder startProcessInstance() {
+      return new IncidentStatusDeciderBuilder(incidentDataDeployer);
     }
 
     public void executeDeployment() {
@@ -267,6 +273,30 @@ public class IncidentDataDeployer {
     @Override
     void adjustIncidentDate(final String processInstanceId, final OffsetDateTime creationDate) {
       // nothing to do here as there's no incident
+    }
+  }
+
+  private static class CustomOpenIncidentTypeCreationHandler extends IncidentCreationHandler {
+
+    private final String customIncidentType;
+
+    public CustomOpenIncidentTypeCreationHandler(final IncidentClient incidentClient,
+                                                 final String customIncidentType) {
+      super(incidentClient);
+      this.customIncidentType = customIncidentType;
+    }
+
+    @Override
+    ProcessInstanceEngineDto startProcessInstanceAndCreateIncident(final String processDefinitionId) {
+      return incidentClient.startProcessInstanceWithCustomIncident(processDefinitionId, this.customIncidentType);
+    }
+
+    @Override
+    void adjustIncidentDate(final String processInstanceId, final OffsetDateTime creationDate) {
+      if (durationInSec != null) {
+        incidentClient.changeIncidentCreationDate(processInstanceId, creationDate);
+        DateCreationFreezer.dateFreezer(creationDate.plusSeconds(durationInSec)).freezeDateAndReturn();
+      }
     }
   }
 }
