@@ -97,12 +97,12 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String CANDIDATE_GROUP_OPERATION_TIMESTAMP = CandidateGroupOperationDto.Fields.timestamp;
 
   public static final String INCIDENTS = ProcessInstanceDto.Fields.incidents;
-  public static final String INCIDENT_ID = IncidentDto.Fields.id;
+  private static final String INCIDENT_ID = IncidentDto.Fields.id;
   public static final String INCIDENT_CREATE_TIME = IncidentDto.Fields.createTime;
-  public static final String INCIDENT_END_TIME = IncidentDto.Fields.endTime;
+  private static final String INCIDENT_END_TIME = IncidentDto.Fields.endTime;
   public static final String INCIDENT_DURATION_IN_MS = IncidentDto.Fields.durationInMs;
   private static final String INCIDENT_INCIDENT_TYPE = IncidentDto.Fields.incidentType;
-  private static final String INCIDENT_ACTIVITY_ID = IncidentDto.Fields.activityId;
+  public static final String INCIDENT_ACTIVITY_ID = IncidentDto.Fields.activityId;
   private static final String INCIDENT_FAILED_ACTIVITY_ID = IncidentDto.Fields.failedActivityId;
   private static final String INCIDENT_MESSAGE = IncidentDto.Fields.incidentMessage;
   private static final String INCIDENT_STATUS = IncidentDto.Fields.incidentStatus;

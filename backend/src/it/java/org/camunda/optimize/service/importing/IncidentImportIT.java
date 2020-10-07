@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
 import static org.mockserver.model.HttpRequest.request;
 import static org.mockserver.model.StringBody.subString;
@@ -61,7 +62,7 @@ public class IncidentImportIT extends AbstractImportIT {
           assertThat(incident.getCreateTime()).isNotNull();
           assertThat(incident.getEndTime()).isNull();
           assertThat(incident.getIncidentType()).isEqualTo(IncidentType.FAILED_EXTERNAL_TASK);
-          assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK);
+          assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK_ID_1);
           assertThat(incident.getFailedActivityId()).isNull();
           assertThat(incident.getIncidentMessage()).isNotNull();
           assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.OPEN);
@@ -91,7 +92,7 @@ public class IncidentImportIT extends AbstractImportIT {
           assertThat(incident.getCreateTime()).isNotNull();
           assertThat(incident.getEndTime()).isNotNull();
           assertThat(incident.getIncidentType()).isEqualTo(IncidentType.FAILED_EXTERNAL_TASK);
-          assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK);
+          assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK_ID_1);
           assertThat(incident.getFailedActivityId()).isNull();
           assertThat(incident.getIncidentMessage()).isNotNull();
           assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.RESOLVED);
@@ -121,7 +122,7 @@ public class IncidentImportIT extends AbstractImportIT {
           assertThat(incident.getCreateTime()).isNotNull();
           assertThat(incident.getEndTime()).isNotNull();
           assertThat(incident.getIncidentType()).isEqualTo(IncidentType.FAILED_EXTERNAL_TASK);
-          assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK);
+          assertThat(incident.getActivityId()).isEqualTo(SERVICE_TASK_ID_1);
           assertThat(incident.getFailedActivityId()).isNull();
           assertThat(incident.getIncidentMessage()).isNotNull();
           assertThat(incident.getIncidentStatus()).isEqualTo(IncidentStatus.DELETED);

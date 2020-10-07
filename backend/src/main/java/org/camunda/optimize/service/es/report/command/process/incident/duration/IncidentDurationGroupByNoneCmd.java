@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
-import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByNone;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.none.ProcessIncidentGroupByNone;
 import org.camunda.optimize.service.es.report.command.modules.view.process.duration.ProcessViewIncidentDuration;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
 import org.springframework.stereotype.Component;
@@ -30,7 +30,7 @@ public class IncidentDurationGroupByNoneCmd extends ProcessCmd<NumberResultDto> 
     return builder.createExecutionPlan()
       .processCommand()
       .view(ProcessViewIncidentDuration.class)
-      .groupBy(ProcessGroupByNone.class)
+      .groupBy(ProcessIncidentGroupByNone.class)
       .distributedBy(ProcessDistributedByNone.class)
       .resultAsNumber()
       .build();

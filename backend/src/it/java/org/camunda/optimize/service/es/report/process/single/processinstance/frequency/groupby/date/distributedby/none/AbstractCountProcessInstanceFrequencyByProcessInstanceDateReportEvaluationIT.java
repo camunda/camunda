@@ -48,7 +48,7 @@ import static org.camunda.optimize.dto.optimize.query.report.single.group.Aggreg
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
-import static org.camunda.optimize.util.BpmnModels.TASK_ID_1;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -494,7 +494,7 @@ public abstract class AbstractCountProcessInstanceFrequencyByProcessInstanceDate
       .build();
 
     List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder.filter().executedFlowNodes()
-      .id(TASK_ID_1)
+      .id(SERVICE_TASK_ID_1)
       .add()
       .buildList();
 

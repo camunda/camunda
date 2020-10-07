@@ -814,6 +814,17 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionKey(processDefinitionKey)
           .build();
         break;
+      case INCIDENT_FREQUENCY_GROUP_BY_FLOW_NODE:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.INCIDENT)
+          .viewProperty(ProcessViewProperty.FREQUENCY)
+          .groupByType(ProcessGroupByType.FLOW_NODES)
+          .distributedByType(DistributedByType.NONE)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionVersions(processDefinitionVersions)
+          .processDefinitionKey(processDefinitionKey)
+          .build();
+        break;
       case INCIDENT_DURATION_GROUP_BY_NONE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.INCIDENT)

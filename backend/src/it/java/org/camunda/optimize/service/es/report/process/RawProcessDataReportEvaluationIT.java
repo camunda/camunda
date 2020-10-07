@@ -55,7 +55,7 @@ import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAU
 import static org.camunda.optimize.service.es.report.SingleReportEvaluator.DEFAULT_OFFSET;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.MAX_RESPONSE_SIZE_LIMIT;
-import static org.camunda.optimize.util.BpmnModels.TASK_ID_1;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 
 public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -574,7 +574,7 @@ public class RawProcessDataReportEvaluationIT extends AbstractProcessDefinitionI
     List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id(TASK_ID_1)
+      .id(SERVICE_TASK_ID_1)
       .add()
       .buildList();
 

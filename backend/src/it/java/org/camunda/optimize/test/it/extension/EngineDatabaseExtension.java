@@ -484,13 +484,13 @@ public class EngineDatabaseExtension implements Extension {
 
   @SneakyThrows
   public void changeIncidentCreationDate(final String processInstanceId, final OffsetDateTime creationDate) {
-    changeIncidentCreationAndEndDate(processInstanceId, creationDate, null);
+    changeIncidentCreationAndEndDateIfPresent(processInstanceId, creationDate, null);
   }
 
   @SneakyThrows
-  public void changeIncidentCreationAndEndDate(final String processInstanceId,
-                                               final OffsetDateTime creationDate,
-                                               final OffsetDateTime endDate) {
+  public void changeIncidentCreationAndEndDateIfPresent(final String processInstanceId,
+                                                        final OffsetDateTime creationDate,
+                                                        final OffsetDateTime endDate) {
     PreparedStatement statement;
     if (creationDate != null) {
       String sql = "UPDATE ACT_HI_INCIDENT SET CREATE_TIME_ = ? WHERE PROC_INST_ID_ = ?";

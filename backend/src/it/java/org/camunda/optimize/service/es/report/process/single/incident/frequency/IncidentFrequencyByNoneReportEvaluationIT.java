@@ -30,7 +30,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE;
-import static org.camunda.optimize.util.BpmnModels.TASK_ID_2;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -221,7 +221,7 @@ public class IncidentFrequencyByNoneReportEvaluationIT extends AbstractProcessDe
     List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id(TASK_ID_2)
+      .id(SERVICE_TASK_ID_2)
       .add()
       .buildList();
     reportData.getFilter().addAll(flowNodeFilter);

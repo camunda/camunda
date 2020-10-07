@@ -19,8 +19,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.view.Proces
 import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
-import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
+import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.TenantService;
@@ -43,7 +43,6 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_VERSIONS;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_KEY;
 import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.SORT_BY_VALUE;
 import static org.camunda.optimize.util.BpmnModels.getSimpleBpmnDiagram;
-import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -383,7 +382,6 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
     // given
     ProcessInstanceEngineDto engineDto = deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
     engineIntegrationExtension.startProcessInstance(engineDto.getDefinitionId());
-    deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY_2);
     importAllEngineEntitiesFromScratch();
 
     embeddedOptimizeExtension.getConfigurationService().setEsAggregationBucketLimit(1);

@@ -8,7 +8,6 @@ package org.camunda.optimize.test.engine;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.extension.EngineDatabaseExtension;
 import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
@@ -16,7 +15,6 @@ import org.camunda.optimize.test.it.extension.EngineIntegrationExtension;
 import java.time.OffsetDateTime;
 
 import static org.camunda.optimize.util.BpmnModels.getExternalTaskProcess;
-import static org.camunda.optimize.util.BpmnModels.getTwoExternalTaskProcess;
 import static org.camunda.optimize.util.BpmnModels.getTwoParallelExternalTaskProcess;
 
 @AllArgsConstructor
@@ -26,38 +24,19 @@ public class IncidentClient {
   private final EngineIntegrationExtension engineIntegrationExtension;
   private final EngineDatabaseExtension engineDatabaseExtension;
 
-  public enum IncidentProcessType {
-    ONE_TASK,
-    TWO_SEQUENTIAL_TASKS,
-    TWO_PARALLEL_TASKS
-  }
 
   public void changeIncidentCreationDate(final String processInstanceId,
                                          final OffsetDateTime creationDate) {
     engineDatabaseExtension.changeIncidentCreationDate(processInstanceId, creationDate);
   }
 
-  public void changeIncidentCreationAndEndDate(final String processInstanceId,
-                                               final OffsetDateTime creationDate,
-                                               final OffsetDateTime endDate) {
-    engineDatabaseExtension.changeIncidentCreationAndEndDate(processInstanceId, creationDate, endDate);
+  public void changeIncidentCreationAndEndDateIfPresent(final String processInstanceId,
+                                                        final OffsetDateTime creationDate,
+                                                        final OffsetDateTime endDate) {
+    engineDatabaseExtension.changeIncidentCreationAndEndDateIfPresent(processInstanceId, creationDate, endDate);
   }
 
-  public String deployProcessAndReturnId(final IncidentProcessType incidentProcessType) {
-    BpmnModelInstance process;
-    switch (incidentProcessType) {
-      case ONE_TASK:
-        process = getExternalTaskProcess();
-        break;
-      case TWO_SEQUENTIAL_TASKS:
-        process = getTwoExternalTaskProcess();
-        break;
-      case TWO_PARALLEL_TASKS:
-        process = getTwoParallelExternalTaskProcess();
-        break;
-      default:
-        throw new OptimizeIntegrationTestException("Unknown incident process type!");
-    }
+  public String deployProcessAndReturnId(final BpmnModelInstance process) {
     return engineIntegrationExtension.deployProcessAndGetId(process);
   }
 
@@ -65,7 +44,7 @@ public class IncidentClient {
     BpmnModelInstance incidentProcess = getExternalTaskProcess();
     final ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.deployAndStartProcess(incidentProcess, tenantId);
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    createOpenIncident(processInstanceEngineDto.getId());
     return processInstanceEngineDto;
   }
 
@@ -88,7 +67,7 @@ public class IncidentClient {
     BpmnModelInstance incidentProcess = getTwoParallelExternalTaskProcess();
     final ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.deployAndStartProcess(incidentProcess);
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    createOpenIncident(processInstanceEngineDto.getId());
     return processInstanceEngineDto;
   }
 
@@ -107,7 +86,7 @@ public class IncidentClient {
   public ProcessInstanceEngineDto startProcessInstanceAndCreateOpenIncident(String processDefinitionId) {
     final ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    createOpenIncident(processInstanceEngineDto.getId());
     return processInstanceEngineDto;
   }
 
@@ -121,13 +100,17 @@ public class IncidentClient {
   public ProcessInstanceEngineDto startProcessInstanceAndCreateDeletedIncident(String processDefinitionId) {
     final ProcessInstanceEngineDto processInstanceEngineDto =
       engineIntegrationExtension.startProcessInstance(processDefinitionId);
-    engineIntegrationExtension.failExternalTasks(processInstanceEngineDto.getId());
+    createOpenIncident(processInstanceEngineDto.getId());
     engineIntegrationExtension.deleteProcessInstance(processInstanceEngineDto.getId());
     return processInstanceEngineDto;
   }
 
   public ProcessInstanceEngineDto startProcessInstanceWithoutIncident(String processDefinitionId) {
     return engineIntegrationExtension.startProcessInstance(processDefinitionId);
+  }
+
+  public void createOpenIncident(final String processInstanceId) {
+    engineIntegrationExtension.failExternalTasks(processInstanceId);
   }
 
 }

@@ -31,7 +31,7 @@ import java.util.Map;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_NONE;
-import static org.camunda.optimize.util.BpmnModels.TASK_ID_1;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
 
 public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends AbstractProcessDefinitionIT {
 
@@ -172,7 +172,7 @@ public class CountProcessInstanceFrequencyByNoneReportEvaluationIT extends Abstr
     List<ProcessFilterDto<?>> flowNodeFilter = ProcessFilterBuilder
       .filter()
       .executedFlowNodes()
-      .id(TASK_ID_1)
+      .id(SERVICE_TASK_ID_1)
       .add()
       .buildList();
     reportData.getFilter().addAll(flowNodeFilter);

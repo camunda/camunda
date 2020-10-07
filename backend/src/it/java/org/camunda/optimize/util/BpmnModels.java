@@ -14,23 +14,28 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 public class BpmnModels {
 
   public static final String START_EVENT = "startEvent";
+  public static final String START_EVENT_NAME = "startEventName";
   public static final String END_EVENT = "endEvent";
+  public static final String END_EVENT_NAME = "endEventName";
   public static final String USER_TASK_1 = "userTask1";
   public static final String USER_TASK_2 = "userTask2";
   public static final String SERVICE_TASK = "serviceTask";
+  public static final String SERVICE_TASK_NAME = "serviceTaskName";
 
   public static final String DEFAULT_PROCESS_ID = "aProcess";
   public static final String VERSION_TAG = "aVersionTag";
 
   public static final String START_EVENT_ID = "startEvent";
   public static final String SPLITTING_GATEWAY_ID = "splittingGateway";
-  public static final String TASK_ID_1 = "serviceTask1";
-  public static final String TASK_ID_2 = "serviceTask2";
+  public static final String SERVICE_TASK_ID_1 = "serviceTask1";
+  public static final String SERVICE_TASK_NAME_1 = "serviceTask1Name";
+  public static final String SERVICE_TASK_ID_2 = "serviceTask2";
+  public static final String SERVICE_TASK_NAME_2 = "serviceTask2Name";
   public static final String MERGE_GATEWAY_ID = "mergeExclusiveGateway";
   public static final String DEFAULT_TOPIC = "MyTopic";
 
-  private static final String END_EVENT_1 = "endEvent1";
-  private static final String END_EVENT_2 = "endEvent2";
+  public static final String END_EVENT_1 = "endEvent1";
+  public static final String END_EVENT_2 = "endEvent2";
 
 
   public static BpmnModelInstance getSimpleBpmnDiagram() {
@@ -116,9 +121,9 @@ public class BpmnModels {
       .camundaVersionTag(VERSION_TAG)
       .name(procDefKey)
       .startEvent(START_EVENT)
-      .serviceTask(TASK_ID_1)
+      .serviceTask(SERVICE_TASK_ID_1)
           .camundaExpression("${true}")
-      .serviceTask(TASK_ID_2)
+      .serviceTask(SERVICE_TASK_ID_2)
         .camundaExpression("${true}")
       .endEvent(END_EVENT)
       .done();
@@ -132,13 +137,13 @@ public class BpmnModels {
       .exclusiveGateway(SPLITTING_GATEWAY_ID)
         .name("Should we go to task 1?")
         .condition("yes", "${goToTask1}")
-        .serviceTask(TASK_ID_1)
+        .serviceTask(SERVICE_TASK_ID_1)
         .camundaExpression("${true}")
       .exclusiveGateway(MERGE_GATEWAY_ID)
         .endEvent(END_EVENT)
       .moveToNode(SPLITTING_GATEWAY_ID)
         .condition("no", "${!goToTask1}")
-        .serviceTask(TASK_ID_2)
+        .serviceTask(SERVICE_TASK_ID_2)
         .camundaExpression("${true}")
         .connectTo(MERGE_GATEWAY_ID)
       .done();
@@ -151,9 +156,12 @@ public class BpmnModels {
       .camundaVersionTag(VERSION_TAG)
       .name(DEFAULT_PROCESS_ID)
       .startEvent(START_EVENT)
-      .serviceTask(SERVICE_TASK)
+        .name(START_EVENT_NAME)
+      .serviceTask(SERVICE_TASK_ID_1)
+        .name(SERVICE_TASK_NAME_1)
         .camundaExternalTask(DEFAULT_TOPIC)
       .endEvent(END_EVENT)
+        .name(END_EVENT_NAME)
       .done();
     // @formatter:on
   }
@@ -164,11 +172,15 @@ public class BpmnModels {
       .camundaVersionTag(VERSION_TAG)
       .name(DEFAULT_PROCESS_ID)
       .startEvent(START_EVENT)
-      .serviceTask(TASK_ID_1)
+        .name(START_EVENT_NAME)
+      .serviceTask(SERVICE_TASK_ID_1)
+        .name(SERVICE_TASK_NAME_1)
         .camundaExternalTask(DEFAULT_TOPIC)
-      .serviceTask(TASK_ID_2)
+      .serviceTask(SERVICE_TASK_ID_2)
+        .name(SERVICE_TASK_NAME_2)
         .camundaExternalTask(DEFAULT_TOPIC)
       .endEvent(END_EVENT)
+        .name(END_EVENT_NAME)
       .done();
     // @formatter:on
   }
@@ -180,11 +192,11 @@ public class BpmnModels {
       .name(DEFAULT_PROCESS_ID)
       .startEvent(START_EVENT)
       .parallelGateway(SPLITTING_GATEWAY_ID)
-        .serviceTask(TASK_ID_1)
+        .serviceTask(SERVICE_TASK_ID_1)
           .camundaExternalTask(DEFAULT_TOPIC)
         .endEvent(END_EVENT_1)
       .moveToNode(SPLITTING_GATEWAY_ID)
-        .serviceTask(TASK_ID_2)
+        .serviceTask(SERVICE_TASK_ID_2)
           .camundaExternalTask(DEFAULT_TOPIC)
         .endEvent(END_EVENT_2)
       .done();

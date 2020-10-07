@@ -17,7 +17,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResult
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedProcessReportEvaluationResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.process.AbstractProcessDefinitionIT;
-import org.camunda.optimize.test.engine.IncidentClient.IncidentProcessType;
 import org.camunda.optimize.test.util.DateCreationFreezer;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
@@ -34,7 +33,8 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDurationDataDeployer.PROCESS_DEFINITION_KEY;
+import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.*;
+import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.test.util.ProcessReportDataType.INCIDENT_DURATION_GROUP_BY_NONE;
 
@@ -44,20 +44,20 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
   private Stream<Consumer<Long>> startInstanceWithDifferentIncidentStates() {
     // @formatter:off
     return Stream.of(
-      (durationInSec) -> IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-        .deployProcess(IncidentProcessType.ONE_TASK)
+      (durationInSec) -> IncidentDataDeployer.dataDeployer(incidentClient)
+        .deployProcess(ONE_TASK)
         .startProcessInstance()
           .withOpenIncident()
           .withIncidentDurationInSec(durationInSec)
         .executeDeployment(),
-      (durationInSec) -> IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-        .deployProcess(IncidentProcessType.ONE_TASK)
+      (durationInSec) -> IncidentDataDeployer.dataDeployer(incidentClient)
+        .deployProcess(ONE_TASK)
         .startProcessInstance()
           .withResolvedIncident()
           .withIncidentDurationInSec(durationInSec)
         .executeDeployment(),
-      (durationInSec) -> IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-        .deployProcess(IncidentProcessType.ONE_TASK)
+      (durationInSec) -> IncidentDataDeployer.dataDeployer(incidentClient)
+        .deployProcess(ONE_TASK)
         .startProcessInstance()
           .withDeletedIncident()
           .withIncidentDurationInSec(durationInSec)
@@ -98,8 +98,8 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
   public void severalOpenIncidentsForMultipleProcessInstances() {
     // given
     // @formatter:off
-    IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-      .deployProcess(IncidentProcessType.ONE_TASK)
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
       .startProcessInstance()
         .withOpenIncident()
         .withIncidentDurationInSec(3L)
@@ -125,8 +125,8 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
   public void severalResolvedIncidentsForMultipleProcessInstances() {
     // given
     // @formatter:off
-    IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-      .deployProcess(IncidentProcessType.ONE_TASK)
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
       .startProcessInstance()
         .withResolvedIncident()
         .withIncidentDurationInSec(3L)
@@ -152,8 +152,8 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
   public void differentIncidentTypesInTheSameReport() {
     // given
     // @formatter:off
-    IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-      .deployProcess(IncidentProcessType.ONE_TASK)
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
       .startProcessInstance()
         .withOpenIncident()
         .withIncidentDurationInSec(1L)
@@ -182,15 +182,15 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
   public void otherProcessDefinitionVersionsDoNoAffectResult() {
     // given
     // @formatter:off
-    IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-      .deployProcess(IncidentProcessType.ONE_TASK)
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
       .startProcessInstance()
         .withResolvedIncident()
         .withIncidentDurationInSec(55L)
       .executeDeployment();
 
-    IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-      .deployProcess(IncidentProcessType.ONE_TASK)
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
       .startProcessInstance()
         .withResolvedIncident()
         .withIncidentDurationInSec(22L)
@@ -213,15 +213,15 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
   public void incidentReportAcrossMultipleDefinitionVersions() {
     // given
     // @formatter:off
-    IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-      .deployProcess(IncidentProcessType.ONE_TASK)
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
       .startProcessInstance()
         .withResolvedIncident()
         .withIncidentDurationInSec(1L)
       .executeDeployment();
 
-    IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-      .deployProcess(IncidentProcessType.ONE_TASK)
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
       .startProcessInstance()
         .withResolvedIncident()
         .withIncidentDurationInSec(5L)
@@ -282,8 +282,8 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
     // Instance 2: one incident in task 1 (open) and because of that the task is still pending.
     // Hint: failExternalTasks method does not complete the tasks
     // @formatter:off
-    IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-      .deployProcess(IncidentProcessType.ONE_TASK)
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
       .startProcessInstance()
         .withResolvedIncident()
         .withIncidentDurationInSec(1L)
@@ -339,8 +339,8 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
   public void processInstanceWithIncidentAndOneWithoutIncident() {
     // given
     // @formatter:off
-    IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-      .deployProcess(IncidentProcessType.ONE_TASK)
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
       .startProcessInstance()
         .withoutIncident()
       .startProcessInstance()
@@ -377,8 +377,8 @@ public class IncidentDurationByNoneReportEvaluationIT extends AbstractProcessDef
   public void aggregationTypes(final AggregationType aggregationType, final double expectedResult) {
     // given
     // @formatter:off
-    IncidentDurationDataDeployer.createIncidentProcess(incidentClient)
-      .deployProcess(IncidentProcessType.ONE_TASK)
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(ONE_TASK)
       .startProcessInstance()
         .withResolvedIncident()
         .withIncidentDurationInSec(1L)

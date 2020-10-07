@@ -36,8 +36,8 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DEFAULT_TENANT_I
 import static org.camunda.optimize.test.util.decision.DmnHelper.createSimpleDmnModel;
 import static org.camunda.optimize.util.BpmnModels.END_EVENT;
 import static org.camunda.optimize.util.BpmnModels.SPLITTING_GATEWAY_ID;
-import static org.camunda.optimize.util.BpmnModels.TASK_ID_1;
-import static org.camunda.optimize.util.BpmnModels.TASK_ID_2;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_1;
+import static org.camunda.optimize.util.BpmnModels.SERVICE_TASK_ID_2;
 
 public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
 
@@ -139,7 +139,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
 
     // given
     outlierDistributionClient.startPIsDistributedByDuration(
-      procDefId, new Gaussian(40 / 2., 12), 40, 0L, TASK_ID_1, TASK_ID_2
+      procDefId, new Gaussian(40 / 2., 12), 40, 0L, SERVICE_TASK_ID_1, SERVICE_TASK_ID_2
     );
 
     // when
@@ -155,7 +155,7 @@ public class ChangingEngineAliasInConfigIT extends AbstractMultiEngineIT {
       Collections.singletonList(ALL_VERSIONS),
       DEFAULT_TENANT_IDS
     );
-    assertThat(outlierTest.get(TASK_ID_1).getTotalCount()).isGreaterThan(1L);
+    assertThat(outlierTest.get(SERVICE_TASK_ID_1).getTotalCount()).isGreaterThan(1L);
   }
 
   private ProcessReportDataDto createRawDataReport(final String processDefinitionKey) {

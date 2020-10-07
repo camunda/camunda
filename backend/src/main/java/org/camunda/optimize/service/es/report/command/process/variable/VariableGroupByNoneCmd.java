@@ -13,7 +13,7 @@ import org.camunda.optimize.service.es.report.command.ProcessCmd;
 import org.camunda.optimize.service.es.report.command.exec.ProcessReportCmdExecutionPlan;
 import org.camunda.optimize.service.es.report.command.exec.builder.ReportCmdExecutionPlanBuilder;
 import org.camunda.optimize.service.es.report.command.modules.distributed_by.process.ProcessDistributedByNone;
-import org.camunda.optimize.service.es.report.command.modules.group_by.process.ProcessGroupByNone;
+import org.camunda.optimize.service.es.report.command.modules.group_by.process.none.ProcessGroupByNone;
 import org.camunda.optimize.service.es.report.command.modules.view.process.variable.ProcessViewVariable;
 import org.camunda.optimize.service.es.report.result.process.SingleProcessNumberReportResult;
 import org.springframework.stereotype.Component;
