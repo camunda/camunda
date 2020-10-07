@@ -7,6 +7,7 @@ package org.camunda.optimize.service.importing.user_task;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.AbstractIT;
+import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.util.OptimizeDateTimeFormatterFactory;
@@ -18,6 +19,7 @@ import java.sql.SQLException;
 import java.time.temporal.ChronoUnit;
 
 import static org.camunda.optimize.util.BpmnModels.getDoubleUserTaskDiagram;
+import static org.camunda.optimize.util.BpmnModels.getSingleUserTaskDiagram;
 
 public abstract class AbstractUserTaskImportIT extends AbstractIT {
 
@@ -67,6 +69,10 @@ public abstract class AbstractUserTaskImportIT extends AbstractIT {
 
   protected ProcessInstanceEngineDto deployAndStartTwoUserTasksProcess() {
     return engineIntegrationExtension.deployAndStartProcess(getDoubleUserTaskDiagram());
+  }
+
+  protected ProcessDefinitionEngineDto deployOneUserTaskDefinition() {
+    return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleUserTaskDiagram());
   }
 
 }

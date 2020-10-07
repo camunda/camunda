@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.service.es.writer;
+package org.camunda.optimize.service.es.writer.usertask;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
@@ -15,15 +15,14 @@ import org.camunda.optimize.dto.optimize.importing.IdentityLinkLogEntryDto;
 import org.camunda.optimize.dto.optimize.persistence.AssigneeOperationDto;
 import org.camunda.optimize.dto.optimize.persistence.CandidateGroupOperationDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
+import org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.groupingByConcurrent;
@@ -136,7 +135,6 @@ public class IdentityLinkLogWriter extends AbstractUserTaskWriter<UserTaskInstan
             log.warn("Found unknown identity link operation type [{}]", logEntry.getOperationType());
         }
       });
-    Set set = new HashSet();
     return candidates;
   }
 

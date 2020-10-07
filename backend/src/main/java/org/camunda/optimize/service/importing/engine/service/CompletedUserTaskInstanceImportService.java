@@ -11,7 +11,7 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.es.job.ElasticsearchImportJob;
 import org.camunda.optimize.service.es.job.importing.CompletedUserTasksElasticsearchImportJob;
-import org.camunda.optimize.service.es.writer.CompletedUserTaskInstanceWriter;
+import org.camunda.optimize.service.es.writer.usertask.CompletedUserTaskInstanceWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +74,7 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
   }
 
   private UserTaskInstanceDto mapEngineEntityToOptimizeEntity(final HistoricUserTaskInstanceDto engineEntity) {
-    final UserTaskInstanceDto userTaskInstanceDto = new UserTaskInstanceDto(
+    return new UserTaskInstanceDto(
       engineEntity.getId(),
       engineEntity.getProcessInstanceId(),
       engineContext.getEngineAlias(),
@@ -86,7 +86,6 @@ public class CompletedUserTaskInstanceImportService implements ImportService<His
       engineEntity.getDeleteReason(),
       engineEntity.getDuration()
     );
-    return userTaskInstanceDto;
   }
 
 }

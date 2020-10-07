@@ -82,6 +82,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
     UserTaskInstanceDto.Fields.candidateGroupOperations;
 
   public static final String USER_TASK_DELETE_REASON = UserTaskInstanceDto.Fields.deleteReason;
+  public static final String USER_TASK_CANCELED = UserTaskInstanceDto.Fields.canceled;
 
   public static final String ENGINE = ProcessInstanceDto.Fields.engine;
   public static final String TENANT_ID = ProcessInstanceDto.Fields.tenantId;
@@ -299,6 +300,9 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
       .endObject()
       .startObject(USER_TASK_DELETE_REASON)
         .field("type", "keyword")
+      .endObject()
+      .startObject(USER_TASK_CANCELED)
+        .field("type", "boolean")
       .endObject()
       .startObject(USER_TASK_ASSIGNEE)
         .field("type", "keyword")
