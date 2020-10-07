@@ -3,7 +3,7 @@
 
 [![Zeebe website](https://img.shields.io/badge/docs-zeebe.io-blue.svg)](https://zeebe.io/) [![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-distribution/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.zeebe/zeebe-distribution) <a href="https://github.com/zeebe-io/zeebe/blob/develop/licenses/APACHE-2.0.txt" alt="License"><img src="https://img.shields.io/badge/License-Apache%202.0-yellow.svg" /></a>
 
-<a href="https://logovtor.com/camunda-logo-vector-svg/" target="_blank"><img src="https://j-it.at/wp-content/uploads/2020/08/600_490768144.jpeg.png" height="300" /></a>
+<a href="https://logovtor.com/camunda-logo-vector-svg/" target="_blank"><img src="https://j-it.at/wp-content/uploads/2020/08/600_490768144.jpeg.png" height="300" /></a> 
 
 Zeebe provides visibility into and control over business processes that span multiple microservices.
 
