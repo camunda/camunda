@@ -17,6 +17,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.distributed
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.UserTaskDistributedByDto;
 import org.camunda.optimize.service.es.schema.IndexMappingCreator;
 import org.camunda.optimize.service.es.schema.index.AlertIndex;
+import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleDecisionReportIndex;
 import org.camunda.optimize.service.es.schema.index.report.SingleProcessReportIndex;
 import org.camunda.optimize.upgrade.main.UpgradeProcedure;
@@ -25,9 +27,14 @@ import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
+import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
+import org.camunda.optimize.upgrade.util.MappingMetadataUtil;
 
+import java.util.List;
 import java.util.Map;
 
+import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -48,6 +55,8 @@ public class UpgradeFrom31To32 extends UpgradeProcedure {
 
   @Override
   public UpgradePlan buildUpgradePlan() {
+    final List<EventProcessInstanceIndex> eventProcessInstanceIndices =
+      MappingMetadataUtil.retrieveAllEventProcessInstanceIndices(esClient);
     final UpgradePlanBuilder.AddUpgradeStepBuilder upgradeBuilder = UpgradePlanBuilder.createUpgradePlan()
       .addUpgradeDependencies(upgradeDependencies)
       .fromVersion(FROM_VERSION)
@@ -56,8 +65,29 @@ public class UpgradeFrom31To32 extends UpgradeProcedure {
       .addUpgradeStep(addTableColumnSettingsToReportConfiguration(SINGLE_PROCESS_REPORT_INDEX_NAME))
       .addUpgradeStep(addTableColumnSettingsToReportConfiguration(SINGLE_DECISION_REPORT_INDEX_NAME))
       .addUpgradeStep(migrateDistributedByField(new SingleProcessReportIndex()))
-      .addUpgradeStep(migrateDistributedByField(new SingleDecisionReportIndex()));
+      .addUpgradeStep(migrateDistributedByField(new SingleDecisionReportIndex()))
+      // the order matters here
+      // update process instance index mappings so new fields are available
+      .addUpgradeStep(new UpdateMappingIndexStep(new ProcessInstanceIndex()))
+      .addUpgradeSteps(eventProcessInstanceIndices.stream().map(UpdateMappingIndexStep::new).collect(toList()))
+      // for being initialized
+      .addUpgradeStep(createInitializeProcessInstanceIncidentsFieldStep(PROCESS_INSTANCE_INDEX_NAME))
+      .addUpgradeSteps(
+        eventProcessInstanceIndices
+          .stream()
+          .map(ProcessInstanceIndex::getIndexName)
+          .map(this::createInitializeProcessInstanceIncidentsFieldStep)
+          .collect(toList())
+      );
     return upgradeBuilder.build();
+  }
+
+  private UpgradeStep createInitializeProcessInstanceIncidentsFieldStep(final String instanceIndexName) {
+    return new UpdateDataStep(
+      instanceIndexName,
+      matchAllQuery(),
+      "ctx._source.incidents = new ArrayList();"
+    );
   }
 
   private UpgradeStep migrateAlertEmailRecipientsField() {

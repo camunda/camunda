@@ -137,7 +137,6 @@ public abstract class AbstractUpgradeIT {
     prefixAwareClient.deleteIndexByRawIndexNames("_all");
   }
 
-  @SneakyThrows
   protected <T> List<T> getAllDocumentsOfIndexAs(final String indexName, final Class<T> valueType) {
     final SearchHit[] searchHits = getAllDocumentsOfIndex(indexName);
     return Arrays
@@ -154,7 +153,8 @@ public abstract class AbstractUpgradeIT {
       .collect(toList());
   }
 
-  protected SearchHit[] getAllDocumentsOfIndex(final String... indexNames) throws IOException {
+  @SneakyThrows
+  protected SearchHit[] getAllDocumentsOfIndex(final String... indexNames) {
     final SearchResponse searchResponse = prefixAwareClient.search(
       new SearchRequest(indexNames).source(new SearchSourceBuilder().size(10000)),
       RequestOptions.DEFAULT

@@ -29,6 +29,7 @@ import org.camunda.optimize.service.es.schema.index.VariableUpdateInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.CamundaActivityEventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessDefinitionIndex;
+import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessPublishStateIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
@@ -51,6 +52,7 @@ import java.util.List;
 
 import static java.util.stream.Collectors.toList;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.CAMUNDA_ACTIVITY_EVENT_INDEX_PREFIX;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_PROCESS_INSTANCE_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_SEQUENCE_COUNT_INDEX_PREFIX;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EVENT_TRACE_STATE_INDEX_PREFIX;
 
@@ -92,6 +94,14 @@ public class MappingMetadataUtil {
       new SingleDecisionReportIndex(),
       new SingleProcessReportIndex()
     );
+  }
+
+  public static List<EventProcessInstanceIndex> retrieveAllEventProcessInstanceIndices(
+    final OptimizeElasticsearchClient esClient) {
+    return retrieveAllDynamicIndexKeysForPrefix(esClient, EVENT_PROCESS_INSTANCE_INDEX_PREFIX)
+      .stream()
+      .map(EventProcessInstanceIndex::new)
+      .collect(toList());
   }
 
   private static List<CamundaActivityEventIndex> retrieveAllCamundaActivityEventIndices(
