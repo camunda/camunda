@@ -19,6 +19,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.VersionUtil;
+import io.zeebe.util.health.HealthStatus;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.ArrayList;
@@ -27,6 +28,8 @@ import java.util.Properties;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
+// TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
+@SuppressWarnings("squid:S1200")
 public final class TopologyManagerImpl extends Actor
     implements TopologyManager, ClusterMembershipEventListener, PartitionListener {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
@@ -248,5 +251,17 @@ public final class TopologyManagerImpl extends Actor
     for (final TopologyPartitionListener listener : topologyPartitionListeners) {
       LogUtil.catchAndLog(LOG, () -> listener.onPartitionLeaderUpdated(partitionId, member));
     }
+  }
+
+  public void onHealthChanged(final int partitionId, final HealthStatus status) {
+    actor.run(
+        () -> {
+          if (status == HealthStatus.HEALTHY) {
+            localBroker.setPartitionUnhealthy(partitionId);
+          } else if (status == HealthStatus.UNHEALTHY) {
+            localBroker.setPartitionHealthy(partitionId);
+          }
+          publishTopologyChanges();
+        });
   }
 }
