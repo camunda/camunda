@@ -247,6 +247,58 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     // @formatter:on
   }
 
+  @Test
+  public void emptyBucketsIncludeAllDistrByKeys() {
+    // given
+    final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto procInstance1 = deployAndStartSimpleProcess(Collections.singletonMap(
+      "doubleVar",
+      1.0
+    ));
+    adjustProcessInstanceDatesAndDuration(procInstance1.getId(), referenceDate, 0, 1L);
+
+    final ProcessInstanceEngineDto procInstance2 = engineIntegrationExtension.startProcessInstance(
+      procInstance1.getDefinitionId(),
+      Collections.singletonMap(
+        "doubleVar",
+        3.0
+      )
+    );
+    adjustProcessInstanceDatesAndDuration(procInstance2.getId(), referenceDate, 2L, 1L);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.DOUBLE, "doubleVar");
+    reportData.getConfiguration().getCustomBucket().setActive(true);
+    reportData.getConfiguration().getCustomBucket().setBaseline(1.0);
+    reportData.getConfiguration().getCustomBucket().setBucketSize(1.0);
+    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then the bucket "2.0" has all distrBy keys that the other buckets have
+    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .groupByContains("1.00")
+        .distributedByContains(localDateTimeToString(startOfToday), 1000.)
+        .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), null)
+        .distributedByContains(localDateTimeToString(startOfToday.plusDays(2)), null)
+      .groupByContains("2.00") // this empty bucket includes all distrBy keys despite all distrBy values being null
+        .distributedByContains(localDateTimeToString(startOfToday), null)
+        .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), null)
+        .distributedByContains(localDateTimeToString(startOfToday.plusDays(2)), null)
+      .groupByContains("3.00")
+        .distributedByContains(localDateTimeToString(startOfToday), null)
+        .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), null)
+        .distributedByContains(localDateTimeToString(startOfToday.plusDays(2)), 1000.)
+      .doAssert(result);
+    // @formatter:on
+  }
+
   @SneakyThrows
   @Test
   public void distributeByDateWorksForAutomaticInterval_WithStringVariable() {

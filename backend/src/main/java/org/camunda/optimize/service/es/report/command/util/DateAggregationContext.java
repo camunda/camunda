@@ -35,8 +35,15 @@ public class DateAggregationContext {
   @NonNull
   private final String dateField;
   private final String runningDateReportEndDateField; // used for range filter aggregation in running date reports only
+
   @NonNull
   private final MinMaxStatDto minMaxStats;
+  // extendBoundsToMinMaxStats true is used for distrBy date reports which require extended bounds even when no date
+  // filters are applied. If date filters are applied, extendedBounds may be overwritten by the filter bounds.
+  // This serves a similar purpose as <allDistributedByKeys> in the ExecutionContext for non-histogram aggregations.
+  @Builder.Default
+  private final boolean extendBoundsToMinMaxStats = false;
+
   @NonNull
   private final ZoneId timezone;
   @NonNull

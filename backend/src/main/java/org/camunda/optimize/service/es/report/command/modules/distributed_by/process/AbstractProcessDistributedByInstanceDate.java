@@ -48,6 +48,7 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
       .aggregateByDateUnit(unit)
       .dateField(getDateField())
       .minMaxStats(stats)
+      .extendBoundsToMinMaxStats(true)
       .timezone(context.getTimezone())
       .subAggregation(viewPart.createAggregation(context))
       .distributedByType(getDistributedBy().getType())

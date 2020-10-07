@@ -31,6 +31,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -204,6 +205,13 @@ public abstract class AbstractGroupByVariable<Data extends SingleReportDataDto> 
     compositeCommandResult.setKeyIsOfNumericType(
       distributedByPart.isKeyOfNumericType(context).orElse(getSortByKeyIsOfNumericType(context))
     );
+    // additional sorting of groupBy number variable result buckets when in a distributed by report
+    if (distributedByPart.isKeyOfNumericType(context).isPresent()
+      && getSortByKeyIsOfNumericType(context)) {
+      groupedData.sort(
+        Comparator.comparingDouble(groupBy -> Double.parseDouble(groupBy.getKey()))
+      );
+    }
   }
 
   private void addMissingVariableBuckets(final List<GroupByResult> groupedData,

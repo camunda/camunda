@@ -200,6 +200,58 @@ public abstract class AbstractProcessInstanceFrequencyByVariableByInstanceDateRe
   }
 
   @Test
+  public void emptyBucketsIncludeAllDistributedByKeys() {
+    // given
+    final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
+    final ProcessInstanceEngineDto procInstance1 = deployAndStartSimpleProcess(Collections.singletonMap(
+      "doubleVar",
+      1.0
+    ));
+    changeProcessInstanceDate(procInstance1.getId(), referenceDate);
+
+    final ProcessInstanceEngineDto procInstance2 = engineIntegrationExtension.startProcessInstance(
+      procInstance1.getDefinitionId(),
+      Collections.singletonMap(
+        "doubleVar",
+        3.0
+      )
+    );
+    changeProcessInstanceDate(procInstance2.getId(), referenceDate.plusDays(2));
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReportData(procInstance1, VariableType.DOUBLE, "doubleVar");
+    reportData.getConfiguration().getCustomBucket().setActive(true);
+    reportData.getConfiguration().getCustomBucket().setBaseline(1.0);
+    reportData.getConfiguration().getCustomBucket().setBucketSize(1.0);
+    AuthorizedProcessReportEvaluationResultDto<ReportHyperMapResultDto> evaluationResponse =
+      reportClient.evaluateHyperMapReport(reportData);
+
+    // then the bucket "2.0" has all distrBy keys that the other buckets have
+    final ReportHyperMapResultDto result = evaluationResponse.getResult();
+    final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
+    // @formatter:off
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .groupByContains("1.00")
+        .distributedByContains(localDateTimeToString(startOfToday), 1.0)
+        .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), 0.0)
+        .distributedByContains(localDateTimeToString(startOfToday.plusDays(2)), 0.0)
+      .groupByContains("2.00") // this empty bucket includes all distrBy keys despite all distrBy values being 0.0
+        .distributedByContains(localDateTimeToString(startOfToday), 0.0)
+        .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), 0.0)
+        .distributedByContains(localDateTimeToString(startOfToday.plusDays(2)), 0.0)
+      .groupByContains("3.00")
+        .distributedByContains(localDateTimeToString(startOfToday), 0.0)
+        .distributedByContains(localDateTimeToString(startOfToday.plusDays(1)), 0.0)
+        .distributedByContains(localDateTimeToString(startOfToday.plusDays(2)), 1.0)
+      .doAssert(result);
+    // @formatter:on
+  }
+
+  @Test
   public void automaticIntervalSelectionWorks_WithStringVariables() {
     // given
     final ProcessInstanceEngineDto procInst1 = deployAndStartSimpleProcessWithStringVariable();
