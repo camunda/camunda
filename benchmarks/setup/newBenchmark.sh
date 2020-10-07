@@ -48,3 +48,5 @@ else
     sed -i -e "s/default/$namespace/g" Makefile starter.yaml timer.yaml simpleStarter.yaml worker.yaml
 fi
 
+# get latest updates from zeebe repo
+helm repo update
