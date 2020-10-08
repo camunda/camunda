@@ -255,7 +255,7 @@
       "label": "Ansicht",
       "rawData": "Rohdaten",
       "pi": "Prozessinstanz",
-      "in": "Vorfall",
+      "in": "Zwischenfall",
       "resolutionDuration": "Auflösung Dauer",
       "fn": "Prozessknoten",
       "userTask": "Benutzeraufgabe",
