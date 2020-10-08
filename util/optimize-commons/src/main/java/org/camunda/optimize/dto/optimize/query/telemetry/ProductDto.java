@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NonNull;
 import org.camunda.optimize.dto.optimize.OptimizeDto;
 
-import static org.camunda.optimize.service.metadata.Version.VERSION;
+import static org.camunda.optimize.service.metadata.Version.RAW_VERSION;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @EqualsAndHashCode
@@ -25,7 +25,7 @@ public class ProductDto implements OptimizeDto {
   private String name = "Camunda Optimize";
   @NonNull
   @Builder.Default
-  private String version = VERSION;
+  private String version = RAW_VERSION;
   @NonNull
   @Builder.Default
   private String edition = "enterprise";

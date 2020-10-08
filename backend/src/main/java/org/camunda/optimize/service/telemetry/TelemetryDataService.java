@@ -36,12 +36,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.metadata.Version.RAW_VERSION;
 import static org.camunda.optimize.service.metadata.Version.VERSION;
 
 @RequiredArgsConstructor
 @Component
 @Slf4j
 public class TelemetryDataService {
+
   public static final String INFORMATION_UNAVAILABLE_STRING = "Unknown";
   public static final String OPTIMIZE_FEATURE = "optimize";
   public static final String CAMUNDA_BPM_FEATURE = "camundaBPM";
@@ -68,7 +70,7 @@ public class TelemetryDataService {
 
   private ProductDto getProductData() {
     return ProductDto.builder()
-      .version(VERSION)
+      .version(RAW_VERSION)
       .internals(getInternalsData())
       .build();
   }

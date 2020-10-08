@@ -14,7 +14,6 @@ import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessInstanceIndex;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
