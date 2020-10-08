@@ -606,7 +606,7 @@ void e2eTestSteps() {
     sh 'gsutil -q -m cp gs://optimize-data/optimize_data-e2e.sqlc /db_dump/dump.sqlc'
   }
   container('postgresql') {
-    sh 'pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/dump.sqlc'
+    sh 'pg_restore --clean --if-exists -v -h localhost -U camunda -d engine /db_dump/dump.sqlc || true'
   }
   container('maven') {
     sh 'sudo apt-get update'
