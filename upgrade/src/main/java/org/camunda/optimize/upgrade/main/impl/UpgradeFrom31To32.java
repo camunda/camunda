@@ -10,6 +10,7 @@ import org.apache.commons.text.StringSubstitutor;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.SingleReportConfigurationDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.AssigneeDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.CandidateGroupDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.FlowNodeDistributedByDto;
@@ -29,11 +30,13 @@ import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateIndexStep;
 import org.camunda.optimize.upgrade.steps.schema.UpdateMappingIndexStep;
 import org.camunda.optimize.upgrade.util.MappingMetadataUtil;
+import org.elasticsearch.index.query.QueryBuilders;
 
 import java.util.List;
 import java.util.Map;
 
 import static java.util.stream.Collectors.toList;
+import static org.camunda.optimize.dto.optimize.ReportConstants.DATE_UNIT_AUTOMATIC;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_DECISION_REPORT_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_PROCESS_REPORT_INDEX_NAME;
@@ -78,7 +81,8 @@ public class UpgradeFrom31To32 extends UpgradeProcedure {
           .map(ProcessInstanceIndex::getIndexName)
           .map(this::createInitializeProcessInstanceIncidentsFieldStep)
           .collect(toList())
-      );
+      )
+      .addUpgradeStep(setDefaultDistributeByCustomBucketValues());
     return upgradeBuilder.build();
   }
 
@@ -145,6 +149,33 @@ public class UpgradeFrom31To32 extends UpgradeProcedure {
     return new UpdateDataStep(
       reportIndexName,
       matchAllQuery(),
+      script,
+      params
+    );
+  }
+
+  private UpgradeStep setDefaultDistributeByCustomBucketValues() {
+    final Map<String, Object> params = ImmutableMap.<String, Object>builder()
+      .put("defaultDistributeByCustomBucket", CustomBucketDto.builder().build())
+      .put("defaultDistributeByDateVariableUnit", DATE_UNIT_AUTOMATIC)
+      .build();
+
+
+    //@formatter:off
+    final String script =
+      "def configuration = ctx._source.data.configuration;" +
+        "if (configuration.distributeByCustomBucket == null) {" +
+          "configuration.distributeByCustomBucket = params.defaultDistributeByCustomBucket;" +
+        "}" +
+        "if (configuration.distributeByDateVariableUnit == null) {" +
+          "configuration.distributeByDateVariableUnit = params.defaultDistributeByDateVariableUnit;" +
+        "}" +
+        "\n";
+    //@formatter:on
+
+    return new UpdateDataStep(
+      SINGLE_PROCESS_REPORT_INDEX_NAME,
+      QueryBuilders.matchAllQuery(),
       script,
       params
     );
