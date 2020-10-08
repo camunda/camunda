@@ -16,6 +16,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.camunda.optimize.dto.optimize.query.telemetry.TelemetryDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.springframework.stereotype.Component;
 
 import javax.ws.rs.core.HttpHeaders;
@@ -56,8 +57,10 @@ public class TelemetrySendingService {
       if (!Response.Status.ACCEPTED.equals(statusCode)) {
         throw new OptimizeRuntimeException("Unexpected response when sending telemetry data: " + statusCode);
       }
+    } catch (IllegalArgumentException e) {
+      throw new OptimizeValidationException("Telemetry endpoint not configured correctly");
     } catch (IOException e) {
-      throw new OptimizeRuntimeException("Failed to send telemetry data.", e);
+      throw new OptimizeRuntimeException("There was a problem sending telemetry data.", e);
     }
   }
 }

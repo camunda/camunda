@@ -142,13 +142,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
     storeLicense(license);
 
     // when
-    final LicenseKeyDto telemetryLicenseKey =
-      embeddedOptimizeExtension.getApplicationContext()
-        .getBean(TelemetryDataService.class)
-        .getTelemetryData()
-        .getProduct()
-        .getInternals()
-        .getLicenseKey();
+    final LicenseKeyDto telemetryLicenseKey = getTelemetryLicenseKey();
 
     // then
     assertThat(telemetryLicenseKey.getCustomer()).isEqualTo("schrottis inn");
@@ -174,13 +168,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
     storeLicense(license);
 
     // when
-    final LicenseKeyDto telemetryLicenseKey =
-      embeddedOptimizeExtension.getApplicationContext()
-        .getBean(TelemetryDataService.class)
-        .getTelemetryData()
-        .getProduct()
-        .getInternals()
-        .getLicenseKey();
+    final LicenseKeyDto telemetryLicenseKey = getTelemetryLicenseKey();
 
     // then
     assertThat(telemetryLicenseKey.getCustomer()).isEqualTo("Testaccount Camunda");
@@ -203,13 +191,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
     storeLicense(license);
 
     // when
-    final LicenseKeyDto telemetryLicenseKey =
-      embeddedOptimizeExtension.getApplicationContext()
-        .getBean(TelemetryDataService.class)
-        .getTelemetryData()
-        .getProduct()
-        .getInternals()
-        .getLicenseKey();
+    final LicenseKeyDto telemetryLicenseKey = getTelemetryLicenseKey();
 
     // then
     assertThat(telemetryLicenseKey.getCustomer()).isEqualTo("license generator test");
@@ -236,13 +218,7 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
       removeLicense();
 
       // when
-      final LicenseKeyDto telemetryLicenseKey =
-        embeddedOptimizeExtension.getApplicationContext()
-          .getBean(TelemetryDataService.class)
-          .getTelemetryData()
-          .getProduct()
-          .getInternals()
-          .getLicenseKey();
+      final LicenseKeyDto telemetryLicenseKey = getTelemetryLicenseKey();
 
       // then
       assertThat(telemetryLicenseKey.getCustomer()).isEqualTo(INFORMATION_UNAVAILABLE_STRING);
@@ -328,6 +304,15 @@ public class TelemetryDataServiceIT extends AbstractMultiEngineIT {
       .setRefreshPolicy(IMMEDIATE);
 
     elasticSearchIntegrationTestExtension.getOptimizeElasticClient().delete(request, RequestOptions.DEFAULT);
+  }
+
+  private LicenseKeyDto getTelemetryLicenseKey() {
+    return embeddedOptimizeExtension.getApplicationContext()
+      .getBean(TelemetryDataService.class)
+      .getTelemetryData()
+      .getProduct()
+      .getInternals()
+      .getLicenseKey();
   }
 
   private Optional<MetadataDto> getMetadata() {
