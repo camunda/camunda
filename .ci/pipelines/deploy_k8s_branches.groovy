@@ -155,6 +155,8 @@ pipeline {
               def mavenProps = readMavenPom().getProperties()
               env.ES_VERSION = params.ES_VERSION ?: mavenProps.getProperty("elasticsearch.test.version")
               env.CAMBPM_VERSION = params.CAMBPM_VERSION ?: mavenProps.getProperty("camunda.engine.version")
+              env.OPTIMIZE_SUPER_USER_IDS = '["demo"]'
+              env.TELEMETRY_ENDPOINT = "https://api.int.telemetry.camunda.cloud/pings"
             }
           }
           dir('infra-core') {
