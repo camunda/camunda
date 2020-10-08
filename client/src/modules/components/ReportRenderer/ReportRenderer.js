@@ -92,11 +92,7 @@ function containsData(report) {
     return report.data.reports.length > 0 && Object.values(report.result.data).some(containsData);
   } else {
     const {type, instanceCount, data} = report.result;
-    if (
-      type &&
-      type.toLowerCase().includes('map') &&
-      (data.length === 0 || data.every(({value}) => !value))
-    ) {
+    if (type && type.toLowerCase().includes('map') && data.length === 0) {
       return false;
     }
 
