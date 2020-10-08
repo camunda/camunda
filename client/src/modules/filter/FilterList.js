@@ -180,19 +180,6 @@ export default class FilterList extends React.Component {
               </ActionItem>
             </li>
           );
-        } else if (['withOpenIncidentsOnly', 'withResolvedIncidentsOnly'].includes(filter.type)) {
-          list.push(
-            <li key={i} className="listItem notEditable">
-              <ActionItem
-                onClick={(evt) => {
-                  evt.stopPropagation();
-                  this.props.deleteFilter(filter);
-                }}
-              >
-                <span className="parameterName">{t('common.filter.types.' + filter.type)}</span>
-              </ActionItem>
-            </li>
-          );
         } else if (['assignee', 'candidateGroup'].includes(filter.type)) {
           const {values, operator} = filter.data;
           list.push(
