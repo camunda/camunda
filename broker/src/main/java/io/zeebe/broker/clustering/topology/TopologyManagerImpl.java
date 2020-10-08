@@ -189,9 +189,22 @@ public final class TopologyManagerImpl extends Actor
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
     if (brokerInfo != null && !isStaticConfigValid(brokerInfo)) {
       LOG.error(
-          "Static configuration of node {} differs from local node {}",
+          "Static configuration of node {} differs from local node {}: "
+              + "NodeId: 0 <= {} < {}, "
+              + "ClusterSize: {} == {}, "
+              + "PartitionsCount: {} == {}, "
+              + "ReplicationFactor: {} == {}.",
           eventSource.id(),
-          atomix.getMembershipService().getLocalMember().id());
+          atomix.getMembershipService().getLocalMember().id(),
+          brokerInfo.getNodeId(),
+          localBroker.getClusterSize(),
+          brokerInfo.getClusterSize(),
+          localBroker.getClusterSize(),
+          brokerInfo.getPartitionsCount(),
+          localBroker.getPartitionsCount(),
+          brokerInfo.getReplicationFactor(),
+          localBroker.getReplicationFactor());
+
       return null;
     }
     return brokerInfo;
