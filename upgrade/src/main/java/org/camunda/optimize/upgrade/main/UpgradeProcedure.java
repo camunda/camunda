@@ -15,6 +15,8 @@ import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.service.UpgradeValidationService;
 import org.camunda.optimize.upgrade.util.UpgradeUtil;
 
+import java.util.Optional;
+
 @Slf4j
 public abstract class UpgradeProcedure {
 
@@ -41,20 +43,25 @@ public abstract class UpgradeProcedure {
   public abstract String getTargetVersion();
 
   public void performUpgrade() {
-    final String schemaVersion = elasticsearchMetadataService.getSchemaVersion(esClient)
-      .orElseThrow(() -> new UpgradeRuntimeException("Can't determine current metadata version!"));
-    validateVersions(schemaVersion);
+    final Optional<String> optionalSchemaVersion = elasticsearchMetadataService.getSchemaVersion(esClient);
 
-    if (!getTargetVersion().equals(schemaVersion)) {
-      try {
-        UpgradePlan upgradePlan = buildUpgradePlan();
-        upgradePlan.execute();
-      } catch (Exception e) {
-        log.error("Error while executing upgrade from {} to {}", getInitialVersion(), getTargetVersion(), e);
-        throw new UpgradeRuntimeException("Upgrade failed.", e);
+    if (optionalSchemaVersion.isPresent()) {
+      final String schemaVersion = optionalSchemaVersion.get();
+      validateVersions(schemaVersion);
+
+      if (!getTargetVersion().equals(schemaVersion)) {
+        try {
+          UpgradePlan upgradePlan = buildUpgradePlan();
+          upgradePlan.execute();
+        } catch (Exception e) {
+          log.error("Error while executing upgrade from {} to {}", getInitialVersion(), getTargetVersion(), e);
+          throw new UpgradeRuntimeException("Upgrade failed.", e);
+        }
+      } else {
+        log.info("Target optionalSchemaVersion is already present, no upgrade to perform.");
       }
     } else {
-      log.info("Target schemaVersion is already present, no upgrade to perform.");
+      log.info("No Connection to elasticsearch or no Optimize Metadata index found, skipping upgrade.");
     }
   }
 

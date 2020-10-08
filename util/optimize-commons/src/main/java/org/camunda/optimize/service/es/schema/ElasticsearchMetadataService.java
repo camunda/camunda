@@ -90,23 +90,16 @@ public class ElasticsearchMetadataService {
 
       long totalHits = searchResponse.getHits().getTotalHits().value;
       if (totalHits == 1) {
-        try {
-          MetadataDto parsed = objectMapper.readValue(
-            searchResponse.getHits().getAt(0).getSourceAsString(),
-            MetadataDto.class
-          );
-          result = Optional.ofNullable(parsed);
-        } catch (IOException e) {
-          log.error("Can't parse metadata", e);
-        }
+        MetadataDto parsed = objectMapper.readValue(
+          searchResponse.getHits().getAt(0).getSourceAsString(),
+          MetadataDto.class
+        );
+        result = Optional.ofNullable(parsed);
       } else if (totalHits > 1) {
         throw new OptimizeRuntimeException("Metadata search returned [" + totalHits + "] hits");
       }
     } catch (IOException | ElasticsearchException e) {
-      log.info(
-        "Was not able to retrieve metadata index, schema might not have been initialized yet if this is the first " +
-          "startup!"
-      );
+      log.info("Was not able to retrieve metadata index!", e);
     }
 
     return result;

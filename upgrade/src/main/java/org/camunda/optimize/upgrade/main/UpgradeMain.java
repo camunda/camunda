@@ -60,10 +60,9 @@ public class UpgradeMain {
       printWarning(upgradeProcedure.getInitialVersion(), upgradeProcedure.getTargetVersion());
     }
 
-    log.info("Execute upgrade...");
+    log.info("Executing upgrade...");
     try {
       upgradeProcedure.performUpgrade();
-      log.info("Finished upgrade successfully!");
       System.exit(0);
     } catch (final Exception e) {
       log.error(e.getMessage(), e);

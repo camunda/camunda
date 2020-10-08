@@ -58,7 +58,8 @@ echo.
 echo Starting Optimize ${project.version}...
 echo (Hint: you can find the log output in the 'optimize*.log' files in the 'log' folder of your distribution.)
 echo.
-start /b "Camunda Optimize" cmd /c "%BASEDIR%\optimize-startup.bat" >NUL 2>&1
+set OPTIMIZE_STARTUP_LOG_FILE=%BASEDIR%/log/optimize-startup.log
+start /b "Camunda Optimize" cmd /c "%BASEDIR%\optimize-startup.bat" %* >"%OPTIMIZE_STARTUP_LOG_FILE%" 2>&1
 
 
 :: command to query optimize

@@ -16,10 +16,6 @@
 cd $(dirname "$0")
 BASEDIR=$(pwd)
 
-echo
-echo "Starting Camunda Optimize ${project.version}...";
-echo
-
 # now set the path to java
 if [ -x "$JAVA_HOME/bin/java" ]; then
   JAVA="$JAVA_HOME/bin/java"
@@ -35,7 +31,7 @@ if [ -z "$OPTIMIZE_JAVA_OPTS" ]; then
 fi
 
 # check if debug mode should be enabled
-if [ "$1" == "debug" ]; then
+if [ "$1" == "--debug" ]; then
   DEBUG_PORT=9999
   DEBUG_JAVA_OPTS="-Xdebug -agentlib:jdwp=transport=dt_socket,address=$DEBUG_PORT,server=y,suspend=n"
 fi
@@ -44,13 +40,23 @@ fi
 # and the optimize jar
 OPTIMIZE_CLASSPATH="${BASEDIR}/environment:${BASEDIR}/lib/*:${BASEDIR}/optimize-backend-${project.version}.jar"
 
-# forward any set java properties
+RUN_UPGRADE=false
 for argument in "$@"
 do
-    if [[ "$argument" =~ ^-D.* ]]
-    then
-        JAVA_SYSTEM_PROPERTIES="$JAVA_SYSTEM_PROPERTIES $argument"
+    if [[ "$argument" =~ ^-D.* ]]; then
+      # forward any set java properties
+      JAVA_SYSTEM_PROPERTIES="$JAVA_SYSTEM_PROPERTIES $argument"
+    elif [[ "$argument" =~ ^--upgrade$ ]]; then
+      RUN_UPGRADE=true
     fi
 done
+
+if [ $RUN_UPGRADE == true ]; then
+  bash ${BASEDIR}/upgrade/upgrade.sh --skip-warning
+fi
+
+echo
+echo "Starting Camunda Optimize ${project.version}..."
+echo
 
 exec $JAVA ${OPTIMIZE_JAVA_OPTS} -cp ${OPTIMIZE_CLASSPATH} ${DEBUG_JAVA_OPTS} ${JAVA_SYSTEM_PROPERTIES} -Dfile.encoding=UTF-8 org.camunda.optimize.Main

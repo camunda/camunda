@@ -32,21 +32,6 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
   }
 
   @Test
-  public void upgradeBreaksWithoutMetadataIndex() {
-    // given
-    cleanAllDataFromElasticsearch();
-    final TestUpgradeProcedure testUpgradeProcedure = new TestUpgradeProcedure(
-      PreviousVersion.PREVIOUS_VERSION, Version.VERSION, "it/it-config.yaml"
-    );
-
-    // when
-    assertThatThrownBy(testUpgradeProcedure::performUpgrade)
-      // then
-      .isInstanceOf(UpgradeRuntimeException.class)
-      .hasMessage("Can't determine current metadata version!");
-  }
-
-  @Test
   public void upgradeBreaksOnUnsupportedExistingSchemaVersion() {
     // given
     final String metadataIndexVersion = "2.0.0";
@@ -97,7 +82,22 @@ public class UpgradeProcedureIT extends AbstractUpgradeIT {
 
     // then
     assertThat(getMetadataVersion()).isEqualTo(Version.VERSION);
-    logCapturer.assertContains("Target schemaVersion is already present, no upgrade to perform.");
+    logCapturer.assertContains("Target optionalSchemaVersion is already present, no upgrade to perform.");
+  }
+
+  @Test
+  public void upgradeDoesNotFailOnOnMissingMetadataIndex() {
+    // given
+    cleanAllDataFromElasticsearch();
+    final TestUpgradeProcedure testUpgradeProcedure = new TestUpgradeProcedure(
+      PreviousVersion.PREVIOUS_VERSION, Version.VERSION, "it/it-config.yaml"
+    );
+
+    // when
+    assertThatNoException().isThrownBy(testUpgradeProcedure::performUpgrade);
+
+    // then
+    logCapturer.assertContains("No Connection to elasticsearch or no Optimize Metadata index found, skipping upgrade.");
   }
 
 }
