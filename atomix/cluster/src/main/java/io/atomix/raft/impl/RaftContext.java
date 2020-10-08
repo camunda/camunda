@@ -356,6 +356,7 @@ public class RaftContext implements AutoCloseable {
       this.commitIndex = commitIndex;
       logWriter.commit(Math.min(commitIndex, logWriter.getLastIndex()));
       if (raftLog.isFlushOnCommit() && isLeader()) {
+        // writer's buffer is isolated from readers
         logWriter.flush();
       }
       final long configurationIndex = cluster.getConfiguration().index();

@@ -610,6 +610,7 @@ public class PassiveRole extends InactiveRole {
     }
 
     // Make sure all entries are flushed before ack
+    // because writer's buffer is isolated from readers
     raft.getLogWriter().flush();
 
     // Return a successful append response.
