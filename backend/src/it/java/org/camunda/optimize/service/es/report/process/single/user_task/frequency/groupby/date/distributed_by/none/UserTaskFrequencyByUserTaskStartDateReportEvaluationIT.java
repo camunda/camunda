@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.ReportMapRes
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.MapResultEntryDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -58,6 +59,36 @@ public class UserTaskFrequencyByUserTaskStartDateReportEvaluationIT
       .get()
       .extracting(MapResultEntryDto::getValue)
       .isEqualTo(executionStateTestValues.resultValue);
+  }
+
+  @Test
+  public void evaluateReportWithExecutionStateCanceled() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoModelElementDefinition();
+    startAndCompleteInstance(processDefinition.getId());
+
+    final ProcessInstanceEngineDto secondInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.cancelActivityInstance(secondInstance.getId(), USER_TASK_1);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.CANCELED);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
+    assertThat(result.getIsComplete()).isTrue();
+    assertThat(result.getData()).isNotNull();
+    assertThat(result.getData()).hasSize(1);
+    ZonedDateTime startOfToday = truncateToStartOfUnit(OffsetDateTime.now(), ChronoUnit.DAYS);
+    assertThat(result.getEntryForKey(localDateTimeToString(startOfToday)))
+      .get()
+      .extracting(MapResultEntryDto::getValue)
+      .isEqualTo(1.);
   }
 
   @Data

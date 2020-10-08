@@ -8,12 +8,14 @@ package org.camunda.optimize.dto.optimize.query.report.single.configuration;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import static org.camunda.optimize.dto.optimize.ReportConstants.ALL_FLOWNODE_EXECUTION_STATE;
+import static org.camunda.optimize.dto.optimize.ReportConstants.CANCELED_FLOWNODE_EXECUTION_STATE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.COMPLETED_FLOWNODE_EXECUTION_STATE;
 import static org.camunda.optimize.dto.optimize.ReportConstants.RUNNING_FLOWNODE_EXECUTION_STATE;
 
 public enum FlowNodeExecutionState {
   RUNNING(RUNNING_FLOWNODE_EXECUTION_STATE),
   COMPLETED(COMPLETED_FLOWNODE_EXECUTION_STATE),
+  CANCELED(CANCELED_FLOWNODE_EXECUTION_STATE),
   ALL(ALL_FLOWNODE_EXECUTION_STATE),
   ;
 

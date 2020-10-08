@@ -451,15 +451,15 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
   public void evaluateReportWithExecutionState(ExecutionStateTestValues executionStateTestValues) {
     // given
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
-      processDefinition.getId());
+    final ProcessInstanceEngineDto firstInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     // finish first running task, second now runs but unclaimed
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(firstInstance.getId());
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
     // claim first running task
-    engineIntegrationExtension.claimAllRunningUserTasks(processInstanceDto2.getId());
+    engineIntegrationExtension.claimAllRunningUserTasks(secondInstance.getId());
 
     importAllEngineEntitiesFromScratch();
 
@@ -470,11 +470,44 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
 
     // then
     assertThat(result.getData()).hasSize(2);
-    assertThat(result.getEntryForKey(USER_TASK_1).get().getValue())
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(executionStateTestValues.getExpectedFrequencyValues().get(USER_TASK_1));
-    assertThat(result.getEntryForKey(USER_TASK_2).get().getValue())
+    assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get().extracting(MapResultEntryDto::getValue)
       .isEqualTo(executionStateTestValues.getExpectedFrequencyValues().get(USER_TASK_2));
     assertThat(result.getInstanceCount()).isEqualTo(2L);
+  }
+
+  @Test
+  public void evaluateReportWithExecutionStateCanceled() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto firstInstance =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    // finish first running task, cancel second task
+    engineIntegrationExtension.finishAllRunningUserTasks(firstInstance.getId());
+    engineIntegrationExtension.cancelActivityInstance(firstInstance.getId(), USER_TASK_2);
+
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    // claim then cancel first running task
+    engineIntegrationExtension.claimAllRunningUserTasks(secondInstance.getId());
+    engineIntegrationExtension.cancelActivityInstance(secondInstance.getId(), USER_TASK_1);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.CANCELED);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+    assertThat(result.getEntryForKey(USER_TASK_2)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
   }
 
   @Test
@@ -506,7 +539,8 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     // then
     assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
-    assertThat(result.getEntryForKey(USER_TASK_1).get().getValue()).isEqualTo(2.);
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(2.);
   }
 
   @Test
@@ -565,7 +599,8 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     assertThat(result.getData()).isNotNull();
     assertThat(result.getData()).hasSize(1);
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
-    assertThat(result.getEntryForKey(USER_TASK_1).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
@@ -590,7 +625,8 @@ public class UserTaskFrequencyByUserTaskReportEvaluationIT extends AbstractProce
     assertThat(result.getInstanceCount()).isEqualTo(1L);
     assertThat(result.getData()).isNotNull();
     assertThat(getExecutedFlowNodeCount(result)).isEqualTo(1L);
-    assertThat(result.getEntryForKey(USER_TASK_1).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test

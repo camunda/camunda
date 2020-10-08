@@ -38,6 +38,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +48,6 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.NOT_IN;
@@ -351,9 +352,9 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     // given
     final String tenantId1 = "tenantId1";
     final String tenantId2 = "tenantId2";
-    final List<String> selectedTenants = newArrayList(tenantId1);
+    final List<String> selectedTenants = Collections.singletonList(tenantId1);
     final String processKey = deployAndStartMultiTenantUserTaskProcess(
-      newArrayList(null, tenantId1, tenantId2)
+      Arrays.asList(null, tenantId1, tenantId2)
     );
 
     importAllEngineEntitiesFromScratch();
@@ -531,6 +532,45 @@ public class UserTaskFrequencyByCandidateGroupReportEvaluationIT extends Abstrac
     assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP).map(MapResultEntryDto::getValue).orElse(null))
       .isEqualTo(executionStateTestValues.getExpectedFrequencyValues().get(SECOND_CANDIDATE_GROUP));
     assertThat(result.getInstanceCount()).isEqualTo(2L);
+  }
+
+  @Test
+  public void evaluateReportWithExecutionStateCanceled() {
+    // given
+    OffsetDateTime now = OffsetDateTime.now();
+    LocalDateUtil.setCurrentTime(now);
+
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    // finish first running task, second now runs unclaimed and canceled
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.finishAllRunningUserTasks(firstInstance.getId());
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
+    engineIntegrationExtension.cancelActivityInstance(firstInstance.getId(), USER_TASK_2);
+
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
+      processDefinition.getId());
+    // claim and cancel first running task
+    engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(FIRST_CANDIDATE_GROUP);
+    engineIntegrationExtension.claimAllRunningUserTasks(secondInstance.getId());
+    engineIntegrationExtension.cancelActivityInstance(secondInstance.getId(), USER_TASK_1);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReport(processDefinition);
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.CANCELED);
+    final ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getData()).hasSize(2);
+    assertThat(result.getEntryForKey(FIRST_CANDIDATE_GROUP)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+    assertThat(result.getEntryForKey(SECOND_CANDIDATE_GROUP)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+    assertThat(result.getInstanceCount()).isEqualTo(2L);
+    assertThat(result.getInstanceCountWithoutFilters()).isEqualTo(2L);
   }
 
   @Test

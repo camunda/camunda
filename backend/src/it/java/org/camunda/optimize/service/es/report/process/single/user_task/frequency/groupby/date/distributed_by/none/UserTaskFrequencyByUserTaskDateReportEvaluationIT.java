@@ -81,7 +81,7 @@ public abstract class UserTaskFrequencyByUserTaskDateReportEvaluationIT
         .extracting(MapResultEntryDto::getValue)
         .containsExactly(expectedUserTaskCount);
     } else {
-      assertThat(result.getData()).hasSize(0);
+      assertThat(result.getData()).isEmpty();
     }
   }
 

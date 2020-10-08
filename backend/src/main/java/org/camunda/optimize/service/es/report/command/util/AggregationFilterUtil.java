@@ -20,6 +20,7 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.writer.ElasticsearchWriterUtil.createDefaultScriptWithPrimitiveParams;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class AggregationFilterUtil {
@@ -34,6 +35,8 @@ public class AggregationFilterUtil {
         return boolQueryBuilder.must(existsQuery(qualifyingFilterField));
       case ALL:
         return boolQueryBuilder;
+      case CANCELED:
+        return boolQueryBuilder.must(termQuery(qualifyingFilterField, true));
       default:
         throw new OptimizeRuntimeException(String.format(
           "Unknown flow node execution state [%s]",

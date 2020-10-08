@@ -78,16 +78,26 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
     changeDuration(processInstance1, USER_TASK_1, 100.);
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(SECOND_CANDIDATE_GROUP);
     engineIntegrationExtension.claimAllRunningUserTasks(processInstance1.getId());
-    changeUserTaskStartDate(processInstance1, now, USER_TASK_2, 700.);
-    changeUserTaskClaimDate(processInstance1, now, USER_TASK_2, 500.);
+    if (FlowNodeExecutionState.CANCELED.equals(executionState)) {
+      engineIntegrationExtension.cancelActivityInstance(processInstance1.getId(), USER_TASK_2);
+      changeDuration(processInstance1, USER_TASK_2, 100.);
+    } else {
+      changeUserTaskStartDate(processInstance1, now, USER_TASK_2, 700.);
+      changeUserTaskClaimDate(processInstance1, now, USER_TASK_2, 500.);
+    }
 
     final ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     // claim first running task
     engineIntegrationExtension.addCandidateGroupForAllRunningUserTasks(processInstance2.getId(), FIRST_CANDIDATE_GROUP);
     engineIntegrationExtension.claimAllRunningUserTasks(processInstance2.getId());
-    changeUserTaskStartDate(processInstance2, now, USER_TASK_1, 700.);
-    changeUserTaskClaimDate(processInstance2, now, USER_TASK_1, 500.);
+    if (FlowNodeExecutionState.CANCELED.equals(executionState)) {
+      engineIntegrationExtension.cancelActivityInstance(processInstance2.getId(), USER_TASK_1);
+      changeDuration(processInstance2, USER_TASK_1, 100.);
+    } else {
+      changeUserTaskStartDate(processInstance2, now, USER_TASK_1, 700.);
+      changeUserTaskClaimDate(processInstance2, now, USER_TASK_1, 500.);
+    }
 
     importAllEngineEntitiesFromScratch();
 
@@ -130,6 +140,11 @@ public abstract class UserTaskDurationByUserTaskStartDateByCandidateGroupReportE
         FlowNodeExecutionState.COMPLETED,
         new ExecutionStateTestValues(100., 100., 100.),
         null
+      ),
+      Arguments.of(
+        FlowNodeExecutionState.CANCELED,
+        new ExecutionStateTestValues(100., 100., 100.),
+        new ExecutionStateTestValues(100., 100., 100.)
       ),
       Arguments.of(
         FlowNodeExecutionState.ALL,

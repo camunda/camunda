@@ -310,8 +310,9 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("startEvent").get().getValue()).isNull();
-    assertThat(result.getEntryForKey(BpmnModels.USER_TASK_1).get().getValue()).isEqualTo(1.);
+    assertThat(result.getEntryForKey("startEvent")).isPresent().get().extracting(MapResultEntryDto::getValue).isNull();
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
@@ -330,8 +331,32 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
 
     // then
     assertThat(result.getInstanceCount()).isEqualTo(1L);
-    assertThat(result.getEntryForKey("startEvent").get().getValue()).isEqualTo(1.);
-    assertThat(result.getEntryForKey(BpmnModels.USER_TASK_1).get().getValue()).isNull();
+    assertThat(result.getEntryForKey("startEvent")).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get().extracting(MapResultEntryDto::getValue).isNull();
+  }
+
+  @Test
+  public void evaluateReportWithExecutionStateCanceled() {
+    // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleUserTaskProcess();
+    engineIntegrationExtension.cancelActivityInstance(processInstanceDto.getId(), USER_TASK_1);
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    ProcessReportDataDto reportData = createReport(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion()
+    );
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.CANCELED);
+    ReportMapResultDto result = reportClient.evaluateMapReport(reportData).getResult();
+
+    // then
+    assertThat(result.getInstanceCount()).isEqualTo(1L);
+    assertThat(result.getEntryForKey("startEvent")).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isNull();
+    assertThat(result.getEntryForKey(USER_TASK_1)).isPresent().get()
+      .extracting(MapResultEntryDto::getValue).isEqualTo(1.);
   }
 
   @Test
@@ -525,7 +550,8 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT extends Abstract
   @Test
   public void resultContainsNonExecutedFlowNodes() {
     // given
-    ProcessInstanceEngineDto engineDto = engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
+    ProcessInstanceEngineDto engineDto =
+      engineIntegrationExtension.deployAndStartProcess(BpmnModels.getSingleUserTaskDiagram());
 
     importAllEngineEntitiesFromScratch();
 

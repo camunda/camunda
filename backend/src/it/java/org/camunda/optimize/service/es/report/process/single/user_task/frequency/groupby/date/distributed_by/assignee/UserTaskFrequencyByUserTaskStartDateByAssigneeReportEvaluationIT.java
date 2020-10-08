@@ -95,6 +95,39 @@ public class UserTaskFrequencyByUserTaskStartDateByAssigneeReportEvaluationIT
     groupByAsserter.doAssert(result);
   }
 
+  @Test
+  public void evaluateReportWithExecutionStateCanceled() {
+    // given
+    final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
+    engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.finishAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD);
+    engineIntegrationExtension.finishAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD);
+
+    final ProcessInstanceEngineDto processInstanceDto2 =
+      engineIntegrationExtension.startProcessInstance(processDefinition.getId());
+    engineIntegrationExtension.claimAllRunningUserTasks(
+      DEFAULT_USERNAME,
+      DEFAULT_PASSWORD,
+      processInstanceDto2.getId()
+    );
+    engineIntegrationExtension.cancelActivityInstance(processInstanceDto2.getId(), USER_TASK_1);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    final ProcessReportDataDto reportData = createReportData(processDefinition, AggregateByDateUnit.DAY);
+    reportData.getConfiguration().setFlowNodeExecutionState(FlowNodeExecutionState.CANCELED);
+    final ReportHyperMapResultDto result = reportClient.evaluateHyperMapReport(reportData).getResult();
+
+    // then
+    HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+      .groupByContains(groupedByDayDateAsString(OffsetDateTime.now()))
+      .distributedByContains(DEFAULT_USERNAME, 1.)
+      .doAssert(result);
+  }
+
   protected static Stream<Arguments> getExecutionStateExpectedValues() {
     return Stream.of(
       Arguments.of(FlowNodeExecutionState.RUNNING, 1., null),

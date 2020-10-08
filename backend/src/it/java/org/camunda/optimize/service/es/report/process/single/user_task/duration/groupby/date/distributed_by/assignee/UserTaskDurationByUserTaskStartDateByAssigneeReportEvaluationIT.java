@@ -81,9 +81,13 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
     final ProcessInstanceEngineDto processInstance2 =
       engineIntegrationExtension.startProcessInstance(processDefinition.getId());
     engineIntegrationExtension.claimAllRunningUserTasks(DEFAULT_USERNAME, DEFAULT_PASSWORD, processInstance2.getId());
-
-    changeUserTaskStartDate(processInstance2, now, USER_TASK_1, 700.);
-    changeUserTaskClaimDate(processInstance2, now, USER_TASK_1, 500.);
+    if (FlowNodeExecutionState.CANCELED.equals(executionState)) {
+      engineIntegrationExtension.cancelActivityInstance(processInstance2.getId(), USER_TASK_1);
+      changeDuration(processInstance2, USER_TASK_1, 100.);
+    } else {
+      changeUserTaskStartDate(processInstance2, now, USER_TASK_1, 700.);
+      changeUserTaskClaimDate(processInstance2, now, USER_TASK_1, 500.);
+    }
 
     importAllEngineEntitiesFromScratch();
 
@@ -120,6 +124,10 @@ public abstract class UserTaskDurationByUserTaskStartDateByAssigneeReportEvaluat
       ),
       Arguments.of(
         FlowNodeExecutionState.COMPLETED,
+        new ExecutionStateTestValues(100., 100., 100.)
+      ),
+      Arguments.of(
+        FlowNodeExecutionState.CANCELED,
         new ExecutionStateTestValues(100., 100., 100.)
       ),
       Arguments.of(

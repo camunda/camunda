@@ -725,13 +725,11 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     runningStateValues.expectedWorkDurationValues = getExpectedResultsMap(500., null);
     runningStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 500.);
 
-
     ExecutionStateTestValues completedStateValues = new ExecutionStateTestValues();
     completedStateValues.executionState = FlowNodeExecutionState.COMPLETED;
     completedStateValues.expectedIdleDurationValues = getExpectedResultsMap(100., null);
     completedStateValues.expectedWorkDurationValues = getExpectedResultsMap(100., null);
     completedStateValues.expectedTotalDurationValues = getExpectedResultsMap(100., null);
-
 
     ExecutionStateTestValues allStateValues = new ExecutionStateTestValues();
     allStateValues.executionState = FlowNodeExecutionState.ALL;
@@ -759,20 +757,19 @@ public abstract class AbstractUserTaskDurationByUserTaskReportEvaluationIT exten
     LocalDateUtil.setCurrentTime(now);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
     // finish first running task, second now runs but unclaimed
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
-    changeDuration(processInstanceDto, USER_TASK_1, 100.);
-    changeUserTaskStartDate(processInstanceDto, now, USER_TASK_2, 500.);
+    engineIntegrationExtension.finishAllRunningUserTasks(firstInstance.getId());
+    changeDuration(firstInstance, USER_TASK_1, 100.);
+    changeUserTaskStartDate(firstInstance, now, USER_TASK_2, 500.);
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
     // claim first running task
-    engineIntegrationExtension.claimAllRunningUserTasks(processInstanceDto2.getId());
-
-    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_1, 700.);
-    changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK_1, 500.);
+    engineIntegrationExtension.claimAllRunningUserTasks(secondInstance.getId());
+    changeUserTaskStartDate(secondInstance, now, USER_TASK_1, 700.);
+    changeUserTaskClaimDate(secondInstance, now, USER_TASK_1, 500.);
 
     importAllEngineEntitiesFromScratch();
 

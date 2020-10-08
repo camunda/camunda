@@ -620,6 +620,12 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     completedStateValues.expectedWorkDurationValues = getExpectedResultsMap(100., null);
     completedStateValues.expectedTotalDurationValues = getExpectedResultsMap(100., null);
 
+    ExecutionStateTestValues canceledStateValues = new ExecutionStateTestValues();
+    canceledStateValues.executionState = FlowNodeExecutionState.CANCELED;
+    canceledStateValues.expectedIdleDurationValues = getExpectedResultsMap(700., 700.);
+    canceledStateValues.expectedWorkDurationValues = getExpectedResultsMap(700., 700.);
+    canceledStateValues.expectedTotalDurationValues = getExpectedResultsMap(700., 700.);
+
     ExecutionStateTestValues allStateValues = new ExecutionStateTestValues();
     allStateValues.executionState = FlowNodeExecutionState.ALL;
     allStateValues.expectedIdleDurationValues = getExpectedResultsMap(
@@ -635,7 +641,7 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
       700.
     );
 
-    return Stream.of(runningStateValues, completedStateValues, allStateValues);
+    return Stream.of(runningStateValues, completedStateValues, canceledStateValues, allStateValues);
   }
 
   @ParameterizedTest
@@ -646,26 +652,34 @@ public abstract class AbstractUserTaskDurationByAssigneeReportEvaluationIT exten
     LocalDateUtil.setCurrentTime(now);
 
     final ProcessDefinitionEngineDto processDefinition = deployTwoUserTasksDefinition();
-    final ProcessInstanceEngineDto processInstanceDto = engineIntegrationExtension.startProcessInstance(
+    final ProcessInstanceEngineDto firstInstance = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
     // finish first running task, second now runs but unclaimed
-    engineIntegrationExtension.finishAllRunningUserTasks(processInstanceDto.getId());
-    changeDuration(processInstanceDto, USER_TASK_1, 100L);
-    engineIntegrationExtension.claimAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, processInstanceDto.getId());
-    changeUserTaskStartDate(processInstanceDto, now, USER_TASK_2, 700.);
-    changeUserTaskClaimDate(processInstanceDto, now, USER_TASK_2, 500.);
+    engineIntegrationExtension.finishAllRunningUserTasks(firstInstance.getId());
+    changeDuration(firstInstance, USER_TASK_1, 100L);
+    engineIntegrationExtension.claimAllRunningUserTasks(SECOND_USER, SECOND_USERS_PASSWORD, firstInstance.getId());
+    changeUserTaskStartDate(firstInstance, now, USER_TASK_2, 700.);
+    changeUserTaskClaimDate(firstInstance, now, USER_TASK_2, 500.);
+    if (FlowNodeExecutionState.CANCELED.equals(executionStateTestValues.executionState)) {
+      engineIntegrationExtension.cancelActivityInstance(firstInstance.getId(), USER_TASK_2);
+      changeDuration(firstInstance, USER_TASK_2, 700L);
+    }
 
-    final ProcessInstanceEngineDto processInstanceDto2 = engineIntegrationExtension.startProcessInstance(
+    final ProcessInstanceEngineDto secondInstance = engineIntegrationExtension.startProcessInstance(
       processDefinition.getId());
     // claim first running task
     engineIntegrationExtension.claimAllRunningUserTasks(
       DEFAULT_USERNAME,
       DEFAULT_PASSWORD,
-      processInstanceDto2.getId()
+      secondInstance.getId()
     );
 
-    changeUserTaskStartDate(processInstanceDto2, now, USER_TASK_1, 700.);
-    changeUserTaskClaimDate(processInstanceDto2, now, USER_TASK_1, 500.);
+    changeUserTaskStartDate(secondInstance, now, USER_TASK_1, 700.);
+    changeUserTaskClaimDate(secondInstance, now, USER_TASK_1, 500.);
+    if (FlowNodeExecutionState.CANCELED.equals(executionStateTestValues.executionState)) {
+      engineIntegrationExtension.cancelActivityInstance(secondInstance.getId(), USER_TASK_1);
+      changeDuration(secondInstance, USER_TASK_1, 700L);
+    }
 
     importAllEngineEntitiesFromScratch();
 

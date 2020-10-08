@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowN
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.hyper.ReportHyperMapResultDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.HyperMapAsserter;
 import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
@@ -79,6 +80,19 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
           .doAssert(result);
         // @formatter:on
         break;
+      case CANCELED:
+        // @formatter:off
+        HyperMapAsserter.asserter()
+      .processInstanceCount(2L)
+      .processInstanceCountWithoutFilters(2L)
+          .isComplete(true)
+          .groupByContains(USER_TASK_1)
+          .distributedByContains(FIRST_CANDIDATE_GROUP, 700.)
+          .groupByContains(USER_TASK_2)
+          .distributedByContains(FIRST_CANDIDATE_GROUP, 700.)
+          .doAssert(result);
+        // @formatter:on
+        break;
       case ALL:
         // @formatter:off
         HyperMapAsserter.asserter()
@@ -92,6 +106,8 @@ public class UserTaskIdleDurationByUserTaskByCandidateGroupReportEvaluationIT
           .doAssert(result);
         // @formatter:on
         break;
+      default:
+        throw new OptimizeIntegrationTestException("No assertions for execution state: " + executionState);
     }
   }
 }
