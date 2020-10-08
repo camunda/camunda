@@ -14,7 +14,6 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.AdditionalProcessReportEvaluationFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportItemDto;
@@ -80,11 +79,9 @@ import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_IN
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_DURATION_BY_FLOW_NODE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.FLOW_NODE_FREQUENCY_GROUP_BY_FLOW_NODE_START_DATE;
-import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_USER_TASK;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_END_DATE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_USER_TASK_START_DATE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_INDEX_NAME;
@@ -145,199 +142,6 @@ public class CombinedReportHandlingIT extends AbstractIT {
 
     // then
     assertThat(response.getStatus()).isEqualTo(Response.Status.BAD_REQUEST.getStatusCode());
-  }
-
-  @ParameterizedTest
-  @MethodSource("getCombinableSingleReports")
-  public void combineCombinableSingleReports(List<SingleProcessReportDefinitionDto> singleReports) {
-    // given
-    CombinedReportDataDto combinedReportData = new CombinedReportDataDto();
-
-    List<CombinedReportItemDto> reportIds = singleReports.stream()
-      .map(report -> new CombinedReportItemDto(createNewSingleReport(report)))
-      .collect(Collectors.toList());
-
-    combinedReportData.setReports(reportIds);
-    CombinedReportDefinitionDto combinedReport = new CombinedReportDefinitionDto();
-    combinedReport.setData(combinedReportData);
-
-    // when
-    IdDto response = embeddedOptimizeExtension
-      .getRequestExecutor()
-      .buildCreateCombinedReportRequest(combinedReport)
-      .execute(IdDto.class, Response.Status.OK.getStatusCode());
-
-    // then
-    AuthorizedCombinedReportEvaluationResultDto<SingleReportResultDto> result =
-      reportClient.evaluateCombinedReportById(response.getId());
-
-    assertThat(result.getReportDefinition().getData().getReports()).containsExactlyInAnyOrderElementsOf(reportIds);
-  }
-
-  private static Stream<List<SingleProcessReportDefinitionDto>> getCombinableSingleReports() {
-    // different procDefs
-    final SingleProcessReportDefinitionDto procDefKeyReport = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto procDefKeyReportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
-      .setProcessDefinitionKey("key")
-      .setProcessDefinitionVersion("1")
-      .setGroupByDateInterval(AggregateByDateUnit.YEAR)
-      .build();
-
-    procDefKeyReportData.setVisualization(ProcessVisualization.BAR);
-    procDefKeyReport.setData(procDefKeyReportData);
-
-    final SingleProcessReportDefinitionDto procDefAnotherKeyReport = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto procDefAnotherKeyReportData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_START_DATE)
-      .setProcessDefinitionKey("anotherKey")
-      .setProcessDefinitionVersion("1")
-      .setGroupByDateInterval(AggregateByDateUnit.YEAR)
-      .build();
-
-    procDefAnotherKeyReportData.setVisualization(ProcessVisualization.BAR);
-    procDefAnotherKeyReport.setData(procDefAnotherKeyReportData);
-
-    // byStartDate/byEndDate
-    final SingleProcessReportDefinitionDto byEndDate = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto byEndDateData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_END_DATE)
-      .setProcessDefinitionKey("key")
-      .setProcessDefinitionVersion("1")
-      .setGroupByDateInterval(AggregateByDateUnit.YEAR)
-      .build();
-
-    byEndDateData.setVisualization(ProcessVisualization.BAR);
-    byEndDate.setData(byEndDateData);
-
-    // userTaskDuration/flowNodeDuration
-    final SingleProcessReportDefinitionDto userTaskDuration = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto userTaskDurationData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(USER_TASK_DURATION_GROUP_BY_USER_TASK)
-      .setProcessDefinitionKey("key")
-      .setProcessDefinitionVersion("1")
-      .build();
-
-    userTaskDurationData.setVisualization(ProcessVisualization.BAR);
-    userTaskDuration.setData(userTaskDurationData);
-
-    final SingleProcessReportDefinitionDto flowNodeDuration = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto flowNodeDurationData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(FLOW_NODE_DURATION_GROUP_BY_FLOW_NODE)
-      .setProcessDefinitionKey("key")
-      .setProcessDefinitionVersion("1")
-      .setVisualization(ProcessVisualization.BAR)
-      .build();
-
-    flowNodeDurationData.setVisualization(ProcessVisualization.BAR);
-    flowNodeDuration.setData(flowNodeDurationData);
-
-    // groupBy number variable reports with same bucket size
-    final SingleProcessReportDefinitionDto groupByNumberVar1 = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto groupByNumberVar1Data = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
-      .setVariableType(VariableType.DOUBLE)
-      .setProcessDefinitionKey("key")
-      .setProcessDefinitionVersion("1")
-      .setVisualization(ProcessVisualization.BAR)
-      .build();
-
-    groupByNumberVar1Data.setVisualization(ProcessVisualization.BAR);
-    groupByNumberVar1Data.getConfiguration().getCustomBucket().setActive(true);
-    groupByNumberVar1Data.getConfiguration().getCustomBucket().setBucketSize(5.0);
-    ((VariableGroupByValueDto) groupByNumberVar1Data.getGroupBy().getValue()).setName("doubleVar");
-    groupByNumberVar1.setData(groupByNumberVar1Data);
-
-    final SingleProcessReportDefinitionDto groupByNumberVar2 = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto groupByNumberVar2Data = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_VARIABLE)
-      .setVariableType(VariableType.DOUBLE)
-      .setProcessDefinitionKey("key")
-      .setProcessDefinitionVersion("1")
-      .setVisualization(ProcessVisualization.BAR)
-      .build();
-
-    groupByNumberVar2Data.setVisualization(ProcessVisualization.BAR);
-    groupByNumberVar2Data.getConfiguration().getCustomBucket().setActive(true);
-    groupByNumberVar2Data.getConfiguration().getCustomBucket().setBucketSize(5.0);
-    ((VariableGroupByValueDto) groupByNumberVar2Data.getGroupBy().getValue()).setName("doubleVar");
-    groupByNumberVar2.setData(groupByNumberVar2Data);
-
-    // groupByDuration
-    final SingleProcessReportDefinitionDto groupByDuration = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto groupByDurationData = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
-      .setProcessDefinitionKey("key")
-      .setProcessDefinitionVersion("1")
-      .setVisualization(ProcessVisualization.BAR)
-      .build();
-    groupByDuration.setData(groupByDurationData);
-
-    final SingleProcessReportDefinitionDto groupByDurationAnotherKey = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto groupByDurationDataAnotherKey = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
-      .setProcessDefinitionKey("anotherKey")
-      .setProcessDefinitionVersion("1")
-      .setVisualization(ProcessVisualization.BAR)
-      .build();
-    groupByDurationAnotherKey.setData(groupByDurationDataAnotherKey);
-
-    // groupByDuration with same bucketSize
-    final SingleProcessReportDefinitionDto groupByDurationBucketSize = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto groupByDurationDataBucketSize = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
-      .setProcessDefinitionKey("key")
-      .setProcessDefinitionVersion("1")
-      .setVisualization(ProcessVisualization.BAR)
-      .build();
-    groupByDurationDataBucketSize.getConfiguration().setCustomBucket(
-      CustomBucketDto.builder()
-        .active(true)
-        .baseline(10.0D)
-        .baselineUnit(BucketUnit.MILLISECOND)
-        .bucketSize(100.0D)
-        .bucketSizeUnit(BucketUnit.MILLISECOND)
-        .build()
-    );
-    groupByDurationBucketSize.setData(groupByDurationDataBucketSize);
-
-    final SingleProcessReportDefinitionDto groupByDurationBucketSizeAnotherKey = new SingleProcessReportDefinitionDto();
-    final ProcessReportDataDto groupByDurationDataBucketSizeAnotherKey = TemplatedProcessReportDataBuilder
-      .createReportData()
-      .setReportDataType(COUNT_PROC_INST_FREQ_GROUP_BY_DURATION)
-      .setProcessDefinitionKey("anotherKey")
-      .setProcessDefinitionVersion("1")
-      .setVisualization(ProcessVisualization.BAR)
-      .build();
-    groupByDurationDataBucketSizeAnotherKey.getConfiguration().setCustomBucket(
-      CustomBucketDto.builder()
-        .active(true)
-        .baseline(10.0D)
-        .baselineUnit(BucketUnit.MILLISECOND)
-        .bucketSize(100.0D)
-        .bucketSizeUnit(BucketUnit.MILLISECOND)
-        .build()
-    );
-    groupByDurationBucketSizeAnotherKey.setData(groupByDurationDataBucketSizeAnotherKey);
-
-    return Stream.of(
-      Arrays.asList(procDefKeyReport, procDefAnotherKeyReport),
-      Arrays.asList(byEndDate, procDefKeyReport),
-      Arrays.asList(userTaskDuration, flowNodeDuration),
-      Arrays.asList(groupByNumberVar1, groupByNumberVar2),
-      Arrays.asList(groupByDuration, groupByDurationAnotherKey),
-      Arrays.asList(groupByDurationBucketSize, groupByDurationBucketSizeAnotherKey)
-    );
   }
 
   private static Stream<List<SingleProcessReportDefinitionDto>> getUncombinableSingleReports() {
