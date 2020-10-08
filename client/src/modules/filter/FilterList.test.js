@@ -211,3 +211,16 @@ it('should display a completed instances only filter', () => {
 
   expect(node.find('ActionItem').dive()).toIncludeText('Completed Instances Only');
 });
+
+it('should display an open incident filter', () => {
+  const data = [
+    {
+      type: 'withOpenIncidentsOnly',
+      data: null,
+    },
+  ];
+
+  const node = shallow(<FilterList data={data} openEditFilterModal={jest.fn()} a />);
+
+  expect(node.find('ActionItem').dive()).toIncludeText('Open Incidents');
+});

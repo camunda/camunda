@@ -183,6 +183,14 @@ export default class Filter extends React.Component {
               {t('common.filter.types.nonSuspendedInstancesOnly')}
             </Dropdown.Option>
           </Dropdown.Submenu>
+          <Dropdown.Submenu label={t('common.filter.types.incident')}>
+            <Dropdown.Option onClick={this.filterByInstancesOnly('withOpenIncidentsOnly')}>
+              {t('common.filter.types.withOpenIncidentsOnly')}
+            </Dropdown.Option>
+            <Dropdown.Option onClick={this.filterByInstancesOnly('withResolvedIncidentsOnly')}>
+              {t('common.filter.types.withResolvedIncidentsOnly')}
+            </Dropdown.Option>
+          </Dropdown.Submenu>
           <Dropdown.Submenu label={t('common.filter.types.date')}>
             <Dropdown.Option onClick={this.openNewFilterModal('startDate')}>
               {t('common.filter.types.startDate')}

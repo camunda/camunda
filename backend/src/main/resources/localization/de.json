@@ -255,7 +255,7 @@
       "label": "Ansicht",
       "rawData": "Rohdaten",
       "pi": "Prozessinstanz",
-      "in": "Vorfall",
+      "in": "Zwischenfall",
       "resolutionDuration": "Auflösung Dauer",
       "fn": "Prozessknoten",
       "userTask": "Benutzeraufgabe",
@@ -820,7 +820,10 @@
         "flowNode": "Prozessknoten",
         "evaluationDateTime": "Evaluierungszeitpunkt",
         "inputVariable": "Eingangsvariable",
-        "outputVariable": "Ausgabevariable"
+        "outputVariable": "Ausgabevariable",
+        "incident": "Zwischenfälle",
+        "withOpenIncidentsOnly": "Offene Zwischenfälle",
+        "withResolvedIncidentsOnly": "Gelöste Zwischenfälle"
       },
       "list": {
         "operators": {

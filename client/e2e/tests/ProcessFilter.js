@@ -135,6 +135,21 @@ test('instance state filters', async (t) => {
   await t.expect(Report.reportRenderer.visible).ok();
 });
 
+test('Incident State filters', async (t) => {
+  await u.createNewReport(t);
+  await u.selectDefinition(t, 'Incident Process');
+  await u.selectView(t, 'Incident', 'Count');
+  await u.selectGroupby(t, 'None');
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Incident State'));
+  await t.click(Report.subFilterOption('Open Incidents'));
+  await t.click(Report.filterRemoveButton);
+  await t.click(Report.filterButton);
+  await t.click(Report.filterOption('Incident State'));
+  await t.click(Report.subFilterOption('Resolved Incidents'));
+  await t.expect(Report.reportRenderer.visible).ok();
+});
+
 test('pick a start date from the date picker', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Lead Qualification');
