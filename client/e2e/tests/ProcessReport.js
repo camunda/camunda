@@ -812,13 +812,20 @@ test('distribute by variable', async (t) => {
   await u.createNewReport(t);
   await u.selectDefinition(t, 'Invoice Receipt with alternative correlation variable', 'All');
   await u.selectView(t, 'Process Instance', 'Count');
-  await u.selectGroupby(t, 'Start Date', 'Month');
+  await u.selectGroupby(t, 'Start Date', 'Automatic');
   await u.selectVisualization(t, 'Bar Chart');
 
   await t.click(e.configurationButton);
   await t.click(e.distributedBySelect);
   await t.click(e.configurationOption('Variable'));
   await t.click(e.submenuOption('approved'));
+  await t.click(e.configurationButton);
+  await t
+    .resizeWindow(1650, 960)
+    .takeElementScreenshot(e.reportRenderer, 'process/single-report/distributedByVar.png')
+    .maximizeWindow();
+
+  await t.click(e.configurationButton);
   await t.click(e.distributedBySelect);
   await t.click(e.configurationOption('Variable'));
   await t.click(e.submenuOption('invoiceCategory'));
