@@ -26,7 +26,6 @@ import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.discovery.NodeDiscoveryConfig;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.cluster.messaging.ManagedBroadcastService;
 import io.atomix.cluster.messaging.ManagedMessagingService;
 import io.atomix.cluster.messaging.ManagedUnicastService;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
@@ -143,7 +142,7 @@ public class Atomix extends AtomixCluster {
   }
 
   protected Atomix(final AtomixConfig config, final AtomixRegistry registry) {
-    this(config, registry, null, null, null);
+    this(config, registry, null, null);
   }
 
   @SuppressWarnings("unchecked")
@@ -151,9 +150,8 @@ public class Atomix extends AtomixCluster {
       final AtomixConfig config,
       final AtomixRegistry registry,
       final ManagedMessagingService messagingService,
-      final ManagedUnicastService unicastService,
-      final ManagedBroadcastService broadcastService) {
-    super(config.getClusterConfig(), VERSION, messagingService, unicastService, broadcastService);
+      final ManagedUnicastService unicastService) {
+    super(config.getClusterConfig(), VERSION, messagingService, unicastService);
     executorService =
         Executors.newScheduledThreadPool(
             Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 8), 4),
