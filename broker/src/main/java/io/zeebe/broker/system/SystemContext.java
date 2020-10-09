@@ -35,7 +35,7 @@ public final class SystemContext {
   private static final String MMAP_REPLICATION_ERROR_MSG =
       "Using memory mapped storage level is currently unsafe with replication enabled; if you wish to use replication, set useMmap flag to false (e.g. ZEEBE_BROKER_DATA_USEMMAP=false)";
   private static final String MAX_BATCH_SIZE_ERROR_MSG =
-      "Expected to have an append batch size maximum which is non negative and smaller then Integer.MAX_VALUE, but was '%s'.";
+      "Expected to have an append batch size maximum which is non negative and smaller then '%d', but was '%s'.";
 
   protected final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
@@ -82,7 +82,7 @@ public final class SystemContext {
     final var maxAppendBatchSize = cluster.getMaxAppendBatchSize();
     if (maxAppendBatchSize.isNegative() || maxAppendBatchSize.toBytes() >= Integer.MAX_VALUE) {
       throw new IllegalArgumentException(
-          String.format(MAX_BATCH_SIZE_ERROR_MSG, maxAppendBatchSize));
+          String.format(MAX_BATCH_SIZE_ERROR_MSG, Integer.MAX_VALUE, maxAppendBatchSize));
     }
 
     final StorageLevel storageLevel = data.getAtomixStorageLevel();

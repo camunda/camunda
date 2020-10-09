@@ -43,7 +43,7 @@ public final class RaftMemberContext {
   private long matchIndex;
   private long heartbeatTime;
   private long responseTime;
-  private int appending;
+  private int inFlightAppendCount;
   private boolean appendSucceeded;
   private long appendTime;
   private boolean configuring;
@@ -69,7 +69,7 @@ public final class RaftMemberContext {
     matchIndex = 0;
     heartbeatTime = 0;
     responseTime = 0;
-    appending = 0;
+    inFlightAppendCount = 0;
     timeStats.clear();
     configuring = false;
     installing = false;
@@ -98,9 +98,9 @@ public final class RaftMemberContext {
    * @return Indicates whether an append request can be sent to the member.
    */
   public boolean canAppend() {
-    return appending == 0
+    return inFlightAppendCount == 0
         || (appendSucceeded
-            && appending < maxAppendsPerMember
+            && inFlightAppendCount < maxAppendsPerMember
             && System.currentTimeMillis() - (timeStats.getMean() / maxAppendsPerMember)
                 >= appendTime);
   }
@@ -111,7 +111,7 @@ public final class RaftMemberContext {
    * @return Indicates whether a heartbeat can be sent to the member.
    */
   public boolean canHeartbeat() {
-    return appending == 0;
+    return inFlightAppendCount == 0;
   }
 
   /** Flags the last append to the member as successful. */
@@ -135,13 +135,13 @@ public final class RaftMemberContext {
 
   /** Starts an append request to the member. */
   public void startAppend() {
-    appending++;
+    inFlightAppendCount++;
     appendTime = System.currentTimeMillis();
   }
 
   /** Completes an append request to the member. */
   public void completeAppend() {
-    appending--;
+    inFlightAppendCount--;
   }
 
   /**
@@ -150,7 +150,7 @@ public final class RaftMemberContext {
    * @param time The time in milliseconds for the append.
    */
   public void completeAppend(final long time) {
-    appending--;
+    inFlightAppendCount--;
     timeStats.addValue(time);
   }
 
@@ -223,7 +223,7 @@ public final class RaftMemberContext {
         .add("matchIndex", matchIndex)
         .add("nextIndex", reader != null ? reader.getNextIndex() : matchIndex + 1)
         .add("heartbeatTime", heartbeatTime)
-        .add("appending", appending)
+        .add("appending", inFlightAppendCount)
         .add("appendSucceeded", appendSucceeded)
         .add("appendTime", appendTime)
         .add("configuring", configuring)

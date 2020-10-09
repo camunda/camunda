@@ -128,7 +128,7 @@ public final class SystemContextTest {
     // expect
     expectedException.expect(IllegalArgumentException.class);
     expectedException.expectMessage(
-        "Expected to have an append batch size maximum which is non negative and smaller then Integer.MAX_VALUE, but was '-1B'.");
+        "Expected to have an append batch size maximum which is non negative and smaller then '2147483647', but was '-1B'.");
 
     initSystemContext(brokerCfg);
   }
@@ -142,7 +142,7 @@ public final class SystemContextTest {
     // expect
     expectedException.expect(IllegalArgumentException.class);
     expectedException.expectMessage(
-        "Expected to have an append batch size maximum which is non negative and smaller then Integer.MAX_VALUE, but was '3221225472B'.");
+        "Expected to have an append batch size maximum which is non negative and smaller then '2147483647', but was '3221225472B'.");
 
     initSystemContext(brokerCfg);
   }
