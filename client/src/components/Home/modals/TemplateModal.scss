@@ -70,7 +70,7 @@
           .name {
             padding-top: 8px;
             padding-bottom: 0;
-            height: 26px;
+            min-height: 26px;
           }
 
           .subTitle {
@@ -94,7 +94,7 @@
           color: $grey-darken-23;
           font-size: 14px;
           font-weight: 500;
-          height: 40px;
+          min-height: 40px;
           padding: 10px;
           line-height: 20px;
         }
