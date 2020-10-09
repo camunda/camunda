@@ -8,6 +8,10 @@
   background-color: white;
   transition: background-color 0.3s;
   height: inherit;
+
+  .ReportDetails .modalsButtons {
+    display: none;
+  }
 }
 
 .fullscreen-enabled {
