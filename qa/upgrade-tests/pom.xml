@@ -269,7 +269,7 @@
                   <artifactItems>
                     <artifactItem>
                       <groupId>org.camunda.optimize</groupId>
-                      <artifactId>generator</artifactId>
+                      <artifactId>optimize-data-generator</artifactId>
                       <version>${project.previousVersion}</version>
                       <type>tar.gz</type>
                       <classifier>tar-with-dependencies</classifier>
