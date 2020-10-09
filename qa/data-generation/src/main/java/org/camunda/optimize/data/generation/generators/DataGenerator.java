@@ -172,6 +172,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
             Thread.sleep(5L);
           } catch (InterruptedException e) {
             logger.warn("Got interrupted while sleeping starting single instance");
+            Thread.currentThread().interrupt();
           }
           incrementStartedInstanceCount();
           if (i % 1000 == 0) {
@@ -187,13 +188,14 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
       logger.info("[definition-id:{}] Finished batch execution", definitionId);
 
       logger.info("[definition-id:{}] Awaiting user task completion.", definitionId);
-      userTaskCompleter.shutdown();
-      userTaskCompleter.awaitUserTaskCompletion(Integer.MAX_VALUE, TimeUnit.SECONDS);
-      logger.info("[definition-id:{}] User tasks completion finished.", definitionId);
-
-      if (Thread.currentThread().isInterrupted()) {
-        return;
+      try {
+        userTaskCompleter.shutdown();
+        userTaskCompleter.awaitUserTaskCompletion(Integer.MAX_VALUE, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        logger.warn("Got interrupted while waiting for userTask completion");
+        Thread.currentThread().interrupt();
       }
+      logger.info("[definition-id:{}] User tasks completion finished.", definitionId);
     }
   }
 
@@ -220,6 +222,7 @@ public abstract class DataGenerator<ModelType extends ModelInstance> implements 
       Thread.sleep(timeToSleep);
     } catch (InterruptedException e) {
       logger.debug("Was interrupted from sleep. Continuing to fetch new entities.", e);
+      Thread.currentThread().interrupt();
     }
   }
 

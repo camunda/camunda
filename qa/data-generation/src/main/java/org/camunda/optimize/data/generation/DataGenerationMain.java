@@ -31,6 +31,7 @@ public class DataGenerationMain {
     DataGenerationInformation dataGenerationInformation = extractDataGenerationInformation(args);
     DataGenerationMain main = new DataGenerationMain(dataGenerationInformation);
     main.generateData();
+    System.exit(0);
   }
 
   private static DataGenerationInformation extractDataGenerationInformation(final String[] args) {

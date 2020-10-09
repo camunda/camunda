@@ -9,8 +9,8 @@ import io.github.classgraph.ClassGraph;
 import io.github.classgraph.ScanResult;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
-import org.camunda.optimize.test.util.client.SimpleEngineClient;
 import org.camunda.optimize.data.generation.generators.dto.DataGenerationInformation;
+import org.camunda.optimize.test.util.client.SimpleEngineClient;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -141,7 +141,6 @@ public class DataGenerationExecutor {
       if (progressReporter != null) {
         stopReportingProgress(progressReporter);
       }
-      engineClient.close();
     }
   }
 
