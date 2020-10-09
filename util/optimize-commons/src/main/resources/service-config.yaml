@@ -476,7 +476,7 @@ telemetry:
   # Interval for telemetry reporting, defaults to every 24 hours.
   reportingIntervalInHours: 24
   # Telemetry endpoint to send data to (production environment)
-  telemetryEndpoint: '${TELEMETRY_ENDPOINT:https://api.telemetry.camunda.cloud/pings}'
+  telemetryEndpoint: 'https://api.telemetry.camunda.cloud/pings'
 
 # Configuration of application internal in-memory caches
 caches:

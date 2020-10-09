@@ -37,6 +37,25 @@ data:
     # Note: for all possible configuration options please have a look
     #       at the Optimize documentation:
     #       https://docs.camunda.org/optimize/latest/technical-guide/configuration/
+    security:
+      # everything that's related to authentication
+      auth:
+        cookie:
+          same-site:
+            # decides if the optimize auth cookie has the same site cookie flag set
+            enabled: true
+        token:
+          # Optimize uses token-based authentication to keep track of which users are
+          # logged in. Define when a token is supposed to expire.
+          lifeMin: 60
+          # Optional secret used to sign authentication tokens, it's recommended to use at least a 64 character secret.
+          # If set `null` a random secret will be generated with each startup of Optimize.
+          secret: null
+        # List of user ids that are granted full permission to all collections, reports & dashboards
+        # Note: For reports these users are still required to be granted access to the corresponding process/decision
+        # definitions in Camunda BPM Admin
+        superUserIds: ['demo']
+
     container:
       # A host name or IP address, to identify a specific network interface on
       # which to listen.
@@ -120,6 +139,14 @@ data:
           # The default payload structure with the alertMessagePlaceholder {{ALERT_MESSAGE}} for the alert text.
           # Optimize will replace this placeholder with the content of the alert message.
           defaultPayload: '{"text": "{{ALERT_MESSAGE}}"}'
+    telemetry:
+      # Sets the initial property value of telemetry configuration once when it has never been enabled/disabled before.
+      # Telemetry can later be enabled/disabled in the UI by superusers
+      initializeTelemetry: false
+      # Interval for telemetry reporting, defaults to every 24 hours.
+      reportingIntervalInHours: 24
+      # Telemetry endpoint to send data to integration environment
+      telemetryEndpoint: 'https://api.int.telemetry.camunda.cloud/pings'
 
 ######################## CAM BPM ########################
   configure-and-run.sh: |
