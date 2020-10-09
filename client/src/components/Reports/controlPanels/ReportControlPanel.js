@@ -127,6 +127,7 @@ export default withErrorHandling(
               ![
                 'executedFlowNodes',
                 'executingFlowNodes',
+                'canceledFlowNodes',
                 'variable',
                 'assignee',
                 'candidateGroup',

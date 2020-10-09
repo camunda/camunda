@@ -109,7 +109,14 @@ export default class BranchControlPanel extends React.Component {
                   tenantIds,
                   filter: this.props.filter.filter(
                     ({type}) =>
-                      !['executedFlowNodes', 'executingFlowNodes', 'variable'].includes(type)
+                      ![
+                        'executedFlowNodes',
+                        'executingFlowNodes',
+                        'canceledFlowNodes',
+                        'variable',
+                        'assignee',
+                        'candidateGroup',
+                      ].includes(type)
                   ),
                 })
               }
