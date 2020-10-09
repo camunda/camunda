@@ -917,6 +917,7 @@
         "note": "Both Executed and Executing Flow Nodes are returned in the result.",
         "executed": "was executed",
         "notExecuted": "was not executed",
+        "canceled": "was cancelled or interrupted",
         "executing": "pending or executing",
         "previewLabel": "Display process instances where: "
       },

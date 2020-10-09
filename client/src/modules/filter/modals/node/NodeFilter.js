@@ -101,7 +101,7 @@ export default class NodeFilter extends React.Component {
               active={type === 'canceledFlowNodes'}
               onClick={() => this.setState({operator: undefined, type: 'canceledFlowNodes'})}
             >
-              was cancelled or interrupted
+              {t('common.filter.nodeModal.canceled')}
             </Button>
           </ButtonGroup>
           {this.props.xml && (

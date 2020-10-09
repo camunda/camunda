@@ -917,6 +917,7 @@
         "note": "Sowohl Ausgeführte als auch Ausführende Prozessknoten werden im Ergebnis zurückgegeben.",
         "executed": "wurde ausgeführt",
         "notExecuted": "wurde nicht ausgeführt",
+        "canceled": "wurde abgebrochen oder unterbrochen",
         "executing": "wartend oder in Ausführung",
         "previewLabel": "Zeige Prozessinstanzen bei denen gilt: "
       },
