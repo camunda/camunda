@@ -37,6 +37,8 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   private Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
   private Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
   private RaftStorageConfig storageConfig = new RaftStorageConfig();
+  private int maxAppendsPerFollower = 2;
+  private int maxAppendBatchSize = 32 * 1024;
 
   @Optional("EntryValidator")
   private EntryValidator entryValidator = new NoopEntryValidator();
@@ -164,6 +166,22 @@ public class RaftPartitionGroupConfig extends PartitionGroupConfig<RaftPartition
   public RaftPartitionGroupConfig setEntryValidator(final EntryValidator entryValidator) {
     this.entryValidator = entryValidator;
     return this;
+  }
+
+  public int getMaxAppendsPerFollower() {
+    return maxAppendsPerFollower;
+  }
+
+  public void setMaxAppendsPerFollower(final int maxAppendsPerFollower) {
+    this.maxAppendsPerFollower = maxAppendsPerFollower;
+  }
+
+  public int getMaxAppendBatchSize() {
+    return maxAppendBatchSize;
+  }
+
+  public void setMaxAppendBatchSize(final int maxAppendBatchSize) {
+    this.maxAppendBatchSize = maxAppendBatchSize;
   }
 
   @Override

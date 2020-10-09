@@ -34,6 +34,7 @@ import org.agrona.IoUtil;
 import org.slf4j.Logger;
 
 public final class AtomixFactory {
+
   public static final String GROUP_NAME = "raft-partition";
 
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
@@ -105,6 +106,8 @@ public final class AtomixFactory {
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(raftDirectory)
             .withSnapshotStoreFactory(snapshotStoreFactory)
+            .withMaxAppendBatchSize((int) clusterCfg.getMaxAppendBatchSizeInBytes())
+            .withMaxAppendsPerFollower(clusterCfg.getMaxAppendsPerFollower())
             .withStorageLevel(dataCfg.getAtomixStorageLevel())
             .withEntryValidator(new ZeebeEntryValidator())
             .withFlushOnCommit()

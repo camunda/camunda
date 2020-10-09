@@ -113,6 +113,8 @@ public class RaftContext implements AutoCloseable {
   private volatile long firstCommitIndex;
   private volatile boolean started;
   private EntryValidator entryValidator;
+  private final int maxAppendBatchSize;
+  private final int maxAppendsPerFollower;
 
   @SuppressWarnings("unchecked")
   public RaftContext(
@@ -122,7 +124,9 @@ public class RaftContext implements AutoCloseable {
       final RaftServerProtocol protocol,
       final RaftStorage storage,
       final ThreadContextFactory threadContextFactory,
-      final boolean closeOnStop) {
+      final boolean closeOnStop,
+      final int maxAppendBatchSize,
+      final int maxAppendsPerFollower) {
     this.name = checkNotNull(name, "name cannot be null");
     this.membershipService = checkNotNull(membershipService, "membershipService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
@@ -164,6 +168,8 @@ public class RaftContext implements AutoCloseable {
 
     logCompactor = new LogCompactor(this);
 
+    this.maxAppendBatchSize = maxAppendBatchSize;
+    this.maxAppendsPerFollower = maxAppendsPerFollower;
     cluster = new RaftClusterContext(localMemberId, this);
 
     // Register protocol listeners.
@@ -234,6 +240,14 @@ public class RaftContext implements AutoCloseable {
     return membershipService.getLocalMember().id();
   }
 
+  public int getMaxAppendBatchSize() {
+    return maxAppendBatchSize;
+  }
+
+  public int getMaxAppendsPerFollower() {
+    return maxAppendsPerFollower;
+  }
+
   /**
    * Adds a role change listener.
    *
@@ -252,20 +266,12 @@ public class RaftContext implements AutoCloseable {
     roleChangeListeners.remove(listener);
   }
 
-  /**
-   * Adds a failure listener which will be invoked when an uncaught exception occurs
-   *
-   * @param failureListener
-   */
+  /** Adds a failure listener which will be invoked when an uncaught exception occurs */
   public void addFailureListener(final Runnable failureListener) {
     failureListeners.add(failureListener);
   }
 
-  /**
-   * Remove a failure listener
-   *
-   * @param failureListener
-   */
+  /** Remove a failure listener */
   public void removeFailureListener(final Runnable failureListener) {
     failureListeners.remove(failureListener);
   }

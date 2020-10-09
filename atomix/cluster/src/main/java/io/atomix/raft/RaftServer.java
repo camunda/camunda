@@ -230,18 +230,10 @@ public interface RaftServer {
    */
   void removeRoleChangeListener(RaftRoleChangeListener listener);
 
-  /**
-   * Adds a failure listener
-   *
-   * @param failureListener
-   */
+  /** Adds a failure listener */
   void addFailureListener(Runnable failureListener);
 
-  /**
-   * Removes a failure listener
-   *
-   * @param failureListener
-   */
+  /** Removes a failure listener */
   void removeFailureListener(Runnable failureListener);
 
   /**
@@ -576,6 +568,8 @@ public interface RaftServer {
     protected ThreadContextFactory threadContextFactory;
     protected Supplier<JournalIndex> journalIndexFactory;
     protected EntryValidator entryValidator = new NoopEntryValidator();
+    protected int maxAppendsPerFollower = 2;
+    protected int maxAppendBatchSize = 32 * 1024;
 
     protected Builder(final MemberId localMemberId) {
       this.localMemberId = checkNotNull(localMemberId, "localMemberId cannot be null");
@@ -688,6 +682,30 @@ public interface RaftServer {
     public Builder withThreadPoolSize(final int threadPoolSize) {
       checkArgument(threadPoolSize > 0, "threadPoolSize must be positive");
       this.threadPoolSize = threadPoolSize;
+      return this;
+    }
+
+    /**
+     * Sets the maximum append requests which are sent per follower at once. Default is 2.
+     *
+     * @param maxAppendsPerFollower the maximum appends send per follower
+     * @return The server builder.
+     */
+    public Builder withMaxAppendsPerFollower(final int maxAppendsPerFollower) {
+      checkArgument(maxAppendsPerFollower > 0, "maxAppendsPerFollower must be positive");
+      this.maxAppendsPerFollower = maxAppendsPerFollower;
+      return this;
+    }
+
+    /**
+     * Sets the maximum batch size, which is sent per append request. Default size is 32 KB.
+     *
+     * @param maxAppendBatchSize the maximum batch size per append
+     * @return The server builder.
+     */
+    public Builder withMaxAppendBatchSize(final int maxAppendBatchSize) {
+      checkArgument(maxAppendBatchSize > 0, "maxAppendBatchSize must be positive");
+      this.maxAppendBatchSize = maxAppendBatchSize;
       return this;
     }
 

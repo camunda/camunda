@@ -34,6 +34,9 @@ public final class SystemContext {
       "Snapshot period %s needs to be larger then or equals to one minute.";
   private static final String MMAP_REPLICATION_ERROR_MSG =
       "Using memory mapped storage level is currently unsafe with replication enabled; if you wish to use replication, set useMmap flag to false (e.g. ZEEBE_BROKER_DATA_USEMMAP=false)";
+  private static final String MAX_BATCH_SIZE_ERROR_MSG =
+      "Expected to have an append batch size maximum which is non negative and smaller then Integer.MAX_VALUE, but was '%s'.";
+
   protected final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private ActorScheduler scheduler;
@@ -74,6 +77,12 @@ public final class SystemContext {
     final int nodeId = cluster.getNodeId();
     if (nodeId < 0 || nodeId >= clusterSize) {
       throw new IllegalArgumentException(String.format(NODE_ID_ERROR_MSG, nodeId, clusterSize));
+    }
+
+    final var maxAppendBatchSize = cluster.getMaxAppendBatchSize();
+    if (maxAppendBatchSize.isNegative() || maxAppendBatchSize.toBytes() >= Integer.MAX_VALUE) {
+      throw new IllegalArgumentException(
+          String.format(MAX_BATCH_SIZE_ERROR_MSG, maxAppendBatchSize));
     }
 
     final StorageLevel storageLevel = data.getAtomixStorageLevel();

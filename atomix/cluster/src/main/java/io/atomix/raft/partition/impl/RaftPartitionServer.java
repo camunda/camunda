@@ -177,6 +177,8 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         .withProtocol(createServerProtocol())
         .withHeartbeatInterval(config.getHeartbeatInterval())
         .withElectionTimeout(config.getElectionTimeout())
+        .withMaxAppendBatchSize(config.getMaxAppendBatchSize())
+        .withMaxAppendsPerFollower(config.getMaxAppendsPerFollower())
         .withStorage(createRaftStorage())
         .withThreadContextFactory(threadContextFactory)
         .withJournalIndexFactory(journalIndexFactory)

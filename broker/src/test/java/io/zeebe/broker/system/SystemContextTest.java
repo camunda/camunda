@@ -15,6 +15,8 @@ import java.time.Duration;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.springframework.util.unit.DataSize;
+import org.springframework.util.unit.DataUnit;
 
 public final class SystemContextTest {
 
@@ -113,6 +115,34 @@ public final class SystemContextTest {
     expectedException.expect(IllegalArgumentException.class);
     expectedException.expectMessage(
         "Snapshot period PT1S needs to be larger then or equals to one minute.");
+
+    initSystemContext(brokerCfg);
+  }
+
+  @Test
+  public void shouldThrowExceptionIfBatchSizeIsNegative() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setMaxAppendBatchSize(DataSize.of(-1, DataUnit.BYTES));
+
+    // expect
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage(
+        "Expected to have an append batch size maximum which is non negative and smaller then Integer.MAX_VALUE, but was '-1B'.");
+
+    initSystemContext(brokerCfg);
+  }
+
+  @Test
+  public void shouldThrowExceptionIfBatchSizeIsTooLarge() {
+    // given
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    brokerCfg.getCluster().setMaxAppendBatchSize(DataSize.of(3, DataUnit.GIGABYTES));
+
+    // expect
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage(
+        "Expected to have an append batch size maximum which is non negative and smaller then Integer.MAX_VALUE, but was '3221225472B'.");
 
     initSystemContext(brokerCfg);
   }

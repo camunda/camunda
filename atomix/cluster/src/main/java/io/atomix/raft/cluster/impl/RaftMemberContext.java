@@ -31,10 +31,10 @@ import org.slf4j.LoggerFactory;
 /** Cluster member state. */
 public final class RaftMemberContext {
 
-  private static final int MAX_APPENDS = 2;
   private static final int APPEND_WINDOW_SIZE = 8;
   private final DefaultRaftMember member;
   private final DescriptiveStatistics timeStats = new DescriptiveStatistics(APPEND_WINDOW_SIZE);
+  private final int maxAppendsPerMember;
   private long term;
   private long configIndex;
   private long snapshotIndex;
@@ -53,8 +53,12 @@ public final class RaftMemberContext {
   private volatile RaftLogReader reader;
   private SnapshotChunkReader snapshotChunkReader;
 
-  RaftMemberContext(final DefaultRaftMember member, final RaftClusterContext cluster) {
+  RaftMemberContext(
+      final DefaultRaftMember member,
+      final RaftClusterContext cluster,
+      final int maxAppendsPerMember) {
     this.member = checkNotNull(member, "member cannot be null").setCluster(cluster);
+    this.maxAppendsPerMember = maxAppendsPerMember;
   }
 
   /** Resets the member state. */
@@ -96,8 +100,9 @@ public final class RaftMemberContext {
   public boolean canAppend() {
     return appending == 0
         || (appendSucceeded
-            && appending < MAX_APPENDS
-            && System.currentTimeMillis() - (timeStats.getMean() / MAX_APPENDS) >= appendTime);
+            && appending < maxAppendsPerMember
+            && System.currentTimeMillis() - (timeStats.getMean() / maxAppendsPerMember)
+                >= appendTime);
   }
 
   /**
