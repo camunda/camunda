@@ -11,7 +11,7 @@ import static io.zeebe.broker.system.configuration.ConfigurationUtil.checkPositi
 
 public class FixedCfg {
 
-  private int limit = 20;
+  private int limit = 10;
 
   public int getLimit() {
     return limit;
