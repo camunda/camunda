@@ -67,6 +67,7 @@ public final class SystemContext {
   private void validateConfiguration() {
     final ClusterCfg cluster = brokerCfg.getCluster();
     final DataCfg data = brokerCfg.getData();
+    final var experimental = brokerCfg.getExperimental();
 
     final int partitionCount = cluster.getPartitionsCount();
     if (partitionCount < 1) {
@@ -79,7 +80,7 @@ public final class SystemContext {
       throw new IllegalArgumentException(String.format(NODE_ID_ERROR_MSG, nodeId, clusterSize));
     }
 
-    final var maxAppendBatchSize = cluster.getMaxAppendBatchSize();
+    final var maxAppendBatchSize = experimental.getMaxAppendBatchSize();
     if (maxAppendBatchSize.isNegative() || maxAppendBatchSize.toBytes() >= Integer.MAX_VALUE) {
       throw new IllegalArgumentException(
           String.format(MAX_BATCH_SIZE_ERROR_MSG, Integer.MAX_VALUE, maxAppendBatchSize));

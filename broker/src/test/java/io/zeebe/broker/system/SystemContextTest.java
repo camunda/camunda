@@ -123,7 +123,7 @@ public final class SystemContextTest {
   public void shouldThrowExceptionIfBatchSizeIsNegative() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
-    brokerCfg.getCluster().setMaxAppendBatchSize(DataSize.of(-1, DataUnit.BYTES));
+    brokerCfg.getExperimental().setMaxAppendBatchSize(DataSize.of(-1, DataUnit.BYTES));
 
     // expect
     expectedException.expect(IllegalArgumentException.class);
@@ -137,7 +137,7 @@ public final class SystemContextTest {
   public void shouldThrowExceptionIfBatchSizeIsTooLarge() {
     // given
     final BrokerCfg brokerCfg = new BrokerCfg();
-    brokerCfg.getCluster().setMaxAppendBatchSize(DataSize.of(3, DataUnit.GIGABYTES));
+    brokerCfg.getExperimental().setMaxAppendBatchSize(DataSize.of(3, DataUnit.GIGABYTES));
 
     // expect
     expectedException.expect(IllegalArgumentException.class);

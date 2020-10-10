@@ -96,6 +96,7 @@ public final class AtomixFactory {
     IoUtil.ensureDirectoryExists(raftDirectory, "Raft data directory");
 
     final ClusterCfg clusterCfg = configuration.getCluster();
+    final var experimentalCfg = configuration.getExperimental();
     final DataCfg dataCfg = configuration.getData();
     final NetworkCfg networkCfg = configuration.getNetwork();
 
@@ -106,8 +107,8 @@ public final class AtomixFactory {
             .withMembers(getRaftGroupMembers(clusterCfg))
             .withDataDirectory(raftDirectory)
             .withSnapshotStoreFactory(snapshotStoreFactory)
-            .withMaxAppendBatchSize((int) clusterCfg.getMaxAppendBatchSizeInBytes())
-            .withMaxAppendsPerFollower(clusterCfg.getMaxAppendsPerFollower())
+            .withMaxAppendBatchSize((int) experimentalCfg.getMaxAppendBatchSizeInBytes())
+            .withMaxAppendsPerFollower(experimentalCfg.getMaxAppendsPerFollower())
             .withStorageLevel(dataCfg.getAtomixStorageLevel())
             .withEntryValidator(new ZeebeEntryValidator())
             .withFlushOnCommit()

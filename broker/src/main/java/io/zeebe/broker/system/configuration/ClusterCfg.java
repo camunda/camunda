@@ -12,9 +12,8 @@ import static io.zeebe.util.StringUtil.LIST_SANITIZER;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
-import org.agrona.collections.IntArrayList;
-import org.springframework.util.unit.DataSize;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public final class ClusterCfg implements ConfigurationEntry {
 
@@ -24,8 +23,6 @@ public final class ClusterCfg implements ConfigurationEntry {
   public static final int DEFAULT_REPLICATION_FACTOR = 1;
   public static final int DEFAULT_CLUSTER_SIZE = 1;
   public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
-  public static final int DEFAULT_MAX_APPENDS_PER_FOLLOWER = 2;
-  public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
 
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 
@@ -36,8 +33,6 @@ public final class ClusterCfg implements ConfigurationEntry {
   private int clusterSize = DEFAULT_CLUSTER_SIZE;
   private String clusterName = DEFAULT_CLUSTER_NAME;
   private MembershipCfg membership = new MembershipCfg();
-  private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
-  private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -45,13 +40,10 @@ public final class ClusterCfg implements ConfigurationEntry {
   }
 
   private void initPartitionIds() {
-    final IntArrayList list = new IntArrayList();
-    for (int i = START_PARTITION_ID; i < START_PARTITION_ID + partitionsCount; i++) {
-      final int partitionId = i;
-      list.add(partitionId);
-    }
-
-    partitionIds = Collections.unmodifiableList(list);
+    partitionIds =
+        IntStream.range(START_PARTITION_ID, START_PARTITION_ID + partitionsCount)
+            .boxed()
+            .collect(Collectors.toList());
   }
 
   public List<String> getInitialContactPoints() {
@@ -114,26 +106,6 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.membership = membership;
   }
 
-  public int getMaxAppendsPerFollower() {
-    return maxAppendsPerFollower;
-  }
-
-  public void setMaxAppendsPerFollower(final int maxAppendsPerFollower) {
-    this.maxAppendsPerFollower = maxAppendsPerFollower;
-  }
-
-  public DataSize getMaxAppendBatchSize() {
-    return maxAppendBatchSize;
-  }
-
-  public long getMaxAppendBatchSizeInBytes() {
-    return Optional.ofNullable(maxAppendBatchSize).orElse(DEFAULT_MAX_APPEND_BATCH_SIZE).toBytes();
-  }
-
-  public void setMaxAppendBatchSize(final DataSize maxAppendBatchSize) {
-    this.maxAppendBatchSize = maxAppendBatchSize;
-  }
-
   @Override
   public String toString() {
     return "ClusterCfg{"
@@ -154,10 +126,6 @@ public final class ClusterCfg implements ConfigurationEntry {
         + '\''
         + ", membership="
         + membership
-        + ", maxAppendsPerFollower="
-        + maxAppendsPerFollower
-        + ", maxAppendBatchSize="
-        + maxAppendBatchSize
         + '}';
   }
 }
