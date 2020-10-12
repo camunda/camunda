@@ -13120,10 +13120,10 @@ react-scripts@3.4.3:
   optionalDependencies:
     fsevents "2.1.2"
 
-react-table@^7.5.1:
-  version "7.5.1"
-  resolved "https://registry.yarnpkg.com/react-table/-/react-table-7.5.1.tgz#b6a9b46e52c0f37ff91717ac478f430c6a357e41"
-  integrity sha512-rprrUElCqvj79lyY2XbUoYLzwA5Mm4CGS8ElQ8OyzocvmkvCcmunvvfbpIg9Jm9HnMBjVZcVyPFPZ1BFelIBKw==
+react-table@^7.6.0:
+  version "7.6.0"
+  resolved "https://registry.yarnpkg.com/react-table/-/react-table-7.6.0.tgz#83d765b96505b5332d108a2e0c27ab653f5a78c3"
+  integrity sha512-16kRTypBWz9ZwLnPWA8hc3eIC64POzO9GaMBiKaCcVM+0QOQzt0G7ebzGUM8SW0CYUpVM+glv1kMXrWj9tr3Sw==
 
 react-test-renderer@^16.0.0-0:
   version "16.10.2"
