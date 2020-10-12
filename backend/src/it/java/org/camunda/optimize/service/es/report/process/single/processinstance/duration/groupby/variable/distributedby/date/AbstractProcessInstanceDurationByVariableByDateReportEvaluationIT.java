@@ -157,7 +157,8 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
   public void distributeByDateWorksForAllStaticUnits_withStringVariable(final AggregateByDateUnit unit) {
     // given
     final ChronoUnit chronoUnit = mapToChronoUnit(unit);
-    final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
+    // setting every unit section to its center to avoid bucket shifting due duration modifications
+    final OffsetDateTime referenceDate = OffsetDateTime.parse("2020-06-15T12:30:30+02:00");
     final ProcessInstanceEngineDto procInstance1 = deployAndStartSimpleProcessWithStringVariable();
     adjustProcessInstanceDatesAndDuration(procInstance1.getId(), referenceDate, 0, 1L);
 
@@ -185,7 +186,8 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
   public void distributeByDateWorksForAllStaticUnits_withDateVariable(final AggregateByDateUnit unit) {
     // given
     final ChronoUnit chronoUnit = mapToChronoUnit(unit);
-    final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
+    // setting every unit section to its center to avoid bucket shifting due duration modifications
+    final OffsetDateTime referenceDate = OffsetDateTime.parse("2020-06-15T12:30:30+02:00");
     final ProcessInstanceEngineDto procInstance1 = deployAndStartSimpleProcess(Collections.singletonMap(
       "dateVar",
       referenceDate
@@ -222,7 +224,8 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
   public void distributeByDateWorksForAllStaticUnits_withNumberVariable(final AggregateByDateUnit unit) {
     // given
     final ChronoUnit chronoUnit = mapToChronoUnit(unit);
-    final OffsetDateTime referenceDate = dateFreezer().freezeDateAndReturn();
+    // setting every unit section to its center to avoid bucket shifting due duration modifications
+    final OffsetDateTime referenceDate = OffsetDateTime.parse("2020-06-15T12:30:30+02:00");
     final ProcessInstanceEngineDto procInstance1 = deployAndStartSimpleProcess(Collections.singletonMap(
       "doubleVar",
       10.0

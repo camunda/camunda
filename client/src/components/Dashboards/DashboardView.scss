@@ -36,5 +36,9 @@
 
   &.fullscreen {
     padding: 20px;
+
+    .ReportDetails .modalsButtons {
+      display: none;
+    }
   }
 }

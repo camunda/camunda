@@ -96,6 +96,10 @@ function containsData(report) {
       return false;
     }
 
+    if (type === 'hyperMap' && data.some(({value}) => value.length === 0)) {
+      return false;
+    }
+
     return (
       instanceCount ||
       (report.data.view.property === 'frequency' && report.data.visualization === 'number')

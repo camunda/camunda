@@ -334,4 +334,22 @@ describe('NoDataNotice', () => {
 
     expect(node.find(NoDataNotice)).toExist();
   });
+
+  it('should show a no data notice for empty hyper report', () => {
+    const report = {
+      ...reportTemplate,
+      result: {
+        ...reportTemplate.result,
+        type: 'hyperMap',
+        data: [
+          {key: 'true', value: []},
+          {key: 'false', value: []},
+        ],
+      },
+    };
+
+    const node = shallow(<ReportRenderer report={report} />);
+
+    expect(node.find(NoDataNotice)).toExist();
+  });
 });
