@@ -17,6 +17,7 @@
 package io.atomix.raft.partition;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.Lists;
@@ -372,6 +373,30 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      */
     public Builder withHeartbeatInterval(final Duration heartbeatInterval) {
       config.setHeartbeatInterval(heartbeatInterval);
+      return this;
+    }
+
+    /**
+     * Sets the maximum append requests which are sent per follower at once. Default is 2.
+     *
+     * @param maxAppendsPerFollower the maximum appends send per follower
+     * @return the Raft partition group builder
+     */
+    public Builder withMaxAppendsPerFollower(final int maxAppendsPerFollower) {
+      checkArgument(maxAppendsPerFollower > 0, "maxAppendsPerFollower must be positive");
+      config.setMaxAppendsPerFollower(maxAppendsPerFollower);
+      return this;
+    }
+
+    /**
+     * Sets the maximum batch size, which is sent per append request. Default size is 32 KB.
+     *
+     * @param maxAppendBatchSize the maximum batch size per append
+     * @return the Raft partition group builder
+     */
+    public Builder withMaxAppendBatchSize(final int maxAppendBatchSize) {
+      checkArgument(maxAppendBatchSize > 0, "maxAppendBatchSize must be positive");
+      config.setMaxAppendBatchSize(maxAppendBatchSize);
       return this;
     }
 

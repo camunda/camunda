@@ -56,6 +56,10 @@ public final class BrokerCfgTest {
       "zeebe.broker.cluster.clusterSize";
   private static final String ZEEBE_BROKER_CLUSTER_CLUSTER_NAME =
       "zeebe.broker.cluster.clusterName";
+  private static final String ZEEBE_BROKER_CLUSTER_MAX_APPENDS_PER_FOLLOWER =
+      "zeebe.broker.experimental.maxAppendsPerFollower";
+  private static final String ZEEBE_BROKER_CLUSTER_MAX_APPEND_BATCH_SIZE =
+      "zeebe.broker.experimental.maxAppendBatchSize";
 
   private static final String ZEEBE_BROKER_DATA_DIRECTORIES = "zeebe.broker.data.directories";
 
@@ -428,6 +432,32 @@ public final class BrokerCfgTest {
 
     // then
     assertThat(cfgCluster.getClusterSize()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldOverrideMaxAppendsViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_CLUSTER_MAX_APPENDS_PER_FOLLOWER, "8");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.getMaxAppendsPerFollower()).isEqualTo(8);
+  }
+
+  @Test
+  public void shouldOverrideMaxAppendBatchSizeViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_CLUSTER_MAX_APPEND_BATCH_SIZE, "256KB");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.getMaxAppendBatchSizeInBytes()).isEqualTo(256 * 1024);
   }
 
   @Test

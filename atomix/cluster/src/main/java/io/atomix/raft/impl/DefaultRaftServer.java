@@ -315,7 +315,9 @@ public class DefaultRaftServer implements RaftServer {
               protocol,
               storage,
               threadContextFactory,
-              closeOnStop);
+              closeOnStop,
+              maxAppendBatchSize,
+              maxAppendsPerFollower);
       raft.setElectionTimeout(electionTimeout);
       raft.setHeartbeatInterval(heartbeatInterval);
       raft.setEntryValidator(entryValidator);

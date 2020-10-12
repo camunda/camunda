@@ -51,7 +51,7 @@ import org.slf4j.Logger;
 /** Abstract appender. */
 abstract class AbstractAppender implements AutoCloseable {
 
-  private static final int MAX_BATCH_SIZE = 1024 * 32;
+  protected final int maxBatchSizePerAppend;
   protected final Logger log;
   protected final RaftContext raft;
   protected boolean open = true;
@@ -64,6 +64,7 @@ abstract class AbstractAppender implements AutoCloseable {
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(RaftServer.class).addValue(raft.getName()).build());
     metrics = new LeaderMetrics(raft.getName());
+    maxBatchSizePerAppend = raft.getMaxAppendBatchSize();
   }
 
   /**
@@ -160,7 +161,7 @@ abstract class AbstractAppender implements AutoCloseable {
       final Indexed<RaftLogEntry> entry = reader.next();
       entries.add(entry.entry());
       size += entry.size();
-      if (entry.index() == lastIndex || size >= MAX_BATCH_SIZE) {
+      if (entry.index() == lastIndex || size >= maxBatchSizePerAppend) {
         break;
       }
     }
