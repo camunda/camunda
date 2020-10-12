@@ -9,6 +9,7 @@ import io.zeebe.tasklist.es.schema.indices.IndexDescriptor;
 import io.zeebe.tasklist.es.schema.templates.TemplateDescriptor;
 import io.zeebe.tasklist.exceptions.TasklistRuntimeException;
 import io.zeebe.tasklist.management.ElsIndicesCheck;
+import io.zeebe.tasklist.property.TasklistElasticsearchProperties;
 import io.zeebe.tasklist.property.TasklistProperties;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,6 +23,7 @@ import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.GetIndexRequest;
 import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
 import org.elasticsearch.client.indices.PutIndexTemplateRequest;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentHelper;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -35,6 +37,13 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchSchemaManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchSchemaManager.class);
+
+  private static final String NUMBER_OF_SHARDS = "number_of_shards";
+  private static final String NUMBER_OF_REPLICAS = "number_of_replicas";
+  private static final String ALIASES = "aliases";
+  private static final String INDEX_PATTERNS = "index_patterns";
+  private static final int TEMPLATE_ORDER = 15;
+
   @Autowired protected RestHighLevelClient esClient;
   @Autowired protected TasklistProperties tasklistProperties;
   @Autowired private List<IndexDescriptor> indexDescriptors;
@@ -59,8 +68,37 @@ public class ElasticsearchSchemaManager {
   }
 
   public void createSchema() {
+    createDefaults();
     createTemplates();
     createIndices();
+  }
+
+  private void createDefaults() {
+    final TasklistElasticsearchProperties elsConfig = tasklistProperties.getElasticsearch();
+    final String schemaVersion = tasklistProperties.getSchemaVersion();
+    final String settingsTemplate =
+        String.format("%s-%s_template", elsConfig.getIndexPrefix(), schemaVersion);
+    final List<String> patterns =
+        List.of(String.format("%s-*-%s_*", elsConfig.getIndexPrefix(), schemaVersion));
+    if (templateNotExists(settingsTemplate)) {
+      LOGGER.info(
+          "Create default settings from '{}' with {} shards and {} replicas per index.",
+          settingsTemplate,
+          elsConfig.getNumberOfShards(),
+          elsConfig.getNumberOfReplicas());
+      final PutIndexTemplateRequest putIndexTemplateRequest =
+          new PutIndexTemplateRequest(settingsTemplate)
+              .order(TEMPLATE_ORDER) // order of template applying
+              .patterns(patterns)
+              .settings(
+                  Settings.builder()
+                      .put(NUMBER_OF_SHARDS, elsConfig.getNumberOfShards())
+                      .put(NUMBER_OF_REPLICAS, elsConfig.getNumberOfReplicas())
+                      .build());
+      putIndexTemplate(putIndexTemplateRequest, settingsTemplate);
+    } else {
+      LOGGER.warn("Default settings in '{}' already exists.", settingsTemplate);
+    }
   }
 
   public void createIndices() {
@@ -72,11 +110,11 @@ public class ElasticsearchSchemaManager {
   }
 
   protected void createIndex(IndexDescriptor indexDescriptor) {
-    if (!indexExists(indexDescriptor.getIndexName())) {
+    if (indexNotExists(indexDescriptor.getIndexName())) {
       final Map<String, Object> indexDescription = readJSONFileToMap(indexDescriptor.getFileName());
       // Adjust aliases in case of other configured indexNames, e.g. non-default prefix
       indexDescription.put(
-          "aliases", Collections.singletonMap(indexDescriptor.getAlias(), Collections.EMPTY_MAP));
+          ALIASES, Collections.singletonMap(indexDescriptor.getAlias(), Collections.emptyMap()));
 
       createIndex(
           new CreateIndexRequest(indexDescriptor.getIndexName()).source(indexDescription),
@@ -85,21 +123,19 @@ public class ElasticsearchSchemaManager {
   }
 
   protected void createTemplate(TemplateDescriptor templateDescriptor) {
-    if (!templateExists(templateDescriptor.getTemplateName())) {
+    if (templateNotExists(templateDescriptor.getTemplateName())) {
       final Map<String, Object> template = readJSONFileToMap(templateDescriptor.getFileName());
 
       // Adjust prefixes and aliases in case of other configured indexNames, e.g. non-default prefix
+      template.put(INDEX_PATTERNS, Collections.singletonList(templateDescriptor.getIndexPattern()));
       template.put(
-          "index_patterns", Collections.singletonList(templateDescriptor.getIndexPattern()));
-      template.put(
-          "aliases",
-          Collections.singletonMap(templateDescriptor.getAlias(), Collections.EMPTY_MAP));
+          ALIASES, Collections.singletonMap(templateDescriptor.getAlias(), Collections.emptyMap()));
 
       putIndexTemplate(
           new PutIndexTemplateRequest(templateDescriptor.getTemplateName()).source(template),
           templateDescriptor.getTemplateName());
     }
-    if (!indexExists(templateDescriptor.getMainIndexName())) {
+    if (indexNotExists(templateDescriptor.getMainIndexName())) {
       // This is necessary, otherwise we won't find indexes at startup
       createIndex(
           new CreateIndexRequest(templateDescriptor.getMainIndexName()),
@@ -153,9 +189,9 @@ public class ElasticsearchSchemaManager {
     }
   }
 
-  protected boolean templateExists(final String templateName) {
+  protected boolean templateNotExists(final String templateName) {
     try {
-      return esClient
+      return !esClient
           .indices()
           .existsTemplate(new IndexTemplatesExistRequest(templateName), RequestOptions.DEFAULT);
     } catch (IOException e) {
@@ -164,9 +200,9 @@ public class ElasticsearchSchemaManager {
     }
   }
 
-  protected boolean indexExists(final String indexName) {
+  protected boolean indexNotExists(final String indexName) {
     try {
-      return esClient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
+      return !esClient.indices().exists(new GetIndexRequest(indexName), RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new TasklistRuntimeException("Failed to check existence of index " + indexName, e);
     }

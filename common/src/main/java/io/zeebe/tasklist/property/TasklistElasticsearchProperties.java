@@ -8,8 +8,13 @@ package io.zeebe.tasklist.property;
 public class TasklistElasticsearchProperties extends ElasticsearchProperties {
 
   public static final String DEFAULT_INDEX_PREFIX = "tasklist";
+  private static final int DEFAULT_NUMBER_OF_SHARDS = 1;
+  private static final int DEFAULT_NUMBER_OF_REPLICAS = 0;
 
   private String indexPrefix = DEFAULT_INDEX_PREFIX;
+  private int numberOfShards = DEFAULT_NUMBER_OF_SHARDS;
+
+  private int numberOfReplicas = DEFAULT_NUMBER_OF_REPLICAS;
 
   public String getIndexPrefix() {
     return indexPrefix;
@@ -21,5 +26,21 @@ public class TasklistElasticsearchProperties extends ElasticsearchProperties {
 
   public void setDefaultIndexPrefix() {
     setIndexPrefix(DEFAULT_INDEX_PREFIX);
+  }
+
+  public int getNumberOfShards() {
+    return numberOfShards;
+  }
+
+  public void setNumberOfShards(final int numberOfShards) {
+    this.numberOfShards = numberOfShards;
+  }
+
+  public int getNumberOfReplicas() {
+    return numberOfReplicas;
+  }
+
+  public void setNumberOfReplicas(final int numberOfReplicas) {
+    this.numberOfReplicas = numberOfReplicas;
   }
 }
