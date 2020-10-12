@@ -22,9 +22,6 @@ import static org.junit.Assert.assertTrue;
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberConfig;
 import io.atomix.cluster.MembershipConfig;
-import io.atomix.cluster.MulticastConfig;
-import io.atomix.cluster.discovery.MulticastDiscoveryConfig;
-import io.atomix.cluster.discovery.MulticastDiscoveryProvider;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.HeartbeatMembershipProtocolConfig;
 import io.atomix.raft.partition.RaftPartitionGroup;
@@ -58,11 +55,6 @@ public class AtomixConfigTest {
     assertEquals("bar", node.getProperties().getProperty("foo"));
     assertEquals("baz", node.getProperties().getProperty("bar"));
 
-    final MulticastConfig multicast = cluster.getMulticastConfig();
-    assertTrue(multicast.isEnabled());
-    assertEquals("230.0.1.1", multicast.getGroup().getHostAddress());
-    assertEquals(56789, multicast.getPort());
-
     final HeartbeatMembershipProtocolConfig protocol =
         (HeartbeatMembershipProtocolConfig) cluster.getProtocolConfig();
     assertEquals(Duration.ofMillis(200), protocol.getHeartbeatInterval());
@@ -73,13 +65,6 @@ public class AtomixConfigTest {
     assertEquals(Duration.ofSeconds(1), membership.getBroadcastInterval());
     assertEquals(12, membership.getReachabilityThreshold());
     assertEquals(Duration.ofSeconds(15), membership.getReachabilityTimeout());
-
-    final MulticastDiscoveryConfig discovery =
-        (MulticastDiscoveryConfig) cluster.getDiscoveryConfig();
-    assertEquals(MulticastDiscoveryProvider.TYPE, discovery.getType());
-    assertEquals(Duration.ofSeconds(1), discovery.getBroadcastInterval());
-    assertEquals(12, discovery.getFailureThreshold());
-    assertEquals(Duration.ofSeconds(15), discovery.getFailureTimeout());
 
     final MessagingConfig messaging = cluster.getMessagingConfig();
     assertEquals(2, messaging.getInterfaces().size());

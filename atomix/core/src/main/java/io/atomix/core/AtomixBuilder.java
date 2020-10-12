@@ -56,6 +56,7 @@ import java.util.Properties;
  * constructed. To load a configuration from a file, use {@link Atomix#builder(String)}.
  */
 public class AtomixBuilder extends AtomixClusterBuilder {
+
   private final AtomixConfig config;
   private final AtomixRegistry registry;
 
@@ -367,24 +368,6 @@ public class AtomixBuilder extends AtomixClusterBuilder {
   @Override
   public AtomixBuilder withConnectionPoolSize(final int connectionPoolSize) {
     super.withConnectionPoolSize(connectionPoolSize);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withMulticastEnabled() {
-    super.withMulticastEnabled();
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withMulticastEnabled(final boolean multicastEnabled) {
-    super.withMulticastEnabled(multicastEnabled);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withMulticastAddress(final Address address) {
-    super.withMulticastAddress(address);
     return this;
   }
 

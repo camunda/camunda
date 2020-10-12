@@ -19,7 +19,6 @@ import static io.zeebe.protocol.Protocol.START_PARTITION_ID;
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.cluster.messaging.impl.NettyBroadcastService;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.cluster.messaging.impl.NettyUnicastService;
 import io.atomix.cluster.protocol.SwimMembershipProtocol;
@@ -569,7 +568,6 @@ public final class ClusteringRule extends ExternalResource {
 
     ((NettyUnicastService) atomix.getUnicastService()).stop().join();
     ((NettyMessagingService) atomix.getMessagingService()).stop().join();
-    ((NettyBroadcastService) atomix.getBroadcastService()).stop().join();
   }
 
   public void connect(final Broker broker) {
@@ -577,7 +575,6 @@ public final class ClusteringRule extends ExternalResource {
 
     ((NettyUnicastService) atomix.getUnicastService()).start().join();
     ((NettyMessagingService) atomix.getMessagingService()).start().join();
-    ((NettyBroadcastService) atomix.getBroadcastService()).start().join();
   }
 
   public void stopBrokerAndAwaitNewLeader(final int nodeId) {
