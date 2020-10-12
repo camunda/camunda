@@ -25,8 +25,9 @@ process.env.BROWSERSTACK_PROJECT_NAME = 'Operate';
 process.env.BROWSERSTACK_BUILD_ID = 'Operate E2E Tests';
 process.env.BROWSERSTACK_USE_AUTOMATE = '1';
 process.env.BROWSERSTACK_DISPLAY_RESOLUTION = '1920x1080';
-process.env.BROWSERSTACK_CONSOLE = 'errors';
+process.env.BROWSERSTACK_CONSOLE = 'verbose';
 process.env.BROWSERSTACK_NETWORK_LOGS = true;
+process.env.BROWSERSTACK_DEBUG = true;
 
 async function start() {
   const testCafe = await createTestCafe('localhost');
