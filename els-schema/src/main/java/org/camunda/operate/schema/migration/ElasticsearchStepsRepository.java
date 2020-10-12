@@ -6,7 +6,6 @@
 package org.camunda.operate.schema.migration;
 
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.elasticsearch.client.RequestOptions.DEFAULT;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import java.io.IOException;
 import java.io.InputStream;
@@ -23,6 +22,8 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.support.IndicesOptions;
+
+import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -50,7 +51,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
 
   private static final String DEFAULT_SCHEMA_CHANGE_FOLDER = "/schema/change";
 
-  private static final String STEPS_REPOSITORY_NAME = "migration-steps-repository";
+  public static final String STEPS_REPOSITORY_NAME = "migration-steps-repository";
   
   @Autowired
   private RestHighLevelClient esClient;
@@ -68,7 +69,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
    */
   @PostConstruct
   public void updateStepsInRepository(){
-    final List<Step> stepsFromFiles = readStepsFromClasspath(DEFAULT_SCHEMA_CHANGE_FOLDER);
+    final List<Step> stepsFromFiles = readStepsFromClasspath();
     final List<Step> stepsFromRepository = findAll();
     for (final Step step : stepsFromFiles) {
       if (!stepsFromRepository.contains(step)) {
@@ -78,19 +79,19 @@ public class ElasticsearchStepsRepository implements StepsRepository {
       }
     }
   }
-  
-  private List<Step> readStepsFromClasspath(final String classpath){
+
+  private List<Step> readStepsFromClasspath(){
     List<Step> steps = new ArrayList<>();
     try {
       PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-      Resource[] resources = resolver.getResources(classpath + "/*" + STEP_FILE_EXTENSION);
+      Resource[] resources = resolver.getResources(ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER + "/*" + STEP_FILE_EXTENSION);
     
       for(Resource resource: resources) {
         logger.info("Read step {} ", resource.getFilename());
         steps.add(readStepFromFile(resource.getFilename(), resource.getInputStream()));
       }
     } catch (IOException e) {
-      throw new OperateRuntimeException(String.format("Could not get steps folder from classpath %s",classpath), e);
+      throw new OperateRuntimeException(String.format("Could not get steps folder from classpath %s", ElasticsearchStepsRepository.DEFAULT_SCHEMA_CHANGE_FOLDER), e);
     }
    
     steps.sort(Step.SEMANTICVERSION_ORDER_COMPARATOR);
@@ -112,7 +113,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
   public String getName() {
     return operateProperties.getElasticsearch().getIndexPrefix() + "-" + STEPS_REPOSITORY_NAME;
   }
-  
+
   protected String idFromStep(final Step step) {
     return step.getVersion() + "-" + step.getOrder();
   }
@@ -123,7 +124,7 @@ public class ElasticsearchStepsRepository implements StepsRepository {
     try {
       response = esClient
           .index(new IndexRequest(getName(), ElasticsearchUtil.ES_INDEX_TYPE, idFromStep(step))
-              .source(objectMapper.writeValueAsString(step), XContentType.JSON), DEFAULT);
+              .source(objectMapper.writeValueAsString(step), XContentType.JSON), RequestOptions.DEFAULT);
     } catch (IOException e) {
       throw new OperateRuntimeException(String.format("Error in save step %s", step), e);
     }
