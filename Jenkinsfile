@@ -186,17 +186,6 @@ pipeline {
                         }
                     }
                 }
-
-                stage('Build Docs') {
-                    steps {
-                      retry(3) {
-                        container('maven') {
-                            sh '.ci/scripts/docs/prepare.sh'
-                            sh '.ci/scripts/docs/build.sh'
-                        }
-                      }
-                    }
-                }
             }
 
             post {
@@ -256,18 +245,6 @@ pipeline {
                                 string(name: 'VERSION', value: env.VERSION),
                                 booleanParam(name: 'IS_LATEST', value: isMasterBranch),
                                 booleanParam(name: 'PUSH', value: isDevelopBranch)
-                            ]
-                        }
-                    }
-                }
-
-                stage('Docs') {
-                    when { anyOf { branch masterBranchName; branch developBranchName } }
-                    steps {
-                        retry(3) {
-                            build job: 'zeebe-docs', parameters: [
-                                string(name: 'BRANCH', value: env.BRANCH_NAME),
-                                booleanParam(name: 'LIVE', value: isMasterBranch)
                             ]
                         }
                     }
