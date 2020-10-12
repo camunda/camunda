@@ -20,16 +20,12 @@ import com.esotericsoftware.kryo.KryoException;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.utils.serializer.Namespace;
-import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileChannel.MapMode;
-import java.nio.file.StandardOpenOption;
 import java.util.zip.CRC32;
-import org.agrona.BufferUtil;
+import org.agrona.IoUtil;
 
 /**
  * Segment writer.
@@ -49,7 +45,6 @@ import org.agrona.BufferUtil;
  */
 class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
 
-  private final FileChannel channel;
   private final MappedByteBuffer buffer;
   private final JournalSegment<E> segment;
   private final int maxEntrySize;
@@ -70,20 +65,15 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
     this.index = index;
     this.namespace = namespace;
     firstIndex = segment.index();
-    channel =
-        file.openChannel(
-            StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE);
-    buffer = mapChannel(channel, segment);
+    buffer = mapFile(file, segment);
     reset(0);
   }
 
-  private static MappedByteBuffer mapChannel(
-      final FileChannel channel, final JournalSegment<?> segment) {
-    try {
-      return channel.map(MapMode.READ_WRITE, 0, segment.descriptor().maxSegmentSize());
-    } catch (final IOException e) {
-      throw new StorageException(e);
-    }
+  private static MappedByteBuffer mapFile(
+      final JournalSegmentFile file, final JournalSegment<?> segment) {
+    // map existing file, because file is already created by SegmentedJournal
+    return IoUtil.mapExistingFile(
+        file.file(), file.name(), 0, segment.descriptor().maxSegmentSize());
   }
 
   @Override
@@ -270,12 +260,7 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
     if (isOpen) {
       isOpen = false;
       flush();
-      BufferUtil.free(buffer);
-      try {
-        channel.close();
-      } catch (final IOException e) {
-        throw new StorageException(e);
-      }
+      IoUtil.unmap(buffer);
     }
   }
 
