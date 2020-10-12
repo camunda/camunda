@@ -30,6 +30,8 @@ public class StarterCfg {
   private boolean withResults;
   private Duration withResultsTimeout;
 
+  private int durationLimit;
+
   public String getProcessId() {
     return processId;
   }
@@ -84,5 +86,13 @@ public class StarterCfg {
 
   public void setWithResultsTimeout(Duration withResultsTimeout) {
     this.withResultsTimeout = withResultsTimeout;
+  }
+
+  public int getDurationLimit() {
+    return durationLimit;
+  }
+
+  public void setDurationLimit(int durationLimit) {
+    this.durationLimit = durationLimit;
   }
 }
