@@ -24,50 +24,17 @@ import java.util.Map;
 
 /** Atomix configuration. */
 public class AtomixConfig implements Config {
-  private ClusterConfig cluster = new ClusterConfig();
-  private boolean enableShutdownHook;
-  private Map<String, PartitionGroupConfig<?>> partitionGroups = new HashMap<>();
-  private boolean typeRegistrationRequired = false;
-  private boolean compatibleSerialization = false;
+
+  private final ClusterConfig cluster = new ClusterConfig();
+  private final Map<String, PartitionGroupConfig<?>> partitionGroups = new HashMap<>();
 
   /**
    * Returns the cluster configuration.
    *
    * @return the cluster configuration
    */
-  public ClusterConfig getClusterConfig() {
+  ClusterConfig getClusterConfig() {
     return cluster;
-  }
-
-  /**
-   * Sets the cluster configuration.
-   *
-   * @param cluster the cluster configuration
-   * @return the Atomix configuration
-   */
-  public AtomixConfig setClusterConfig(final ClusterConfig cluster) {
-    this.cluster = cluster;
-    return this;
-  }
-
-  /**
-   * Returns whether to enable the shutdown hook.
-   *
-   * @return whether to enable the shutdown hook
-   */
-  public boolean isEnableShutdownHook() {
-    return enableShutdownHook;
-  }
-
-  /**
-   * Sets whether to enable the shutdown hook.
-   *
-   * @param enableShutdownHook whether to enable the shutdown hook
-   * @return the Atomix configuration
-   */
-  public AtomixConfig setEnableShutdownHook(final boolean enableShutdownHook) {
-    this.enableShutdownHook = enableShutdownHook;
-    return this;
   }
 
   /**
@@ -75,21 +42,8 @@ public class AtomixConfig implements Config {
    *
    * @return the partition group configurations
    */
-  public Map<String, PartitionGroupConfig<?>> getPartitionGroups() {
+  Map<String, PartitionGroupConfig<?>> getPartitionGroups() {
     return partitionGroups;
-  }
-
-  /**
-   * Sets the partition group configurations.
-   *
-   * @param partitionGroups the partition group configurations
-   * @return the Atomix configuration
-   */
-  public AtomixConfig setPartitionGroups(
-      final Map<String, PartitionGroupConfig<?>> partitionGroups) {
-    partitionGroups.forEach((name, group) -> group.setName(name));
-    this.partitionGroups = partitionGroups;
-    return this;
   }
 
   /**
@@ -98,49 +52,8 @@ public class AtomixConfig implements Config {
    * @param partitionGroup the partition group configuration to add
    * @return the Atomix configuration
    */
-  public AtomixConfig addPartitionGroup(final PartitionGroupConfig partitionGroup) {
+  AtomixConfig addPartitionGroup(final PartitionGroupConfig partitionGroup) {
     partitionGroups.put(partitionGroup.getName(), partitionGroup);
-    return this;
-  }
-
-  /**
-   * Returns whether serializable type registration is required for user types.
-   *
-   * @return whether serializable type registration is required for user types
-   */
-  public boolean isTypeRegistrationRequired() {
-    return typeRegistrationRequired;
-  }
-
-  /**
-   * Sets whether serializable type registration is required for user types.
-   *
-   * @param typeRegistrationRequired whether serializable type registration is required for user
-   *     types
-   * @return the Atomix configuration
-   */
-  public AtomixConfig setTypeRegistrationRequired(final boolean typeRegistrationRequired) {
-    this.typeRegistrationRequired = typeRegistrationRequired;
-    return this;
-  }
-
-  /**
-   * Returns whether compatible serialization is enabled for user types.
-   *
-   * @return whether compatible serialization is enabled for user types
-   */
-  public boolean isCompatibleSerialization() {
-    return compatibleSerialization;
-  }
-
-  /**
-   * Sets whether compatible serialization is enabled for user types.
-   *
-   * @param compatibleSerialization whether compatible serialization is enabled for user types
-   * @return the Atomix configuration
-   */
-  public AtomixConfig setCompatibleSerialization(final boolean compatibleSerialization) {
-    this.compatibleSerialization = compatibleSerialization;
     return this;
   }
 }

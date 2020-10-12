@@ -53,10 +53,6 @@
     </dependency>
 
     <dependency>
-      <artifactId>classgraph</artifactId>
-      <groupId>io.github.classgraph</groupId>
-    </dependency>
-    <dependency>
       <artifactId>slf4j-api</artifactId>
       <groupId>org.slf4j</groupId>
     </dependency>
@@ -64,11 +60,6 @@
       <artifactId>guava</artifactId>
       <groupId>com.google.guava</groupId>
     </dependency>
-    <dependency>
-      <artifactId>config</artifactId>
-      <groupId>com.typesafe</groupId>
-    </dependency>
-
 
     <dependency>
       <artifactId>hamcrest</artifactId>
