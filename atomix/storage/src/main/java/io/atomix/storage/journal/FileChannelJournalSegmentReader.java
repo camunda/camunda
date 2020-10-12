@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.NoSuchElementException;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
@@ -44,17 +45,17 @@ class FileChannelJournalSegmentReader<E> implements JournalReader<E> {
   private Indexed<E> nextEntry;
 
   FileChannelJournalSegmentReader(
-      final FileChannel channel,
+      final JournalSegmentFile file,
       final JournalSegment<E> segment,
       final int maxEntrySize,
       final JournalIndex index,
       final Namespace namespace) {
-    this.channel = channel;
+    this.segment = segment;
     this.maxEntrySize = maxEntrySize;
     this.index = index;
     this.namespace = namespace;
+    channel = file.openChannel(StandardOpenOption.READ);
     memory = ByteBuffer.allocate((maxEntrySize + Integer.BYTES + Integer.BYTES) * 2);
-    this.segment = segment;
     reset();
   }
 
@@ -162,11 +163,15 @@ class FileChannelJournalSegmentReader<E> implements JournalReader<E> {
 
   @Override
   public void close() {
-    // Do nothing. The parent reader manages the channel.
+    try {
+      channel.close();
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
+    segment.onReaderClosed(this);
   }
 
   /** Reads the next entry in the segment. */
-  @SuppressWarnings("unchecked")
   private void readNext() {
     final long index = getNextIndex();
 

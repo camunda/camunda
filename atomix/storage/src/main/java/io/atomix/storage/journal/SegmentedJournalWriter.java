@@ -24,13 +24,12 @@ public class SegmentedJournalWriter<E> implements JournalWriter<E> {
   private final SegmentedJournal<E> journal;
   private final JournalMetrics journalMetrics;
   private JournalSegment<E> currentSegment;
-  private MappableJournalSegmentWriter<E> currentWriter;
+  private JournalWriter<E> currentWriter;
 
   public SegmentedJournalWriter(final SegmentedJournal<E> journal) {
     this.journal = journal;
     journalMetrics = journal.getJournalMetrics();
     currentSegment = journal.getLastSegment();
-    currentSegment.acquire();
     currentWriter = currentSegment.writer();
   }
 
@@ -82,18 +81,13 @@ public class SegmentedJournalWriter<E> implements JournalWriter<E> {
   public void commit(final long index) {
     if (index > journal.getCommitIndex()) {
       journal.setCommitIndex(index);
-      if (journal.isFlushOnCommit()) {
-        flush();
-      }
     }
   }
 
   @Override
   public void reset(final long index) {
     if (index > currentSegment.index()) {
-      currentSegment.release();
       currentSegment = journal.resetSegments(index);
-      currentSegment.acquire();
       currentWriter = currentSegment.writer();
     } else {
       truncate(index - 1);
@@ -111,10 +105,8 @@ public class SegmentedJournalWriter<E> implements JournalWriter<E> {
         () -> {
           // Delete all segments with first indexes greater than the given index.
           while (index < currentSegment.index() && currentSegment != journal.getFirstSegment()) {
-            currentSegment.release();
             journal.removeSegment(currentSegment);
             currentSegment = journal.getLastSegment();
-            currentSegment.acquire();
             currentWriter = currentSegment.writer();
           }
 
@@ -138,9 +130,7 @@ public class SegmentedJournalWriter<E> implements JournalWriter<E> {
 
   private void createNewSegment() {
     currentWriter.flush();
-    currentSegment.release();
     currentSegment = journal.getNextSegment();
-    currentSegment.acquire();
     currentWriter = currentSegment.writer();
   }
 }

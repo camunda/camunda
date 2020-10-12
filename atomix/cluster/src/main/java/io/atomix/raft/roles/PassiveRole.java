@@ -609,6 +609,9 @@ public class PassiveRole extends InactiveRole {
       raft.notifyCommitListeners(commitIndex);
     }
 
+    // Make sure all entries are flushed before ack to ensure we have persisted what we acknowledge
+    raft.getLogWriter().flush();
+
     // Return a successful append response.
     succeedAppend(lastLogIndex, future);
   }

@@ -199,15 +199,6 @@ public class SegmentedJournal<E> implements Journal<E> {
     return segments.tailMap(index).values();
   }
 
-  /**
-   * Returns the total size of the journal.
-   *
-   * @return the total size of the journal
-   */
-  public long size() {
-    return segments.values().stream().mapToLong(segment -> segment.size()).sum();
-  }
-
   @Override
   public SegmentedJournalWriter<E> writer() {
     return writer;
@@ -225,6 +216,7 @@ public class SegmentedJournal<E> implements Journal<E> {
    * @param mode The mode in which to read entries.
    * @return The Raft log reader.
    */
+  @Override
   public SegmentedJournalReader<E> openReader(
       final long index, final SegmentedJournalReader.Mode mode) {
     final SegmentedJournalReader<E> reader = new SegmentedJournalReader<>(this, index, mode);
@@ -681,7 +673,7 @@ public class SegmentedJournal<E> implements Journal<E> {
    *
    * @return Indicates whether {@code flushOnCommit} is enabled for the log.
    */
-  boolean isFlushOnCommit() {
+  public boolean isFlushOnCommit() {
     return flushOnCommit;
   }
 

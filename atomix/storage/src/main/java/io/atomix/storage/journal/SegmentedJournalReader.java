@@ -26,7 +26,7 @@ public class SegmentedJournalReader<E> implements JournalReader<E> {
   private final Mode mode;
   private JournalSegment<E> currentSegment;
   private Indexed<E> previousEntry;
-  private MappableJournalSegmentReader<E> currentReader;
+  private JournalReader<E> currentReader;
 
   SegmentedJournalReader(final SegmentedJournal<E> journal, final long index, final Mode mode) {
     this.journal = journal;
@@ -37,7 +37,6 @@ public class SegmentedJournalReader<E> implements JournalReader<E> {
   /** Initializes the reader to the given index. */
   private void initialize(final long index) {
     currentSegment = journal.getSegment(index);
-    currentSegment.acquire();
     currentReader = currentSegment.createReader();
     long nextIndex = getNextIndex();
     while (index > nextIndex && hasNext()) {
@@ -191,9 +190,7 @@ public class SegmentedJournalReader<E> implements JournalReader<E> {
 
   private void replaceCurrentSegment(final JournalSegment<E> nextSegment) {
     currentReader.close();
-    currentSegment.release();
     currentSegment = nextSegment;
-    currentSegment.acquire();
     currentReader = currentSegment.createReader();
   }
 }
