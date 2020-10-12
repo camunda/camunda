@@ -8,21 +8,16 @@
 package io.zeebe.broker.exporter.stream;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.exporter.context.ExporterContext;
-import io.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.zeebe.db.ZeebeDb;
 import io.zeebe.engine.processor.EventFilter;
 import io.zeebe.engine.processor.RecordValues;
 import io.zeebe.engine.processor.TypedEventImpl;
-import io.zeebe.exporter.api.Exporter;
 import io.zeebe.exporter.api.context.Context;
-import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
-import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.util.LangUtil;
@@ -52,8 +47,6 @@ public final class ExporterDirector extends Actor {
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
-  private static final String SKIP_POSITION_UPDATE_ERROR_MESSAGE =
-      "Failed to update exporter position when skipping filtered record, can be skipped, but may indicate an issue if it occurs often";
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
   private final List<ExporterContainer> containers;
   private final LogStream logStream;
@@ -71,19 +64,19 @@ public final class ExporterDirector extends Actor {
   private boolean inExportingPhase;
 
   public ExporterDirector(final ExporterDirectorContext context) {
-    this.name = context.getName();
-    this.containers =
+    name = context.getName();
+    containers =
         context.getDescriptors().stream().map(ExporterContainer::new).collect(Collectors.toList());
 
-    this.logStream = Objects.requireNonNull(context.getLogStream());
+    logStream = Objects.requireNonNull(context.getLogStream());
     final int partitionId = logStream.getPartitionId();
-    this.recordExporter = new RecordExporter(containers, partitionId);
-    this.exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
-    this.recordWrapStrategy = new EndlessRetryStrategy(actor);
+    recordExporter = new RecordExporter(containers, partitionId);
+    exportingRetryStrategy = new BackOffRetryStrategy(actor, Duration.ofSeconds(10));
+    recordWrapStrategy = new EndlessRetryStrategy(actor);
 
-    this.zeebeDb = context.getZeebeDb();
+    zeebeDb = context.getZeebeDb();
 
-    this.metrics = new ExporterMetrics(partitionId);
+    metrics = new ExporterMetrics(partitionId);
   }
 
   public ActorFuture<Void> startAsync(final ActorScheduler actorScheduler) {
@@ -127,8 +120,8 @@ public final class ExporterDirector extends Actor {
       recoverFromSnapshot();
 
       for (final ExporterContainer container : containers) {
-        LOG.debug("Configure exporter with id '{}'", container.getId());
-        container.exporter.configure(container.context);
+        container.initContainer(actor, state);
+        container.configureExporter();
       }
 
       eventFilter = createEventFilter(containers);
@@ -160,17 +153,11 @@ public final class ExporterDirector extends Actor {
   @Override
   protected void onActorCloseRequested() {
     isOpened.set(false);
-    for (final ExporterContainer container : containers) {
-      try {
-        container.exporter.close();
-      } catch (final Exception e) {
-        container.context.getLogger().error("Error on close", e);
-      }
-    }
+    containers.forEach(ExporterContainer::close);
   }
 
   private void recoverFromSnapshot() {
-    this.state = new ExportersState(zeebeDb, zeebeDb.createContext());
+    state = new ExportersState(zeebeDb, zeebeDb.createContext());
 
     final long snapshotPosition = state.getLowestPosition();
     final boolean failedToRecoverReader = !logStreamReader.seekToNextEvent(snapshotPosition);
@@ -188,7 +175,7 @@ public final class ExporterDirector extends Actor {
   private ExporterEventFilter createEventFilter(final List<ExporterContainer> containers) {
 
     final List<Context.RecordFilter> recordFilters =
-        containers.stream().map(c -> c.context.getFilter()).collect(Collectors.toList());
+        containers.stream().map(c -> c.getContext().getFilter()).collect(Collectors.toList());
 
     final Map<RecordType, Boolean> acceptRecordTypes =
         Arrays.stream(RecordType.values())
@@ -220,13 +207,8 @@ public final class ExporterDirector extends Actor {
 
     // start reading
     for (final ExporterContainer container : containers) {
-      container.position = state.getPosition(container.getId());
-      container.lastUnacknowledgedPosition = container.position;
-      if (container.position == ExportersState.VALUE_NOT_FOUND) {
-        state.setPosition(container.getId(), -1L);
-      }
-      LOG.debug("Open exporter with id '{}'", container.getId());
-      container.exporter.open(container);
+      container.initPosition();
+      container.openExporter();
     }
 
     clearExporterState();
@@ -361,21 +343,9 @@ public final class ExporterDirector extends Actor {
       while (exporterIndex < exportersCount) {
         final ExporterContainer container = containers.get(exporterIndex);
 
-        try {
-          if (container.position < typedEvent.getPosition()) {
-            if (container.acceptRecord(rawMetadata)) {
-              container.export(typedEvent);
-            } else {
-              container.updatePositionOnSkipIfUpToDate(typedEvent.getPosition());
-            }
-          }
-
+        if (container.exportRecord(rawMetadata, typedEvent)) {
           exporterIndex++;
-        } catch (final Exception ex) {
-          container
-              .context
-              .getLogger()
-              .error("Error on exporting record with key {}", typedEvent.getKey(), ex);
+        } else {
           return false;
         }
       }
@@ -419,68 +389,6 @@ public final class ExporterDirector extends Actor {
           + ", acceptValueTypes="
           + acceptValueTypes
           + '}';
-    }
-  }
-
-  private class ExporterContainer implements Controller {
-    private final ExporterContext context;
-    private final Exporter exporter;
-    private long position;
-    private long lastUnacknowledgedPosition;
-
-    ExporterContainer(final ExporterDescriptor descriptor) {
-      context =
-          new ExporterContext(
-              Loggers.getExporterLogger(descriptor.getId()), descriptor.getConfiguration());
-
-      exporter = descriptor.newInstance();
-    }
-
-    private void export(final Record<?> record) {
-      exporter.export(record);
-      lastUnacknowledgedPosition = record.getPosition();
-    }
-
-    /**
-     * Updates the exporter's position if it is up to date - that is, if it's last acknowledged
-     * position is greater than or equal to its last unacknowledged position. This is safe to do
-     * when skipping records as it means we passed no record to this exporter between both.
-     *
-     * @param eventPosition the new, up to date position
-     */
-    private void updatePositionOnSkipIfUpToDate(final long eventPosition) {
-      if (position >= lastUnacknowledgedPosition && position < eventPosition) {
-        try {
-          updateExporterLastExportedRecordPosition(eventPosition);
-        } catch (final Exception e) {
-          LOG.warn(SKIP_POSITION_UPDATE_ERROR_MESSAGE, e);
-        }
-      }
-    }
-
-    private void updateExporterLastExportedRecordPosition(final long eventPosition) {
-      state.setPosition(getId(), eventPosition);
-      position = eventPosition;
-    }
-
-    @Override
-    public void updateLastExportedRecordPosition(final long position) {
-      actor.run(() -> updateExporterLastExportedRecordPosition(position));
-    }
-
-    @Override
-    public void scheduleTask(final Duration delay, final Runnable task) {
-      actor.runDelayed(delay, task);
-    }
-
-    private String getId() {
-      return context.getConfiguration().getId();
-    }
-
-    private boolean acceptRecord(final RecordMetadata metadata) {
-      final Context.RecordFilter filter = context.getFilter();
-      return filter.acceptType(metadata.getRecordType())
-          && filter.acceptValue(metadata.getValueType());
     }
   }
 }
