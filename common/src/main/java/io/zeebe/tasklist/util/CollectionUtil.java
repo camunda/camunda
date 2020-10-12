@@ -62,6 +62,11 @@ public abstract class CollectionUtil {
     return result;
   }
 
+  // We need this because map::getOrDefault throws an exception for null keys :-(
+  public static <K, T> T getOrDefaultFromMap(Map<K, T> map, K key, T defaultValue) {
+    return key == null ? defaultValue : map.getOrDefault(key, defaultValue);
+  }
+
   public static <S, T> List<T> map(Collection<S> sourceList, Function<S, T> mapper) {
     return map(sourceList.stream(), mapper);
   }

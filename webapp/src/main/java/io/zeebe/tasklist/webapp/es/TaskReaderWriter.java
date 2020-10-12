@@ -6,6 +6,7 @@
 package io.zeebe.tasklist.webapp.es;
 
 import static io.zeebe.tasklist.util.CollectionUtil.asMap;
+import static io.zeebe.tasklist.util.CollectionUtil.getOrDefaultFromMap;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.zeebe.tasklist.util.ElasticsearchUtil.joinWithAnd;
 import static org.elasticsearch.action.support.WriteRequest.RefreshPolicy.WAIT_UNTIL;
@@ -38,6 +39,8 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.elasticsearch.search.sort.SortBuilder;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -49,6 +52,17 @@ import org.springframework.stereotype.Component;
 public class TaskReaderWriter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskReaderWriter.class);
+
+  private static final Map<TaskState, SortBuilder> SORT_BY_STATE =
+      Map.of(
+          TaskState.CREATED,
+          SortBuilders.fieldSort(TaskTemplate.CREATION_TIME).order(SortOrder.DESC),
+          TaskState.COMPLETED,
+          SortBuilders.fieldSort(TaskTemplate.COMPLETION_TIME).order(SortOrder.DESC),
+          TaskState.CANCELED,
+          SortBuilders.fieldSort(TaskTemplate.COMPLETION_TIME).order(SortOrder.DESC));
+  private static final SortBuilder DEFAULT_SORT =
+      SortBuilders.fieldSort(TaskTemplate.CREATION_TIME).order(SortOrder.DESC);
 
   @Autowired private RestHighLevelClient esClient;
 
@@ -101,9 +115,8 @@ public class TaskReaderWriter {
   }
 
   public List<TaskDTO> getTasks(TaskQueryDTO query, List<String> fieldNames) {
-
     final QueryBuilder esQuery = buildQuery(query);
-
+    final SortBuilder sort = getOrDefaultFromMap(SORT_BY_STATE, query.getState(), DEFAULT_SORT);
     // TODO #104 define list of fields
 
     // TODO we can play around with query type here (2nd parameter), e.g. when we select for only
@@ -111,10 +124,8 @@ public class TaskReaderWriter {
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(taskTemplate)
             .source(
-                new SearchSourceBuilder()
-                    .query(esQuery)
-                    .sort(TaskTemplate.CREATION_TIME, SortOrder.DESC)
-                //            .fetchSource(fieldNames.toArray(String[]::new), null)
+                new SearchSourceBuilder().query(esQuery).sort(sort)
+                //  .fetchSource(fieldNames.toArray(String[]::new), null)
                 );
 
     try {

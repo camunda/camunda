@@ -158,10 +158,10 @@ public class TasklistTester {
     return getTasksByPath("$.data.tasks");
   }
 
-  public GraphQLResponse getCompletedTasks() throws IOException {
+  public List<TaskDTO> getCompletedTasks() throws IOException {
     graphQLResponse =
         graphQLTestTemplate.postForResource("graphql/taskIT/get-completed-tasks.graphql");
-    return graphQLResponse;
+    return getTasksByPath("$.data.tasks");
   }
 
   public GraphQLResponse getAllTasks() throws IOException {

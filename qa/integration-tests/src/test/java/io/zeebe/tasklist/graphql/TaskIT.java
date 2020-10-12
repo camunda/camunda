@@ -7,6 +7,7 @@ package io.zeebe.tasklist.graphql;
 
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CANCELED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
+import static java.util.Comparator.comparing;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.Assert.assertEquals;
@@ -199,8 +200,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   private void assertSorting(GraphQLResponse response) {
     final List<TaskDTO> tasks = Arrays.asList(response.get("$.data.tasks", TaskDTO[].class));
-    final Comparator<TaskDTO> comparator =
-        Comparator.comparing(TaskDTO::getCreationTime).reversed();
+    final Comparator<TaskDTO> comparator = comparing(TaskDTO::getCreationTime).reversed();
     assertThat(tasks).isSortedAccordingTo(comparator);
   }
 
@@ -282,19 +282,18 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
 
   @Test
   public void shouldReturnAllCompletedTasks() throws IOException {
-    final GraphQLResponse response =
+    final int completedTasksCount = 5;
+    final List<TaskDTO> completedTasks =
         tester
             .having()
-            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 2, 3)
+            .createCreatedAndCompletedTasks(BPMN_PROCESS_ID, ELEMENT_ID, 2, completedTasksCount)
             .when()
             .getCompletedTasks();
     // then
-    assertTrue(response.isOk());
-    assertEquals("3", response.get("$.data.tasks.length()"));
-    for (int i = 0; i < 3; i++) {
-      assertEquals(
-          TaskState.COMPLETED.name(), response.get(String.format("$.data.tasks[%d].taskState", i)));
-    }
+    assertThat(completedTasks).hasSize(completedTasksCount);
+    assertThat(completedTasks.stream()).allMatch(t -> TaskState.COMPLETED.equals(t.getTaskState()));
+    assertThat(completedTasks)
+        .isSortedAccordingTo(comparing(TaskDTO::getCompletionTime).reversed());
   }
 
   @Test
@@ -317,8 +316,10 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
             .and()
             .waitFor(1000)
             .then() // then #2
-            .getTasksByQuery("{tasks(query: {assigned: false}) {id}}");
+            .getTasksByQuery("{tasks(query: {assigned: false}) {id creationTime}}");
     assertEquals(2, tasksAfterOneClaimed.size());
+    assertThat(tasksAfterOneClaimed)
+        .isSortedAccordingTo(comparing(TaskDTO::getCreationTime).reversed());
   }
 
   @Test

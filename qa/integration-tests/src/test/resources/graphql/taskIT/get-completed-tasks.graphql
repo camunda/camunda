@@ -1,5 +1,7 @@
 {tasks(query: {state: COMPLETED}) {
     id
     taskState
-}
+    creationTime
+    completionTime
+  }
 }
