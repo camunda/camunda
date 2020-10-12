@@ -58,7 +58,6 @@ public class SegmentedJournal<E> implements Journal<E> {
   private final int maxSegmentSize;
   private final int maxEntrySize;
   private final int maxEntriesPerSegment;
-  private final boolean flushOnCommit;
   private final SegmentedJournalWriter<E> writer;
   private volatile long commitIndex;
   private final NavigableMap<Long, JournalSegment<E>> segments = new ConcurrentSkipListMap<>();
@@ -75,7 +74,6 @@ public class SegmentedJournal<E> implements Journal<E> {
       final int maxSegmentSize,
       final int maxEntrySize,
       final int maxEntriesPerSegment,
-      final boolean flushOnCommit,
       final Supplier<JournalIndex> journalIndexFactory,
       final long minFreeSpace) {
     this.name = checkNotNull(name, "name cannot be null");
@@ -85,7 +83,6 @@ public class SegmentedJournal<E> implements Journal<E> {
     this.maxSegmentSize = maxSegmentSize;
     this.maxEntrySize = maxEntrySize;
     this.maxEntriesPerSegment = maxEntriesPerSegment;
-    this.flushOnCommit = flushOnCommit;
     journalMetrics = new JournalMetrics(name);
     this.journalIndexFactory =
         journalIndexFactory == null
@@ -669,15 +666,6 @@ public class SegmentedJournal<E> implements Journal<E> {
   }
 
   /**
-   * Returns whether {@code flushOnCommit} is enabled for the log.
-   *
-   * @return Indicates whether {@code flushOnCommit} is enabled for the log.
-   */
-  public boolean isFlushOnCommit() {
-    return flushOnCommit;
-  }
-
-  /**
    * Returns the Raft log commit index.
    *
    * @return The Raft log commit index.
@@ -713,7 +701,6 @@ public class SegmentedJournal<E> implements Journal<E> {
     protected int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
     protected int maxEntriesPerSegment = DEFAULT_MAX_ENTRIES_PER_SEGMENT;
 
-    private boolean flushOnCommit = DEFAULT_FLUSH_ON_COMMIT;
     private Supplier<JournalIndex> journalIndexFactory;
     private long freeDiskSpace = DEFAULT_MIN_FREE_DISK_SPACE;
 
@@ -856,35 +843,6 @@ public class SegmentedJournal<E> implements Journal<E> {
       return this;
     }
 
-    /**
-     * Enables flushing buffers to disk when entries are committed to a segment, returning the
-     * builder for method chaining.
-     *
-     * <p>When flush-on-commit is enabled, log entry buffers will be automatically flushed to disk
-     * each time an entry is committed in a given segment.
-     *
-     * @return The storage builder.
-     */
-    public Builder<E> withFlushOnCommit() {
-      return withFlushOnCommit(true);
-    }
-
-    /**
-     * Sets whether to flush buffers to disk when entries are committed to a segment, returning the
-     * builder for method chaining.
-     *
-     * <p>When flush-on-commit is enabled, log entry buffers will be automatically flushed to disk
-     * each time an entry is committed in a given segment.
-     *
-     * @param flushOnCommit Whether to flush buffers to disk when entries are committed to a
-     *     segment.
-     * @return The storage builder.
-     */
-    public Builder<E> withFlushOnCommit(final boolean flushOnCommit) {
-      this.flushOnCommit = flushOnCommit;
-      return this;
-    }
-
     public Builder<E> withJournalIndexFactory(final Supplier<JournalIndex> journalIndexFactory) {
       this.journalIndexFactory = journalIndexFactory;
       return this;
@@ -900,7 +858,6 @@ public class SegmentedJournal<E> implements Journal<E> {
           maxSegmentSize,
           maxEntrySize,
           maxEntriesPerSegment,
-          flushOnCommit,
           journalIndexFactory,
           freeDiskSpace);
     }
