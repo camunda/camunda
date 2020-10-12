@@ -79,6 +79,7 @@ public final class EngineRule extends ExternalResource {
   private final int partitionCount;
   private final boolean explicitStart;
   private Consumer<String> jobsAvailableCallback = type -> {};
+  private DeploymentDistributor deploymentDistributor = new DeploymentDistributionImpl();
 
   private final Int2ObjectHashMap<SubscriptionCommandMessageHandler> subscriptionHandlers =
       new Int2ObjectHashMap<>();
@@ -143,6 +144,11 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withDeploymentDistributor(final DeploymentDistributor deploymentDistributor) {
+    this.deploymentDistributor = deploymentDistributor;
+    return this;
+  }
+
   private void startProcessors() {
     final DeploymentRecord deploymentRecord = new DeploymentRecord();
     final UnsafeBuffer deploymentBuffer = new UnsafeBuffer(new byte[deploymentRecord.getLength()]);
@@ -162,7 +168,7 @@ public final class EngineRule extends ExternalResource {
                           partitionCount,
                           new SubscriptionCommandSender(
                               partitionId, new PartitionCommandSenderImpl()),
-                          new DeploymentDistributionImpl(),
+                          deploymentDistributor,
                           (key, partition) -> {},
                           jobsAvailableCallback)
                       .withListener(new ProcessingExporterTransistor()));
