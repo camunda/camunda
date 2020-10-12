@@ -22,7 +22,7 @@ const stateIconsMap = {
 
 function StateIcon({state, ...props}) {
   const TargetComponent = stateIconsMap[state] || Styled.AliasIcon;
-  return <TargetComponent data-test={`${state}-icon`} {...props} />;
+  return <TargetComponent data-testid={`${state}-icon`} {...props} />;
 }
 
 export default themed(StateIcon);

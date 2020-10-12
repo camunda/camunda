@@ -143,7 +143,7 @@ const Message = function ({message}) {
         <TD colSpan={6}>
           <EmptyMessage
             message={message}
-            data-test="empty-message-instances-list"
+            data-testid="empty-message-instances-list"
           />
         </TD>
       </Styled.EmptyTR>
@@ -159,7 +159,7 @@ const Body = observer(function (props) {
   const {data, rowsToDisplay, handleOperationButtonClick} = useListContext();
 
   return (
-    <TBody {...props} data-test="instances-list">
+    <TBody {...props} data-testid="instances-list">
       {data.slice(0, rowsToDisplay).map((instance, idx) => {
         const isSelected = instanceSelection.isInstanceChecked(instance.id);
         return (
@@ -168,7 +168,7 @@ const Body = observer(function (props) {
               <Styled.Cell>
                 <Styled.SelectionStatusIndicator selected={isSelected} />
                 <Checkbox
-                  data-test="instance-checkbox"
+                  data-testid="instance-checkbox"
                   type="selection"
                   isChecked={isSelected}
                   onChange={() => instanceSelection.selectInstance(instance.id)}
@@ -177,7 +177,7 @@ const Body = observer(function (props) {
 
                 <StateIcon
                   state={instance.state}
-                  data-test={`${instance.state}-icon-${instance.id}`}
+                  data-testid={`${instance.state}-icon-${instance.id}`}
                 />
                 <Styled.WorkflowName>
                   {getWorkflowName(instance)}
@@ -193,8 +193,8 @@ const Body = observer(function (props) {
               </Styled.InstanceAnchor>
             </TD>
             <TD>{`Version ${instance.workflowVersion}`}</TD>
-            <TD data-test="start-time">{formatDate(instance.startDate)}</TD>
-            <TD data-test="end-time">{formatDate(instance.endDate)}</TD>
+            <TD data-testid="start-time">{formatDate(instance.startDate)}</TD>
+            <TD data-testid="end-time">{formatDate(instance.endDate)}</TD>
             <TD>
               <Operations
                 instance={instance}

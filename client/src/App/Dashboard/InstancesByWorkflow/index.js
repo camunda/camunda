@@ -127,7 +127,7 @@ const InstancesByWorkflow = observer(
         );
       } else
         return (
-          <ul data-test="instances-by-workflow">
+          <ul data-testid="instances-by-workflow">
             {instances.map((item, index) => {
               const workflowsCount = item.workflows.length;
               const name = item.workflowName || item.bpmnProcessId;
@@ -141,7 +141,7 @@ const InstancesByWorkflow = observer(
               return (
                 <Styled.Li
                   key={item.bpmnProcessId}
-                  data-test={`incident-byWorkflow-${index}`}
+                  data-testid={`incident-byWorkflow-${index}`}
                 >
                   {workflowsCount === 1 ? (
                     IncidentByWorkflowComponent

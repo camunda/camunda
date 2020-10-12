@@ -12,7 +12,11 @@ import * as Styled from './styled.js';
 // export default React.memo(function Skeleton(props) {
 export const BrandNavElement = memo((props) => (
   <Styled.ListItem>
-    <Styled.Brand to={props.to} title={props.title} data-test={props.dataTest}>
+    <Styled.Brand
+      to={props.to}
+      title={props.title}
+      data-testid={props.dataTest}
+    >
       <Styled.LogoIcon />
       <Styled.BrandLabel>{props.label}</Styled.BrandLabel>
     </Styled.Brand>
@@ -32,11 +36,11 @@ export const LinkElement = memo((props) => (
       to={props.to}
       isActive={props.isActive}
       title={props.title}
-      data-test={props.dataTest}
+      data-testid={props.dataTest}
     >
       <Styled.DashboardLabel
         isActive={props.isActive}
-        data-test="dashboard-label"
+        data-testid="dashboard-label"
       >
         {props.label}
       </Styled.DashboardLabel>
@@ -57,7 +61,7 @@ export const NavElement = memo((props) => (
     <Styled.ListLink
       isActive={props.isActive}
       title={props.title}
-      data-test={props.dataTest}
+      data-testid={props.dataTest}
       {...props.linkProps}
     >
       <Styled.NavigationLabel isActive={props.isActive}>

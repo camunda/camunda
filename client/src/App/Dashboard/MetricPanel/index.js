@@ -26,7 +26,7 @@ const MetricPanel = observer(() => {
   return (
     <Styled.Panel>
       <Styled.Title
-        data-test="total-instances-link"
+        data-testid="total-instances-link"
         to={getUrl({
           filter: {active: true, incidents: true},
           hasFinishedInstances: running === 0,
@@ -43,12 +43,12 @@ const MetricPanel = observer(() => {
           barHeight={15}
         />
       ) : (
-        <Styled.SkeletonBar data-test="instances-bar-skeleton" />
+        <Styled.SkeletonBar data-testid="instances-bar-skeleton" />
       )}
 
       <Styled.LabelContainer>
         <Styled.Label
-          data-test="incident-instances-link"
+          data-testid="incident-instances-link"
           to={getUrl({
             filter: {incidents: true},
           })}
@@ -56,7 +56,7 @@ const MetricPanel = observer(() => {
           Instances with Incident
         </Styled.Label>
         <Styled.Label
-          data-test="active-instances-link"
+          data-testid="active-instances-link"
           to={getUrl({
             filter: {active: true},
           })}

@@ -53,7 +53,7 @@ const OperationsPanel = observer(
         }}
       >
         <Styled.OperationsList
-          data-test="operations-list"
+          data-testid="operations-list"
           isInitialLoadComplete={isInitialLoadComplete}
         >
           {!isInitialLoadComplete ? (

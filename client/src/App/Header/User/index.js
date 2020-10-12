@@ -51,25 +51,25 @@ export default function User({handleRedirect}) {
 
   const userName = getUserName(user);
   return (
-    <Styled.ProfileDropdown data-test="profile-dropdown">
+    <Styled.ProfileDropdown data-testid="profile-dropdown">
       <ThemeConsumer>
         {({toggleTheme}) =>
           userName ? (
             <Styled.Dropdown label={userName}>
               <Dropdown.Option
                 label="Toggle Theme"
-                data-test="toggle-theme-button"
+                data-testid="toggle-theme-button"
                 onClick={toggleTheme}
               />
 
               <Dropdown.Option
                 label="Logout"
-                data-test="logout-button"
+                data-testid="logout-button"
                 onClick={handleLogout}
               />
             </Styled.Dropdown>
           ) : (
-            <Styled.SkeletonBlock data-test="username-skeleton" />
+            <Styled.SkeletonBlock data-testid="username-skeleton" />
           )
         }
       </ThemeConsumer>

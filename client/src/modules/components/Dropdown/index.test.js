@@ -56,7 +56,10 @@ describe('Dropdown', () => {
     expect(node.find(Dropdown.Option)).not.toExist();
 
     //when
-    node.find('button').find("[data-test='dropdown-toggle']").simulate('click');
+    node
+      .find('button')
+      .find("[data-testid='dropdown-toggle']")
+      .simulate('click');
 
     //then
     expect(node.find(Dropdown.Option)).toExist();
@@ -81,10 +84,16 @@ describe('Dropdown', () => {
 
   it('should isOpen/close on click of the button', () => {
     //given
-    node.find('button').find("[data-test='dropdown-toggle']").simulate('click');
+    node
+      .find('button')
+      .find("[data-testid='dropdown-toggle']")
+      .simulate('click');
     expect(node.find(Dropdown).state().isOpen).toBe(true);
     //when
-    node.find('button').find("[data-test='dropdown-toggle']").simulate('click');
+    node
+      .find('button')
+      .find("[data-testid='dropdown-toggle']")
+      .simulate('click');
     //then
     expect(node.find(Dropdown).state().isOpen).toBe(false);
   });
@@ -101,7 +110,10 @@ describe('Dropdown', () => {
 
   it('should call onOpen on the initial click', () => {
     // when clicking to open
-    node.find('button').find("[data-test='dropdown-toggle']").simulate('click');
+    node
+      .find('button')
+      .find("[data-testid='dropdown-toggle']")
+      .simulate('click');
     expect(mockOnOpen).toHaveBeenCalledTimes(1);
   });
 });

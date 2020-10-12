@@ -26,7 +26,7 @@ export default function EmptyPanel({
       ) : (
         <Styled.LabelContainer>
           {type === 'warning' && (
-            <Styled.WarningIcon data-test="warning-icon" />
+            <Styled.WarningIcon data-testid="warning-icon" />
           )}
           <Styled.Label type={type}>{label}</Styled.Label>
         </Styled.LabelContainer>

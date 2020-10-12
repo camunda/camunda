@@ -138,7 +138,7 @@ const Variables = observer(function Variables() {
             hasAutoSize
             minRows={1}
             maxRows={4}
-            data-test="edit-value"
+            data-testid="edit-value"
             placeholder="Value"
             value={value}
             onChange={(e) => setValue(e.target.value)}
@@ -160,7 +160,7 @@ const Variables = observer(function Variables() {
         .length > 0;
     const isVariableEmpty = key.trim() === '';
     return (
-      <TR data-test="add-key-row">
+      <TR data-testid="add-key-row">
         <Styled.EditInputTD>
           <Styled.TextInput
             autoFocus
@@ -196,7 +196,7 @@ const Variables = observer(function Variables() {
       instance && isRunning({state: instance.state});
     return (
       <Styled.TableScroll>
-        <Table data-test="variables-list">
+        <Table data-testid="variables-list">
           <Styled.THead>
             <TR>
               <TH>Variable</TH>
@@ -208,7 +208,7 @@ const Variables = observer(function Variables() {
             {items.map(({name, value: propValue, hasActiveOperation}) => (
               <TR
                 key={name}
-                data-test={name}
+                data-testid={name}
                 hasActiveOperation={hasActiveOperation}
               >
                 <Styled.TD isBold={true}>
@@ -226,11 +226,11 @@ const Variables = observer(function Variables() {
                     {isCurrentInstanceRunning && (
                       <Styled.EditButtonsTD>
                         {hasActiveOperation ? (
-                          <Styled.Spinner data-test="edit-variable-spinner" />
+                          <Styled.Spinner data-testid="edit-variable-spinner" />
                         ) : (
                           <Styled.EditButton
                             title="Enter edit mode"
-                            data-test="edit-variable-button"
+                            data-testid="edit-variable-button"
                             onClick={() =>
                               handleOpenEditVariable(name, propValue)
                             }
@@ -285,7 +285,7 @@ const Variables = observer(function Variables() {
       <Styled.VariablesContent ref={variablesContentRef}>
         {isLoading && isInitialLoadComplete && (
           <Styled.EmptyPanel
-            data-test="variables-spinner"
+            data-testid="variables-spinner"
             type="skeleton"
             Skeleton={SpinnerSkeleton}
           />

@@ -19,7 +19,7 @@ function ColumnHeader(props) {
           !disabled && onSort(sortKey);
         },
         title: `Sort by ${sortKey}`,
-        'data-test': `sort-by-${sortKey}`,
+        'data-testid': `sort-by-${sortKey}`,
       }
     : {disabled};
 

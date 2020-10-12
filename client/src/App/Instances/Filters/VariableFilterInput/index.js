@@ -52,7 +52,7 @@ export default function VariableFilterInput({
         value={variable.name}
         placeholder="Variable"
         name="name"
-        data-test="nameInput"
+        data-testid="nameInput"
         onChange={handleChange}
         hasError={!isNameComplete}
       />
@@ -60,7 +60,7 @@ export default function VariableFilterInput({
         value={variable.value}
         placeholder="Value"
         name="value"
-        data-test="valueInput"
+        data-testid="valueInput"
         onChange={handleChange}
         hasError={(!isValueValid && isValueComplete) || !isValueComplete}
       />

@@ -24,7 +24,7 @@ function Pill(props) {
       disabled={props.isDisabled}
       type={props.type}
     >
-      <TargetIcon data-test="target-icon" />
+      <TargetIcon data-testid="target-icon" />
       <Styled.Label grow={props.grow}>{props.children}</Styled.Label>
       {props.type === PILL_TYPE.FILTER && (
         <Styled.Count>{props.count}</Styled.Count>

@@ -103,7 +103,7 @@ const Operations = observer(
             <OperationSpinner
               selected={selected}
               title={`Instance ${instance.id} has scheduled Operations`}
-              data-test="operation-spinner"
+              data-testid="operation-spinner"
             />
           )}
           <OperationItems>

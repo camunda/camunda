@@ -47,10 +47,6 @@ global.localStorage = (function () {
 
 window.MutationObserver = MutationObserver;
 
-configure({
-  testIdAttribute: 'data-test',
-});
-
 beforeAll(() => mockServer.listen());
 afterEach(() => mockServer.resetHandlers());
 afterAll(() => mockServer.close());

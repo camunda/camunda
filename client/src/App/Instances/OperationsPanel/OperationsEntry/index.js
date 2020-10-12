@@ -54,22 +54,22 @@ const OperationsEntry = ({operation}) => {
   return (
     <Styled.Entry
       isRunning={isOperationRunning(operation)}
-      data-test="operations-entry"
+      data-testid="operations-entry"
     >
       <Styled.EntryStatus>
         <div>
           <Styled.Type>{TYPE_LABELS[type]}</Styled.Type>
-          <Styled.Id data-test="operation-id">{id}</Styled.Id>
+          <Styled.Id data-testid="operation-id">{id}</Styled.Id>
         </div>
         <Styled.OperationIcon>
           {RESOLVE_INCIDENT === type && (
-            <Styled.Retry data-test="operation-retry-icon" />
+            <Styled.Retry data-testid="operation-retry-icon" />
           )}
           {UPDATE_VARIABLE === type && (
-            <Styled.Edit data-test="operation-edit-icon" />
+            <Styled.Edit data-testid="operation-edit-icon" />
           )}
           {CANCEL_WORKFLOW_INSTANCE === type && (
-            <Styled.Cancel data-test="operation-cancel-icon" />
+            <Styled.Cancel data-testid="operation-cancel-icon" />
           )}
         </Styled.OperationIcon>
       </Styled.EntryStatus>

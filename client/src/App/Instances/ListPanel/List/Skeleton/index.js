@@ -39,7 +39,7 @@ function InstanceRow() {
 
 function Skeleton(props) {
   return (
-    <tbody data-test="listpanel-skeleton">
+    <tbody data-testid="listpanel-skeleton">
       <MultiRow Component={InstanceRow} {...props} />
     </tbody>
   );

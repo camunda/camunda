@@ -53,7 +53,7 @@ const DiagramPanel = observer(
           </Styled.PaneHeader>
           <SplitPane.Pane.Body style={{position: 'relative'}}>
             {(workflowStatistics.isLoading || areStateDefinitionsLoading) && (
-              <SpinnerSkeleton data-test="spinner" />
+              <SpinnerSkeleton data-testid="spinner" />
             )}
             {filters.isNoWorkflowSelected && this.renderMessage('NoWorkflow')}
             {filters.isNoVersionSelected

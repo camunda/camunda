@@ -32,10 +32,10 @@ function Node({isSelected, node, treeDepth}) {
   const hasChildren = node.children.length > 0;
 
   return (
-    <Li treeDepth={treeDepth} data-test={`tree-node-${node.id}`}>
+    <Li treeDepth={treeDepth} data-testid={`tree-node-${node.id}`}>
       <NodeDetails
         showConnectionDot={treeDepth >= 3}
-        data-test={`treeDepth:${treeDepth}`}
+        data-testid={`treeDepth:${treeDepth}`}
       >
         <NodeStateIcon state={node.state} indentationMultiplier={treeDepth} />
       </NodeDetails>
@@ -44,7 +44,7 @@ function Node({isSelected, node, treeDepth}) {
         isFoldable={hasChildren && treeDepth >= 2}
       >
         <Foldable.Summary
-          data-test={node.id}
+          data-testid={node.id}
           onSelection={() => flowNodeInstance.changeCurrentSelection(node)}
           isSelected={isSelected}
           isLastChild={node.isLastChild}
@@ -58,7 +58,7 @@ function Node({isSelected, node, treeDepth}) {
           <Foldable.Details>
             <Ul
               showConnectionLine={treeDepth >= 2}
-              data-test={`treeDepth:${treeDepth}`}
+              data-testid={`treeDepth:${treeDepth}`}
             >
               {node.children.map((childNode, index) => {
                 return (

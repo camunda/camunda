@@ -108,7 +108,7 @@ const IncidentsByError = observer(
         );
       } else
         return (
-          <ul data-test="incidents-by-error">
+          <ul data-testid="incidents-by-error">
             {incidents.map((item, index) => {
               const buttonTitle = concatButtonTitle(
                 item.instancesWithErrorCount,
@@ -118,7 +118,7 @@ const IncidentsByError = observer(
               return (
                 <Styled.Li
                   key={item.errorMessage}
-                  data-test={`incident-byError-${index}`}
+                  data-testid={`incident-byError-${index}`}
                 >
                   <Collapse
                     content={this.renderIncidentsPerWorkflow(

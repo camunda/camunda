@@ -48,7 +48,7 @@ const FlowNodeInstanceLog = observer(
         <Styled.Panel>
           {areDiagramDefinitionsAvailable &&
           isInstanceExecutionHistoryAvailable ? (
-            <Styled.FlowNodeInstanceLog data-test="instance-history">
+            <Styled.FlowNodeInstanceLog data-testid="instance-history">
               <Styled.NodeContainer>
                 <FlowNodeInstancesTree
                   node={instanceExecutionHistory}
@@ -57,7 +57,7 @@ const FlowNodeInstanceLog = observer(
               </Styled.NodeContainer>
             </Styled.FlowNodeInstanceLog>
           ) : (
-            <Styled.FlowNodeInstanceSkeleton data-test="flownodeInstance-skeleton">
+            <Styled.FlowNodeInstanceSkeleton data-testid="flownodeInstance-skeleton">
               <EmptyPanel
                 label={label}
                 type={type}

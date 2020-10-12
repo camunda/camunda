@@ -81,7 +81,7 @@ export default class Checkbox extends React.Component {
         />
 
         <Styled.Input
-          data-test="checkbox-input"
+          data-testid="checkbox-input"
           id={id}
           indeterminate={isIndeterminate}
           type="checkbox"

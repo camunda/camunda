@@ -92,7 +92,7 @@ const Paginator = observer(
             </React.Fragment>
           )}
           <Styled.Page
-            data-test="next-page"
+            data-testid="next-page"
             title="Next page"
             aria-label="Next page"
             disabled={currentPage === maxPage}

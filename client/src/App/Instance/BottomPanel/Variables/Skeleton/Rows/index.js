@@ -18,7 +18,7 @@ function VariableRow() {
 
 const Rows = React.memo(function Skeleton(props) {
   return (
-    <div data-test="skeleton-rows">
+    <div data-testid="skeleton-rows">
       <Styled.MultiRow Component={VariableRow} {...props} />
     </div>
   );

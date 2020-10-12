@@ -88,7 +88,7 @@ export const Ul = styled.ul`
 `;
 
 export const MoreDropdown = themed(styled(Dropdown)`
-  [data-test='dropdown-toggle'] {
+  [data-testid='dropdown-toggle'] {
     display: flex;
     align-items: center;
 
@@ -119,7 +119,7 @@ export const MoreDropdown = themed(styled(Dropdown)`
     }
   }
 
-  [data-test='menu'] {
+  [data-testid='menu'] {
     margin-top: 9px;
     width: 235px;
     padding: 0 6px;

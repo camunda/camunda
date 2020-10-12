@@ -375,7 +375,7 @@ class Diagram extends React.PureComponent {
       selectedFlowNodeName,
     } = this.props;
     return (
-      <Styled.Diagram data-test="diagram">
+      <Styled.Diagram data-testid="diagram">
         <Styled.DiagramCanvas ref={this.myRef} />
         <DiagramControls
           handleZoomIn={this.handleZoomIn}

@@ -19,7 +19,7 @@ const Bar = ({node, isSelected}) => {
       <NodeIcon
         types={typeDetails}
         isSelected={isSelected}
-        data-test={`flow-node-icon-${type}`}
+        data-testid={`flow-node-icon-${type}`}
       />
       <NodeName isSelected={isSelected} isBold={children.length > 0}>
         {`${name ?? ''}${

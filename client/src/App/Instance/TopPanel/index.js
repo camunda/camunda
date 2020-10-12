@@ -88,8 +88,8 @@ const TopPanel = observer((props) => {
   return (
     <Styled.Pane expandState={expandState}>
       <InstanceHeader />
-      <Styled.SplitPaneBody data-test="diagram-panel-body">
-        {isLoading && <SpinnerSkeleton data-test="spinner" />}
+      <Styled.SplitPaneBody data-testid="diagram-panel-body">
+        {isLoading && <SpinnerSkeleton data-testid="spinner" />}
         {isInitialLoadComplete && (
           <>
             {instance?.state === 'INCIDENT' && nodeMetaDataMap && (

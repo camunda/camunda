@@ -20,15 +20,15 @@ function InstancesBar(props) {
     <div className={props.className}>
       <Styled.Wrapper size={size}>
         <Styled.IncidentsCount
-          data-test="incident-instances-badge"
+          data-testid="incident-instances-badge"
           hasIncidents={hasIncidents}
         >
           {incidentsCount}
         </Styled.IncidentsCount>
-        <Styled.Label data-test="incident-message">{label}</Styled.Label>
+        <Styled.Label data-testid="incident-message">{label}</Styled.Label>
         {activeCount >= 0 && (
           <Styled.ActiveCount
-            data-test="active-instances-badge"
+            data-testid="active-instances-badge"
             hasActive={hasActive}
           >
             {activeCount}
@@ -38,7 +38,7 @@ function InstancesBar(props) {
       <Styled.BarContainer height={barHeight}>
         <Styled.Bar hasActive={hasActive} />
         <Styled.IncidentsBar
-          data-test="incidents-bar"
+          data-testid="incidents-bar"
           style={{
             width: `${incidentsBarRatio}%`,
           }}

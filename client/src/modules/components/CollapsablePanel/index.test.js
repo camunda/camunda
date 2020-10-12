@@ -20,14 +20,14 @@ describe('CollapsablePanel', () => {
         isCollapsed={false}
         toggle={() => {}}
       >
-        <div data-test="cool-panel-content">Cool Panel Content</div>
+        <div data-testid="cool-panel-content">Cool Panel Content</div>
       </CollapsablePanel>
     );
 
     // then
-    const expandedPanel = node.find('[data-test="expanded-panel"]').first();
-    const collapsedPanel = node.find('[data-test="collapsed-panel"]').first();
-    const content = expandedPanel.find('[data-test="cool-panel-content"]');
+    const expandedPanel = node.find('[data-testid="expanded-panel"]').first();
+    const collapsedPanel = node.find('[data-testid="collapsed-panel"]').first();
+    const content = expandedPanel.find('[data-testid="cool-panel-content"]');
 
     expect(expandedPanel).toHaveStyleRule('visibility', 'visible');
     expect(collapsedPanel).toHaveStyleRule('visibility', 'hidden');
@@ -44,13 +44,13 @@ describe('CollapsablePanel', () => {
         isCollapsed={true}
         toggle={() => {}}
       >
-        <div data-test="cool-panel-content">Cool Panel Content</div>
+        <div data-testid="cool-panel-content">Cool Panel Content</div>
       </CollapsablePanel>
     );
 
     // then
-    const expandedPanel = node.find('[data-test="expanded-panel"]').first();
-    const collapsedPanel = node.find('[data-test="collapsed-panel"]').first();
+    const expandedPanel = node.find('[data-testid="expanded-panel"]').first();
+    const collapsedPanel = node.find('[data-testid="collapsed-panel"]').first();
 
     expect(collapsedPanel).toHaveStyleRule('visibility', 'visible');
     expect(expandedPanel).toHaveStyleRule('visibility', 'hidden');
@@ -68,13 +68,13 @@ describe('CollapsablePanel', () => {
         isCollapsed={false}
         toggle={toggleMock}
       >
-        <div data-test="cool-panel-content">Cool Panel Content</div>
+        <div data-testid="cool-panel-content">Cool Panel Content</div>
       </CollapsablePanel>
     );
 
     // then
-    const collapseButton = node.find('[data-test="collapse-button"]').first();
-    const expandButton = node.find('[data-test="expand-button"]').first();
+    const collapseButton = node.find('[data-testid="collapse-button"]').first();
+    const expandButton = node.find('[data-testid="expand-button"]').first();
 
     collapseButton.simulate('click');
     expandButton.simulate('click');
@@ -93,12 +93,12 @@ it('should have background color style rule when hasBackgroundColor is true', ()
       isCollapsed={false}
       toggle={() => {}}
     >
-      <div data-test="cool-panel-content">Cool Panel Content</div>
+      <div data-testid="cool-panel-content">Cool Panel Content</div>
     </CollapsablePanel>
   );
 
   // then
-  const expandedPanel = node.find('[data-test="expanded-panel"]').first();
+  const expandedPanel = node.find('[data-testid="expanded-panel"]').first();
   expect(expandedPanel).toHaveStyleRule('background-color', '#313238');
 });
 
@@ -111,12 +111,12 @@ it('should have border-right rule when panel position is RIGHT', () => {
       isCollapsed={false}
       toggle={() => {}}
     >
-      <div data-test="cool-panel-content">Cool Panel Content</div>
+      <div data-testid="cool-panel-content">Cool Panel Content</div>
     </CollapsablePanel>
   );
 
   // then
-  const expandedPanel = node.find('[data-test="expanded-panel"]').first();
+  const expandedPanel = node.find('[data-testid="expanded-panel"]').first();
   expect(expandedPanel).toHaveStyleRule('border-right', 'none');
 });
 it('should not have border-right rule when panel position is not RIGHT', () => {
@@ -128,11 +128,11 @@ it('should not have border-right rule when panel position is not RIGHT', () => {
       isCollapsed={false}
       toggle={() => {}}
     >
-      <div data-test="cool-panel-content">Cool Panel Content</div>
+      <div data-testid="cool-panel-content">Cool Panel Content</div>
     </CollapsablePanel>
   );
 
   // then
-  const expandedPanel = node.find('[data-test="expanded-panel"]').first();
+  const expandedPanel = node.find('[data-testid="expanded-panel"]').first();
   expect(expandedPanel).not.toHaveStyleRule('border-right', 'none');
 });

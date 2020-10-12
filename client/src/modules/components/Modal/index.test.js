@@ -61,7 +61,7 @@ describe('Modal', () => {
     expect(
       node
         .find(Modal.Header)
-        .find("[data-test='cross-button']")
+        .find("[data-testid='cross-button']")
         .find(CloseLarge)
     ).toHaveLength(1);
 
@@ -79,7 +79,7 @@ describe('Modal', () => {
     // when
     node
       .find(Modal.Header)
-      .find("button[data-test='cross-button']")
+      .find("button[data-testid='cross-button']")
       .prop('onClick')();
 
     // then

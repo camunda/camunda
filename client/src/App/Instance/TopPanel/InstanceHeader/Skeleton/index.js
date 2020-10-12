@@ -11,7 +11,7 @@ import * as Header from '../styled';
 
 export default React.memo(function Skeleton(props) {
   return (
-    <Header.Table {...props} data-test="instance-header-skeleton">
+    <Header.Table {...props} data-testid="instance-header-skeleton">
       <tbody>
         <Header.Tr>
           <Styled.SkeletonTD>

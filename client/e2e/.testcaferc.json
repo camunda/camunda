@@ -1,7 +1,6 @@
 {
   "clientScripts": [
-    {"module": "@testing-library/dom/dist/@testing-library/dom.umd.js"},
-    "./testcafe-config.js"
+    {"module": "@testing-library/dom/dist/@testing-library/dom.umd.js"}
   ],
   "assertionTimeout": 20000
 }

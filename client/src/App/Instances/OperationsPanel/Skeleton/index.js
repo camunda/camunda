@@ -30,7 +30,7 @@ export function OperationEntry() {
 
 export default function Skeleton() {
   return (
-    <div data-test="skeleton">
+    <div data-testid="skeleton">
       <OperationEntry />
       {doesMatchMinHeight(400) && <OperationEntry />}
       {doesMatchMinHeight(530) && <OperationEntry />}

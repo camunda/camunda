@@ -22,7 +22,7 @@ const ProgressBar = ({totalCount, finishedCount}) => {
   return (
     <Styled.Container>
       <Styled.Background />
-      <Styled.Bar width={barWidth} data-test="progress-bar" />
+      <Styled.Bar width={barWidth} data-testid="progress-bar" />
     </Styled.Container>
   );
 };

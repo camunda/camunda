@@ -10,7 +10,7 @@ import {MultiRow, Container, Circle, Block} from './styled';
 
 export function Row() {
   return (
-    <Container data-test="flow-node-instance-log-skeleton-row">
+    <Container data-testid="flow-node-instance-log-skeleton-row">
       <Circle />
       <Block />
     </Container>

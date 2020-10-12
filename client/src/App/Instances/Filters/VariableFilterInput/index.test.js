@@ -16,7 +16,7 @@ import * as Styled from './styled';
 import {mockDefaultProps} from './index.setup';
 
 const getStyledInput = (node, dataTestName) => {
-  return node.find(Styled.TextInput).filter(`[data-test="${dataTestName}"]`);
+  return node.find(Styled.TextInput).filter(`[data-testid="${dataTestName}"]`);
 };
 
 const mountNode = (mockCustomProps) => {
@@ -55,10 +55,10 @@ describe('VariableFilterInput', () => {
     node.update();
 
     // then
-    expect(node.find('input[data-test="nameInput"]').props().value).toBe(
+    expect(node.find('input[data-testid="nameInput"]').props().value).toBe(
       newName
     );
-    expect(node.find('input[data-test="valueInput"]').props().value).toBe(
+    expect(node.find('input[data-testid="valueInput"]').props().value).toBe(
       newValue
     );
   });
@@ -72,10 +72,10 @@ describe('VariableFilterInput', () => {
     await act(async () => {
       // when
       node
-        .find('input[data-test="nameInput"]')
+        .find('input[data-testid="nameInput"]')
         .simulate('change', {target: {name: 'name', value: name}});
       node
-        .find('input[data-test="valueInput"]')
+        .find('input[data-testid="valueInput"]')
         .simulate('change', {target: {name: 'value', value: value}});
     });
 

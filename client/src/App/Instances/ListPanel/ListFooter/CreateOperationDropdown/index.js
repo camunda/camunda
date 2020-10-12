@@ -54,7 +54,7 @@ const CreateOperationDropdown = ({label, selectedCount}) => {
   return (
     <Styled.DropdownContainer
       dropdownWidth={dropdownWidth}
-      data-test="create-operation-dropdown"
+      data-testid="create-operation-dropdown"
     >
       <Dropdown
         buttonStyles={Styled.dropdownButtonStyles}

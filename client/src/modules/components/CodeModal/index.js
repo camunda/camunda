@@ -42,7 +42,7 @@ function CodeModal({
       <Modal.Footer>
         {mode === MODE.VIEW && (
           <Modal.PrimaryButton
-            data-test="primary-close-btn"
+            data-testid="primary-close-btn"
             title="Close Modal"
             onClick={onModalClose}
           >

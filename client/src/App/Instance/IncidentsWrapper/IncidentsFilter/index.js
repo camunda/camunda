@@ -35,12 +35,12 @@ const IncidentsFilter = observer(function IncidentsFilter({
         <Styled.PillsWrapper>
           <Styled.FilterRow>
             <Styled.Label>Incident type:</Styled.Label>
-            <Styled.Ul data-test="incidents-by-errorType">
+            <Styled.Ul data-testid="incidents-by-errorType">
               {groupedErrorTypes[0].map((item) => {
                 return (
                   <li key={item.errorType}>
                     <Pill
-                      data-test={item.errorType}
+                      data-testid={item.errorType}
                       type="FILTER"
                       count={item.count}
                       isActive={selectedErrorTypes.includes(item.errorType)}
@@ -60,7 +60,7 @@ const IncidentsFilter = observer(function IncidentsFilter({
                       return (
                         <Dropdown.Option key={item.errorType}>
                           <Pill
-                            data-test={item.errorType}
+                            data-testid={item.errorType}
                             type="FILTER"
                             count={item.count}
                             isActive={selectedErrorTypes.includes(
@@ -81,12 +81,12 @@ const IncidentsFilter = observer(function IncidentsFilter({
           </Styled.FilterRow>
           <Styled.FilterRow>
             <Styled.Label>Flow Node:</Styled.Label>
-            <Styled.Ul data-test="incidents-by-flowNode">
+            <Styled.Ul data-testid="incidents-by-flowNode">
               {groupedFlowNodes[0].map((item) => {
                 return (
                   <li key={item.flowNodeId}>
                     <Pill
-                      data-test={item.flowNodeId}
+                      data-testid={item.flowNodeId}
                       type="FILTER"
                       count={item.count}
                       isActive={selectedFlowNodes.includes(item.flowNodeId)}
@@ -127,7 +127,7 @@ const IncidentsFilter = observer(function IncidentsFilter({
         </Styled.PillsWrapper>
         <Styled.ButtonWrapper>
           <Styled.ClearButton
-            data-test="clear-button"
+            data-testid="clear-button"
             size="small"
             title="Clear All"
             onClick={onClearAll}

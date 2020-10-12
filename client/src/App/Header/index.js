@@ -183,7 +183,7 @@ const Header = observer(
         return (
           <>
             <Styled.StateIcon
-              data-test={`state-icon-${instance.state}`}
+              data-testid={`state-icon-${instance.state}`}
               state={instance.state}
             />
             Instance {instance.id}
@@ -192,8 +192,8 @@ const Header = observer(
       } else {
         return (
           <>
-            <Styled.SkeletonCircle data-test="instance-skeleton-circle" />
-            <Styled.SkeletonBlock data-test="instance-skeleton-block" />
+            <Styled.SkeletonCircle data-testid="instance-skeleton-circle" />
+            <Styled.SkeletonBlock data-testid="instance-skeleton-block" />
           </>
         );
       }

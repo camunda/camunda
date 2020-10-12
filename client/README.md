@@ -244,19 +244,19 @@ and also to avoid name collision.
 **Good**
 
 ```
-<DiagramTile data-test="add-diagram-tile" />
+<DiagramTile data-testid="add-diagram-tile" />
 ```
 
 **Good**
 
 ```
-<Button data-test="delete-account-button" />
+<Button data-testid="delete-account-button" />
 ```
 
 **Good**
 
 ```
-<Button data-test="delete-comment-button" />
+<Button data-testid="delete-comment-button" />
 ```
 
 **Good**
@@ -264,13 +264,13 @@ and also to avoid name collision.
 For the button on the confirmation modal
 
 ```
-<Button data-test="confirm-delete-comment-button" />
+<Button data-testid="confirm-delete-comment-button" />
 ```
 
 **Bad**
 
 ```
-<Button data-test="delete-button" />
+<Button data-testid="delete-button" />
 ```
 
 ## Automatic Formatting

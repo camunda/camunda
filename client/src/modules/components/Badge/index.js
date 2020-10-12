@@ -18,7 +18,7 @@ export default function Badge(props) {
     children && children.toString().length === 1 && position === 0;
   const Component = isRoundBagde ? Styled.BadgeCircle : Styled.Badge;
 
-  return <Component data-test="badge" {...props} />;
+  return <Component data-testid="badge" {...props} />;
 }
 
 Badge.propTypes = {

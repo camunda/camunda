@@ -303,7 +303,7 @@ const Filters = observer(
             <Styled.Field>
               <Styled.ValidationTextInput
                 value={errorMessage}
-                data-test="error-message"
+                data-testid="error-message"
                 name="errorMessage"
                 placeholder="Error Message"
                 onChange={this.handleControlledInputChange}

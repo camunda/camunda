@@ -1311,8 +1311,8 @@ describe('Filters', () => {
       const nameTarget = {target: {name: 'name', value: name}};
       const valueTarget = {target: {name: 'value', value: value}};
 
-      const nameInput = node.find('input[data-test="nameInput"]');
-      const valueInput = node.find('input[data-test="valueInput"]');
+      const nameInput = node.find('input[data-testid="nameInput"]');
+      const valueInput = node.find('input[data-testid="valueInput"]');
 
       nameInput.simulate('change', nameTarget);
       valueInput.simulate('change', valueTarget);

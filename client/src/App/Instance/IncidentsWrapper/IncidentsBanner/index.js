@@ -28,7 +28,7 @@ const IncidentsBanner = observer(({onClick, isOpen, expandState}) => {
   return (
     expandState !== EXPAND_STATE.COLLAPSED && (
       <Styled.IncidentsBanner
-        data-test="incidents-banner"
+        data-testid="incidents-banner"
         onClick={onClick}
         title={title}
         isExpanded={isOpen}

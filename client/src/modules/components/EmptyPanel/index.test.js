@@ -11,7 +11,7 @@ import PropTypes from 'prop-types';
 
 const label = 'someLabel';
 const SkeletonMock = ({rowsToDisplay}) => (
-  <div data-test="Skeleton">{rowsToDisplay}</div>
+  <div data-testid="Skeleton">{rowsToDisplay}</div>
 );
 
 SkeletonMock.propTypes = {

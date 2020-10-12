@@ -65,7 +65,7 @@ describe('CodeModal', () => {
     });
 
     it('should render close button', () => {
-      const closebtn = node.find('button[data-test="primary-close-btn"]');
+      const closebtn = node.find('button[data-testid="primary-close-btn"]');
 
       expect(closebtn).toExist();
 

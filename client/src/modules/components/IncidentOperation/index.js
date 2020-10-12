@@ -33,13 +33,13 @@ const IncidentOperation = observer(({instanceId, incident, showSpinner}) => {
   return (
     <Styled.Operations>
       {(isSpinnerVisible || showSpinner) && (
-        <OperationSpinner data-test="operation-spinner" />
+        <OperationSpinner data-testid="operation-spinner" />
       )}
       <OperationItems>
         <OperationItems.Item
           type={OPERATION_TYPE.RESOLVE_INCIDENT}
           onClick={handleOnClick}
-          data-test="retry-incident"
+          data-testid="retry-incident"
           title="Retry Incident"
         />
       </OperationItems>

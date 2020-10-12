@@ -60,14 +60,14 @@ function CollapsablePanel({
         isCollapsed={isCollapsed}
         panelPosition={panelPosition}
         transitionTimeout={TRANSITION_TIMEOUT}
-        data-test="collapsed-panel"
+        data-testid="collapsed-panel"
       >
         <Styled.ExpandButton
           ref={expandButtonRef}
           title={`Expand ${label}`}
           onClick={toggle}
           panelPosition={panelPosition}
-          data-test="expand-button"
+          data-testid="expand-button"
         >
           <Styled.Vertical offset={verticalLabelOffset}>
             <span>{label}</span>
@@ -81,7 +81,7 @@ function CollapsablePanel({
         panelPosition={panelPosition}
         hasBackgroundColor={hasBackgroundColor}
         transitionTimeout={TRANSITION_TIMEOUT}
-        data-test="expanded-panel"
+        data-testid="expanded-panel"
       >
         <Styled.Header panelPosition={panelPosition}>
           <Styled.CollapseButton
@@ -90,7 +90,7 @@ function CollapsablePanel({
             isExpanded={true}
             title={`Collapse ${label}`}
             onClick={toggle}
-            data-test="collapse-button"
+            data-testid="collapse-button"
           />
           {label}
           {header}

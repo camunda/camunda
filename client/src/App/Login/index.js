@@ -77,7 +77,7 @@ class Login extends React.Component {
     // default render
     return (
       <>
-        {isLoading && <SpinnerSkeleton data-test="spinner" />}
+        {isLoading && <SpinnerSkeleton data-testid="spinner" />}
         <Styled.Login onSubmit={this.handleLogin}>
           <Styled.LoginHeader>
             <Styled.Logo />
@@ -102,7 +102,7 @@ class Login extends React.Component {
               aria-label="Password"
             />
             <Button
-              data-test="login-button"
+              data-testid="login-button"
               type="submit"
               size="large"
               title="Log in"

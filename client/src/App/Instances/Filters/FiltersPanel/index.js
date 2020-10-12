@@ -21,7 +21,7 @@ import * as Styled from './styled';
 function Header() {
   return (
     <Styled.FiltersHeader>
-      <Badge type={BADGE_TYPE.FILTERS} data-test="filter-panel-header-badge">
+      <Badge type={BADGE_TYPE.FILTERS} data-testid="filter-panel-header-badge">
         <Observer>{() => instances.state.filteredInstancesCount}</Observer>
       </Badge>
     </Styled.FiltersHeader>

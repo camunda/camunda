@@ -67,7 +67,7 @@ export default class PopoverOverlay extends React.Component {
         <Fragment key={`${selectedFlowNodeId}-a${item.name}`}>
           <LinkButton
             size="small"
-            data-test="select-flownode"
+            data-testid="select-flownode"
             onClick={() =>
               onFlowNodeSelection(selectedFlowNodeId, item.options)
             }
@@ -147,7 +147,7 @@ export default class PopoverOverlay extends React.Component {
         <Styled.Popover
           theme={theme}
           side={this.props.position.side}
-          data-test="popover"
+          data-testid="popover"
         >
           {this.renderSummary()}
           {Boolean(metadata.data) && (
@@ -155,7 +155,7 @@ export default class PopoverOverlay extends React.Component {
               size="small"
               onClick={this.handleModalOpen}
               title="Show more metadata"
-              data-test="more-metadata"
+              data-testid="more-metadata"
             >
               More...
             </LinkButton>

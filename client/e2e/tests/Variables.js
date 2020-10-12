@@ -192,7 +192,7 @@ test('Edit variables', async (t) => {
     .navigateTo(
       `${config.endpoint}/#/instances/${instance.workflowInstanceKey}`
     )
-    .expect(Selector('[data-test="testData"]').exists)
+    .expect(Selector('[data-testid="testData"]').exists)
     .ok();
 });
 

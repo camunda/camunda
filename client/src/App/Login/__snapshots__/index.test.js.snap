@@ -59,7 +59,7 @@ exports[`Login should display an error if any field is empty 1`] = `
       />
       <ForwardRef(Button)
         color="main"
-        data-test="login-button"
+        data-testid="login-button"
         size="large"
         title="Log in"
         type="submit"
@@ -106,7 +106,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
       />
       <ForwardRef(Button)
         color="main"
-        data-test="login-button"
+        data-testid="login-button"
         size="large"
         title="Log in"
         type="submit"
@@ -151,7 +151,7 @@ exports[`Login should render login form by default 1`] = `
       />
       <ForwardRef(Button)
         color="main"
-        data-test="login-button"
+        data-testid="login-button"
         size="large"
         title="Log in"
         type="submit"

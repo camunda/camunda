@@ -86,7 +86,7 @@ const IncidentsTable = observer(function IncidentsTable({incidents}) {
 
   return (
     <>
-      <Table data-test="incidents-table">
+      <Table data-testid="incidents-table">
         <THead>
           <TR>
             <Styled.FirstTH>
@@ -143,7 +143,7 @@ const IncidentsTable = observer(function IncidentsTable({incidents}) {
                   unmountOnExit
                 >
                   <Styled.IncidentTR
-                    data-test={`tr-incident-${incident.id}`}
+                    data-testid={`tr-incident-${incident.id}`}
                     isSelected={selection.treeRowIds.includes(
                       incident.flowNodeInstanceId
                     )}

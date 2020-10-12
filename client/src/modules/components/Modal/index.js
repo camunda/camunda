@@ -132,7 +132,7 @@ export default class Modal extends React.Component {
       >
         <Styled.ModalRoot
           className={className}
-          data-test="modal"
+          data-testid="modal"
           ref={this.modalRef}
           role="dialog"
         >
@@ -160,7 +160,7 @@ Modal.Header = function ModalHeader({children, ...props}) {
       <ModalContext.Consumer>
         {(modalContext) => (
           <Styled.CrossButton
-            data-test="cross-button"
+            data-testid="cross-button"
             onClick={modalContext.onModalClose}
             title="Exit Modal"
           >

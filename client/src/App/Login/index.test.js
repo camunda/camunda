@@ -140,14 +140,14 @@ describe('Login', () => {
       node.instance().handleLogin({preventDefault: () => {}});
 
       // then
-      expect(node.find('[data-test="spinner"]').exists()).toBe(true);
+      expect(node.find('[data-testid="spinner"]').exists()).toBe(true);
 
       // when
       await flushPromises();
       node.update();
 
       // then
-      expect(node.find('[data-test="spinner"]').exists()).toBe(false);
+      expect(node.find('[data-testid="spinner"]').exists()).toBe(false);
     });
     it('should redirect to referrer page on successful login', async () => {
       // given
@@ -188,7 +188,7 @@ describe('Login', () => {
     expect(node.state('error')).toEqual(REQUIRED_FIELD_ERROR);
     expect(errorSpan.text()).toContain(REQUIRED_FIELD_ERROR);
     expect(node).toMatchSnapshot();
-    expect(node.find('[data-test="spinner"]').exists()).toBe(false);
+    expect(node.find('[data-testid="spinner"]').exists()).toBe(false);
     // reset api.login
     api.login = originalLogin.bind(api);
   });
@@ -209,7 +209,7 @@ describe('Login', () => {
     expect(node.state('error')).toEqual(LOGIN_ERROR);
     expect(errorSpan.text()).toContain(LOGIN_ERROR);
     expect(node).toMatchSnapshot();
-    expect(node.find('[data-test="spinner"]').exists()).toBe(false);
+    expect(node.find('[data-testid="spinner"]').exists()).toBe(false);
 
     // reset api.login
     api.login = originalLogin.bind(api);

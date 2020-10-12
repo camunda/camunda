@@ -438,14 +438,16 @@ describe('Diagram', () => {
       node.update();
 
       const overlayNode = node.find('Overlay');
-      const moreButton = overlayNode.find('button[data-test="more-metadata"]');
+      const moreButton = overlayNode.find(
+        'button[data-testid="more-metadata"]'
+      );
 
       // when
       moreButton.simulate('click');
       node.update();
 
       // when
-      node.find('button[data-test="select-flownode"]').simulate('click');
+      node.find('button[data-testid="select-flownode"]').simulate('click');
 
       // then
       expect(mockProps.onFlowNodeSelection.mock.calls[0][0]).toBe(activityId);

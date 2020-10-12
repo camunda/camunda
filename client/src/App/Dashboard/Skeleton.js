@@ -13,7 +13,7 @@ import PropTypes from 'prop-types';
 
 const MultiRowContainer = (props) => {
   return (
-    <Styled.MultiRowContainer data-test="skeleton">
+    <Styled.MultiRowContainer data-testid="skeleton">
       <MultiRow Component={Styled.Block} {...props} />
     </Styled.MultiRowContainer>
   );

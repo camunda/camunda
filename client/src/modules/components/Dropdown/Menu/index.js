@@ -37,7 +37,7 @@ export default class Menu extends React.Component {
         placement={placement}
         className={className}
         transitionTiming={transitionTiming}
-        data-test="menu"
+        data-testid="menu"
       >
         {React.Children.map(children, (child, index) => (
           <Styled.Li onKeyDown={onKeyDown} placement={placement} key={index}>
