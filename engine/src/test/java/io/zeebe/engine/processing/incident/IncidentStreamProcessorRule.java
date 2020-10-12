@@ -76,7 +76,7 @@ public final class IncidentStreamProcessorRule extends ExternalResource {
 
     environmentRule.startTypedStreamProcessor(
         (typedRecordProcessors, processingContext) -> {
-          zeebeState = processingContext.getZeebeState();
+          this.zeebeState = processingContext.getZeebeState();
           workflowState = zeebeState.getWorkflowState();
 
           final var variablesState = workflowState.getElementInstanceState().getVariablesState();
