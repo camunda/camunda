@@ -378,7 +378,7 @@ public final class RaftStorage {
     private static final boolean DEFAULT_DYNAMIC_COMPACTION = true;
     private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024; // 1GB
     private static final double DEFAULT_FREE_MEMORY_BUFFER = .2;
-    private static final boolean DEFAULT_FLUSH_ON_COMMIT = true;
+    private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
     private static final boolean DEFAULT_RETAIN_STALE_SNAPSHOTS = false;
 
     private String prefix = DEFAULT_PREFIX;
@@ -389,7 +389,7 @@ public final class RaftStorage {
     private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
     private int maxEntriesPerSegment = DEFAULT_MAX_ENTRIES_PER_SEGMENT;
     private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
-    private boolean flushExplicitly = DEFAULT_FLUSH_ON_COMMIT;
+    private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
     private boolean retainStaleSnapshots = DEFAULT_RETAIN_STALE_SNAPSHOTS;
     private StorageStatistics storageStatistics;
     private ReceivableSnapshotStore persistedSnapshotStore;
