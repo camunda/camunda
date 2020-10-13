@@ -63,12 +63,10 @@ public abstract class AbstractJournalTest {
   protected SegmentedJournal<TestEntry> journal;
 
   private final int maxSegmentSize;
-  private final int cacheSize;
   private File folder;
 
   protected AbstractJournalTest(final int maxSegmentSize, final int cacheSize) {
     this.maxSegmentSize = maxSegmentSize;
-    this.cacheSize = cacheSize;
     final int entryLength = (NAMESPACE.serialize(ENTRY).length + 8);
     entriesPerSegment = (maxSegmentSize - 64) / entryLength;
   }
@@ -175,7 +173,7 @@ public abstract class AbstractJournalTest {
     assertEquals(1, indexed.index());
 
     assertEquals(2, writer.getNextIndex());
-    writer.append(new Indexed<>(2, ENTRY, 0));
+    writer.append(new Indexed<>(2, ENTRY, 0, -1));
     reader.reset(2);
     indexed = reader.next();
     assertEquals(2, indexed.index());
@@ -239,7 +237,7 @@ public abstract class AbstractJournalTest {
     // Truncate the journal and write a different entry.
     writer.truncate(1);
     assertEquals(2, writer.getNextIndex());
-    writer.append(new Indexed<>(2, ENTRY, 0));
+    writer.append(new Indexed<>(2, ENTRY, 0, -1));
     reader.reset(2);
     indexed = reader.next();
     assertEquals(2, indexed.index());

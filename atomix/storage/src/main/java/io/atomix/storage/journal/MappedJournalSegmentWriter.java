@@ -51,6 +51,7 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
   private final JournalIndex index;
   private final Namespace namespace;
   private final long firstIndex;
+  private final CRC32 crc32 = new CRC32();
   private Indexed<E> lastEntry;
   private boolean isOpen = true;
 
@@ -97,6 +98,16 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
 
   @Override
   public <T extends E> Indexed<T> append(final T entry) {
+    return append(entry, false, -1);
+  }
+
+  @Override
+  public <T extends E> Indexed<T> append(final T entry, final long checksum) {
+    return append(entry, true, checksum);
+  }
+
+  public <T extends E> Indexed<T> append(
+      final T entry, final boolean validateChecksum, final long expectedChecksum) {
     // Store the entry index.
     final long index = getNextIndex();
 
@@ -126,12 +137,12 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
     }
 
     // Compute the checksum for the entry.
-    final CRC32 crc32 = new CRC32();
     buffer.position(position + Integer.BYTES + Integer.BYTES);
-    final ByteBuffer slice = buffer.slice();
-    slice.limit(length);
-    crc32.update(slice);
-    final long checksum = crc32.getValue();
+    final long checksum = computeChecksum(length);
+
+    if (validateChecksum && checksum != expectedChecksum) {
+      throw new StorageException.InvalidChecksum("Entry has an invalid checksum");
+    }
 
     // Create a single byte[] in memory for the entire entry and write it as a batch to the
     // underlying buffer.
@@ -141,10 +152,18 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
     buffer.position(position + Integer.BYTES + Integer.BYTES + length);
 
     // Update the last entry with the correct index/term/length.
-    final Indexed<E> indexedEntry = new Indexed<>(index, entry, length);
+    final Indexed<E> indexedEntry = new Indexed<>(index, entry, length, checksum);
     lastEntry = indexedEntry;
     this.index.index(lastEntry, position);
     return (Indexed<T>) indexedEntry;
+  }
+
+  private long computeChecksum(final int length) {
+    final ByteBuffer slice = buffer.slice();
+    slice.limit(length);
+    crc32.reset();
+    crc32.update(slice);
+    return crc32.getValue();
   }
 
   @Override
@@ -189,16 +208,16 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
         final long checksum = buffer.getInt() & 0xFFFFFFFFL;
 
         // Compute the checksum for the entry bytes.
-        final CRC32 crc32 = new CRC32();
         final ByteBuffer slice = buffer.slice();
         slice.limit(length);
+        crc32.reset();
         crc32.update(slice);
 
         // If the stored checksum equals the computed checksum, return the entry.
         if (checksum == crc32.getValue()) {
           slice.rewind();
           final E entry = namespace.deserialize(slice);
-          lastEntry = new Indexed<>(nextIndex, entry, length);
+          lastEntry = new Indexed<>(nextIndex, entry, length, checksum);
           this.index.index(lastEntry, position);
           nextIndex++;
         } else {
