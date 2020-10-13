@@ -23,7 +23,7 @@ import io.zeebe.protocol.record.intent.IncidentIntent;
  *
  * <p>See {@link IncidentIntent} for intents.
  */
-public interface IncidentRecordValue extends RecordValue {
+public interface IncidentRecordValue extends RecordValue, WorkflowInstanceRelated {
   /**
    * @return the type of error this incident is caused by. Can be <code>UNKNOWN</code> if the
    *     incident record is part of a {@link IncidentIntent#RESOLVE} command.
