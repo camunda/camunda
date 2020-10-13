@@ -50,4 +50,8 @@ public class CancelWorkflowInstanceHandler extends AbstractOperationHandler impl
   public OperationType getType() {
     return OperationType.CANCEL_WORKFLOW_INSTANCE;
   }
+
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
+  }
 }

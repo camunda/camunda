@@ -41,4 +41,8 @@ public class UpdateVariableHandler extends AbstractOperationHandler implements O
   public OperationType getType() {
     return OperationType.UPDATE_VARIABLE;
   }
+
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
+  }
 }

@@ -6,16 +6,13 @@
 package org.camunda.operate.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 import java.util.Map;
-
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.PayloadUtil;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,11 +30,7 @@ public class ImportFieldsIT extends OperateZeebeIntegrationTest {
   @Before
   public void before() {
     super.before();
-    try {
-      FieldSetter.setField(updateVariableHandler, UpdateVariableHandler.class.getDeclaredField("zeebeClient"), zeebeClient);
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    updateVariableHandler.setZeebeClient(zeebeClient);
   }
 
   @Test // OPE-818

@@ -6,11 +6,11 @@
 package org.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.List;
 import java.util.Optional;
-
 import org.camunda.operate.entities.ErrorType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
@@ -20,11 +20,9 @@ import org.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.annotation.IfProfileValue;
 import org.springframework.test.web.servlet.MvcResult;
-import com.fasterxml.jackson.core.type.TypeReference;
 import org.springframework.util.unit.DataSize;
 
 public class IncidentIT extends OperateZeebeIntegrationTest {
@@ -35,11 +33,7 @@ public class IncidentIT extends OperateZeebeIntegrationTest {
   @Before
   public void before() {
     super.before();
-    try {
-      FieldSetter.setField(updateVariableHandler, UpdateVariableHandler.class.getDeclaredField("zeebeClient"), zeebeClient);
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    updateVariableHandler.setZeebeClient(zeebeClient);
   }
 
   @Test

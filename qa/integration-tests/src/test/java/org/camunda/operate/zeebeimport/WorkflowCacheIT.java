@@ -5,19 +5,17 @@
  */
 package org.camunda.operate.zeebeimport;
 
-import java.util.concurrent.ConcurrentHashMap;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.boot.test.mock.mockito.SpyBean;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
 
@@ -27,11 +25,7 @@ public class WorkflowCacheIT extends OperateZeebeIntegrationTest {
   @After
   public void after() {
     //clean the cache
-    try {
-      FieldSetter.setField(workflowCache, WorkflowCache.class.getDeclaredField("cache"), new ConcurrentHashMap<>());
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject cache into some of the beans");
-    }
+    workflowCache.clearCache();
     super.after();
   }
 

@@ -5,6 +5,15 @@
  */
 package org.camunda.operate.it;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -41,19 +50,9 @@ import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-import com.fasterxml.jackson.core.type.TypeReference;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class OperationIT extends OperateZeebeIntegrationTest {
 
@@ -91,14 +90,9 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   @Before
   public void before() {
     super.before();
-
-    try {
-      FieldSetter.setField(cancelWorkflowInstanceHandler, CancelWorkflowInstanceHandler.class.getDeclaredField("zeebeClient"), super.getClient());
-      FieldSetter.setField(updateRetriesHandler, ResolveIncidentHandler.class.getDeclaredField("zeebeClient"), super.getClient());
-      FieldSetter.setField(updateVariableHandler, UpdateVariableHandler.class.getDeclaredField("zeebeClient"), super.getClient());
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    cancelWorkflowInstanceHandler.setZeebeClient(super.getClient());
+    updateRetriesHandler.setZeebeClient(super.getClient());
+    updateVariableHandler.setZeebeClient(super.getClient());
 
     mockMvc = mockMvcTestRule.getMockMvc();
     initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();

@@ -6,23 +6,20 @@
 package org.camunda.operate.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 import java.util.Arrays;
-
+import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
 import org.camunda.operate.webapp.es.reader.IncidentReader;
 import org.camunda.operate.webapp.es.reader.ListViewReader;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import org.camunda.operate.webapp.rest.dto.listview.ListViewWorkflowInstanceDto;
-import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.webapp.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
@@ -49,13 +46,9 @@ public class ErrorMessagesIT extends OperateZeebeIntegrationTest{
   }
 
   private void injectZeebeClientIntoOperationHandler() {
-    try {
-      FieldSetter.setField(cancelWorkflowInstanceHandler, CancelWorkflowInstanceHandler.class.getDeclaredField("zeebeClient"), zeebeClient);
-      FieldSetter.setField(updateRetriesHandler, ResolveIncidentHandler.class.getDeclaredField("zeebeClient"), zeebeClient);
-      FieldSetter.setField(updateVariableHandler, UpdateVariableHandler.class.getDeclaredField("zeebeClient"), zeebeClient);
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    cancelWorkflowInstanceHandler.setZeebeClient(zeebeClient);
+    updateRetriesHandler.setZeebeClient(zeebeClient);
+    updateVariableHandler.setZeebeClient(zeebeClient);
   }
 
   // OPE-453

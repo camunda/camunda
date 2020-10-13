@@ -56,4 +56,8 @@ public class ResolveIncidentHandler extends AbstractOperationHandler implements 
   public OperationType getType() {
     return OperationType.RESOLVE_INCIDENT;
   }
+
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
+  }
 }

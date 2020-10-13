@@ -176,4 +176,17 @@ public class OperateZeebeRule extends TestWatcher {
   public ClientRule getClientRule() {
     return clientRule;
   }
+
+  public void setOperateProperties(final OperateProperties operateProperties) {
+    this.operateProperties = operateProperties;
+  }
+
+  public void setZeebeEsClient(final RestHighLevelClient zeebeEsClient) {
+    this.zeebeEsClient = zeebeEsClient;
+  }
+
+  public void setEmbeddedZeebeConfigurer(
+      final EmbeddedZeebeConfigurer embeddedZeebeConfigurer) {
+    this.embeddedZeebeConfigurer = embeddedZeebeConfigurer;
+  }
 }

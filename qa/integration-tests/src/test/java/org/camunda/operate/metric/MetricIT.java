@@ -5,6 +5,12 @@
  */
 package org.camunda.operate.metric;
 
+import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.util.MetricAssert;
@@ -14,14 +20,7 @@ import org.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import org.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 
 public class MetricIT extends OperateZeebeIntegrationTest {
   
@@ -42,13 +41,9 @@ public class MetricIT extends OperateZeebeIntegrationTest {
   }
 
   private void injectZeebeClientIntoOperationHandler() {
-    try {
-      FieldSetter.setField(cancelWorkflowInstanceHandler, CancelWorkflowInstanceHandler.class.getDeclaredField("zeebeClient"), zeebeClient);
-      FieldSetter.setField(updateRetriesHandler, ResolveIncidentHandler.class.getDeclaredField("zeebeClient"), zeebeClient);
-      FieldSetter.setField(updateVariableHandler, UpdateVariableHandler.class.getDeclaredField("zeebeClient"), zeebeClient);
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    cancelWorkflowInstanceHandler.setZeebeClient(zeebeClient);
+    updateRetriesHandler.setZeebeClient(zeebeClient);
+    updateVariableHandler.setZeebeClient(zeebeClient);
   }
 
   @Test // OPE-624 

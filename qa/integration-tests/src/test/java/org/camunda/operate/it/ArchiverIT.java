@@ -5,6 +5,21 @@
  */
 package org.camunda.operate.it;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
+import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
+import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
+import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
+import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.containsString;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -17,7 +32,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.archiver.Archiver;
 import org.camunda.operate.archiver.BatchOperationArchiverJob;
 import org.camunda.operate.archiver.WorkflowInstancesArchiverJob;
@@ -31,6 +45,7 @@ import org.camunda.operate.schema.templates.ListViewTemplate;
 import org.camunda.operate.schema.templates.SequenceFlowTemplate;
 import org.camunda.operate.schema.templates.WorkflowInstanceDependant;
 import org.camunda.operate.util.CollectionUtil;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.MetricAssert;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.TestUtil;
@@ -53,24 +68,8 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
-import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
-import static org.camunda.operate.schema.templates.ListViewTemplate.JOIN_RELATION;
-import static org.camunda.operate.schema.templates.ListViewTemplate.WORKFLOW_INSTANCE_JOIN_RELATION;
-import static org.camunda.operate.util.MetricAssert.assertThatMetricsFrom;
-import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
-import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termQuery;
-import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
-import static org.hamcrest.CoreMatchers.allOf;
-import static org.hamcrest.CoreMatchers.containsString;
 
 public class ArchiverIT extends OperateZeebeIntegrationTest {
 
@@ -115,11 +114,7 @@ public class ArchiverIT extends OperateZeebeIntegrationTest {
     super.before();
     dateTimeFormatter = DateTimeFormatter.ofPattern(operateProperties.getArchiver().getRolloverDateFormat()).withZone(ZoneId.systemDefault());
     archiverJob = beanFactory.getBean(WorkflowInstancesArchiverJob.class, partitionHolder.getPartitionIds());
-    try {
-      FieldSetter.setField(cancelWorkflowInstanceHandler, CancelWorkflowInstanceHandler.class.getDeclaredField("zeebeClient"), super.getClient());
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    cancelWorkflowInstanceHandler.setZeebeClient(super.getClient());
     clearMetrics();
   }
 

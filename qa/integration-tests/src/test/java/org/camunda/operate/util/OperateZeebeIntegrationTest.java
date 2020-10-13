@@ -11,31 +11,6 @@ import static org.camunda.operate.webapp.rest.WorkflowInstanceRestService.WORKFL
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import java.util.List;
-import java.util.concurrent.Future;
-import java.util.function.Predicate;
-
-import org.apache.http.HttpStatus;
-import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
-import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
-import org.camunda.operate.zeebeimport.ImportPositionHolder;
-import org.camunda.operate.zeebe.PartitionHolder;
-import org.camunda.operate.zeebeimport.cache.WorkflowCache;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.mockito.internal.util.reflection.FieldSetter;
-import org.springframework.beans.factory.BeanFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
-
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -43,6 +18,28 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.ClientRule;
 import io.zeebe.test.EmbeddedBrokerRule;
+import java.util.List;
+import java.util.concurrent.Future;
+import java.util.function.Predicate;
+import org.apache.http.HttpStatus;
+import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
+import org.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
+import org.camunda.operate.webapp.zeebe.operation.OperationExecutor;
+import org.camunda.operate.zeebe.PartitionHolder;
+import org.camunda.operate.zeebeimport.ImportPositionHolder;
+import org.camunda.operate.zeebeimport.cache.WorkflowCache;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest {
 
@@ -165,11 +162,7 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
     workflowCache.clearCache();
     importPositionHolder.clearCache();
-    try {
-      FieldSetter.setField(partitionHolder, PartitionHolder.class.getDeclaredField("zeebeClient"), getClient());
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    partitionHolder.setZeebeClient(getClient());
 
   }
 
