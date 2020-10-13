@@ -179,3 +179,17 @@ it('should render a button linking to view mode', () => {
 
   expect(node.find(Button)).toExist();
 });
+
+it('should add a DiagramScrollLock when a shared report is embedded', () => {
+  props.match.params.type = 'report';
+  props.location.search = '?mode=embed';
+
+  const node = shallow(<Sharing {...props} />);
+
+  node.setState({
+    loading: false,
+    evaluationResult: {name: 'My report name'},
+  });
+
+  expect(node.find('DiagramScrollLock')).toExist();
+});

@@ -75,9 +75,10 @@ it('should construct special link for embedding', () => {
 
   node.setState({loaded: true, id: 10});
 
-  expect(node.find('CopyToClipboard').at(1).prop('value')).toContain(
-    '<iframe src="http://example.com/#/share/report/10'
-  );
+  const clipboardValue = node.find('CopyToClipboard').at(1).prop('value');
+
+  expect(clipboardValue).toContain('<iframe src="http://example.com/#/share/report/10');
+  expect(clipboardValue).toContain('mode=embed');
 });
 
 it('should include filters', async () => {

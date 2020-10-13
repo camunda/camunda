@@ -46,25 +46,31 @@ export default class ShareEntity extends React.Component {
     }
   };
 
-  buildShareLink = () => {
-    let query = '';
-    if (this.state.includeFilters) {
-      query = '?filter=' + encodeURIComponent(JSON.stringify(this.props.filter));
-    }
-
-    if (this.state.id) {
-      const currentUrl = window.location.href;
-      return `${currentUrl.substring(0, currentUrl.indexOf('#'))}#/share/${this.props.type}/${
-        this.state.id
-      }${query}`;
-    } else {
+  buildShareLink = (params = {}) => {
+    if (!this.state.id) {
       return '';
     }
+
+    const currentUrl = window.location.href;
+    const query = new URLSearchParams();
+    for (const [key, value] of Object.entries(params)) {
+      query.set(key, value);
+    }
+    if (this.state.includeFilters) {
+      query.set('filter', JSON.stringify(this.props.filter));
+    }
+    const queryString = query.toString();
+
+    return `${currentUrl.substring(0, currentUrl.indexOf('#'))}#/share/${this.props.type}/${
+      this.state.id
+    }${queryString && '?' + queryString}`;
   };
 
   buildShareLinkForEmbedding = () => {
     if (this.state.id) {
-      return `<iframe src="${this.buildShareLink()}" frameborder="0" style="width: 1000px; height: 700px; allowtransparency; overflow: scroll"></iframe>`;
+      return `<iframe src="${this.buildShareLink({
+        mode: 'embed',
+      })}" frameborder="0" style="width: 1000px; height: 700px; allowtransparency; overflow: scroll"></iframe>`;
     } else {
       return '';
     }

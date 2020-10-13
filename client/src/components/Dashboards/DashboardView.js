@@ -19,6 +19,7 @@ import {
   Popover,
   Deleter,
   EntityName,
+  DiagramScrollLock,
 } from 'components';
 import {evaluateReport} from 'services';
 import {themed} from 'theme';
@@ -232,11 +233,10 @@ export function DashboardView(props) {
             loadReport={evaluateReport}
             reports={reports}
             filter={filter}
-            addons={
-              autoRefreshInterval && [
-                <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />,
-              ]
-            }
+            addons={[
+              <AutoRefreshBehavior key="autorefresh" interval={autoRefreshInterval} />,
+              <DiagramScrollLock key="diagramScrollLock" />,
+            ]}
           />
         </div>
       </div>

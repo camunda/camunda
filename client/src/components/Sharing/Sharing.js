@@ -18,6 +18,7 @@ import {
   LastModifiedInfo,
   ReportDetails,
   InstanceCount,
+  DiagramScrollLock,
 } from 'components';
 import {Link, withRouter} from 'react-router-dom';
 import {evaluateEntity, createLoadReportCallback} from './service';
@@ -70,6 +71,7 @@ export class Sharing extends React.Component {
           loadReport={createLoadReportCallback(this.getId())}
           reports={this.state.evaluationResult.reports}
           filter={filter && JSON.parse(filter)}
+          addons={[<DiagramScrollLock key="diagramScrollLock" />]}
           disableNameLink
         />
       );
@@ -83,6 +85,7 @@ export class Sharing extends React.Component {
   render() {
     const {loading, evaluationResult} = this.state;
     const type = this.getType();
+    const params = new URLSearchParams(this.props.location.search);
 
     if (loading) {
       return <LoadingIndicator />;
@@ -121,7 +124,10 @@ export class Sharing extends React.Component {
           </div>
           {type === 'report' && <InstanceCount report={evaluationResult} />}
         </div>
-        <div className="content">{SharingView}</div>
+        <div className="content">
+          {SharingView}
+          {type === 'report' && params.get('mode') === 'embed' && <DiagramScrollLock />}
+        </div>
       </div>
     );
   }

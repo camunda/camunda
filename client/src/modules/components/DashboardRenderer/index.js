@@ -5,3 +5,4 @@
  */
 
 export {default as DashboardRenderer} from './DashboardRenderer';
+export {default as DiagramScrollLock} from './DiagramScrollLock';
