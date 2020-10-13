@@ -26,7 +26,7 @@ import org.camunda.optimize.dto.optimize.query.event.process.CamundaActivityEven
 import org.camunda.optimize.dto.optimize.query.event.process.EventDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EsEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableUpdateInstanceDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
@@ -666,7 +666,7 @@ public class ElasticSearchIntegrationTestExtension implements BeforeEachCallback
                                                                                final String name,
                                                                                final String version,
                                                                                final List<IdentityDto> identityDtos) {
-    final IndexableEventProcessMappingDto eventProcessMappingDto = IndexableEventProcessMappingDto.builder()
+    final EsEventProcessMappingDto eventProcessMappingDto = EsEventProcessMappingDto.builder()
       .id(key)
       .roles(normalizeToSimpleIdentityDtos(identityDtos))
       .build();

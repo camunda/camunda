@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EsEventProcessMappingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -89,7 +89,7 @@ public class EventProcessDefinitionReader {
 
   public List<EventProcessDefinitionDto> getAllEventProcessDefinitionsOmitXml() {
     log.debug("Fetching all available event based processes definitions.");
-    String[] fieldsToExclude = new String[]{IndexableEventProcessMappingDto.Fields.xml};
+    String[] fieldsToExclude = new String[]{EsEventProcessMappingDto.Fields.xml};
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .size(LIST_FETCH_LIMIT)
       .fetchSource(null, fieldsToExclude);

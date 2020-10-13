@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.IdentityType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EsEventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.rest.event.EventProcessMappingResponseDto;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.util.IdGenerator;
@@ -53,7 +53,7 @@ public class EventBasedProcessQueryPerformanceTest extends AbstractQueryPerforma
     final Map<String, Object> mappingsById = IntStream.range(0, numberOfDifferentEvents)
       .mapToObj(index -> {
         final String mappingId = IdGenerator.getNextId();
-        return IndexableEventProcessMappingDto.builder()
+        return EsEventProcessMappingDto.builder()
           .id(mappingId)
           .name("event based process name")
           .xml("some xml")
@@ -64,7 +64,7 @@ public class EventBasedProcessQueryPerformanceTest extends AbstractQueryPerforma
           .roles(Collections.singletonList(new EventProcessRoleRequestDto(new IdentityDto(DEFAULT_USER, IdentityType.USER))))
           .build();
       })
-      .collect(Collectors.toMap(IndexableEventProcessMappingDto::getId, mapping -> mapping));
+      .collect(Collectors.toMap(EsEventProcessMappingDto::getId, mapping -> mapping));
     elasticSearchIntegrationTestExtension.addEntriesToElasticsearch(
       new EventProcessMappingIndex().getIndexName(), mappingsById
     );

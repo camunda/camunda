@@ -25,19 +25,19 @@ import java.util.stream.Collectors;
 @Builder
 @FieldNameConstants
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class IndexableEventProcessMappingDto implements OptimizeDto {
+public class EsEventProcessMappingDto implements OptimizeDto {
   @EqualsAndHashCode.Include
   private String id;
   private String name;
   private String xml;
   private OffsetDateTime lastModified;
   private String lastModifier;
-  private List<IndexableEventMappingDto> mappings;
+  private List<EsEventMappingDto> mappings;
   private List<EventSourceEntryDto> eventSources;
   private List<EventProcessRoleRequestDto<IdentityDto>> roles;
 
-  public static IndexableEventProcessMappingDto fromEventProcessMappingDto(final EventProcessMappingDto eventMappingDto) {
-    return IndexableEventProcessMappingDto.builder()
+  public static EsEventProcessMappingDto fromEventProcessMappingDto(final EventProcessMappingDto eventMappingDto) {
+    return EsEventProcessMappingDto.builder()
       .id(eventMappingDto.getId())
       .name(eventMappingDto.getName())
       .xml(eventMappingDto.getXml())
@@ -47,7 +47,7 @@ public class IndexableEventProcessMappingDto implements OptimizeDto {
         Optional.ofNullable(eventMappingDto.getMappings())
           .map(mappings -> mappings.keySet()
             .stream()
-            .map(flowNodeId -> IndexableEventMappingDto.fromEventMappingDto(
+            .map(flowNodeId -> EsEventMappingDto.fromEventMappingDto(
               flowNodeId,
               eventMappingDto.getMappings().get(flowNodeId)
             ))
@@ -71,7 +71,7 @@ public class IndexableEventProcessMappingDto implements OptimizeDto {
         Optional.ofNullable(this.mappings)
           .map(mappingList -> mappingList.stream()
             .collect(Collectors.toMap(
-              IndexableEventMappingDto::getFlowNodeId,
+              EsEventMappingDto::getFlowNodeId,
               mapping -> EventMappingDto.builder()
                 .start(mapping.getStart())
                 .end(mapping.getEnd()).build()

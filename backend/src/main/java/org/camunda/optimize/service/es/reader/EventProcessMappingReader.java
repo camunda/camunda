@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.dto.optimize.IdentityDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventProcessRoleRequestDto;
-import org.camunda.optimize.dto.optimize.query.event.process.IndexableEventProcessMappingDto;
+import org.camunda.optimize.dto.optimize.query.event.process.EsEventProcessMappingDto;
 import org.camunda.optimize.service.es.OptimizeElasticsearchClient;
 import org.camunda.optimize.service.es.schema.index.events.EventProcessMappingIndex;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
@@ -61,7 +61,7 @@ public class EventProcessMappingReader {
     EventProcessMappingDto result = null;
     if (getResponse.isExists()) {
       try {
-        result = objectMapper.readValue(getResponse.getSourceAsString(), IndexableEventProcessMappingDto.class)
+        result = objectMapper.readValue(getResponse.getSourceAsString(), EsEventProcessMappingDto.class)
           .toEventProcessMappingDto();
       } catch (IOException e) {
         String reason = "Could not deserialize information for event based process with ID: " + eventProcessMappingId;
@@ -79,7 +79,7 @@ public class EventProcessMappingReader {
 
   public List<EventProcessMappingDto> getAllEventProcessMappingsOmitXml() {
     log.debug("Fetching all available event based processes.");
-    String[] fieldsToExclude = new String[]{IndexableEventProcessMappingDto.Fields.xml};
+    String[] fieldsToExclude = new String[]{EsEventProcessMappingDto.Fields.xml};
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder()
       .query(matchAllQuery())
       .size(LIST_FETCH_LIMIT)
@@ -98,11 +98,11 @@ public class EventProcessMappingReader {
 
     return ElasticsearchReaderUtil.retrieveAllScrollResults(
       scrollResp,
-      IndexableEventProcessMappingDto.class,
+      EsEventProcessMappingDto.class,
       objectMapper,
       esClient,
       configurationService.getEsScrollTimeoutInSeconds()
-    ).stream().map(IndexableEventProcessMappingDto::toEventProcessMappingDto).collect(Collectors.toList());
+    ).stream().map(EsEventProcessMappingDto::toEventProcessMappingDto).collect(Collectors.toList());
   }
 
   public List<EventProcessRoleRequestDto<IdentityDto>> getEventProcessRoles(final String eventProcessMappingId) {
@@ -126,7 +126,7 @@ public class EventProcessMappingReader {
     List<EventProcessRoleRequestDto<IdentityDto>> result = Collections.emptyList();
     if (getResponse.isExists()) {
       try {
-        result = objectMapper.readValue(getResponse.getSourceAsString(), IndexableEventProcessMappingDto.class)
+        result = objectMapper.readValue(getResponse.getSourceAsString(), EsEventProcessMappingDto.class)
           .getRoles();
       } catch (IOException e) {
         final String reason = "Could not deserialize information for event based process with id: " + eventProcessMappingId;

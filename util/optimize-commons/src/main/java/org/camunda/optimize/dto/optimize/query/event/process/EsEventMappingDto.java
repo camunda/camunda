@@ -19,15 +19,15 @@ import org.camunda.optimize.dto.optimize.OptimizeDto;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldNameConstants
-public class IndexableEventMappingDto implements OptimizeDto {
+public class EsEventMappingDto implements OptimizeDto {
 
   String flowNodeId;
   EventTypeDto start;
   EventTypeDto end;
 
-  public static IndexableEventMappingDto fromEventMappingDto(final String flowNodeId,
-                                                             final EventMappingDto eventMappingDto) {
-    return IndexableEventMappingDto.builder()
+  public static EsEventMappingDto fromEventMappingDto(final String flowNodeId,
+                                                      final EventMappingDto eventMappingDto) {
+    return EsEventMappingDto.builder()
       .flowNodeId(flowNodeId)
       .start(eventMappingDto.getStart())
       .end(eventMappingDto.getEnd())
