@@ -72,7 +72,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
-    return findFirstDashboardsForReport(reportDefinition.getId()).stream()
+    return getDashboardsForReport(reportDefinition.getId()).stream()
       .map(dashboardDefinitionDto -> new ConflictedItemDto(
         dashboardDefinitionDto.getId(), ConflictedItemType.DASHBOARD, dashboardDefinitionDto.getName()
       ))
@@ -117,7 +117,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(final CollectionDefinitionDto definition) {
-    return dashboardReader.findDashboardsForCollection(definition.getId()).stream()
+    return dashboardReader.getDashboardsForCollection(definition.getId()).stream()
       .map(dashboardDefinitionDto -> new ConflictedItemDto(
         dashboardDefinitionDto.getId(), ConflictedItemType.COLLECTION, dashboardDefinitionDto.getName()
       ))
@@ -201,7 +201,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
 
   private void removeVariableFiltersFromDashboardsIfUnavailable(final List<ProcessVariableNameResponseDto> filters,
                                                                 final String reportId) {
-    final List<DashboardDefinitionDto> dashboardsForReport = dashboardReader.findDashboardsForReport(reportId);
+    final List<DashboardDefinitionDto> dashboardsForReport = dashboardReader.getDashboardsForReport(reportId);
     dashboardsForReport
       .stream()
       .filter(dashboard -> !CollectionUtils.isEmpty(dashboard.getAvailableFilters()) &&
@@ -434,8 +434,8 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     dashboardWriter.removeReportFromDashboards(reportId);
   }
 
-  private List<DashboardDefinitionDto> findFirstDashboardsForReport(final String reportId) {
-    return dashboardReader.findDashboardsForReport(reportId);
+  private List<DashboardDefinitionDto> getDashboardsForReport(final String reportId) {
+    return dashboardReader.getDashboardsForReport(reportId);
   }
 
   private boolean isSameCollection(final String newCollectionId, final String oldCollectionId) {

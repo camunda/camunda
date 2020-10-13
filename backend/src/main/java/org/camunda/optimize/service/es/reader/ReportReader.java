@@ -191,7 +191,7 @@ public class ReportReader {
     final List<String> processReportIds = processReportsForKey.stream()
       .map(ReportDefinitionDto::getId)
       .collect(Collectors.toList());
-    final List<CombinedReportDefinitionDto> combinedReports = findCombinedReportsForSimpleReports(processReportIds);
+    final List<CombinedReportDefinitionDto> combinedReports = getCombinedReportsForSimpleReports(processReportIds);
     processReportsForKey.addAll(combinedReports);
     return processReportsForKey;
   }
@@ -238,7 +238,7 @@ public class ReportReader {
     return getReportDefinitionDtos(reportIds, reportType, indices);
   }
 
-  public List<ReportDefinitionDto> findReportsForCollectionOmitXml(String collectionId) {
+  public List<ReportDefinitionDto> getReportsForCollectionOmitXml(String collectionId) {
     log.debug("Fetching reports using collection with id {}", collectionId);
 
     QueryBuilder qb = QueryBuilders.termQuery(COLLECTION_ID, collectionId);
@@ -263,11 +263,11 @@ public class ReportReader {
     return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), ReportDefinitionDto.class, objectMapper);
   }
 
-  public List<CombinedReportDefinitionDto> findCombinedReportsForSimpleReport(String simpleReportId) {
-    return findCombinedReportsForSimpleReports(Collections.singletonList(simpleReportId));
+  public List<CombinedReportDefinitionDto> getCombinedReportsForSimpleReport(String simpleReportId) {
+    return getCombinedReportsForSimpleReports(Collections.singletonList(simpleReportId));
   }
 
-  private List<CombinedReportDefinitionDto> findCombinedReportsForSimpleReports(List<String> simpleReportIds) {
+  private List<CombinedReportDefinitionDto> getCombinedReportsForSimpleReports(List<String> simpleReportIds) {
     log.debug("Fetching first combined reports using simpleReports with ids {}", simpleReportIds);
 
     final NestedQueryBuilder getCombinedReportsBySimpleReportIdQuery = nestedQuery(

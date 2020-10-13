@@ -69,7 +69,7 @@ public class DashboardReader {
     }
   }
 
-  public List<DashboardDefinitionDto> findDashboardsForCollection(String collectionId) {
+  public List<DashboardDefinitionDto> getDashboardsForCollection(String collectionId) {
     log.debug("Fetching dashboards using collection with id {}", collectionId);
 
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
@@ -90,7 +90,7 @@ public class DashboardReader {
     return ElasticsearchReaderUtil.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
   }
 
-  public List<DashboardDefinitionDto> findDashboardsForReport(String reportId) {
+  public List<DashboardDefinitionDto> getDashboardsForReport(String reportId) {
     log.debug("Fetching dashboards using report with id {}", reportId);
 
     final QueryBuilder getCombinedReportsBySimpleReportIdQuery = QueryBuilders.boolQuery()

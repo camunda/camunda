@@ -243,7 +243,7 @@ public class CollectionScopeService {
   private List<SingleReportDefinitionDto<?>> getAllReportsAffectedByScopeDeletion(final String collectionId,
                                                                                   final String scopeEntryId) {
     CollectionScopeEntryDto scopeEntry = new CollectionScopeEntryDto(scopeEntryId);
-    List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
+    List<ReportDefinitionDto> reportsInCollection = reportReader.getReportsForCollectionOmitXml(collectionId);
     return reportsInCollection.stream()
       .filter(report -> !report.isCombined())
       .map(report -> (SingleReportDefinitionDto<?>) report)
@@ -337,7 +337,7 @@ public class CollectionScopeService {
 
   private List<SingleReportDefinitionDto<?>> getReportsAffectedByScopeUpdate(final String collectionId,
                                                                              final CollectionDefinitionDto collectionDefinition) {
-    List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
+    List<ReportDefinitionDto> reportsInCollection = reportReader.getReportsForCollectionOmitXml(collectionId);
     return reportsInCollection.stream()
       .filter(report -> !report.isCombined())
       .map(report -> (SingleReportDefinitionDto<?>) report)

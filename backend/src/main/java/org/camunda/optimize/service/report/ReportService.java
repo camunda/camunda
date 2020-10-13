@@ -88,7 +88,7 @@ public class ReportService implements CollectionReferencingService {
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForCollectionDelete(final CollectionDefinitionDto definition) {
-    return reportReader.findReportsForCollectionOmitXml(definition.getId()).stream()
+    return reportReader.getReportsForCollectionOmitXml(definition.getId()).stream()
       .map(reportDefinitionDto -> new ConflictedItemDto(
         reportDefinitionDto.getId(), ConflictedItemType.COLLECTION, reportDefinitionDto.getName()
       ))
@@ -233,12 +233,12 @@ public class ReportService implements CollectionReferencingService {
     // verify user is authorized to access collection
     collectionService.getAuthorizedCollectionDefinitionOrFail(userId, collectionId);
 
-    List<ReportDefinitionDto> reportsInCollection = reportReader.findReportsForCollectionOmitXml(collectionId);
+    List<ReportDefinitionDto> reportsInCollection = reportReader.getReportsForCollectionOmitXml(collectionId);
     return filterAuthorizedReports(userId, reportsInCollection);
   }
 
   private List<ReportDefinitionDto> getReportsForCollection(final String collectionId) {
-    return reportReader.findReportsForCollectionOmitXml(collectionId);
+    return reportReader.getReportsForCollectionOmitXml(collectionId);
   }
 
   public void updateCombinedProcessReport(final String userId,
@@ -524,7 +524,7 @@ public class ReportService implements CollectionReferencingService {
     final Set<ConflictedItemDto> conflictedItems = new LinkedHashSet<>();
     if (!reportDefinition.isCombined()) {
       conflictedItems.addAll(
-        mapCombinedReportsToConflictingItems(reportReader.findCombinedReportsForSimpleReport(reportDefinition.getId()))
+        mapCombinedReportsToConflictingItems(reportReader.getCombinedReportsForSimpleReport(reportDefinition.getId()))
       );
     }
     conflictedItems.addAll(reportRelationService.getConflictedItemsForDeleteReport(reportDefinition));
@@ -609,7 +609,7 @@ public class ReportService implements CollectionReferencingService {
 
     if (semanticsForCombinedReportChanged(currentReportVersion, reportUpdateDto)) {
       conflictedItems.addAll(
-        mapCombinedReportsToConflictingItems(reportReader.findCombinedReportsForSimpleReport(reportId))
+        mapCombinedReportsToConflictingItems(reportReader.getCombinedReportsForSimpleReport(reportId))
       );
     }
 

@@ -225,11 +225,11 @@ public class AlertService implements ReportReferencingService {
       .map(authorizedReportDefinitionDto -> authorizedReportDefinitionDto.getDefinitionDto().getId())
       .collect(toList());
 
-    return alertReader.findFirstAlertsForReports(authorizedReportIds);
+    return alertReader.getAlertsForReports(authorizedReportIds);
   }
 
-  private List<AlertDefinitionDto> findFirstAlertsForReport(String reportId) {
-    return alertReader.findFirstAlertsForReport(reportId);
+  private List<AlertDefinitionDto> getAlertsForReport(String reportId) {
+    return alertReader.getAlertsForReport(reportId);
   }
 
   private AlertDefinitionDto getAlert(String alertId) {
@@ -286,7 +286,7 @@ public class AlertService implements ReportReferencingService {
   }
 
   public void copyAndMoveAlerts(String oldReportId, String newReportId) {
-    List<AlertDefinitionDto> oldAlerts = findFirstAlertsForReport(oldReportId);
+    List<AlertDefinitionDto> oldAlerts = getAlertsForReport(oldReportId);
     for (AlertDefinitionDto alert : oldAlerts) {
       alert.setReportId(newReportId);
       createAlert(alert, alert.getOwner());
@@ -374,7 +374,7 @@ public class AlertService implements ReportReferencingService {
   }
 
   private void deleteAlertsForReport(String reportId) {
-    List<AlertDefinitionDto> alerts = alertReader.findFirstAlertsForReport(reportId);
+    List<AlertDefinitionDto> alerts = alertReader.getAlertsForReport(reportId);
 
     for (AlertDefinitionDto alert : alerts) {
       unscheduleJob(alert);
@@ -419,7 +419,7 @@ public class AlertService implements ReportReferencingService {
 
   @Override
   public Set<ConflictedItemDto> getConflictedItemsForReportDelete(final ReportDefinitionDto reportDefinition) {
-    return mapAlertsToConflictingItems(findFirstAlertsForReport(reportDefinition.getId()));
+    return mapAlertsToConflictingItems(getAlertsForReport(reportDefinition.getId()));
   }
 
   @Override
@@ -435,12 +435,12 @@ public class AlertService implements ReportReferencingService {
     if (currentDefinition instanceof SingleProcessReportDefinitionDto) {
       if (validateIfReportIsSuitableForAlert((SingleProcessReportDefinitionDto) currentDefinition)
         && !validateIfReportIsSuitableForAlert((SingleProcessReportDefinitionDto) updateDefinition)) {
-        conflictedItems.addAll(mapAlertsToConflictingItems(findFirstAlertsForReport(currentDefinition.getId())));
+        conflictedItems.addAll(mapAlertsToConflictingItems(getAlertsForReport(currentDefinition.getId())));
       }
     } else if (currentDefinition instanceof SingleDecisionReportDefinitionDto) {
       if (validateIfReportIsSuitableForAlert((SingleDecisionReportDefinitionDto) currentDefinition)
         && !validateIfReportIsSuitableForAlert((SingleDecisionReportDefinitionDto) updateDefinition)) {
-        conflictedItems.addAll(mapAlertsToConflictingItems(findFirstAlertsForReport(currentDefinition.getId())));
+        conflictedItems.addAll(mapAlertsToConflictingItems(getAlertsForReport(currentDefinition.getId())));
       }
     }
 
