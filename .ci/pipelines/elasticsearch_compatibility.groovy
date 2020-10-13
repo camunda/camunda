@@ -4,12 +4,12 @@
 @Library('camunda-ci') _
 
 // general properties for CI execution
-def static NODE_POOL() { return "agents-n1-standard-32-netssd-preempt" }
+def static NODE_POOL() { return "agents-n1-standard-32-netssd-stable" }
 
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.6.3-jdk-8-slim" }
 
-def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) {
-  return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${cambpmVersion}"
+def static CAMBPM_DOCKER_IMAGE(String camBpmVersion) {
+  return "registry.camunda.cloud/cambpm-ee/camunda-bpm-platform-ee:${camBpmVersion}"
 }
 
 def static ELASTICSEARCH_DOCKER_IMAGE(String esVersion) {
@@ -20,14 +20,14 @@ CAMBPM_LATEST_VERSION_POM_PROPERTY = "camunda.engine.version"
 
 
 static String mavenElasticsearchIntegrationTestAgent(esVersion, camBpmVersion) {
-  return itStageBasePod() + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec(esVersion)
+  return itStageBasePod(4) + camBpmContainerSpec(camBpmVersion) + elasticSearchContainerSpec(esVersion)
 }
 
 static String mavenElasticsearchAWSIntegrationTestAgent(camBpmVersion) {
-  return itStageBasePod() + camBpmContainerSpec(camBpmVersion)
+  return itStageBasePod(2) + camBpmContainerSpec(camBpmVersion)
 }
 
-static String itStageBasePod() {
+static String itStageBasePod(int limitsCpu) {
   return """
 metadata:
   labels:
@@ -60,7 +60,7 @@ spec:
     tty: true
     env:
       - name: LIMITS_CPU
-        value: 4
+        value: ${limitsCpu}
       - name: TZ
         value: Europe/Berlin
     resources:
