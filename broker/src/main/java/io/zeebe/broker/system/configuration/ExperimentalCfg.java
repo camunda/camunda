@@ -19,9 +19,11 @@ public class ExperimentalCfg {
 
   public static final int DEFAULT_MAX_APPENDS_PER_FOLLOWER = 2;
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
+  public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
 
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
+  private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
 
   public int getMaxAppendsPerFollower() {
     return maxAppendsPerFollower;
@@ -35,12 +37,20 @@ public class ExperimentalCfg {
     return maxAppendBatchSize;
   }
 
+  public void setMaxAppendBatchSize(final DataSize maxAppendBatchSize) {
+    this.maxAppendBatchSize = maxAppendBatchSize;
+  }
+
   public long getMaxAppendBatchSizeInBytes() {
     return Optional.ofNullable(maxAppendBatchSize).orElse(DEFAULT_MAX_APPEND_BATCH_SIZE).toBytes();
   }
 
-  public void setMaxAppendBatchSize(final DataSize maxAppendBatchSize) {
-    this.maxAppendBatchSize = maxAppendBatchSize;
+  public boolean isDisableExplicitRaftFlush() {
+    return disableExplicitRaftFlush;
+  }
+
+  public void setDisableExplicitRaftFlush(final boolean disableExplicitRaftFlush) {
+    this.disableExplicitRaftFlush = disableExplicitRaftFlush;
   }
 
   @Override
@@ -50,6 +60,8 @@ public class ExperimentalCfg {
         + maxAppendsPerFollower
         + ", maxAppendBatchSize="
         + maxAppendBatchSize
+        + ", disableExplicitRaftFlush="
+        + disableExplicitRaftFlush
         + '}';
   }
 }

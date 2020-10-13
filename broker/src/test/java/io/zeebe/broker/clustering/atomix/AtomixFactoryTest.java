@@ -60,6 +60,36 @@ public final class AtomixFactoryTest {
     assertThat(config.getStorageConfig().getLevel()).isEqualTo(StorageLevel.DISK);
   }
 
+  @Test
+  public void shouldDisableExplicitFlush() {
+    // given
+    final var brokerConfig = newConfig();
+    brokerConfig.getExperimental().setDisableExplicitRaftFlush(true);
+
+    // when
+    final var atomix =
+        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory());
+
+    // then
+    final var config = getPartitionGroupConfig(atomix);
+    assertThat(config.getStorageConfig().shouldFlushExplicitly()).isFalse();
+  }
+
+  @Test
+  public void shouldEnableExplicitFlush() {
+    // given
+    final var brokerConfig = newConfig();
+    brokerConfig.getExperimental().setDisableExplicitRaftFlush(false);
+
+    // when
+    final var atomix =
+        AtomixFactory.fromConfiguration(brokerConfig, new FileBasedSnapshotStoreFactory());
+
+    // then
+    final var config = getPartitionGroupConfig(atomix);
+    assertThat(config.getStorageConfig().shouldFlushExplicitly()).isTrue();
+  }
+
   private RaftPartitionGroup getPartitionGroup(final Atomix atomix) {
     return (RaftPartitionGroup)
         atomix.getPartitionService().getPartitionGroup(AtomixFactory.GROUP_NAME);

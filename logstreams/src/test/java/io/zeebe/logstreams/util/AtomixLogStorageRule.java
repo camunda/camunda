@@ -243,7 +243,7 @@ public final class AtomixLogStorageRule extends ExternalResource
 
   private RaftStorage.Builder buildDefaultStorage() {
     return RaftStorage.builder()
-        .withFlushOnCommit()
+        .withFlushExplicitly(true)
         .withStorageLevel(StorageLevel.DISK)
         .withNamespace(RaftNamespaces.RAFT_STORAGE)
         .withRetainStaleSnapshots();

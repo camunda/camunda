@@ -60,6 +60,8 @@ public final class BrokerCfgTest {
       "zeebe.broker.experimental.maxAppendsPerFollower";
   private static final String ZEEBE_BROKER_CLUSTER_MAX_APPEND_BATCH_SIZE =
       "zeebe.broker.experimental.maxAppendBatchSize";
+  private static final String ZEEBE_BROKER_EXPERIMENTAL_DISABLEEXPLICITRAFTFLUSH =
+      "zeebe.broker.experimental.disableExplicitRaftFlush";
 
   private static final String ZEEBE_BROKER_DATA_DIRECTORIES = "zeebe.broker.data.directories";
 
@@ -461,6 +463,19 @@ public final class BrokerCfgTest {
   }
 
   @Test
+  public void shouldOverrideDisableExplicitRaftFlushViaEnvironment() {
+    // given
+    environment.put(ZEEBE_BROKER_EXPERIMENTAL_DISABLEEXPLICITRAFTFLUSH, "true");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("cluster-cfg", environment);
+    final ExperimentalCfg experimentalCfg = cfg.getExperimental();
+
+    // then
+    assertThat(experimentalCfg.isDisableExplicitRaftFlush()).isTrue();
+  }
+
+  @Test
   public void shouldOverrideAllClusterPropertiesViaEnvironment() {
     // given
     environment.put(ZEEBE_BROKER_CLUSTER_CLUSTER_SIZE, "1");
@@ -585,9 +600,10 @@ public final class BrokerCfgTest {
     final BrokerCfg actual = TestConfigReader.readConfig("exporters", environment);
 
     // then
-    assertThat(actual.getExporters()).hasSize(1);
-    assertThat(actual.getExporters()).containsKey("elasticsearch");
-    assertThat(actual.getExporters().get("elasticsearch")).isEqualTo(expected);
+    assertThat(actual.getExporters())
+        .hasSize(1)
+        .containsKey("elasticsearch")
+        .containsEntry("elasticsearch", expected);
   }
 
   @Test

@@ -478,22 +478,13 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     /**
-     * Enables flush on commit.
-     *
-     * @return the Raft partition group builder
-     */
-    public Builder withFlushOnCommit() {
-      return withFlushOnCommit(true);
-    }
-
-    /**
      * Sets whether to flush logs to disk on commit.
      *
-     * @param flushOnCommit whether to flush logs to disk on commit
+     * @param flushExplicitly whether to flush logs to disk on commit
      * @return the Raft partition group builder
      */
-    public Builder withFlushOnCommit(final boolean flushOnCommit) {
-      config.getStorageConfig().setFlushOnCommit(flushOnCommit);
+    public Builder withFlushExplicitly(final boolean flushExplicitly) {
+      config.getStorageConfig().setFlushExplicitly(flushExplicitly);
       return this;
     }
 

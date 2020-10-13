@@ -317,7 +317,7 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         .withStorageLevel(storageConfig.getLevel())
         .withMaxSegmentSize((int) storageConfig.getSegmentSize().bytes())
         .withMaxEntrySize((int) storageConfig.getMaxEntrySize().bytes())
-        .withFlushOnCommit(storageConfig.isFlushOnCommit())
+        .withFlushExplicitly(storageConfig.shouldFlushExplicitly())
         .withFreeDiskSpace(storageConfig.getFreeDiskSpace())
         .withNamespace(RaftNamespaces.RAFT_STORAGE)
         .withSnapshotStore(persistedSnapshotStore)

@@ -111,7 +111,7 @@ public final class AtomixFactory {
             .withMaxAppendsPerFollower(experimentalCfg.getMaxAppendsPerFollower())
             .withStorageLevel(dataCfg.getAtomixStorageLevel())
             .withEntryValidator(new ZeebeEntryValidator())
-            .withFlushOnCommit()
+            .withFlushExplicitly(!experimentalCfg.isDisableExplicitRaftFlush())
             .withFreeDiskSpace(dataCfg.getFreeDiskSpaceReplicationWatermark());
 
     // by default, the Atomix max entry size is 1 MB
