@@ -58,6 +58,14 @@ public final class DeploymentClient {
                   .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
                   .getFirst();
 
+  private static final BiFunction<Long, Consumer<Consumer<Integer>>, Record<DeploymentRecordValue>>
+      CREATED_EXPECTATION =
+          (sourceRecordPosition, forEachPartition) ->
+              RecordingExporter.deploymentRecords(DeploymentIntent.CREATED)
+                  .withSourceRecordPosition(sourceRecordPosition)
+                  .withPartitionId(Protocol.DEPLOYMENT_PARTITION)
+                  .getFirst();
+
   private final StreamProcessorRule environmentRule;
   private final DeploymentRecord deploymentRecord;
   private final Consumer<Consumer<Integer>> forEachPartition;
@@ -130,6 +138,11 @@ public final class DeploymentClient {
 
   public DeploymentClient expectRejection() {
     expectation = REJECTION_EXPECTATION;
+    return this;
+  }
+
+  public DeploymentClient expectCreated() {
+    expectation = CREATED_EXPECTATION;
     return this;
   }
 
