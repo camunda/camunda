@@ -7,6 +7,7 @@
  */
 package io.zeebe.gateway.grpc;
 
+import com.google.protobuf.Any;
 import com.google.rpc.Code;
 import com.google.rpc.Status;
 import com.google.rpc.Status.Builder;
@@ -27,25 +28,19 @@ import org.slf4j.Logger;
 
 /** Maps arbitrary {@link Throwable} to {@link StatusRuntimeException} and logs the exception. */
 public final class GrpcErrorMapper {
-  private final Logger logger;
-
-  public GrpcErrorMapper() {
-    this(Loggers.GATEWAY_LOGGER);
-  }
-
-  public GrpcErrorMapper(final Logger logger) {
-    this.logger = logger;
-  }
-
   public StatusRuntimeException mapError(final Throwable error) {
-    return StatusProto.toStatusRuntimeException(mapErrorToStatus(error));
+    return mapError(error, Loggers.GATEWAY_LOGGER);
   }
 
-  private Status mapErrorToStatus(final Throwable error) {
+  public StatusRuntimeException mapError(final Throwable error, final Logger logger) {
+    return StatusProto.toStatusRuntimeException(mapErrorToStatus(error, logger));
+  }
+
+  private Status mapErrorToStatus(final Throwable error, final Logger logger) {
     final Builder builder = Status.newBuilder();
 
     if (error instanceof ExecutionException) {
-      return mapErrorToStatus(error.getCause());
+      return mapErrorToStatus(error.getCause(), logger);
     } else if (error instanceof BrokerErrorException) {
       final Status status = mapBrokerErrorToStatus(((BrokerErrorException) error).getError());
       builder.mergeFrom(status);
@@ -81,11 +76,16 @@ public final class GrpcErrorMapper {
     } else if (error instanceof RequestRetriesExhaustedException) {
       builder.setCode(Code.RESOURCE_EXHAUSTED_VALUE).setMessage(error.getMessage());
 
+      // RequestRetriesExhaustedException will sometimes carry suppressed exceptions which can be
+      // added/mapped as error details to give more information to the user
+      for (final Throwable suppressed : error.getSuppressed()) {
+        builder.addDetails(Any.pack(mapErrorToStatus(suppressed, logger)));
+      }
+
       // this error occurs when all partitions have exhausted for requests which have no fixed
       // partitions - it will then also occur when back pressure kicks in, leading to a large burst
       // of error logs that is, in fact, expected
-      Loggers.GATEWAY_LOGGER.trace(
-          "Expected to handle gRPC request, but all retries have been exhausted", error);
+      logger.trace("Expected to handle gRPC request, but all retries have been exhausted", error);
     } else {
       builder
           .setCode(Code.INTERNAL_VALUE)
