@@ -7,23 +7,21 @@
  */
 package io.zeebe.gateway.impl.job;
 
-import io.grpc.stub.ServerCallStreamObserver;
-import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.RequestMapper;
+import io.zeebe.gateway.grpc.ServerStreamObserver;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
-import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 
 public final class LongPollingActivateJobsRequest {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private final BrokerActivateJobsRequest request;
-  private final StreamObserver<ActivateJobsResponse> responseObserver;
+  private final ServerStreamObserver<ActivateJobsResponse> responseObserver;
   private final String jobType;
   private final String worker;
   private final int maxJobsToActivate;
@@ -32,11 +30,10 @@ public final class LongPollingActivateJobsRequest {
   private ScheduledTimer scheduledTimer;
   private boolean isTimedOut;
   private boolean isCompleted;
-  private BooleanSupplier cancelCheck = () -> false;
 
   public LongPollingActivateJobsRequest(
       final ActivateJobsRequest request,
-      final StreamObserver<ActivateJobsResponse> responseObserver) {
+      final ServerStreamObserver<ActivateJobsResponse> responseObserver) {
     this(
         RequestMapper.toActivateJobsRequest(request),
         responseObserver,
@@ -48,17 +45,13 @@ public final class LongPollingActivateJobsRequest {
 
   private LongPollingActivateJobsRequest(
       final BrokerActivateJobsRequest request,
-      final StreamObserver<ActivateJobsResponse> responseObserver,
+      final ServerStreamObserver<ActivateJobsResponse> responseObserver,
       final String jobType,
       final String worker,
       final int maxJobstoActivate,
       final long longPollingTimeout) {
     this.request = request;
     this.responseObserver = responseObserver;
-
-    if (responseObserver instanceof ServerCallStreamObserver) {
-      cancelCheck = ((ServerCallStreamObserver) responseObserver)::isCancelled;
-    }
     this.jobType = jobType;
     this.worker = worker;
     maxJobsToActivate = maxJobstoActivate;
@@ -101,14 +94,14 @@ public final class LongPollingActivateJobsRequest {
   }
 
   public boolean isCanceled() {
-    return cancelCheck.getAsBoolean();
+    return responseObserver.isCancelled();
   }
 
   public BrokerActivateJobsRequest getRequest() {
     return request;
   }
 
-  public StreamObserver<ActivateJobsResponse> getResponseObserver() {
+  public ServerStreamObserver<ActivateJobsResponse> getResponseObserver() {
     return responseObserver;
   }
 

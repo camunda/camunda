@@ -136,7 +136,6 @@ public class LongPollingActivateJobsTest {
 
     // then
     final var jobs = activateJobsResponse.join().getJobs();
-
     assertThat(jobs).hasSize(1).extracting(ActivatedJob::getWorker).contains("open");
   }
 
