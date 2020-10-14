@@ -7,7 +7,7 @@
 import React, {runLastEffect} from 'react';
 import {shallow} from 'enzyme';
 
-import MultiUserTypeahead from './MultiUserTypeahead';
+import MultiUserInput from './MultiUserInput';
 import {searchIdentities} from './service';
 
 jest.mock('debounce', () =>
@@ -22,13 +22,13 @@ jest.mock('./service', () => ({
 }));
 
 it('should render a MultiSelect', () => {
-  const node = shallow(<MultiUserTypeahead />);
+  const node = shallow(<MultiUserInput />);
 
   expect(node.find('MultiSelect')).toExist();
 });
 
 it('should load initial data when component is mounted', () => {
-  shallow(<MultiUserTypeahead />);
+  shallow(<MultiUserInput />);
 
   runLastEffect();
 
@@ -36,7 +36,7 @@ it('should load initial data when component is mounted', () => {
 });
 
 it('should enable loading while loading data and enable hasMore if there are more data available', async () => {
-  const node = shallow(<MultiUserTypeahead />);
+  const node = shallow(<MultiUserInput />);
   runLastEffect();
 
   expect(node.find('MultiSelect').prop('loading')).toBe(true);
@@ -46,7 +46,7 @@ it('should enable loading while loading data and enable hasMore if there are mor
 });
 
 it('should enable loading if typeahead is closed while empty', async () => {
-  const node = shallow(<MultiUserTypeahead />);
+  const node = shallow(<MultiUserInput />);
 
   node.find('MultiSelect').prop('onSearch')('test');
   await node.update();
@@ -64,7 +64,7 @@ it('should format user list information correctly', async () => {
     total: 50,
   });
   const node = shallow(
-    <MultiUserTypeahead
+    <MultiUserInput
       users={[{id: 'GROUP:groupId', identity: {id: 'groupId', name: 'groupName', type: 'group'}}]}
     />
   );
@@ -77,7 +77,7 @@ it('should format user list information correctly', async () => {
 it('should invoke onAdd when selecting an identity even if it is not in loaded identities', async () => {
   searchIdentities.mockReturnValue({result: [{id: 'notTest'}], total: 1});
   const spy = jest.fn();
-  const node = shallow(<MultiUserTypeahead onAdd={spy} />);
+  const node = shallow(<MultiUserInput onAdd={spy} />);
 
   node.find('MultiSelect').prop('onAdd')('test');
 

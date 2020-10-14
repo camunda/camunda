@@ -11,3 +11,8 @@ export async function searchIdentities(terms) {
 
   return await response.json();
 }
+
+export async function getUser(id) {
+  const response = await get(`api/identity/${id}`);
+  return await response.json();
+}

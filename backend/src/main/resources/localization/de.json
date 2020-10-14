@@ -103,8 +103,6 @@
       "editor-description": "Erstellen, bearbeiten und löschen von Dashboards, Berichten und Alarmen",
       "manager": "Manager",
       "manager-description": "Volle Rechte beim Bearbeiten von Sammlungen und Benutzern",
-      "existing-user-error": "Ein Benutzer mit dieser ID existiert schon",
-      "existing-group-error": "Eine Gruppe mit dieser ID existiert schon",
       "existing-identity": "Ein Benutzer oder eine Gruppe mit dieser ID existiert schon",
       "inCollection": "in dieser Sammlung",
       "missingAuthorizationsWarning": "Einige Daten können aufgrund fehlender Berechtigungen für Benutzer ausgeblendet sein.",

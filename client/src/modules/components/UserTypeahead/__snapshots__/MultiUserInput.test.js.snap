@@ -3,7 +3,7 @@
 exports[`should format user list information correctly 1`] = `
 <MultiSelect
   async={true}
-  className="MultiUserTypeahead"
+  className="MultiUserInput"
   hasMore={true}
   loading={false}
   onAdd={[Function]}

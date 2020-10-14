@@ -5,14 +5,13 @@
  */
 
 import React from 'react';
-import update from 'immutability-helper';
 
-import {Modal, Button, MultiUserTypeahead, Labeled} from 'components';
+import {Modal, Button, UserTypeahead, Labeled} from 'components';
 import {showError} from 'notifications';
 import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
 
-import {getUsers, getUser, updateUsers} from './service';
+import {getUsers, updateUsers} from './service';
 
 import './UsersModal.scss';
 
@@ -26,35 +25,6 @@ export class UsersModal extends React.Component {
   componentDidMount() {
     this.props.mightFail(getUsers(this.props.id), (users) => this.setState({users}), showError);
   }
-
-  addUser = (user) => {
-    this.getSelectedUser(user, ({id, type, name, memberCount}) => {
-      const newId = `${type.toUpperCase()}:${id}`;
-      const newIdentity = {id: newId, identity: {id, name, type, memberCount}};
-      this.setState(({users}) => ({
-        users: update(users, {$push: [newIdentity]}),
-      }));
-    });
-  };
-
-  getSelectedUser = (user, cb) => {
-    const {id, name} = user;
-    if (this.state.users.some(({identity}) => identity.id === id)) {
-      return showError(t('home.roles.existing-identity'));
-    }
-
-    if (!name) {
-      return this.props.mightFail(getUser(id), cb, showError);
-    }
-
-    cb(user);
-  };
-
-  removeUser = (id) => {
-    this.setState(({users}) => ({
-      users: users.filter((user) => user.id !== id),
-    }));
-  };
 
   onConfirm = () => {
     this.setState({loading: true});
@@ -84,14 +54,7 @@ export class UsersModal extends React.Component {
         <Modal.Content>
           <p className="description">{t('events.permissions.description')}</p>
           <Labeled className="userTypeahead" label={t('home.userTitle')}>
-            {users && (
-              <MultiUserTypeahead
-                users={users}
-                onAdd={this.addUser}
-                onRemove={this.removeUser}
-                onClear={() => this.setState({users: []})}
-              />
-            )}
+            {users && <UserTypeahead users={users} onChange={(users) => this.setState({users})} />}
           </Labeled>
         </Modal.Content>
         <Modal.Actions>

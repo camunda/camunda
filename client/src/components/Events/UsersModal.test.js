@@ -7,26 +7,15 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {showError} from 'notifications';
+import {UserTypeahead} from 'components';
 
 import {UsersModal} from './UsersModal';
-import {updateUsers, getUser, getUsers} from './service';
+import {updateUsers} from './service';
 
 jest.mock('./service', () => ({
   updateUsers: jest.fn(),
-  getUser: jest.fn().mockReturnValue({id: 'USER:test', type: 'user', name: 'Test'}),
-  getUsers: jest.fn().mockReturnValue([
-    {
-      id: 'USER:kermit',
-      identity: {
-        id: 'kermit',
-        type: 'user', // or group
-      },
-    },
-  ]),
+  getUsers: jest.fn().mockReturnValue([]),
 }));
-
-jest.mock('notifications', () => ({showError: jest.fn()}));
 
 beforeEach(() => updateUsers.mockClear());
 
@@ -36,56 +25,25 @@ const props = {
   mightFail: jest.fn().mockImplementation((data, cb) => cb(data)),
 };
 
-it('should add user/group to the list', () => {
+it('should disable the save button if the user list is empty', () => {
   const node = shallow(<UsersModal {...props} />);
 
-  node.find('MultiUserTypeahead').prop('onAdd')({
-    id: 'sales',
-    type: 'group',
-    name: 'Sales',
-    memberCount: '2',
-  });
+  expect(node.find(UserTypeahead).prop('users').length).toBe(0);
+  expect(node.find('[primary]')).toBeDisabled();
+});
+
+it('should update the list of users based on the UserTypeahead', () => {
+  const node = shallow(<UsersModal {...props} />);
+
+  node.find(UserTypeahead).prop('onChange')([
+    {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}},
+    {id: 'GROUP:sales', identity: {id: 'sales', memberCount: '2', name: 'Sales', type: 'group'}},
+  ]);
 
   node.find('[primary]').simulate('click');
 
   expect(updateUsers).toHaveBeenCalledWith('processId', [
     {id: 'USER:kermit', identity: {id: 'kermit', type: 'user'}},
     {id: 'GROUP:sales', identity: {id: 'sales', memberCount: '2', name: 'Sales', type: 'group'}},
-  ]);
-});
-
-it('should disable the save button if the user list is empty', () => {
-  getUsers.mockReturnValueOnce([]);
-  const node = shallow(<UsersModal {...props} />);
-
-  expect(node.find('MultiUserTypeahead').prop('users').length).toBe(0);
-  expect(node.find('[primary]')).toBeDisabled();
-});
-
-it('should show an error when adding already existing user/group', () => {
-  const node = shallow(<UsersModal {...props} />);
-
-  node.find('MultiUserTypeahead').prop('onAdd')({
-    id: 'kermit',
-    name: 'Kermit',
-    type: 'user',
-  });
-
-  expect(showError).toHaveBeenCalled();
-});
-
-it('should load non imported user before adding it to the list', () => {
-  getUsers.mockReturnValueOnce([]);
-  const node = shallow(<UsersModal {...props} />);
-  node.find('MultiUserTypeahead').prop('onAdd')({
-    id: 'test',
-  });
-  expect(getUser).toHaveBeenCalledWith('test');
-  node.find('[primary]').simulate('click');
-  expect(updateUsers).toHaveBeenCalledWith('processId', [
-    {
-      id: 'USER:USER:test',
-      identity: {id: 'USER:test', memberCount: undefined, name: 'Test', type: 'user'},
-    },
   ]);
 });

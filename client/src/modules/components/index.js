@@ -41,7 +41,7 @@ export {Badge} from './Badge';
 export {SubNav, NavItem} from './navigation';
 export {HeatmapOverlay} from './HeatmapOverlay';
 export {EntityList} from './EntityList';
-export {MultiUserTypeahead, UserTypeahead} from './UserTypeahead';
+export {UserTypeahead} from './UserTypeahead';
 export {DateRangeInput} from './DateRangeInput';
 export {LastModifiedInfo} from './LastModifiedInfo';
 export {ReportDetails} from './ReportDetails';

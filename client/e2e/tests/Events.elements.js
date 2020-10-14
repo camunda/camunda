@@ -38,7 +38,7 @@ export const endEvent = Selector('.invoiceProcessed input[type=checkbox]');
 export const eventsTable = Selector('.EventTable');
 export const publishButton = Selector('.publish-button');
 export const permissionButton = Selector('.permission button');
-export const usersTypeahead = Selector('.MultiUserTypeahead');
+export const usersTypeahead = Selector('.MultiUserInput');
 export const buttonWithText = (text) => Selector('.Modal__content-container button').withText(text);
 export const zoomButton = Selector('.zoomIn');
 export const diagram = Selector('.ProcessView .BPMNDiagram');

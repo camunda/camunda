@@ -5,124 +5,63 @@
  */
 
 import React from 'react';
-import debounce from 'debounce';
-import {searchIdentities} from './service';
-import {Typeahead} from 'components';
+import update from 'immutability-helper';
+
+import {withErrorHandling} from 'HOC';
 import {t} from 'translation';
-import './UserTypeahead.scss';
+import {showError} from 'notifications';
 
-export default class UserTypeahead extends React.Component {
-  state = {
-    loading: true,
-    hasMore: false,
-    initialDataLoaded: false,
-    empty: true,
-    identities: [],
-  };
+import MultiUserInput from './MultiUserInput';
+import {getUser} from './service';
 
-  componentDidMount() {
-    this.loadNewValues('');
-  }
+export function UserTypeahead({users, collectionUsers = [], onChange, mightFail}) {
+  const getSelectedUser = (user, cb) => {
+    const {id, name} = user;
+    if (!name) {
+      return mightFail(
+        getUser(id),
+        (user) => {
+          const {type, id} = user;
+          const exists = (users) => users.some((user) => user.id === `${type.toUpperCase()}:${id}`);
 
-  loadNewValues = (query) => {
-    if (this.state.initialDataLoaded && !query) {
-      return this.cancelPendingSearch();
+          if (exists(users)) {
+            return showError(t('home.roles.existing-identity'));
+          }
+
+          if (exists(collectionUsers)) {
+            return showError(
+              t('home.roles.existing-identity') + ' ' + t('home.roles.inCollection')
+            );
+          }
+
+          cb(user);
+        },
+        showError
+      );
     }
-    this.setState({loading: true});
-    this.search(query);
+
+    cb(user);
   };
 
-  search = debounce(async (query) => {
-    const {total, result} = await searchIdentities(query);
-    this.setState({
-      identities: result,
-      loading: false,
-      hasMore: total > result.length,
-      empty: result.length === 0,
-      initialDataLoaded: !query,
+  const addUser = (user) => {
+    getSelectedUser(user, ({id, type, name, memberCount}) => {
+      const newId = `${type.toUpperCase()}:${id}`;
+      const newIdentity = {id: newId, identity: {id, name, type, memberCount}};
+      onChange(update(users, {$push: [newIdentity]}));
     });
-  }, 800);
-
-  cancelPendingSearch = () => {
-    this.search.clear();
-    this.setState({loading: false});
   };
 
-  handleClose = () => {
-    const {empty, loading} = this.state;
-    // prevents unnecessary requests
-    if (loading && !empty) {
-      this.cancelPendingSearch();
-    } else if (empty) {
-      // prevents disabling the typeahead if closed empty
-      this.setState({loading: true});
-    }
-  };
+  const removeUser = (id) => onChange(users.filter((user) => user.id !== id));
 
-  selectIdentity = (id) => {
-    const selectedIdentity = this.state.identities.find((identity) => identity.id === id);
-    if (selectedIdentity) {
-      this.props.onChange(selectedIdentity);
-    } else {
-      this.props.onChange({id});
-    }
-  };
-
-  render() {
-    const {loading, hasMore, identities} = this.state;
-    const {selectedIdentity} = this.props;
-    return (
-      <Typeahead
-        value={selectedIdentity && selectedIdentity.id}
-        className="UserTypeahead"
-        onSearch={this.loadNewValues}
-        loading={loading}
-        hasMore={!loading && hasMore}
-        onClose={this.handleClose}
-        onOpen={() => this.loadNewValues('')}
-        placeholder={t('common.collection.addUserModal.searchPlaceholder')}
-        onChange={this.selectIdentity}
-        async
-        typedOption
-      >
-        {identities.map((identity) => {
-          const {text, tag, subTexts} = formatTypeaheadOption(identity);
-          return (
-            <Typeahead.Option key={identity.id} value={identity.id} label={text}>
-              <Typeahead.Highlight>{text}</Typeahead.Highlight>
-              {tag}
-              {subTexts && (
-                <span className="subTexts">
-                  {subTexts
-                    .filter((subText) => subText)
-                    .map((subText, i) => (
-                      <span className="subText" key={i}>
-                        <Typeahead.Highlight matchFromStart>{subText}</Typeahead.Highlight>
-                      </span>
-                    ))}
-                </span>
-              )}
-            </Typeahead.Option>
-          );
-        })}
-      </Typeahead>
-    );
-  }
+  return (
+    <MultiUserInput
+      users={users}
+      collectionUsers={collectionUsers}
+      onAdd={addUser}
+      onRemove={removeUser}
+      onClear={() => onChange([])}
+    />
+  );
 }
 
-function formatTypeaheadOption({name, email, id, type}) {
-  const subTexts = [];
-  if (name) {
-    subTexts.push(email);
-  }
-
-  if (name || email) {
-    subTexts.push(id);
-  }
-
-  return {
-    text: name || email || id,
-    tag: type === 'group' && ' (User Group)',
-    subTexts,
-  };
-}
+export default withErrorHandling(UserTypeahead);

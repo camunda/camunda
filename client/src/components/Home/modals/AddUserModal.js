@@ -6,12 +6,11 @@
 
 import React from 'react';
 
-import {Button, LabeledInput, Modal, Form, Message, UserTypeahead} from 'components';
-
+import {Button, LabeledInput, Modal, Form, UserTypeahead} from 'components';
 import {t} from 'translation';
 
 const defaultState = {
-  selectedIdentity: null,
+  users: [],
   activeRole: 'viewer',
 };
 
@@ -19,12 +18,12 @@ export default class AddUserModal extends React.Component {
   state = defaultState;
 
   onConfirm = () => {
-    const {selectedIdentity, activeRole} = this.state;
-    if (!this.isValid()) {
+    const {users, activeRole} = this.state;
+    if (!users.length) {
       return;
     }
 
-    this.props.onConfirm(selectedIdentity.id, selectedIdentity.type, activeRole);
+    this.props.onConfirm(users.map(({identity}) => ({role: activeRole, identity})));
     this.reset();
   };
 
@@ -37,26 +36,9 @@ export default class AddUserModal extends React.Component {
     this.setState(defaultState);
   };
 
-  alreadyExists = () => {
-    const {selectedIdentity} = this.state;
-    if (!selectedIdentity) {
-      return false;
-    }
-
-    return this.props.existingUsers.find(
-      ({identity: {id, type}}) => type === selectedIdentity.type && id === selectedIdentity.id
-    );
-  };
-
-  isValid = () => this.state.selectedIdentity && !this.alreadyExists();
-
   render() {
-    const {open} = this.props;
-    const {selectedIdentity, activeRole} = this.state;
-
-    const alreadyExists = this.alreadyExists();
-
-    const validInput = this.isValid();
+    const {open, existingUsers} = this.props;
+    const {users, activeRole} = this.state;
 
     return (
       <Modal className="AddUserModal" open={open} onClose={this.onClose} onConfirm={this.onConfirm}>
@@ -65,17 +47,11 @@ export default class AddUserModal extends React.Component {
           <Form>
             {t('home.userTitle')}
             <Form.Group>
-              <UserTypeahead onChange={(selectedIdentity) => this.setState({selectedIdentity})} />
-              {alreadyExists && selectedIdentity.type === 'user' && (
-                <Message error>
-                  {t('home.roles.existing-user-error')} {t('home.roles.inCollection')}
-                </Message>
-              )}
-              {alreadyExists && selectedIdentity.type === 'group' && (
-                <Message error>
-                  {t('home.roles.existing-group-error')} {t('home.roles.inCollection')}
-                </Message>
-              )}
+              <UserTypeahead
+                users={users}
+                collectionUsers={existingUsers}
+                onChange={(users) => this.setState({users})}
+              />
             </Form.Group>
             {t('home.roles.userRole')}
             <Form.Group>
@@ -119,7 +95,13 @@ export default class AddUserModal extends React.Component {
           <Button main className="cancel" onClick={this.onClose}>
             {t('common.cancel')}
           </Button>
-          <Button main primary className="confirm" disabled={!validInput} onClick={this.onConfirm}>
+          <Button
+            main
+            primary
+            className="confirm"
+            disabled={!users.length}
+            onClick={this.onConfirm}
+          >
             {t('common.add')}
           </Button>
         </Modal.Actions>

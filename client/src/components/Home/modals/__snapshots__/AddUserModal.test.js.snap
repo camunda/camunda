@@ -14,8 +14,10 @@ exports[`should match snapshot 1`] = `
     <Form>
       Users and User Groups
       <FormGroup>
-        <UserTypeahead
+        <UserTypeaheadErrorHandler
+          collectionUsers={Array []}
           onChange={[Function]}
+          users={Array []}
         />
       </FormGroup>
       User role

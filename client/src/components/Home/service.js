@@ -33,8 +33,8 @@ export async function getUsers(collection) {
   return await response.json();
 }
 
-export async function addUser(collection, id, type, role) {
-  return await post(`api/collection/${collection}/role`, {identity: {id, type}, role});
+export async function addUser(collection, roles) {
+  return await post(`api/collection/${collection}/role`, roles);
 }
 
 export async function editUser(collection, id, role) {

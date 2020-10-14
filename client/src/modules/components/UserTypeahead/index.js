@@ -5,4 +5,3 @@
  */
 
 export {default as UserTypeahead} from './UserTypeahead';
-export {default as MultiUserTypeahead} from './MultiUserTypeahead';

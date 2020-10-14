@@ -85,6 +85,7 @@ export default function MultiSelect({
   return (
     <div className={classnames('MultiSelect', className)} onMouseDown={() => setInsideClick(true)}>
       <MultiValueInput
+        className="typeaheadInput"
         key={resetInput}
         onChange={onChange}
         values={values}

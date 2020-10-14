@@ -12,9 +12,15 @@ import {t} from 'translation';
 
 import {searchIdentities} from './service';
 
-import './UserTypeahead.scss';
+import './MultiUserInput.scss';
 
-export default function MultiUserTypeahead({users = [], onAdd, onRemove, onClear}) {
+export default function MultiUserInput({
+  users = [],
+  collectionUsers = [],
+  onAdd,
+  onRemove,
+  onClear,
+}) {
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [initialDataLoaded, setInitialDataLoaded] = useState(false);
@@ -66,7 +72,9 @@ export default function MultiUserTypeahead({users = [], onAdd, onRemove, onClear
 
   function add(id) {
     if (id) {
-      const selectedIdentity = identities.find((identity) => identity.id === id);
+      const selectedIdentity = identities
+        .filter(filterSelected)
+        .find((identity) => identity.id === id);
       if (selectedIdentity) {
         onAdd(selectedIdentity);
       } else {
@@ -76,7 +84,9 @@ export default function MultiUserTypeahead({users = [], onAdd, onRemove, onClear
   }
 
   const filterSelected = ({id, type}) => {
-    return !users.some((user) => user.id === `${type.toUpperCase()}:${id}`);
+    const exists = (users) => users.some((user) => user.id === `${type.toUpperCase()}:${id}`);
+
+    return !exists(users) && !exists(collectionUsers);
   };
 
   return (
@@ -85,7 +95,7 @@ export default function MultiUserTypeahead({users = [], onAdd, onRemove, onClear
         value: user.id,
         label: formatTypeaheadOption(user.identity).text,
       }))}
-      className="MultiUserTypeahead"
+      className="MultiUserInput"
       onSearch={loadNewValues}
       loading={loading}
       hasMore={!loading && hasMore}

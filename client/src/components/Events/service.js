@@ -63,11 +63,6 @@ export async function updateUsers(id, newUsers) {
   return await put(`api/eventBasedProcess/${id}/role`, newUsers);
 }
 
-export async function getUser(id) {
-  const response = await get(`api/identity/${id}`);
-  return await response.json();
-}
-
 export async function getCleanedMappings(body) {
   const response = await post('api/eventBasedProcess/_mappingCleanup', body);
   return await response.json();

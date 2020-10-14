@@ -44,13 +44,9 @@ export default withErrorHandling(
     };
 
     openAddUserModal = () => this.setState({addingUser: true});
-    addUser = (name, type, role) => {
+    addUsers = (roles) => {
       this.closeAddUserModal();
-      this.props.mightFail(
-        addUser(this.props.collection, name, type, role),
-        this.updateList,
-        showError
-      );
+      this.props.mightFail(addUser(this.props.collection, roles), this.updateList, showError);
     };
     closeAddUserModal = () => this.setState({addingUser: false});
 
@@ -148,7 +144,7 @@ export default withErrorHandling(
             open={addingUser}
             existingUsers={users}
             onClose={this.closeAddUserModal}
-            onConfirm={this.addUser}
+            onConfirm={this.addUsers}
           />
           {editing && (
             <EditUserModal
