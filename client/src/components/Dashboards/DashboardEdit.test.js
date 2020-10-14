@@ -9,12 +9,25 @@ import {shallow} from 'enzyme';
 
 import {nowDirty} from 'saveGuard';
 import {EntityNameForm} from 'components';
+import {showPrompt} from 'prompt';
+import {redirectTo} from 'redirect';
 
 import {FiltersEdit} from './filters';
 
 import DashboardEdit from './DashboardEdit';
 
 jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
+jest.mock('prompt', () => ({
+  showPrompt: jest.fn().mockImplementation(async (config, cb) => await cb()),
+}));
+jest.mock('redirect', () => ({
+  redirectTo: jest.fn(),
+}));
+
+beforeEach(() => {
+  showPrompt.mockClear();
+  redirectTo.mockClear();
+});
 
 it('should contain an AddButton', () => {
   const node = shallow(<DashboardEdit />);
@@ -22,7 +35,7 @@ it('should contain an AddButton', () => {
   expect(node.find('AddButton')).toExist();
 });
 
-it('should editing report addons', () => {
+it('should contain editing report addons', () => {
   const node = shallow(<DashboardEdit />);
 
   expect(node.find('DashboardRenderer').prop('addons')).toMatchSnapshot();
@@ -82,4 +95,35 @@ it('should shows Filters Edit by default if there are initial filters defined', 
   const node = shallow(<DashboardEdit initialAvailableFilters={[{}]} />);
 
   expect(node.find(FiltersEdit)).toExist();
+});
+
+it('should save the dashboard when going to the report edit mode', async () => {
+  const report = {
+    position: {x: 0, y: 0},
+    dimensions: {height: 2, width: 2},
+    report: {id: 'new'},
+  };
+  const spy = jest.fn();
+
+  const node = shallow(<DashboardEdit initialReports={[report]} saveChanges={spy} />);
+
+  node.find('DashboardRenderer').prop('addons')[2].props.onClick(report);
+
+  await flushPromises();
+
+  // Parent component takes care of saving the reports and assigning ids
+  node.setProps({
+    initialReports: [
+      {
+        position: {x: 0, y: 0},
+        dimensions: {height: 2, width: 2},
+        id: '1',
+      },
+    ],
+  });
+
+  await flushPromises();
+
+  expect(spy).toHaveBeenCalled();
+  expect(redirectTo).toHaveBeenCalledWith('report/1/edit');
 });

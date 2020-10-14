@@ -1,0 +1,19 @@
+.EditButton {
+  position: absolute;
+  top: 0;
+  right: 29px;
+  border: none;
+  background-color: transparent;
+  padding: 8px;
+
+  &:hover,
+  &:active {
+    background-color: transparent;
+    border: none;
+    box-shadow: none;
+  }
+
+  .Icon {
+    margin: 0;
+  }
+}

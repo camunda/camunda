@@ -6,6 +6,8 @@
 
 import React from 'react';
 
+import './ExternalReport.scss';
+
 export default class ExternalReport extends React.Component {
   state = {
     reloadState: 0,
@@ -20,7 +22,7 @@ export default class ExternalReport extends React.Component {
 
     if (report.configuration && report.configuration.external) {
       return (
-        <div className="DashboardReport__wrapper">
+        <div className="ExternalReport DashboardReport__wrapper">
           <iframe
             key={this.state.reloadState}
             title="External Report"

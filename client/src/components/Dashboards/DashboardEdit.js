@@ -12,10 +12,13 @@ import {evaluateReport} from 'services';
 import {DashboardRenderer, EntityNameForm, Button, Icon} from 'components';
 import {t} from 'translation';
 import {nowDirty, nowPristine} from 'saveGuard';
+import {showPrompt} from 'prompt';
+import {redirectTo} from 'redirect';
 
 import {AddButton} from './AddButton';
 import {DeleteButton} from './DeleteButton';
 import DragOverlay from './DragOverlay';
+import EditButton from './EditButton';
 
 import {FiltersEdit} from './filters';
 
@@ -164,7 +167,7 @@ export default class DashboardEdit extends React.Component {
       nowDirty(t('dashboard.label'), this.save);
     }
 
-    if (!deepEqual(prevProps.initialReports, this.props.initialReports)) {
+    if (prevProps.initialReports !== this.props.initialReports) {
       // initial reports might change because of a save without leaving the edit mode
       // This happens for example if the dashboard is saved for the variable filter
       this.setState({reports: this.props.initialReports}, () => {
@@ -193,6 +196,26 @@ export default class DashboardEdit extends React.Component {
 
       Promise.all(promises).then(resolve);
     });
+  };
+
+  editReport = (report) => {
+    showPrompt(
+      {
+        title: t('dashboard.saveModal.unsaved'),
+        body: t('dashboard.saveModal.text'),
+        yes: t('common.saveContinue'),
+        no: t('common.cancel'),
+      },
+      async () => {
+        // unsaved reports don't have ids yet. As their report object gets overwritten on save
+        // we keep track of their position in the reports array instead to match the old
+        // report object with the new one that has an id after the save
+        const reportIdx = this.state.reports.indexOf(report);
+        await this.save(true);
+        const reportId = this.state.reports[reportIdx].id;
+        redirectTo('report/' + reportId + '/edit');
+      }
+    );
   };
 
   render() {
@@ -241,6 +264,7 @@ export default class DashboardEdit extends React.Component {
             addons={[
               <DragOverlay key="DragOverlay" />,
               <DeleteButton key="DeleteButton" deleteReport={this.deleteReport} />,
+              <EditButton key="EditButton" onClick={this.editReport} />,
             ]}
             onChange={this.updateLayout}
           />

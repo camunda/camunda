@@ -1,10 +1,13 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`should editing report addons 1`] = `
+exports[`should contain editing report addons 1`] = `
 Array [
   <DragOverlay />,
   <DeleteButton
     deleteReport={[Function]}
+  />,
+  <EditButton
+    onClick={[Function]}
   />,
 ]
 `;
