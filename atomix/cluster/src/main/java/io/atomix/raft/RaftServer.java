@@ -33,8 +33,6 @@ import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.raft.zeebe.NoopEntryValidator;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.index.JournalIndex;
-import io.atomix.utils.concurrent.ThreadContextFactory;
-import io.atomix.utils.concurrent.ThreadModel;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
@@ -552,20 +550,15 @@ public interface RaftServer {
 
     private static final Duration DEFAULT_ELECTION_TIMEOUT = Duration.ofMillis(750);
     private static final Duration DEFAULT_HEARTBEAT_INTERVAL = Duration.ofMillis(250);
-    private static final ThreadModel DEFAULT_THREAD_MODEL = ThreadModel.SHARED_THREAD_POOL;
-    private static final int DEFAULT_THREAD_POOL_SIZE =
-        Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 8), 4);
 
     protected String name;
     protected MemberId localMemberId;
     protected ClusterMembershipService membershipService;
     protected RaftServerProtocol protocol;
     protected RaftStorage storage;
+    protected RaftThreadContextFactory threadContextFactory;
     protected Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
     protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
-    protected ThreadModel threadModel = DEFAULT_THREAD_MODEL;
-    protected int threadPoolSize = DEFAULT_THREAD_POOL_SIZE;
-    protected ThreadContextFactory threadContextFactory;
     protected Supplier<JournalIndex> journalIndexFactory;
     protected EntryValidator entryValidator = new NoopEntryValidator();
     protected int maxAppendsPerFollower = 2;
@@ -611,17 +604,6 @@ public interface RaftServer {
     }
 
     /**
-     * Sets the server thread model.
-     *
-     * @param threadModel the server thread model
-     * @return the server builder
-     */
-    public Builder withThreadModel(final ThreadModel threadModel) {
-      this.threadModel = checkNotNull(threadModel, "threadModel cannot be null");
-      return this;
-    }
-
-    /**
      * Sets the storage module.
      *
      * @param storage The storage module.
@@ -630,6 +612,19 @@ public interface RaftServer {
      */
     public Builder withStorage(final RaftStorage storage) {
       this.storage = checkNotNull(storage, "storage cannot be null");
+      return this;
+    }
+
+    /**
+     * Sets the threadContextFactory used to create raft threadContext
+     *
+     * @param threadContextFactory The RaftThreadContextFactory
+     * @return The Raft server builder.
+     * @throws NullPointerException if {@code threadContextFactory} is null
+     */
+    public Builder withThreadContextFactory(final RaftThreadContextFactory threadContextFactory) {
+      this.threadContextFactory =
+          checkNotNull(threadContextFactory, "threadContextFactory cannot be null");
       return this;
     }
 
@@ -674,18 +669,6 @@ public interface RaftServer {
     }
 
     /**
-     * Sets the server thread pool size.
-     *
-     * @param threadPoolSize The server thread pool size.
-     * @return The server builder.
-     */
-    public Builder withThreadPoolSize(final int threadPoolSize) {
-      checkArgument(threadPoolSize > 0, "threadPoolSize must be positive");
-      this.threadPoolSize = threadPoolSize;
-      return this;
-    }
-
-    /**
      * Sets the maximum append requests which are sent per follower at once. Default is 2.
      *
      * @param maxAppendsPerFollower the maximum appends send per follower
@@ -706,19 +689,6 @@ public interface RaftServer {
     public Builder withMaxAppendBatchSize(final int maxAppendBatchSize) {
       checkArgument(maxAppendBatchSize > 0, "maxAppendBatchSize must be positive");
       this.maxAppendBatchSize = maxAppendBatchSize;
-      return this;
-    }
-
-    /**
-     * Sets the client thread context factory.
-     *
-     * @param threadContextFactory the client thread context factory
-     * @return the server builder
-     * @throws NullPointerException if the factory is null
-     */
-    public Builder withThreadContextFactory(final ThreadContextFactory threadContextFactory) {
-      this.threadContextFactory =
-          checkNotNull(threadContextFactory, "threadContextFactory cannot be null");
       return this;
     }
 

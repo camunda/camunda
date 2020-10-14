@@ -22,11 +22,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
+import io.atomix.raft.RaftThreadContextFactory;
 import io.atomix.raft.cluster.RaftCluster;
 import io.atomix.raft.storage.RaftStorage;
 import io.atomix.utils.concurrent.AtomixFuture;
 import io.atomix.utils.concurrent.Futures;
-import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import java.util.Collection;
@@ -279,9 +279,6 @@ public class DefaultRaftServer implements RaftServer {
 
     @Override
     public RaftServer build() {
-      final Logger log =
-          ContextualLoggerFactory.getLogger(
-              RaftServer.class, LoggerContext.builder(RaftServer.class).addValue(name).build());
 
       // If the server name is null, set it to the member ID.
       if (name == null) {
@@ -294,18 +291,10 @@ public class DefaultRaftServer implements RaftServer {
         storage = RaftStorage.builder().build();
       }
 
-      // If a ThreadContextFactory was not provided, create one and ensure it's closed when the
-      // server is stopped.
-      final boolean closeOnStop;
-      final ThreadContextFactory threadContextFactory;
-      if (this.threadContextFactory == null) {
-        threadContextFactory =
-            threadModel.factory("raft-server-" + name + "-%d", threadPoolSize, log);
-        closeOnStop = true;
-      } else {
-        threadContextFactory = this.threadContextFactory;
-        closeOnStop = false;
-      }
+      final RaftThreadContextFactory singleThreadFactory =
+          threadContextFactory == null
+              ? new DefaultRaftSingleThreadContextFactory()
+              : threadContextFactory;
 
       final RaftContext raft =
           new RaftContext(
@@ -314,8 +303,7 @@ public class DefaultRaftServer implements RaftServer {
               membershipService,
               protocol,
               storage,
-              threadContextFactory,
-              closeOnStop,
+              singleThreadFactory,
               maxAppendBatchSize,
               maxAppendsPerFollower);
       raft.setElectionTimeout(electionTimeout);

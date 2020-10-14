@@ -37,7 +37,6 @@ import io.atomix.storage.journal.JournalReader.Mode;
 import io.atomix.storage.journal.index.JournalIndex;
 import io.atomix.utils.Managed;
 import io.atomix.utils.concurrent.Futures;
-import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.serializer.Serializer;
@@ -67,7 +66,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
   private final RaftPartitionGroupConfig config;
   private final ClusterMembershipService membershipService;
   private final ClusterCommunicationService clusterCommunicator;
-  private final ThreadContextFactory threadContextFactory;
   private final Set<RaftRoleChangeListener> deferredRoleChangeListeners =
       new CopyOnWriteArraySet<>();
   private final Set<Runnable> deferredFailureListeners = new CopyOnWriteArraySet<>();
@@ -82,14 +80,12 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
       final MemberId localMemberId,
       final ClusterMembershipService membershipService,
       final ClusterCommunicationService clusterCommunicator,
-      final ThreadContextFactory threadContextFactory,
       final Supplier<JournalIndex> journalIndexFactory) {
     this.partition = partition;
     this.config = config;
     this.localMemberId = localMemberId;
     this.membershipService = membershipService;
     this.clusterCommunicator = clusterCommunicator;
-    this.threadContextFactory = threadContextFactory;
     this.journalIndexFactory = journalIndexFactory;
     log =
         ContextualLoggerFactory.getLogger(
@@ -180,7 +176,6 @@ public class RaftPartitionServer implements Managed<RaftPartitionServer> {
         .withMaxAppendBatchSize(config.getMaxAppendBatchSize())
         .withMaxAppendsPerFollower(config.getMaxAppendsPerFollower())
         .withStorage(createRaftStorage())
-        .withThreadContextFactory(threadContextFactory)
         .withJournalIndexFactory(journalIndexFactory)
         .withEntryValidator(config.getEntryValidator())
         .build();

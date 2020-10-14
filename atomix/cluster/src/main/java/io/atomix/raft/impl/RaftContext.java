@@ -28,6 +28,7 @@ import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftRoleChangeListener;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
+import io.atomix.raft.RaftThreadContextFactory;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftClusterContext;
@@ -53,9 +54,7 @@ import io.atomix.raft.storage.system.MetaStore;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.storage.StorageException;
 import io.atomix.utils.concurrent.ComposableFuture;
-import io.atomix.utils.concurrent.SingleThreadContext;
 import io.atomix.utils.concurrent.ThreadContext;
-import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
@@ -98,10 +97,6 @@ public class RaftContext implements AutoCloseable {
   private final RaftLogReader logReader;
   private final ReceivableSnapshotStore persistedSnapshotStore;
   private final LogCompactor logCompactor;
-  private final ThreadContextFactory threadContextFactory;
-  private final ThreadContext loadContext;
-  private final ThreadContext stateContext;
-  private final boolean closeOnStop;
   private volatile State state = State.ACTIVE;
   private RaftRole role = new InactiveRole(this);
   private Duration electionTimeout = Duration.ofMillis(500);
@@ -122,8 +117,7 @@ public class RaftContext implements AutoCloseable {
       final ClusterMembershipService membershipService,
       final RaftServerProtocol protocol,
       final RaftStorage storage,
-      final ThreadContextFactory threadContextFactory,
-      final boolean closeOnStop,
+      final RaftThreadContextFactory threadContextFactory,
       final int maxAppendBatchSize,
       final int maxAppendsPerFollower) {
     this.name = checkNotNull(name, "name cannot be null");
@@ -142,13 +136,8 @@ public class RaftContext implements AutoCloseable {
 
     final String baseThreadName = String.format("raft-server-%s-%s", localMemberId.id(), name);
     threadContext =
-        new SingleThreadContext(namedThreads(baseThreadName, log), this::onUncaughtException);
-    loadContext = new SingleThreadContext(namedThreads(baseThreadName + "-load", log));
-    stateContext = new SingleThreadContext(namedThreads(baseThreadName + "-state", log));
-
-    this.threadContextFactory =
-        checkNotNull(threadContextFactory, "threadContextFactory cannot be null");
-    this.closeOnStop = closeOnStop;
+        threadContextFactory.createContext(
+            namedThreads(baseThreadName, log), this::onUncaughtException);
 
     // Open the metadata store.
     meta = storage.openMetaStore();
@@ -590,8 +579,6 @@ public class RaftContext implements AutoCloseable {
     // Unregister protocol listeners.
     unregisterHandlers(protocol);
 
-    // Close the state machine and thread context.
-    stateContext.close();
     logCompactor.close();
 
     // Close the log.
@@ -617,12 +604,6 @@ public class RaftContext implements AutoCloseable {
 
     // close thread contexts
     threadContext.close();
-    loadContext.close();
-
-    // Only close the thread context factory if indicated.
-    if (closeOnStop) {
-      threadContextFactory.close();
-    }
   }
 
   /** Unregisters server handlers on the configured protocol. */
