@@ -17,6 +17,6 @@
   },
   "dependencies": {
     "@testing-library/testcafe": "^4.2.3",
-    "testcafe-browser-provider-browserstack": "^1.13.0"
+    "testcafe-browser-provider-browserstack": "^1.13.1"
   }
 }
