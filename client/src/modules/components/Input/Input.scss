@@ -14,6 +14,7 @@ textarea {
 
   &::placeholder {
     color: $placeholder-color;
+    font-style: italic;
   }
 
   &[disabled],
@@ -40,6 +41,7 @@ textarea {
 
 .searchClear {
   position: absolute;
+  display: flex;
   right: 10px;
   top: 0;
   bottom: 0;
@@ -70,11 +72,18 @@ input[type='checkbox'] {
   padding: 0;
   appearance: none;
   background-color: #fff;
-  border: 1px solid #d3d3d3;
+  border: 1px solid $silver-darken-80;
 
   &:disabled {
     cursor: not-allowed;
-    opacity: 0.5;
+    background-color: $silver-base-97;
+    &:checked {
+      opacity: 0.5;
+    }
+  }
+
+  &:hover:not(:disabled) {
+    border-color: $blue-darken-55;
   }
 }
 
@@ -83,18 +92,15 @@ input[type='checkbox'] {
 
   &:checked {
     background: url('./check-small.svg');
-    background-color: white;
+    background-color: $blue-darken-55;
+    border-color: $blue-darken-55;
     background-position: 0.5px;
     background-size: cover;
   }
 
   &:indeterminate {
-    background: linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0) calc(50% - 2px),
-      rgba(0, 0, 0, 1) calc(50%),
-      rgba(0, 0, 0, 0) calc(50% + 2px)
-    );
+    background: linear-gradient(white);
+    background-color: $blue-darken-55;
     background-size: 6px 2px;
     background-repeat: no-repeat;
     background-position: center;
@@ -105,14 +111,15 @@ input[type='radio'] {
   border-radius: 50%;
 
   &:checked {
-    background: radial-gradient(#000 0, #000 40%, #fff 60%);
+    background: radial-gradient(#fff 0, #fff 40%, $blue-darken-55 60%);
+    border-color: $blue-darken-55;
 
     &:focus {
-      box-shadow: inset 0px 0px 0px 3px #fff, #2b7bff 0px 0px 0px 1px, #8cb7ff 0px 0px 0px 4px;
+      box-shadow: inset 0px 0px 0px 4px $blue-darken-55, #8cb7ff 0px 0px 0px 2px;
     }
 
     &:not(:focus) {
-      box-shadow: inset 0px 0px 0px 3px #fff;
+      box-shadow: inset 0px 0px 0px 4px $blue-darken-55;
     }
   }
 }

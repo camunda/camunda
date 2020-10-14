@@ -39,6 +39,11 @@ export default React.forwardRef(function Input({isInvalid, onClear, ...props}, r
       <input
         required={!!onClear}
         type="text"
+        onDoubleClick={() => {
+          if (props.type === 'text') {
+            inputEl.select();
+          }
+        }}
         {...props}
         className={classnames('Input', props.className, {isInvalid})}
         ref={setRef}

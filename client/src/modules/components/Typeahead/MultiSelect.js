@@ -103,6 +103,7 @@ export default function MultiSelect({
         disableAddByKeyboard
       />
       <Button
+        tabIndex="-1"
         className="optionsButton"
         onClick={() => input.current.focus()}
         disabled={isInputDisabled}

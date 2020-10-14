@@ -134,6 +134,7 @@ export default class Typeahead extends React.Component {
           onClear={this.open}
         />
         <Button
+          tabIndex="-1"
           className="optionsButton"
           onClick={() => this.input.current.focus()}
           disabled={isInputDisabled}
