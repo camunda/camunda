@@ -7,7 +7,6 @@ package io.zeebe.tasklist.graphql;
 
 import static io.zeebe.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -26,7 +25,6 @@ import java.util.Map;
 import java.util.function.Predicate;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -57,14 +55,7 @@ public class TaskMutationIT extends TasklistZeebeIntegrationTest {
   @Before
   public void before() {
     super.before();
-    try {
-      FieldSetter.setField(
-          taskMutationResolver,
-          TaskMutationResolver.class.getDeclaredField("zeebeClient"),
-          super.getClient());
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    taskMutationResolver.setZeebeClient(super.getClient());
   }
 
   @Test

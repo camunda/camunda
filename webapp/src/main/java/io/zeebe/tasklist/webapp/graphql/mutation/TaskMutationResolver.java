@@ -102,4 +102,8 @@ public class TaskMutationResolver implements GraphQLMutationResolver {
     }
     return currentUser.getUsername();
   }
+
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
+  }
 }

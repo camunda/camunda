@@ -18,12 +18,10 @@ import io.zeebe.tasklist.util.ZeebeClientRule;
 import io.zeebe.tasklist.zeebe.PartitionHolder;
 import io.zeebe.tasklist.zeebeimport.ZeebeImporter;
 import org.apache.http.HttpStatus;
-import org.assertj.core.api.Assertions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -105,34 +103,14 @@ public class ZeebeConnectorIT extends TasklistIntegrationTest {
 
   private void startZeebe() {
     tasklistZeebeRule = new TasklistZeebeRule();
-    try {
-      FieldSetter.setField(
-          tasklistZeebeRule,
-          TasklistZeebeRule.class.getDeclaredField("tasklistProperties"),
-          tasklistProperties);
-      FieldSetter.setField(
-          tasklistZeebeRule,
-          TasklistZeebeRule.class.getDeclaredField("zeebeEsClient"),
-          zeebeEsClient);
-      FieldSetter.setField(
-          tasklistZeebeRule,
-          TasklistZeebeRule.class.getDeclaredField("embeddedZeebeConfigurer"),
-          embeddedZeebeConfigurer);
-    } catch (NoSuchFieldException e) {
-      Assertions.fail("Failed to inject fields in tasklistZeebeRule");
-    }
+    tasklistZeebeRule.setEmbeddedZeebeConfigurer(embeddedZeebeConfigurer);
+    tasklistZeebeRule.setTasklistProperties(tasklistProperties);
+    tasklistZeebeRule.setZeebeEsClient(zeebeEsClient);
     clientRule = new ZeebeClientRule(tasklistZeebeRule.getBrokerRule());
     tasklistZeebeRule.starting(null);
     clientRule.before();
     tasklistProperties.getZeebeElasticsearch().setPrefix(tasklistZeebeRule.getPrefix());
-    try {
-      FieldSetter.setField(
-          partitionHolder,
-          PartitionHolder.class.getDeclaredField("zeebeClient"),
-          clientRule.getClient());
-    } catch (NoSuchFieldException e) {
-      Assertions.fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    partitionHolder.setZeebeClient(clientRule.getClient());
   }
 
   @Test

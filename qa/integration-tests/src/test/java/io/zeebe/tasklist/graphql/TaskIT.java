@@ -9,7 +9,6 @@ import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CANCELED_BY_FLO
 import static io.zeebe.tasklist.util.ElasticsearchChecks.TASK_IS_CREATED_BY_FLOW_NODE_BPMN_ID_CHECK;
 import static java.util.Comparator.comparing;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -30,7 +29,6 @@ import java.util.Comparator;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 
@@ -58,14 +56,7 @@ public class TaskIT extends TasklistZeebeIntegrationTest {
   @Before
   public void before() {
     super.before();
-    try {
-      FieldSetter.setField(
-          taskMutationResolver,
-          TaskMutationResolver.class.getDeclaredField("zeebeClient"),
-          super.getClient());
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    taskMutationResolver.setZeebeClient(super.getClient());
   }
 
   @Test

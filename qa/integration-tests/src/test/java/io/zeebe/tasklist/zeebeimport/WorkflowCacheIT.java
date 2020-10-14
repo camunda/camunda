@@ -6,7 +6,6 @@
 package io.zeebe.tasklist.zeebeimport;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -15,10 +14,8 @@ import io.zeebe.tasklist.util.ElasticsearchChecks.TestCheck;
 import io.zeebe.tasklist.util.TasklistZeebeIntegrationTest;
 import io.zeebe.tasklist.util.ZeebeTestUtil;
 import io.zeebe.tasklist.webapp.es.cache.WorkflowCache;
-import java.util.concurrent.ConcurrentHashMap;
 import org.junit.After;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.SpyBean;
@@ -33,14 +30,9 @@ public class WorkflowCacheIT extends TasklistZeebeIntegrationTest {
 
   @After
   public void after() {
-    // clean the cache
-    try {
-      FieldSetter.setField(
-          workflowCache, WorkflowCache.class.getDeclaredField("cache"), new ConcurrentHashMap<>());
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject cache into some of the beans");
-    }
     super.after();
+    // clean the cache
+    workflowCache.clearCache();
   }
 
   @Test

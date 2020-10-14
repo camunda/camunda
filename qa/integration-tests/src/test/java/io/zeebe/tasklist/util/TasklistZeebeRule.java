@@ -152,4 +152,16 @@ public class TasklistZeebeRule extends TestWatcher {
   public ClientRule getClientRule() {
     return clientRule;
   }
+
+  public void setTasklistProperties(final TasklistProperties tasklistProperties) {
+    this.tasklistProperties = tasklistProperties;
+  }
+
+  public void setZeebeEsClient(final RestHighLevelClient zeebeEsClient) {
+    this.zeebeEsClient = zeebeEsClient;
+  }
+
+  public void setEmbeddedZeebeConfigurer(final EmbeddedZeebeConfigurer embeddedZeebeConfigurer) {
+    this.embeddedZeebeConfigurer = embeddedZeebeConfigurer;
+  }
 }

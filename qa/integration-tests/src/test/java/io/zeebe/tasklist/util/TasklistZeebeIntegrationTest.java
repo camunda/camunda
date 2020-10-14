@@ -6,7 +6,6 @@
 package io.zeebe.tasklist.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 
 import io.micrometer.core.instrument.Meter;
@@ -26,7 +25,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.mockito.Mockito;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -73,12 +71,7 @@ public abstract class TasklistZeebeIntegrationTest extends TasklistIntegrationTe
 
     workflowCache.clearCache();
     importPositionHolder.clearCache();
-    try {
-      FieldSetter.setField(
-          partitionHolder, PartitionHolder.class.getDeclaredField("zeebeClient"), getClient());
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    partitionHolder.setZeebeClient(getClient());
 
     setDefaultCurrentUser();
   }

@@ -103,4 +103,8 @@ public class PartitionHolder {
   protected void sleepFor(long milliseconds) {
     ThreadUtil.sleepFor(milliseconds);
   }
+
+  public void setZeebeClient(final ZeebeClient zeebeClient) {
+    this.zeebeClient = zeebeClient;
+  }
 }

@@ -9,7 +9,6 @@ import static io.zeebe.tasklist.graphql.TaskIT.GET_TASK_QUERY_PATTERN;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_INSTANCE_IS_CANCELED_CHECK;
 import static io.zeebe.tasklist.util.ElasticsearchChecks.WORKFLOW_INSTANCE_IS_COMPLETED_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.idsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
@@ -48,7 +47,6 @@ import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -95,14 +93,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     archiverJob = beanFactory.getBean(TaskArchiverJob.class, partitionHolder.getPartitionIds());
     workflowInstanceArchiverJob =
         beanFactory.getBean(WorkflowInstanceArchiverJob.class, partitionHolder.getPartitionIds());
-    try {
-      FieldSetter.setField(
-          taskMutationResolver,
-          TaskMutationResolver.class.getDeclaredField("zeebeClient"),
-          super.getClient());
-    } catch (NoSuchFieldException e) {
-      fail("Failed to inject ZeebeClient into some of the beans");
-    }
+    taskMutationResolver.setZeebeClient(super.getClient());
     clearMetrics();
   }
 
