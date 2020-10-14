@@ -3,11 +3,11 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.zeebeimport.v24.record.value;
+package io.zeebe.tasklist.zeebeimport.v25.record.value;
 
 import io.zeebe.protocol.record.value.BpmnElementType;
 import io.zeebe.protocol.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.tasklist.zeebeimport.v24.record.RecordValueWithPayloadImpl;
+import io.zeebe.tasklist.zeebeimport.v25.record.RecordValueWithPayloadImpl;
 
 public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     implements WorkflowInstanceRecordValue {

@@ -28,7 +28,7 @@ public class ZeebeConnector {
     final String brokerContactPoint = tasklistProperties.getZeebe().getBrokerContactPoint();
 
     return ZeebeClient.newClientBuilder()
-        .brokerContactPoint(brokerContactPoint)
+        .gatewayAddress(brokerContactPoint)
         .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE)
         .usePlaintext()
         .build();

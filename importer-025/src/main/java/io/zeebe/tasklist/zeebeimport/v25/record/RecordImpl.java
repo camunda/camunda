@@ -3,7 +3,7 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package io.zeebe.tasklist.zeebeimport.v24.record;
+package io.zeebe.tasklist.zeebeimport.v25.record;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.zeebe.protocol.record.Record;
@@ -22,6 +22,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   private RecordType recordType;
   private RejectionType rejectionType;
   private String rejectionReason;
+  private String brokerVersion;
   private ValueType valueType;
 
   private long key;
@@ -79,6 +80,11 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   }
 
   @Override
+  public String getBrokerVersion() {
+    return brokerVersion;
+  }
+
+  @Override
   public ValueType getValueType() {
     return valueType;
   }
@@ -98,6 +104,10 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
 
   public void setRejectionReason(String rejectionReason) {
     this.rejectionReason = rejectionReason;
+  }
+
+  public void setBrokerVersion(final String brokerVersion) {
+    this.brokerVersion = brokerVersion;
   }
 
   public void setRejectionType(RejectionType rejectionType) {
@@ -150,6 +160,9 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
         + rejectionType
         + ", rejectionReason='"
         + rejectionReason
+        + '\''
+        + ", brokerVersion='"
+        + brokerVersion
         + '\''
         + ", valueType="
         + valueType
