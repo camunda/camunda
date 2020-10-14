@@ -3389,14 +3389,14 @@ boolbase@^1.0.0, boolbase@~1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/boolbase/-/boolbase-1.0.0.tgz#68dff5fbe60c51eb37725ea9e3ed310dcc1e776e"
 
-bpmn-js@^7.3.0:
-  version "7.3.0"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-7.3.0.tgz#a59629bc278de3c996708cebe0ab065cad35c97e"
-  integrity sha512-jldTeMe7aj7EBS9Owj01FSUopwW3DqMJHJ/YFPOUB7/JrVGRMQCXI7DZP6diC7ItrV+51R8SsN3gqTpqTmUVMQ==
+bpmn-js@^7.3.1:
+  version "7.3.1"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-7.3.1.tgz#7dbc5ee3a01ddadf9c2766ab6103f4878a01e6ac"
+  integrity sha512-lr8qaSxHROhD2MK9Z+csDT7zTOIq3hJmNu+ZGUpY2uy0pTscyP/1nwdS+EHKUPIK6Y0rJr87N+cVjkPKQckRuA==
   dependencies:
     bpmn-moddle "^7.0.3"
     css.escape "^1.5.1"
-    diagram-js "^6.7.0"
+    diagram-js "^6.7.1"
     diagram-js-direct-editing "^1.6.1"
     ids "^1.0.0"
     inherits "^2.0.1"
@@ -4794,10 +4794,10 @@ diagram-js-direct-editing@^1.6.1:
     min-dash "^3.0.0"
     min-dom "^3.0.0"
 
-diagram-js@^6.7.0:
-  version "6.7.0"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-6.7.0.tgz#785b409078c52153f3437167402312c0c1061468"
-  integrity sha512-kkY6fFUgNA/Teju776wSg3/zPmmcedLVlX48agyfEa0oJGfzsneJtwYkNSTZfBmHO5g8MKIJ6AThdwvooIMUWw==
+diagram-js@^6.7.1:
+  version "6.7.1"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-6.7.1.tgz#26b1cf5790709fdd9179670e0ec009f90d075762"
+  integrity sha512-uPmjvcmFCUhn+/7jZCaJA1Aj1DVFK7aUF6XYs+EZDUkxChYL5CvcrUiml8eIz1O0V5JQ3VWwIDS+Q6G2QI1NRA==
   dependencies:
     css.escape "^1.5.1"
     didi "^4.0.0"
