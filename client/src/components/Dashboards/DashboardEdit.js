@@ -19,6 +19,8 @@ import DragOverlay from './DragOverlay';
 
 import {FiltersEdit} from './filters';
 
+import './DashboardEdit.scss';
+
 export default class DashboardEdit extends React.Component {
   constructor(props) {
     super(props);
@@ -220,6 +222,7 @@ export default class DashboardEdit extends React.Component {
               <Icon type="filter" />
               {t('dashboard.filter.label')}
             </Button>
+            <div className="separator" />
           </EntityNameForm>
         </div>
         {filtersShown && (
