@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Multisets;
 import com.google.common.collect.Sets;
 import io.atomix.utils.Version;
+import io.atomix.utils.serializer.NamespaceImpl.Builder;
 import io.atomix.utils.serializer.serializers.ArraysAsListSerializer;
 import io.atomix.utils.serializer.serializers.AtomicBooleanSerializer;
 import io.atomix.utils.serializer.serializers.AtomicIntegerSerializer;
@@ -53,73 +54,73 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 public final class Namespaces {
-  public static final int BASIC_MAX_SIZE = 50;
-  public static final NamespaceImpl BASIC =
-      Namespace.builder()
-          .nextId(NamespaceImpl.FLOATING_ID)
-          .register(byte[].class)
-          .register(new AtomicBooleanSerializer(), AtomicBoolean.class)
-          .register(new AtomicIntegerSerializer(), AtomicInteger.class)
-          .register(new AtomicLongSerializer(), AtomicLong.class)
-          .register(
-              new ImmutableListSerializer(),
-              ImmutableList.class,
-              ImmutableList.of(1).getClass(),
-              ImmutableList.of(1, 2).getClass(),
-              ImmutableList.of(1, 2, 3).subList(1, 3).getClass())
-          .register(
-              new ImmutableSetSerializer(),
-              ImmutableSet.class,
-              ImmutableSet.of().getClass(),
-              ImmutableSet.of(1).getClass(),
-              ImmutableSet.of(1, 2).getClass())
-          .register(
-              new ImmutableMapSerializer(),
-              ImmutableMap.class,
-              ImmutableMap.of().getClass(),
-              ImmutableMap.of("a", 1).getClass(),
-              ImmutableMap.of("R", 2, "D", 2).getClass())
-          .register(Collections.unmodifiableSet(Collections.emptySet()).getClass())
-          .register(HashMap.class)
-          .register(ConcurrentHashMap.class)
-          .register(CopyOnWriteArraySet.class)
-          .register(
-              ArrayList.class,
-              LinkedList.class,
-              HashSet.class,
-              LinkedHashSet.class,
-              ArrayDeque.class)
-          .register(HashMultiset.class)
-          .register(Multisets.immutableEntry("", 0).getClass())
-          .register(Sets.class)
-          .register(Maps.immutableEntry("a", "b").getClass())
-          .register(new ArraysAsListSerializer(), Arrays.asList().getClass())
-          .register(Collections.singletonList(1).getClass())
-          .register(Duration.class)
-          .register(Collections.emptySet().getClass())
-          .register(Optional.class)
-          .register(Collections.emptyList().getClass())
-          .register(Collections.singleton(Object.class).getClass())
-          .register(Properties.class)
-          .register(int[].class)
-          .register(long[].class)
-          .register(short[].class)
-          .register(double[].class)
-          .register(float[].class)
-          .register(char[].class)
-          .register(String[].class)
-          .register(boolean[].class)
-          .register(Object[].class)
-          .register(LogicalTimestamp.class)
-          .register(WallClockTimestamp.class)
-          .register(Version.class)
-          .register(
-              new ByteBufferSerializer(),
-              ByteBuffer.class,
-              ByteBuffer.allocate(1).getClass(),
-              ByteBuffer.allocateDirect(1).getClass())
-          .setCompatible(true)
-          .build("BASIC");
+
+  public static final Namespace BASIC =
+      new FallbackNamespace(
+          new Builder()
+              .nextId(NamespaceImpl.FLOATING_ID)
+              .register(byte[].class)
+              .register(new AtomicBooleanSerializer(), AtomicBoolean.class)
+              .register(new AtomicIntegerSerializer(), AtomicInteger.class)
+              .register(new AtomicLongSerializer(), AtomicLong.class)
+              .register(
+                  new ImmutableListSerializer(),
+                  ImmutableList.class,
+                  ImmutableList.of(1).getClass(),
+                  ImmutableList.of(1, 2).getClass(),
+                  ImmutableList.of(1, 2, 3).subList(1, 3).getClass())
+              .register(
+                  new ImmutableSetSerializer(),
+                  ImmutableSet.class,
+                  ImmutableSet.of().getClass(),
+                  ImmutableSet.of(1).getClass(),
+                  ImmutableSet.of(1, 2).getClass())
+              .register(
+                  new ImmutableMapSerializer(),
+                  ImmutableMap.class,
+                  ImmutableMap.of().getClass(),
+                  ImmutableMap.of("a", 1).getClass(),
+                  ImmutableMap.of("R", 2, "D", 2).getClass())
+              .register(Collections.unmodifiableSet(Collections.emptySet()).getClass())
+              .register(HashMap.class)
+              .register(ConcurrentHashMap.class)
+              .register(CopyOnWriteArraySet.class)
+              .register(
+                  ArrayList.class,
+                  LinkedList.class,
+                  HashSet.class,
+                  LinkedHashSet.class,
+                  ArrayDeque.class)
+              .register(HashMultiset.class)
+              .register(Multisets.immutableEntry("", 0).getClass())
+              .register(Sets.class)
+              .register(Maps.immutableEntry("a", "b").getClass())
+              .register(new ArraysAsListSerializer(), Arrays.asList().getClass())
+              .register(Collections.singletonList(1).getClass())
+              .register(Duration.class)
+              .register(Collections.emptySet().getClass())
+              .register(Optional.class)
+              .register(Collections.emptyList().getClass())
+              .register(Collections.singleton(Object.class).getClass())
+              .register(Properties.class)
+              .register(int[].class)
+              .register(long[].class)
+              .register(short[].class)
+              .register(double[].class)
+              .register(float[].class)
+              .register(char[].class)
+              .register(String[].class)
+              .register(boolean[].class)
+              .register(Object[].class)
+              .register(LogicalTimestamp.class)
+              .register(WallClockTimestamp.class)
+              .register(Version.class)
+              .register(
+                  new ByteBufferSerializer(),
+                  ByteBuffer.class,
+                  ByteBuffer.allocate(1).getClass(),
+                  ByteBuffer.allocateDirect(1).getClass())
+              .name("BASIC"));
 
   /** Kryo registration Id for user custom registration. */
   public static final int BEGIN_USER_CUSTOM_ID = 500;
