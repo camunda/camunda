@@ -429,7 +429,6 @@ public class VariablesState {
   /**
    * Provides all variables of a scope to the given consumer until a condition is met.
    *
-   * @param scopeKey
    * @param variableFilter evaluated with the name of each variable; the variable is consumed only
    *     if the filter returns true
    * @param variableConsumer a consumer that receives variable name and value
@@ -469,7 +468,8 @@ public class VariablesState {
 
     removeAllVariables(scopeKey);
 
-    childParentColumnFamily.delete(this.scopeKey);
+    childKey.wrapLong(scopeKey);
+    childParentColumnFamily.delete(childKey);
   }
 
   public void removeAllVariables(final long scopeKey) {
@@ -527,6 +527,7 @@ public class VariablesState {
   }
 
   public interface VariableListener {
+
     void onCreate(
         long key,
         long workflowKey,
@@ -545,6 +546,7 @@ public class VariablesState {
   }
 
   private class IndexedDocument implements Iterable<Void> {
+
     // variable name offset -> variable value offset
     private final Int2IntHashMap entries = new Int2IntHashMap(-1);
     private final DocumentEntryIterator iterator = new DocumentEntryIterator();
@@ -581,6 +583,7 @@ public class VariablesState {
   }
 
   private class DocumentEntryIterator implements Iterator<Void> {
+
     private EntryIterator iterator;
     private DirectBuffer document;
     private int documentLength;
