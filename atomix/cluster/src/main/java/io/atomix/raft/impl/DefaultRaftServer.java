@@ -30,6 +30,7 @@ import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import java.util.Collection;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -295,6 +296,7 @@ public class DefaultRaftServer implements RaftServer {
           threadContextFactory == null
               ? new DefaultRaftSingleThreadContextFactory()
               : threadContextFactory;
+      final Supplier<Random> randomSupplier = randomFactory == null ? Random::new : randomFactory;
 
       final RaftContext raft =
           new RaftContext(
@@ -305,7 +307,8 @@ public class DefaultRaftServer implements RaftServer {
               storage,
               singleThreadFactory,
               maxAppendBatchSize,
-              maxAppendsPerFollower);
+              maxAppendsPerFollower,
+              randomSupplier);
       raft.setElectionTimeout(electionTimeout);
       raft.setHeartbeatInterval(heartbeatInterval);
       raft.setEntryValidator(entryValidator);

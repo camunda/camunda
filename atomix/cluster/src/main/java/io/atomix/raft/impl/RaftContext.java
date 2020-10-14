@@ -60,6 +60,7 @@ import io.atomix.utils.logging.LoggerContext;
 import io.zeebe.snapshots.raft.ReceivableSnapshotStore;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -110,6 +111,8 @@ public class RaftContext implements AutoCloseable {
   private EntryValidator entryValidator;
   private final int maxAppendBatchSize;
   private final int maxAppendsPerFollower;
+  // Used for randomizing election timeout
+  private final Random random;
 
   public RaftContext(
       final String name,
@@ -119,11 +122,13 @@ public class RaftContext implements AutoCloseable {
       final RaftStorage storage,
       final RaftThreadContextFactory threadContextFactory,
       final int maxAppendBatchSize,
-      final int maxAppendsPerFollower) {
+      final int maxAppendsPerFollower,
+      final Supplier<Random> randomFactory) {
     this.name = checkNotNull(name, "name cannot be null");
     this.membershipService = checkNotNull(membershipService, "membershipService cannot be null");
     this.protocol = checkNotNull(protocol, "protocol cannot be null");
     this.storage = checkNotNull(storage, "storage cannot be null");
+    random = randomFactory.get();
     log =
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(RaftServer.class).addValue(name).build());
@@ -954,6 +959,10 @@ public class RaftContext implements AutoCloseable {
 
   public RaftReplicationMetrics getReplicationMetrics() {
     return replicationMetrics;
+  }
+
+  public Random getRandom() {
+    return random;
   }
 
   /** Raft server state. */

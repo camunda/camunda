@@ -39,6 +39,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -559,6 +560,7 @@ public interface RaftServer {
     protected RaftThreadContextFactory threadContextFactory;
     protected Duration electionTimeout = DEFAULT_ELECTION_TIMEOUT;
     protected Duration heartbeatInterval = DEFAULT_HEARTBEAT_INTERVAL;
+    protected Supplier<Random> randomFactory;
     protected Supplier<JournalIndex> journalIndexFactory;
     protected EntryValidator entryValidator = new NoopEntryValidator();
     protected int maxAppendsPerFollower = 2;
@@ -625,6 +627,18 @@ public interface RaftServer {
     public Builder withThreadContextFactory(final RaftThreadContextFactory threadContextFactory) {
       this.threadContextFactory =
           checkNotNull(threadContextFactory, "threadContextFactory cannot be null");
+      return this;
+    }
+
+    /**
+     * Sets the factory that creates a {@link Random}. Raft uses it to randomize election timeouts.
+     * This factory is useful in testing, when we want to control the execution.
+     *
+     * @param randomFactory
+     * @return The Raft server builder.
+     */
+    public Builder withRandomFactory(final Supplier<Random> randomFactory) {
+      this.randomFactory = checkNotNull(randomFactory, "randomFactory cannot be null");
       return this;
     }
 
