@@ -8,29 +8,35 @@ package org.camunda.optimize.rest.eventprocess;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import io.github.netmikey.logunit.api.LogCapturer;
 import lombok.SneakyThrows;
 import org.camunda.bpm.engine.ActivityTypes;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.OptimizeRequestExecutor;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto;
-import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventMappingDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventScopeType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceEntryDto;
 import org.camunda.optimize.dto.optimize.query.event.process.EventSourceType;
 import org.camunda.optimize.dto.optimize.query.event.process.EventTypeDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountDto;
+import org.camunda.optimize.dto.optimize.query.event.sequence.EventCountRequestDto;
 import org.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import org.camunda.optimize.dto.optimize.rest.CloudEventDto;
 import org.camunda.optimize.dto.optimize.rest.sorting.EventCountSorter;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.schema.index.events.EventSequenceCountIndex;
+import org.camunda.optimize.service.events.EventCountService;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.slf4j.event.Level;
 
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
@@ -57,8 +63,9 @@ import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamunda
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskEndEventSuffix;
 import static org.camunda.optimize.service.util.EventDtoBuilderUtil.applyCamundaTaskStartEventSuffix;
 import static org.camunda.optimize.test.optimize.EventProcessClient.createExternalEventSourceEntry;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.EXTERNAL_EVENTS_INDEX_SUFFIX;
 
-public class EventRestServiceIT extends AbstractIT {
+public class EventCountRestServiceIT extends AbstractIT {
 
   private static final String CAMUNDA_START_EVENT = ActivityTypes.START_EVENT;
   private static final String CAMUNDA_END_EVENT = ActivityTypes.END_EVENT_NONE;
@@ -104,6 +111,12 @@ public class EventRestServiceIT extends AbstractIT {
       .collect(toList());
 
   private static String simpleDiagramXml;
+
+  @RegisterExtension
+  @Order(5)
+  protected final LogCapturer logCapturer = LogCapturer.create()
+    .forLevel(Level.DEBUG)
+    .captureForType(EventCountService.class);
 
   @BeforeAll
   public static void setup() {
@@ -1221,6 +1234,52 @@ public class EventRestServiceIT extends AbstractIT {
     // then the correct status code is returned
     createPostEventCountsRequest(eventCountRequestDto)
       .executeAndReturnList(EventCountDto.class, Response.Status.BAD_REQUEST.getStatusCode());
+  }
+
+  @Test
+  public void getEventCounts_camundaSource_countsAreZeroWhenSequenceNotYetProcessed() {
+    // given
+    final String definitionKey = "myProcess";
+    deployAndStartUserTaskProcess(definitionKey);
+
+    importAllEngineEntitiesFromScratch();
+
+    // when
+    List<EventCountDto> eventCountDtos =
+      createPostEventCountsRequestCamundaSourceOnly(
+        definitionKey,
+        Arrays.asList(EventScopeType.ALL, EventScopeType.PROCESS_INSTANCE, EventScopeType.START_END),
+        ImmutableList.of("1")
+      ).executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(eventCountDtos)
+      .containsExactlyInAnyOrder(
+        createProcessInstanceStartEventCountDto(definitionKey),
+        createStartEventCountDto(definitionKey, 0L),
+        createTaskStartEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
+        createTaskEndEventCountDto(definitionKey, CAMUNDA_USER_TASK, 0L),
+        createEndEventCountDto(definitionKey, 0L),
+        createProcessInstanceEndEventCount(definitionKey)
+      );
+    logCapturer.assertContains(
+      String.format("Cannot fetch event counts for sources with keys %s as sequence count indices do not exist",
+                    Collections.singletonList(definitionKey)));
+  }
+
+  @Test
+  public void getEventCounts_externalSource_countsEmptyWhenSequenceNotYetProcessed() {
+    // given the external event sequence does not exist
+    elasticSearchIntegrationTestExtension.deleteIndexOfMapping(new EventSequenceCountIndex(EXTERNAL_EVENTS_INDEX_SUFFIX));
+
+    // when
+    List<EventCountDto> eventCountDtos = createPostEventCountsRequestExternalEventsOnly()
+      .executeAndReturnList(EventCountDto.class, Response.Status.OK.getStatusCode());
+
+    // then
+    assertThat(eventCountDtos).isEmpty();
+    logCapturer.assertContains(
+      "Cannot fetch external event counts as sequence count index for external events does not exist");
   }
 
   private EventCountDto createNullGroupCountDto(final boolean suggested) {
