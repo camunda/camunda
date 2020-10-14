@@ -50,15 +50,14 @@ public class TestContainerUtil {
   private RestHighLevelClient esClient;
 
   public void startZeebe(final String dataFolderPath, final String version) {
-    broker = new ZeebeBrokerContainer(version)
+    broker = new ZeebeBrokerContainer("camunda/zeebe:" + version)
         .withFileSystemBind(dataFolderPath, "/usr/local/zeebe/data")
-        .withNetwork(getNetwork())
-        .withEmbeddedGateway(true)
-        .withLogLevel(Level.DEBUG);
+        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
+        .withNetwork(getNetwork());
     addConfig(broker, version);
     broker.start();
 
-    contactPoint = broker.getExternalAddress(ZeebePort.GATEWAY);
+    contactPoint = broker.getExternalAddress(ZeebePort.GATEWAY.getPort());
     client = ZeebeClient.newClientBuilder().brokerContactPoint(contactPoint).usePlaintext().build();
   }
 

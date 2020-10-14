@@ -90,18 +90,16 @@ public abstract class AbstractTestFixture implements TestFixture {
 
   protected void startZeebe(final String version) {
     logger.info("************ Starting Zeebe {} ************", version);
-    broker = new ZeebeBrokerContainer(version)
+    broker = new ZeebeBrokerContainer("camunda/zeebe:" + version)
         .withFileSystemBind(testContext.getZeebeDataFolder().getPath(), "/usr/local/zeebe/data")
         .withNetwork(testContext.getNetwork())
-        .withEmbeddedGateway(true)
-        .withLogLevel(Level.DEBUG)
-        .withSecurityEnabled(false);
+        .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
     addConfig(broker);
     broker.start();
     logger.info("************ Zeebe started  ************");
 
-    testContext.setInternalZeebeContactPoint(broker.getInternalAddress(ZeebePort.GATEWAY));
-    testContext.setExternalZeebeContactPoint(broker.getExternalAddress(ZeebePort.GATEWAY));
+    testContext.setInternalZeebeContactPoint(broker.getInternalAddress(ZeebePort.GATEWAY.getPort()));
+    testContext.setExternalZeebeContactPoint(broker.getExternalAddress(ZeebePort.GATEWAY.getPort()));
   }
 
   protected void addConfig(ZeebeBrokerContainer zeebeBroker) {
