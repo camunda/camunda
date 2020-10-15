@@ -3,7 +3,7 @@
   "version": "0.25.0-SNAPSHOT",
   "private": true,
   "dependencies": {
-    "@apollo/client": "^3.2.3",
+    "@apollo/client": "^3.2.4",
     "@testing-library/jest-dom": "^5.11.4",
     "@testing-library/react": "^11.1.0",
     "@testing-library/testcafe": "^4.2.3",
