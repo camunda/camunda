@@ -10,7 +10,7 @@ import update from 'immutability-helper';
 import deepEqual from 'deep-equal';
 
 import {evaluateReport} from 'services';
-import {DashboardRenderer, EntityNameForm, Button, Icon} from 'components';
+import {DashboardRenderer, EntityNameForm} from 'components';
 import {t} from 'translation';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {showPrompt} from 'prompt';
@@ -20,7 +20,7 @@ import {DeleteButton} from './DeleteButton';
 import DragOverlay from './DragOverlay';
 import EditButton from './EditButton';
 
-import {FiltersEdit} from './filters';
+import {FiltersEdit, AddFiltersButton} from './filters';
 
 import './DashboardEdit.scss';
 
@@ -31,9 +31,8 @@ export class DashboardEdit extends React.Component {
     const {name, initialAvailableFilters, initialReports} = props;
     this.state = {
       reports: initialReports,
-      availableFilters: initialAvailableFilters,
+      availableFilters: initialAvailableFilters || [],
       name: name,
-      filtersShown: initialAvailableFilters?.length > 0,
     };
   }
 
@@ -220,7 +219,9 @@ export class DashboardEdit extends React.Component {
 
   render() {
     const {lastModifier, lastModified, isNew} = this.props;
-    const {reports, name, filtersShown, availableFilters} = this.state;
+    const {reports, name, availableFilters} = this.state;
+
+    const optimizeReports = reports?.filter(({id, report}) => !!id || !!report);
 
     return (
       <div className="DashboardEdit">
@@ -236,21 +237,18 @@ export class DashboardEdit extends React.Component {
             onCancel={nowPristine}
           >
             <AddButton addReport={this.addReport} />
-            <Button
-              main
-              className="tool-button"
-              active={filtersShown}
-              onClick={() => this.setState(({filtersShown}) => ({filtersShown: !filtersShown}))}
-            >
-              <Icon type="filter" />
-              {t('dashboard.filter.label')}
-            </Button>
+            <AddFiltersButton
+              reports={optimizeReports}
+              persistReports={() => this.save(true)}
+              availableFilters={availableFilters}
+              setAvailableFilters={(availableFilters) => this.setState({availableFilters})}
+            />
             <div className="separator" />
           </EntityNameForm>
         </div>
-        {filtersShown && (
+        {availableFilters.length > 0 && (
           <FiltersEdit
-            reports={reports?.filter(({id, report}) => !!id || !!report)}
+            reports={optimizeReports}
             persistReports={() => this.save(true)}
             availableFilters={availableFilters}
             setAvailableFilters={(availableFilters) => this.setState({availableFilters})}

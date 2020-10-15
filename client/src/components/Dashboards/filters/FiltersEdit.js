@@ -5,150 +5,82 @@
  */
 
 import React, {useState} from 'react';
-import useDeepCompareEffect from 'use-deep-compare-effect';
 
 import {getVariableNames, getVariableValues} from './service';
 
-import {ActionItem, Dropdown} from 'components';
+import {Button, Icon} from 'components';
 import {VariableFilter} from 'filter';
-import {withErrorHandling} from 'HOC';
-import {showError} from 'notifications';
 import {t} from 'translation';
-import {showPrompt} from 'prompt';
+
+import InstanceStateFilter from './InstanceStateFilter';
+import DateFilter from './DateFilter';
+import DashboardVariableFilter from './VariableFilter';
 
 import './FiltersEdit.scss';
 
-export function FiltersEdit({
-  availableFilters,
-  setAvailableFilters,
-  reports = [],
-  persistReports,
-  mightFail,
-}) {
-  const [showVariableModal, setShowVariableModal] = useState(false);
-  const [openVariableModalAfterReportUpdate, setOpenVariableModalAfterReportUpdate] = useState(
-    null
-  );
-  const [availableVariables, setAvailableVariables] = useState([]);
-
-  const reportIds = reports.filter(({id}) => !!id).map(({id}) => id);
-  const hasUnsavedReports = reports.some(({id, report}) => report && !id);
-
-  useDeepCompareEffect(() => {
-    mightFail(
-      getVariableNames(reportIds),
-      (availableVariables) => {
-        setAvailableVariables(availableVariables);
-        setAvailableFilters(
-          availableFilters.filter(({type, data}) => {
-            if (type !== 'variable') {
-              return true;
-            }
-
-            return availableVariables.some(
-              ({type, name}) => data.type === type && data.name === name
-            );
-          })
-        );
-        if (openVariableModalAfterReportUpdate) {
-          openVariableModalAfterReportUpdate();
-          setShowVariableModal(true);
-          setOpenVariableModalAfterReportUpdate(null);
-        }
-      },
-      showError
-    );
-  }, [reportIds]);
-
-  function addFilter(type) {
-    setAvailableFilters([...availableFilters, {type}]);
-  }
-
-  function hasFilter(type) {
-    return availableFilters.some((filter) => filter.type === type);
-  }
+export default function FiltersEdit({availableFilters, setAvailableFilters, reports}) {
+  const [filterToEdit, setFilterToEdit] = useState();
 
   function removeFilter(idxToRemove) {
     setAvailableFilters(availableFilters.filter((_, idx) => idx !== idxToRemove));
   }
 
-  const disableVariableFilter = reports.length === 0;
+  const reportIds = reports.filter(({id}) => !!id).map(({id}) => id);
 
   return (
-    <div className="FiltersEdit">
-      <h3>{t('dashboard.filter.info')}</h3>
-      <span className="hint">{t('dashboard.filter.notice')}</span>
-      <ul>
-        {availableFilters.map(({type, data}, idx) => (
-          <li key={idx}>
-            <ActionItem onClick={() => removeFilter(idx)}>
-              {type === 'variable' ? (
-                <>
-                  {t('dashboard.filter.varAbbreviation')}:{' '}
-                  <span className="variableName">{data.name}</span>
-                </>
-              ) : (
-                t('dashboard.filter.types.' + type)
-              )}
-            </ActionItem>
-          </li>
-        ))}
-        <li>
-          <Dropdown label={t('common.filter.addFilter')}>
-            {['startDate', 'endDate', 'state'].map((type) => (
-              <Dropdown.Option
+    <div className="FiltersEdit FiltersView">
+      {availableFilters.map(({type, data}, idx) => {
+        const deleter = (
+          <Button className="deleteButton" icon onClick={() => removeFilter(idx)}>
+            <Icon type="close-large" />
+          </Button>
+        );
+        switch (type) {
+          case 'state':
+            return <InstanceStateFilter key={type}>{deleter}</InstanceStateFilter>;
+          case 'startDate':
+          case 'endDate':
+            return (
+              <DateFilter
                 key={type}
-                disabled={hasFilter(type)}
-                onClick={() => addFilter(type)}
+                emptyText={t('common.off')}
+                icon="calender"
+                title={t('dashboard.filter.types.' + type)}
               >
-                {t('dashboard.filter.types.' + type)}
-              </Dropdown.Option>
-            ))}
-            <Dropdown.Option
-              disabled={disableVariableFilter}
-              title={disableVariableFilter ? t('dashboard.filter.disabledVariable') : undefined}
-              onClick={() => {
-                if (hasUnsavedReports) {
-                  showPrompt(
-                    {
-                      title: t('dashboard.saveModal.unsaved'),
-                      body: t('dashboard.saveModal.text'),
-                      yes: t('common.saveContinue'),
-                      no: t('common.cancel'),
-                    },
-                    () =>
-                      new Promise((resolve) => {
-                        setOpenVariableModalAfterReportUpdate(() => resolve);
-                        persistReports();
-                      })
-                  );
-                } else {
-                  setShowVariableModal(true);
-                }
-              }}
-            >
-              {t('dashboard.filter.types.variable')}
-            </Dropdown.Option>
-          </Dropdown>
-        </li>
-      </ul>
-      {showVariableModal && (
+                {deleter}
+              </DateFilter>
+            );
+          case 'variable':
+            return (
+              <DashboardVariableFilter key={idx} config={data}>
+                <Button className="editButton" icon onClick={() => setFilterToEdit(idx)}>
+                  <Icon type="edit" />
+                </Button>
+                {deleter}
+              </DashboardVariableFilter>
+            );
+          default:
+            return null;
+        }
+      })}
+      {typeof filterToEdit !== 'undefined' && (
         <VariableFilter
           className="dashboardVariableFilter"
           forceEnabled={(variable) => ['Date', 'Boolean'].includes(variable?.type)}
           addFilter={({type, data}) => {
-            if (['Boolean', 'Date'].includes(data.type)) {
-              setAvailableFilters([
-                ...availableFilters,
-                {type, data: {name: data.name, type: data.type}},
-              ]);
-            } else {
-              setAvailableFilters([
-                ...availableFilters,
-                {type, data: {data: data.data, name: data.name, type: data.type}},
-              ]);
-            }
-            setShowVariableModal(false);
+            setAvailableFilters(
+              availableFilters.map((filter, idx) => {
+                if (idx !== filterToEdit) {
+                  return filter;
+                }
+                if (['Boolean', 'Date'].includes(data.type)) {
+                  return {type, data: {name: data.name, type: data.type}};
+                } else {
+                  return {type, data: {data: data.data, name: data.name, type: data.type}};
+                }
+              })
+            );
+            setFilterToEdit();
           }}
           getPretext={(variable) => {
             if (variable) {
@@ -164,16 +96,31 @@ export function FiltersEdit({
               return <div className="preText">{text}</div>;
             }
           }}
-          close={() => setShowVariableModal(false)}
+          close={() => setFilterToEdit()}
           config={{
-            getVariables: () => availableVariables,
+            getVariables: () => getVariableNames(reportIds),
             getValues: (...args) => getVariableValues(reportIds, ...args),
           }}
           filterType="variable"
+          filterData={{
+            type: 'variable',
+            data: augmentFilterData(availableFilters[filterToEdit].data),
+          }}
         />
       )}
     </div>
   );
 }
 
-export default withErrorHandling(FiltersEdit);
+// The Variable Filter needs certain data fields that are not stored for dashboard filters
+// E.g. a values array for boolean variables. This function augments the dashboard filter data
+// with dummy values for those cases so that the VariableFilter modal can deal with them
+function augmentFilterData(data) {
+  if (data.type === 'Date') {
+    return {...data, data: {}};
+  }
+  if (data.type === 'Boolean') {
+    return {...data, data: {values: []}};
+  }
+  return data;
+}

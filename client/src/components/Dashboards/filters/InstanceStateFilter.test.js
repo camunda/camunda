@@ -73,3 +73,13 @@ it('should disable incompatible filters', () => {
   expect(node.find(Switch).at(0)).toHaveProp('disabled', false);
   expect(node.find(Switch).at(1)).toHaveProp('disabled', true);
 });
+
+it('should render children', () => {
+  const node = shallow(
+    <InstanceStateFilter {...props}>
+      <div className="childContent" />
+    </InstanceStateFilter>
+  );
+
+  expect(node.find('.childContent')).toExist();
+});

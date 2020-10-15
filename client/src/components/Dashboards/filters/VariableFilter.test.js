@@ -40,3 +40,13 @@ it('should render component based on variable type', () => {
   expect(node.find(DateFilter)).not.toExist();
   expect(node.find(BooleanFilter)).toExist();
 });
+
+it('should render children', () => {
+  const node = shallow(
+    <VariableFilter {...props}>
+      <div className="childContent" />
+    </VariableFilter>
+  );
+
+  expect(node.find('.childContent')).toExist();
+});

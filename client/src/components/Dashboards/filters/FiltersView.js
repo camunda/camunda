@@ -38,6 +38,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter}) 
               <DateFilter
                 key={type}
                 emptyText={t('common.off')}
+                title={t('dashboard.filter.types.' + type)}
                 icon="calender"
                 resetTrigger={resetTrigger}
                 filter={dateFilter?.data}
@@ -49,9 +50,7 @@ export default function FiltersView({availableFilters, filter = [], setFilter}) 
                     setFilter(rest);
                   }
                 }}
-              >
-                <div className="title">{t('dashboard.filter.types.' + type)}</div>
-              </DateFilter>
+              />
             );
           case 'variable':
             const variableFilter = filter.find(
