@@ -13,6 +13,7 @@ import {
   parseQueryString,
   decodeFields,
   getWorkflowByVersion,
+  isVariableEmpty,
 } from './index';
 
 import {DEFAULT_FILTER} from 'modules/constants';
@@ -462,6 +463,16 @@ describe('modules/utils/filter.js', () => {
         version: 2,
         bpmnProcessId: 'eventBasedGatewayProcess',
       });
+    });
+  });
+
+  describe('isVariableEmpty', () => {
+    it('should check if variable is empty', () => {
+      expect(isVariableEmpty(undefined)).toBe(true);
+      expect(isVariableEmpty({name: '', value: ''})).toBe(true);
+      expect(isVariableEmpty({name: 'test', value: ''})).toBe(false);
+      expect(isVariableEmpty({name: '', value: '123'})).toBe(false);
+      expect(isVariableEmpty({name: 'test', value: '123'})).toBe(false);
     });
   });
 });

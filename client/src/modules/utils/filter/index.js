@@ -224,4 +224,10 @@ export function getFilterWithWorkflowIds(filter = {}, allWorkflows = {}) {
   return decodeFields({...newFilter});
 }
 
-export {decodeFields};
+function isVariableEmpty(variable) {
+  return (
+    variable === undefined || (variable.name === '' && variable.value === '')
+  );
+}
+
+export {decodeFields, isVariableEmpty};

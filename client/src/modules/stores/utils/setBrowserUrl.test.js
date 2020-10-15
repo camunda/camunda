@@ -79,5 +79,28 @@ describe('setBrowserUrl', () => {
       pathname: '/instances',
       search: '?filter={}',
     });
+
+    setBrowserUrl(
+      historyMock,
+      locationMock,
+      {active: true, incidents: true, variable: {name: '', value: ''}},
+      groupedWorkflows
+    );
+    expect(historyMock.push).toHaveBeenNthCalledWith(5, {
+      pathname: '/instances',
+      search: '?filter={"active":true,"incidents":true}',
+    });
+
+    setBrowserUrl(
+      historyMock,
+      locationMock,
+      {active: true, incidents: true, variable: {name: 'test', value: '123'}},
+      groupedWorkflows
+    );
+    expect(historyMock.push).toHaveBeenNthCalledWith(6, {
+      pathname: '/instances',
+      search:
+        '?filter={"active":true,"incidents":true,"variable":{"name":"test","value":"123"}}',
+    });
   });
 });

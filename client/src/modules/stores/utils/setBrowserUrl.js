@@ -4,10 +4,11 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {getFilterQueryString} from 'modules/utils/filter';
+import {getFilterQueryString, isVariableEmpty} from 'modules/utils/filter';
 
 const setBrowserUrl = (history, location, filter, groupedWorkflows, name) => {
   let workflowName;
+  let urlFilterValues = {...filter};
 
   if (name !== undefined) {
     workflowName = name;
@@ -17,9 +18,14 @@ const setBrowserUrl = (history, location, filter, groupedWorkflows, name) => {
   } else {
     workflowName = '';
   }
+
+  if (isVariableEmpty(urlFilterValues.variable)) {
+    urlFilterValues.variable = null;
+  }
+
   return history.push({
     pathname: location.pathname,
-    search: getFilterQueryString(filter, workflowName),
+    search: getFilterQueryString(urlFilterValues, workflowName),
   });
 };
 
