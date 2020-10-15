@@ -37,7 +37,7 @@ services:
 
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:SNAPSHOT
+    image: camunda/zeebe:0.25.0-rc1
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe
@@ -59,14 +59,16 @@ services:
     image: camunda/zeebe-tasklist:latest
     ports:
       - 8080:8080
+      - 5005:5005
     environment:
-      - zeebe.tasklist.elasticsearch.url=http://elasticsearch:9200
-      - zeebe.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
+      - zeebe.tasklist.elasticsearch.host=elasticsearch
+      - zeebe.tasklist.zeebeElasticsearch.host=elasticsearch
       - zeebe.tasklist.zeebe.brokerContactPoint=zeebe:26500
       - spring.profiles.active=dev,dev-data,auth
       - zeebe.tasklist.csrfPreventionEnabled=false
       - graphql.playground.enabled=true
       - graphql.playground.settings.request.credentials=include
+      - JAVA_TOOL_OPTIONS='-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5005'
     volumes:
       - ./distro/src/main/config/application.yml:/app/resources/application.yaml
       - ./distro/src/main/config/log4j2.xml:/app/resources/log4j2.xml
@@ -95,7 +97,7 @@ services:
 
   zeebe-e2e:
     container_name: zeebe-e2e
-    image: camunda/zeebe:SNAPSHOT
+    image: camunda/zeebe:0.25.0-rc1
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_BROKER_NETWORK_HOST=zeebe-e2e
