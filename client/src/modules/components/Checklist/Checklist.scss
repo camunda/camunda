@@ -61,4 +61,20 @@
 
     @include scrollable;
   }
+
+  .searchInputContainer {
+    position: relative;
+
+    .Input:valid ~ .searchIcon {
+      display: none;
+    }
+
+    .searchIcon {
+      position: absolute;
+      right: 10px;
+      top: calc(50% - 2px);
+      transform: translateY(-50%);
+      color: $silver-darken-80;
+    }
+  }
 }

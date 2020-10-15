@@ -14,13 +14,23 @@ exports[`should match snapshot 1`] = `
       onChange={[Function]}
       type="checkbox"
     />
-    <ForwardRef(Input)
-      className="searchInput"
-      onChange={[Function]}
-      placeholder="Search for items"
-      type="text"
-      value=""
-    />
+    <div
+      className="searchInputContainer"
+    >
+      <ForwardRef(Input)
+        className="searchInput"
+        onChange={[Function]}
+        onClear={[Function]}
+        placeholder="Search for items"
+        type="text"
+        value=""
+      />
+      <Icon
+        className="searchIcon"
+        size="20"
+        type="search"
+      />
+    </div>
     <Tag
       onRemove={[Function]}
     >
