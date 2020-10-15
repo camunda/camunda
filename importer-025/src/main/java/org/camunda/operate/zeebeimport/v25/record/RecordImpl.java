@@ -20,6 +20,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   private RecordType recordType;
   private RejectionType rejectionType;
   private String rejectionReason;
+  private String brokerVersion;
   private ValueType valueType;
 
   private long key;
@@ -58,6 +59,11 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   }
 
   @Override
+  public String getBrokerVersion() {
+    return brokerVersion;
+  }
+
+  @Override
   public ValueType getValueType() {
     return valueType;
   }
@@ -80,6 +86,10 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
 
   public void setRejectionReason(String rejectionReason) {
     this.rejectionReason = rejectionReason;
+  }
+
+  public void setBrokerVersion(final String brokerVersion) {
+    this.brokerVersion = brokerVersion;
   }
 
   public void setValueType(ValueType valueType) {
@@ -143,30 +153,19 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
 
   @Override
   public String toString() {
-    return "RecordImpl{"
-        + "partitionId="
-        + partitionId
-        + ", intent="
-        + intent
-        + ", recordType="
-        + recordType
-        + ", rejectionType="
-        + rejectionType
-        + ", rejectionReason='"
-        + rejectionReason
-        + '\''
-        + ", valueType="
-        + valueType
-        + ", key="
-        + key
-        + ", position="
-        + position
-        + ", timestamp="
-        + timestamp
-        + ", sourceRecordPosition="
-        + sourceRecordPosition
-        + ", value="
-        + value
-        + '}';
+    return "RecordImpl{" +
+        "partitionId=" + partitionId +
+        ", intent=" + intent +
+        ", recordType=" + recordType +
+        ", rejectionType=" + rejectionType +
+        ", rejectionReason='" + rejectionReason + '\'' +
+        ", brokerVersion='" + brokerVersion + '\'' +
+        ", valueType=" + valueType +
+        ", key=" + key +
+        ", position=" + position +
+        ", timestamp=" + timestamp +
+        ", sourceRecordPosition=" + sourceRecordPosition +
+        ", value=" + value +
+        '}';
   }
 }
