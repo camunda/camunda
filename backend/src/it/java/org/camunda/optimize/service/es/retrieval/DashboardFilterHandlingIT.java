@@ -10,6 +10,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.optimize.DashboardFilterType;
+import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardFilterDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
@@ -31,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static javax.ws.rs.HttpMethod.POST;
@@ -553,6 +555,84 @@ public class DashboardFilterHandlingIT extends AbstractIT {
     assertThat(storedDashboard.getAvailableFilters()).isEqualTo(dashboardAfterUpdate.getAvailableFilters());
   }
 
+  @Test
+  public void dashboardFiltersAreCopiedOnPrivateDashboardCopy() {
+    // given
+    final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
+    final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
+
+    final DashboardDefinitionDto dashboardDefinitionDto =
+      createDashboardDefinitionWithFiltersAndReports(
+        Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
+        Collections.singletonList(reportId)
+      );
+    final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+
+    // when
+    IdDto copyId = dashboardClient.copyDashboard(dashboardId);
+    final DashboardDefinitionDto originalDashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionDto copiedDashboard = dashboardClient.getDashboard(copyId.getId());
+
+    // then
+    assertThat(copiedDashboard.getCollectionId()).isNull();
+    assertThat(originalDashboard.getCollectionId()).isNull();
+    assertThat(copiedDashboard.getAvailableFilters())
+      .containsExactlyInAnyOrderElementsOf(originalDashboard.getAvailableFilters());
+  }
+
+  @Test
+  public void dashboardFiltersAreCopiedOnDashboardCopyInsideCollection() {
+    // given
+    final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
+    final String collectionId = collectionClient.createNewCollectionWithProcessScope(deployedInstance);
+    final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
+    final String reportInCollectionId = reportClient.copyReportToCollection(reportId, collectionId)
+      .readEntity(IdDto.class).getId();
+
+    final DashboardDefinitionDto dashboardDefinitionDto =
+      createDashboardDefinitionWithFiltersAndReports(
+        Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
+        Collections.singletonList(reportInCollectionId),
+        collectionId
+      );
+    final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+
+    // when
+    IdDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
+    final DashboardDefinitionDto originalDashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionDto copiedDashboard = dashboardClient.getDashboard(copyId.getId());
+
+    // then
+    assertThat(copiedDashboard.getCollectionId()).isEqualTo(originalDashboard.getCollectionId());
+    assertThat(copiedDashboard.getAvailableFilters())
+      .containsExactlyInAnyOrderElementsOf(originalDashboard.getAvailableFilters());
+  }
+
+  @Test
+  public void dashboardFiltersAreCopiedOnDashboardCopyIntoCollection() {
+    // given
+    final ProcessInstanceEngineDto deployedInstance = deployInstanceWithVariables(INSTANCE_VAR_MAP);
+    final String reportId = createAndSaveReportForDeployedInstance(deployedInstance).getId();
+    final DashboardDefinitionDto dashboardDefinitionDto =
+      createDashboardDefinitionWithFiltersAndReports(
+        Arrays.asList(STATE_DASHBOARD_FILTER, DATE_VAR_DASHBOARD_FILTER),
+        Collections.singletonList(reportId)
+      );
+    final String dashboardId = dashboardClient.createDashboard(dashboardDefinitionDto);
+    final String collectionId = collectionClient.createNewCollectionWithProcessScope(deployedInstance);
+
+    // when
+    IdDto copyId = dashboardClient.copyDashboardToCollection(dashboardId, collectionId);
+    final DashboardDefinitionDto originalDashboard = dashboardClient.getDashboard(dashboardId);
+    final DashboardDefinitionDto copiedDashboard = dashboardClient.getDashboard(copyId.getId());
+
+    // then
+    assertThat(copiedDashboard.getCollectionId()).isEqualTo(collectionId);
+    assertThat(originalDashboard.getCollectionId()).isNull();
+    assertThat(copiedDashboard.getAvailableFilters())
+      .containsExactlyInAnyOrderElementsOf(originalDashboard.getAvailableFilters());
+  }
+
   private SingleProcessReportDefinitionDto createAndSaveReportForDeployedInstance(final ProcessInstanceEngineDto deployedInstanceWithAllVariables) {
     final SingleProcessReportDefinitionDto singleProcessReportDefinitionDto =
       reportClient.createSingleProcessReportDefinitionDto(
@@ -572,11 +652,18 @@ public class DashboardFilterHandlingIT extends AbstractIT {
 
   private DashboardDefinitionDto createDashboardDefinitionWithFiltersAndReports(final List<DashboardFilterDto> dashboardFilterDtos,
                                                                                 final List<String> reportIds) {
+    return createDashboardDefinitionWithFiltersAndReports(dashboardFilterDtos, reportIds, null);
+  }
+
+  private DashboardDefinitionDto createDashboardDefinitionWithFiltersAndReports(final List<DashboardFilterDto> dashboardFilterDtos,
+                                                                                final List<String> reportIds,
+                                                                                final String collectionId) {
     final DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
     dashboardDefinitionDto.setReports(reportIds.stream()
                                         .map(id -> ReportLocationDto.builder().id(id).build())
                                         .collect(Collectors.toList()));
     dashboardDefinitionDto.setAvailableFilters(dashboardFilterDtos);
+    Optional.ofNullable(collectionId).ifPresent(dashboardDefinitionDto::setCollectionId);
     return dashboardDefinitionDto;
   }
 

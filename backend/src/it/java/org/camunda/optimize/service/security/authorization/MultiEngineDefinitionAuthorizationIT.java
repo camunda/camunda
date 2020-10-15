@@ -15,20 +15,18 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import javax.ws.rs.core.Response;
 import java.util.List;
-import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_DECISION_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.service.util.importing.EngineConstants.RESOURCE_TYPE_TENANT;
 import static org.camunda.optimize.test.engine.AuthorizationClient.KERMIT_USER;
 import static org.camunda.optimize.test.it.extension.EmbeddedOptimizeExtension.DEFAULT_ENGINE_ALIAS;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT {
 
-  public AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);
-  public AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondaryEngineIntegrationExtension);
+  private AuthorizationClient defaultAuthorizationClient = new AuthorizationClient(engineIntegrationExtension);
+  private AuthorizationClient secondAuthorizationClient = new AuthorizationClient(secondaryEngineIntegrationExtension);
 
   @ParameterizedTest
   @MethodSource("definitionType")
@@ -42,11 +40,11 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
-    //when
+    // when
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
-    //then
-    assertThat(definitions.size(), is(2));
+    // then
+    assertThat(definitions).hasSize(2);
   }
 
   @ParameterizedTest
@@ -60,12 +58,12 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
-    //when
+    // when
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
-    //then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getEngine(), is(SECOND_ENGINE_ALIAS));
+    // then
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getEngine()).isEqualTo(SECOND_ENGINE_ALIAS);
 
   }
 
@@ -86,12 +84,12 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
-    //when
+    // when
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
-    //then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getEngine(), is(DEFAULT_ENGINE_ALIAS));
+    // then
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getEngine()).isEqualTo(DEFAULT_ENGINE_ALIAS);
   }
 
   @ParameterizedTest
@@ -110,12 +108,12 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
 
     deployStartAndImportDefinitionForAllEngines(definitionResourceType);
 
-    //when
+    // when
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
-    //then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getEngine(), is(DEFAULT_ENGINE_ALIAS));
+    // then
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getEngine()).isEqualTo(DEFAULT_ENGINE_ALIAS);
   }
 
   @ParameterizedTest
@@ -143,8 +141,8 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getEngine(), is(DEFAULT_ENGINE_ALIAS));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getEngine()).isEqualTo(DEFAULT_ENGINE_ALIAS);
   }
 
   @ParameterizedTest
@@ -169,8 +167,8 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getEngine(), is(SECOND_ENGINE_ALIAS));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getEngine()).isEqualTo(SECOND_ENGINE_ALIAS);
   }
 
   @ParameterizedTest
@@ -194,8 +192,8 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getEngine(), is(SECOND_ENGINE_ALIAS));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getEngine()).isEqualTo(SECOND_ENGINE_ALIAS);
   }
 
   @ParameterizedTest
@@ -216,8 +214,8 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getEngine(), is(DEFAULT_ENGINE_ALIAS));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getEngine()).isEqualTo(DEFAULT_ENGINE_ALIAS);
   }
 
   @ParameterizedTest
@@ -242,8 +240,8 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getEngine(), is(DEFAULT_ENGINE_ALIAS));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getEngine()).isEqualTo(DEFAULT_ENGINE_ALIAS);
   }
 
   @ParameterizedTest
@@ -271,8 +269,8 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     //then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getEngine(), is(SECOND_ENGINE_ALIAS));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getEngine()).isEqualTo(SECOND_ENGINE_ALIAS);
   }
 
   @ParameterizedTest
@@ -297,7 +295,7 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     final List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(2));
+    assertThat(definitions).hasSize(2);
   }
 
   @ParameterizedTest
@@ -320,8 +318,8 @@ public class MultiEngineDefinitionAuthorizationIT extends AbstractMultiEngineIT 
     List<DefinitionOptimizeDto> definitions = retrieveDefinitionsAsKermitUser(definitionResourceType);
 
     // then
-    assertThat(definitions.size(), is(1));
-    assertThat(definitions.get(0).getEngine(), is(DEFAULT_ENGINE_ALIAS));
+    assertThat(definitions).hasSize(1);
+    assertThat(definitions.get(0).getEngine()).isEqualTo(DEFAULT_ENGINE_ALIAS);
   }
 
   private String getDefinitionKeyDefaultEngine(final int definitionResourceType) {

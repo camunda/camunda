@@ -162,7 +162,6 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     collectionService.verifyUserAuthorizedToEditCollectionResources(userId, collectionId);
 
     final List<ReportLocationDto> newDashboardReports = new ArrayList<>(dashboardDefinition.getReports());
-
     if (!isSameCollection(collectionId, dashboardDefinition.getCollectionId())) {
       newDashboardReports.clear();
       containingReportsComplyWithNewCollectionScope(userId, collectionId, dashboardDefinition);
@@ -174,14 +173,12 @@ public class DashboardService implements ReportReferencingService, CollectionRef
             ReportDefinitionDto report = reportReader.getReport(originalReportId)
               .orElseThrow(() -> new NotFoundException("Was not able to retrieve report with id [" + originalReportId + "]"
                                                          + "from Elasticsearch. Report does not exist."));
-
             final String newReportName = keepReportNames ? report.getName() : null;
             reportCopyId = reportService.copyAndMoveReport(
               originalReportId, userId, collectionId, newReportName, uniqueReportCopies, keepReportNames
             ).getId();
             uniqueReportCopies.put(originalReportId, reportCopyId);
           }
-
           newDashboardReports.add(
             reportLocationDto.toBuilder().id(reportCopyId).configuration(reportLocationDto.getConfiguration()).build()
           );
@@ -196,6 +193,7 @@ public class DashboardService implements ReportReferencingService, CollectionRef
     newDashboardDefinitionDto.setCollectionId(collectionId);
     newDashboardDefinitionDto.setName(newDashboardName);
     newDashboardDefinitionDto.setReports(newDashboardReports);
+    newDashboardDefinitionDto.setAvailableFilters(dashboardDefinition.getAvailableFilters());
     return dashboardWriter.createNewDashboard(userId, newDashboardDefinitionDto);
   }
 

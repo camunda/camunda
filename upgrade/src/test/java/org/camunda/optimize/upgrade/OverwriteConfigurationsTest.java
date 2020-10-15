@@ -11,10 +11,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.createEnvConfig;
 import static org.camunda.optimize.upgrade.EnvironmentConfigUtil.deleteEnvConfig;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class OverwriteConfigurationsTest {
 
@@ -43,8 +42,8 @@ public class OverwriteConfigurationsTest {
     ConfigurationService configuration = ConfigurationServiceBuilder.createDefaultConfiguration();
 
     // then
-    assertThat(configuration.getElasticsearchConnectionNodes().size(), is(1));
-    assertThat(configuration.getElasticsearchConnectionNodes().get(0).getHost(), is("foo"));
+    assertThat(configuration.getElasticsearchConnectionNodes()).hasSize(1);
+    assertThat(configuration.getElasticsearchConnectionNodes().get(0).getHost()).isEqualTo("foo");
   }
 
 }

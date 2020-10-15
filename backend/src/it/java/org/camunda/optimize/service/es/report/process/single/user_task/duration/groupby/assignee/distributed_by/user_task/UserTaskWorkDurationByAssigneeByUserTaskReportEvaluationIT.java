@@ -20,12 +20,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.test.it.extension.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
 import static org.camunda.optimize.test.util.ProcessReportDataType.USER_TASK_DURATION_GROUP_BY_ASSIGNEE_BY_USER_TASK;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
 
 public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
   extends AbstractUserTaskDurationByAssigneeByUserTaskReportEvaluationIT {
@@ -73,10 +72,8 @@ public class UserTaskWorkDurationByAssigneeByUserTaskReportEvaluationIT
   @Override
   protected void assertEvaluateReportWithExecutionState(final ReportHyperMapResultDto result,
                                                         final ExecutionStateTestValues expectedValues) {
-    assertThat(
-      result.getDataEntryForKey(DEFAULT_USERNAME).get(),
-      is(expectedValues.getExpectedWorkDurationValues())
-    );
+    assertThat(result.getDataEntryForKey(DEFAULT_USERNAME)).isPresent().get()
+      .isEqualTo(expectedValues.getExpectedWorkDurationValues());
   }
 
   @Override
