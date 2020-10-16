@@ -12,4 +12,12 @@
   .Message.error {
     margin-top: 5px;
   }
+
+  .MultiValueInput {
+    .Tag,
+    .Tag .Button {
+      background-color: #7fa8c5;
+      color: white;
+    }
+  }
 }

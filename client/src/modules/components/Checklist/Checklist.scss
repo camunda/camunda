@@ -19,18 +19,19 @@
 
     .Tag {
       margin-left: 10px;
-      height: 32px;
+      height: 30px;
       border-radius: 15px;
+      color: $grey-darken-36;
 
       .tagText {
         position: relative;
-        top: 4px;
+        top: 2px;
         margin-right: 5px;
       }
 
       button {
         position: relative;
-        top: 9px;
+        top: 7px;
       }
     }
   }
