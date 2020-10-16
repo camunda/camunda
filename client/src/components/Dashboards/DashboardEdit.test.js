@@ -10,23 +10,18 @@ import {shallow} from 'enzyme';
 import {nowDirty} from 'saveGuard';
 import {EntityNameForm} from 'components';
 import {showPrompt} from 'prompt';
-import {redirectTo} from 'redirect';
 
 import {FiltersEdit} from './filters';
 
-import DashboardEdit from './DashboardEdit';
+import {DashboardEdit} from './DashboardEdit';
 
 jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
 jest.mock('prompt', () => ({
   showPrompt: jest.fn().mockImplementation(async (config, cb) => await cb()),
 }));
-jest.mock('redirect', () => ({
-  redirectTo: jest.fn(),
-}));
 
 beforeEach(() => {
   showPrompt.mockClear();
-  redirectTo.mockClear();
 });
 
 it('should contain an AddButton', () => {
@@ -103,9 +98,12 @@ it('should save the dashboard when going to the report edit mode', async () => {
     dimensions: {height: 2, width: 2},
     report: {id: 'new'},
   };
-  const spy = jest.fn();
+  const saveSpy = jest.fn();
+  const historySpy = jest.fn();
 
-  const node = shallow(<DashboardEdit initialReports={[report]} saveChanges={spy} />);
+  const node = shallow(
+    <DashboardEdit initialReports={[report]} saveChanges={saveSpy} history={{push: historySpy}} />
+  );
 
   node.find('DashboardRenderer').prop('addons')[2].props.onClick(report);
 
@@ -124,6 +122,6 @@ it('should save the dashboard when going to the report edit mode', async () => {
 
   await flushPromises();
 
-  expect(spy).toHaveBeenCalled();
-  expect(redirectTo).toHaveBeenCalledWith('report/1/edit');
+  expect(saveSpy).toHaveBeenCalled();
+  expect(historySpy).toHaveBeenCalledWith('report/1/edit');
 });

@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import {withRouter} from 'react-router-dom';
 import update from 'immutability-helper';
 import deepEqual from 'deep-equal';
 
@@ -13,7 +14,6 @@ import {DashboardRenderer, EntityNameForm, Button, Icon} from 'components';
 import {t} from 'translation';
 import {nowDirty, nowPristine} from 'saveGuard';
 import {showPrompt} from 'prompt';
-import {redirectTo} from 'redirect';
 
 import {AddButton} from './AddButton';
 import {DeleteButton} from './DeleteButton';
@@ -24,7 +24,7 @@ import {FiltersEdit} from './filters';
 
 import './DashboardEdit.scss';
 
-export default class DashboardEdit extends React.Component {
+export class DashboardEdit extends React.Component {
   constructor(props) {
     super(props);
 
@@ -213,7 +213,7 @@ export default class DashboardEdit extends React.Component {
         const reportIdx = this.state.reports.indexOf(report);
         await this.save(true);
         const reportId = this.state.reports[reportIdx].id;
-        redirectTo('report/' + reportId + '/edit');
+        this.props.history.push('report/' + reportId + '/edit');
       }
     );
   };
@@ -273,6 +273,8 @@ export default class DashboardEdit extends React.Component {
     );
   }
 }
+
+export default withRouter(DashboardEdit);
 
 function createEvent(type, position) {
   return new MouseEvent(type, {
