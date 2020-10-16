@@ -7,7 +7,7 @@
 import React from 'react';
 
 import MultiSelect from './MultiSelect';
-import {MultiValueInput} from 'components';
+import {UncontrolledMultiValueInput} from 'components';
 
 import {shallow} from 'enzyme';
 
@@ -20,11 +20,11 @@ it('should show/hide options list on input focus/blur', () => {
     </MultiSelect>
   );
 
-  node.find(MultiValueInput).simulate('focus');
+  node.find(UncontrolledMultiValueInput).simulate('focus');
 
   expect(node.find('OptionsList').prop('open')).toBe(true);
 
-  node.find(MultiValueInput).simulate('blur');
+  node.find(UncontrolledMultiValueInput).simulate('blur');
 
   expect(node.find('OptionsList').prop('open')).toBe(false);
 });
@@ -56,10 +56,10 @@ it('should reset MultiSelect when clicking outside', async () => {
     </MultiSelect>
   );
 
-  node.find(MultiValueInput).prop('onChange')('randomText');
+  node.find(UncontrolledMultiValueInput).prop('onChange')({target: {value: 'randomText'}});
   expect(node.find('OptionsList').prop('filter')).toBe('randomText');
 
-  node.find(MultiValueInput).simulate('blur');
+  node.find(UncontrolledMultiValueInput).simulate('blur');
 
   expect(node.find('OptionsList').prop('filter')).toBe('');
 });

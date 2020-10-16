@@ -2,15 +2,11 @@
 
 exports[`should match snapshot 1`] = `
 <div
-  className="MultiValueInput"
+  className="UncontrolledMultiValueInput"
   onClick={[Function]}
 >
   <ForwardRef(Input)
     autoComplete="none"
-    onBlur={[Function]}
-    onChange={[Function]}
-    onKeyDown={[Function]}
-    value=""
   />
   <span
     className="sizer"

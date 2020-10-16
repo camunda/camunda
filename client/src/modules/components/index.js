@@ -49,5 +49,5 @@ export {InstanceCount} from './InstanceCount';
 export {DocsLink} from './DocsLink';
 export {Tabs} from './Tabs';
 export {Tag} from './Tag';
-export {MultiValueInput} from './MultiValueInput';
+export {MultiValueInput, UncontrolledMultiValueInput} from './MultiValueInput';
 export {Checklist} from './Checklist';

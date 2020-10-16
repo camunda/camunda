@@ -7,7 +7,7 @@
 import React, {useRef, useState} from 'react';
 import classnames from 'classnames';
 
-import {Button, Icon, Dropdown, MultiValueInput} from 'components';
+import {Button, Icon, Dropdown, UncontrolledMultiValueInput} from 'components';
 import {t} from 'translation';
 
 import OptionsList from './OptionsList';
@@ -36,7 +36,6 @@ export default function MultiSelect({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [optionClicked, setOptionClicked] = useState(false);
-  const [resetInput, setResetInput] = useState(false);
   const [insideClick, setInsideClick] = useState(false);
 
   const input = useRef();
@@ -54,7 +53,6 @@ export default function MultiSelect({
   function hideList() {
     if (!optionClicked) {
       if (query && !insideClick) {
-        setResetInput(!resetInput);
         setQuery('');
       }
       onClose();
@@ -77,31 +75,33 @@ export default function MultiSelect({
     return placeholder;
   }
 
-  function onChange(value) {
+  function onChange({target: {value}}) {
     setQuery(value);
     onSearch(value);
   }
 
+  function handleKeyPress(evt) {
+    if (query === '' && evt.key === 'Backspace' && values.length > 0) {
+      const lastElementIndex = values.length - 1;
+      onRemove(values[lastElementIndex].value, lastElementIndex);
+    }
+  }
+
   return (
     <div className={classnames('MultiSelect', className)} onMouseDown={() => setInsideClick(true)}>
-      <MultiValueInput
-        className="typeaheadInput"
-        key={resetInput}
+      <UncontrolledMultiValueInput
+        inputClassName="typeaheadInput"
+        ref={input}
+        value={query}
         onChange={onChange}
         values={values}
-        onAdd={(...args) => {
-          if (!optionClicked) {
-            onAdd(...args);
-          }
-        }}
         onRemove={onRemove}
-        ref={input}
         onBlur={hideList}
         onClear={onClear}
         onFocus={showList}
         disabled={isInputDisabled}
         placeholder={getPlaceholderText(isEmpty)}
-        disableAddByKeyboard
+        onKeyDown={handleKeyPress}
       />
       <Button
         tabIndex="-1"
