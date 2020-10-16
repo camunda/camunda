@@ -71,39 +71,40 @@ public class Starter extends App {
 
     final CountDownLatch countDownLatch = new CountDownLatch(1);
 
-    final ScheduledFuture scheduledTask = executorService.scheduleAtFixedRate(
-        () -> {
-          if (shouldContinue.get()) {
-            try {
-              if (starterCfg.isWithResults()) {
-                requestFutures.put(
-                    client
-                        .newCreateInstanceCommand()
-                        .bpmnProcessId(processId)
-                        .latestVersion()
-                        .variables(variables)
-                        .withResult()
-                        .requestTimeout(starterCfg.getWithResultsTimeout())
-                        .send());
+    final ScheduledFuture scheduledTask =
+        executorService.scheduleAtFixedRate(
+            () -> {
+              if (shouldContinue.get()) {
+                try {
+                  if (starterCfg.isWithResults()) {
+                    requestFutures.put(
+                        client
+                            .newCreateInstanceCommand()
+                            .bpmnProcessId(processId)
+                            .latestVersion()
+                            .variables(variables)
+                            .withResult()
+                            .requestTimeout(starterCfg.getWithResultsTimeout())
+                            .send());
+                  } else {
+                    requestFutures.put(
+                        client
+                            .newCreateInstanceCommand()
+                            .bpmnProcessId(processId)
+                            .latestVersion()
+                            .variables(variables)
+                            .send());
+                  }
+                } catch (Exception e) {
+                  LOG.error("Error on creating new workflow instance", e);
+                }
               } else {
-                requestFutures.put(
-                    client
-                        .newCreateInstanceCommand()
-                        .bpmnProcessId(processId)
-                        .latestVersion()
-                        .variables(variables)
-                        .send());
+                countDownLatch.countDown();
               }
-            } catch (Exception e) {
-              LOG.error("Error on creating new workflow instance", e);
-            }
-          } else {
-            countDownLatch.countDown();
-          }
-        },
-        0,
-        intervalMs,
-        TimeUnit.MILLISECONDS);
+            },
+            0,
+            intervalMs,
+            TimeUnit.MILLISECONDS);
 
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
@@ -127,7 +128,7 @@ public class Starter extends App {
                   stopMonitoringServer();
                 }));
 
-    //wait for starter to finish
+    // wait for starter to finish
     try {
       countDownLatch.await();
     } catch (InterruptedException e) {
@@ -141,8 +142,6 @@ public class Starter extends App {
     responseChecker.close();
     stopMonitoringServer();
   }
-
-
 
   private ZeebeClient createZeebeClient() {
     final ZeebeClientBuilder builder =
@@ -188,7 +187,6 @@ public class Starter extends App {
       return () -> true;
     }
   }
-
 
   public static void main(String[] args) {
     createApp(Starter::new);
