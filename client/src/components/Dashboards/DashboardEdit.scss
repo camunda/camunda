@@ -11,4 +11,9 @@
       transform: translate(0, 6px);
     }
   }
+
+  .OptimizeReport .visualization,
+  .ExternalReport iframe {
+    opacity: 0.5;
+  }
 }
