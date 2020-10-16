@@ -72,7 +72,33 @@ it('should contain a popover with information about the filters', () => {
   const node = shallow(<InstanceCount {...props} />);
 
   expect(node.find('Popover')).toExist();
-  expect(node.find('FilterList').prop('data')).toBe(props.report.data.filter);
+  expect(node.find('FilterList').prop('data')).toEqual(props.report.data.filter);
+});
+
+it('should separate report and dashboard level filters', () => {
+  const allFilters = [
+    {type: 'runningInstancesOnly', data: null},
+    {
+      type: 'processInstanceDuration',
+      data: {value: 7, unit: 'days', operator: '>', includeNull: false},
+    },
+    {type: 'runningInstancesOnly', data: null},
+    {type: 'nonCanceledInstancesOnly', data: null},
+  ];
+
+  const dashboardFilters = [
+    {type: 'runningInstancesOnly', data: null},
+    {type: 'nonCanceledInstancesOnly', data: null},
+  ];
+
+  const reportWithAllFilters = update(props.report, {data: {filter: {$set: allFilters}}});
+
+  const node = shallow(
+    <InstanceCount {...props} report={reportWithAllFilters} additionalFilter={dashboardFilters} />
+  );
+
+  expect(node.find('FilterList').at(0).prop('data')).toMatchSnapshot();
+  expect(node.find('FilterList').at(1).prop('data')).toMatchSnapshot();
 });
 
 it('should not contain a popover if the report has no filters', () => {

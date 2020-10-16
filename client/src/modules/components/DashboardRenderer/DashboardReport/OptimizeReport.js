@@ -93,7 +93,7 @@ export class OptimizeReport extends React.Component {
       return <LoadingIndicator />;
     }
 
-    const {disableNameLink, children = () => {}} = this.props;
+    const {disableNameLink, filter, children = () => {}} = this.props;
 
     const reportName = this.getName();
 
@@ -106,7 +106,7 @@ export class OptimizeReport extends React.Component {
           >
             {reportName}
           </EntityName>
-          <InstanceCount report={data} useIcon="filter" />
+          <InstanceCount report={data} additionalFilter={filter} useIcon="filter" />
         </div>
         <div className="visualization">
           {error ? (

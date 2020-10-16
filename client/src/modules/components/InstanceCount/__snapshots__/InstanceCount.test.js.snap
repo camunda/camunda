@@ -18,3 +18,34 @@ Object {
   ],
 }
 `;
+
+exports[`should separate report and dashboard level filters 1`] = `
+Array [
+  Object {
+    "data": Object {
+      "includeNull": false,
+      "operator": ">",
+      "unit": "days",
+      "value": 7,
+    },
+    "type": "processInstanceDuration",
+  },
+  Object {
+    "data": null,
+    "type": "runningInstancesOnly",
+  },
+]
+`;
+
+exports[`should separate report and dashboard level filters 2`] = `
+Array [
+  Object {
+    "data": null,
+    "type": "runningInstancesOnly",
+  },
+  Object {
+    "data": null,
+    "type": "nonCanceledInstancesOnly",
+  },
+]
+`;

@@ -5,8 +5,11 @@
     .InstanceCount {
       margin-top: 0;
 
-      .Popover .countString {
-        display: none;
+      .Popover {
+        .countString,
+        .filterListHeading {
+          display: none;
+        }
       }
     }
   }
