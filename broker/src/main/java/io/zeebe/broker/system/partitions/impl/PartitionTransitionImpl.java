@@ -40,28 +40,37 @@ public class PartitionTransitionImpl implements PartitionTransition {
 
   @Override
   public ActorFuture<Void> toFollower() {
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-    currentTransition.onComplete((nothing, err) -> transition(future, followerSteps));
-    return future;
+    return enqueueTransition(followerSteps);
   }
 
   @Override
   public ActorFuture<Void> toLeader() {
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-    currentTransition.onComplete((nothing, err) -> transition(future, leaderSteps));
-    return future;
+    return enqueueTransition(leaderSteps);
   }
 
   @Override
   public ActorFuture<Void> toInactive() {
-    final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-    currentTransition.onComplete((nothing, err) -> transition(future, EMPTY_LIST));
-    return future;
+    return enqueueTransition(EMPTY_LIST);
+  }
+
+  /**
+   * This method allows to enqueue the next transition, such that the transitions are executed in
+   * order. Previous we had the issue that all transitions have subscribe to the current transition,
+   * which lead to undefined behavior.
+   *
+   * @param partitionStepList the steps which should be installed on the transition
+   */
+  private ActorFuture<Void> enqueueTransition(final List<PartitionStep> partitionStepList) {
+    final var nextTransitionFuture = new CompletableActorFuture<Void>();
+    final var nextCurrentTransition = currentTransition;
+    currentTransition = nextTransitionFuture;
+    nextCurrentTransition.onComplete(
+        (nothing, err) -> transition(nextTransitionFuture, partitionStepList));
+    return nextTransitionFuture;
   }
 
   private void transition(
       final CompletableActorFuture<Void> future, final List<PartitionStep> steps) {
-    currentTransition = future;
     closePartition()
         .onComplete(
             (nothing, err) -> {
@@ -76,6 +85,10 @@ public class PartitionTransitionImpl implements PartitionTransition {
   private void installPartition(
       final CompletableActorFuture<Void> future, final List<PartitionStep> steps) {
     if (steps.isEmpty()) {
+      LOG.debug(
+          "Partition {} transition complete, installed {} resources!",
+          context.getPartitionId(),
+          openedSteps.size());
       future.complete(null);
       return;
     }
@@ -95,9 +108,6 @@ public class PartitionTransitionImpl implements PartitionTransition {
   }
 
   private CompletableActorFuture<Void> closePartition() {
-    // caution: this method may be called concurrently on role transition due to closing the actor
-    // - first, it is called by one of the transitionTo...() methods
-    // - then it is called by onActorClosing()
     final var closingSteps = new ArrayList<>(openedSteps);
     Collections.reverse(closingSteps);
 
@@ -110,6 +120,9 @@ public class PartitionTransitionImpl implements PartitionTransition {
   private void stepByStepClosing(
       final CompletableActorFuture<Void> future, final List<PartitionStep> steps) {
     if (steps.isEmpty()) {
+      LOG.debug(
+          "Partition {} closed all previous open resources, before transitioning.",
+          context.getPartitionId());
       future.complete(null);
       return;
     }

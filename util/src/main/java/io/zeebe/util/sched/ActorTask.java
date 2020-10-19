@@ -20,6 +20,8 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A task executed by the scheduler. For each actor (instance), exactly one task is created. Each
@@ -27,6 +29,8 @@ import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
  */
 @SuppressWarnings("restriction")
 public class ActorTask {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ActorTask.class);
 
   public final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
   final Actor actor;
@@ -306,6 +310,7 @@ public class ActorTask {
     // discard next jobs
     ActorJob next;
     while ((next = fastLaneJobs.poll()) != null) {
+      LOG.debug("Discard job {} from fastLane of Actor {}.", next, actor.getName());
       failJob(next);
     }
   }
