@@ -25,7 +25,7 @@ in this module's resources folder.
 
 You can configure the Elasticsearch Exporter with the following arguments:
 
-* `urls` (`string`): a valid list URLs as a string (e.g. `http://localhost:9200`)
+* `urls` (`string`): a valid list URLs as list string (e.g. `http://localhost:9200`)
 
 All other options fall under a two categories, both expressed as nested maps: `bulk` and `index`.
 

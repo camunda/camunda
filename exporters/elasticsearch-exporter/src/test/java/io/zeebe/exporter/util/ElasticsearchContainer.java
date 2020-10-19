@@ -101,7 +101,7 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
     super.doStart();
 
     if (isAuthEnabled) {
-      client = new RestHighLevelClient(RestClient.builder(getRestHttpHosts())).build();
+      client = RestClient.builder(getRestHttpHosts()).build();
       setupUser();
     }
   }
