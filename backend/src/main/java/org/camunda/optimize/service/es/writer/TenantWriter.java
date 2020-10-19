@@ -41,7 +41,7 @@ public class TenantWriter {
       esClient,
       importItemName,
       tenantDtos,
-      (request, dto) -> addImportTenantRequest(request, dto)
+      this::addImportTenantRequest
     );
   }
 

@@ -241,6 +241,9 @@ public class ElasticSearchSchemaManager {
                                               final Settings indexSettings) throws
                                                                             IOException,
                                                                             ElasticsearchStatusException {
+    log.debug("Creating Optimize Index with name {}, default alias {} and additional aliases {}",
+              indexName, defaultAliasName, additionalAliases
+    );
     final CreateIndexRequest request = new CreateIndexRequest(indexName);
     final Set<String> aliases = new HashSet<>(additionalAliases);
     aliases.add(defaultAliasName);
