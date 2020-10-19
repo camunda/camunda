@@ -7,6 +7,7 @@
  */
 package io.zeebe.exporter;
 
+import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.carrotsearch.hppc.cursors.ObjectCursor;
@@ -20,7 +21,9 @@ import io.zeebe.test.exporter.ExporterIntegrationRule;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.util.ZbLogger;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
+import org.apache.http.HttpHost;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -128,7 +131,8 @@ public abstract class AbstractElasticsearchExporterIntegrationTestCase {
     final ElasticsearchExporterConfiguration configuration =
         new ElasticsearchExporterConfiguration();
 
-    configuration.url = elastic.getRestHttpHost().toString();
+    configuration.urls =
+        List.of(elastic.getRestHttpHosts()).stream().map(HttpHost::toString).collect(toList());
 
     configuration.bulk.delay = 1;
     configuration.bulk.size = 1;

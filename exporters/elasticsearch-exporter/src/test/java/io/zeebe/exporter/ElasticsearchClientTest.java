@@ -103,4 +103,26 @@ public class ElasticsearchClientTest {
             scopeKey,
             workflowInstanceKey);
   }
+
+  @Test
+  public void shouldUseLegacyUrlIfExist() {
+    configuration = new ElasticsearchExporterConfiguration();
+    configuration.url = "http://localhost:8080";
+    configuration.urls = List.of("bad url");
+
+    logSpy = spy(LoggerFactory.getLogger(ElasticsearchClientTest.class));
+
+    client = new ElasticsearchClient(configuration, logSpy);
+  }
+
+  @Test(expected = ElasticsearchExporterException.class)
+  public void shouldUseUrlslIfUrlNotExist() {
+    configuration = new ElasticsearchExporterConfiguration();
+    configuration.url = null;
+    configuration.urls = List.of("bad url");
+
+    logSpy = spy(LoggerFactory.getLogger(ElasticsearchClientTest.class));
+
+    client = new ElasticsearchClient(configuration, logSpy);
+  }
 }

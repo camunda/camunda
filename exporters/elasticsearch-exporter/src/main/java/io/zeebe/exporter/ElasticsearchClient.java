@@ -200,13 +200,24 @@ public class ElasticsearchClient {
   }
 
   private RestHighLevelClient createClient() {
-    final HttpHost httpHost = urlToHttpHost(configuration.url);
+    final HttpHost[] httpHosts = resolveHosts();
 
     // use single thread for rest client
     final RestClientBuilder builder =
-        RestClient.builder(httpHost).setHttpClientConfigCallback(this::setHttpClientConfigCallback);
+        RestClient.builder(httpHosts)
+            .setHttpClientConfigCallback(this::setHttpClientConfigCallback);
 
     return new RestHighLevelClient(builder);
+  }
+
+  private HttpHost[] resolveHosts() {
+    if (configuration.url != null) {
+      return new HttpHost[] {urlToHttpHost(configuration.url)};
+    } else {
+      return configuration.urls.stream()
+          .map(ElasticsearchClient::urlToHttpHost)
+          .toArray(HttpHost[]::new);
+    }
   }
 
   private HttpAsyncClientBuilder setHttpClientConfigCallback(final HttpAsyncClientBuilder builder) {

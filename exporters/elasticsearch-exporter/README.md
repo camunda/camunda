@@ -25,7 +25,7 @@ in this module's resources folder.
 
 You can configure the Elasticsearch Exporter with the following arguments:
 
-* `url` (`string`): a valid URL as a string (e.g. `http://localhost:9200`)
+* `urls` (`string`): a valid list URLs as a string (e.g. `http://localhost:9200`)
 
 All other options fall under a two categories, both expressed as nested maps: `bulk` and `index`.
 
@@ -38,7 +38,7 @@ it should be flushed (regardless of size) can be controlled by configuration.
 For example:
 
 ```yaml
-...  
+...
   exporters:
     elasticsearch:
       args:
@@ -74,11 +74,11 @@ For example:
         index:
           prefix: zeebe-record
           createTemplate: true
-          
+
           command: false
           event: true
           rejection: false
-          
+
           deployment: false
           incident: true
           job: false
@@ -118,28 +118,30 @@ Here is a complete, default configuration example:
       #
       # These setting can also be overridden using the environment variables "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_..."
       #
-      
+
       className: io.zeebe.exporter.ElasticsearchExporter
-     
+
       args:
-        url: http://localhost:9200
-     
+        url: http://localhost:9200 #deprecated use urls
+        urls:
+          - http://localhost:9200
+
         bulk:
           delay: 5
           size: 1000
-     
+
         authentication:
           username: elastic
           password: changeme
-     
+
         index:
           prefix: zeebe-record
           createTemplate: true
-     
+
           command: false
           event: true
           rejection: false
-     
+
           deployment: true
           error: true
           incident: true
@@ -152,7 +154,7 @@ Here is a complete, default configuration example:
           workflowInstance: true
           workflowInstanceCreation: false
           workflowInstanceSubscription: false
-     
+
           ignoreVariablesAbove: 32677
 
 ```

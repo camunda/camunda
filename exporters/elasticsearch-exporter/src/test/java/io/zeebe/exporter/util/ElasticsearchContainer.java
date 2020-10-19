@@ -85,12 +85,12 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
   }
 
   @Override
-  public HttpHost getRestHttpHost() {
+  public HttpHost[] getRestHttpHosts() {
     final String scheme = isSslEnabled ? "https" : "http";
     final String host = getContainerIpAddress();
     final int port = this.port > 0 ? this.port : getMappedPort(DEFAULT_HTTP_PORT);
 
-    return new HttpHost(host, port, scheme);
+    return new HttpHost[] {new HttpHost(host, port, scheme)};
   }
 
   @Override
@@ -105,7 +105,7 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
     super.doStart();
 
     if (isAuthEnabled) {
-      client = new RestHighLevelClient(RestClient.builder(getRestHttpHost()));
+      client = new RestHighLevelClient(RestClient.builder(getRestHttpHosts()));
       setupUser();
     }
   }

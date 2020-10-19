@@ -10,11 +10,20 @@ package io.zeebe.exporter;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.ValueType;
+import java.util.List;
 
 public class ElasticsearchExporterConfiguration {
 
-  // elasticsearch http url
-  public String url = "http://localhost:9200";
+  private static final String DEFAULT_URL = "http://localhost:9200";
+
+  /**
+   * Elasticsearch http url
+   *
+   * @deprecated Use {@link #urls} instead.
+   */
+  @Deprecated public String url;
+
+  public List<String> urls = List.of(DEFAULT_URL);
 
   public final IndexConfiguration index = new IndexConfiguration();
   public final BulkConfiguration bulk = new BulkConfiguration();
@@ -23,8 +32,8 @@ public class ElasticsearchExporterConfiguration {
   @Override
   public String toString() {
     return "ElasticsearchExporterConfiguration{"
-        + "url='"
-        + url
+        + "urls='"
+        + urls
         + '\''
         + ", index="
         + index

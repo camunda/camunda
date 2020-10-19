@@ -23,7 +23,7 @@ public interface ElasticsearchNode<SELF extends ElasticsearchNode> {
 
   SELF withKeyStore(String keyStore);
 
-  HttpHost getRestHttpHost();
+  HttpHost[] getRestHttpHosts();
 
   SELF withPort(int port);
 }
