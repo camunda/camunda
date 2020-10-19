@@ -463,6 +463,72 @@ func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUsesCachedCred
 	s.False(authServerCalled)
 }
 
+func (s *oauthCredsProviderTestSuite) TestOAuthCredentialsProviderUpdatesExpiredToken() {
+	// create fake gRPC server which returns UNAUTHENTICATED always except if we use the token `accessToken`
+	gatewayLis, grpcServer := createAuthenticatedGrpcServer(accessToken)
+	go grpcServer.Serve(gatewayLis)
+	defer grpcServer.Stop()
+
+	authServerCalled := false
+	// setup authorization server to return valid token
+	token := mutableToken{accessToken}
+	authzServer := mockAuthorizationServer(s.T(), &token)
+	defer authzServer.Close()
+
+	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Type", "application/json")
+		responsePayload := []byte("{\"access_token\": \"" + token.value + "\"," +
+			"\"expires_in\": 3600," +
+			"\"token_type\": \"bearer\"}")
+
+		_, err := writer.Write(responsePayload)
+		if err != nil {
+			panic(err)
+		}
+		authServerCalled = true
+	}))
+	defer ts.Close()
+
+	// setup cache with expired token
+	truncateDefaultOAuthYamlCacheFile()
+	cache, err := NewOAuthYamlCredentialsCache(DefaultOauthYamlCachePath)
+	s.NoError(err)
+	err = cache.Update(audience, &oauth2.Token{
+		AccessToken: accessToken,
+		Expiry:      time.Now().Add(time.Second * -1),
+		TokenType:   "Bearer",
+	})
+	s.NoError(err)
+
+	// use the mock authorization server
+	credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+		ClientID:               clientID,
+		ClientSecret:           clientSecret,
+		Audience:               audience,
+		AuthorizationServerURL: ts.URL,
+	})
+
+	s.NoError(err)
+	parts := strings.Split(gatewayLis.Addr().String(), ":")
+	client, err := NewClient(&ClientConfig{
+		GatewayAddress:         fmt.Sprintf("0.0.0.0:%s", parts[len(parts)-1]),
+		UsePlaintextConnection: true,
+		CredentialsProvider:    credsProvider,
+	})
+	s.NoError(err)
+
+	// when
+	_, err = client.NewTopologyCommand().Send(context.Background())
+
+	// then
+	s.NoError(err)
+	if errorStatus, ok := status.FromError(err); ok {
+		s.Equal(codes.OK, errorStatus.Code())
+	}
+
+	s.True(authServerCalled)
+}
+
 func (s *oauthCredsProviderTestSuite) TestOAuthTimeout() {
 	// given
 	truncateDefaultOAuthYamlCacheFile()
