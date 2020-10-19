@@ -11,7 +11,6 @@ import org.camunda.optimize.service.metadata.PreviousVersion;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.impl.GenericUpgradeProcedure;
-import org.camunda.optimize.upgrade.main.impl.UpgradeFrom31To32;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -36,8 +35,10 @@ public class UpgradeMain {
 
   static {
     new LoggingConfigurationReader().defineLogbackLoggingConfiguration();
-    UPGRADE_PROCEDURES.put(Version.VERSION, new GenericUpgradeProcedure(PreviousVersion.PREVIOUS_VERSION, Version.VERSION));
-    UPGRADE_PROCEDURES.put(UpgradeFrom31To32.TO_VERSION, new UpgradeFrom31To32());
+    UPGRADE_PROCEDURES.put(
+      Version.VERSION,
+      new GenericUpgradeProcedure(PreviousVersion.PREVIOUS_VERSION, Version.VERSION)
+    );
   }
 
   public static void main(String... args) {
