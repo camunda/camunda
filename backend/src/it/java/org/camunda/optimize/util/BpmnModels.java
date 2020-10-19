@@ -37,6 +37,8 @@ public class BpmnModels {
   public static final String END_EVENT_1 = "endEvent1";
   public static final String END_EVENT_2 = "endEvent2";
 
+  public static final String START_LOOP = "mergeExclusiveGateway";
+  public static final String END_LOOP = "splittingGateway";
 
   public static BpmnModelInstance getSimpleBpmnDiagram() {
     return getSimpleBpmnDiagram(DEFAULT_PROCESS_ID, START_EVENT, END_EVENT);
@@ -199,6 +201,30 @@ public class BpmnModels {
         .serviceTask(SERVICE_TASK_ID_2)
           .camundaExternalTask(DEFAULT_TOPIC)
         .endEvent(END_EVENT_2)
+      .done();
+    // @formatter:on
+  }
+
+  public static BpmnModelInstance getLoopingProcess() {
+    // @formatter:off
+    return Bpmn.createExecutableProcess()
+      .startEvent(START_EVENT)
+      .exclusiveGateway(START_LOOP)
+      .serviceTask(SERVICE_TASK_ID_1)
+        .camundaExpression("${true}")
+      .exclusiveGateway(END_LOOP)
+        .condition("End process", "${!anotherRound}")
+      .endEvent(END_EVENT)
+      .moveToLastGateway()
+        .condition("Take another round", "${anotherRound}")
+      .serviceTask(SERVICE_TASK_ID_2)
+        .camundaExpression("${true}")
+        .camundaInputParameter("anotherRound", "${anotherRound}")
+        .camundaOutputParameter("anotherRound", "${!anotherRound}")
+      .scriptTask("scriptTask")
+        .scriptFormat("groovy")
+        .scriptText("sleep(10)")
+      .connectTo("mergeExclusiveGateway")
       .done();
     // @formatter:on
   }

@@ -41,6 +41,8 @@ import static org.camunda.optimize.dto.optimize.query.report.single.configuratio
 import static org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType.MIN;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_NONE_WITH_PART;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;
+import static org.camunda.optimize.util.BpmnModels.END_LOOP;
+import static org.camunda.optimize.util.BpmnModels.START_LOOP;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.elasticsearch.script.Script.DEFAULT_SCRIPT_LANG;
 
@@ -48,8 +50,6 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
 
   private static final String END_EVENT = "endEvent";
   private static final String START_EVENT = "startEvent";
-  private static final String START_LOOP = "mergeExclusiveGateway";
-  private static final String END_LOOP = "splittingGateway";
   private static final String TEST_ACTIVITY = "testActivity";
 
   private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListForProcessParts();
@@ -65,7 +65,10 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       processInstanceDto.getDefinitionId(),
       startDate
     );
-    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
+    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
+      processInstanceDto.getDefinitionId(),
+      endDate
+    );
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -108,7 +111,10 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       processInstanceDto.getDefinitionId(),
       startDate
     );
-    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
+    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
+      processInstanceDto.getDefinitionId(),
+      endDate
+    );
     importAllEngineEntitiesFromScratch();
 
     // when
@@ -139,7 +145,10 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       processInstanceDto.getDefinitionId(),
       startDate
     );
-    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
+    engineDatabaseExtension.changeActivityInstanceEndDateForProcessDefinition(
+      processInstanceDto.getDefinitionId(),
+      endDate
+    );
     importAllEngineEntitiesFromScratch();
     ProcessReportDataDto reportDataDto =
       createReport(
@@ -482,31 +491,6 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT exte
       .name("var")
       .add()
       .buildList();
-  }
-
-  private ProcessInstanceEngineDto deployAndStartLoopingProcess() {
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-      .startEvent("startEvent")
-      .exclusiveGateway(START_LOOP)
-      .serviceTask()
-      .camundaExpression("${true}")
-      .exclusiveGateway(END_LOOP)
-      .condition("Take another round", "${!anotherRound}")
-      .endEvent("endEvent")
-      .moveToLastGateway()
-      .condition("End process", "${anotherRound}")
-      .serviceTask("serviceTask")
-      .camundaExpression("${true}")
-      .camundaInputParameter("anotherRound", "${anotherRound}")
-      .camundaOutputParameter("anotherRound", "${!anotherRound}")
-      .scriptTask("scriptTask")
-      .scriptFormat("groovy")
-      .scriptText("sleep(10)")
-      .connectTo("mergeExclusiveGateway")
-      .done();
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("anotherRound", true);
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {

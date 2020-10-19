@@ -50,13 +50,12 @@ import static org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto.S
 import static org.camunda.optimize.test.util.DateModificationHelper.truncateToStartOfUnit;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurations;
 import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateExpectedValueGivenDurationsDefaultAggr;
+import static org.camunda.optimize.util.BpmnModels.END_LOOP;
+import static org.camunda.optimize.util.BpmnModels.START_LOOP;
 import static org.camunda.optimize.util.BpmnModels.getSingleServiceTaskProcess;
 
 public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPartReportEvaluationIT
   extends AbstractProcessDefinitionIT {
-
-  private static final String START_LOOP = "mergeExclusiveGateway";
-  private static final String END_LOOP = "splittingGateway";
 
   private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListForProcessParts();
 
@@ -66,7 +65,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
 
   @Test
   public void reportEvaluationForOneProcess() {
-
     // given
     OffsetDateTime procInstReferenceDate = OffsetDateTime.now();
     OffsetDateTime activityStartDate = OffsetDateTime.now();
@@ -660,7 +658,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
       .isSortedAccordingTo(Comparator.naturalOrder());
   }
 
-
   @Test
   public void testCustomOrderOnResultValueIsApplied() {
     // given
@@ -838,33 +835,6 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateWithProcessPa
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess() {
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSingleServiceTaskProcess());
-  }
-
-  private ProcessInstanceEngineDto deployAndStartLoopingProcess() {
-    // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-    .startEvent("startEvent")
-    .exclusiveGateway(START_LOOP)
-      .serviceTask()
-        .camundaExpression("${true}")
-      .exclusiveGateway(END_LOOP)
-        .condition("Take another round", "${!anotherRound}")
-      .endEvent("endEvent")
-    .moveToLastGateway()
-      .condition("End process", "${anotherRound}")
-      .serviceTask("serviceTask")
-        .camundaExpression("${true}")
-        .camundaInputParameter("anotherRound", "${anotherRound}")
-        .camundaOutputParameter("anotherRound", "${!anotherRound}")
-      .scriptTask("scriptTask")
-        .scriptFormat("groovy")
-        .scriptText("sleep(10)")
-      .connectTo("mergeExclusiveGateway")
-    .done();
-    // @formatter:on
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("anotherRound", true);
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {

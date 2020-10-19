@@ -105,6 +105,22 @@ public class TemplatedProcessReportDataBuilder {
           .variableType(variableType)
           .build();
         break;
+      case PROC_INST_DUR_GROUP_BY_START_DATE_BY_VARIABLE_WITH_PART:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.START_DATE)
+          .distributedByType(DistributedByType.VARIABLE)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .groupByDateInterval(groupByDateInterval)
+          .variableName(variableName)
+          .variableType(variableType)
+          .processPartStart(startFlowNodeId)
+          .processPartEnd(endFlowNodeId)
+          .build();
+        break;
       case PROC_INST_DUR_GROUP_BY_START_DATE_WITH_PART:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
@@ -141,6 +157,22 @@ public class TemplatedProcessReportDataBuilder {
           .groupByDateInterval(groupByDateInterval)
           .variableName(variableName)
           .variableType(variableType)
+          .build();
+        break;
+      case PROC_INST_DUR_GROUP_BY_END_DATE_BY_VARIABLE_WITH_PART:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.END_DATE)
+          .distributedByType(DistributedByType.VARIABLE)
+          .visualization(ProcessVisualization.TABLE)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .groupByDateInterval(groupByDateInterval)
+          .variableName(variableName)
+          .variableType(variableType)
+          .processPartStart(startFlowNodeId)
+          .processPartEnd(endFlowNodeId)
           .build();
         break;
       case PROC_INST_DUR_GROUP_BY_END_DATE_WITH_PART:
@@ -196,6 +228,22 @@ public class TemplatedProcessReportDataBuilder {
           .variableType(variableType)
           .build();
         break;
+      case PROC_INST_DUR_GROUP_BY_VARIABLE_BY_START_DATE_WITH_PART:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.START_DATE)
+          .distributeByDateInterval(distributeByDateInterval)
+          .visualization(ProcessVisualization.HEAT)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .variableName(variableName)
+          .variableType(variableType)
+          .processPartStart(startFlowNodeId)
+          .processPartEnd(endFlowNodeId)
+          .build();
+        break;
       case PROC_INST_DUR_GROUP_BY_VARIABLE_BY_END_DATE:
         reportData = new ProcessReportDataBuilderHelper()
           .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
@@ -208,6 +256,22 @@ public class TemplatedProcessReportDataBuilder {
           .processDefinitionVersions(processDefinitionVersions)
           .variableName(variableName)
           .variableType(variableType)
+          .build();
+        break;
+      case PROC_INST_DUR_GROUP_BY_VARIABLE_BY_END_DATE_WITH_PART:
+        reportData = new ProcessReportDataBuilderHelper()
+          .viewEntity(ProcessViewEntity.PROCESS_INSTANCE)
+          .viewProperty(ProcessViewProperty.DURATION)
+          .groupByType(ProcessGroupByType.VARIABLE)
+          .distributedByType(DistributedByType.END_DATE)
+          .distributeByDateInterval(distributeByDateInterval)
+          .visualization(ProcessVisualization.HEAT)
+          .processDefinitionKey(processDefinitionKey)
+          .processDefinitionVersions(processDefinitionVersions)
+          .variableName(variableName)
+          .variableType(variableType)
+          .processPartStart(startFlowNodeId)
+          .processPartEnd(endFlowNodeId)
           .build();
         break;
       case COUNT_PROC_INST_FREQ_GROUP_BY_NONE:

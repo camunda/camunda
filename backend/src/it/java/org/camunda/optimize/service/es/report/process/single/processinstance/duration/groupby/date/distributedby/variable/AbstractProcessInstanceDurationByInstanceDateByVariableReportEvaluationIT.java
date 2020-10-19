@@ -742,9 +742,9 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     // @formatter:on
   }
 
-  private ProcessReportDataDto createReportData(final ProcessInstanceEngineDto processInstanceDto,
-                                                final VariableType variableType,
-                                                final String variableName) {
+  protected ProcessReportDataDto createReportData(final ProcessInstanceEngineDto processInstanceDto,
+                                                  final VariableType variableType,
+                                                  final String variableName) {
     return TemplatedProcessReportDataBuilder
       .createReportData()
       .setReportDataType(getTestReportDataType())
@@ -756,7 +756,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
       .build();
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleProcess(Map<String, Object> variables) {
+  protected ProcessInstanceEngineDto deployAndStartSimpleProcess(Map<String, Object> variables) {
     ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
     ProcessInstanceEngineDto processInstanceEngineDto =
@@ -766,10 +766,10 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     return processInstanceEngineDto;
   }
 
-  private void adjustProcessInstanceDatesAndDuration(final String processInstanceId,
-                                                     final OffsetDateTime referenceDate,
-                                                     final long daysToShift,
-                                                     final Long durationInSec) {
+  protected void adjustProcessInstanceDatesAndDuration(final String processInstanceId,
+                                                       final OffsetDateTime referenceDate,
+                                                       final long daysToShift,
+                                                       final Long durationInSec) {
     final OffsetDateTime shiftedEndDate = referenceDate.plusDays(daysToShift);
     if (durationInSec != null) {
       engineDatabaseExtension.changeProcessInstanceStartDate(

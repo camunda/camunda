@@ -6,6 +6,7 @@
 package org.camunda.optimize.service.es.report.process.single.processinstance.duration.groupby.variable.distributedby.none;
 
 import lombok.SneakyThrows;
+import org.assertj.core.util.Maps;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
@@ -64,11 +65,11 @@ import static org.camunda.optimize.test.util.DurationAggregationUtil.calculateEx
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE;
 import static org.camunda.optimize.test.util.ProcessReportDataType.PROC_INST_DUR_GROUP_BY_VARIABLE_WITH_PART;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.NUMBER_OF_DATA_POINTS_FOR_AUTOMATIC_INTERVAL_SELECTION;
+import static org.camunda.optimize.util.BpmnModels.END_LOOP;
+import static org.camunda.optimize.util.BpmnModels.START_LOOP;
 
 public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT extends AbstractProcessDefinitionIT {
 
-  private static final String START_LOOP = "mergeExclusiveGateway";
-  private static final String END_LOOP = "splittingGateway";
   private static final String TEST_ACTIVITY = "testActivity";
 
   private final List<AggregationType> aggregationTypes = AggregationType.getAggregationTypesAsListForProcessParts();
@@ -535,7 +536,7 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   }
 
   @Test
-  public void multipleBuckets_numberVariable_invaliBaseline_returnsEmptyResult() {
+  public void multipleBuckets_numberVariable_invalidBaseline_returnsEmptyResult() {
     // given
     ProcessDefinitionEngineDto processDefinitionDto = deploySimpleServiceTaskProcess();
     Map<String, Object> variables = new HashMap<>();
@@ -803,7 +804,8 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
   public void takeCorrectActivityOccurrences() {
     // given
     OffsetDateTime startDate = OffsetDateTime.now().minusHours(1);
-    ProcessInstanceEngineDto processInstanceDto = deployAndStartLoopingProcess();
+    ProcessInstanceEngineDto processInstanceDto =
+      deployAndStartLoopingProcess(Maps.newHashMap(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE));
     engineDatabaseExtension.changeFirstActivityInstanceStartDate(START_LOOP, startDate);
     engineDatabaseExtension.changeFirstActivityInstanceEndDate(END_LOOP, startDate.plusSeconds(2));
     importAllEngineEntitiesFromScratch();
@@ -1325,34 +1327,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
       .done();
     // @formatter:on
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartLoopingProcess() {
-    // @formatter:off
-    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
-    .startEvent("startEvent")
-    .exclusiveGateway(START_LOOP)
-      .serviceTask()
-        .camundaExpression("${true}")
-      .exclusiveGateway(END_LOOP)
-        .condition("Take another round", "${!anotherRound}")
-      .endEvent("endEvent")
-    .moveToLastGateway()
-      .condition("End process", "${anotherRound}")
-      .serviceTask("serviceTask")
-        .camundaExpression("${true}")
-        .camundaInputParameter("anotherRound", "${anotherRound}")
-        .camundaOutputParameter("anotherRound", "${!anotherRound}")
-      .scriptTask("scriptTask")
-        .scriptFormat("groovy")
-        .scriptText("sleep(10)")
-      .connectTo("mergeExclusiveGateway")
-    .done();
-    // @formatter:on
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("anotherRound", true);
-    variables.put(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE);
-    return engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleUserTaskProcessWithVariables(Map<String, Object> variables) {

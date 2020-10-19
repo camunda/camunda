@@ -6,7 +6,6 @@
 package org.camunda.optimize.service.es.report.process;
 
 import com.google.common.collect.ImmutableMap;
-import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.AbstractIT;
 import org.camunda.optimize.dto.engine.HistoricUserTaskInstanceDto;
@@ -136,7 +135,7 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   protected ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String key,
                                                                             String activityId,
                                                                             String tenantId) {
-    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance(key, activityId);
+    BpmnModelInstance processModel = BpmnModels.getSingleServiceTaskProcess(key, activityId);
     return engineIntegrationExtension.deployAndStartProcessWithVariables(
       processModel, ImmutableMap.of(DEFAULT_VARIABLE_NAME, DEFAULT_VARIABLE_VALUE), tenantId
     );
@@ -160,8 +159,14 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
   }
 
   protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcessAndGetDefinition(String key) {
-    BpmnModelInstance processModel = createSimpleServiceTaskModelInstance(key, TEST_ACTIVITY);
+    BpmnModelInstance processModel = BpmnModels.getSingleServiceTaskProcess(key, TEST_ACTIVITY);
     return engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartTwoServiceTaskProcessWithVariables(final String key,
+                                                                                      final Map<String, Object> variables) {
+    BpmnModelInstance processModel = BpmnModels.getTwoServiceTasksProcess(key);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(processModel, variables);
   }
 
   protected ProcessDefinitionEngineDto deploySimpleGatewayProcessDefinition() {
@@ -179,6 +184,16 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .forEach(tenant -> deployAndStartSimpleServiceTaskProcess(processKey, TEST_ACTIVITY, tenant));
 
     return processKey;
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartLoopingProcess() {
+    return deployAndStartLoopingProcess(new HashMap<>());
+  }
+
+  protected ProcessInstanceEngineDto deployAndStartLoopingProcess(Map<String, Object> variables) {
+    final BpmnModelInstance modelInstance = BpmnModels.getLoopingProcess();
+    variables.put("anotherRound", true);
+    return engineIntegrationExtension.deployAndStartProcessWithVariables(modelInstance, variables);
   }
 
   protected List<ProcessInstanceEngineDto> startAndEndProcessInstancesWithGivenRuntime(
@@ -265,19 +280,6 @@ public class AbstractProcessDefinitionIT extends AbstractIT {
       .buildCreateSingleProcessReportRequest(singleProcessReportDefinitionDto)
       .execute(IdDto.class, Response.Status.OK.getStatusCode())
       .getId();
-  }
-
-  private BpmnModelInstance createSimpleServiceTaskModelInstance(final String key,
-                                                                 final String activityId) {
-    // @formatter:off
-    return Bpmn.createExecutableProcess(key)
-      .name("aProcessName")
-      .startEvent(START_EVENT)
-      .serviceTask(activityId)
-      .camundaExpression("${true}")
-      .endEvent(END_EVENT)
-      .done();
-    // @formatter:on
   }
 
   protected void changeUserTaskIdleDuration(final ProcessInstanceEngineDto processInstanceDto,

@@ -450,13 +450,13 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     // @formatter:on
   }
 
-  private ProcessReportDataDto createReportData(final ProcessInstanceEngineDto processInstanceDto,
-                                                final VariableType variableType,
-                                                final String variableName) {
+  protected ProcessReportDataDto createReportData(final ProcessInstanceEngineDto processInstanceDto,
+                                                  final VariableType variableType,
+                                                  final String variableName) {
     return createReportData(processInstanceDto, variableType, variableName, AggregateByDateUnit.DAY);
   }
 
-  private ProcessReportDataDto createReportData(final ProcessInstanceEngineDto processInstanceDto,
+  protected ProcessReportDataDto createReportData(final ProcessInstanceEngineDto processInstanceDto,
                                                 final VariableType variableType,
                                                 final String variableName,
                                                 final AggregateByDateUnit distributeByDateUnit) {
@@ -484,7 +484,7 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     ));
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleProcess(Map<String, Object> variables) {
+  protected ProcessInstanceEngineDto deployAndStartSimpleProcess(Map<String, Object> variables) {
     ProcessDefinitionEngineDto processDefinition = engineIntegrationExtension.deployProcessAndGetProcessDefinition(
       getSingleServiceTaskProcess());
     ProcessInstanceEngineDto processInstanceEngineDto =
@@ -494,10 +494,10 @@ public abstract class AbstractProcessInstanceDurationByVariableByDateReportEvalu
     return processInstanceEngineDto;
   }
 
-  private void adjustProcessInstanceDatesAndDuration(final String processInstanceId,
-                                                     final OffsetDateTime referenceDate,
-                                                     final long daysToShift,
-                                                     final Long durationInSec) {
+  protected void adjustProcessInstanceDatesAndDuration(final String processInstanceId,
+                                                       final OffsetDateTime referenceDate,
+                                                       final long daysToShift,
+                                                       final Long durationInSec) {
     final OffsetDateTime shiftedEndDate = referenceDate.plusDays(daysToShift);
     if (durationInSec != null) {
       engineDatabaseExtension.changeProcessInstanceStartDate(
