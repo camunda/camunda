@@ -16,7 +16,6 @@
  */
 package io.atomix.cluster;
 
-import io.atomix.cluster.messaging.BroadcastService;
 import io.atomix.cluster.messaging.MessagingService;
 import io.atomix.cluster.messaging.UnicastService;
 
@@ -40,11 +39,4 @@ public interface BootstrapService {
    * @return the cluster unicast service
    */
   UnicastService getUnicastService();
-
-  /**
-   * Returns the cluster broadcast service
-   *
-   * @return the cluster broadcast service
-   */
-  BroadcastService getBroadcastService();
 }

@@ -76,7 +76,7 @@ public class LogBufferAppender {
       final int streamId,
       final Runnable onComplete) {
     final int partitionSize = partition.getPartitionSize();
-    final int framedMessageLength = framedLength(length);
+    final int framedMessageLength = claimedFragmentLength(length);
     final int alignedFrameLength = alignedLength(framedMessageLength);
 
     // move the tail of the partition
@@ -102,6 +102,10 @@ public class LogBufferAppender {
     return newTail;
   }
 
+  public static int claimedFragmentLength(final int length) {
+    return framedLength(length);
+  }
+
   public int claim(
       final LogBufferPartition partition,
       final int activePartitionId,
@@ -110,11 +114,7 @@ public class LogBufferAppender {
       final int batchLength,
       final Runnable onComplete) {
     final int partitionSize = partition.getPartitionSize();
-    // reserve enough space for frame alignment because each batch fragment must start on an aligned
-    // position
-    final int framedMessageLength =
-        batchLength + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT) + FRAME_ALIGNMENT;
-    final int alignedFrameLength = align(framedMessageLength, FRAME_ALIGNMENT);
+    final int alignedFrameLength = claimedBatchLength(fragmentCount, batchLength);
 
     // move the tail of the partition
     final int frameOffset = partition.getAndAddTail(alignedFrameLength);
@@ -131,6 +131,13 @@ public class LogBufferAppender {
     }
 
     return newTail;
+  }
+
+  public static int claimedBatchLength(final int fragmentCount, final int batchLength) {
+    // reserve space for frame alignment because each batch must start on an aligned position
+    final int framedMessageLength =
+        batchLength + fragmentCount * (HEADER_LENGTH + FRAME_ALIGNMENT) + FRAME_ALIGNMENT;
+    return align(framedMessageLength, FRAME_ALIGNMENT);
   }
 
   protected int onEndOfPartition(

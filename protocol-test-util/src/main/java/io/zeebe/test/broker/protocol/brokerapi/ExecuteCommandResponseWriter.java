@@ -50,8 +50,8 @@ public final class ExecuteCommandResponseWriter
     partitionId = partitionIdFunction.apply(request);
     final Map<String, Object> deserializedEvent = eventFunction.apply(request);
     value = msgPackHelper.encodeAsMsgPack(deserializedEvent);
-    this.valueType = request.valueType();
-    this.intent = intentFunction.apply(request);
+    valueType = request.valueType();
+    intent = intentFunction.apply(request);
   }
 
   public void setPartitionIdFunction(

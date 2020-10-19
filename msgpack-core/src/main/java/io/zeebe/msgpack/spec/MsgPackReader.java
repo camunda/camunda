@@ -52,7 +52,7 @@ public final class MsgPackReader {
   }
 
   public void reset() {
-    this.offset = 0;
+    offset = 0;
   }
 
   public int readMapHeader() {

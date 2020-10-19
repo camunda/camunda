@@ -10,20 +10,15 @@ package io.zeebe.exporter.util;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.Map;
 import org.apache.http.HttpHost;
-import org.elasticsearch.client.ElasticsearchClient;
-import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.security.PutRoleRequest;
-import org.elasticsearch.client.security.PutUserRequest;
-import org.elasticsearch.client.security.RefreshPolicy;
-import org.elasticsearch.client.security.user.User;
-import org.elasticsearch.client.security.user.privileges.Role;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
@@ -31,6 +26,7 @@ import org.testcontainers.utility.Base58;
 
 public class ElasticsearchContainer extends GenericContainer<ElasticsearchContainer>
     implements ElasticsearchNode<ElasticsearchContainer> {
+  private static final ObjectMapper MAPPER = new ObjectMapper();
   private static final int DEFAULT_HTTP_PORT = 9200;
   private static final int DEFAULT_TCP_PORT = 9300;
   private static final String DEFAULT_IMAGE = "docker.elastic.co/elasticsearch/elasticsearch";
@@ -39,11 +35,11 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
   private boolean isAuthEnabled;
   private String username;
   private String password;
-  private RestHighLevelClient client;
+  private RestClient client;
   private int port;
 
   public ElasticsearchContainer() {
-    this(ElasticsearchClient.class.getPackage().getImplementationVersion());
+    this(RestClient.class.getPackage().getImplementationVersion());
   }
 
   public ElasticsearchContainer(final String version) {
@@ -59,7 +55,7 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
   public ElasticsearchContainer withUser(final String username, final String password) {
     this.username = username;
     this.password = password;
-    this.isAuthEnabled = true;
+    isAuthEnabled = true;
 
     return withXpack()
         .withEnv("xpack.security.enabled", "true")
@@ -75,7 +71,7 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
 
   @Override
   public ElasticsearchContainer withKeyStore(final String keyStore) {
-    this.isSslEnabled = true;
+    isSslEnabled = true;
 
     return withXpack()
         .withClasspathResourceMapping(
@@ -105,7 +101,7 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
     super.doStart();
 
     if (isAuthEnabled) {
-      client = new RestHighLevelClient(RestClient.builder(getRestHttpHosts()));
+      client = new RestHighLevelClient(RestClient.builder(getRestHttpHosts())).build();
       setupUser();
     }
   }
@@ -152,27 +148,24 @@ public class ElasticsearchContainer extends GenericContainer<ElasticsearchContai
   }
 
   private void setupUser() {
-    final User user = new User(username, Collections.singleton("zeebe-exporter"));
+    final var request = new Request("POST", "/_xpack/security/user/" + username);
+    final var body =
+        Map.of(
+            "roles", Collections.singleton("zeebe-exporter"), "password", password.toCharArray());
 
     try {
+      request.setJsonEntity(MAPPER.writeValueAsString(body));
       createRole(client);
-      client
-          .security()
-          .putUser(
-              PutUserRequest.withPassword(
-                  user, password.toCharArray(), true, RefreshPolicy.IMMEDIATE),
-              RequestOptions.DEFAULT);
+      client.performRequest(request);
     } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }
 
   // note: caveat, do not use custom index prefixes!
-  private void createRole(final RestHighLevelClient client) throws IOException {
-    final Role role = Role.builder().name("zeebe-exporter").build();
-
-    client
-        .security()
-        .putRole(new PutRoleRequest(role, RefreshPolicy.IMMEDIATE), RequestOptions.DEFAULT);
+  private void createRole(final RestClient client) throws IOException {
+    final var request = new Request("PUT", "/_xpack/security/role/zeebe-exporter");
+    request.setJsonEntity("{}");
+    client.performRequest(request);
   }
 }

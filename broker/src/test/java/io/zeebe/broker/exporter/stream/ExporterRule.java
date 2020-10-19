@@ -7,7 +7,6 @@
  */
 package io.zeebe.broker.exporter.stream;
 
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -16,7 +15,6 @@ import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.util.TestStreams;
-import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.RecordType;
 import io.zeebe.protocol.record.intent.Intent;
@@ -70,13 +68,8 @@ public final class ExporterRule implements TestRule {
   @SuppressWarnings("unchecked")
   public void startExporterDirector(final List<ExporterDescriptor> exporterDescriptors) {
     final var stream = streams.getLogStream(STREAM_NAME);
-
-    final var snapshotStorage = streams.createSnapshotStorage(stream);
-    final var snapshotController =
-        spy(new StateSnapshotController(zeebeDbFactory, snapshotStorage));
-    capturedZeebeDb = spy(snapshotController.openDb());
-
-    doAnswer(invocationOnMock -> capturedZeebeDb).when(snapshotController).openDb();
+    final var runtimeFolder = streams.createRuntimeFolder(stream);
+    capturedZeebeDb = spy(zeebeDbFactory.createDb(runtimeFolder.toFile()));
 
     final ExporterDirectorContext context =
         new ExporterDirectorContext()
@@ -88,7 +81,6 @@ public final class ExporterRule implements TestRule {
 
     director = new ExporterDirector(context);
     director.startAsync(actorSchedulerRule.get()).join();
-    closeables.manage(snapshotStorage);
   }
 
   public ControlledActorClock getClock() {

@@ -7,11 +7,12 @@
  */
 package io.zeebe.broker.system;
 
-import static io.zeebe.engine.processor.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
+import static io.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector.MINIMUM_SNAPSHOT_PERIOD;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.ThreadsCfg;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -21,6 +22,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 
 public final class SystemContext {
+
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final String BROKER_ID_LOG_PROPERTY = "broker-id";
   private static final String NODE_ID_ERROR_MSG =
@@ -29,6 +31,12 @@ public final class SystemContext {
       "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
   private static final String SNAPSHOT_PERIOD_ERROR_MSG =
       "Snapshot period %s needs to be larger then or equals to one minute.";
+  private static final String MAX_BATCH_SIZE_ERROR_MSG =
+      "Expected to have an append batch size maximum which is non negative and smaller then '%d', but was '%s'.";
+  private static final String REPLICATION_WITH_DISABLED_FLUSH_WARNING =
+      "Disabling explicit flushing is an experimental feature and can lead to inconsistencies "
+          + "and/or data loss! Please refer to the documentation whether or not you should use this!";
+
   protected final BrokerCfg brokerCfg;
   private Map<String, String> diagnosticContext;
   private ActorScheduler scheduler;
@@ -51,13 +59,15 @@ public final class SystemContext {
     final var cluster = brokerCfg.getCluster();
     final String brokerId = String.format("Broker-%d", cluster.getNodeId());
 
-    this.diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
-    this.scheduler = initScheduler(clock, brokerId);
+    diagnosticContext = Collections.singletonMap(BROKER_ID_LOG_PROPERTY, brokerId);
+    scheduler = initScheduler(clock, brokerId);
     setStepTimeout(stepTimeout);
   }
 
   private void validateConfiguration() {
     final ClusterCfg cluster = brokerCfg.getCluster();
+    final DataCfg data = brokerCfg.getData();
+    final var experimental = brokerCfg.getExperimental();
 
     final int partitionCount = cluster.getPartitionsCount();
     if (partitionCount < 1) {
@@ -68,6 +78,12 @@ public final class SystemContext {
     final int nodeId = cluster.getNodeId();
     if (nodeId < 0 || nodeId >= clusterSize) {
       throw new IllegalArgumentException(String.format(NODE_ID_ERROR_MSG, nodeId, clusterSize));
+    }
+
+    final var maxAppendBatchSize = experimental.getMaxAppendBatchSize();
+    if (maxAppendBatchSize.isNegative() || maxAppendBatchSize.toBytes() >= Integer.MAX_VALUE) {
+      throw new IllegalArgumentException(
+          String.format(MAX_BATCH_SIZE_ERROR_MSG, Integer.MAX_VALUE, maxAppendBatchSize));
     }
 
     final int replicationFactor = cluster.getReplicationFactor();
@@ -81,6 +97,34 @@ public final class SystemContext {
     final var snapshotPeriod = dataCfg.getSnapshotPeriod();
     if (snapshotPeriod.isNegative() || snapshotPeriod.minus(MINIMUM_SNAPSHOT_PERIOD).isNegative()) {
       throw new IllegalArgumentException(String.format(SNAPSHOT_PERIOD_ERROR_MSG, snapshotPeriod));
+    }
+
+    final var diskUsageCommandWatermark = dataCfg.getDiskUsageCommandWatermark();
+    if (!(diskUsageCommandWatermark > 0 && diskUsageCommandWatermark <= 1)) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected diskUsageCommandWatermark to be in the range (0,1], but found %f",
+              diskUsageCommandWatermark));
+    }
+
+    final var diskUsageReplicationWatermark = dataCfg.getDiskUsageReplicationWatermark();
+    if (!(diskUsageReplicationWatermark > 0 && diskUsageReplicationWatermark <= 1)) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Expected diskUsageReplicationWatermark to be in the range (0,1], but found %f",
+              diskUsageReplicationWatermark));
+    }
+
+    if (data.isDiskUsageMonitoringEnabled()
+        && diskUsageCommandWatermark >= diskUsageReplicationWatermark) {
+      throw new IllegalArgumentException(
+          String.format(
+              "diskUsageCommandWatermark (%f) must be less than diskUsageReplicationWatermark (%f)",
+              diskUsageCommandWatermark, diskUsageReplicationWatermark));
+    }
+
+    if (experimental.isDisableExplicitRaftFlush()) {
+      LOG.warn(REPLICATION_WITH_DISABLED_FLUSH_WARNING);
     }
   }
 
@@ -116,6 +160,5 @@ public final class SystemContext {
 
   private void setStepTimeout(final Duration stepTimeout) {
     this.stepTimeout = stepTimeout;
-    scheduler.setBlockingTasksShutdownTime(stepTimeout);
   }
 }

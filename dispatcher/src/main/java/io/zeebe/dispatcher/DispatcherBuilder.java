@@ -7,7 +7,6 @@
  */
 package io.zeebe.dispatcher;
 
-import static io.zeebe.dispatcher.impl.PositionUtil.position;
 import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.PARTITION_COUNT;
 import static io.zeebe.dispatcher.impl.log.LogBufferDescriptor.requiredCapacity;
 
@@ -35,7 +34,7 @@ public final class DispatcherBuilder {
 
   private String[] subscriptionNames;
 
-  private int initialPartitionId = 0;
+  private long initialPosition = 1;
 
   public DispatcherBuilder(final String dispatcherName) {
     this.dispatcherName = dispatcherName;
@@ -65,10 +64,9 @@ public final class DispatcherBuilder {
     return this;
   }
 
-  public DispatcherBuilder initialPartitionId(final int initialPartitionId) {
-    EnsureUtil.ensureGreaterThanOrEqual("initial partition id", initialPartitionId, 0);
-
-    this.initialPartitionId = initialPartitionId;
+  public DispatcherBuilder initialPosition(final long initialPosition) {
+    EnsureUtil.ensureGreaterThanOrEqual("initial position", initialPosition, 1);
+    this.initialPosition = initialPosition;
     return this;
   }
 
@@ -94,21 +92,11 @@ public final class DispatcherBuilder {
     final AllocatedBuffer allocatedBuffer = initAllocatedBuffer(bufferSize);
 
     // allocate the counters
-
-    AtomicPosition publisherLimit = null;
-    AtomicPosition publisherPosition = null;
-
-    final long initialPosition = position(initialPartitionId, 0);
-
-    publisherLimit = new AtomicPosition();
-    publisherLimit.set(initialPosition);
-
-    publisherPosition = new AtomicPosition();
-    publisherPosition.set(initialPosition);
+    final AtomicPosition publisherLimit = new AtomicPosition();
+    final AtomicPosition publisherPosition = new AtomicPosition();
 
     // create dispatcher
-
-    final LogBuffer logBuffer = new LogBuffer(allocatedBuffer, partitionSize, initialPartitionId);
+    final LogBuffer logBuffer = new LogBuffer(allocatedBuffer, partitionSize);
     final LogBufferAppender logAppender = new LogBufferAppender();
 
     final Dispatcher dispatcher =
@@ -117,6 +105,7 @@ public final class DispatcherBuilder {
             logAppender,
             publisherLimit,
             publisherPosition,
+            initialPosition,
             logWindowLength,
             maxFragmentLength,
             subscriptionNames,

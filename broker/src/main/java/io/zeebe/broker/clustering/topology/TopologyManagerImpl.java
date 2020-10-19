@@ -52,12 +52,11 @@ public final class TopologyManagerImpl extends Actor
       localBroker.setVersion(version);
     }
 
-    this.actorName = buildActorName(localBroker.getNodeId(), "TopologyManager");
+    actorName = buildActorName(localBroker.getNodeId(), "TopologyManager");
   }
 
   @Override
-  public ActorFuture<Void> onBecomingFollower(
-      final int partitionId, final long term, final LogStream logStream) {
+  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
     return setFollower(partitionId);
   }
 
@@ -190,9 +189,22 @@ public final class TopologyManagerImpl extends Actor
     final BrokerInfo brokerInfo = BrokerInfo.fromProperties(eventSource.properties());
     if (brokerInfo != null && !isStaticConfigValid(brokerInfo)) {
       LOG.error(
-          "Static configuration of node {} differs from local node {}",
+          "Static configuration of node {} differs from local node {}: "
+              + "NodeId: 0 <= {} < {}, "
+              + "ClusterSize: {} == {}, "
+              + "PartitionsCount: {} == {}, "
+              + "ReplicationFactor: {} == {}.",
           eventSource.id(),
-          atomix.getMembershipService().getLocalMember().id());
+          atomix.getMembershipService().getLocalMember().id(),
+          brokerInfo.getNodeId(),
+          localBroker.getClusterSize(),
+          brokerInfo.getClusterSize(),
+          localBroker.getClusterSize(),
+          brokerInfo.getPartitionsCount(),
+          localBroker.getPartitionsCount(),
+          brokerInfo.getReplicationFactor(),
+          localBroker.getReplicationFactor());
+
       return null;
     }
     return brokerInfo;

@@ -10,12 +10,11 @@ package io.zeebe.broker.it.clustering;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.clustering.atomix.storage.snapshot.DbSnapshotMetadata;
 import io.zeebe.broker.it.util.GrpcClientRule;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.snapshots.broker.impl.FileBasedSnapshotMetadata;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -28,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.zip.CRC32C;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -39,18 +37,11 @@ public final class SnapshotReplicationTest {
   private static final Duration SNAPSHOT_PERIOD = Duration.ofMinutes(5);
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
-  private static final String WORKFLOW_RESOURCE_NAME = "workflow.bpmn";
 
   private final ClusteringRule clusteringRule =
       new ClusteringRule(PARTITION_COUNT, 3, 3, SnapshotReplicationTest::configureBroker);
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
-  private ZeebeClient client;
-
-  @Before
-  public void init() {
-    client = clientRule.getClient();
-  }
 
   @Test
   public void shouldReplicateSnapshots() {
@@ -74,32 +65,6 @@ public final class SnapshotReplicationTest {
   }
 
   @Test
-  public void shouldReceiveLatestSnapshotOnRejoin() {
-    // given
-    final var leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
-    final var followers =
-        clusteringRule.getOtherBrokerObjects(leaderNodeId).stream()
-            .map(b -> b.getConfig().getCluster().getNodeId())
-            .collect(Collectors.toList());
-
-    final var firstFollowerId = followers.get(0);
-    final var secondFollowerId = followers.get(1);
-
-    // when - snapshot
-    clusteringRule.stopBroker(firstFollowerId);
-    triggerSnapshotCreation();
-    clusteringRule.restartBroker(firstFollowerId);
-    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId));
-    clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(firstFollowerId));
-
-    // then - replicated
-    final Map<Integer, Map<String, Long>> brokerSnapshotChecksums = getBrokerSnapshotChecksums();
-    final var leaderChecksums = Objects.requireNonNull(brokerSnapshotChecksums.get(leaderNodeId));
-    assertThat(brokerSnapshotChecksums.get(firstFollowerId)).containsAllEntriesOf(leaderChecksums);
-    assertThat(brokerSnapshotChecksums.get(secondFollowerId)).containsAllEntriesOf(leaderChecksums);
-  }
-
-  @Test
   public void shouldReceiveNewSnapshotsOnRejoin() {
     // given
     final var leaderNodeId = clusteringRule.getLeaderForPartition(1).getNodeId();
@@ -112,7 +77,7 @@ public final class SnapshotReplicationTest {
     final var secondFollowerId = followers.get(1);
 
     // when - snapshot
-    clusteringRule.stopBroker(firstFollowerId);
+    clusteringRule.stopBrokerAndAwaitNewLeader(firstFollowerId);
     triggerSnapshotCreation();
     final var snapshotAtSecondFollower =
         clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(secondFollowerId));
@@ -132,7 +97,7 @@ public final class SnapshotReplicationTest {
   }
 
   private void triggerSnapshotCreation() {
-    client.newDeployCommand().addWorkflowModel(WORKFLOW, WORKFLOW_RESOURCE_NAME).send().join();
+    clientRule.deployWorkflow(WORKFLOW);
     clusteringRule.getClock().addTime(SNAPSHOT_PERIOD);
   }
 
@@ -222,7 +187,7 @@ public final class SnapshotReplicationTest {
   private Map<String, Long> createChecksumsForSnapshot(final Path validSnapshotDir)
       throws IOException {
     final var snapshotMetadata =
-        DbSnapshotMetadata.ofPath(validSnapshotDir.getFileName()).orElseThrow();
+        FileBasedSnapshotMetadata.ofPath(validSnapshotDir.getFileName()).orElseThrow();
     final String prefix =
         String.format(
             "%d-%d-%d",
@@ -251,5 +216,7 @@ public final class SnapshotReplicationTest {
 
   private static void configureBroker(final BrokerCfg brokerCfg) {
     brokerCfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
+    brokerCfg.getData().setLogIndexDensity(1);
+    brokerCfg.getData().setUseMmap(false);
   }
 }

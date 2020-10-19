@@ -9,10 +9,11 @@ package io.zeebe.broker.transport.commandapi;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.PartitionListener;
+import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.broker.transport.backpressure.PartitionAwareRequestLimiter;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
-import io.zeebe.engine.processor.CommandResponseWriter;
-import io.zeebe.engine.processor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.zeebe.protocol.record.RecordType;
@@ -24,7 +25,8 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.function.Consumer;
 import org.agrona.collections.IntHashSet;
 
-public final class CommandApiService extends Actor implements PartitionListener {
+public final class CommandApiService extends Actor
+    implements PartitionListener, DiskSpaceUsageListener {
 
   private final PartitionAwareRequestLimiter limiter;
   private final ServerTransport serverTransport;
@@ -39,7 +41,7 @@ public final class CommandApiService extends Actor implements PartitionListener 
     this.serverTransport = serverTransport;
     this.limiter = limiter;
     requestHandler = new CommandApiRequestHandler();
-    this.actorName = buildActorName(localBroker.getNodeId(), "CommandApiService");
+    actorName = buildActorName(localBroker.getNodeId(), "CommandApiService");
   }
 
   @Override
@@ -56,11 +58,10 @@ public final class CommandApiService extends Actor implements PartitionListener 
   }
 
   @Override
-  public ActorFuture<Void> onBecomingFollower(
-      final int partitionId, final long term, final LogStream logStream) {
+  public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
     return actor.call(
         () -> {
-          requestHandler.removePartition(logStream);
+          requestHandler.removePartition(partitionId);
           cleanLeadingPartition(partitionId);
         });
   }
@@ -80,7 +81,7 @@ public final class CommandApiService extends Actor implements PartitionListener 
                   (recordWriter, error) -> {
                     if (error == null) {
 
-                      final var requestLimiter = this.limiter.getLimiter(partitionId);
+                      final var requestLimiter = limiter.getLimiter(partitionId);
                       requestHandler.addPartition(partitionId, recordWriter, requestLimiter);
                       serverTransport.subscribe(partitionId, requestHandler);
                       future.complete(null);
@@ -117,5 +118,15 @@ public final class CommandApiService extends Actor implements PartitionListener 
         partitionLimiter.onResponse(typedRecord.getRequestStreamId(), typedRecord.getRequestId());
       }
     };
+  }
+
+  @Override
+  public void onDiskSpaceNotAvailable() {
+    actor.run(requestHandler::onDiskSpaceNotAvailable);
+  }
+
+  @Override
+  public void onDiskSpaceAvailable() {
+    actor.run(requestHandler::onDiskSpaceAvailable);
   }
 }

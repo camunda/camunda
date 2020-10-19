@@ -19,7 +19,6 @@ import static io.zeebe.logstreams.impl.log.LogEntryDescriptor.valueOffset;
 
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
@@ -60,7 +59,7 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   @Override
   public LogStreamRecordWriter sourceRecordPosition(final long position) {
-    this.sourceRecordPosition = position;
+    sourceRecordPosition = position;
     return this;
   }
 
@@ -78,7 +77,7 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   @Override
   public LogStreamRecordWriter metadataWriter(final BufferWriter writer) {
-    this.metadataWriter = writer;
+    metadataWriter = writer;
     return this;
   }
 
@@ -95,7 +94,7 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   @Override
   public LogStreamRecordWriter valueWriter(final BufferWriter writer) {
-    this.valueWriter = writer;
+    valueWriter = writer;
     return this;
   }
 
@@ -159,13 +158,13 @@ public final class LogStreamWriterImpl implements LogStreamRecordWriter {
   private long claimLogEntry(final int valueLength, final int metadataLength) {
     final int framedLength = valueLength + headerLength(metadataLength);
 
-    long claimedPosition = -1;
-
+    long claimedPosition;
     do {
 
-      claimedPosition = logWriteBuffer.claim(claimedFragment, framedLength, partitionId);
+      claimedPosition =
+          logWriteBuffer.claimSingleFragment(claimedFragment, framedLength, partitionId);
     } while (claimedPosition == RESULT_PADDING_AT_END_OF_PARTITION);
 
-    return claimedPosition - DataFrameDescriptor.alignedFramedLength(framedLength);
+    return claimedPosition;
   }
 }

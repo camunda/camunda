@@ -16,31 +16,19 @@
  */
 package io.atomix.raft.protocol;
 
-import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.session.SessionId;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.ThreadContext;
 import java.net.ConnectException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 /** Test server protocol. */
 public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServerProtocol {
 
-  private final Map<Long, Consumer<ResetRequest>> resetListeners = Maps.newConcurrentMap();
-  private Function<OpenSessionRequest, CompletableFuture<OpenSessionResponse>> openSessionHandler;
-  private Function<CloseSessionRequest, CompletableFuture<CloseSessionResponse>>
-      closeSessionHandler;
-  private Function<KeepAliveRequest, CompletableFuture<KeepAliveResponse>> keepAliveHandler;
-  private Function<QueryRequest, CompletableFuture<QueryResponse>> queryHandler;
-  private Function<CommandRequest, CompletableFuture<CommandResponse>> commandHandler;
-  private Function<MetadataRequest, CompletableFuture<MetadataResponse>> metadataHandler;
   private Function<JoinRequest, CompletableFuture<JoinResponse>> joinHandler;
   private Function<LeaveRequest, CompletableFuture<LeaveResponse>> leaveHandler;
   private Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> configureHandler;
@@ -55,9 +43,8 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   public TestRaftServerProtocol(
       final MemberId memberId,
       final Map<MemberId, TestRaftServerProtocol> servers,
-      final Map<MemberId, TestRaftClientProtocol> clients,
       final ThreadContext context) {
-    super(servers, clients, context);
+    super(servers, context);
     servers.put(memberId, this);
   }
 
@@ -75,45 +62,6 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
       return null;
     }
     return super.server(memberId);
-  }
-
-  @Override
-  public CompletableFuture<OpenSessionResponse> openSession(
-      final MemberId memberId, final OpenSessionRequest request) {
-    return scheduleTimeout(
-        getServer(memberId).thenCompose(listener -> listener.openSession(request)));
-  }
-
-  @Override
-  public CompletableFuture<CloseSessionResponse> closeSession(
-      final MemberId memberId, final CloseSessionRequest request) {
-    return scheduleTimeout(
-        getServer(memberId).thenCompose(listener -> listener.closeSession(request)));
-  }
-
-  @Override
-  public CompletableFuture<KeepAliveResponse> keepAlive(
-      final MemberId memberId, final KeepAliveRequest request) {
-    return scheduleTimeout(
-        getServer(memberId).thenCompose(listener -> listener.keepAlive(request)));
-  }
-
-  @Override
-  public CompletableFuture<QueryResponse> query(
-      final MemberId memberId, final QueryRequest request) {
-    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.query(request)));
-  }
-
-  @Override
-  public CompletableFuture<CommandResponse> command(
-      final MemberId memberId, final CommandRequest request) {
-    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.command(request)));
-  }
-
-  @Override
-  public CompletableFuture<MetadataResponse> metadata(
-      final MemberId memberId, final MetadataRequest request) {
-    return scheduleTimeout(getServer(memberId).thenCompose(listener -> listener.metadata(request)));
   }
 
   @Override
@@ -170,206 +118,108 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
   }
 
   @Override
-  public CompletableFuture<HeartbeatResponse> heartbeat(
-      final MemberId memberId, final HeartbeatRequest request) {
-    return scheduleTimeout(
-        getClient(memberId).thenCompose(protocol -> protocol.heartbeat(request)));
-  }
-
-  @Override
-  public void publish(final MemberId memberId, final PublishRequest request) {
-    getClient(memberId).thenAccept(protocol -> protocol.publish(request));
-  }
-
-  @Override
-  public void registerOpenSessionHandler(
-      final Function<OpenSessionRequest, CompletableFuture<OpenSessionResponse>> handler) {
-    this.openSessionHandler = handler;
-  }
-
-  @Override
-  public void unregisterOpenSessionHandler() {
-    this.openSessionHandler = null;
-  }
-
-  @Override
-  public void registerCloseSessionHandler(
-      final Function<CloseSessionRequest, CompletableFuture<CloseSessionResponse>> handler) {
-    this.closeSessionHandler = handler;
-  }
-
-  @Override
-  public void unregisterCloseSessionHandler() {
-    this.closeSessionHandler = null;
-  }
-
-  @Override
-  public void registerKeepAliveHandler(
-      final Function<KeepAliveRequest, CompletableFuture<KeepAliveResponse>> handler) {
-    this.keepAliveHandler = handler;
-  }
-
-  @Override
-  public void unregisterKeepAliveHandler() {
-    this.keepAliveHandler = null;
-  }
-
-  @Override
-  public void registerQueryHandler(
-      final Function<QueryRequest, CompletableFuture<QueryResponse>> handler) {
-    this.queryHandler = handler;
-  }
-
-  @Override
-  public void unregisterQueryHandler() {
-    this.queryHandler = null;
-  }
-
-  @Override
-  public void registerCommandHandler(
-      final Function<CommandRequest, CompletableFuture<CommandResponse>> handler) {
-    this.commandHandler = handler;
-  }
-
-  @Override
-  public void unregisterCommandHandler() {
-    this.commandHandler = null;
-  }
-
-  @Override
-  public void registerMetadataHandler(
-      final Function<MetadataRequest, CompletableFuture<MetadataResponse>> handler) {
-    this.metadataHandler = handler;
-  }
-
-  @Override
-  public void unregisterMetadataHandler() {
-    this.metadataHandler = null;
-  }
-
-  @Override
   public void registerJoinHandler(
       final Function<JoinRequest, CompletableFuture<JoinResponse>> handler) {
-    this.joinHandler = handler;
+    joinHandler = handler;
   }
 
   @Override
   public void unregisterJoinHandler() {
-    this.joinHandler = null;
+    joinHandler = null;
   }
 
   @Override
   public void registerLeaveHandler(
       final Function<LeaveRequest, CompletableFuture<LeaveResponse>> handler) {
-    this.leaveHandler = handler;
+    leaveHandler = handler;
   }
 
   @Override
   public void unregisterLeaveHandler() {
-    this.leaveHandler = null;
+    leaveHandler = null;
   }
 
   @Override
   public void registerTransferHandler(
       final Function<TransferRequest, CompletableFuture<TransferResponse>> handler) {
-    this.transferHandler = handler;
+    transferHandler = handler;
   }
 
   @Override
   public void unregisterTransferHandler() {
-    this.transferHandler = null;
+    transferHandler = null;
   }
 
   @Override
   public void registerConfigureHandler(
       final Function<ConfigureRequest, CompletableFuture<ConfigureResponse>> handler) {
-    this.configureHandler = handler;
+    configureHandler = handler;
   }
 
   @Override
   public void unregisterConfigureHandler() {
-    this.configureHandler = null;
+    configureHandler = null;
   }
 
   @Override
   public void registerReconfigureHandler(
       final Function<ReconfigureRequest, CompletableFuture<ReconfigureResponse>> handler) {
-    this.reconfigureHandler = handler;
+    reconfigureHandler = handler;
   }
 
   @Override
   public void unregisterReconfigureHandler() {
-    this.reconfigureHandler = null;
+    reconfigureHandler = null;
   }
 
   @Override
   public void registerInstallHandler(
       final Function<InstallRequest, CompletableFuture<InstallResponse>> handler) {
-    this.installHandler = handler;
+    installHandler = handler;
   }
 
   @Override
   public void unregisterInstallHandler() {
-    this.installHandler = null;
+    installHandler = null;
   }
 
   @Override
   public void registerPollHandler(
       final Function<PollRequest, CompletableFuture<PollResponse>> handler) {
-    this.pollHandler = handler;
+    pollHandler = handler;
   }
 
   @Override
   public void unregisterPollHandler() {
-    this.pollHandler = null;
+    pollHandler = null;
   }
 
   @Override
   public void registerVoteHandler(
       final Function<VoteRequest, CompletableFuture<VoteResponse>> handler) {
-    this.voteHandler = handler;
+    voteHandler = handler;
   }
 
   @Override
   public void unregisterVoteHandler() {
-    this.voteHandler = null;
+    voteHandler = null;
   }
 
   @Override
   public void registerAppendHandler(
       final Function<AppendRequest, CompletableFuture<AppendResponse>> handler) {
-    this.appendHandler = handler;
+    appendHandler = handler;
   }
 
   @Override
   public void unregisterAppendHandler() {
-    this.appendHandler = null;
-  }
-
-  @Override
-  public void registerResetListener(
-      final SessionId sessionId, final Consumer<ResetRequest> listener, final Executor executor) {
-    resetListeners.put(sessionId.id(), request -> executor.execute(() -> listener.accept(request)));
-  }
-
-  @Override
-  public void unregisterResetListener(final SessionId sessionId) {
-    resetListeners.remove(sessionId.id());
+    appendHandler = null;
   }
 
   private CompletableFuture<TestRaftServerProtocol> getServer(final MemberId memberId) {
     final TestRaftServerProtocol server = server(memberId);
     if (server != null) {
       return Futures.completedFuture(server);
-    } else {
-      return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  private CompletableFuture<TestRaftClientProtocol> getClient(final MemberId memberId) {
-    final TestRaftClientProtocol client = client(memberId);
-    if (client != null) {
-      return Futures.completedFuture(client);
     } else {
       return Futures.exceptionalFuture(new ConnectException());
     }
@@ -444,61 +294,6 @@ public class TestRaftServerProtocol extends TestRaftProtocol implements RaftServ
       return joinHandler.apply(request);
     } else {
       return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  CompletableFuture<MetadataResponse> metadata(final MetadataRequest request) {
-    if (metadataHandler != null) {
-      return metadataHandler.apply(request);
-    } else {
-      return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  CompletableFuture<CommandResponse> command(final CommandRequest request) {
-    if (commandHandler != null) {
-      return commandHandler.apply(request);
-    } else {
-      return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  CompletableFuture<QueryResponse> query(final QueryRequest request) {
-    if (queryHandler != null) {
-      return queryHandler.apply(request);
-    } else {
-      return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  CompletableFuture<KeepAliveResponse> keepAlive(final KeepAliveRequest request) {
-    if (keepAliveHandler != null) {
-      return keepAliveHandler.apply(request);
-    } else {
-      return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  CompletableFuture<CloseSessionResponse> closeSession(final CloseSessionRequest request) {
-    if (closeSessionHandler != null) {
-      return closeSessionHandler.apply(request);
-    } else {
-      return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  CompletableFuture<OpenSessionResponse> openSession(final OpenSessionRequest request) {
-    if (openSessionHandler != null) {
-      return openSessionHandler.apply(request);
-    } else {
-      return Futures.exceptionalFuture(new ConnectException());
-    }
-  }
-
-  void reset(final ResetRequest request) {
-    final Consumer<ResetRequest> listener = resetListeners.get(request.session());
-    if (listener != null) {
-      listener.accept(request);
     }
   }
 }

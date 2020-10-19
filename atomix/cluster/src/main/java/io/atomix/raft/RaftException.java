@@ -116,24 +116,10 @@ public abstract class RaftException extends RuntimeException {
     }
   }
 
-  public static class UnknownSession extends RaftException {
-
-    public UnknownSession(final String message, final Object... args) {
-      super(RaftError.Type.UNKNOWN_SESSION, message, args);
-    }
-  }
-
   public static class UnknownService extends RaftException {
 
     public UnknownService(final String message, final Object... args) {
       super(RaftError.Type.UNKNOWN_SERVICE, message, args);
-    }
-  }
-
-  public static class ClosedSession extends RaftException {
-
-    public ClosedSession(final String message, final Object... args) {
-      super(RaftError.Type.CLOSED_SESSION, message, args);
     }
   }
 

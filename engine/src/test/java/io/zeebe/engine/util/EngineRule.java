@@ -11,18 +11,20 @@ import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import io.zeebe.engine.processor.CommandResponseWriter;
-import io.zeebe.engine.processor.ReadonlyProcessingContext;
-import io.zeebe.engine.processor.RecordValues;
-import io.zeebe.engine.processor.StreamProcessorLifecycleAware;
-import io.zeebe.engine.processor.TypedEventImpl;
-import io.zeebe.engine.processor.workflow.EngineProcessors;
-import io.zeebe.engine.processor.workflow.deployment.distribute.DeploymentDistributor;
-import io.zeebe.engine.processor.workflow.deployment.distribute.PendingDeploymentDistribution;
-import io.zeebe.engine.processor.workflow.message.command.PartitionCommandSender;
-import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandMessageHandler;
-import io.zeebe.engine.processor.workflow.message.command.SubscriptionCommandSender;
+import io.zeebe.engine.processing.EngineProcessors;
+import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
+import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
+import io.zeebe.engine.processing.message.command.PartitionCommandSender;
+import io.zeebe.engine.processing.message.command.SubscriptionCommandMessageHandler;
+import io.zeebe.engine.processing.message.command.SubscriptionCommandSender;
+import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.zeebe.engine.processing.streamprocessor.RecordValues;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessorLifecycleAware;
+import io.zeebe.engine.processing.streamprocessor.TypedEventImpl;
+import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.client.DeploymentClient;
 import io.zeebe.engine.util.client.IncidentClient;
 import io.zeebe.engine.util.client.JobActivationClient;
@@ -45,7 +47,6 @@ import io.zeebe.protocol.record.value.JobRecordValue;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
-import io.zeebe.util.FileUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
@@ -72,16 +73,17 @@ public final class EngineRule extends ExternalResource {
 
   private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
   private static final RecordingExporter RECORDING_EXPORTER = new RecordingExporter();
-  private StreamProcessorRule environmentRule;
+  private final StreamProcessorRule environmentRule;
   private final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
   private final int partitionCount;
   private final boolean explicitStart;
   private Consumer<String> jobsAvailableCallback = type -> {};
+  private DeploymentDistributor deploymentDistributor = new DeploymentDistributionImpl();
 
   private final Int2ObjectHashMap<SubscriptionCommandMessageHandler> subscriptionHandlers =
       new Int2ObjectHashMap<>();
-  private final ExecutorService subscriptionHandlerExecutor = Executors.newSingleThreadExecutor();
+  private ExecutorService subscriptionHandlerExecutor;
 
   private EngineRule(final int partitionCount) {
     this(partitionCount, false);
@@ -92,7 +94,7 @@ public final class EngineRule extends ExternalResource {
     this.explicitStart = explicitStart;
     environmentRule =
         new StreamProcessorRule(
-            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.DEFAULT_DB_FACTORY);
+            PARTITION_ID, partitionCount, DefaultZeebeDbFactory.defaultFactory());
   }
 
   public static EngineRule singlePartition() {
@@ -116,6 +118,8 @@ public final class EngineRule extends ExternalResource {
 
   @Override
   protected void before() {
+    subscriptionHandlerExecutor = Executors.newSingleThreadExecutor();
+
     if (!explicitStart) {
       startProcessors();
     }
@@ -124,7 +128,6 @@ public final class EngineRule extends ExternalResource {
   @Override
   protected void after() {
     subscriptionHandlerExecutor.shutdown();
-    environmentRule = null;
     subscriptionHandlers.clear();
   }
 
@@ -138,6 +141,11 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withJobsAvailableCallback(final Consumer<String> callback) {
     jobsAvailableCallback = callback;
+    return this;
+  }
+
+  public EngineRule withDeploymentDistributor(final DeploymentDistributor deploymentDistributor) {
+    this.deploymentDistributor = deploymentDistributor;
     return this;
   }
 
@@ -160,7 +168,7 @@ public final class EngineRule extends ExternalResource {
                           partitionCount,
                           new SubscriptionCommandSender(
                               partitionId, new PartitionCommandSenderImpl()),
-                          new DeploymentDistributionImpl(),
+                          deploymentDistributor,
                           (key, partition) -> {},
                           jobsAvailableCallback)
                       .withListener(new ProcessingExporterTransistor()));
@@ -188,14 +196,7 @@ public final class EngineRule extends ExternalResource {
     forEachPartition(
         partitionId -> {
           try {
-
-            final var snapshotController = environmentRule.getStateSnapshotController(partitionId);
-
             environmentRule.closeStreamProcessor(partitionId);
-
-            if (snapshotController.getValidSnapshotsCount() > 0) {
-              FileUtil.deleteFolder(snapshotController.getLastValidSnapshotDirectory().toPath());
-            }
           } catch (final Exception e) {
             throw new RuntimeException(e);
           }
@@ -221,6 +222,14 @@ public final class EngineRule extends ExternalResource {
 
   public ControlledActorClock getClock() {
     return environmentRule.getClock();
+  }
+
+  public ZeebeState getZeebeState() {
+    return environmentRule.getZeebeState();
+  }
+
+  public StreamProcessor getStreamProcessor(final int partitionId) {
+    return environmentRule.getStreamProcessor(partitionId);
   }
 
   public DeploymentClient deployment() {
@@ -278,6 +287,13 @@ public final class EngineRule extends ExternalResource {
     return environmentRule.getCommandResponseWriter();
   }
 
+  public void pauseProcessing(final int partitionId) {
+    environmentRule.pauseProcessing(partitionId);
+  }
+
+  public void resumeProcessing(final int partitionId) {
+    environmentRule.resumeProcessing(partitionId);
+  }
   /////////////////////////////////////////////////////////////////////////////////////////////////
   //////////////////////////////// PROCESSOR EXPORTER CROSSOVER ///////////////////////////////////
   /////////////////////////////////////////////////////////////////////////////////////////////////

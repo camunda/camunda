@@ -10,10 +10,7 @@ package io.zeebe.util.sched;
 import io.zeebe.util.sched.ActorScheduler.ActorSchedulerBuilder;
 import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Used to submit {@link ActorTask ActorTasks} and Blocking Actions to the scheduler's internal
@@ -22,14 +19,10 @@ import java.util.concurrent.TimeUnit;
 public final class ActorExecutor {
   private final ActorThreadGroup cpuBoundThreads;
   private final ActorThreadGroup ioBoundThreads;
-  private final ThreadPoolExecutor blockingTasksRunner;
-  private Duration blockingTasksShutdownTime;
 
   public ActorExecutor(final ActorSchedulerBuilder builder) {
-    this.ioBoundThreads = builder.getIoBoundActorThreads();
-    this.cpuBoundThreads = builder.getCpuBoundActorThreads();
-    this.blockingTasksRunner = builder.getBlockingTasksRunner();
-    this.blockingTasksShutdownTime = builder.getBlockingTasksShutdownTime();
+    ioBoundThreads = builder.getIoBoundActorThreads();
+    cpuBoundThreads = builder.getCpuBoundActorThreads();
   }
 
   /**
@@ -55,34 +48,13 @@ public final class ActorExecutor {
     return startingFuture;
   }
 
-  /**
-   * Sumbit a blocking action to run using the scheduler's blocking thread pool
-   *
-   * @param action the action to submit
-   */
-  public void submitBlocking(final Runnable action) {
-    blockingTasksRunner.execute(action);
-  }
-
   public void start() {
     cpuBoundThreads.start();
     ioBoundThreads.start();
   }
 
   public CompletableFuture<Void> closeAsync() {
-    blockingTasksRunner.shutdown();
-
-    final CompletableFuture<Void> resultFuture =
-        CompletableFuture.allOf(ioBoundThreads.closeAsync(), cpuBoundThreads.closeAsync());
-
-    try {
-      blockingTasksRunner.awaitTermination(
-          blockingTasksShutdownTime.getSeconds(), TimeUnit.SECONDS);
-    } catch (final InterruptedException e) {
-      e.printStackTrace();
-    }
-
-    return resultFuture;
+    return CompletableFuture.allOf(ioBoundThreads.closeAsync(), cpuBoundThreads.closeAsync());
   }
 
   public ActorThreadGroup getCpuBoundThreads() {
@@ -91,13 +63,5 @@ public final class ActorExecutor {
 
   public ActorThreadGroup getIoBoundThreads() {
     return ioBoundThreads;
-  }
-
-  public Duration getBlockingTasksShutdownTime() {
-    return blockingTasksShutdownTime;
-  }
-
-  public void setBlockingTasksShutdownTime(final Duration duration) {
-    blockingTasksShutdownTime = duration;
   }
 }

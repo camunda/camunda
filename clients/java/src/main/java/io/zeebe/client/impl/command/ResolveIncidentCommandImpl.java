@@ -42,7 +42,7 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
       final Duration requestTimeout,
       final Predicate<Throwable> retryPredicate) {
     this.asyncStub = asyncStub;
-    this.builder = ResolveIncidentRequest.newBuilder().setIncidentKey(incidentKey);
+    builder = ResolveIncidentRequest.newBuilder().setIncidentKey(incidentKey);
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
   }

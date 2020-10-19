@@ -51,6 +51,7 @@ import io.zeebe.client.impl.command.SetVariablesCommandImpl;
 import io.zeebe.client.impl.command.TopologyRequestImpl;
 import io.zeebe.client.impl.worker.JobClientImpl;
 import io.zeebe.client.impl.worker.JobWorkerBuilderImpl;
+import io.zeebe.client.util.VersionUtil;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.io.Closeable;
@@ -96,24 +97,24 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final GatewayStub gatewayStub,
       final ScheduledExecutorService executorService) {
     this.config = config;
-    this.objectMapper = new ZeebeObjectMapper();
+    objectMapper = new ZeebeObjectMapper();
     this.channel = channel;
-    this.asyncStub = gatewayStub;
+    asyncStub = gatewayStub;
     this.executorService = executorService;
 
     if (config.getCredentialsProvider() != null) {
-      this.credentialsProvider = config.getCredentialsProvider();
+      credentialsProvider = config.getCredentialsProvider();
     } else {
-      this.credentialsProvider = new NoopCredentialsProvider();
+      credentialsProvider = new NoopCredentialsProvider();
     }
-    this.jobClient = newJobClient();
+    jobClient = newJobClient();
   }
 
   public static ManagedChannel buildChannel(final ZeebeClientConfiguration config) {
     final URI address;
 
     try {
-      address = new URI("zb://" + config.getBrokerContactPoint());
+      address = new URI("zb://" + config.getGatewayAddress());
     } catch (final URISyntaxException e) {
       throw new RuntimeException("Failed to parse broker contact point", e);
     }
@@ -123,6 +124,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
     configureConnectionSecurity(config, channelBuilder);
     channelBuilder.keepAliveTime(config.getKeepAlive().toMillis(), TimeUnit.MILLISECONDS);
+    channelBuilder.userAgent("zeebe-client-java/" + VersionUtil.getVersion());
 
     return channelBuilder.build();
   }
@@ -187,7 +189,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public ZeebeClientConfiguration getConfiguration() {
-    return this.config;
+    return config;
   }
 
   @Override

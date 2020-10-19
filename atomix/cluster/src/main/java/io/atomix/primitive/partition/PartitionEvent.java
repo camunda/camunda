@@ -100,10 +100,10 @@ public class PartitionEvent extends AbstractEvent<PartitionEvent.Type, Partition
   public boolean equals(final Object object) {
     if (object instanceof PartitionEvent) {
       final PartitionEvent that = (PartitionEvent) object;
-      return this.partitionId().equals(that.partitionId())
-          && this.members.equals(that.members)
-          && Objects.equals(this.primary, that.primary)
-          && this.backups.equals(that.backups);
+      return partitionId().equals(that.partitionId())
+          && members.equals(that.members)
+          && Objects.equals(primary, that.primary)
+          && backups.equals(that.backups);
     }
     return false;
   }

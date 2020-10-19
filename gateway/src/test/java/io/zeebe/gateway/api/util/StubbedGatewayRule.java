@@ -7,7 +7,10 @@
  */
 package io.zeebe.gateway.api.util;
 
+import io.zeebe.gateway.impl.configuration.GatewayCfg;
+import io.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.zeebe.gateway.impl.job.LongPollingActivateJobsHandler;
+import io.zeebe.gateway.impl.job.RoundRobinActivateJobsHandler;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.rules.ExternalResource;
@@ -18,18 +21,25 @@ public final class StubbedGatewayRule extends ExternalResource {
   protected GatewayBlockingStub client;
   private final ActorSchedulerRule actorSchedulerRule;
   private final StubbedBrokerClient brokerClient;
-  private final LongPollingActivateJobsHandler longPollingHandler;
+  private final ActivateJobsHandler activateJobsHandler;
 
-  public StubbedGatewayRule(final ActorSchedulerRule actorSchedulerRule) {
+  public StubbedGatewayRule(final ActorSchedulerRule actorSchedulerRule, final GatewayCfg config) {
     this.actorSchedulerRule = actorSchedulerRule;
-    this.brokerClient = new StubbedBrokerClient();
-    this.longPollingHandler =
-        LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
+    brokerClient = new StubbedBrokerClient();
+    activateJobsHandler = getActivateJobsHandler(config, brokerClient);
+  }
+
+  private static ActivateJobsHandler getActivateJobsHandler(
+      final GatewayCfg config, final StubbedBrokerClient brokerClient) {
+    if (config.getLongPolling().isEnabled()) {
+      return LongPollingActivateJobsHandler.newBuilder().setBrokerClient(brokerClient).build();
+    }
+    return new RoundRobinActivateJobsHandler(brokerClient);
   }
 
   @Override
   protected void before() throws Throwable {
-    gateway = new StubbedGateway(actorSchedulerRule.get(), brokerClient, longPollingHandler);
+    gateway = new StubbedGateway(actorSchedulerRule.get(), brokerClient, activateJobsHandler);
     gateway.start();
     client = gateway.buildClient();
   }

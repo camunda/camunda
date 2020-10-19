@@ -22,17 +22,11 @@ import static org.junit.Assert.assertTrue;
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberConfig;
 import io.atomix.cluster.MembershipConfig;
-import io.atomix.cluster.MulticastConfig;
-import io.atomix.cluster.discovery.MulticastDiscoveryConfig;
-import io.atomix.cluster.discovery.MulticastDiscoveryProvider;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.HeartbeatMembershipProtocolConfig;
-import io.atomix.core.profile.ConsensusProfile;
-import io.atomix.core.profile.ConsensusProfileConfig;
 import io.atomix.raft.partition.RaftPartitionGroup;
 import io.atomix.raft.partition.RaftPartitionGroupConfig;
 import java.time.Duration;
-import java.util.Arrays;
 import org.junit.Test;
 
 /** Atomix configuration test. */
@@ -42,7 +36,6 @@ public class AtomixConfigTest {
   public void testDefaultAtomixConfig() throws Exception {
     final AtomixConfig config = Atomix.config();
     assertTrue(config.getPartitionGroups().isEmpty());
-    assertTrue(config.getProfiles().isEmpty());
   }
 
   @Test
@@ -62,11 +55,6 @@ public class AtomixConfigTest {
     assertEquals("bar", node.getProperties().getProperty("foo"));
     assertEquals("baz", node.getProperties().getProperty("bar"));
 
-    final MulticastConfig multicast = cluster.getMulticastConfig();
-    assertTrue(multicast.isEnabled());
-    assertEquals("230.0.1.1", multicast.getGroup().getHostAddress());
-    assertEquals(56789, multicast.getPort());
-
     final HeartbeatMembershipProtocolConfig protocol =
         (HeartbeatMembershipProtocolConfig) cluster.getProtocolConfig();
     assertEquals(Duration.ofMillis(200), protocol.getHeartbeatInterval());
@@ -78,37 +66,17 @@ public class AtomixConfigTest {
     assertEquals(12, membership.getReachabilityThreshold());
     assertEquals(Duration.ofSeconds(15), membership.getReachabilityTimeout());
 
-    final MulticastDiscoveryConfig discovery =
-        (MulticastDiscoveryConfig) cluster.getDiscoveryConfig();
-    assertEquals(MulticastDiscoveryProvider.TYPE, discovery.getType());
-    assertEquals(Duration.ofSeconds(1), discovery.getBroadcastInterval());
-    assertEquals(12, discovery.getFailureThreshold());
-    assertEquals(Duration.ofSeconds(15), discovery.getFailureTimeout());
-
     final MessagingConfig messaging = cluster.getMessagingConfig();
     assertEquals(2, messaging.getInterfaces().size());
     assertEquals("127.0.0.1", messaging.getInterfaces().get(0));
     assertEquals("0.0.0.0", messaging.getInterfaces().get(1));
     assertEquals(5000, messaging.getPort().intValue());
     assertEquals(Duration.ofSeconds(10), messaging.getConnectTimeout());
-    assertTrue(messaging.getTlsConfig().isEnabled());
-    assertEquals("keystore.jks", messaging.getTlsConfig().getKeyStore());
-    assertEquals("foo", messaging.getTlsConfig().getKeyStorePassword());
-    assertEquals("truststore.jks", messaging.getTlsConfig().getTrustStore());
-    assertEquals("bar", messaging.getTlsConfig().getTrustStorePassword());
 
     final RaftPartitionGroupConfig groupOne =
         (RaftPartitionGroupConfig) config.getPartitionGroups().get("one");
     assertEquals(RaftPartitionGroup.TYPE, groupOne.getType());
     assertEquals("one", groupOne.getName());
     assertEquals(7, groupOne.getPartitions());
-
-    final ConsensusProfileConfig consensusProfile =
-        (ConsensusProfileConfig) config.getProfiles().get(0);
-    assertEquals(ConsensusProfile.TYPE, consensusProfile.getType());
-    assertEquals("management", consensusProfile.getManagementGroup());
-    assertEquals("consensus", consensusProfile.getDataGroup());
-    assertEquals(3, consensusProfile.getPartitions());
-    assertTrue(consensusProfile.getMembers().containsAll(Arrays.asList("one", "two", "three")));
   }
 }

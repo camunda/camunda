@@ -3,13 +3,13 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Workflow Engine</name>
   <artifactId>zeebe-workflow-engine</artifactId>
-  <version>0.24.0-SNAPSHOT</version>
+  <version>0.25.0-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.24.0-SNAPSHOT</version>
+    <version>0.25.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -116,8 +116,14 @@
     </dependency>
 
     <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -138,9 +144,16 @@
       <artifactId>zeebe-test-util</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
       <scope>test</scope>
     </dependency>
 

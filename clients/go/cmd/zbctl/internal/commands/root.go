@@ -29,7 +29,6 @@ import (
 const (
 	DefaultAddressHost = "127.0.0.1"
 	DefaultAddressPort = "26500"
-	AddressEnvVar      = "ZEEBE_ADDRESS"
 	defaultTimeout     = 10 * time.Second
 )
 
@@ -77,7 +76,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify a contact point address. If omitted, will read from the environment variable '"+AddressEnvVar+"' (default '"+fmt.Sprintf("%s:%s", DefaultAddressHost, DefaultAddressPort)+"')")
+	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify a contact point address. If omitted, will read from the environment variable '"+zbc.GatewayAddressEnvVar+"' (default '"+fmt.Sprintf("%s:%s", DefaultAddressHost, DefaultAddressPort)+"')")
 	rootCmd.PersistentFlags().StringVar(&caCertPathFlag, "certPath", "", "Specify a path to a certificate with which to validate gateway requests. If omitted, will read from the environment variable '"+zbc.CaCertificatePath+"'")
 	rootCmd.PersistentFlags().StringVar(&clientIDFlag, "clientId", "", "Specify a client identifier to request an access token. If omitted, will read from the environment variable '"+zbc.OAuthClientIdEnvVar+"'")
 	rootCmd.PersistentFlags().StringVar(&clientSecretFlag, "clientSecret", "", "Specify a client secret to request an access token. If omitted, will read from the environment variable '"+zbc.OAuthClientSecretEnvVar+"'")
@@ -172,9 +171,8 @@ func parseAddress() (address string, port string) {
 
 	if len(addressFlag) > 0 {
 		address = addressFlag
-	} else if addressEnv, exists := os.LookupEnv(AddressEnvVar); exists {
+	} else if addressEnv, exists := os.LookupEnv(zbc.GatewayAddressEnvVar); exists {
 		address = addressEnv
-
 	}
 
 	if strings.Contains(address, ":") {

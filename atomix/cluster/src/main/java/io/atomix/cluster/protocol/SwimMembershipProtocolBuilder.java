@@ -89,6 +89,17 @@ public class SwimMembershipProtocolBuilder extends GroupMembershipProtocolBuilde
   }
 
   /**
+   * Sets the probe timeout
+   *
+   * @param probeTimeout
+   * @return
+   */
+  public SwimMembershipProtocolBuilder withProbeTimeout(final Duration probeTimeout) {
+    config.setProbeTimeout(probeTimeout);
+    return this;
+  }
+
+  /**
    * Sets the number of probes to perform on suspect members.
    *
    * @param suspectProbes the number of probes to perform on suspect members

@@ -9,7 +9,6 @@ package io.zeebe.logstreams.impl.log;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.impl.PositionUtil;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
@@ -70,11 +69,11 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
 
     this.partitionId = partitionId;
     this.nodeId = nodeId;
-    this.actorName = buildActorName(nodeId, "LogStream-" + partitionId);
+    actorName = buildActorName(nodeId, "LogStream-" + partitionId);
 
     this.maxFrameLength = maxFrameLength;
     this.logStorage = logStorage;
-    this.closeFuture = new CompletableActorFuture<>();
+    closeFuture = new CompletableActorFuture<>();
 
     try {
       logStorage.open();
@@ -82,10 +81,10 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
       throw new UncheckedIOException(e);
     }
 
-    this.commitPosition = INVALID_ADDRESS;
-    this.readers = new ArrayList<>();
-    this.reader = new LogStreamReaderImpl(logStorage);
-    this.readers.add(reader);
+    commitPosition = INVALID_ADDRESS;
+    readers = new ArrayList<>();
+    reader = new LogStreamReaderImpl(logStorage);
+    readers.add(reader);
 
     internalSetCommitPosition(reader.seekToEnd());
   }
@@ -261,11 +260,19 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     final var appenderOpenFuture = new CompletableActorFuture<LogStorageAppender>();
 
     appenderFuture = appenderOpenFuture;
-    final int initialDispatcherPartitionId = determineInitialPartitionId();
+    final var lastPosition = getLastPosition();
+    final long initialPosition;
+    if (lastPosition > 0) {
+      internalSetCommitPosition(lastPosition);
+      initialPosition = lastPosition + 1;
+    } else {
+      initialPosition = 1;
+    }
+
     writeBuffer =
         Dispatchers.create(buildActorName(nodeId, "dispatcher-" + partitionId))
             .maxFragmentLength(maxFrameLength)
-            .initialPartitionId(initialDispatcherPartitionId + 1)
+            .initialPosition(initialPosition)
             .name(logName + "-write-buffer")
             .actorScheduler(actorScheduler)
             .build();
@@ -281,7 +288,8 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
                         partitionId,
                         logStorage,
                         subscription,
-                        maxFrameLength);
+                        maxFrameLength,
+                        this::setCommitPosition);
 
                 actorScheduler
                     .submitActor(appender)
@@ -308,20 +316,9 @@ public final class LogStreamImpl extends Actor implements LogStream, FailureList
     onFailure();
   }
 
-  private int determineInitialPartitionId() {
+  private long getLastPosition() {
     try (final LogStreamReaderImpl logReader = new LogStreamReaderImpl(logStorage)) {
-
-      // Get position of last entry
-      final long lastPosition = logReader.seekToEnd();
-
-      // dispatcher needs to generate positions greater than the last position
-      int dispatcherPartitionId = 0;
-
-      if (lastPosition > 0) {
-        dispatcherPartitionId = PositionUtil.partitionId(lastPosition);
-      }
-
-      return dispatcherPartitionId;
+      return logReader.seekToEnd();
     }
   }
 

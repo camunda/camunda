@@ -31,7 +31,7 @@ public final class IncidentMetrics {
   private final String partitionIdLabel;
 
   public IncidentMetrics(final int partitionId) {
-    this.partitionIdLabel = String.valueOf(partitionId);
+    partitionIdLabel = String.valueOf(partitionId);
   }
 
   private void incidentEvent(final String action) {

@@ -21,28 +21,16 @@ import io.atomix.raft.RaftServer;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
-import io.atomix.raft.protocol.CloseSessionRequest;
-import io.atomix.raft.protocol.CloseSessionResponse;
-import io.atomix.raft.protocol.CommandRequest;
-import io.atomix.raft.protocol.CommandResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
-import io.atomix.raft.protocol.KeepAliveRequest;
-import io.atomix.raft.protocol.KeepAliveResponse;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
-import io.atomix.raft.protocol.MetadataRequest;
-import io.atomix.raft.protocol.MetadataResponse;
-import io.atomix.raft.protocol.OpenSessionRequest;
-import io.atomix.raft.protocol.OpenSessionResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
-import io.atomix.raft.protocol.QueryRequest;
-import io.atomix.raft.protocol.QueryResponse;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.ReconfigureRequest;
@@ -65,50 +53,6 @@ public class InactiveRole extends AbstractRole {
   @Override
   public RaftServer.Role role() {
     return RaftServer.Role.INACTIVE;
-  }
-
-  @Override
-  public CompletableFuture<MetadataResponse> onMetadata(final MetadataRequest request) {
-    logRequest(request);
-    return Futures.completedFuture(
-        logResponse(
-            MetadataResponse.builder()
-                .withStatus(Status.ERROR)
-                .withError(RaftError.Type.UNAVAILABLE)
-                .build()));
-  }
-
-  @Override
-  public CompletableFuture<OpenSessionResponse> onOpenSession(final OpenSessionRequest request) {
-    logRequest(request);
-    return Futures.completedFuture(
-        logResponse(
-            OpenSessionResponse.builder()
-                .withStatus(Status.ERROR)
-                .withError(RaftError.Type.UNAVAILABLE)
-                .build()));
-  }
-
-  @Override
-  public CompletableFuture<KeepAliveResponse> onKeepAlive(final KeepAliveRequest request) {
-    logRequest(request);
-    return Futures.completedFuture(
-        logResponse(
-            KeepAliveResponse.builder()
-                .withStatus(Status.ERROR)
-                .withError(RaftError.Type.UNAVAILABLE)
-                .build()));
-  }
-
-  @Override
-  public CompletableFuture<CloseSessionResponse> onCloseSession(final CloseSessionRequest request) {
-    logRequest(request);
-    return Futures.completedFuture(
-        logResponse(
-            CloseSessionResponse.builder()
-                .withStatus(Status.ERROR)
-                .withError(RaftError.Type.UNAVAILABLE)
-                .build()));
   }
 
   @Override
@@ -218,28 +162,6 @@ public class InactiveRole extends AbstractRole {
     return Futures.completedFuture(
         logResponse(
             VoteResponse.builder()
-                .withStatus(Status.ERROR)
-                .withError(RaftError.Type.UNAVAILABLE)
-                .build()));
-  }
-
-  @Override
-  public CompletableFuture<CommandResponse> onCommand(final CommandRequest request) {
-    logRequest(request);
-    return Futures.completedFuture(
-        logResponse(
-            CommandResponse.builder()
-                .withStatus(Status.ERROR)
-                .withError(RaftError.Type.UNAVAILABLE)
-                .build()));
-  }
-
-  @Override
-  public CompletableFuture<QueryResponse> onQuery(final QueryRequest request) {
-    logRequest(request);
-    return Futures.completedFuture(
-        logResponse(
-            QueryResponse.builder()
                 .withStatus(Status.ERROR)
                 .withError(RaftError.Type.UNAVAILABLE)
                 .build()));

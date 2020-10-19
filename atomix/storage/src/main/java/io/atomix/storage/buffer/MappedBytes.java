@@ -102,12 +102,6 @@ public class MappedBytes extends ByteBufferBytes {
   }
 
   @Override
-  public Bytes flush() {
-    ((MappedByteBuffer) buffer).force();
-    return this;
-  }
-
-  @Override
   public void close() {
     try {
       BufferCleaner.freeBuffer(buffer);
@@ -122,6 +116,12 @@ public class MappedBytes extends ByteBufferBytes {
       throw new RuntimeException(e);
     }
     super.close();
+  }
+
+  @Override
+  public Bytes flush() {
+    ((MappedByteBuffer) buffer).force();
+    return this;
   }
 
   /** Deletes the underlying file. */

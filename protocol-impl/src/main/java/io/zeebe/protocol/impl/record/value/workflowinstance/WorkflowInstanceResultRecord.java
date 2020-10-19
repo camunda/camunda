@@ -30,7 +30,7 @@ public final class WorkflowInstanceResultRecord extends UnifiedRecordValue
       new LongProperty("workflowInstanceKey", -1);
 
   public WorkflowInstanceResultRecord() {
-    this.declareProperty(bpmnProcessIdProperty)
+    declareProperty(bpmnProcessIdProperty)
         .declareProperty(workflowKeyProperty)
         .declareProperty(workflowInstanceKeyProperty)
         .declareProperty(versionProperty)
@@ -42,12 +42,12 @@ public final class WorkflowInstanceResultRecord extends UnifiedRecordValue
   }
 
   public WorkflowInstanceResultRecord setBpmnProcessId(final String bpmnProcessId) {
-    this.bpmnProcessIdProperty.setValue(bpmnProcessId);
+    bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
 
   public WorkflowInstanceResultRecord setBpmnProcessId(final DirectBuffer bpmnProcessId) {
-    this.bpmnProcessIdProperty.setValue(bpmnProcessId);
+    bpmnProcessIdProperty.setValue(bpmnProcessId);
     return this;
   }
 
@@ -56,7 +56,7 @@ public final class WorkflowInstanceResultRecord extends UnifiedRecordValue
   }
 
   public WorkflowInstanceResultRecord setVersion(final int version) {
-    this.versionProperty.setValue(version);
+    versionProperty.setValue(version);
     return this;
   }
 
@@ -65,7 +65,7 @@ public final class WorkflowInstanceResultRecord extends UnifiedRecordValue
   }
 
   public WorkflowInstanceResultRecord setWorkflowKey(final long key) {
-    this.workflowKeyProperty.setValue(key);
+    workflowKeyProperty.setValue(key);
     return this;
   }
 
@@ -75,7 +75,7 @@ public final class WorkflowInstanceResultRecord extends UnifiedRecordValue
   }
 
   public WorkflowInstanceResultRecord setWorkflowInstanceKey(final long instanceKey) {
-    this.workflowInstanceKeyProperty.setValue(instanceKey);
+    workflowInstanceKeyProperty.setValue(instanceKey);
     return this;
   }
 

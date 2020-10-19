@@ -10,21 +10,19 @@ package io.zeebe.engine.util;
 import static io.zeebe.engine.util.StreamProcessingComposite.getLogName;
 
 import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.engine.processor.CommandResponseWriter;
-import io.zeebe.engine.processor.StreamProcessor;
-import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.processor.TypedRecordProcessorFactory;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.engine.util.StreamProcessingComposite.StreamProcessorTestFactory;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.util.SynchronousLogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.record.intent.Intent;
 import io.zeebe.protocol.record.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.test.util.TestUtil;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import io.zeebe.util.allocation.DirectBufferAllocator;
@@ -71,11 +69,11 @@ public final class StreamProcessorRule implements TestRule {
   }
 
   public StreamProcessorRule(final int partitionId) {
-    this(partitionId, 1, DefaultZeebeDbFactory.DEFAULT_DB_FACTORY);
+    this(partitionId, 1, DefaultZeebeDbFactory.defaultFactory());
   }
 
   public StreamProcessorRule(final int partitionId, final TemporaryFolder temporaryFolder) {
-    this(partitionId, 1, DefaultZeebeDbFactory.DEFAULT_DB_FACTORY, temporaryFolder);
+    this(partitionId, 1, DefaultZeebeDbFactory.defaultFactory(), temporaryFolder);
   }
 
   public StreamProcessorRule(
@@ -135,6 +133,14 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.startTypedStreamProcessor(partitionId, factory);
   }
 
+  public void pauseProcessing(final int partitionId) {
+    streamProcessingComposite.pauseProcessing(partitionId);
+  }
+
+  public void resumeProcessing(final int partitionId) {
+    streamProcessingComposite.resumeProcessing(partitionId);
+  }
+
   public void closeStreamProcessor(final int partitionId) {
     streamProcessingComposite.closeStreamProcessor(partitionId);
   }
@@ -143,21 +149,8 @@ public final class StreamProcessorRule implements TestRule {
     closeStreamProcessor(startPartitionId);
   }
 
-  public StateSnapshotController getStateSnapshotController(final int partitionId) {
-    return streams.getStateSnapshotController(getLogName(partitionId));
-  }
-
-  public StateSnapshotController getStateSnapshotController() {
-    return getStateSnapshotController(startPartitionId);
-  }
-
-  public void waitForNextSnapshot() {
-    final var stateSnapshotController = getStateSnapshotController();
-    final var validSnapshotsCount = getStateSnapshotController().getValidSnapshotsCount();
-    clock.addTime(TestStreams.SNAPSHOT_INTERVAL);
-
-    TestUtil.waitUntil(
-        () -> validSnapshotsCount < stateSnapshotController.getValidSnapshotsCount());
+  public StreamProcessor getStreamProcessor(final int partitionId) {
+    return streamProcessingComposite.getStreamProcessor(partitionId);
   }
 
   public CommandResponseWriter getCommandResponseWriter() {
@@ -241,6 +234,11 @@ public final class StreamProcessorRule implements TestRule {
     return streamProcessingComposite.writeCommand(requestStreamId, requestId, intent, value);
   }
 
+  public void snapshot() {
+    final var partitionId = startPartitionId;
+    streamProcessingComposite.snapshot(partitionId);
+  }
+
   private class SetupRule extends ExternalResource {
 
     private final int startPartitionId;
@@ -267,6 +265,7 @@ public final class StreamProcessorRule implements TestRule {
     @Override
     protected void after() {
       streams = null;
+      streamProcessingComposite = null;
     }
   }
 
@@ -274,7 +273,7 @@ public final class StreamProcessorRule implements TestRule {
 
     @Override
     protected void failed(final Throwable e, final Description description) {
-      LOG.info("Test failed, following records where exported:");
+      LOG.info("Test failed, following records were exported:");
       printAllRecords();
     }
   }

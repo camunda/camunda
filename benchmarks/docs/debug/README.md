@@ -50,6 +50,24 @@ For error and warn level logs, this is even more important, as these are expecte
 
 > Note that actionable can be providing just enough context for the user to report it to a Zeebe dev, who can then (from the context), act on it.
 
+### Changing log level dynamically in a running cluster
+
+Zeebe brokers expose a spring endpoint for configuring loggers dynamically. 
+See [spring docs](https://docs.spring.io/spring-boot/docs/current/actuator-api/html/#loggers).
+
+To change the log level of a broker in our benchmark clusters, first port-forward to the broker.
+
+`kubectl port-forward zeebe-0 9600:9600`
+
+Then execute the following in your local machine. 
+Change `io.atomix` to the required logger and set the "configuredLevel" to the required level.
+
+```
+curl 'http://localhost:9600/actuator/loggers/io.atomix' -i -X POST -H 'Content-Type: application/json' -d '{"configuredLevel":"debug"}'
+```
+
+Alternatively, you can execute the above command directly on the broker pod if `curl` command is available.
+
 ## Thread dump
 
 You can obtain a thread dump from the command line by finding the PID of your Java process, e.g. `pgrep java`.

@@ -15,7 +15,6 @@ import io.zeebe.util.sched.channel.ChannelSubscription;
 import io.zeebe.util.sched.channel.ConsumableChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.AllCompletedFutureConsumer;
-import io.zeebe.util.sched.future.FirstSuccessfullyCompletedFutureConsumer;
 import io.zeebe.util.sched.future.FutureContinuationRunnable;
 import java.time.Duration;
 import java.util.Collection;
@@ -31,11 +30,11 @@ public class ActorControl {
 
   public ActorControl(final Actor actor) {
     this.actor = actor;
-    this.task = new ActorTask(actor);
+    task = new ActorTask(actor);
   }
 
   private ActorControl(final ActorTask task) {
-    this.actor = task.actor;
+    actor = task.actor;
     this.task = task;
   }
 
@@ -77,20 +76,6 @@ public class ActorControl {
     channel.registerConsumer(subscription);
 
     return subscription;
-  }
-
-  public void pollBlocking(final Runnable condition, final Runnable action) {
-    ensureCalledFromWithinActor("pollBlocking(...)");
-
-    final ActorJob job = new ActorJob();
-    job.setRunnable(action);
-    job.onJobAddedToTask(task);
-
-    final BlockingPollSubscription subscription =
-        new BlockingPollSubscription(job, condition, task.getActorExecutor(), true);
-    job.setSubscription(subscription);
-
-    subscription.submit();
   }
 
   /**
@@ -169,53 +154,6 @@ public class ActorControl {
   }
 
   /**
-   * run a blocking task
-   *
-   * <p>The provided runnable is executed in any of the actor's lifecycle phases.
-   */
-  public void runBlocking(final Runnable runnable) {
-    ensureCalledFromWithinActor("runBlocking(...)");
-
-    final ActorJob noop = new ActorJob();
-    noop.onJobAddedToTask(task);
-    noop.setAutoCompleting(true);
-    noop.setRunnable(
-        () -> {
-          // noop
-        });
-
-    final BlockingPollSubscription subscription =
-        new BlockingPollSubscription(noop, runnable, task.getActorExecutor(), false);
-    noop.setSubscription(subscription);
-
-    subscription.submit();
-  }
-
-  /**
-   * The provided runnable is executed in any of the actor's lifecycle phases. The provided
-   * completionConsumer is only executed while the actor is in one of the following lifecycle phases
-   * {@link ActorLifecyclePhase#STARTED}.
-   *
-   * @param runnable
-   * @param completionConsumer
-   */
-  public void runBlocking(final Runnable runnable, final Consumer<Throwable> completionConsumer) {
-    final RunnableAdapter<Void> adapter = RunnableAdapter.wrapRunnable(runnable);
-    ensureCalledFromWithinActor("runBlocking(...)");
-
-    final ActorJob noop = new ActorJob();
-    noop.onJobAddedToTask(task);
-    noop.setAutoCompleting(true);
-    noop.setRunnable(adapter.wrapConsumer(completionConsumer));
-
-    final BlockingPollSubscription subscription =
-        new BlockingPollSubscription(noop, adapter, task.getActorExecutor(), false);
-    noop.setSubscription(subscription);
-
-    subscription.submit();
-  }
-
-  /**
    * Run the provided runnable repeatedly until it calls {@link #done()}. To be used for jobs which
    * may experience backpressure.
    */
@@ -252,7 +190,7 @@ public class ActorControl {
     final ActorTask currentTask = currentActorRunner.getCurrentTask();
 
     final ActorJob job;
-    if (currentTask == this.task) {
+    if (currentTask == task) {
       job = currentActorRunner.newJob();
     } else {
       job = new ActorJob();
@@ -263,7 +201,7 @@ public class ActorControl {
     job.onJobAddedToTask(task);
     task.submit(job);
 
-    if (currentTask == this.task) {
+    if (currentTask == task) {
       yield();
     }
   }
@@ -317,7 +255,7 @@ public class ActorControl {
     final ActorLifecyclePhase lifecyclePhase = task.getLifecyclePhase();
     if (lifecyclePhase != ActorLifecyclePhase.CLOSE_REQUESTED
         && lifecyclePhase != ActorLifecyclePhase.CLOSED) {
-      this.submitContinuationJob(
+      submitContinuationJob(
           future,
           callback,
           (job) -> new ActorFutureSubscription(future, job, lifecyclePhase.getValue()));
@@ -342,7 +280,7 @@ public class ActorControl {
 
     final ActorLifecyclePhase lifecyclePhase = task.getLifecyclePhase();
     if (lifecyclePhase != ActorLifecyclePhase.CLOSED) {
-      this.submitContinuationJob(
+      submitContinuationJob(
           future,
           callback,
           (job) ->
@@ -394,49 +332,6 @@ public class ActorControl {
     }
   }
 
-  /**
-   * Invoke the callback when the first future is completed successfully, or when all futures are
-   * completed exceptionally. This call does not block the actor.
-   *
-   * <p>The callback is is executed while the actor is in the following actor lifecycle phases:
-   * {@link ActorLifecyclePhase#STARTED}
-   *
-   * @param futures the futures to wait on
-   * @param callback the callback that handle the future's result. The throwable is <code>null
-   *     </code> when the first future is completed successfully. Otherwise, it holds the exception
-   *     of the last completed future.
-   */
-  public <T> void runOnFirstCompletion(
-      final Collection<ActorFuture<T>> futures, final BiConsumer<T, Throwable> callback) {
-    runOnFirstCompletion(futures, callback, null);
-  }
-
-  /**
-   * Invoke the callback when the first future is completed successfully, or when all futures are
-   * completed exceptionally. This call does not block the actor.
-   *
-   * <p>The callback is is executed while the actor is in the following actor lifecycle phases:
-   * {@link ActorLifecyclePhase#STARTED}
-   *
-   * @param futures the futures to wait on
-   * @param callback the callback that handle the future's result. The throwable is <code>null
-   *     </code> when the first future is completed successfully. Otherwise, it holds the exception
-   *     of the last completed future.
-   * @param closer the callback that is invoked when a future is completed after the first future is
-   *     completed
-   */
-  public <T> void runOnFirstCompletion(
-      final Collection<ActorFuture<T>> futures,
-      final BiConsumer<T, Throwable> callback,
-      final Consumer<T> closer) {
-    final BiConsumer<T, Throwable> futureConsumer =
-        new FirstSuccessfullyCompletedFutureConsumer<>(futures.size(), callback, closer);
-
-    for (final ActorFuture<T> future : futures) {
-      runOnCompletion(future, futureConsumer);
-    }
-  }
-
   /** can be called by the actor to yield the thread */
   public void yield() {
     final ActorJob job = ensureCalledFromWithinActor("yield()");
@@ -458,7 +353,7 @@ public class ActorControl {
   private void scheduleRunnable(final Runnable runnable, final boolean autocompleting) {
     final ActorThread currentActorThread = ActorThread.current();
 
-    if (currentActorThread != null && currentActorThread.getCurrentTask() == this.task) {
+    if (currentActorThread != null && currentActorThread.getCurrentTask() == task) {
       final ActorJob newJob = currentActorThread.newJob();
       newJob.setRunnable(runnable);
       newJob.setAutoCompleting(autocompleting);

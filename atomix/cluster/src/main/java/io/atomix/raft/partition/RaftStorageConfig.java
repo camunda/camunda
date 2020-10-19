@@ -19,10 +19,10 @@ package io.atomix.raft.partition;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.esotericsoftware.kryo.serializers.FieldSerializer.Optional;
-import io.atomix.raft.storage.snapshot.SnapshotStoreFactory;
-import io.atomix.raft.storage.snapshot.impl.DefaultSnapshotStore;
 import io.atomix.storage.StorageLevel;
 import io.atomix.utils.memory.MemorySize;
+import io.zeebe.snapshots.broker.impl.FileBasedSnapshotStoreFactory;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
 
 /** Raft storage configuration. */
 public class RaftStorageConfig {
@@ -31,18 +31,21 @@ public class RaftStorageConfig {
   private static final StorageLevel DEFAULT_STORAGE_LEVEL = StorageLevel.DISK;
   private static final int DEFAULT_MAX_SEGMENT_SIZE = 1024 * 1024 * 32;
   private static final int DEFAULT_MAX_ENTRY_SIZE = 1024 * 1024;
-  private static final boolean DEFAULT_FLUSH_ON_COMMIT = false;
-  private static final SnapshotStoreFactory DEFAULT_SNAPSHOT_STORE_FACTORY =
-      DefaultSnapshotStore::new;
+  private static final boolean DEFAULT_FLUSH_EXPLICITLY = true;
+  private static final long DEFAULT_FREE_DISK_SPACE = 1024L * 1024 * 1024 * 1; // 1GB
+  private static final ReceivableSnapshotStoreFactory DEFAULT_SNAPSHOT_STORE_FACTORY =
+      new FileBasedSnapshotStoreFactory();
 
   private String directory;
   private StorageLevel level = DEFAULT_STORAGE_LEVEL;
   private int maxEntrySize = DEFAULT_MAX_ENTRY_SIZE;
   private long segmentSize = DEFAULT_MAX_SEGMENT_SIZE;
-  private boolean flushOnCommit = DEFAULT_FLUSH_ON_COMMIT;
+  private boolean flushExplicitly = DEFAULT_FLUSH_EXPLICITLY;
+  private long freeDiskSpace = DEFAULT_FREE_DISK_SPACE;
 
   @Optional("SnapshotStoreFactory")
-  private SnapshotStoreFactory snapshotStoreFactory = DEFAULT_SNAPSHOT_STORE_FACTORY;
+  private ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory =
+      DEFAULT_SNAPSHOT_STORE_FACTORY;
 
   /**
    * Returns the partition data directory.
@@ -72,7 +75,7 @@ public class RaftStorageConfig {
    * @return the Raft partition group configuration
    */
   public RaftStorageConfig setLevel(final StorageLevel storageLevel) {
-    this.level = checkNotNull(storageLevel);
+    level = checkNotNull(storageLevel);
     return this;
   }
 
@@ -117,22 +120,24 @@ public class RaftStorageConfig {
   }
 
   /**
-   * Returns whether to flush logs to disk on commit.
+   * Returns whether to flush logs to disk to guarantee correctness. If true, followers will flush
+   * on every append, and the leader will flush on commit.
    *
-   * @return whether to flush logs to disk on commit
+   * @return whether to flush logs to disk
    */
-  public boolean isFlushOnCommit() {
-    return flushOnCommit;
+  public boolean shouldFlushExplicitly() {
+    return flushExplicitly;
   }
 
   /**
-   * Sets whether to flush logs to disk on commit.
+   * Sets whether to flush logs to disk to guarantee correctness. If true, followers will flush on
+   * every append, and the leader will flush on commit.
    *
-   * @param flushOnCommit whether to flush logs to disk on commit
+   * @param flushExplicitly whether to flush logs to disk
    * @return the Raft partition group configuration
    */
-  public RaftStorageConfig setFlushOnCommit(final boolean flushOnCommit) {
-    this.flushOnCommit = flushOnCommit;
+  public RaftStorageConfig setFlushExplicitly(final boolean flushExplicitly) {
+    this.flushExplicitly = flushExplicitly;
     return this;
   }
 
@@ -152,19 +157,39 @@ public class RaftStorageConfig {
    *
    * @return the snapshot store factory
    */
-  public SnapshotStoreFactory getSnapshotStoreFactory() {
-    return snapshotStoreFactory;
+  public ReceivableSnapshotStoreFactory getPersistedSnapshotStoreFactory() {
+    return persistedSnapshotStoreFactory;
   }
 
   /**
    * Sets the snapshot store factory.
    *
-   * @param snapshotStoreFactory the new snapshot store factory
+   * @param persistedSnapshotStoreFactory the new snapshot store factory
    * @return the Raft storage configuration
    */
-  public RaftStorageConfig setSnapshotStoreFactory(
-      final SnapshotStoreFactory snapshotStoreFactory) {
-    this.snapshotStoreFactory = snapshotStoreFactory;
+  public RaftStorageConfig setPersistedSnapshotStoreFactory(
+      final ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory) {
+    this.persistedSnapshotStoreFactory = persistedSnapshotStoreFactory;
+    return this;
+  }
+
+  /**
+   * Returns the minimum free disk space buffer to leave when allocating a new segment
+   *
+   * @return free disk buffer
+   */
+  public long getFreeDiskSpace() {
+    return freeDiskSpace;
+  }
+
+  /**
+   * Sets the minimum free disk space buffer
+   *
+   * @param freeDiskSpace
+   * @return
+   */
+  public RaftStorageConfig setFreeDiskSpace(final long freeDiskSpace) {
+    this.freeDiskSpace = freeDiskSpace;
     return this;
   }
 }

@@ -25,8 +25,8 @@ public final class LogStreamWriterRule extends ExternalResource {
 
   @Override
   protected void before() {
-    this.logStream = logStreamRule.getLogStream();
-    this.logStreamWriter = logStream.newLogStreamRecordWriter();
+    logStream = logStreamRule.getLogStream();
+    logStreamWriter = logStream.newLogStreamRecordWriter();
   }
 
   @Override
@@ -81,7 +81,7 @@ public final class LogStreamWriterRule extends ExternalResource {
   public void waitForPositionToBeAppended(final long position) {
     TestUtil.waitUntil(
         () -> logStream.getCommitPosition() >= position, // Now only committed events are appended.
-        "Failed to wait for position {} to be appended",
+        "Failed to wait for position %d to be appended",
         position);
   }
 }

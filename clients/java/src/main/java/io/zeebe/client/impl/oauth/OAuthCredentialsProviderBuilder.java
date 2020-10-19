@@ -89,7 +89,7 @@ public final class OAuthCredentialsProviderBuilder {
    * $HOME/.camunda/credentials
    */
   public OAuthCredentialsProviderBuilder credentialsCachePath(final String cachePath) {
-    this.credentialsCachePath = cachePath;
+    credentialsCachePath = cachePath;
     return this;
   }
 

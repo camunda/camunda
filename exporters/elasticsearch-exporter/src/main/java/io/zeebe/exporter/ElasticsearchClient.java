@@ -7,7 +7,11 @@
  */
 package io.zeebe.exporter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.prometheus.client.Histogram;
+import io.zeebe.exporter.dto.BulkItemError;
+import io.zeebe.exporter.dto.BulkResponse;
+import io.zeebe.exporter.dto.PutIndexTemplateResponse;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.ValueType;
 import io.zeebe.protocol.record.value.VariableRecordValue;
@@ -19,8 +23,13 @@ import java.net.URISyntaxException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -28,16 +37,13 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
-import org.elasticsearch.action.admin.indices.template.put.PutIndexTemplateRequest;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequest;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.xcontent.XContentHelper;
+import org.elasticsearch.common.xcontent.DeprecationHandler;
+import org.elasticsearch.common.xcontent.NamedXContentRegistry;
+import org.elasticsearch.common.xcontent.XContent;
+import org.elasticsearch.common.xcontent.XContentParser;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
 
@@ -46,20 +52,29 @@ public class ElasticsearchClient {
   public static final String INDEX_TEMPLATE_FILENAME_PATTERN = "/zeebe-record-%s-template.json";
   public static final String INDEX_DELIMITER = "_";
   public static final String ALIAS_DELIMITER = "-";
-  protected final RestHighLevelClient client;
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+
+  protected final RestClient client;
   private final ElasticsearchExporterConfiguration configuration;
   private final Logger log;
   private final DateTimeFormatter formatter;
-  private BulkRequest bulkRequest;
+  private List<String> bulkRequest;
   private ElasticsearchMetrics metrics;
 
   public ElasticsearchClient(
       final ElasticsearchExporterConfiguration configuration, final Logger log) {
+    this(configuration, log, new ArrayList<>());
+  }
+
+  ElasticsearchClient(
+      final ElasticsearchExporterConfiguration configuration,
+      final Logger log,
+      final List<String> bulkRequest) {
     this.configuration = configuration;
     this.log = log;
-    this.client = createClient();
-    this.bulkRequest = new BulkRequest();
-    this.formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
+    client = createClient();
+    this.bulkRequest = bulkRequest;
+    formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
   }
 
   public void close() throws IOException {
@@ -72,22 +87,16 @@ public class ElasticsearchClient {
     }
 
     checkRecord(record);
-
-    final IndexRequest request =
-        new IndexRequest(indexFor(record), typeFor(record), idFor(record))
-            .source(record.toJson(), XContentType.JSON)
-            .routing(String.valueOf(record.getPartitionId()));
-    bulk(request);
+    bulk(newIndexCommand(record), record);
   }
 
-  @SuppressWarnings("unchecked")
-  private void checkRecord(Record<?> record) {
+  private void checkRecord(final Record<?> record) {
     if (record.getValueType() == ValueType.VARIABLE) {
       checkVariableRecordValue((Record<VariableRecordValue>) record);
     }
   }
 
-  private void checkVariableRecordValue(Record<VariableRecordValue> record) {
+  private void checkVariableRecordValue(final Record<VariableRecordValue> record) {
     final VariableRecordValue value = record.getValue();
     final int size = value.getValue().getBytes().length;
 
@@ -103,51 +112,91 @@ public class ElasticsearchClient {
     }
   }
 
-  public void bulk(final IndexRequest indexRequest) {
-    bulkRequest.add(indexRequest);
-  }
+  public void bulk(final Map<String, Object> command, final Record<?> record) {
+    final String serializedCommand;
 
-  /** @return true if all bulk records where flushed successfully */
-  public boolean flush() {
-    boolean success = true;
-    final int bulkSize = bulkRequest.numberOfActions();
-    if (bulkSize > 0) {
-      try {
-        metrics.recordBulkSize(bulkSize);
-        final BulkResponse responses = exportBulk();
-        success = checkBulkResponses(responses);
-      } catch (final IOException e) {
-        throw new ElasticsearchExporterException("Failed to flush bulk", e);
-      }
-
-      if (success) {
-        // all records where flushed, create new bulk request, otherwise retry next time
-        bulkRequest = new BulkRequest();
-      }
+    try {
+      serializedCommand = MAPPER.writeValueAsString(command);
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException(
+          "Failed to serialize bulk request command to JSON", e);
     }
 
-    return success;
+    final String jsonCommand = serializedCommand + "\n" + record.toJson();
+    // don't re-append when retrying same record, to avoid OOM
+    if (bulkRequest.isEmpty() || !bulkRequest.get(bulkRequest.size() - 1).equals(jsonCommand)) {
+      bulkRequest.add(jsonCommand);
+    }
+  }
+
+  /**
+   * @throws ElasticsearchExporterException if not all items of the bulk were flushed successfully
+   */
+  public void flush() {
+    if (bulkRequest.isEmpty()) {
+      return;
+    }
+
+    final int bulkSize = bulkRequest.size();
+    metrics.recordBulkSize(bulkSize);
+
+    final var bulkMemorySize = getBulkMemorySize();
+    metrics.recordBulkMemorySize(bulkMemorySize);
+
+    final BulkResponse bulkResponse;
+    try {
+      bulkResponse = exportBulk();
+
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException("Failed to flush bulk", e);
+    }
+
+    final var success = checkBulkResponse(bulkResponse);
+    if (!success) {
+      throw new ElasticsearchExporterException("Failed to flush all items of the bulk");
+    }
+
+    // all records where flushed, create new bulk request, otherwise retry next time
+    bulkRequest = new ArrayList<>();
+  }
+
+  private boolean checkBulkResponse(final BulkResponse bulkResponse) {
+    final var hasErrors = bulkResponse.hasErrors();
+    if (hasErrors) {
+      bulkResponse.getItems().stream()
+          .flatMap(item -> Optional.ofNullable(item.getIndex()).stream())
+          .flatMap(index -> Optional.ofNullable(index.getError()).stream())
+          .collect(Collectors.groupingBy(BulkItemError::getType))
+          .forEach(
+              (errorType, errors) ->
+                  log.warn(
+                      "Failed to flush {} item(s) of bulk request [type: {}, reason: {}]",
+                      errors.size(),
+                      errorType,
+                      errors.get(0).getReason()));
+    }
+
+    return !hasErrors;
   }
 
   private BulkResponse exportBulk() throws IOException {
     try (final Histogram.Timer timer = metrics.measureFlushDuration()) {
-      return client.bulk(bulkRequest, RequestOptions.DEFAULT);
-    }
-  }
+      final var request = new Request("POST", "/_bulk");
+      request.setJsonEntity(String.join("\n", bulkRequest) + "\n");
 
-  private boolean checkBulkResponses(final BulkResponse responses) {
-    for (final BulkItemResponse response : responses) {
-      if (response.isFailed()) {
-        log.warn("Failed to flush at least one bulk request {}", response.getFailureMessage());
-        return false;
-      }
-    }
+      final var response = client.performRequest(request);
 
-    return true;
+      return MAPPER.readValue(response.getEntity().getContent(), BulkResponse.class);
+    }
   }
 
   public boolean shouldFlush() {
-    return bulkRequest.numberOfActions() >= configuration.bulk.size;
+    return bulkRequest.size() >= configuration.bulk.size
+        || getBulkMemorySize() >= configuration.bulk.memoryLimit;
+  }
+
+  private int getBulkMemorySize() {
+    return bulkRequest.stream().mapToInt(String::length).sum();
   }
 
   /** @return true if request was acknowledged */
@@ -165,7 +214,7 @@ public class ElasticsearchClient {
     try (final InputStream inputStream =
         ElasticsearchExporter.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
-        template = XContentHelper.convertToMap(XContentType.JSON.xContent(), inputStream, true);
+        template = convertToMap(XContentType.JSON.xContent(), inputStream);
       } else {
         throw new ElasticsearchExporterException(
             "Failed to find index template in classpath " + filename);
@@ -179,35 +228,35 @@ public class ElasticsearchClient {
     template.put("index_patterns", Collections.singletonList(templateName + INDEX_DELIMITER + "*"));
 
     // update alias in template in case it was changed in configuration
-    template.put("aliases", Collections.singletonMap(aliasName, Collections.EMPTY_MAP));
+    template.put("aliases", Collections.singletonMap(aliasName, Collections.emptyMap()));
 
-    final PutIndexTemplateRequest request =
-        new PutIndexTemplateRequest(templateName).source(template);
-
-    return putIndexTemplate(request);
+    return putIndexTemplate(templateName, template);
   }
 
   /** @return true if request was acknowledged */
-  private boolean putIndexTemplate(final PutIndexTemplateRequest putIndexTemplateRequest) {
+  private boolean putIndexTemplate(final String templateName, final Object body) {
     try {
-      return client
-          .indices()
-          .putTemplate(putIndexTemplateRequest, RequestOptions.DEFAULT)
-          .isAcknowledged();
+      final var request = new Request("PUT", "/_template/" + templateName);
+      request.addParameter("include_type_name", "true");
+      request.setJsonEntity(MAPPER.writeValueAsString(body));
+
+      final var response = client.performRequest(request);
+      final var putIndexTemplateResponse =
+          MAPPER.readValue(response.getEntity().getContent(), PutIndexTemplateResponse.class);
+      return putIndexTemplateResponse.isAcknowledged();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to put index template", e);
     }
   }
 
-  private RestHighLevelClient createClient() {
+  private RestClient createClient() {
     final HttpHost[] httpHosts = resolveHosts();
 
-    // use single thread for rest client
     final RestClientBuilder builder =
         RestClient.builder(httpHosts)
             .setHttpClientConfigCallback(this::setHttpClientConfigCallback);
 
-    return new RestHighLevelClient(builder);
+    return builder.build();
   }
 
   private HttpHost[] resolveHosts() {
@@ -221,9 +270,10 @@ public class ElasticsearchClient {
   }
 
   private HttpAsyncClientBuilder setHttpClientConfigCallback(final HttpAsyncClientBuilder builder) {
+    // use single thread for rest client
     builder.setDefaultIOReactorConfig(IOReactorConfig.custom().setIoThreadCount(1).build());
 
-    if (configuration.authentication.isPresent()) {
+    if (configuration.hasAuthenticationPresent()) {
       setupBasicAuthentication(builder);
     }
 
@@ -235,7 +285,8 @@ public class ElasticsearchClient {
     credentialsProvider.setCredentials(
         AuthScope.ANY,
         new UsernamePasswordCredentials(
-            configuration.authentication.username, configuration.authentication.password));
+            configuration.getAuthentication().getUsername(),
+            configuration.getAuthentication().getPassword()));
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
   }
@@ -288,5 +339,27 @@ public class ElasticsearchClient {
 
   private static String indexTemplateForValueType(final ValueType valueType) {
     return String.format(INDEX_TEMPLATE_FILENAME_PATTERN, valueTypeToString(valueType));
+  }
+
+  private Map<String, Object> convertToMap(final XContent content, final InputStream input) {
+    try (XContentParser parser =
+        content.createParser(
+            NamedXContentRegistry.EMPTY, DeprecationHandler.THROW_UNSUPPORTED_OPERATION, input)) {
+      return parser.mapOrdered();
+    } catch (final IOException e) {
+      throw new ElasticsearchExporterException("Failed to parse content to map", e);
+    }
+  }
+
+  private Map<String, Object> newIndexCommand(final Record<?> record) {
+    final Map<String, Object> command = new HashMap<>();
+    final Map<String, Object> contents = new HashMap<>();
+    contents.put("_index", indexFor(record));
+    contents.put("_type", typeFor(record));
+    contents.put("_id", idFor(record));
+    contents.put("routing", String.valueOf(record.getPartitionId()));
+
+    command.put("index", contents);
+    return command;
   }
 }

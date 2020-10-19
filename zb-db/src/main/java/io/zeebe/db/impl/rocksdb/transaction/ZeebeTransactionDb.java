@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -194,6 +195,21 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
           context.wrapValueView(value);
         });
     return context.getValueView();
+  }
+
+  @Override
+  public Optional<String> getProperty(
+      final ColumnFamilyNames columnFamilyName, final String propertyName) {
+
+    final var handle = handelToEnumMap.get(columnFamilyMap.get(columnFamilyName));
+
+    String propertyValue = null;
+    try {
+      propertyValue = optimisticTransactionDB.getProperty(handle, propertyName);
+    } catch (final RocksDBException rde) {
+      LOG.debug(rde.getMessage(), rde);
+    }
+    return Optional.ofNullable(propertyValue);
   }
 
   ////////////////////////////////////////////////////////////////////
@@ -400,6 +416,12 @@ public class ZeebeTransactionDb<ColumnFamilyNames extends Enum<ColumnFamilyNames
           }
         });
     return isEmpty.get();
+  }
+
+  @Override
+  public boolean isEmpty(final ColumnFamilyNames columnFamilyName, final DbContext context) {
+    final var columnFamilyHandle = columnFamilyMap.get(columnFamilyName);
+    return isEmpty(columnFamilyHandle, context);
   }
 
   @Override

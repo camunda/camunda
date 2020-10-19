@@ -41,7 +41,7 @@ public class ZeebeTestRule extends ExternalResource {
               properties.setProperty(
                   ClientProperties.BROKER_CONTACTPOINT,
                   SocketUtil.toHostAndPortString(brokerRule.getGatewayAddress()));
-              properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, "");
+              properties.putIfAbsent(ClientProperties.USE_PLAINTEXT_CONNECTION, "true");
 
               return properties;
             });

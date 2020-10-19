@@ -31,7 +31,7 @@ public final class SecurityTest {
       new GrpcClientRule(
           cfg ->
               configureClientForTls(
-                  cfg.brokerContactPoint(
+                  cfg.gatewayAddress(
                       SocketUtil.toHostAndPortString(clusteringRule.getGatewayAddress()))));
 
   @Rule
@@ -51,7 +51,7 @@ public final class SecurityTest {
     return clientBuilder.caCertificatePath(
         io.zeebe.broker.it.clustering.DeploymentClusteredTest.class
             .getClassLoader()
-            .getResource("security/ca.cert.pem")
+            .getResource("security/test-chain.cert.pem")
             .getPath());
   }
 

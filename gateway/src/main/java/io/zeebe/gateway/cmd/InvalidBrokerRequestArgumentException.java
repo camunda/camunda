@@ -7,10 +7,7 @@
  */
 package io.zeebe.gateway.cmd;
 
-import io.grpc.Status;
-
-public final class InvalidBrokerRequestArgumentException extends ClientException
-    implements GrpcStatusException {
+public final class InvalidBrokerRequestArgumentException extends ClientException {
 
   private static final String MESSAGE_FORMAT = "Expected argument '%s' to be %s, but was %s";
   private static final long serialVersionUID = -1582037715962211105L;
@@ -45,10 +42,5 @@ public final class InvalidBrokerRequestArgumentException extends ClientException
 
   public String getActualValue() {
     return actualValue;
-  }
-
-  @Override
-  public Status getGrpcStatus() {
-    return Status.INVALID_ARGUMENT.augmentDescription(getMessage());
   }
 }

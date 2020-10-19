@@ -18,11 +18,11 @@ public final class MsgPackHelper {
   protected final ObjectMapper objectMapper;
 
   public MsgPackHelper() {
-    this.objectMapper = new ObjectMapper(new MessagePackFactory());
+    objectMapper = new ObjectMapper(new MessagePackFactory());
     // in the default setting, jackson deserializes numbers as Integer/Long/BigDecimal
     // depending on the value range; with that setting, asserting code has to do type conversion;
     // => we ensure it is always Long
-    this.objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
+    objectMapper.configure(DeserializationFeature.USE_LONG_FOR_INTS, true);
   }
 
   @SuppressWarnings("unchecked")

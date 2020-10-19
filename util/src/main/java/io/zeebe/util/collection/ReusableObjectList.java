@@ -23,7 +23,7 @@ public final class ReusableObjectList<T extends Reusable> implements Iterable<T>
   private int size = 0;
 
   public ReusableObjectList(final Supplier<T> elementFactory) {
-    this.elements = new ArrayList<>();
+    elements = new ArrayList<>();
     this.elementFactory = elementFactory;
   }
 

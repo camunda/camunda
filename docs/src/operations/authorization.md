@@ -17,7 +17,7 @@ public class MyCredentialsProvider implements CredentialsProvider {
     */
     @Override
     public void applyCredentials(final Metadata headers) {
-      final Key<String> authHeaderkey = Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);     
+      final Key<String> authHeaderkey = Key.of("Authorization", Metadata.ASCII_STRING_MARSHALLER);
       headers.put(authHeaderKey, "Bearer someToken");
     }
 
@@ -29,7 +29,7 @@ public class MyCredentialsProvider implements CredentialsProvider {
       return ((StatusRuntimeException) throwable).getStatus() == Status.DEADLINE_EXCEEDED;
     }
 }
-``` 
+```
 
 After implementing the CredentialsProvider, we can simply provide it when building a client:
 
@@ -38,7 +38,7 @@ public class SecureClient {
     public static void main(final String[] args) {
       final ZeebeClient client = ZeebeClient.newClientBuilder().credentialsProvider(new MyCredentialsProvider()).build();
 
-      // continue...    
+      // continue...
     }
 }
 ```
@@ -46,33 +46,44 @@ public class SecureClient {
 ### Go
 
 ```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "google.golang.org/grpc/status"
+    "google.golang.org/grpc/codes"
+    "github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
+)
+
 type MyCredentialsProvider struct {
 }
 
 // ApplyCredentials adds a token to the Authorization header of a gRPC call.
-func (p *MyCredentialsProvider) ApplyCredentials(headers map[string]string) error {
+func (p *MyCredentialsProvider) ApplyCredentials(ctx context.Context, headers map[string]string) error {
     headers["Authorization"] = "someToken"
     return nil
 }
 
 // ShouldRetryRequest returns true if the call failed with a deadline exceed error.
-func (p *MyCredentialsProvider) ShouldRetryRequest(err error) bool {
+func (p *MyCredentialsProvider) ShouldRetryRequest(ctx context.Context, err error) bool {
     return status.Code(err) == codes.DeadlineExceeded
 }
 
 func main() {
-    client, err := NewZBClientWithConfig(&ZBClientConfig{
-		  CredentialsProvider:  &MyCredentialsProvider{},
+    client, err := zbc.NewClient(&zbc.ClientConfig{
+    	CredentialsProvider:  &MyCredentialsProvider{},
     })
     if err != nil {
       panic(err)
     }
-  
-    response, err := client.NewTopologyCommand().Send()
+
+    ctx := context.Background()
+    response, err := client.NewTopologyCommand().Send(ctx)
     if err != nil {
       panic(err)
     }
-    
+
     fmt.Println(response.String())
 }
 ```
@@ -97,10 +108,10 @@ public class AuthorizedClient {
 
         final ZeebeClient client =
             new ZeebeClientBuilderImpl()
-                .brokerContactPoint("cluster.endpoint.com:443")
+                .gatewayAddress("cluster.endpoint.com:443")
                 .credentialsProvider(provider)
                 .build();
-    
+
         System.out.println(client.newTopologyRequest().send().join().toString());
     }
 }
@@ -113,7 +124,7 @@ public class AuthorizedClient {
     public void main(final String[] args) {
         final ZeebeClient client =
             new ZeebeClientBuilderImpl()
-                .brokerContactPoint("cluster.endpoint.com:443")
+                .gatewayAddress("cluster.endpoint.com:443")
                 .build();
 
         System.out.println(client.newTopologyRequest().send().join().toString());
@@ -123,12 +134,20 @@ public class AuthorizedClient {
 
 The client will create an OAuthCredentialProvider with the credentials specified through the environment variables and the audience will be extracted from the address specified through the ZeebeClientBuilder.
 
-> **Note:** Zeebe's Java client will not prevent you from adding credentials to gRPC calls while using an insecure connection but you should be aware that doing so will expose your access token by transmiting it in plaintext. 
+> **Note:** Zeebe's Java client will not prevent you from adding credentials to gRPC calls while using an insecure connection but you should be aware that doing so will expose your access token by transmiting it in plaintext.
 
 ### Go
 ```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
+)
+
 func main() {
-    credsProvider, err := NewOAuthCredentialsProvider(&OAuthProviderConfig{
+    credsProvider, err := zbc.NewOAuthCredentialsProvider(&zbc.OAuthProviderConfig{
         ClientID:     "clientId",
         ClientSecret: "clientSecret",
         Audience:     "cluster.endpoint.com",
@@ -137,7 +156,7 @@ func main() {
         panic(err)
     }
 
-    client, err := NewZBClientWithConfig(&ZBClientConfig{
+    client, err := zbc.NewClient(&zbc.ClientConfig{
         GatewayAddress:      "cluster.endpoint.com:443",
         CredentialsProvider: credsProvider,
     })
@@ -145,7 +164,9 @@ func main() {
         panic(err)
     }
 
-    response, err := client.NewTopologyCommand().Send()
+
+    ctx := context.Background()
+    response, err := client.NewTopologyCommand().Send(ctx)
     if err != nil {
         panic(err)
     }
@@ -157,15 +178,24 @@ func main() {
 As was the case with the Java client, it's possible to make use of the `ZEEBE_CLIENT_ID` and `ZEEBE_CLIENT_SECRET` environment variables to simplify the client configuration:
 
 ```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
+)
+
 func main() {
-    client, err := NewZBClientWithConfig(&ZBClientConfig{
+    client, err := zbc.NewClient(&zbc.ClientConfig{
         GatewayAddress: "cluster.endpoint.com:443",
     })
     if err != nil {
         panic(err)
     }
 
-    response, err := client.NewTopologyCommand().Send()
+    ctx := context.Background()
+    response, err := client.NewTopologyCommand().Send(ctx)
     if err != nil {
         panic(err)
     }
@@ -174,7 +204,7 @@ func main() {
 }
 ```
 
-> **Note:** Like the Java client, the Go client will not prevent you from adding credentials to gRPC calls while using an insecure connection but doing so will expose your access token. 
+> **Note:** Like the Java client, the Go client will not prevent you from adding credentials to gRPC calls while using an insecure connection but doing so will expose your access token.
 
 
 ### Environment Variables

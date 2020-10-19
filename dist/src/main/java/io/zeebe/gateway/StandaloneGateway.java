@@ -11,16 +11,15 @@ import static java.lang.Runtime.getRuntime;
 
 import io.atomix.cluster.AtomixCluster;
 import io.atomix.cluster.discovery.BootstrapDiscoveryProvider;
-import io.atomix.core.Atomix;
+import io.atomix.cluster.protocol.GroupMembershipProtocol;
+import io.atomix.cluster.protocol.SwimMembershipProtocol;
 import io.atomix.utils.net.Address;
-import io.prometheus.client.exporter.HTTPServer;
-import io.prometheus.client.hotspot.DefaultExports;
+import io.zeebe.gateway.impl.SpringGatewayBridge;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.legacy.tomlconfig.LegacyConfigurationSupport;
-import io.zeebe.legacy.tomlconfig.LegacyConfigurationSupport.Scope;
+import io.zeebe.gateway.impl.configuration.MembershipCfg;
 import io.zeebe.util.VersionUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
@@ -31,27 +30,46 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.core.env.Environment;
+import org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
 
 public class StandaloneGateway {
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
   private final AtomixCluster atomixCluster;
   private final Gateway gateway;
-  private final GatewayCfg gatewayCfg;
   private final ActorScheduler actorScheduler;
 
-  public StandaloneGateway(final GatewayCfg gatewayCfg) {
+  public StandaloneGateway(
+      final GatewayCfg gatewayCfg, final SpringGatewayBridge springGatewayBridge) {
     atomixCluster = createAtomixCluster(gatewayCfg.getCluster());
     actorScheduler = createActorScheduler(gatewayCfg);
     final Function<GatewayCfg, BrokerClient> brokerClientFactory =
         cfg -> new BrokerClientImpl(cfg, atomixCluster, actorScheduler, false);
     gateway = new Gateway(gatewayCfg, brokerClientFactory, actorScheduler);
-    this.gatewayCfg = gatewayCfg;
+
+    springGatewayBridge.registerGatewayStatusSupplier(gateway::getStatus);
+    springGatewayBridge.registerClusterStateSupplier(
+        () -> gateway.getBrokerClient().getTopologyManager().getTopology());
   }
 
   private AtomixCluster createAtomixCluster(final ClusterCfg clusterCfg) {
+    final MembershipCfg membershipCfg = clusterCfg.getMembership();
+    final GroupMembershipProtocol membershipProtocol =
+        SwimMembershipProtocol.builder()
+            .withFailureTimeout(membershipCfg.getFailureTimeout())
+            .withGossipInterval(membershipCfg.getGossipInterval())
+            .withProbeInterval(membershipCfg.getProbeInterval())
+            .withProbeTimeout(membershipCfg.getProbeTimeout())
+            .withBroadcastDisputes(membershipCfg.isBroadcastDisputes())
+            .withBroadcastUpdates(membershipCfg.isBroadcastUpdates())
+            .withGossipFanout(membershipCfg.getGossipFanout())
+            .withNotifySuspect(membershipCfg.isNotifySuspect())
+            .withSuspectProbes(membershipCfg.getSuspectProbes())
+            .withSyncInterval(membershipCfg.getSyncInterval())
+            .build();
+
     final var atomix =
-        Atomix.builder()
+        AtomixCluster.builder()
             .withMemberId(clusterCfg.getMemberId())
             .withAddress(Address.from(clusterCfg.getHost(), clusterCfg.getPort()))
             .withClusterId(clusterCfg.getClusterName())
@@ -59,6 +77,7 @@ public class StandaloneGateway {
                 BootstrapDiscoveryProvider.builder()
                     .withNodes(Address.from(clusterCfg.getContactPoint()))
                     .build())
+            .withMembershipProtocol(membershipProtocol)
             .build();
 
     atomix.start();
@@ -79,21 +98,9 @@ public class StandaloneGateway {
   }
 
   public void run() throws IOException, InterruptedException {
-    HTTPServer monitoringServer = null;
-    if (gatewayCfg.getMonitoring().isEnabled()) {
-      monitoringServer =
-          new HTTPServer(
-              gatewayCfg.getMonitoring().getHost(), gatewayCfg.getMonitoring().getPort());
-      DefaultExports.initialize();
-    }
-
     gateway.listenAndServe();
     atomixCluster.stop();
     actorScheduler.stop();
-
-    if (monitoringServer != null) {
-      monitoringServer.stop();
-    }
   }
 
   public static void main(final String[] args) throws Exception {
@@ -108,19 +115,15 @@ public class StandaloneGateway {
               }
             });
 
-    final LegacyConfigurationSupport legacyConfigurationSupport =
-        new LegacyConfigurationSupport(Scope.GATEWAY);
-    legacyConfigurationSupport.checkForLegacyTomlConfigurationArgument(
-        args, "gateway.yaml.template");
-
     SpringApplication.run(Launcher.class, args);
   }
 
-  @SpringBootApplication
+  @SpringBootApplication(exclude = {ElasticsearchRestClientAutoConfiguration.class})
+  @ComponentScan({"io.zeebe.gateway", "io.zeebe.shared", "io.zeebe.util"})
   public static class Launcher implements CommandLineRunner {
 
     @Autowired GatewayCfg configuration;
-    @Autowired Environment springEnvironment;
+    @Autowired SpringGatewayBridge springGatewayBridge;
 
     @Override
     public void run(final String... args) throws Exception {
@@ -132,7 +135,7 @@ public class StandaloneGateway {
         LOG.info("Starting standalone gateway with configuration {}", gatewayCfg.toJson());
       }
 
-      new StandaloneGateway(gatewayCfg).run();
+      new StandaloneGateway(gatewayCfg, springGatewayBridge).run();
     }
   }
 }

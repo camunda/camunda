@@ -25,11 +25,13 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
 
   protected final ExecuteCommandRequest request = new ExecuteCommandRequest();
   protected final ExecuteCommandResponse response = new ExecuteCommandResponse();
+  private final String type;
 
   public BrokerExecuteCommand(final ValueType valueType, final Intent intent) {
     super(ExecuteCommandResponseDecoder.SCHEMA_ID, ExecuteCommandResponseDecoder.TEMPLATE_ID);
     request.setValueType(valueType);
     request.setIntent(intent);
+    type = valueType.name() + "#" + intent.name();
   }
 
   public long getKey() {
@@ -42,6 +44,11 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
 
   public ValueType getValueType() {
     return request.getValueType();
+  }
+
+  @Override
+  public String getType() {
+    return type;
   }
 
   @Override

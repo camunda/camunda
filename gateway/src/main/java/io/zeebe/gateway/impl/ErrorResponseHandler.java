@@ -29,7 +29,7 @@ public final class ErrorResponseHandler {
     final int errorDataLength = decoder.errorDataLength();
     final byte[] errorData = new byte[errorDataLength];
     decoder.getErrorData(errorData, 0, errorDataLength);
-    this.errorMessage = BufferUtil.wrapArray(errorData);
+    errorMessage = BufferUtil.wrapArray(errorData);
   }
 
   public ErrorCode getErrorCode() {

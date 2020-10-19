@@ -40,9 +40,9 @@ public final class PriorityScheduler implements TaskScheduler {
    */
   public PriorityScheduler(final IntFunction<ActorTask> getTaskFn, final double[] quotas) {
     this.getTaskFn = getTaskFn;
-    this.priorityCount = quotas.length;
-    this.slicePriorities = calclateSlicePriorities(quotas);
-    this.currentRun = new Run();
+    priorityCount = quotas.length;
+    slicePriorities = calclateSlicePriorities(quotas);
+    currentRun = new Run();
   }
 
   /*

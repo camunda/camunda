@@ -43,7 +43,7 @@ public final class OAuthCredentialsCache {
 
   public OAuthCredentialsCache(final File cacheFile) {
     this.cacheFile = cacheFile;
-    this.audiences = new HashMap<>();
+    audiences = new HashMap<>();
   }
 
   public OAuthCredentialsCache readCache() throws IOException {

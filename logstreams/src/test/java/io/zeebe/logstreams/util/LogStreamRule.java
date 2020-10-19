@@ -45,7 +45,7 @@ public final class LogStreamRule extends ExternalResource {
       final Consumer<LogStreamBuilder> streamBuilder,
       final UnaryOperator<Builder> storageBuilder) {
     this.temporaryFolder = temporaryFolder;
-    this.shouldStartByDefault = shouldStart;
+    shouldStartByDefault = shouldStart;
     this.streamBuilder = streamBuilder;
     this.storageBuilder = storageBuilder;
   }

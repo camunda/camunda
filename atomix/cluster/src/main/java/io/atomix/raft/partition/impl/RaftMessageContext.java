@@ -40,23 +40,23 @@ class RaftMessageContext {
 
   RaftMessageContext(final String prefix) {
     this.prefix = prefix;
-    this.heartbeatSubject = getSubject(prefix, "heartbeat");
-    this.openSessionSubject = getSubject(prefix, "open");
-    this.closeSessionSubject = getSubject(prefix, "close");
-    this.keepAliveSubject = getSubject(prefix, "keep-alive");
-    this.querySubject = getSubject(prefix, "query");
-    this.commandSubject = getSubject(prefix, "command");
-    this.metadataSubject = getSubject(prefix, "metadata");
-    this.joinSubject = getSubject(prefix, "join");
-    this.leaveSubject = getSubject(prefix, "leave");
-    this.configureSubject = getSubject(prefix, "configure");
-    this.reconfigureSubject = getSubject(prefix, "reconfigure");
-    this.installSubject = getSubject(prefix, "install");
-    this.transferSubject = getSubject(prefix, "transfer");
-    this.pollSubject = getSubject(prefix, "poll");
-    this.voteSubject = getSubject(prefix, "vote");
-    this.appendSubject = getSubject(prefix, "append");
-    this.leaderHeartbeatSubject = getSubject(prefix, "leaderHeartbeat");
+    heartbeatSubject = getSubject(prefix, "heartbeat");
+    openSessionSubject = getSubject(prefix, "open");
+    closeSessionSubject = getSubject(prefix, "close");
+    keepAliveSubject = getSubject(prefix, "keep-alive");
+    querySubject = getSubject(prefix, "query");
+    commandSubject = getSubject(prefix, "command");
+    metadataSubject = getSubject(prefix, "metadata");
+    joinSubject = getSubject(prefix, "join");
+    leaveSubject = getSubject(prefix, "leave");
+    configureSubject = getSubject(prefix, "configure");
+    reconfigureSubject = getSubject(prefix, "reconfigure");
+    installSubject = getSubject(prefix, "install");
+    transferSubject = getSubject(prefix, "transfer");
+    pollSubject = getSubject(prefix, "poll");
+    voteSubject = getSubject(prefix, "vote");
+    appendSubject = getSubject(prefix, "append");
+    leaderHeartbeatSubject = getSubject(prefix, "leaderHeartbeat");
   }
 
   private static String getSubject(final String prefix, final String type) {

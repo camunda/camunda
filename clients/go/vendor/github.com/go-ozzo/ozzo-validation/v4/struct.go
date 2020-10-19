@@ -164,7 +164,7 @@ func findStructField(structValue reflect.Value, fieldValue reflect.Value) *refle
 
 // getErrorFieldName returns the name that should be used to represent the validation error of a struct field.
 func getErrorFieldName(f *reflect.StructField) string {
-	if tag := f.Tag.Get(ErrorTag); tag != "" {
+	if tag := f.Tag.Get(ErrorTag); tag != "" && tag != "-" {
 		if cps := strings.SplitN(tag, ",", 2); cps[0] != "" {
 			return cps[0]
 		}

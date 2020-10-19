@@ -9,6 +9,7 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	"github.com/docker/go-connections/nat"
 	"github.com/pkg/errors"
+
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -25,6 +26,7 @@ type DeprecatedContainer interface {
 type ContainerProvider interface {
 	CreateContainer(context.Context, ContainerRequest) (Container, error) // create a container without starting it
 	RunContainer(context.Context, ContainerRequest) (Container, error)    // create a container and start it
+	Health(context.Context) error
 }
 
 // Container allows getting info about and controlling a single container instance
@@ -47,6 +49,7 @@ type Container interface {
 	NetworkAliases(context.Context) (map[string][]string, error) // get container network aliases for a network
 	Exec(ctx context.Context, cmd []string) (int, error)
 	ContainerIP(context.Context) (string, error) // get container ip
+	CopyFileToContainer(ctx context.Context, hostFilePath string, containerFilePath string, fileMode int64) error
 }
 
 // ImageBuildInfo defines what is needed to build an image
@@ -68,6 +71,7 @@ type FromDockerfile struct {
 type ContainerRequest struct {
 	FromDockerfile
 	Image           string
+	Entrypoint      []string
 	Env             map[string]string
 	ExposedPorts    []string // allow specifying protocol info
 	Cmd             []string
@@ -77,7 +81,8 @@ type ContainerRequest struct {
 	Tmpfs           map[string]string
 	RegistryCred    string
 	WaitingFor      wait.Strategy
-	Name            string              // for specifying container name
+	Name            string // for specifying container name
+	Hostname        string
 	Privileged      bool                // for starting privileged container
 	Networks        []string            // for specifying network names
 	NetworkAliases  map[string][]string // for specifying network aliases

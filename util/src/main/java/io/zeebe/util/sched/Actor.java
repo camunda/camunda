@@ -13,7 +13,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-public abstract class Actor implements CloseableSilently {
+public abstract class Actor implements CloseableSilently, AsyncClosable {
 
   private static final int MAX_CLOSE_TIMEOUT = 300;
   protected final ActorControl actor = new ActorControl(this);
@@ -65,6 +65,7 @@ public abstract class Actor implements CloseableSilently {
     closeAsync().join(MAX_CLOSE_TIMEOUT, TimeUnit.SECONDS);
   }
 
+  @Override
   public ActorFuture<Void> closeAsync() {
     return actor.close();
   }

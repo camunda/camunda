@@ -15,6 +15,7 @@
  */
 package io.zeebe;
 
+import com.google.common.util.concurrent.UncheckedExecutionException;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigBeanFactory;
 import com.typesafe.config.ConfigFactory;
@@ -22,7 +23,11 @@ import io.prometheus.client.exporter.HTTPServer;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.Topology;
 import io.zeebe.config.AppCfg;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.function.Function;
 import me.dinowernli.grpc.prometheus.Configuration;
 import me.dinowernli.grpc.prometheus.MonitoringClientInterceptor;
@@ -53,9 +58,10 @@ abstract class App implements Runnable {
     }
   }
 
-  private static void stopMonitoringServer() {
+  protected static void stopMonitoringServer() {
     if (monitoringServer != null) {
       monitoringServer.stop();
+      monitoringServer = null;
     }
   }
 
@@ -76,5 +82,35 @@ abstract class App implements Runnable {
         // retry
       }
     }
+  }
+
+  protected String readVariables(final String payloadPath) {
+    try {
+      final var classLoader = App.class.getClassLoader();
+      try (InputStream fromResource = classLoader.getResourceAsStream(payloadPath)) {
+        if (fromResource != null) {
+          return tryReadVariables(fromResource);
+        }
+        // unable to find from resources, try as regular file
+        try (InputStream fromFile = new FileInputStream(payloadPath)) {
+          return tryReadVariables(fromFile);
+        }
+      }
+    } catch (IOException e) {
+      throw new UncheckedExecutionException(e);
+    }
+  }
+
+  private String tryReadVariables(final InputStream inputStream) throws IOException {
+    final StringBuilder stringBuilder = new StringBuilder();
+    try (InputStreamReader reader = new InputStreamReader(inputStream)) {
+      try (BufferedReader br = new BufferedReader(reader)) {
+        String line;
+        while ((line = br.readLine()) != null) {
+          stringBuilder.append(line).append("\n");
+        }
+      }
+    }
+    return stringBuilder.toString();
   }
 }

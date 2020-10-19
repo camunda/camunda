@@ -69,13 +69,18 @@ public class SlicedBuffer extends AbstractBuffer {
   }
 
   @Override
+  public boolean isReadOnly() {
+    return root.isReadOnly();
+  }
+
+  @Override
   public boolean isFile() {
     return root.isFile();
   }
 
   @Override
-  public boolean isReadOnly() {
-    return root.isReadOnly();
+  public void close() {
+    root.release();
   }
 
   @Override
@@ -88,10 +93,5 @@ public class SlicedBuffer extends AbstractBuffer {
     if (root instanceof AbstractBuffer) {
       ((AbstractBuffer) root).compact(from, to, length);
     }
-  }
-
-  @Override
-  public void close() {
-    root.release();
   }
 }

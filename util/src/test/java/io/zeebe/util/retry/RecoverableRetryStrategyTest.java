@@ -32,7 +32,7 @@ public final class RecoverableRetryStrategyTest {
   @Before
   public void setUp() {
     final ControllableActor actor = new ControllableActor();
-    this.actorControl = actor.getActor();
+    actorControl = actor.getActor();
     recoverableRetryStrategy = new RecoverableRetryStrategy(actorControl);
 
     schedulerRule.submitActor(actor);

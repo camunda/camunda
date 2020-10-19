@@ -24,7 +24,7 @@ public class PackedValue extends BaseValue {
   }
 
   public void wrap(final DirectBuffer buff, final int offset, final int length) {
-    this.buffer.wrap(buff, offset, length);
+    buffer.wrap(buff, offset, length);
     this.length = length;
   }
 

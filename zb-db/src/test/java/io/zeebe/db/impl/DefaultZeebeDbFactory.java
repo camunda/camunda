@@ -9,6 +9,7 @@ package io.zeebe.db.impl;
 
 import io.zeebe.db.ZeebeDbFactory;
 import io.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import java.util.Properties;
 
 public final class DefaultZeebeDbFactory {
 
@@ -16,5 +17,12 @@ public final class DefaultZeebeDbFactory {
       ZeebeDbFactory<ColumnFamilyType> getDefaultFactory(
           final Class<ColumnFamilyType> columnFamilyTypeClass) {
     return ZeebeRocksDbFactory.newFactory(columnFamilyTypeClass);
+  }
+
+  public static <ColumnFamilyType extends Enum<ColumnFamilyType>>
+      ZeebeDbFactory<ColumnFamilyType> getDefaultFactory(
+          final Class<ColumnFamilyType> columnFamilyTypeClass,
+          final Properties columnFamilyOptions) {
+    return ZeebeRocksDbFactory.newFactory(columnFamilyTypeClass, columnFamilyOptions);
   }
 }

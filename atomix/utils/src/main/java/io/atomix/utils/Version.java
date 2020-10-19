@@ -110,10 +110,10 @@ public final class Version implements Comparable<Version> {
   @Override
   public int compareTo(final Version that) {
     return ComparisonChain.start()
-        .compare(this.major, that.major)
-        .compare(this.minor, that.minor)
-        .compare(this.patch, that.patch)
-        .compare(Build.from(this.build), Build.from(that.build))
+        .compare(major, that.major)
+        .compare(minor, that.minor)
+        .compare(patch, that.patch)
+        .compare(Build.from(build), Build.from(that.build))
         .result();
   }
 
@@ -129,10 +129,10 @@ public final class Version implements Comparable<Version> {
     }
 
     final Version that = (Version) object;
-    return this.major == that.major
-        && this.minor == that.minor
-        && this.patch == that.patch
-        && Objects.equals(this.build, that.build);
+    return major == that.major
+        && minor == that.minor
+        && patch == that.patch
+        && Objects.equals(build, that.build);
   }
 
   @Override
@@ -189,8 +189,8 @@ public final class Version implements Comparable<Version> {
     @Override
     public int compareTo(final Build that) {
       return ComparisonChain.start()
-          .compare(this.type.ordinal(), that.type.ordinal())
-          .compare(this.version, that.version)
+          .compare(type.ordinal(), that.type.ordinal())
+          .compare(version, that.version)
           .result();
     }
 
@@ -205,7 +205,7 @@ public final class Version implements Comparable<Version> {
         return false;
       }
       final Build that = (Build) object;
-      return Objects.equals(this.type, that.type) && this.version == that.version;
+      return Objects.equals(type, that.type) && version == that.version;
     }
 
     @Override

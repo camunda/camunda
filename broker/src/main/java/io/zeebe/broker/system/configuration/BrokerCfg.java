@@ -12,6 +12,7 @@ import static io.zeebe.util.ObjectWriterFactory.getDefaultJsonObjectWriter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.exporter.metrics.MetricsExporter;
+import io.zeebe.broker.system.configuration.backpressure.BackpressureCfg;
 import io.zeebe.util.Environment;
 import io.zeebe.util.exception.UncheckedExecutionException;
 import java.time.Duration;
@@ -33,6 +34,7 @@ public final class BrokerCfg {
   private Map<String, ExporterCfg> exporters = new HashMap<>();
   private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
   private BackpressureCfg backpressure = new BackpressureCfg();
+  private ExperimentalCfg experimental = new ExperimentalCfg();
 
   private Duration stepTimeout = Duration.ofMinutes(5);
   private boolean executionMetricsExporterEnabled;
@@ -96,7 +98,7 @@ public final class BrokerCfg {
   }
 
   public void setData(final DataCfg logs) {
-    this.data = logs;
+    data = logs;
   }
 
   public Map<String, ExporterCfg> getExporters() {
@@ -141,6 +143,14 @@ public final class BrokerCfg {
     this.executionMetricsExporterEnabled = executionMetricsExporterEnabled;
   }
 
+  public ExperimentalCfg getExperimental() {
+    return experimental;
+  }
+
+  public void setExperimental(final ExperimentalCfg experimental) {
+    this.experimental = experimental;
+  }
+
   @Override
   public String toString() {
     return "BrokerCfg{"
@@ -158,9 +168,11 @@ public final class BrokerCfg {
         + gateway
         + ", backpressure="
         + backpressure
+        + ", experimental="
+        + experimental
         + ", stepTimeout="
         + stepTimeout
-        + ", executionMetricsExporter="
+        + ", executionMetricsExporterEnabled="
         + executionMetricsExporterEnabled
         + '}';
   }

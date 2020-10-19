@@ -34,7 +34,8 @@ import io.atomix.utils.Version;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.event.AbstractListenerManager;
 import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.Namespace;
+import io.atomix.utils.serializer.FallbackNamespace;
+import io.atomix.utils.serializer.NamespaceImpl;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
 import java.util.Collection;
@@ -64,27 +65,29 @@ public class HeartbeatMembershipProtocol
   private static final String HEARTBEAT_MESSAGE = "atomix-cluster-membership";
   private static final Serializer SERIALIZER =
       Serializer.using(
-          Namespace.builder()
-              .register(Namespaces.BASIC)
-              .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-              .register(MemberId.class)
-              .register(GossipMember.class)
-              .register(new AddressSerializer(), Address.class)
-              .build("ClusterMembershipService"));
+          new FallbackNamespace(
+              new NamespaceImpl.Builder()
+                  .register(Namespaces.BASIC)
+                  .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
+                  .register(MemberId.class)
+                  .register(GossipMember.class)
+                  .register(new AddressSerializer(), Address.class)
+                  .name("ClusterMembershipService")));
+
   private final HeartbeatMembershipProtocolConfig config;
-  private volatile NodeDiscoveryService discoveryService;
-  private volatile BootstrapService bootstrapService;
   private final AtomicBoolean started = new AtomicBoolean();
-  private volatile GossipMember localMember;
-  private volatile Properties localProperties = new Properties();
   private final Map<MemberId, GossipMember> members = Maps.newConcurrentMap();
   private final Map<MemberId, PhiAccrualFailureDetector> failureDetectors = Maps.newConcurrentMap();
   private final ScheduledExecutorService heartbeatScheduler =
       Executors.newSingleThreadScheduledExecutor(
           namedThreads("atomix-cluster-heartbeat-sender", LOGGER));
-  private final NodeDiscoveryEventListener discoveryEventListener = this::handleDiscoveryEvent;
   private final ExecutorService eventExecutor =
       Executors.newSingleThreadExecutor(namedThreads("atomix-cluster-events", LOGGER));
+  private volatile NodeDiscoveryService discoveryService;
+  private volatile BootstrapService bootstrapService;
+  private volatile GossipMember localMember;
+  private final NodeDiscoveryEventListener discoveryEventListener = this::handleDiscoveryEvent;
+  private volatile Properties localProperties = new Properties();
   private ScheduledFuture<?> heartbeatFuture;
 
   public HeartbeatMembershipProtocol(final HeartbeatMembershipProtocolConfig config) {
@@ -119,9 +122,9 @@ public class HeartbeatMembershipProtocol
   public CompletableFuture<Void> join(
       final BootstrapService bootstrap, final NodeDiscoveryService discovery, final Member member) {
     if (started.compareAndSet(false, true)) {
-      this.bootstrapService = bootstrap;
-      this.discoveryService = discovery;
-      this.localMember =
+      bootstrapService = bootstrap;
+      discoveryService = discovery;
+      localMember =
           new GossipMember(
               member.id(),
               member.address(),
@@ -377,8 +380,8 @@ public class HeartbeatMembershipProtocol
 
     GossipMember(final MemberId id, final Address address) {
       super(id, address);
-      this.version = null;
-      this.timestamp = 0;
+      version = null;
+      timestamp = 0;
     }
 
     GossipMember(

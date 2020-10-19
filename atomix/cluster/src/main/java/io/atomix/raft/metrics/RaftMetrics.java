@@ -38,7 +38,7 @@ public class RaftMetrics {
       partitionId = 0;
       groupName = "raft";
     }
-    this.partition = String.valueOf(partitionId);
-    this.partitionGroupName = groupName;
+    partition = String.valueOf(partitionId);
+    partitionGroupName = groupName;
   }
 }

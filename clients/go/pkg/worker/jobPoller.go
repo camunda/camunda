@@ -19,6 +19,8 @@ import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"io"
 	"log"
 	"sync"
@@ -37,6 +39,7 @@ type jobPoller struct {
 	closeSignal    chan struct{}
 	remaining      int
 	threshold      int
+	metrics        JobWorkerMetrics
 }
 
 func (poller *jobPoller) poll(closeWait *sync.WaitGroup) {
@@ -50,10 +53,12 @@ func (poller *jobPoller) poll(closeWait *sync.WaitGroup) {
 		// either a job was finished
 		case <-poller.workerFinished:
 			poller.remaining--
+			poller.setJobsRemainingCountMetric(poller.remaining)
 		// or the poll interval exceeded
 		case <-time.After(poller.pollInterval):
 		// or poller should stop
 		case <-poller.closeSignal:
+			poller.setJobsRemainingCountMetric(0)
 			return
 		}
 
@@ -80,17 +85,24 @@ func (poller *jobPoller) activateJobs() {
 
 	for {
 		response, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
 		if err != nil {
-			log.Println("Failed to activate jobs for worker", poller.request.Worker, err)
+			if err != io.EOF && status.Code(err) != codes.ResourceExhausted {
+				log.Println("Failed to activate jobs for worker", poller.request.Worker, err)
+			}
+
 			break
 		}
 
 		poller.remaining += len(response.Jobs)
+		poller.setJobsRemainingCountMetric(poller.remaining)
 		for _, job := range response.Jobs {
 			poller.jobQueue <- entities.Job{ActivatedJob: *job}
 		}
+	}
+}
+
+func (poller *jobPoller) setJobsRemainingCountMetric(count int) {
+	if poller.metrics != nil {
+		poller.metrics.SetJobsRemainingCount(poller.request.GetType(), count)
 	}
 }

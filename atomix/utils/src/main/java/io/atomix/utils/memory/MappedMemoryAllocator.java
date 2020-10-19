@@ -66,7 +66,7 @@ public class MappedMemoryAllocator implements MemoryAllocator<MappedMemory> {
       throw new IllegalArgumentException("offset cannot be negative");
     }
     this.file = file;
-    this.channel = this.file.getChannel();
+    channel = this.file.getChannel();
     this.mode = mode;
     this.offset = offset;
   }

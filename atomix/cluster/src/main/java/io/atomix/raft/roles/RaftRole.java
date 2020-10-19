@@ -19,28 +19,16 @@ package io.atomix.raft.roles;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
-import io.atomix.raft.protocol.CloseSessionRequest;
-import io.atomix.raft.protocol.CloseSessionResponse;
-import io.atomix.raft.protocol.CommandRequest;
-import io.atomix.raft.protocol.CommandResponse;
 import io.atomix.raft.protocol.ConfigureRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
-import io.atomix.raft.protocol.KeepAliveRequest;
-import io.atomix.raft.protocol.KeepAliveResponse;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
-import io.atomix.raft.protocol.MetadataRequest;
-import io.atomix.raft.protocol.MetadataResponse;
-import io.atomix.raft.protocol.OpenSessionRequest;
-import io.atomix.raft.protocol.OpenSessionResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
-import io.atomix.raft.protocol.QueryRequest;
-import io.atomix.raft.protocol.QueryResponse;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TransferRequest;
@@ -59,38 +47,6 @@ public interface RaftRole extends Managed<RaftRole> {
    * @return The server state type.
    */
   RaftServer.Role role();
-
-  /**
-   * Handles a metadata request.
-   *
-   * @param request The request to handle.
-   * @return A completable future to be completed with the request response.
-   */
-  CompletableFuture<MetadataResponse> onMetadata(MetadataRequest request);
-
-  /**
-   * Handles an open session request.
-   *
-   * @param request The request to handle.
-   * @return A completable future to be completed with the request response.
-   */
-  CompletableFuture<OpenSessionResponse> onOpenSession(OpenSessionRequest request);
-
-  /**
-   * Handles a keep alive request.
-   *
-   * @param request The request to handle.
-   * @return A completable future to be completed with the request response.
-   */
-  CompletableFuture<KeepAliveResponse> onKeepAlive(KeepAliveRequest request);
-
-  /**
-   * Handles a close session request.
-   *
-   * @param request The request to handle.
-   * @return A completable future to be completed with the request response.
-   */
-  CompletableFuture<CloseSessionResponse> onCloseSession(CloseSessionRequest request);
 
   /**
    * Handles a configure request.
@@ -163,20 +119,4 @@ public interface RaftRole extends Managed<RaftRole> {
    * @return A completable future to be completed with the request response.
    */
   CompletableFuture<VoteResponse> onVote(VoteRequest request);
-
-  /**
-   * Handles a command request.
-   *
-   * @param request The request to handle.
-   * @return A completable future to be completed with the request response.
-   */
-  CompletableFuture<CommandResponse> onCommand(CommandRequest request);
-
-  /**
-   * Handles a query request.
-   *
-   * @param request The request to handle.
-   * @return A completable future to be completed with the request response.
-   */
-  CompletableFuture<QueryResponse> onQuery(QueryRequest request);
 }

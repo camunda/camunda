@@ -19,14 +19,13 @@ package io.atomix.storage.journal;
 import com.esotericsoftware.kryo.KryoException;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.index.JournalIndex;
-import io.atomix.utils.memory.BufferCleaner;
 import io.atomix.utils.serializer.Namespace;
-import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.zip.CRC32;
+import org.agrona.IoUtil;
 
 /**
  * Segment writer.
@@ -46,38 +45,35 @@ import java.util.zip.CRC32;
  */
 class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
 
-  private final MappedByteBuffer mappedBuffer;
-  private final ByteBuffer buffer;
+  private final MappedByteBuffer buffer;
   private final JournalSegment<E> segment;
   private final int maxEntrySize;
   private final JournalIndex index;
   private final Namespace namespace;
   private final long firstIndex;
   private Indexed<E> lastEntry;
+  private boolean isOpen = true;
 
   MappedJournalSegmentWriter(
-      final MappedByteBuffer buffer,
+      final JournalSegmentFile file,
       final JournalSegment<E> segment,
       final int maxEntrySize,
       final JournalIndex index,
       final Namespace namespace) {
-    this.mappedBuffer = buffer;
-    this.buffer = buffer.slice();
     this.segment = segment;
     this.maxEntrySize = maxEntrySize;
     this.index = index;
     this.namespace = namespace;
-    this.firstIndex = segment.index();
+    firstIndex = segment.index();
+    buffer = mapFile(file, segment);
     reset(0);
   }
 
-  /**
-   * Returns the mapped buffer underlying the segment writer.
-   *
-   * @return the mapped buffer underlying the segment writer
-   */
-  MappedByteBuffer buffer() {
-    return mappedBuffer;
+  private static MappedByteBuffer mapFile(
+      final JournalSegmentFile file, final JournalSegment<?> segment) {
+    // map existing file, because file is already created by SegmentedJournal
+    return IoUtil.mapExistingFile(
+        file.file(), file.name(), 0, segment.descriptor().maxSegmentSize());
   }
 
   @Override
@@ -100,7 +96,6 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public <T extends E> Indexed<T> append(final T entry) {
     // Store the entry index.
     final long index = getNextIndex();
@@ -147,13 +142,12 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
 
     // Update the last entry with the correct index/term/length.
     final Indexed<E> indexedEntry = new Indexed<>(index, entry, length);
-    this.lastEntry = indexedEntry;
+    lastEntry = indexedEntry;
     this.index.index(lastEntry, position);
     return (Indexed<T>) indexedEntry;
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void append(final Indexed<E> entry) {
     final long nextIndex = getNextIndex();
 
@@ -227,7 +221,6 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
   }
 
   @Override
-  @SuppressWarnings("unchecked")
   public void truncate(final long index) {
     // If the index is greater than or equal to the last index, skip the truncate.
     if (index >= getLastIndex()) {
@@ -259,16 +252,15 @@ class MappedJournalSegmentWriter<E> implements JournalWriter<E> {
 
   @Override
   public void flush() {
-    mappedBuffer.force();
+    buffer.force();
   }
 
   @Override
   public void close() {
-    flush();
-    try {
-      BufferCleaner.freeBuffer(mappedBuffer);
-    } catch (final IOException e) {
-      throw new StorageException(e);
+    if (isOpen) {
+      isOpen = false;
+      flush();
+      IoUtil.unmap(buffer);
     }
   }
 

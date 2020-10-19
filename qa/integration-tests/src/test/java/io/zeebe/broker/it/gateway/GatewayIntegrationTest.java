@@ -11,16 +11,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.AtomixCluster;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.cmd.BrokerRejectionException;
 import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerRejection;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceCreationRecord;
 import io.zeebe.protocol.record.RejectionType;
 import io.zeebe.test.util.socket.SocketUtil;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -47,7 +48,7 @@ public final class GatewayIntegrationTest {
         .setHost("0.0.0.0")
         .setPort(SocketUtil.getNextAddress().getPort())
         .setContactPoint(internalApi.toString())
-        .setRequestTimeout(Duration.ofSeconds(3));
+        .setRequestTimeout(Duration.ofSeconds(10));
     configuration.init();
 
     final ControlledActorClock clock = new ControlledActorClock();
@@ -61,18 +62,27 @@ public final class GatewayIntegrationTest {
   }
 
   @Test
-  public void shouldReturnRejectionWithCorrectTypeAndReason() {
+  public void shouldReturnRejectionWithCorrectTypeAndReason() throws InterruptedException {
     // given
+    final CountDownLatch latch = new CountDownLatch(1);
+    final AtomicReference<Throwable> errorResponse = new AtomicReference<>();
 
     // when
-    final BrokerResponse<WorkflowInstanceCreationRecord> response =
-        client.sendRequest(new BrokerCreateWorkflowInstanceRequest()).join();
+    client.sendRequestWithRetry(
+        new BrokerCreateWorkflowInstanceRequest(),
+        (k, r) -> {},
+        error -> {
+          errorResponse.set(error);
+          latch.countDown();
+        });
 
     // then
-    assertThat(response.isRejection()).isTrue();
-    final BrokerRejection error = response.getRejection();
-    assertThat(error.getType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
-    assertThat(error.getReason())
+    latch.await();
+    final var error = errorResponse.get();
+    assertThat(error).isInstanceOf(BrokerRejectionException.class);
+    final BrokerRejection rejection = ((BrokerRejectionException) error).getRejection();
+    assertThat(rejection.getType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getReason())
         .isEqualTo("Expected at least a bpmnProcessId or a key greater than -1, but none given");
   }
 }

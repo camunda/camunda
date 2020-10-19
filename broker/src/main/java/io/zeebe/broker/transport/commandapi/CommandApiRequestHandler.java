@@ -10,7 +10,6 @@ package io.zeebe.broker.transport.commandapi;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.transport.backpressure.BackpressureMetrics;
 import io.zeebe.broker.transport.backpressure.RequestLimiter;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
@@ -57,9 +56,10 @@ final class CommandApiRequestHandler implements RequestHandler {
 
   private final Map<ValueType, UnpackedObject> recordsByType = new EnumMap<>(ValueType.class);
   private final BackpressureMetrics metrics;
+  private boolean isDiskSpaceAvailable = true;
 
   CommandApiRequestHandler() {
-    this.metrics = new BackpressureMetrics();
+    metrics = new BackpressureMetrics();
     initEventTypeMap();
   }
 
@@ -82,6 +82,17 @@ final class CommandApiRequestHandler implements RequestHandler {
       final DirectBuffer buffer,
       final int messageOffset,
       final int messageLength) {
+
+    if (!isDiskSpaceAvailable) {
+      errorResponseWriter
+          .resourceExhausted(
+              String.format(
+                  "Cannot accept requests for partition %d. Broker is out of disk space",
+                  partitionId))
+          .tryWriteResponse(output, partitionId, requestId);
+      return;
+    }
+
     executeCommandRequestDecoder.wrap(
         buffer,
         messageOffset + messageHeaderDecoder.encodedLength(),
@@ -194,12 +205,24 @@ final class CommandApiRequestHandler implements RequestHandler {
         });
   }
 
-  void removePartition(final LogStream logStream) {
+  void removePartition(final int partitionId) {
     cmdQueue.add(
         () -> {
-          leadingStreams.remove(logStream.getPartitionId());
-          partitionLimiters.remove(logStream.getPartitionId());
+          leadingStreams.remove(partitionId);
+          partitionLimiters.remove(partitionId);
         });
+  }
+
+  void onDiskSpaceNotAvailable() {
+    cmdQueue.add(
+        () -> {
+          isDiskSpaceAvailable = false;
+          LOG.debug("Broker is out of disk space. All client requests will be rejected");
+        });
+  }
+
+  void onDiskSpaceAvailable() {
+    cmdQueue.add(() -> isDiskSpaceAvailable = true);
   }
 
   @Override

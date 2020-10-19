@@ -22,6 +22,9 @@ public class ElasticsearchExporter implements Exporter {
 
   public static final String ZEEBE_RECORD_TEMPLATE_JSON = "/zeebe-record-template.json";
 
+  // by default, the bulk request may not be bigger than 100MB
+  private static final int RECOMMENDED_MAX_BULK_MEMORY_LIMIT = 100 * 1024 * 1024;
+
   private Logger log;
   private Controller controller;
 
@@ -42,15 +45,6 @@ public class ElasticsearchExporter implements Exporter {
     validate(configuration);
 
     context.setFilter(new ElasticsearchRecordFilter(configuration));
-  }
-
-  private void validate(final ElasticsearchExporterConfiguration configuration) {
-    if (configuration.index.prefix != null && configuration.index.prefix.contains("_")) {
-      throw new ExporterException(
-          String.format(
-              "Elasticsearch prefix must not contain underscore. Current value: %s",
-              configuration.index.prefix));
-    }
   }
 
   @Override
@@ -81,7 +75,7 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   @Override
-  public void export(final Record record) {
+  public void export(final Record<?> record) {
     if (!indexTemplatesCreated) {
       createIndexTemplates();
     }
@@ -91,6 +85,21 @@ public class ElasticsearchExporter implements Exporter {
 
     if (client.shouldFlush()) {
       flush();
+    }
+  }
+
+  private void validate(final ElasticsearchExporterConfiguration configuration) {
+    if (configuration.index.prefix != null && configuration.index.prefix.contains("_")) {
+      throw new ExporterException(
+          String.format(
+              "Elasticsearch prefix must not contain underscore. Current value: %s",
+              configuration.index.prefix));
+    }
+
+    if (configuration.bulk.memoryLimit > RECOMMENDED_MAX_BULK_MEMORY_LIMIT) {
+      log.warn(
+          "The bulk memory limit is set to more than {} bytes. It is recommended to set the limit between 5 to 15 MB.",
+          RECOMMENDED_MAX_BULK_MEMORY_LIMIT);
     }
   }
 
@@ -113,11 +122,8 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void flush() {
-    if (client.flush()) {
-      controller.updateLastExportedRecordPosition(lastPosition);
-    } else {
-      log.warn("Failed to flush bulk completely");
-    }
+    client.flush();
+    controller.updateLastExportedRecordPosition(lastPosition);
   }
 
   private void createIndexTemplates() {
@@ -182,7 +188,7 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
-  private class ElasticsearchRecordFilter implements Context.RecordFilter {
+  private static class ElasticsearchRecordFilter implements Context.RecordFilter {
 
     private final ElasticsearchExporterConfiguration configuration;
 

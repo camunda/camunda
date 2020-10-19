@@ -10,20 +10,21 @@ package io.zeebe.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
+import org.slf4j.event.Level;
+import org.slf4j.spi.LocationAwareLogger;
 
 /**
- * Delegating Logger implementation which guards all invocations with static checks for the log
- * level. Allows the JVM to remove log statements which are not needed with the current log level.
- * Removes the possibility to dynamically change the log level.
+ * Delegating Logger implementation for wrapping a LocationAwareLogger
+ *
+ * <p>If given a {@link LocationAwareLogger} delegate, it will properly calculate the caller
+ * location.
  */
-public final class ZbLogger implements Logger {
+public class ZbLogger implements Logger {
+  private static final String FQCN = ZbLogger.class.getName();
 
   private final Logger logger;
-  private final boolean isTraceEnabled;
-  private final boolean isDebugEnabled;
-  private final boolean isInfoEnabled;
-  private final boolean isWarnEnabled;
-  private final boolean isErrorEnabled;
+  private final String loggerFqcn;
+  private final LocationAwareLogger locationAwareLogger;
 
   public ZbLogger(final Class<?> clazz) {
     this(LoggerFactory.getLogger(clazz));
@@ -34,12 +35,18 @@ public final class ZbLogger implements Logger {
   }
 
   public ZbLogger(final Logger logger) {
+    this(logger, FQCN);
+  }
+
+  public ZbLogger(final Logger logger, final String loggerFqcn) {
     this.logger = logger;
-    this.isTraceEnabled = logger.isTraceEnabled();
-    this.isDebugEnabled = logger.isDebugEnabled();
-    this.isInfoEnabled = logger.isInfoEnabled();
-    this.isWarnEnabled = logger.isWarnEnabled();
-    this.isErrorEnabled = logger.isErrorEnabled();
+    this.loggerFqcn = loggerFqcn;
+
+    if (logger instanceof LocationAwareLogger) {
+      locationAwareLogger = (LocationAwareLogger) logger;
+    } else {
+      locationAwareLogger = null;
+    }
   }
 
   @Override
@@ -49,422 +56,625 @@ public final class ZbLogger implements Logger {
 
   @Override
   public boolean isTraceEnabled() {
-    return isTraceEnabled;
+    return logger.isTraceEnabled();
   }
 
   @Override
   public void trace(final String msg) {
-    if (isTraceEnabled) {
-      logger.trace(msg);
+    if (isTraceEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.TRACE.toInt(), msg, null);
+      } else {
+        logger.trace(msg);
+      }
     }
   }
 
   @Override
   public void trace(final String format, final Object arg) {
-    if (isTraceEnabled) {
-      logger.trace(format, arg);
+    if (isTraceEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.TRACE.toInt(), format, null, arg);
+      } else {
+        logger.trace(format, arg);
+      }
     }
   }
 
   @Override
   public void trace(final String format, final Object arg1, final Object arg2) {
-    if (isTraceEnabled) {
-      logger.trace(format, arg1, arg2);
+    if (isTraceEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.TRACE.toInt(), format, null, arg1, arg2);
+      } else {
+        logger.trace(format, arg1, arg2);
+      }
     }
   }
 
   @Override
   public void trace(final String format, final Object... arguments) {
-    if (isTraceEnabled) {
-      logger.trace(format, arguments);
+    if (isTraceEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.TRACE.toInt(), format, null, arguments);
+      } else {
+        logger.trace(format, arguments);
+      }
     }
   }
 
   @Override
   public void trace(final String msg, final Throwable t) {
-    if (isTraceEnabled) {
-      logger.trace(msg, t);
+    if (isTraceEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.TRACE.toInt(), msg, t);
+      } else {
+        logger.trace(msg, t);
+      }
     }
   }
 
   @Override
   public boolean isTraceEnabled(final Marker marker) {
-    return isTraceEnabled;
+    return logger.isTraceEnabled(marker);
   }
 
   @Override
   public void trace(final Marker marker, final String msg) {
-    if (isTraceEnabled) {
-      logger.trace(marker, msg);
+    if (isTraceEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.TRACE.toInt(), msg, null);
+      } else {
+        logger.trace(marker, msg);
+      }
     }
   }
 
   @Override
   public void trace(final Marker marker, final String format, final Object arg) {
-    if (isTraceEnabled) {
-      logger.trace(marker, format, arg);
+    if (isTraceEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.TRACE.toInt(), format, null, arg);
+      } else {
+        logger.trace(marker, format, arg);
+      }
     }
   }
 
   @Override
   public void trace(
       final Marker marker, final String format, final Object arg1, final Object arg2) {
-    if (isTraceEnabled) {
-      logger.trace(marker, format, arg1, arg2);
+    if (isTraceEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.TRACE.toInt(), format, null, arg1, arg2);
+      } else {
+        logger.trace(marker, format, arg1, arg2);
+      }
     }
   }
 
   @Override
   public void trace(final Marker marker, final String format, final Object... argArray) {
-    if (isTraceEnabled) {
-      logger.trace(marker, format, argArray);
+    if (isTraceEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.TRACE.toInt(), format, null, argArray);
+      } else {
+        logger.trace(marker, format, argArray);
+      }
     }
   }
 
   @Override
   public void trace(final Marker marker, final String msg, final Throwable t) {
-    if (isTraceEnabled) {
-      logger.trace(marker, msg, t);
+    if (isTraceEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.TRACE.toInt(), msg, t);
+      } else {
+        logger.trace(marker, msg, t);
+      }
     }
   }
 
   @Override
   public boolean isDebugEnabled() {
-    return isDebugEnabled;
+    return logger.isDebugEnabled();
   }
 
   @Override
   public void debug(final String msg) {
-    if (isDebugEnabled) {
-      logger.debug(msg);
+    if (isDebugEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.DEBUG.toInt(), msg, null);
+      } else {
+        logger.debug(msg);
+      }
     }
   }
 
   @Override
   public void debug(final String format, final Object arg) {
-    if (isDebugEnabled) {
-      logger.debug(format, arg);
+    if (isDebugEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.DEBUG.toInt(), format, null, arg);
+      } else {
+        logger.debug(format, arg);
+      }
     }
   }
 
   @Override
   public void debug(final String format, final Object arg1, final Object arg2) {
-    if (isDebugEnabled) {
-      logger.debug(format, arg1, arg2);
+    if (isDebugEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.DEBUG.toInt(), format, null, arg1, arg2);
+      } else {
+        logger.debug(format, arg1, arg2);
+      }
     }
   }
 
   @Override
   public void debug(final String format, final Object... arguments) {
-    if (isDebugEnabled) {
-      logger.debug(format, arguments);
+    if (isDebugEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.DEBUG.toInt(), format, null, arguments);
+      } else {
+        logger.debug(format, arguments);
+      }
     }
   }
 
   @Override
   public void debug(final String msg, final Throwable t) {
-    if (isDebugEnabled) {
-      logger.debug(msg, t);
+    if (isDebugEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.DEBUG.toInt(), msg, t);
+      } else {
+        logger.debug(msg, t);
+      }
     }
   }
 
   @Override
   public boolean isDebugEnabled(final Marker marker) {
-    return isDebugEnabled;
+    return logger.isDebugEnabled(marker);
   }
 
   @Override
   public void debug(final Marker marker, final String msg) {
-    if (isDebugEnabled) {
-      logger.debug(marker, msg);
+    if (isDebugEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.DEBUG.toInt(), msg, null);
+      } else {
+        logger.debug(marker, msg);
+      }
     }
   }
 
   @Override
   public void debug(final Marker marker, final String format, final Object arg) {
-    if (isDebugEnabled) {
-      logger.debug(marker, format, arg);
+    if (isDebugEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.DEBUG.toInt(), format, null, arg);
+      } else {
+        logger.debug(marker, format, arg);
+      }
     }
   }
 
   @Override
   public void debug(
       final Marker marker, final String format, final Object arg1, final Object arg2) {
-    if (isDebugEnabled) {
-      logger.debug(marker, format, arg1, arg2);
+    if (isDebugEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.DEBUG.toInt(), format, null, arg1, arg2);
+      } else {
+        logger.debug(marker, format, arg1, arg2);
+      }
     }
   }
 
   @Override
   public void debug(final Marker marker, final String format, final Object... arguments) {
-    if (isDebugEnabled) {
-      logger.debug(marker, format, arguments);
+    if (isDebugEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.DEBUG.toInt(), format, null, arguments);
+      } else {
+        logger.debug(marker, format, arguments);
+      }
     }
   }
 
   @Override
   public void debug(final Marker marker, final String msg, final Throwable t) {
-    if (isDebugEnabled) {
-      logger.debug(marker, msg, t);
+    if (isDebugEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.DEBUG.toInt(), msg, t);
+      } else {
+        logger.debug(marker, msg, t);
+      }
     }
   }
 
   @Override
   public boolean isInfoEnabled() {
-    return isInfoEnabled;
+    return logger.isInfoEnabled();
   }
 
   @Override
   public void info(final String msg) {
-    if (isInfoEnabled) {
-      logger.info(msg);
+    if (isInfoEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.INFO.toInt(), msg, null);
+      } else {
+        logger.info(msg);
+      }
     }
   }
 
   @Override
   public void info(final String format, final Object arg) {
-    if (isInfoEnabled) {
-      logger.info(format, arg);
+    if (isInfoEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.INFO.toInt(), format, null, arg);
+      } else {
+        logger.info(format, arg);
+      }
     }
   }
 
   @Override
   public void info(final String format, final Object arg1, final Object arg2) {
-    if (isInfoEnabled) {
-      logger.info(format, arg1, arg2);
+    if (isInfoEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.INFO.toInt(), format, null, arg1, arg2);
+      } else {
+        logger.info(format, arg1, arg2);
+      }
     }
   }
 
   @Override
   public void info(final String format, final Object... arguments) {
-    if (isInfoEnabled) {
-      logger.info(format, arguments);
+    if (isInfoEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.INFO.toInt(), format, null, arguments);
+      } else {
+        logger.info(format, arguments);
+      }
     }
   }
 
   @Override
   public void info(final String msg, final Throwable t) {
-    if (isInfoEnabled) {
-      logger.info(msg, t);
+    if (isInfoEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.INFO.toInt(), msg, t);
+      } else {
+        logger.info(msg, t);
+      }
     }
   }
 
   @Override
   public boolean isInfoEnabled(final Marker marker) {
-    return isInfoEnabled;
+    return logger.isInfoEnabled(marker);
   }
 
   @Override
   public void info(final Marker marker, final String msg) {
-    if (isInfoEnabled) {
-      logger.info(marker, msg);
+    if (isInfoEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.INFO.toInt(), msg, null);
+      } else {
+        logger.info(marker, msg);
+      }
     }
   }
 
   @Override
   public void info(final Marker marker, final String format, final Object arg) {
-    if (isInfoEnabled) {
-      logger.info(marker, format, arg);
+    if (isInfoEnabled()) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.INFO.toInt(), format, null, arg);
+      } else {
+        logger.info(marker, format, arg);
+      }
     }
   }
 
   @Override
   public void info(final Marker marker, final String format, final Object arg1, final Object arg2) {
-    if (isInfoEnabled) {
-      logger.info(marker, format, arg1, arg2);
+    if (isInfoEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.INFO.toInt(), format, null, arg1, arg2);
+      } else {
+        logger.info(marker, format, arg1, arg2);
+      }
     }
   }
 
   @Override
   public void info(final Marker marker, final String format, final Object... arguments) {
-    if (isInfoEnabled) {
-      logger.info(marker, format, arguments);
+    if (isInfoEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.INFO.toInt(), format, null, arguments);
+      } else {
+        logger.info(marker, format, arguments);
+      }
     }
   }
 
   @Override
   public void info(final Marker marker, final String msg, final Throwable t) {
-    if (isInfoEnabled) {
-      logger.info(marker, msg, t);
+    if (isInfoEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.INFO.toInt(), msg, t);
+      } else {
+        logger.info(marker, msg, t);
+      }
     }
   }
 
   @Override
   public boolean isWarnEnabled() {
-    return isWarnEnabled;
+    return logger.isWarnEnabled();
   }
 
   @Override
   public void warn(final String msg) {
-    if (isWarnEnabled) {
-      logger.warn(msg);
+    if (isWarnEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.WARN.toInt(), msg, null);
+      } else {
+        logger.warn(msg);
+      }
     }
   }
 
   @Override
   public void warn(final String format, final Object arg) {
-    if (isWarnEnabled) {
-      logger.warn(format, arg);
+    if (isWarnEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.WARN.toInt(), format, null, arg);
+      } else {
+        logger.warn(format, arg);
+      }
     }
   }
 
   @Override
   public void warn(final String format, final Object... arguments) {
-    if (isWarnEnabled) {
-      logger.warn(format, arguments);
+    if (isWarnEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.WARN.toInt(), format, null, arguments);
+      } else {
+        logger.warn(format, arguments);
+      }
     }
   }
 
   @Override
   public void warn(final String format, final Object arg1, final Object arg2) {
-    if (isWarnEnabled) {
-      logger.warn(format, arg1, arg2);
+    if (isWarnEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.WARN.toInt(), format, null, arg1, arg2);
+      } else {
+        logger.warn(format, arg1, arg2);
+      }
     }
   }
 
   @Override
   public void warn(final String msg, final Throwable t) {
-    if (isWarnEnabled) {
-      logger.warn(msg, t);
+    if (isWarnEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.WARN.toInt(), msg, t);
+      } else {
+        logger.warn(msg, t);
+      }
     }
   }
 
   @Override
   public boolean isWarnEnabled(final Marker marker) {
-    return isWarnEnabled;
+    return logger.isWarnEnabled(marker);
   }
 
   @Override
   public void warn(final Marker marker, final String msg) {
-    if (isWarnEnabled) {
-      logger.warn(marker, msg);
+    if (isWarnEnabled()) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.WARN.toInt(), msg, null);
+      } else {
+        logger.warn(marker, msg);
+      }
     }
   }
 
   @Override
   public void warn(final Marker marker, final String format, final Object arg) {
-    if (isWarnEnabled) {
-      logger.warn(marker, format, arg);
+    if (isWarnEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.WARN.toInt(), format, null, arg);
+      } else {
+        logger.warn(marker, format, arg);
+      }
     }
   }
 
   @Override
   public void warn(final Marker marker, final String format, final Object arg1, final Object arg2) {
-    if (isWarnEnabled) {
-      logger.warn(marker, format, arg1, arg2);
+    if (isWarnEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.WARN.toInt(), format, null, arg1, arg2);
+      } else {
+        logger.warn(marker, format, arg1, arg2);
+      }
     }
   }
 
   @Override
   public void warn(final Marker marker, final String format, final Object... arguments) {
-    if (isWarnEnabled) {
-      logger.warn(marker, format, arguments);
+    if (isWarnEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.WARN.toInt(), format, null, arguments);
+      } else {
+        logger.warn(marker, format, arguments);
+      }
     }
   }
 
   @Override
   public void warn(final Marker marker, final String msg, final Throwable t) {
-    if (isWarnEnabled) {
-      logger.warn(marker, msg, t);
+    if (isWarnEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.WARN.toInt(), msg, t);
+      } else {
+        logger.warn(marker, msg, t);
+      }
     }
   }
 
   @Override
   public boolean isErrorEnabled() {
-    return isErrorEnabled;
+    return logger.isErrorEnabled();
   }
 
   @Override
   public void error(final String msg) {
-    if (isErrorEnabled) {
-      logger.error(msg);
+    if (isErrorEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.ERROR.toInt(), msg, null);
+      } else {
+        logger.error(msg);
+      }
     }
   }
 
   @Override
   public void error(final String format, final Object arg) {
-    if (isErrorEnabled) {
-      logger.error(format, arg);
+    if (isErrorEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.ERROR.toInt(), format, null, arg);
+      } else {
+        logger.error(format, arg);
+      }
     }
   }
 
   @Override
   public void error(final String format, final Object arg1, final Object arg2) {
-    if (isErrorEnabled) {
-      logger.error(format, arg1, arg2);
+    if (isErrorEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.ERROR.toInt(), format, null, arg1, arg2);
+      } else {
+        logger.error(format, arg1, arg2);
+      }
     }
   }
 
   @Override
   public void error(final String format, final Object... arguments) {
-    if (isErrorEnabled) {
-      logger.error(format, arguments);
+    if (isErrorEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.ERROR.toInt(), format, null, arguments);
+      } else {
+        logger.error(format, arguments);
+      }
     }
   }
 
   @Override
   public void error(final String msg, final Throwable t) {
-    if (isErrorEnabled) {
-      logger.error(msg, t);
+    if (isErrorEnabled()) {
+      if (locationAwareLogger != null) {
+        log(null, Level.ERROR.toInt(), msg, t);
+      } else {
+        logger.error(msg, t);
+      }
     }
   }
 
   @Override
   public boolean isErrorEnabled(final Marker marker) {
-    return isErrorEnabled;
+    return logger.isErrorEnabled(marker);
   }
 
   @Override
   public void error(final Marker marker, final String msg) {
-    if (isErrorEnabled) {
-      logger.error(marker, msg);
+    if (isErrorEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.ERROR.toInt(), msg, null);
+      } else {
+        logger.error(marker, msg);
+      }
     }
   }
 
   @Override
   public void error(final Marker marker, final String format, final Object arg) {
-    if (isErrorEnabled) {
-      logger.error(marker, format, arg);
+    if (isErrorEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.ERROR.toInt(), format, null, arg);
+      } else {
+        logger.error(marker, format, arg);
+      }
     }
   }
 
   @Override
   public void error(
       final Marker marker, final String format, final Object arg1, final Object arg2) {
-    if (isErrorEnabled) {
-      logger.error(marker, format, arg1, arg2);
+    if (isErrorEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.ERROR.toInt(), format, null, arg1, arg2);
+      } else {
+        logger.error(marker, format, arg1, arg2);
+      }
     }
   }
 
   @Override
   public void error(final Marker marker, final String format, final Object... arguments) {
-    if (isErrorEnabled) {
-      logger.error(marker, format, arguments);
+    if (isErrorEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.ERROR.toInt(), format, null, arguments);
+      } else {
+        logger.error(marker, format, arguments);
+      }
     }
   }
 
   @Override
   public void error(final Marker marker, final String msg, final Throwable t) {
-    if (isErrorEnabled) {
-      logger.error(marker, msg, t);
+    if (isErrorEnabled(marker)) {
+      if (locationAwareLogger != null) {
+        log(marker, Level.ERROR.toInt(), msg, t);
+      } else {
+        logger.error(marker, msg, t);
+      }
     }
   }
 
-  public void trace(final String format, final int arg) {
-    if (isTraceEnabled) {
-      logger.trace(format, arg);
+  private void log(
+      final Marker marker,
+      final int level,
+      final String message,
+      final Throwable throwable,
+      final Object... arguments) {
+    // there's a bug in Log4J's SLF4J bridge with the implementation of LocationAwareLogger, where
+    // the throwable is not properly attached to the statement - there's an open issue for it, but
+    // until it is patched we have to do it here ourselves
+    // https://issues.apache.org/jira/browse/LOG4J2-2863
+    var resolvedThrowable = throwable;
+    if (resolvedThrowable == null && arguments != null && arguments.length > 0) {
+      final var lastArgument = arguments[arguments.length - 1];
+      if (lastArgument instanceof Throwable) {
+        resolvedThrowable = (Throwable) lastArgument;
+      }
     }
-  }
 
-  public void trace(final String format, final int arg1, final Object arg2) {
-    if (isTraceEnabled) {
-      logger.trace(format, arg1, arg2);
-    }
-  }
-
-  public void trace(final String format, final int arg1, final int arg2) {
-    if (isTraceEnabled) {
-      logger.trace(format, arg1, arg2);
-    }
+    locationAwareLogger.log(marker, loggerFqcn, level, message, arguments, resolvedThrowable);
   }
 }

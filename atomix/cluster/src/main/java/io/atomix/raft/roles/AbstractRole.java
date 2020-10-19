@@ -41,7 +41,7 @@ public abstract class AbstractRole implements RaftRole {
 
   protected AbstractRole(final RaftContext raft) {
     this.raft = raft;
-    this.log =
+    log =
         ContextualLoggerFactory.getLogger(
             getClass(),
             LoggerContext.builder(RaftServer.class)
@@ -59,13 +59,13 @@ public abstract class AbstractRole implements RaftRole {
 
   /** Logs a request. */
   protected final <R extends RaftRequest> R logRequest(final R request) {
-    log.trace("Received {}", request);
+    log.debug("Received {}", request);
     return request;
   }
 
   /** Logs a response. */
   protected final <R extends RaftResponse> R logResponse(final R response) {
-    log.trace("Sending {}", response);
+    log.debug("Sending {}", response);
     return response;
   }
 

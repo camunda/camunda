@@ -39,13 +39,15 @@ public final class RestoreTest {
           cfg -> {
             cfg.getData().setSnapshotPeriod(SNAPSHOT_PERIOD);
             cfg.getData().setLogSegmentSize(ATOMIX_SEGMENT_SIZE);
+            cfg.getData().setLogIndexDensity(1);
             cfg.getNetwork().setMaxMessageSize(ATOMIX_SEGMENT_SIZE);
+            cfg.getData().setUseMmap(false);
           });
   private final GrpcClientRule clientRule =
       new GrpcClientRule(
           config ->
               config
-                  .brokerContactPoint(
+                  .gatewayAddress(
                       SocketUtil.toHostAndPortString(clusteringRule.getGatewayAddress()))
                   .defaultRequestTimeout(Duration.ofMinutes(1))
                   .usePlaintext());
@@ -55,7 +57,7 @@ public final class RestoreTest {
   @Test
   public void shouldReplicateLogEvents() {
     // given
-    clusteringRule.stopBroker(2);
+    clusteringRule.stopBrokerAndAwaitNewLeader(2);
 
     final BpmnModelInstance firstWorkflow =
         Bpmn.createExecutableProcess("process-test1").startEvent().endEvent().done();
@@ -80,7 +82,7 @@ public final class RestoreTest {
     clusteringRule.restartBroker(2);
     clusteringRule.waitForSnapshotAtBroker(clusteringRule.getBroker(2));
 
-    clusteringRule.stopBroker(1);
+    clusteringRule.stopBrokerAndAwaitNewLeader(1);
 
     final long thirdWorkflowKey = clientRule.deployWorkflow(thirdWorkflow);
 
@@ -89,7 +91,7 @@ public final class RestoreTest {
         clusteringRule.getBroker(clusteringRule.getLeaderForPartition(1).getNodeId()));
 
     clusteringRule.restartBroker(1);
-    clusteringRule.stopBroker(0);
+    clusteringRule.stopBrokerAndAwaitNewLeader(0);
 
     // then
     // If restore did not happen, following workflows won't be deployed

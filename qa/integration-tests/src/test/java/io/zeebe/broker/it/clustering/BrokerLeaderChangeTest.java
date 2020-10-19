@@ -18,9 +18,11 @@ import io.zeebe.client.api.worker.JobWorker;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
+import java.time.Duration;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -34,7 +36,8 @@ public final class BrokerLeaderChangeTest {
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
   public final Timeout testTimeout = Timeout.seconds(120);
-  public final ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
+  public final ClusteringRule clusteringRule =
+      new ClusteringRule(1, 3, 3, cfg -> cfg.getData().setUseMmap(false));
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
@@ -47,7 +50,7 @@ public final class BrokerLeaderChangeTest {
     final int partition = Protocol.START_PARTITION_ID;
     final int oldLeader = clusteringRule.getLeaderForPartition(partition).getNodeId();
 
-    clusteringRule.stopBroker(oldLeader);
+    clusteringRule.stopBrokerAndAwaitNewLeader(oldLeader);
 
     waitUntil(() -> clusteringRule.getLeaderForPartition(partition).getNodeId() != oldLeader);
 
@@ -72,13 +75,38 @@ public final class BrokerLeaderChangeTest {
     final long jobKey = clientRule.createSingleJob(JOB_TYPE);
 
     // when
-    clusteringRule.stopBroker(leaderForPartition.getNodeId());
+    clusteringRule.stopBrokerAndAwaitNewLeader(leaderForPartition.getNodeId());
     final JobCompleter jobCompleter = new JobCompleter(jobKey);
 
     // then
     jobCompleter.waitForJobCompletion();
 
     jobCompleter.close();
+  }
+
+  @Test
+  public void shouldBeAbleToBecomeLeaderAgain() {
+    // given
+    final var firstLeaderInfo = clusteringRule.getLeaderForPartition(1);
+    final var firstLeaderNodeId = firstLeaderInfo.getNodeId();
+
+    // when
+    // restarting until we become leader again
+    do {
+      final var previousLeader = clusteringRule.getCurrentLeaderForPartition(1);
+      clusteringRule.stepDown(previousLeader.getNodeId(), 1);
+      Awaitility.await()
+          .pollInterval(Duration.ofMillis(100))
+          .atMost(Duration.ofSeconds(10))
+          .until(
+              () -> clusteringRule.getCurrentLeaderForPartition(1),
+              newLeader -> !previousLeader.equals(newLeader));
+
+    } while (clusteringRule.getCurrentLeaderForPartition(1).getNodeId() != firstLeaderNodeId);
+
+    // then
+    assertThat(clusteringRule.getCurrentLeaderForPartition(1).getNodeId())
+        .isEqualTo(firstLeaderNodeId);
   }
 
   class JobCompleter {

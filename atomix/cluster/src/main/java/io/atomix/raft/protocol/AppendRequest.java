@@ -195,7 +195,7 @@ public class AppendRequest extends AbstractRaftRequest {
      */
     public Builder withPrevLogIndex(final long prevLogIndex) {
       checkArgument(prevLogIndex >= 0, "prevLogIndex must be positive");
-      this.logIndex = prevLogIndex;
+      logIndex = prevLogIndex;
       return this;
     }
 
@@ -208,7 +208,7 @@ public class AppendRequest extends AbstractRaftRequest {
      */
     public Builder withPrevLogTerm(final long prevLogTerm) {
       checkArgument(prevLogTerm >= 0, "prevLogTerm must be positive");
-      this.logTerm = prevLogTerm;
+      logTerm = prevLogTerm;
       return this;
     }
 
@@ -244,7 +244,7 @@ public class AppendRequest extends AbstractRaftRequest {
      * @throws NullPointerException if {@code entry} is {@code null}
      */
     public Builder addEntry(final RaftLogEntry entry) {
-      this.entries.add(checkNotNull(entry, "entry"));
+      entries.add(checkNotNull(entry, "entry"));
       return this;
     }
 

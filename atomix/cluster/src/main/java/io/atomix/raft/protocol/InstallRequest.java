@@ -183,33 +183,39 @@ public class InstallRequest extends AbstractRaftRequest {
   @Override
   public int hashCode() {
     return Objects.hash(
-        getClass(),
         currentTerm,
         leader,
         index,
         term,
+        timestamp,
+        version,
         chunkId,
         nextChunkId,
-        complete,
+        data,
         initial,
-        data);
+        complete);
   }
 
   @Override
-  public boolean equals(final Object object) {
-    if (object instanceof InstallRequest) {
-      final InstallRequest request = (InstallRequest) object;
-      return request.currentTerm == currentTerm
-          && request.leader == leader
-          && request.index == index
-          && request.chunkId.equals(chunkId)
-          && request.complete == complete
-          && request.initial == initial
-          && request.term == term
-          && request.nextChunkId.equals(nextChunkId)
-          && request.data.equals(data);
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
     }
-    return false;
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final InstallRequest that = (InstallRequest) o;
+    return currentTerm == that.currentTerm
+        && index == that.index
+        && term == that.term
+        && timestamp == that.timestamp
+        && version == that.version
+        && initial == that.initial
+        && complete == that.complete
+        && Objects.equals(leader, that.leader)
+        && Objects.equals(chunkId, that.chunkId)
+        && Objects.equals(nextChunkId, that.nextChunkId)
+        && Objects.equals(data, that.data);
   }
 
   @Override

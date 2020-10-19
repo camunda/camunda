@@ -20,7 +20,7 @@ public class ExporterDescriptor {
       final Class<? extends Exporter> exporterClass,
       final Map<String, Object> args) {
     this.exporterClass = exporterClass;
-    this.configuration = new ExporterConfiguration(id, args);
+    configuration = new ExporterConfiguration(id, args);
   }
 
   public Exporter newInstance() throws ExporterInstantiationException {

@@ -1,6 +1,6 @@
 final PROJECT = "zeebe"
-final CHAOS_TEST_NAMESPACE = "zeebe-chaos-test"
-final NOTIFY_EMAIL = "christopher.zell@camunda.com"
+final CHAOS_TEST_NAMESPACE = "86981f58-648d-480b-b768-f273b68ea02d-zeebe"
+final CONTEXT = "gke_camunda-cloud-240911_europe-west1-d_ultrachaos"
 
 pipeline {
     options {
@@ -45,26 +45,32 @@ pipeline {
         }
 
         stage('Create cluster') {
+            environment {
+                TOKEN = credentials('zeebe-chaos-serviceaccount-token')
+            }
             steps {
                 container('python') {
-                    // copy dummy kubeconfig so we can change default namespace later, without the config
-                    // file `kubectl` cannot change the context since it's not defined
+                    // copy kubeconfig and add user with camunda cloud token
                     sh 'mkdir -p ~/.kube && cp zeebe/.ci/scripts/chaos-tests/kubeconfig ~/.kube/config'
-                    dir('zeebe/benchmarks/setup') {
-                      sh "./newBenchmark.sh ${CHAOS_TEST_NAMESPACE}"
-                      dir("${CHAOS_TEST_NAMESPACE}") {
-                        sh "cp -rv ../../../.ci/scripts/chaos-tests/kustomize ."
-                        sh "helm template --release-name ${CHAOS_TEST_NAMESPACE} zeebe/zeebe-cluster -f zeebe-values.yaml --output-dir ."
-                        sh "cp -v ${CHAOS_TEST_NAMESPACE}/zeebe-cluster/templates/* kustomize/"
-                        sh "cp -v worker.yaml kustomize/"
-                        sh "kubectl apply -k kustomize"
-                      }
+                    sh 'cat ~/.kube/config'
+                    // create user with auth token
+                    sh "kubectl config set-credentials ${CONTEXT}-zeebe-chaos-token-user --token ${TOKEN}"
+                    // Set context to use token user
+                    sh "kubectl config set-context ${CONTEXT} --user ${CONTEXT}-zeebe-chaos-token-user"
+                    // swtich namespace
+                    sh "kubens ${CHAOS_TEST_NAMESPACE}"
+                    sh "kubectl get pods"
+                    dir('zeebe/benchmarks/setup/cloud-default') {
+                      sh "kubectl apply -f worker.yaml"
                     }
                 }
             }
         }
 
         stage('Run chaos tests') {
+            environment {
+                CHAOS_SETUP = "cloud"
+            }
             steps {
                 container('python') {
                     dir('zeebe-chaos/chaos-experiments/kubernetes') {
@@ -83,28 +89,23 @@ pipeline {
     post {
         always {
             container('python') {
-              dir("zeebe/benchmarks/setup/") {
-               sh "./deleteBenchmark.sh ${CHAOS_TEST_NAMESPACE}"
+                dir("zeebe/benchmarks/setup/cloud-default") {
+                    sh "kubectl delete -f worker.yaml"
+                }
+                archiveArtifacts 'zeebe-chaos/chaos-experiments/kubernetes/chaostoolkit.log'
+                archiveArtifacts 'zeebe-chaos/chaos-experiments/kubernetes/journal.json'
             }
-            archiveArtifacts 'zeebe-chaos/chaos-experiments/kubernetes/chaostoolkit.log'
-            archiveArtifacts 'zeebe-chaos/chaos-experiments/kubernetes/journal.json'
-          }
         }
 
-        failure {
-            buildNotification(currentBuild.result, NOTIFY_EMAIL)
+        changed {
+            script {
+                slackSend(
+                    channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+                    message: "Zeebe ${env.JOB_NAME} build ${currentBuild.absoluteUrl} changed status to ${currentBuild.currentResult}")
+            }
         }
+
     }
-}
-
-void buildNotification(String buildStatus, String to) {
-
-    buildStatus = buildStatus ?: 'SUCCESS'
-
-    String subject = "[${buildStatus}] - ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}"
-    String body = "See: ${env.BUILD_URL}consoleFull"
-
-    emailext subject: subject, body: body, to: to
 }
 
 static String pythonAgent() {

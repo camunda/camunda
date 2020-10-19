@@ -23,11 +23,11 @@ class PortRange implements Iterator<InetSocketAddress> {
   PortRange(final String host, final int forkNumber, final int min, final int max) {
     assert max <= 65535 : "Port range exceeds maximal available port 65535, got max port " + max;
     this.host = host;
-    this.basePort = min;
-    this.maxOffset = max - min;
+    basePort = min;
+    maxOffset = max - min;
     this.forkNumber = forkNumber;
 
-    this.currentOffset = 0;
+    currentOffset = 0;
   }
 
   @Override

@@ -14,8 +14,8 @@ import io.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequest;
 import io.zeebe.broker.system.management.deployment.PushDeploymentResponse;
-import io.zeebe.engine.processor.workflow.deployment.distribute.DeploymentDistributor;
-import io.zeebe.engine.processor.workflow.deployment.distribute.PendingDeploymentDistribution;
+import io.zeebe.engine.processing.deployment.distribute.DeploymentDistributor;
+import io.zeebe.engine.processing.deployment.distribute.PendingDeploymentDistribution;
 import io.zeebe.engine.state.deployment.DeploymentsState;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.encoding.ErrorResponse;
@@ -209,6 +209,12 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
                             partition,
                             pushRequest.deploymentKey());
 
+                      } else if (errorResponse.getErrorCode() == ErrorCode.RESOURCE_EXHAUSTED) {
+                        LOG.warn(
+                            "Received rejected deployment push due to error of type {}: '{}'. Will be retried after a delay",
+                            errorResponse.getErrorCode().name(),
+                            BufferUtil.bufferAsString(errorResponse.getErrorData()));
+                        return;
                       } else {
                         LOG.warn(
                             "Received rejected deployment push due to error of type {}: '{}'",
@@ -251,7 +257,6 @@ public final class DeploymentDistributorImpl implements DeploymentDistributor {
     final DirectBuffer responseBuffer = new UnsafeBuffer(response);
 
     if (pushDeploymentResponse.tryWrap(responseBuffer)) {
-      pushDeploymentResponse.wrap(responseBuffer);
       if (handlePushResponse()) {
         final IntArrayList missingResponses = getPartitionResponses(topic);
         missingResponses.removeInt(pushDeploymentResponse.partitionId());

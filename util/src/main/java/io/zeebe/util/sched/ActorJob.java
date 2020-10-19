@@ -28,13 +28,13 @@ public final class ActorJob {
   private ActorSubscription subscription;
 
   public void onJobAddedToTask(final ActorTask task) {
-    this.actor = task.actor;
+    actor = task.actor;
     this.task = task;
-    this.schedulingState = TaskSchedulingState.QUEUED;
+    schedulingState = TaskSchedulingState.QUEUED;
   }
 
   void execute(final ActorThread runner) {
-    this.actorThread = runner;
+    actorThread = runner;
     try {
       invoke();
 
@@ -46,7 +46,7 @@ public final class ActorJob {
     } catch (final Exception e) {
       task.onFailure(e);
     } finally {
-      this.actorThread = null;
+      actorThread = null;
 
       // in any case, success or exception, decide if the job should be resubmitted
       if (isTriggeredBySubscription() || (isAutoCompleting && runnable == null) || isDoneCalled) {
@@ -64,10 +64,10 @@ public final class ActorJob {
       if (!isTriggeredBySubscription()) {
         // TODO: preempt after fixed number of iterations
         while (runnable != null && !task.shouldYield && !isDoneCalled) {
-          final Runnable r = this.runnable;
+          final Runnable r = runnable;
 
           if (isAutoCompleting) {
-            this.runnable = null;
+            runnable = null;
           }
 
           r.run();
@@ -167,7 +167,7 @@ public final class ActorJob {
   }
 
   public void failFuture(final Throwable cause) {
-    if (this.resultFuture != null) {
+    if (resultFuture != null) {
       resultFuture.completeExceptionally(cause);
     }
   }

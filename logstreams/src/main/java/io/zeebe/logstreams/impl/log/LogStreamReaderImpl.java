@@ -38,7 +38,7 @@ public final class LogStreamReaderImpl implements LogStreamReader {
   private int bufferOffset;
 
   public LogStreamReaderImpl(final LogStorage logStorage) {
-    this.storageReader = logStorage.newReader();
+    storageReader = logStorage.newReader();
     invalidateBufferAndOffsets();
     seek(FIRST_POSITION);
   }
@@ -83,7 +83,6 @@ public final class LogStreamReaderImpl implements LogStreamReader {
 
     if (storageReader.isEmpty()) {
       state = IteratorState.EMPTY_LOG_STREAM;
-      return UNINITIALIZED;
     } else {
       if (readLastBlockIntoBuffer()) {
         do {
@@ -96,8 +95,9 @@ public final class LogStreamReaderImpl implements LogStreamReader {
 
       // if the log is not empty this should not happen however
       Loggers.LOGSTREAMS_LOGGER.warn("Unexpected non-empty log failed to read the last block");
-      return UNINITIALIZED;
     }
+
+    return UNINITIALIZED;
   }
 
   @Override
@@ -203,7 +203,7 @@ public final class LogStreamReaderImpl implements LogStreamReader {
       state = IteratorState.NOT_ENOUGH_DATA;
       return false;
     } else {
-      this.nextLogStorageReadAddress = result;
+      nextLogStorageReadAddress = result;
       return true;
     }
   }

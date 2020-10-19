@@ -22,7 +22,6 @@ import io.atomix.cluster.AtomixClusterBuilder;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.discovery.NodeDiscoveryProvider;
 import io.atomix.cluster.protocol.GroupMembershipProtocol;
-import io.atomix.core.profile.Profile;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.utils.net.Address;
 import java.time.Duration;
@@ -57,6 +56,7 @@ import java.util.Properties;
  * constructed. To load a configuration from a file, use {@link Atomix#builder(String)}.
  */
 public class AtomixBuilder extends AtomixClusterBuilder {
+
   private final AtomixConfig config;
   private final AtomixRegistry registry;
 
@@ -87,50 +87,6 @@ public class AtomixBuilder extends AtomixClusterBuilder {
    */
   public AtomixBuilder withShutdownHook(final boolean enabled) {
     config.setEnableShutdownHook(enabled);
-    return this;
-  }
-
-  /**
-   * Sets the Atomix profiles.
-   *
-   * <p>Profiles are common configurations that will be applied to the instance configuration when
-   * the {@link Atomix} instance is constructed.
-   *
-   * @param profiles the profiles
-   * @return the Atomix builder
-   * @throws NullPointerException if the profiles are null
-   */
-  public AtomixBuilder withProfiles(final Profile... profiles) {
-    return withProfiles(Arrays.asList(checkNotNull(profiles)));
-  }
-
-  /**
-   * Sets the Atomix profiles.
-   *
-   * <p>Profiles are common configurations that will be applied to the instance configuration when
-   * the {@link Atomix} instance is constructed.
-   *
-   * @param profiles the profiles
-   * @return the Atomix builder
-   * @throws NullPointerException if the profiles are null
-   */
-  public AtomixBuilder withProfiles(final Collection<Profile> profiles) {
-    profiles.forEach(profile -> config.addProfile(profile.config()));
-    return this;
-  }
-
-  /**
-   * Adds an Atomix profile.
-   *
-   * <p>Profiles are common configurations that will be applied to the instance configuration when
-   * the {@link Atomix} instance is constructed.
-   *
-   * @param profile the profile to add
-   * @return the Atomix builder
-   * @throws NullPointerException if the profile is null
-   */
-  public AtomixBuilder addProfile(final Profile profile) {
-    config.addProfile(profile.config());
     return this;
   }
 
@@ -416,24 +372,6 @@ public class AtomixBuilder extends AtomixClusterBuilder {
   }
 
   @Override
-  public AtomixBuilder withMulticastEnabled() {
-    super.withMulticastEnabled();
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withMulticastEnabled(final boolean multicastEnabled) {
-    super.withMulticastEnabled(multicastEnabled);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withMulticastAddress(final Address address) {
-    super.withMulticastAddress(address);
-    return this;
-  }
-
-  @Override
   public AtomixBuilder setBroadcastInterval(final Duration interval) {
     super.setBroadcastInterval(interval);
     return this;
@@ -460,42 +398,6 @@ public class AtomixBuilder extends AtomixClusterBuilder {
   @Override
   public AtomixBuilder withMembershipProvider(final NodeDiscoveryProvider locationProvider) {
     super.withMembershipProvider(locationProvider);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withTlsEnabled() {
-    super.withTlsEnabled();
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withTlsEnabled(final boolean tlsEnabled) {
-    super.withTlsEnabled(tlsEnabled);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withKeyStore(final String keyStore) {
-    super.withKeyStore(keyStore);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withKeyStorePassword(final String keyStorePassword) {
-    super.withKeyStorePassword(keyStorePassword);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withTrustStore(final String trustStore) {
-    super.withTrustStore(trustStore);
-    return this;
-  }
-
-  @Override
-  public AtomixBuilder withTrustStorePassword(final String trustStorePassword) {
-    super.withTrustStorePassword(trustStorePassword);
     return this;
   }
 

@@ -11,7 +11,7 @@ import static io.zeebe.protocol.record.ExecuteCommandResponseEncoder.keyNullValu
 import static io.zeebe.protocol.record.ExecuteCommandResponseEncoder.partitionIdNullValue;
 import static io.zeebe.protocol.record.ExecuteCommandResponseEncoder.valueHeaderLength;
 
-import io.zeebe.engine.processor.CommandResponseWriter;
+import io.zeebe.engine.processing.streamprocessor.writers.CommandResponseWriter;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.record.ExecuteCommandResponseEncoder;
 import io.zeebe.protocol.record.MessageHeaderEncoder;

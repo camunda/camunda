@@ -39,7 +39,7 @@ public final class ExportersStateTest {
   public void setup() throws Exception {
     final File dbDirectory = temporaryFolder.newFolder();
 
-    db = DefaultZeebeDbFactory.DEFAULT_DB_FACTORY.createDb(dbDirectory);
+    db = DefaultZeebeDbFactory.defaultFactory().createDb(dbDirectory);
     state = new ExportersState(db, db.createContext());
   }
 
@@ -89,47 +89,6 @@ public final class ExportersStateTest {
   }
 
   @Test
-  public void shouldSetPositionSinceSomethingIsGreaterThanNothing() {
-    // given
-    final String id = "exporter";
-    final long position = 12312;
-
-    // when
-    state.setPositionIfGreater(id, position);
-
-    // then
-    assertThat(state.getPosition(id)).isEqualTo(position);
-  }
-
-  @Test
-  public void shouldNotSetPositionIfLowerThanExisting() {
-    // given
-    final String id = "exporter";
-    final long position = 12313;
-
-    // when
-    state.setPosition(id, position);
-    state.setPositionIfGreater(id, position - 1);
-
-    // then
-    assertThat(state.getPosition(id)).isEqualTo(position);
-  }
-
-  @Test
-  public void shouldSetPositionIfGreaterThanExisting() {
-    // given
-    final String id = "exporter";
-    final long position = 123;
-
-    // when
-    state.setPosition(id, position - 1);
-    state.setPositionIfGreater(id, position);
-
-    // then
-    assertThat(state.getPosition(id)).isEqualTo(position);
-  }
-
-  @Test
   public void shouldRemovePosition() {
     // given
     state.setPosition("e1", 1L);
@@ -164,6 +123,19 @@ public final class ExportersStateTest {
     state.setPosition("e1", 1L);
 
     // when/then
+    assertThat(state.getLowestPosition()).isEqualTo(-1L);
+  }
+
+  @Test
+  public void shouldClearState() {
+    // given
+    state.setPosition("e2", 1L);
+
+    // when
+    state.removePosition("e2");
+
+    // then
+    assertThat(state.hasExporters()).isFalse();
     assertThat(state.getLowestPosition()).isEqualTo(-1L);
   }
 }

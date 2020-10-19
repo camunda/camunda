@@ -8,8 +8,8 @@
 package io.zeebe.engine.util;
 
 import io.zeebe.db.ZeebeDb;
-import io.zeebe.engine.processor.KeyGenerator;
 import io.zeebe.engine.state.DefaultZeebeDbFactory;
+import io.zeebe.engine.state.KeyGenerator;
 import io.zeebe.engine.state.ZbColumnFamilies;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.protocol.Protocol;
@@ -60,7 +60,7 @@ public final class ZeebeStateRule extends ExternalResource {
   public ZeebeDb<ZbColumnFamilies> createNewDb() {
     try {
       final ZeebeDb<ZbColumnFamilies> db =
-          DefaultZeebeDbFactory.DEFAULT_DB_FACTORY.createDb(tempFolder.newFolder());
+          DefaultZeebeDbFactory.defaultFactory().createDb(tempFolder.newFolder());
 
       return db;
     } catch (final Exception e) {

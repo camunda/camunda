@@ -44,7 +44,7 @@ public final class CancelWorkflowInstanceCommandImpl implements CancelWorkflowIn
     this.asyncStub = asyncStub;
     this.requestTimeout = requestTimeout;
     this.retryPredicate = retryPredicate;
-    this.builder = CancelWorkflowInstanceRequest.newBuilder();
+    builder = CancelWorkflowInstanceRequest.newBuilder();
     builder.setWorkflowInstanceKey(workflowInstanceKey);
   }
 

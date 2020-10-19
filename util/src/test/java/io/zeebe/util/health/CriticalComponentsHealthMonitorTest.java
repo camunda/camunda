@@ -144,7 +144,7 @@ public class CriticalComponentsHealthMonitorTest {
 
     @Override
     public HealthStatus getHealthStatus() {
-      return this.healthStatus;
+      return healthStatus;
     }
 
     void setHealthStatus(final HealthStatus healthStatus) {

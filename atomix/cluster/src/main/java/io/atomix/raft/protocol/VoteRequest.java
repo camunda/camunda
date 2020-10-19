@@ -160,7 +160,7 @@ public class VoteRequest extends AbstractRaftRequest {
      */
     public Builder withLastLogIndex(final long logIndex) {
       checkArgument(logIndex >= 0, "lastLogIndex must be positive");
-      this.lastLogIndex = logIndex;
+      lastLogIndex = logIndex;
       return this;
     }
 
@@ -173,7 +173,7 @@ public class VoteRequest extends AbstractRaftRequest {
      */
     public Builder withLastLogTerm(final long logTerm) {
       checkArgument(logTerm >= 0, "lastLogTerm must be positive");
-      this.lastLogTerm = logTerm;
+      lastLogTerm = logTerm;
       return this;
     }
 

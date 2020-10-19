@@ -19,7 +19,7 @@ public final class LongValue extends BaseValue {
   }
 
   public LongValue(final long initialValue) {
-    this.value = initialValue;
+    value = initialValue;
   }
 
   public long getValue() {
@@ -27,7 +27,7 @@ public final class LongValue extends BaseValue {
   }
 
   public void setValue(final long val) {
-    this.value = val;
+    value = val;
   }
 
   @Override

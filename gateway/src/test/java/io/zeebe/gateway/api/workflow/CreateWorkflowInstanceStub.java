@@ -21,10 +21,17 @@ public final class CreateWorkflowInstanceStub
   public static final String PROCESS_ID = "process";
   public static final int PROCESS_VERSION = 1;
   public static final long WORKFLOW_KEY = 456;
+  private BrokerResponse<WorkflowInstanceCreationRecord> response;
 
   @Override
   public void registerWith(final StubbedBrokerClient gateway) {
     gateway.registerHandler(BrokerCreateWorkflowInstanceRequest.class, this);
+  }
+
+  public CreateWorkflowInstanceStub respondWith(
+      final BrokerResponse<WorkflowInstanceCreationRecord> response) {
+    this.response = response;
+    return this;
   }
 
   public long getWorkflowInstanceKey() {
@@ -45,14 +52,23 @@ public final class CreateWorkflowInstanceStub
 
   @Override
   public BrokerResponse<WorkflowInstanceCreationRecord> handle(
-      final BrokerCreateWorkflowInstanceRequest request) throws Exception {
-    final WorkflowInstanceCreationRecord response = new WorkflowInstanceCreationRecord();
-    response.setBpmnProcessId(PROCESS_ID);
-    response.setVariables(request.getRequestWriter().getVariablesBuffer());
-    response.setVersion(PROCESS_VERSION);
-    response.setWorkflowKey(WORKFLOW_KEY);
-    response.setWorkflowInstanceKey(WORKFLOW_INSTANCE_KEY);
+      final BrokerCreateWorkflowInstanceRequest request) {
 
-    return new BrokerResponse<>(response, 0, WORKFLOW_INSTANCE_KEY);
+    if (response != null) {
+      return response;
+    }
+
+    return getDefaultResponse(request);
+  }
+
+  private BrokerResponse<WorkflowInstanceCreationRecord> getDefaultResponse(
+      final BrokerCreateWorkflowInstanceRequest request) {
+    final var record = new WorkflowInstanceCreationRecord();
+    record.setBpmnProcessId(PROCESS_ID);
+    record.setVariables(request.getRequestWriter().getVariablesBuffer());
+    record.setVersion(PROCESS_VERSION);
+    record.setWorkflowKey(WORKFLOW_KEY);
+    record.setWorkflowInstanceKey(WORKFLOW_INSTANCE_KEY);
+    return new BrokerResponse<>(record, 0, WORKFLOW_INSTANCE_KEY);
   }
 }

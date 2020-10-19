@@ -36,7 +36,7 @@ public final class ExecuteCommandResponse implements BufferReader {
 
   public ExecuteCommandResponse(final MsgPackHelper msgPackHelper) {
     this.msgPackHelper = msgPackHelper;
-    this.errorResponse = new ErrorResponse(msgPackHelper);
+    errorResponse = new ErrorResponse(msgPackHelper);
   }
 
   public Map<String, Object> getValue() {

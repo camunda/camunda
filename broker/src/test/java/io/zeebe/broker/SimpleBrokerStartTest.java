@@ -7,6 +7,7 @@
  */
 package io.zeebe.broker;
 
+import static io.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -24,6 +25,8 @@ import org.junit.rules.TemporaryFolder;
 
 public final class SimpleBrokerStartTest {
 
+  private static final SpringBrokerBridge TEST_SPRING_BROKER_BRIDGE = new SpringBrokerBridge();
+
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
   private File newTemporaryFolder;
 
@@ -36,9 +39,12 @@ public final class SimpleBrokerStartTest {
   public void shouldFailToStartBrokerWithSmallTimeout() {
     // given
     final var brokerCfg = new BrokerCfg();
+    assignSocketAddresses(brokerCfg);
     brokerCfg.setStepTimeout(Duration.ofMillis(1));
 
-    final var broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
+    final var broker =
+        new Broker(
+            brokerCfg, newTemporaryFolder.getAbsolutePath(), null, TEST_SPRING_BROKER_BRIDGE);
 
     // when
     final var catchedThrownBy = assertThatThrownBy(() -> broker.start().join());
@@ -55,7 +61,13 @@ public final class SimpleBrokerStartTest {
 
     // when
     final var catchedThrownBy =
-        assertThatThrownBy(() -> new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), null));
+        assertThatThrownBy(
+            () ->
+                new Broker(
+                    brokerCfg,
+                    newTemporaryFolder.getAbsolutePath(),
+                    null,
+                    TEST_SPRING_BROKER_BRIDGE));
 
     // then
     catchedThrownBy.isInstanceOf(IllegalArgumentException.class);
@@ -65,13 +77,16 @@ public final class SimpleBrokerStartTest {
   public void shouldCallPartitionListenerAfterStart() throws Exception {
     // given
     final var brokerCfg = new BrokerCfg();
-    final var broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), null);
+    assignSocketAddresses(brokerCfg);
+
+    final var broker =
+        new Broker(
+            brokerCfg, newTemporaryFolder.getAbsolutePath(), null, TEST_SPRING_BROKER_BRIDGE);
     final var leaderLatch = new CountDownLatch(1);
     broker.addPartitionListener(
         new PartitionListener() {
           @Override
-          public ActorFuture<Void> onBecomingFollower(
-              final int partitionId, final long term, final LogStream logStream) {
+          public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
             return CompletableActorFuture.completed(null);
           }
 

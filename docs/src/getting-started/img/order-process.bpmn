@@ -40,7 +40,7 @@
       <bpmn:outgoing>SequenceFlow_08vb0ur</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="SequenceFlow_1girnrf" name="&#62;=$100" sourceRef="ExclusiveGateway_05lcnr8" targetRef="ServiceTask_1a7kbmc">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">orderValue&gt;=100</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">=orderValue&gt;=100</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:exclusiveGateway id="ExclusiveGateway_05ptfs8">
       <bpmn:incoming>SequenceFlow_1rl28fn</bpmn:incoming>
@@ -56,7 +56,7 @@
   </bpmn:process>
   <bpmn:message id="Message_155nrcd" name="payment-received">
     <bpmn:extensionElements>
-      <zeebe:subscription correlationKey="orderId" />
+      <zeebe:subscription correlationKey="=orderId" />
     </bpmn:extensionElements>
   </bpmn:message>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">

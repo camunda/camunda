@@ -27,10 +27,10 @@ public final class CreateWorkflowInstanceResponseImpl implements WorkflowInstanc
 
   public CreateWorkflowInstanceResponseImpl(
       final GatewayOuterClass.CreateWorkflowInstanceResponse response) {
-    this.workflowKey = response.getWorkflowKey();
-    this.bpmnProcessId = response.getBpmnProcessId();
-    this.version = response.getVersion();
-    this.workflowInstanceKey = response.getWorkflowInstanceKey();
+    workflowKey = response.getWorkflowKey();
+    bpmnProcessId = response.getBpmnProcessId();
+    version = response.getVersion();
+    workflowInstanceKey = response.getWorkflowInstanceKey();
   }
 
   @Override

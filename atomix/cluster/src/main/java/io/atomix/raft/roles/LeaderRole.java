@@ -17,42 +17,26 @@
 package io.atomix.raft.roles;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Sets;
-import io.atomix.cluster.ClusterMembershipEvent;
-import io.atomix.cluster.ClusterMembershipEventListener;
 import io.atomix.cluster.MemberId;
-import io.atomix.primitive.session.SessionId;
 import io.atomix.raft.RaftError;
 import io.atomix.raft.RaftException;
+import io.atomix.raft.RaftException.NoLeader;
 import io.atomix.raft.RaftServer;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.cluster.RaftMember;
 import io.atomix.raft.cluster.impl.DefaultRaftMember;
 import io.atomix.raft.cluster.impl.RaftMemberContext;
-import io.atomix.raft.impl.MetadataResult;
-import io.atomix.raft.impl.OperationResult;
-import io.atomix.raft.impl.PendingCommand;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
-import io.atomix.raft.protocol.CloseSessionRequest;
-import io.atomix.raft.protocol.CloseSessionResponse;
-import io.atomix.raft.protocol.CommandRequest;
-import io.atomix.raft.protocol.CommandResponse;
+import io.atomix.raft.protocol.ConfigureRequest;
+import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
-import io.atomix.raft.protocol.KeepAliveRequest;
-import io.atomix.raft.protocol.KeepAliveResponse;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
-import io.atomix.raft.protocol.MetadataRequest;
-import io.atomix.raft.protocol.MetadataResponse;
-import io.atomix.raft.protocol.OpenSessionRequest;
-import io.atomix.raft.protocol.OpenSessionResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
-import io.atomix.raft.protocol.QueryRequest;
-import io.atomix.raft.protocol.QueryResponse;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
@@ -60,48 +44,38 @@ import io.atomix.raft.protocol.TransferRequest;
 import io.atomix.raft.protocol.TransferResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
-import io.atomix.raft.session.RaftSession;
-import io.atomix.raft.storage.log.entry.CloseSessionEntry;
-import io.atomix.raft.storage.log.entry.CommandEntry;
 import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.log.entry.InitializeEntry;
-import io.atomix.raft.storage.log.entry.KeepAliveEntry;
-import io.atomix.raft.storage.log.entry.MetadataEntry;
-import io.atomix.raft.storage.log.entry.OpenSessionEntry;
-import io.atomix.raft.storage.log.entry.QueryEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
 import io.atomix.raft.storage.system.Configuration;
+import io.atomix.raft.zeebe.ValidationResult;
 import io.atomix.raft.zeebe.ZeebeEntry;
 import io.atomix.raft.zeebe.ZeebeLogAppender;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.Futures;
 import io.atomix.utils.concurrent.Scheduled;
+import io.zeebe.snapshots.raft.PersistedSnapshotListener;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
-import java.util.stream.Collectors;
 
 /** Leader state. */
 public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
-  private static final int MAX_PENDING_COMMANDS = 1000;
   private static final int MAX_APPEND_ATTEMPTS = 5;
   private final LeaderAppender appender;
-  private final Set<SessionId> expiring = Sets.newHashSet();
-  private final ClusterMembershipEventListener clusterListener = this::handleClusterEvent;
   private Scheduled appendTimer;
   private long configuring;
-  private boolean transferring;
   private CompletableFuture<Void> commitInitialEntriesFuture;
+  private ZeebeEntry lastZbEntry = null;
 
   public LeaderRole(final RaftContext context) {
     super(context);
-    this.appender = new LeaderAppender(this);
+    appender = new LeaderAppender(this);
   }
 
   @Override
@@ -116,392 +90,27 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     // Commit the initial leader entries.
     commitInitialEntriesFuture = commitInitialEntries();
 
-    // Register the cluster event listener.
-    raft.getMembershipService().addListener(clusterListener);
+    lastZbEntry = findLastZeebeEntry();
 
     return super.start().thenRun(this::startTimers).thenApply(v -> this);
   }
 
   @Override
   public synchronized CompletableFuture<Void> stop() {
-    raft.getMembershipService().removeListener(clusterListener);
     return super.stop()
         .thenRun(appender::close)
         .thenRun(this::cancelTimers)
-        .thenRun(this::stepDown)
-        .thenRun(this::failPendingCommands);
+        .thenRun(this::stepDown);
+  }
+
+  @Override
+  protected PersistedSnapshotListener createSnapshotListener() {
+    return null;
   }
 
   @Override
   public RaftServer.Role role() {
     return RaftServer.Role.LEADER;
-  }
-
-  @Override
-  public CompletableFuture<MetadataResponse> onMetadata(final MetadataRequest request) {
-    raft.checkThread();
-    logRequest(request);
-
-    if (transferring) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              MetadataResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
-                  .build()));
-    }
-
-    final CompletableFuture<MetadataResponse> future = new CompletableFuture<>();
-    final Indexed<MetadataEntry> entry =
-        new Indexed<>(
-            raft.getLastApplied(),
-            new MetadataEntry(raft.getTerm(), System.currentTimeMillis(), request.session()),
-            0);
-    raft.getServiceManager()
-        .<MetadataResult>apply(entry)
-        .whenComplete(
-            (result, error) -> {
-              if (error == null) {
-                future.complete(
-                    logResponse(
-                        MetadataResponse.builder()
-                            .withStatus(RaftResponse.Status.OK)
-                            .withSessions(result.sessions())
-                            .build()));
-              } else {
-                future.complete(
-                    logResponse(
-                        MetadataResponse.builder()
-                            .withStatus(RaftResponse.Status.ERROR)
-                            .withError(RaftError.Type.PROTOCOL_ERROR)
-                            .build()));
-              }
-            });
-    return future;
-  }
-
-  @Override
-  public CompletableFuture<OpenSessionResponse> onOpenSession(final OpenSessionRequest request) {
-    final long term = raft.getTerm();
-    final long timestamp = System.currentTimeMillis();
-    final long minTimeout = request.minTimeout();
-
-    // If the client submitted a session timeout, use the client's timeout, otherwise use the
-    // configured
-    // default server session timeout.
-    final long maxTimeout;
-    if (request.maxTimeout() != 0) {
-      maxTimeout = request.maxTimeout();
-    } else {
-      maxTimeout = raft.getSessionTimeout().toMillis();
-    }
-
-    raft.checkThread();
-    logRequest(request);
-
-    final CompletableFuture<OpenSessionResponse> future = new CompletableFuture<>();
-    append(
-            new OpenSessionEntry(
-                term,
-                timestamp,
-                request.node(),
-                request.serviceName(),
-                request.serviceType(),
-                request.serviceConfig(),
-                request.readConsistency(),
-                minTimeout,
-                maxTimeout))
-        .whenComplete(
-            (entry, error) -> {
-              if (error != null) {
-                future.complete(
-                    logResponse(
-                        OpenSessionResponse.builder()
-                            .withStatus(RaftResponse.Status.ERROR)
-                            .withError(RaftError.Type.PROTOCOL_ERROR)
-                            .build()));
-                return;
-              }
-
-              appender
-                  .appendEntries(entry.index())
-                  .whenComplete(
-                      (commitIndex, commitError) -> {
-                        raft.checkThread();
-                        if (isRunning()) {
-                          if (commitError == null) {
-                            raft.getServiceManager()
-                                .<Long>apply(entry.index())
-                                .whenComplete(
-                                    (sessionId, sessionError) -> {
-                                      if (sessionError == null) {
-                                        future.complete(
-                                            logResponse(
-                                                OpenSessionResponse.builder()
-                                                    .withStatus(RaftResponse.Status.OK)
-                                                    .withSession(sessionId)
-                                                    .withTimeout(maxTimeout)
-                                                    .build()));
-                                      } else if (sessionError instanceof CompletionException
-                                          && sessionError.getCause() instanceof RaftException) {
-                                        future.complete(
-                                            logResponse(
-                                                OpenSessionResponse.builder()
-                                                    .withStatus(RaftResponse.Status.ERROR)
-                                                    .withError(
-                                                        ((RaftException) sessionError.getCause())
-                                                            .getType(),
-                                                        sessionError.getMessage())
-                                                    .build()));
-                                      } else if (sessionError instanceof RaftException) {
-                                        future.complete(
-                                            logResponse(
-                                                OpenSessionResponse.builder()
-                                                    .withStatus(RaftResponse.Status.ERROR)
-                                                    .withError(
-                                                        ((RaftException) sessionError).getType(),
-                                                        sessionError.getMessage())
-                                                    .build()));
-                                      } else {
-                                        future.complete(
-                                            logResponse(
-                                                OpenSessionResponse.builder()
-                                                    .withStatus(RaftResponse.Status.ERROR)
-                                                    .withError(
-                                                        RaftError.Type.PROTOCOL_ERROR,
-                                                        sessionError.getMessage())
-                                                    .build()));
-                                      }
-                                    });
-                          } else {
-                            future.complete(
-                                logResponse(
-                                    OpenSessionResponse.builder()
-                                        .withStatus(RaftResponse.Status.ERROR)
-                                        .withError(RaftError.Type.PROTOCOL_ERROR)
-                                        .build()));
-                          }
-                        } else {
-                          future.complete(
-                              logResponse(
-                                  OpenSessionResponse.builder()
-                                      .withStatus(RaftResponse.Status.ERROR)
-                                      .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
-                                      .build()));
-                        }
-                      });
-            });
-
-    return future;
-  }
-
-  @Override
-  public CompletableFuture<KeepAliveResponse> onKeepAlive(final KeepAliveRequest request) {
-    final long term = raft.getTerm();
-    final long timestamp = System.currentTimeMillis();
-
-    raft.checkThread();
-    logRequest(request);
-
-    final CompletableFuture<KeepAliveResponse> future = new CompletableFuture<>();
-    append(
-            new KeepAliveEntry(
-                term,
-                timestamp,
-                request.sessionIds(),
-                request.commandSequenceNumbers(),
-                request.eventIndexes()))
-        .whenComplete(
-            (entry, error) -> {
-              if (error != null) {
-                future.complete(
-                    logResponse(
-                        KeepAliveResponse.builder()
-                            .withStatus(RaftResponse.Status.ERROR)
-                            .withLeader(raft.getCluster().getMember().memberId())
-                            .withError(RaftError.Type.PROTOCOL_ERROR)
-                            .build()));
-                return;
-              }
-
-              appender
-                  .appendEntries(entry.index())
-                  .whenComplete(
-                      (commitIndex, commitError) -> {
-                        raft.checkThread();
-                        if (isRunning()) {
-                          if (commitError == null) {
-                            raft.getServiceManager()
-                                .<long[]>apply(entry.index())
-                                .whenCompleteAsync(
-                                    (sessionResult, sessionError) -> {
-                                      if (sessionError == null) {
-                                        future.complete(
-                                            logResponse(
-                                                KeepAliveResponse.builder()
-                                                    .withStatus(RaftResponse.Status.OK)
-                                                    .withLeader(
-                                                        raft.getCluster().getMember().memberId())
-                                                    .withMembers(
-                                                        raft.getCluster().getMembers().stream()
-                                                            .map(RaftMember::memberId)
-                                                            .filter(m -> m != null)
-                                                            .collect(Collectors.toList()))
-                                                    .withSessionIds(sessionResult)
-                                                    .build()));
-                                      } else if (sessionError instanceof CompletionException
-                                          && sessionError.getCause() instanceof RaftException) {
-                                        future.complete(
-                                            logResponse(
-                                                KeepAliveResponse.builder()
-                                                    .withStatus(RaftResponse.Status.ERROR)
-                                                    .withLeader(
-                                                        raft.getCluster().getMember().memberId())
-                                                    .withError(
-                                                        ((RaftException) sessionError.getCause())
-                                                            .getType(),
-                                                        sessionError.getMessage())
-                                                    .build()));
-                                      } else if (sessionError instanceof RaftException) {
-                                        future.complete(
-                                            logResponse(
-                                                KeepAliveResponse.builder()
-                                                    .withStatus(RaftResponse.Status.ERROR)
-                                                    .withLeader(
-                                                        raft.getCluster().getMember().memberId())
-                                                    .withError(
-                                                        ((RaftException) sessionError).getType(),
-                                                        sessionError.getMessage())
-                                                    .build()));
-                                      } else {
-                                        future.complete(
-                                            logResponse(
-                                                KeepAliveResponse.builder()
-                                                    .withStatus(RaftResponse.Status.ERROR)
-                                                    .withLeader(
-                                                        raft.getCluster().getMember().memberId())
-                                                    .withError(
-                                                        RaftError.Type.PROTOCOL_ERROR,
-                                                        sessionError.getMessage())
-                                                    .build()));
-                                      }
-                                    },
-                                    raft.getThreadContext());
-                          } else {
-                            future.complete(
-                                logResponse(
-                                    KeepAliveResponse.builder()
-                                        .withStatus(RaftResponse.Status.ERROR)
-                                        .withLeader(raft.getCluster().getMember().memberId())
-                                        .withError(RaftError.Type.PROTOCOL_ERROR)
-                                        .build()));
-                          }
-                        } else {
-                          final RaftMember leader = raft.getLeader();
-                          future.complete(
-                              logResponse(
-                                  KeepAliveResponse.builder()
-                                      .withStatus(RaftResponse.Status.ERROR)
-                                      .withLeader(leader != null ? leader.memberId() : null)
-                                      .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
-                                      .build()));
-                        }
-                      });
-            });
-
-    return future;
-  }
-
-  @Override
-  public CompletableFuture<CloseSessionResponse> onCloseSession(final CloseSessionRequest request) {
-    final long term = raft.getTerm();
-    final long timestamp = System.currentTimeMillis();
-
-    raft.checkThread();
-    logRequest(request);
-
-    final CompletableFuture<CloseSessionResponse> future = new CompletableFuture<>();
-    append(new CloseSessionEntry(term, timestamp, request.session(), false, request.delete()))
-        .whenComplete(
-            (entry, error) -> {
-              if (error != null) {
-                future.complete(
-                    logResponse(
-                        CloseSessionResponse.builder()
-                            .withStatus(RaftResponse.Status.ERROR)
-                            .withError(RaftError.Type.PROTOCOL_ERROR)
-                            .build()));
-                return;
-              }
-
-              appender
-                  .appendEntries(entry.index())
-                  .whenComplete(
-                      (commitIndex, commitError) -> {
-                        raft.checkThread();
-                        if (isRunning()) {
-                          if (commitError == null) {
-                            raft.getServiceManager()
-                                .<Long>apply(entry.index())
-                                .whenComplete(
-                                    (closeResult, closeError) -> {
-                                      if (closeError == null) {
-                                        future.complete(
-                                            logResponse(
-                                                CloseSessionResponse.builder()
-                                                    .withStatus(RaftResponse.Status.OK)
-                                                    .build()));
-                                      } else if (closeError instanceof CompletionException
-                                          && closeError.getCause() instanceof RaftException) {
-                                        future.complete(
-                                            logResponse(
-                                                CloseSessionResponse.builder()
-                                                    .withStatus(RaftResponse.Status.ERROR)
-                                                    .withError(
-                                                        ((RaftException) closeError.getCause())
-                                                            .getType(),
-                                                        closeError.getMessage())
-                                                    .build()));
-                                      } else if (closeError instanceof RaftException) {
-                                        future.complete(
-                                            logResponse(
-                                                CloseSessionResponse.builder()
-                                                    .withStatus(RaftResponse.Status.ERROR)
-                                                    .withError(
-                                                        ((RaftException) closeError).getType(),
-                                                        closeError.getMessage())
-                                                    .build()));
-                                      } else {
-                                        future.complete(
-                                            logResponse(
-                                                CloseSessionResponse.builder()
-                                                    .withStatus(RaftResponse.Status.ERROR)
-                                                    .withError(
-                                                        RaftError.Type.PROTOCOL_ERROR,
-                                                        closeError.getMessage())
-                                                    .build()));
-                                      }
-                                    });
-                          } else {
-                            future.complete(
-                                logResponse(
-                                    CloseSessionResponse.builder()
-                                        .withStatus(RaftResponse.Status.ERROR)
-                                        .withError(RaftError.Type.PROTOCOL_ERROR)
-                                        .build()));
-                          }
-                        } else {
-                          future.complete(
-                              logResponse(
-                                  CloseSessionResponse.builder()
-                                      .withStatus(RaftResponse.Status.ERROR)
-                                      .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
-                                      .build()));
-                        }
-                      });
-            });
-
-    return future;
   }
 
   @Override
@@ -709,159 +318,20 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     return future;
   }
 
-  @Override
-  public CompletableFuture<CommandResponse> onCommand(final CommandRequest request) {
-    raft.checkThread();
-    logRequest(request);
+  private ZeebeEntry findLastZeebeEntry() {
+    long index = raft.getLogWriter().getLastIndex();
+    while (index > 0) {
+      raft.getLogReader().reset(index);
+      final Indexed<RaftLogEntry> lastEntry = raft.getLogReader().next();
 
-    if (transferring) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              CommandResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
-                  .build()));
-    }
-
-    // Get the client's server session. If the session doesn't exist, return an unknown session
-    // error.
-    final RaftSession session = raft.getSessions().getSession(request.session());
-    if (session == null) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              CommandResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.UNKNOWN_SESSION)
-                  .build()));
-    }
-
-    final long sequenceNumber = request.sequenceNumber();
-
-    // If a command with the given sequence number is already pending, return the existing future to
-    // ensure
-    // duplicate requests aren't committed as duplicate entries in the log.
-    final PendingCommand existingCommand = session.getCommand(sequenceNumber);
-    if (existingCommand != null) {
-      if (sequenceNumber <= session.nextRequestSequence()) {
-        drainCommands(sequenceNumber, session);
+      if (lastEntry != null && lastEntry.type() == ZeebeEntry.class) {
+        return ((ZeebeEntry) lastEntry.entry());
       }
-      log.trace("Returning pending result for command sequence {}", sequenceNumber);
-      return existingCommand.future();
+
+      --index;
     }
 
-    final CompletableFuture<CommandResponse> future = new CompletableFuture<>();
-
-    // If the request sequence number is greater than the next sequence number, that indicates a
-    // command is missing.
-    // Register the command request and return a future to be completed once commands are properly
-    // sequenced.
-    // If the session's current sequence number is too far beyond the last known sequence number,
-    // reject the command
-    // to force it to be resent by the client.
-    if (sequenceNumber > session.nextRequestSequence()) {
-      if (session.getCommands().size() < MAX_PENDING_COMMANDS) {
-        log.trace(
-            "Registered sequence command {} > {}", sequenceNumber, session.nextRequestSequence());
-        session.registerCommand(request.sequenceNumber(), new PendingCommand(request, future));
-        return future;
-      } else {
-        return CompletableFuture.completedFuture(
-            logResponse(
-                CommandResponse.builder()
-                    .withStatus(RaftResponse.Status.ERROR)
-                    .withError(RaftError.Type.COMMAND_FAILURE)
-                    .withLastSequence(session.getRequestSequence())
-                    .build()));
-      }
-    }
-
-    // If the command has already been applied to the state machine then return a cached result if
-    // possible, otherwise
-    // return null.
-    if (sequenceNumber <= session.getCommandSequence()) {
-      final OperationResult result = session.getResult(sequenceNumber);
-      if (result != null) {
-        completeOperation(result, CommandResponse.builder(), null, future);
-      } else {
-        future.complete(
-            CommandResponse.builder()
-                .withStatus(RaftResponse.Status.ERROR)
-                .withError(RaftError.Type.PROTOCOL_ERROR)
-                .build());
-      }
-    }
-    // Otherwise, commit the command and update the request sequence number, then drain pending
-    // commands.
-    else {
-      commitCommand(request, future);
-      session.setRequestSequence(sequenceNumber);
-      drainCommands(sequenceNumber, session);
-    }
-
-    return future.thenApply(this::logResponse);
-  }
-
-  @Override
-  public CompletableFuture<QueryResponse> onQuery(final QueryRequest request) {
-    raft.checkThread();
-    logRequest(request);
-
-    // If this server has not yet applied entries up to the client's session ID, forward the
-    // query to the leader. This ensures that a follower does not tell the client its session
-    // doesn't exist if the follower hasn't had a chance to see the session's registration entry.
-    if (raft.getLastApplied() < request.session()) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              QueryResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(
-                      RaftError.Type.UNKNOWN_SESSION,
-                      "Session has not yet been created. You're seeing into the future!")
-                  .build()));
-    }
-
-    // Look up the client's session.
-    final RaftSession session = raft.getSessions().getSession(request.session());
-    if (session == null) {
-      log.warn("Unknown session {}", request.session());
-      return CompletableFuture.completedFuture(
-          logResponse(
-              QueryResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.UNKNOWN_SESSION)
-                  .build()));
-    }
-
-    final Indexed<QueryEntry> entry =
-        new Indexed<>(
-            request.index(),
-            new QueryEntry(
-                raft.getTerm(),
-                System.currentTimeMillis(),
-                request.session(),
-                request.sequenceNumber(),
-                request.operation()),
-            0);
-
-    final CompletableFuture<QueryResponse> future;
-    switch (session.readConsistency()) {
-      case SEQUENTIAL:
-        future = queryLocal(entry);
-        break;
-      case LINEARIZABLE_LEASE:
-        future = queryBoundedLinearizable(entry);
-        break;
-      case LINEARIZABLE:
-        future = queryLinearizable(entry);
-        break;
-      default:
-        future =
-            Futures.exceptionalFuture(
-                new IllegalStateException(
-                    "Unknown consistency level: " + session.readConsistency()));
-        break;
-    }
-    return future.thenApply(this::logResponse);
+    return null;
   }
 
   /** Cancels the timers. */
@@ -877,62 +347,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     if (raft.getLeader() != null && raft.getLeader().equals(raft.getCluster().getMember())) {
       raft.setLeader(null);
     }
-  }
-
-  /** Fails pending commands. */
-  private void failPendingCommands() {
-    for (final RaftSession session : raft.getSessions().getSessions()) {
-      for (final PendingCommand command : session.clearCommands()) {
-        command
-            .future()
-            .complete(
-                logResponse(
-                    CommandResponse.builder()
-                        .withStatus(RaftResponse.Status.ERROR)
-                        .withError(
-                            RaftError.Type.COMMAND_FAILURE,
-                            "Request sequence number "
-                                + command.request().sequenceNumber()
-                                + " out of sequence")
-                        .withLastSequence(session.getRequestSequence())
-                        .build()));
-      }
-    }
-  }
-
-  /**
-   * Executes a bounded linearizable query.
-   *
-   * <p>Bounded linearizable queries succeed as long as this server remains the leader. This is
-   * possible since the leader will step down in the event it fails to contact a majority of the
-   * cluster.
-   */
-  private CompletableFuture<QueryResponse> queryBoundedLinearizable(
-      final Indexed<QueryEntry> entry) {
-    return applyQuery(entry);
-  }
-
-  /**
-   * Executes a linearizable query.
-   *
-   * <p>Linearizable queries are first sequenced with commands and then applied to the state
-   * machine. Once applied, we verify the node's leadership prior to responding successfully to the
-   * query.
-   */
-  private CompletableFuture<QueryResponse> queryLinearizable(final Indexed<QueryEntry> entry) {
-    return applyQuery(entry)
-        .thenComposeAsync(
-            response ->
-                appender
-                    .appendEntries()
-                    .thenApply(index -> response)
-                    .exceptionally(
-                        error ->
-                            QueryResponse.builder()
-                                .withStatus(RaftResponse.Status.ERROR)
-                                .withError(RaftError.Type.QUERY_FAILURE, error.getMessage())
-                                .build()),
-            raft.getThreadContext());
   }
 
   /** Sets the current node as the cluster leader. */
@@ -963,7 +377,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               raft.checkThread();
               if (isRunning()) {
                 if (error == null) {
-                  raft.getServiceManager().apply(resultIndex);
                   future.complete(null);
                 } else {
                   log.info("Failed to commit the initial entry, stepping down");
@@ -994,59 +407,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
     raft.checkThread();
     if (isRunning()) {
       appender.appendEntries();
-    }
-  }
-
-  /** Handles a cluster event. */
-  private void handleClusterEvent(final ClusterMembershipEvent event) {
-    raft.getThreadContext()
-        .execute(
-            () -> {
-              if (event.type() == ClusterMembershipEvent.Type.MEMBER_REMOVED) {
-                log.debug("Node {} deactivated", event.subject().id());
-                raft.getSessions().getSessions().stream()
-                    .filter(session -> session.memberId().equals(event.subject().id()))
-                    .forEach(this::expireSession);
-              }
-            });
-  }
-
-  /** Expires the given session. */
-  private void expireSession(final RaftSession session) {
-    if (expiring.add(session.sessionId())) {
-      log.debug("Expiring session due to heartbeat failure: {}", session);
-      append(
-              new CloseSessionEntry(
-                  raft.getTerm(),
-                  System.currentTimeMillis(),
-                  session.sessionId().id(),
-                  true,
-                  false))
-          .whenComplete(
-              (entry, error) -> {
-                if (error != null) {
-                  expiring.remove(session.sessionId());
-                  return;
-                }
-
-                appender
-                    .appendEntries(entry.index())
-                    .whenComplete(
-                        (commitIndex, commitError) -> {
-                          raft.checkThread();
-                          if (isRunning()) {
-                            if (commitError == null) {
-                              raft.getServiceManager()
-                                  .<Long>apply(entry.index())
-                                  .whenCompleteAsync(
-                                      (r, e) -> expiring.remove(session.sessionId()),
-                                      raft.getThreadContext());
-                            } else {
-                              expiring.remove(session.sessionId());
-                            }
-                          }
-                        });
-              });
     }
   }
 
@@ -1099,12 +459,17 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .whenComplete(
                       (commitIndex, commitError) -> {
                         raft.checkThread();
-                        if (isRunning() && commitError == null) {
-                          raft.getServiceManager().<OperationResult>apply(entry.index());
-                        }
                         configuring = 0;
                       });
             });
+  }
+
+  @Override
+  public CompletableFuture<ConfigureResponse> onConfigure(final ConfigureRequest request) {
+    if (updateTermAndLeader(request.term(), request.leader())) {
+      raft.transition(Role.FOLLOWER);
+    }
+    return super.onConfigure(request);
   }
 
   @Override
@@ -1120,8 +485,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .withError(RaftError.Type.ILLEGAL_MEMBER_STATE)
                   .build()));
     }
-
-    transferring = true;
 
     final CompletableFuture<TransferResponse> future = new CompletableFuture<>();
     appender
@@ -1187,7 +550,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .withTerm(raft.getTerm())
                   .withSucceeded(false)
                   .withLastLogIndex(raft.getLogWriter().getLastIndex())
-                  .withLastSnapshotIndex(raft.getSnapshotStore().getCurrentSnapshotIndex())
+                  .withLastSnapshotIndex(raft.getPersistedSnapshotStore().getCurrentSnapshotIndex())
                   .build()));
     } else {
       raft.setLeader(request.leader());
@@ -1236,103 +599,6 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   }
 
   /**
-   * Sequentially drains pending commands from the session's command request queue.
-   *
-   * @param session the session for which to drain commands
-   */
-  private void drainCommands(final long sequenceNumber, final RaftSession session) {
-    // First we need to drain any commands that exist in the queue *prior* to the next sequence
-    // number. This is
-    // possible if commands from the prior term are committed after a leader change.
-    long nextSequence = session.nextRequestSequence();
-    for (long i = sequenceNumber; i < nextSequence; i++) {
-      final PendingCommand nextCommand = session.removeCommand(i);
-      if (nextCommand != null) {
-        commitCommand(nextCommand.request(), nextCommand.future());
-      }
-    }
-
-    // Finally, drain any commands that are sequenced in the session.
-    PendingCommand nextCommand = session.removeCommand(nextSequence);
-    while (nextCommand != null) {
-      commitCommand(nextCommand.request(), nextCommand.future());
-      session.setRequestSequence(nextSequence);
-      nextSequence = session.nextRequestSequence();
-      nextCommand = session.removeCommand(nextSequence);
-    }
-  }
-
-  /**
-   * Commits a command.
-   *
-   * @param request the command request
-   * @param future the command response future
-   */
-  private void commitCommand(
-      final CommandRequest request, final CompletableFuture<CommandResponse> future) {
-    final long term = raft.getTerm();
-    final long timestamp = System.currentTimeMillis();
-
-    final CommandEntry command =
-        new CommandEntry(
-            term, timestamp, request.session(), request.sequenceNumber(), request.operation());
-    append(command)
-        .whenComplete(
-            (entry, error) -> {
-              if (error != null) {
-                final Throwable cause = Throwables.getRootCause(error);
-                if (Throwables.getRootCause(error) instanceof StorageException.TooLarge) {
-                  log.warn("Failed to append command {}", command, cause);
-                  future.complete(
-                      CommandResponse.builder()
-                          .withStatus(RaftResponse.Status.ERROR)
-                          .withError(RaftError.Type.PROTOCOL_ERROR)
-                          .build());
-                } else {
-                  future.complete(
-                      CommandResponse.builder()
-                          .withStatus(RaftResponse.Status.ERROR)
-                          .withError(RaftError.Type.COMMAND_FAILURE)
-                          .build());
-                }
-                return;
-              }
-
-              // Replicate the command to followers.
-              appender
-                  .appendEntries(entry.index())
-                  .whenComplete(
-                      (commitIndex, commitError) -> {
-                        raft.checkThread();
-                        if (isRunning()) {
-                          // If the command was successfully committed, apply it to the state
-                          // machine.
-                          if (commitError == null) {
-                            raft.getServiceManager()
-                                .<OperationResult>apply(entry.index())
-                                .whenComplete(
-                                    (r, e) -> {
-                                      completeOperation(r, CommandResponse.builder(), e, future);
-                                    });
-                          } else {
-                            future.complete(
-                                CommandResponse.builder()
-                                    .withStatus(RaftResponse.Status.ERROR)
-                                    .withError(RaftError.Type.COMMAND_FAILURE)
-                                    .build());
-                          }
-                        } else {
-                          future.complete(
-                              CommandResponse.builder()
-                                  .withStatus(RaftResponse.Status.ERROR)
-                                  .withError(RaftError.Type.COMMAND_FAILURE)
-                                  .build());
-                        }
-                      });
-            });
-  }
-
-  /**
    * Appends an entry to the Raft log.
    *
    * @param entry the entry to append
@@ -1374,6 +640,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     try {
       final Indexed<E> indexedEntry = raft.getLogWriter().append(entry);
+      raft.getReplicationMetrics().setAppendIndex(indexedEntry.index());
       log.trace("Appended {}", indexedEntry);
       resultingFuture = CompletableFuture.completedFuture(indexedEntry);
     } catch (final StorageException.TooLarge e) {
@@ -1420,8 +687,14 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     if (!isRunning()) {
       appendListener.onWriteError(
-          new IllegalStateException("LeaderRole is closed and cannot be used as appender"));
+          new NoLeader("LeaderRole is closed and cannot be used as appender"));
       return;
+    }
+
+    final ValidationResult result = raft.getEntryValidator().validateEntry(lastZbEntry, entry);
+    if (result.failed()) {
+      appendListener.onWriteError(new IllegalStateException(result.getErrorMessage()));
+      raft.transition(Role.FOLLOWER);
     }
 
     append(entry)
@@ -1435,6 +708,10 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   raft.transition(Role.FOLLOWER);
                 }
               } else {
+                if (indexed.type().equals(ZeebeEntry.class)) {
+                  lastZbEntry = indexed.entry();
+                }
+
                 appendListener.onWrite(indexed);
                 replicate(indexed, appendListener);
               }
@@ -1456,7 +733,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
               // entries properly on fail over
               if (commitError == null) {
                 appendListener.onCommit(indexed);
-                raft.getServiceManager().apply(indexed.index());
+                raft.notifyCommitListeners(indexed.index());
               } else {
                 appendListener.onCommitError(indexed, commitError);
                 // replicating the entry will be retried on the next append request

@@ -12,20 +12,17 @@ import static io.zeebe.util.StringUtil.LIST_SANITIZER;
 
 import java.util.Collections;
 import java.util.List;
-import org.agrona.collections.IntArrayList;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public final class ClusterCfg implements ConfigurationEntry {
+
   public static final List<String> DEFAULT_CONTACT_POINTS = Collections.emptyList();
   public static final int DEFAULT_NODE_ID = 0;
   public static final int DEFAULT_PARTITIONS_COUNT = 1;
   public static final int DEFAULT_REPLICATION_FACTOR = 1;
   public static final int DEFAULT_CLUSTER_SIZE = 1;
   public static final String DEFAULT_CLUSTER_NAME = "zeebe-cluster";
-
-  // the following values are from atomix per default
-  private static final long DEFAULT_GOSSIP_FAILURE_TIMEOUT = 10_000;
-  private static final int DEFAULT_GOSSIP_INTERVAL = 250;
-  private static final int DEFAULT_GOSSIP_PROBE_INTERVAL = 1000;
 
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 
@@ -35,11 +32,7 @@ public final class ClusterCfg implements ConfigurationEntry {
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
   private int clusterSize = DEFAULT_CLUSTER_SIZE;
   private String clusterName = DEFAULT_CLUSTER_NAME;
-
-  // We do not add this to the toString or env - to hide it from the config
-  private long gossipFailureTimeout = DEFAULT_GOSSIP_FAILURE_TIMEOUT;
-  private long gossipInterval = DEFAULT_GOSSIP_INTERVAL;
-  private long gossipProbeInterval = DEFAULT_GOSSIP_PROBE_INTERVAL;
+  private MembershipCfg membership = new MembershipCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -47,13 +40,10 @@ public final class ClusterCfg implements ConfigurationEntry {
   }
 
   private void initPartitionIds() {
-    final IntArrayList list = new IntArrayList();
-    for (int i = START_PARTITION_ID; i < START_PARTITION_ID + partitionsCount; i++) {
-      final int partitionId = i;
-      list.add(partitionId);
-    }
-
-    partitionIds = Collections.unmodifiableList(list);
+    partitionIds =
+        IntStream.range(START_PARTITION_ID, START_PARTITION_ID + partitionsCount)
+            .boxed()
+            .collect(Collectors.toList());
   }
 
   public List<String> getInitialContactPoints() {
@@ -108,35 +98,22 @@ public final class ClusterCfg implements ConfigurationEntry {
     this.clusterName = clusterName;
   }
 
-  public long getGossipFailureTimeout() {
-    return gossipFailureTimeout;
+  public MembershipCfg getMembership() {
+    return membership;
   }
 
-  public void setGossipFailureTimeout(final long gossipFailureTimeout) {
-    this.gossipFailureTimeout = gossipFailureTimeout;
-  }
-
-  public long getGossipInterval() {
-    return gossipInterval;
-  }
-
-  public void setGossipInterval(final long gossipInterval) {
-    this.gossipInterval = gossipInterval;
-  }
-
-  public long getGossipProbeInterval() {
-    return gossipProbeInterval;
-  }
-
-  public void setGossipProbeInterval(final long gossipProbeInterval) {
-    this.gossipProbeInterval = gossipProbeInterval;
+  public void setMembership(final MembershipCfg membership) {
+    this.membership = membership;
   }
 
   @Override
   public String toString() {
-
     return "ClusterCfg{"
-        + "nodeId="
+        + "initialContactPoints="
+        + initialContactPoints
+        + ", partitionIds="
+        + partitionIds
+        + ", nodeId="
         + nodeId
         + ", partitionsCount="
         + partitionsCount
@@ -144,8 +121,11 @@ public final class ClusterCfg implements ConfigurationEntry {
         + replicationFactor
         + ", clusterSize="
         + clusterSize
-        + ", initialContactPoints="
-        + initialContactPoints
+        + ", clusterName='"
+        + clusterName
+        + '\''
+        + ", membership="
+        + membership
         + '}';
   }
 }

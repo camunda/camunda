@@ -31,7 +31,7 @@ public final class DebugHttpExporter implements Exporter {
   }
 
   @Override
-  public void export(final Record record) {
+  public void export(final Record<?> record) {
     try {
       httpServer.add(record);
     } catch (final Exception e) {
@@ -44,11 +44,11 @@ public final class DebugHttpExporter implements Exporter {
       final DebugHttpExporterConfiguration configuration =
           context.getConfiguration().instantiate(DebugHttpExporterConfiguration.class);
 
-      httpServer = new DebugHttpServer(configuration.port, configuration.limit);
+      httpServer = new DebugHttpServer(configuration.getPort(), configuration.getLimit());
       log.info(
           "Debug http server started, inspect the last {} records on http://localhost:{}",
-          configuration.limit,
-          configuration.port);
+          configuration.getLimit(),
+          configuration.getPort());
     }
   }
 
@@ -66,7 +66,24 @@ public final class DebugHttpExporter implements Exporter {
   }
 
   public static class DebugHttpExporterConfiguration {
-    public final int port = 8000;
-    public final int limit = 1024;
+
+    private int port = 8000;
+    private int limit = 1024;
+
+    private int getPort() {
+      return port;
+    }
+
+    private void setPort(final int port) {
+      this.port = port;
+    }
+
+    private int getLimit() {
+      return limit;
+    }
+
+    private void setLimit(final int limit) {
+      this.limit = limit;
+    }
   }
 }

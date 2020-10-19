@@ -48,7 +48,7 @@ public final class NetworkCfg {
   }
 
   public NetworkCfg setMinKeepAliveInterval(final Duration keepAlive) {
-    this.minKeepAliveInterval = keepAlive;
+    minKeepAliveInterval = keepAlive;
     return this;
   }
 

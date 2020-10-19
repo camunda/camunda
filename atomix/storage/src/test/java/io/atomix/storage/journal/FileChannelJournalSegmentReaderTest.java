@@ -21,19 +21,25 @@ import static org.junit.Assert.assertTrue;
 import io.atomix.storage.StorageLevel;
 import io.atomix.storage.journal.JournalReader.Mode;
 import io.atomix.storage.journal.index.SparseJournalIndex;
+import io.atomix.utils.serializer.FallbackNamespace;
 import io.atomix.utils.serializer.Namespace;
+import io.atomix.utils.serializer.NamespaceImpl;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 public class FileChannelJournalSegmentReaderTest {
-  private static final Namespace NAMESPACE = Namespace.builder().register(Integer.class).build();
+  private static final Namespace NAMESPACE =
+      new FallbackNamespace(new NamespaceImpl.Builder().register(Integer.class));
   private static final Integer ENTRY = 1;
   private static final int ENTRY_SIZE =
-      NAMESPACE.serialize(ENTRY).length + Long.BYTES; // padding for checksum;
+      NAMESPACE.serialize(ENTRY).length + Integer.BYTES; // padding for checksum;
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
@@ -42,6 +48,33 @@ public class FileChannelJournalSegmentReaderTest {
   @Before
   public void setUp() throws IOException {
     directory = temporaryFolder.newFolder();
+  }
+
+  @Test
+  public void shouldReadEventsOnAllSegments() {
+    // given
+    final int entriesPerSegment = 7;
+    final SparseJournalIndex journalIndex = new SparseJournalIndex(5);
+    try (final SegmentedJournal<Integer> journal = createJournal(entriesPerSegment, journalIndex)) {
+      final SegmentedJournalWriter<Integer> writer = journal.writer();
+      final SegmentedJournalReader<Integer> reader = journal.openReader(1, Mode.ALL);
+
+      final var expectedEntryCount = entriesPerSegment * 3;
+      for (int i = 0; i < expectedEntryCount; i++) {
+        writer.append(i);
+      }
+
+      // when
+      final var entries = new ArrayList<Integer>();
+      while (reader.hasNext()) {
+        entries.add(reader.next().entry());
+      }
+
+      // then
+      assertEquals(expectedEntryCount, entries.size());
+      assertEquals(
+          IntStream.range(0, expectedEntryCount).boxed().collect(Collectors.toList()), entries);
+    }
   }
 
   @Test
@@ -79,6 +112,7 @@ public class FileChannelJournalSegmentReaderTest {
         .withDirectory(directory)
         .withNamespace(NAMESPACE)
         .withStorageLevel(StorageLevel.DISK)
+        .withMaxEntrySize(ENTRY_SIZE)
         .withMaxSegmentSize(maxSegmentSize)
         .withJournalIndexFactory(() -> journalIndex)
         .build();

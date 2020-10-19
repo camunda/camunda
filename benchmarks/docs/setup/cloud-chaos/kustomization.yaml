@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+commonLabels:
+  app.kubernetes.io/component: remote-zeebe-chaos
+  app.kubernetes.io/name: zeebe-controller-k8s
+
+resources:
+- zeebe-chaos-namespace.yaml
+- zeebe-chaos-serviceaccount.yaml
+- zeebe-chaos-rolebinding.yaml
+- zeebe-chaos-role.yaml

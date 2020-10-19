@@ -15,21 +15,21 @@
  */
 package io.zeebe;
 
-import com.google.common.util.concurrent.UncheckedExecutionException;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.config.AppCfg;
 import io.zeebe.config.StarterCfg;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +48,8 @@ public class Starter extends App {
     final StarterCfg starterCfg = appCfg.getStarter();
     final int rate = starterCfg.getRate();
     final String processId = starterCfg.getProcessId();
-    final BlockingQueue<Future> requestFutures = new ArrayBlockingQueue<>(5_000);
+    final BlockingQueue<Future<?>> requestFutures = new ArrayBlockingQueue<>(5_000);
+    final int durationLimit = starterCfg.getDurationLimit();
 
     final ZeebeClient client = createZeebeClient();
 
@@ -60,23 +61,44 @@ public class Starter extends App {
     deployWorkflow(client, starterCfg.getBpmnXmlPath());
 
     // start instances
-    final ClassLoader classLoader = getClass().getClassLoader();
     final int intervalMs = Math.floorDiv(1000, rate);
     LOG.info("Creating an instance every {}ms", intervalMs);
 
-    final String variables = readVariables(starterCfg, classLoader);
-    executorService.scheduleAtFixedRate(
+    final String variables = readVariables(starterCfg.getPayloadPath());
+    final LocalDateTime startTime = LocalDateTime.now();
+
+    final Supplier<Boolean> shouldContinue = createContinuationCondition(starterCfg);
+
+    final CountDownLatch countDownLatch = new CountDownLatch(1);
+
+    final ScheduledFuture scheduledTask = executorService.scheduleAtFixedRate(
         () -> {
-          try {
-            requestFutures.put(
-                client
-                    .newCreateInstanceCommand()
-                    .bpmnProcessId(processId)
-                    .latestVersion()
-                    .variables(variables)
-                    .send());
-          } catch (Exception e) {
-            LOG.error("Error on creating new workflow instance", e);
+          if (shouldContinue.get()) {
+            try {
+              if (starterCfg.isWithResults()) {
+                requestFutures.put(
+                    client
+                        .newCreateInstanceCommand()
+                        .bpmnProcessId(processId)
+                        .latestVersion()
+                        .variables(variables)
+                        .withResult()
+                        .requestTimeout(starterCfg.getWithResultsTimeout())
+                        .send());
+              } else {
+                requestFutures.put(
+                    client
+                        .newCreateInstanceCommand()
+                        .bpmnProcessId(processId)
+                        .latestVersion()
+                        .variables(variables)
+                        .send());
+              }
+            } catch (Exception e) {
+              LOG.error("Error on creating new workflow instance", e);
+            }
+          } else {
+            countDownLatch.countDown();
           }
         },
         0,
@@ -90,42 +112,37 @@ public class Starter extends App {
         .addShutdownHook(
             new Thread(
                 () -> {
-                  executorService.shutdown();
-                  try {
-                    executorService.awaitTermination(60, TimeUnit.SECONDS);
-                  } catch (InterruptedException e) {
-                    e.printStackTrace();
+                  if (!executorService.isShutdown()) {
+                    executorService.shutdown();
+                    try {
+                      executorService.awaitTermination(60, TimeUnit.SECONDS);
+                    } catch (InterruptedException e) {
+                      LOG.error("Error during shutfown", e);
+                    }
                   }
-                  client.close();
-                  responseChecker.close();
+                  if (responseChecker.isAlive()) {
+                    responseChecker.close();
+                  }
+
+                  stopMonitoringServer();
                 }));
-  }
 
-  private String readVariables(final StarterCfg starterCfg, final ClassLoader classLoader) {
+    //wait for starter to finish
     try {
-      final StringBuilder stringBuilder = new StringBuilder();
-      try (final InputStream variablesStream =
-          classLoader.getResourceAsStream(starterCfg.getPayloadPath())) {
-        if (variablesStream == null) {
-          throw new IllegalStateException(
-              "Expected to access "
-                  + starterCfg.getPayloadPath()
-                  + ", but failed to open an input stream.");
-        }
-
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(variablesStream))) {
-          String line;
-          while ((line = br.readLine()) != null) {
-            stringBuilder.append(line).append("\n");
-          }
-        }
-      }
-
-      return stringBuilder.toString();
-    } catch (IOException e) {
-      throw new UncheckedExecutionException(e);
+      countDownLatch.await();
+    } catch (InterruptedException e) {
+      LOG.error("Error occurred waiting for countdown latch", e);
     }
+
+    LOG.info("Starter finished");
+
+    scheduledTask.cancel(true);
+    executorService.shutdown();
+    responseChecker.close();
+    stopMonitoringServer();
   }
+
+
 
   private ZeebeClient createZeebeClient() {
     final ZeebeClientBuilder builder =
@@ -157,6 +174,21 @@ public class Starter extends App {
       }
     }
   }
+
+  private Supplier<Boolean> createContinuationCondition(StarterCfg starterCfg) {
+    final int durationLimit = starterCfg.getDurationLimit();
+
+    if (durationLimit > 0) {
+      // if there is a duration limit
+      final LocalDateTime endTime = LocalDateTime.now().plus(durationLimit, ChronoUnit.SECONDS);
+      // continue until time is up
+      return () -> LocalDateTime.now().isBefore(endTime);
+    } else {
+      // otherwise continue forever
+      return () -> true;
+    }
+  }
+
 
   public static void main(String[] args) {
     createApp(Starter::new);

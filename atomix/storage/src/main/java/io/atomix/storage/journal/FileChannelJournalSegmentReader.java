@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.StandardOpenOption;
 import java.util.NoSuchElementException;
 import java.util.zip.CRC32;
 import java.util.zip.Checksum;
@@ -44,17 +45,17 @@ class FileChannelJournalSegmentReader<E> implements JournalReader<E> {
   private Indexed<E> nextEntry;
 
   FileChannelJournalSegmentReader(
-      final FileChannel channel,
+      final JournalSegmentFile file,
       final JournalSegment<E> segment,
       final int maxEntrySize,
       final JournalIndex index,
       final Namespace namespace) {
-    this.channel = channel;
+    this.segment = segment;
     this.maxEntrySize = maxEntrySize;
     this.index = index;
     this.namespace = namespace;
-    this.memory = ByteBuffer.allocate((maxEntrySize + Integer.BYTES + Integer.BYTES) * 2);
-    this.segment = segment;
+    channel = file.openChannel(StandardOpenOption.READ);
+    memory = ByteBuffer.allocate((maxEntrySize + Integer.BYTES + Integer.BYTES) * 2);
     reset();
   }
 
@@ -162,64 +163,97 @@ class FileChannelJournalSegmentReader<E> implements JournalReader<E> {
 
   @Override
   public void close() {
-    // Do nothing. The parent reader manages the channel.
-  }
-
-  /** Reads the next entry in the segment. */
-  @SuppressWarnings("unchecked")
-  private void readNext() {
-    // Compute the index of the next entry in the segment.
-    final long index = getNextIndex();
-
     try {
-      // Read more bytes from the segment if necessary.
-      if (memory.remaining() < maxEntrySize) {
-        final long position = channel.position() + memory.position();
-        channel.position(position);
-        memory.clear();
-        channel.read(memory);
-        channel.position(position);
-        memory.flip();
-      }
-
-      // Mark the buffer so it can be reset if necessary.
-      memory.mark();
-
-      try {
-        // Read the length of the entry.
-        final int length = memory.getInt();
-
-        // If the buffer length is zero then return.
-        if (length <= 0 || length > maxEntrySize) {
-          memory.reset().limit(memory.position());
-          nextEntry = null;
-          return;
-        }
-
-        // Read the checksum of the entry.
-        final long checksum = memory.getInt() & 0xFFFFFFFFL;
-
-        // Compute the checksum for the entry bytes.
-        final Checksum crc32 = new CRC32();
-        crc32.update(memory.array(), memory.position(), length);
-
-        // If the stored checksum equals the computed checksum, return the entry.
-        if (checksum == crc32.getValue()) {
-          final int limit = memory.limit();
-          memory.limit(memory.position() + length);
-          final E entry = namespace.deserialize(memory);
-          memory.limit(limit);
-          nextEntry = new Indexed<>(index, entry, length);
-        } else {
-          memory.reset().limit(memory.position());
-          nextEntry = null;
-        }
-      } catch (final BufferUnderflowException e) {
-        memory.reset().limit(memory.position());
-        nextEntry = null;
-      }
+      channel.close();
     } catch (final IOException e) {
       throw new StorageException(e);
     }
+    segment.onReaderClosed(this);
+  }
+
+  /** Reads the next entry in the segment. */
+  private void readNext() {
+    final long index = getNextIndex();
+
+    try {
+      // Mark the buffer so it can be reset if necessary.
+      memory.mark();
+
+      final var cantReadLength = memory.remaining() < Integer.BYTES;
+      if (cantReadLength) {
+        readBytesIntoBuffer();
+        memory.mark();
+      }
+
+      final int length = memory.getInt();
+      if (isLengthInvalid(length)) {
+        return;
+      }
+
+      // we using a CRC32 - which is 32 byte checksum
+      // remaining bytes need to be larger or equals to entry length + checksum length
+      final var cantReadEntry = memory.remaining() < (length + Integer.BYTES);
+      if (cantReadEntry) {
+        readBytesIntoBuffer();
+        memory.mark();
+        // we don't need to read the length again
+      }
+
+      readNextEntry(index, length);
+
+    } catch (final BufferUnderflowException e) {
+      resetReading();
+    } catch (final IOException e) {
+      throw new StorageException(e);
+    }
+  }
+
+  private void readNextEntry(final long index, final int length) {
+    if (isChecksumInvalid(length)) {
+      resetReading();
+      return;
+    }
+
+    // If the stored checksum equals the computed checksum, set the next entry.
+    final int limit = memory.limit();
+    memory.limit(memory.position() + length);
+    final E entry = namespace.deserialize(memory);
+    memory.limit(limit);
+    nextEntry = new Indexed<>(index, entry, length);
+  }
+
+  private void resetReading() {
+    memory.reset().limit(memory.position());
+    nextEntry = null;
+  }
+
+  private boolean isChecksumInvalid(final int length) {
+    // Read the checksum of the entry.
+    final long checksum = memory.getInt() & 0xFFFFFFFFL;
+
+    // Compute the checksum for the entry bytes.
+    final Checksum crc32 = new CRC32();
+    crc32.update(memory.array(), memory.position(), length);
+
+    return checksum != crc32.getValue();
+  }
+
+  private boolean isLengthInvalid(final int length) {
+    // If the buffer length is zero then return.
+    if (length <= 0 || length > maxEntrySize) {
+      memory.reset().limit(memory.position());
+      nextEntry = null;
+      return true;
+    }
+    return false;
+  }
+
+  private void readBytesIntoBuffer() throws IOException {
+    final long position = channel.position() + memory.position();
+    channel.position(position);
+    memory.clear();
+    channel.read(memory);
+    channel.position(position);
+    memory.flip();
   }
 }

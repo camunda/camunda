@@ -49,13 +49,12 @@ public final class LogStorageAppenderHealthTest {
             .actorScheduler(schedulerRule.get())
             .bufferSize((int) ByteValue.ofMegabytes(100 * MAX_FRAGMENT_SIZE))
             .maxFragmentLength(MAX_FRAGMENT_SIZE)
-            .initialPartitionId(0)
             .build();
     final var subscription = dispatcher.openSubscription("log");
 
     appender =
         new LogStorageAppender(
-            "appender", PARTITION_ID, failingLogStorage, subscription, MAX_FRAGMENT_SIZE);
+            "appender", PARTITION_ID, failingLogStorage, subscription, MAX_FRAGMENT_SIZE, l -> {});
     writer = new LogStreamWriterImpl(PARTITION_ID, dispatcher);
   }
 

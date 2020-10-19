@@ -28,7 +28,6 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   private static final String ERROR_MSG_MISSING_PARTITON_MAP =
       "Node already unsubscribed from partition %d, this can only happen when atomix does not cleanly remove its handlers.";
 
-  private final int nodeId;
   private final Int2ObjectHashMap<Long2ObjectHashMap<CompletableFuture<byte[]>>>
       partitionsRequestMap;
   private final AtomicLong requestCount;
@@ -38,12 +37,10 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
   public AtomixServerTransport(final int nodeId, final MessagingService messagingService) {
     this.messagingService = messagingService;
-    this.nodeId = nodeId;
-
-    this.partitionsRequestMap = new Int2ObjectHashMap<>();
-    this.requestCount = new AtomicLong(0);
-    this.reusableRequestBuffer = new UnsafeBuffer(0, 0);
-    this.actorName = buildActorName(nodeId, "ServerTransport");
+    partitionsRequestMap = new Int2ObjectHashMap<>();
+    requestCount = new AtomicLong(0);
+    reusableRequestBuffer = new UnsafeBuffer(0, 0);
+    actorName = buildActorName(nodeId, "ServerTransport");
   }
 
   @Override
@@ -68,9 +65,13 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   public ActorFuture<Void> subscribe(final int partitionId, final RequestHandler requestHandler) {
     return actor.call(
         () -> {
+          final var topicName = topicName(partitionId);
+          if (LOG.isTraceEnabled()) {
+            LOG.trace("Subscribe for topic {}", topicName);
+          }
           partitionsRequestMap.put(partitionId, new Long2ObjectHashMap<>());
           messagingService.registerHandler(
-              topicName(partitionId),
+              topicName,
               (sender, request) -> handleAtomixRequest(request, partitionId, requestHandler));
         });
   }
@@ -81,7 +82,12 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
   }
 
   private void removePartition(final int partitionId) {
-    messagingService.unregisterHandler(topicName(partitionId));
+    final var topicName = topicName(partitionId);
+    if (LOG.isTraceEnabled()) {
+      LOG.trace("Unsubscribe from topic {}", topicName);
+    }
+
+    messagingService.unregisterHandler(topicName);
 
     final var requestMap = partitionsRequestMap.remove(partitionId);
     if (requestMap != null) {
@@ -98,6 +104,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
           final var requestMap = partitionsRequestMap.get(partitionId);
           if (requestMap == null) {
             final var errorMsg = String.format(ERROR_MSG_MISSING_PARTITON_MAP, partitionId);
+            LOG.trace(errorMsg);
             completableFuture.completeExceptionally(new IllegalStateException(errorMsg));
             return;
           }
@@ -106,7 +113,9 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
             reusableRequestBuffer.wrap(requestBytes);
             requestHandler.onRequest(
                 this, partitionId, requestId, reusableRequestBuffer, 0, requestBytes.length);
-
+            if (LOG.isTraceEnabled()) {
+              LOG.trace("Handled request {} for topic {}", requestId, topicName(partitionId));
+            }
             // we only add the request to the map after successful handling
             requestMap.put(requestId, completableFuture);
           } catch (final Exception exception) {
@@ -136,7 +145,7 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
         () -> {
           final var requestMap = partitionsRequestMap.get(partitionId);
           if (requestMap == null) {
-            LOG.error(
+            LOG.warn(
                 "Node is no longer leader for partition {}, tried to respond on request with id {}",
                 partitionId,
                 requestId);
@@ -145,7 +154,17 @@ public class AtomixServerTransport extends Actor implements ServerTransport {
 
           final var completableFuture = requestMap.remove(requestId);
           if (completableFuture != null) {
+            if (LOG.isTraceEnabled()) {
+              LOG.trace(
+                  "Send response to request {} for topic {}", requestId, topicName(partitionId));
+            }
+
             completableFuture.complete(bytes);
+          } else if (LOG.isTraceEnabled()) {
+            LOG.trace(
+                "Wasn't able to send response to request {} for topic {}",
+                requestId,
+                topicName(partitionId));
           }
         });
   }

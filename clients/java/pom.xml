@@ -9,7 +9,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>0.24.0-SNAPSHOT</version>
+    <version>0.25.0-SNAPSHOT</version>
     <relativePath>../../parent</relativePath>
   </parent>
 
@@ -139,6 +139,14 @@
   </dependencies>
 
   <build>
+    <!-- NOTE: required to access the version as a resource-->
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -151,9 +159,9 @@
         </configuration>
       </plugin>
 
-      <plugin> 
-        <groupId>org.codehaus.mojo</groupId> 
-        <artifactId>clirr-maven-plugin</artifactId> 
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
       </plugin>
     </plugins>
   </build>

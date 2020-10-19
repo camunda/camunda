@@ -24,6 +24,6 @@ public final class LongProperty extends BaseProperty<LongValue> {
 
   public void setValue(final long value) {
     this.value.setValue(value);
-    this.isSet = true;
+    isSet = true;
   }
 }

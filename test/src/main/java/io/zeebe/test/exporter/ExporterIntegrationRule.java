@@ -260,6 +260,7 @@ public class ExporterIntegrationRule extends ExternalResource {
     final Map<String, Object> variables = new HashMap<>();
     variables.put("orderId", "foo-bar-123");
     variables.put("largeValue", "x".repeat(8192));
+    variables.put("unicode", "Á");
 
     final long workflowInstanceKey = createWorkflowInstance("testProcess", variables);
 
@@ -385,7 +386,7 @@ public class ExporterIntegrationRule extends ExternalResource {
         ClientProperties.BROKER_CONTACTPOINT,
         SocketUtil.toHostAndPortString(
             getBrokerConfig().getGateway().getNetwork().toSocketAddress()));
-    properties.put(ClientProperties.USE_PLAINTEXT_CONNECTION, "");
+    properties.put(ClientProperties.USE_PLAINTEXT_CONNECTION, "true");
 
     return properties;
   }

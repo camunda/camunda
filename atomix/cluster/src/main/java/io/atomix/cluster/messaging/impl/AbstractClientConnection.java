@@ -142,9 +142,9 @@ abstract class AbstractClientConnection implements ClientConnection {
       this.id = id;
       this.type = type;
       this.timeout = getTimeoutMillis(type, timeout);
-      this.scheduledFuture =
+      scheduledFuture =
           executorService.schedule(this::timeout, this.timeout, TimeUnit.MILLISECONDS);
-      this.replyFuture = future;
+      replyFuture = future;
       future.thenRun(() -> addReplyTime(type, System.currentTimeMillis() - time));
       callbacks.put(id, this);
     }

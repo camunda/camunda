@@ -33,7 +33,8 @@ import io.atomix.cluster.impl.AddressSerializer;
 import io.atomix.utils.Version;
 import io.atomix.utils.event.AbstractListenerManager;
 import io.atomix.utils.net.Address;
-import io.atomix.utils.serializer.Namespace;
+import io.atomix.utils.serializer.FallbackNamespace;
+import io.atomix.utils.serializer.NamespaceImpl;
 import io.atomix.utils.serializer.Namespaces;
 import io.atomix.utils.serializer.Serializer;
 import java.util.ArrayList;
@@ -75,21 +76,19 @@ public class SwimMembershipProtocol
   private static final String MEMBERSHIP_PROBE_REQUEST = "atomix-membership-probe-request";
   private static final Serializer SERIALIZER =
       Serializer.using(
-          Namespace.builder()
-              .register(Namespaces.BASIC)
-              .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
-              .register(MemberId.class)
-              .register(new AddressSerializer(), Address.class)
-              .register(ImmutableMember.class)
-              .register(State.class)
-              .register(ImmutablePair.class)
-              .build("ClusterMembershipService"));
+          new FallbackNamespace(
+              new NamespaceImpl.Builder()
+                  .register(Namespaces.BASIC)
+                  .nextId(Namespaces.BEGIN_USER_CUSTOM_ID)
+                  .register(MemberId.class)
+                  .register(new AddressSerializer(), Address.class)
+                  .register(ImmutableMember.class)
+                  .register(State.class)
+                  .register(ImmutablePair.class)
+                  .name("ClusterMembershipService")));
+
   private final SwimMembershipProtocolConfig config;
-  private NodeDiscoveryService discoveryService;
-  private BootstrapService bootstrapService;
   private final AtomicBoolean started = new AtomicBoolean();
-  private SwimMember localMember;
-  private volatile Properties localProperties = new Properties();
   private final Map<MemberId, SwimMember> members = Maps.newConcurrentMap();
   private final List<SwimMember> randomMembers = Lists.newCopyOnWriteArrayList();
   private final Map<MemberId, ImmutableMember> updates = new LinkedHashMap<>();
@@ -97,22 +96,26 @@ public class SwimMembershipProtocol
   private final ScheduledExecutorService swimScheduler =
       Executors.newSingleThreadScheduledExecutor(
           namedThreads("atomix-cluster-heartbeat-sender", LOGGER));
+  private final ExecutorService eventExecutor =
+      Executors.newSingleThreadExecutor(namedThreads("atomix-cluster-events", LOGGER));
+  private final AtomicInteger probeCounter = new AtomicInteger();
+  private NodeDiscoveryService discoveryService;
+  private BootstrapService bootstrapService;
+  private SwimMember localMember;
   private final BiFunction<Address, byte[], CompletableFuture<byte[]>> probeRequestHandler =
       (address, payload) ->
           handleProbeRequest(SERIALIZER.decode(payload)).thenApply(SERIALIZER::encode);
   private final NodeDiscoveryEventListener discoveryEventListener = this::handleDiscoveryEvent;
-  private final ExecutorService eventExecutor =
-      Executors.newSingleThreadExecutor(namedThreads("atomix-cluster-events", LOGGER));
   private final BiFunction<Address, byte[], byte[]> syncHandler =
       (address, payload) -> SERIALIZER.encode(handleSync(SERIALIZER.decode(payload)));
   private final BiFunction<Address, byte[], byte[]> probeHandler =
       (address, payload) -> SERIALIZER.encode(handleProbe(SERIALIZER.decode(payload)));
   private final BiConsumer<Address, byte[]> gossipListener =
       (address, payload) -> handleGossipUpdates(SERIALIZER.decode(payload));
+  private volatile Properties localProperties = new Properties();
   private ScheduledFuture<?> gossipFuture;
   private ScheduledFuture<?> probeFuture;
   private ScheduledFuture<?> syncFuture;
-  private final AtomicInteger probeCounter = new AtomicInteger();
 
   SwimMembershipProtocol(final SwimMembershipProtocolConfig config) {
     this.config = config;
@@ -146,9 +149,9 @@ public class SwimMembershipProtocol
   public CompletableFuture<Void> join(
       final BootstrapService bootstrap, final NodeDiscoveryService discovery, final Member member) {
     if (started.compareAndSet(false, true)) {
-      this.bootstrapService = bootstrap;
-      this.discoveryService = discovery;
-      this.localMember =
+      bootstrapService = bootstrap;
+      discoveryService = discovery;
+      localMember =
           new SwimMember(
               member.id(),
               member.address(),
@@ -158,25 +161,23 @@ public class SwimMembershipProtocol
               member.properties(),
               member.version(),
               System.currentTimeMillis());
-      this.localProperties.putAll(localMember.properties());
+      localProperties.putAll(localMember.properties());
       discoveryService.addListener(discoveryEventListener);
 
-      LOGGER.info("{} - Member activated: {}", localMember.id(), localMember);
+      // we need to add our local node to the member list,
+      // to share the mapping between node id and address in the cluster
       localMember.setState(State.ALIVE);
       members.put(localMember.id(), localMember);
       post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_ADDED, localMember));
 
+      LOGGER.debug("Nodes from discovery service {}", discoveryService.getNodes());
+
       registerHandlers();
-      gossipFuture =
-          swimScheduler.scheduleAtFixedRate(
-              this::gossip, 0, config.getGossipInterval().toMillis(), TimeUnit.MILLISECONDS);
-      probeFuture =
-          swimScheduler.scheduleAtFixedRate(
-              this::probe, 0, config.getProbeInterval().toMillis(), TimeUnit.MILLISECONDS);
-      swimScheduler.execute(this::syncAll);
-      syncFuture =
-          swimScheduler.scheduleAtFixedRate(
-              this::sync, 0, config.getSyncInterval().toMillis(), TimeUnit.MILLISECONDS);
+
+      scheduleGossip();
+      scheduleProbe();
+      scheduleSync();
+
       LOGGER.info("Started");
     }
     return CompletableFuture.completedFuture(null);
@@ -233,12 +234,13 @@ public class SwimMembershipProtocol
 
     // If the local member is not present, add the member in the ALIVE state.
     if (swimMember == null) {
+      LOGGER.trace("Member not exist yet {}", member);
       if (member.state() == State.ALIVE) {
         swimMember = new SwimMember(member);
         members.put(swimMember.id(), swimMember);
         randomMembers.add(swimMember);
         Collections.shuffle(randomMembers);
-        LOGGER.debug("{} - Member added {}", this.localMember.id(), swimMember);
+        LOGGER.debug("{} - Member added {}", localMember.id(), swimMember);
         swimMember.setState(State.ALIVE);
         post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_ADDED, swimMember.copy()));
         recordUpdate(swimMember.copy());
@@ -258,7 +260,7 @@ public class SwimMembershipProtocol
         members.put(member.id(), swimMember);
         randomMembers.add(swimMember);
         Collections.shuffle(randomMembers);
-        LOGGER.debug("{} - Evicted member for new version {}", this.localMember.id(), swimMember);
+        LOGGER.debug("{} - Evicted member for new version {}", localMember.id(), swimMember);
         post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_ADDED, swimMember.copy()));
         recordUpdate(swimMember.copy());
       } else {
@@ -282,7 +284,7 @@ public class SwimMembershipProtocol
           triggerReachabilityEventOnDeath(swimMember);
         } else if (!Objects.equals(member.properties(), swimMember.properties())) {
           swimMember.properties().putAll(member.properties());
-          LOGGER.debug("{} - Member metadata changed {}", this.localMember.id(), swimMember);
+          LOGGER.debug("{} - Member metadata changed {}", localMember.id(), swimMember);
           post(
               new GroupMembershipEvent(
                   GroupMembershipEvent.Type.METADATA_CHANGED, swimMember.copy()));
@@ -301,7 +303,7 @@ public class SwimMembershipProtocol
 
       // If the updated state is SUSPECT, post a REACHABILITY_CHANGED event and record an update.
       if (member.state() == State.SUSPECT) {
-        LOGGER.debug("{} - Member unreachable {}", this.localMember.id(), swimMember);
+        LOGGER.debug("{} - Member unreachable {}", localMember.id(), swimMember);
         post(
             new GroupMembershipEvent(
                 GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
@@ -313,11 +315,7 @@ public class SwimMembershipProtocol
       // MEMBER_REMOVED
       // event and record an update.
       else if (member.state() == State.DEAD) {
-        members.remove(swimMember.id());
-        randomMembers.remove(swimMember);
-        Collections.shuffle(randomMembers);
-        LOGGER.debug("{} - Member removed {}", this.localMember.id(), swimMember);
-        post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, swimMember.copy()));
+        tryRemoveMember(swimMember);
       }
       recordUpdate(swimMember.copy());
       return true;
@@ -328,28 +326,24 @@ public class SwimMembershipProtocol
   private void triggerReachabilityEventOnDeath(final SwimMember swimMember) {
     if (swimMember.getState() == State.ALIVE) {
       swimMember.setState(State.SUSPECT);
-      LOGGER.debug("{} - Member unreachable {}", this.localMember.id(), swimMember);
+      LOGGER.debug("{} - Member unreachable {}", localMember.id(), swimMember);
       post(
           new GroupMembershipEvent(
               GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
     }
     swimMember.setState(State.DEAD);
-    members.remove(swimMember.id());
-    randomMembers.remove(swimMember);
-    Collections.shuffle(randomMembers);
-    LOGGER.debug("{} - Member removed {}", this.localMember.id(), swimMember);
-    post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, swimMember.copy()));
+    tryRemoveMember(swimMember);
   }
 
   private void triggerReachibilityEventOnSuspect(
       final ImmutableMember member, final SwimMember swimMember) {
     if (!Objects.equals(member.properties(), swimMember.properties())) {
       swimMember.properties().putAll(member.properties());
-      LOGGER.debug("{} - Member metadata changed {}", this.localMember.id(), swimMember);
+      LOGGER.debug("{} - Member metadata changed {}", localMember.id(), swimMember);
       post(new GroupMembershipEvent(GroupMembershipEvent.Type.METADATA_CHANGED, swimMember.copy()));
     }
     swimMember.setState(State.SUSPECT);
-    LOGGER.debug("{} - Member unreachable {}", this.localMember.id(), swimMember);
+    LOGGER.debug("{} - Member unreachable {}", localMember.id(), swimMember);
     post(
         new GroupMembershipEvent(
             GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
@@ -361,13 +355,13 @@ public class SwimMembershipProtocol
   private void triggerReachabilityChangedEventOnAlive(
       final ImmutableMember member, final SwimMember swimMember) {
     swimMember.setState(State.ALIVE);
-    LOGGER.debug("{} - Member reachable {}", this.localMember.id(), swimMember);
+    LOGGER.debug("{} - Member reachable {}", localMember.id(), swimMember);
     post(
         new GroupMembershipEvent(
             GroupMembershipEvent.Type.REACHABILITY_CHANGED, swimMember.copy()));
     if (!Objects.equals(member.properties(), swimMember.properties())) {
       swimMember.properties().putAll(member.properties());
-      LOGGER.debug("{} - Member metadata changed {}", this.localMember.id(), swimMember);
+      LOGGER.debug("{} - Member metadata changed {}", localMember.id(), swimMember);
       post(new GroupMembershipEvent(GroupMembershipEvent.Type.METADATA_CHANGED, swimMember.copy()));
     }
   }
@@ -388,25 +382,20 @@ public class SwimMembershipProtocol
           && System.currentTimeMillis() - member.getUpdated()
               > config.getFailureTimeout().toMillis()) {
         member.setState(State.DEAD);
-        members.remove(member.id());
-        randomMembers.remove(member);
-        Collections.shuffle(randomMembers);
-        LOGGER.debug("{} - Member removed {}", this.localMember.id(), member);
-        post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, member.copy()));
+
+        tryRemoveMember(member);
         recordUpdate(member.copy());
       }
     }
   }
 
-  /** Synchronizes the node state with peers. */
-  private void syncAll() {
-    final List<SwimMember> syncMembers =
-        discoveryService.getNodes().stream()
-            .map(node -> new SwimMember(MemberId.from(node.id().id()), node.address()))
-            .filter(member -> !member.id().equals(localMember.id()))
-            .collect(Collectors.toList());
-    for (final SwimMember member : syncMembers) {
-      sync(member.copy());
+  private void tryRemoveMember(final SwimMember member) {
+    final var deadMember = members.remove(member.id());
+    if (deadMember != null) {
+      randomMembers.remove(member);
+      Collections.shuffle(randomMembers);
+      LOGGER.debug("{} - Member removed {}", localMember.id(), member);
+      post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, member.copy()));
     }
   }
 
@@ -416,7 +405,7 @@ public class SwimMembershipProtocol
    * @param member the peer with which to synchronize the node state
    */
   private void sync(final ImmutableMember member) {
-    LOGGER.debug("{} - Synchronizing membership with {}", localMember.id(), member);
+    LOGGER.debug("{} - Start synchronizing membership with {}", localMember.id(), member);
     bootstrapService
         .getMessagingService()
         .sendAndReceive(
@@ -430,15 +419,20 @@ public class SwimMembershipProtocol
               if (error == null) {
                 final Collection<ImmutableMember> members = SERIALIZER.decode(response);
                 LOGGER.debug(
-                    "{} - Synchronized membership with {}, received: {}",
+                    "{} - Finished synchronizing membership with {}, received: '{}'",
                     localMember.id(),
                     member,
                     members);
                 members.forEach(this::updateState);
               } else {
                 LOGGER.debug(
-                    "{} - Failed to synchronize membership with {}", localMember.id(), member);
+                    "{} - Failed to synchronize membership with {}",
+                    localMember.id(),
+                    member,
+                    error);
               }
+
+              scheduleSync();
             },
             swimScheduler);
   }
@@ -455,6 +449,8 @@ public class SwimMembershipProtocol
       if (member != null) {
         sync(member.copy());
       }
+    } else {
+      scheduleSync();
     }
   }
 
@@ -465,8 +461,7 @@ public class SwimMembershipProtocol
    */
   private Collection<ImmutableMember> handleSync(final ImmutableMember member) {
     updateState(member);
-    return new ArrayList<>(
-        members.values().stream().map(SwimMember::copy).collect(Collectors.toList()));
+    return members.values().stream().map(SwimMember::copy).collect(Collectors.toList());
   }
 
   /** Sends probes to all members or to the next member in round robin fashion. */
@@ -475,13 +470,13 @@ public class SwimMembershipProtocol
     // This is necessary to ensure we attempt to probe all nodes that are provided by the discovery
     // provider.
     final List<SwimMember> probeMembers =
-        Lists.newArrayList(
-            discoveryService.getNodes().stream()
-                .map(node -> new SwimMember(MemberId.from(node.id().id()), node.address()))
-                .filter(member -> !members.containsKey(member.id()))
-                .filter(member -> !member.id().equals(localMember.id()))
-                .sorted(Comparator.comparing(Member::id))
-                .collect(Collectors.toList()));
+        discoveryService.getNodes().stream()
+            .map(node -> new SwimMember(MemberId.from(node.id().id()), node.address()))
+            .filter(member -> !members.containsKey(member.id()))
+            .filter(member -> !member.id().equals(localMember.id()))
+            .filter(member -> !member.address().equals(localMember.address()))
+            .sorted(Comparator.comparing(Member::id))
+            .collect(Collectors.toList());
 
     // Then add the randomly sorted list of SWIM members.
     probeMembers.addAll(randomMembers);
@@ -489,9 +484,12 @@ public class SwimMembershipProtocol
     // If there are members to probe, select the next member to probe using a counter for round
     // robin probes.
     if (!probeMembers.isEmpty()) {
+      LOGGER.trace("Possible members to probe '{}'", probeMembers);
       final SwimMember probeMember =
           probeMembers.get(Math.abs(probeCounter.incrementAndGet() % probeMembers.size()));
       probe(probeMember.copy());
+    } else {
+      scheduleProbe();
     }
   }
 
@@ -515,7 +513,7 @@ public class SwimMembershipProtocol
               if (error == null) {
                 updateState(SERIALIZER.decode(response));
               } else {
-                LOGGER.debug("{} - Failed to probe {}", this.localMember.id(), member, error);
+                LOGGER.debug("{} - Failed to probe {}", localMember.id(), member, error);
                 // Verify that the local member term has not changed and request probes from peers.
                 final SwimMember swimMember = members.get(member.id());
                 if (swimMember != null
@@ -523,6 +521,8 @@ public class SwimMembershipProtocol
                   requestProbes(swimMember.copy());
                 }
               }
+
+              scheduleProbe();
             },
             swimScheduler);
   }
@@ -607,7 +607,7 @@ public class SwimMembershipProtocol
    */
   private CompletableFuture<Boolean> requestProbe(
       final SwimMember member, final ImmutableMember suspect) {
-    LOGGER.debug("{} - Requesting probe of {} from {}", this.localMember.id(), suspect, member);
+    LOGGER.debug("{} - Requesting probe of {} from {}", localMember.id(), suspect, member);
     return bootstrapService
         .getMessagingService()
         .sendAndReceive(
@@ -617,7 +617,7 @@ public class SwimMembershipProtocol
             false,
             config.getProbeTimeout().multipliedBy(2))
         .<Boolean>thenApply(SERIALIZER::decode)
-        .<Boolean>exceptionally(e -> false)
+        .exceptionally(e -> false)
         .thenApply(
             succeeded -> {
               LOGGER.debug(
@@ -723,6 +723,8 @@ public class SwimMembershipProtocol
       // Gossip the pending updates to peers.
       gossip(updates);
     }
+
+    scheduleGossip();
   }
 
   /**
@@ -827,6 +829,24 @@ public class SwimMembershipProtocol
     bootstrapService.getUnicastService().removeListener(MEMBERSHIP_GOSSIP, gossipListener);
   }
 
+  private void scheduleGossip() {
+    gossipFuture =
+        swimScheduler.schedule(
+            (Runnable) this::gossip, config.getGossipInterval().toMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  private void scheduleSync() {
+    syncFuture =
+        swimScheduler.schedule(
+            (Runnable) this::sync, config.getSyncInterval().toMillis(), TimeUnit.MILLISECONDS);
+  }
+
+  private void scheduleProbe() {
+    probeFuture =
+        swimScheduler.schedule(
+            (Runnable) this::probe, config.getProbeInterval().toMillis(), TimeUnit.MILLISECONDS);
+  }
+
   /** Bootstrap member location provider type. */
   public static class Type implements GroupMembershipProtocol.Type<SwimMembershipProtocolConfig> {
     private static final String NAME = "swim";
@@ -873,16 +893,6 @@ public class SwimMembershipProtocol
     }
 
     @Override
-    public Version version() {
-      return version;
-    }
-
-    @Override
-    public long timestamp() {
-      return timestamp;
-    }
-
-    @Override
     public String toString() {
       return toStringHelper(Member.class)
           .add("id", id())
@@ -893,6 +903,16 @@ public class SwimMembershipProtocol
           .add("state", state())
           .add("incarnationNumber", incarnationNumber())
           .toString();
+    }
+
+    @Override
+    public Version version() {
+      return version;
+    }
+
+    @Override
+    public long timestamp() {
+      return timestamp;
     }
 
     /**
@@ -924,8 +944,8 @@ public class SwimMembershipProtocol
 
     SwimMember(final MemberId id, final Address address) {
       super(id, address);
-      this.version = null;
-      this.timestamp = 0;
+      version = null;
+      timestamp = 0;
     }
 
     SwimMember(
@@ -951,10 +971,10 @@ public class SwimMembershipProtocol
           member.rack(),
           member.host(),
           member.properties());
-      this.version = member.version;
-      this.timestamp = member.timestamp;
-      this.state = member.state;
-      this.incarnationNumber = member.incarnationNumber;
+      version = member.version;
+      timestamp = member.timestamp;
+      state = member.state;
+      incarnationNumber = member.incarnationNumber;
     }
 
     /**

@@ -8,22 +8,22 @@
 package io.zeebe.broker.logstreams;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.logstreams.state.Snapshot;
-import io.zeebe.logstreams.state.SnapshotDeletionListener;
-import io.zeebe.logstreams.state.SnapshotStorage;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
+import io.zeebe.snapshots.raft.PersistedSnapshotListener;
+import io.zeebe.snapshots.raft.PersistedSnapshotStore;
 import io.zeebe.util.sched.Actor;
 
-public final class LogDeletionService extends Actor implements SnapshotDeletionListener {
+public final class LogDeletionService extends Actor implements PersistedSnapshotListener {
   private final LogCompactor logCompactor;
-  private final SnapshotStorage snapshotStorage;
   private final String actorName;
+  private final PersistedSnapshotStore persistedSnapshotStore;
 
   public LogDeletionService(
       final int nodeId,
       final int partitionId,
       final LogCompactor logCompactor,
-      final SnapshotStorage snapshotStorage) {
-    this.snapshotStorage = snapshotStorage;
+      final PersistedSnapshotStore persistedSnapshotStore) {
+    this.persistedSnapshotStore = persistedSnapshotStore;
     this.logCompactor = logCompactor;
     actorName = buildActorName(nodeId, "DeletionService-" + partitionId);
   }
@@ -35,23 +35,23 @@ public final class LogDeletionService extends Actor implements SnapshotDeletionL
 
   @Override
   protected void onActorStarting() {
-    snapshotStorage.addDeletionListener(this);
+    persistedSnapshotStore.addSnapshotListener(this);
   }
 
   @Override
   protected void onActorClosing() {
-    if (snapshotStorage != null) {
-      snapshotStorage.removeDeletionListener(this);
+    if (persistedSnapshotStore != null) {
+      persistedSnapshotStore.removeSnapshotListener(this);
     }
   }
 
   @Override
-  public void onSnapshotsDeleted(final Snapshot oldestRemainingSnapshot) {
-    actor.run(() -> delegateDeletion(oldestRemainingSnapshot));
+  public void onNewSnapshot(final PersistedSnapshot newPersistedSnapshot) {
+    actor.run(() -> delegateDeletion(newPersistedSnapshot));
   }
 
-  private void delegateDeletion(final Snapshot snapshot) {
-    final var compactionBound = snapshot.getCompactionBound();
+  private void delegateDeletion(final PersistedSnapshot persistedSnapshot) {
+    final var compactionBound = persistedSnapshot.getCompactionBound();
     logCompactor
         .compactLog(compactionBound)
         .exceptionally(error -> logCompactionError(compactionBound, error))

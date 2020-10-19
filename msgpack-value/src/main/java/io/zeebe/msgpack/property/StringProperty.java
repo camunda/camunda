@@ -28,7 +28,7 @@ public final class StringProperty extends BaseProperty<StringValue> {
 
   public void setValue(final String value) {
     this.value.wrap(getBytes(value));
-    this.isSet = true;
+    isSet = true;
   }
 
   public void setValue(final DirectBuffer buffer) {
@@ -36,7 +36,7 @@ public final class StringProperty extends BaseProperty<StringValue> {
   }
 
   public void setValue(final DirectBuffer buffer, final int offset, final int length) {
-    this.value.wrap(buffer, offset, length);
-    this.isSet = true;
+    value.wrap(buffer, offset, length);
+    isSet = true;
   }
 }

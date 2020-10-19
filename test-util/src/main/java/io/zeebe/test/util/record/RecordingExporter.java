@@ -8,6 +8,7 @@
 package io.zeebe.test.util.record;
 
 import io.zeebe.exporter.api.Exporter;
+import io.zeebe.exporter.api.context.Controller;
 import io.zeebe.protocol.record.Record;
 import io.zeebe.protocol.record.RecordValue;
 import io.zeebe.protocol.record.ValueType;
@@ -51,18 +52,34 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public final class RecordingExporter implements Exporter {
+  public static final long DEFAULT_MAX_WAIT_TIME = Duration.ofSeconds(5).toMillis();
 
-  private static final long MAX_WAIT = Duration.ofSeconds(5).toMillis();
   private static final List<Record<?>> RECORDS = new CopyOnWriteArrayList<>();
   private static final Lock LOCK = new ReentrantLock();
   private static final Condition IS_EMPTY = LOCK.newCondition();
 
+  private static long maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
+
+  private Controller controller;
+
+  public static void setMaximumWaitTime(final long maximumWaitTime) {
+    RecordingExporter.maximumWaitTime = maximumWaitTime;
+  }
+
   @Override
-  public void export(final Record record) {
+  public void open(final Controller controller) {
+    this.controller = controller;
+  }
+
+  @Override
+  public void export(final Record<?> record) {
     LOCK.lock();
     try {
       RECORDS.add(record.clone());
       IS_EMPTY.signal();
+      if (controller != null) { // the engine tests do not open the exporter
+        controller.updateLastExportedRecordPosition(record.getPosition());
+      }
     } finally {
       LOCK.unlock();
     }
@@ -231,7 +248,7 @@ public final class RecordingExporter implements Exporter {
       LOCK.lock();
       try {
         long now = System.currentTimeMillis();
-        final long endTime = now + MAX_WAIT;
+        final long endTime = now + maximumWaitTime;
         while (isEmpty() && endTime > now) {
           final long waitTime = endTime - now;
           try {

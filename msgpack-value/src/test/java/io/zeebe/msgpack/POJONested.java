@@ -13,15 +13,15 @@ public final class POJONested extends UnpackedObject {
   private final LongProperty longProp = new LongProperty("foo", -1L);
 
   public POJONested() {
-    this.declareProperty(longProp);
+    declareProperty(longProp);
   }
 
   public long getLong() {
-    return this.longProp.getValue();
+    return longProp.getValue();
   }
 
   public POJONested setLong(final long value) {
-    this.longProp.setValue(value);
+    longProp.setValue(value);
     return this;
   }
 }

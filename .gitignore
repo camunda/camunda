@@ -24,7 +24,9 @@ faces-config.NavData
 .cache-tests
 
 *.DS_Store
+.java-version
 .gradle
+.worktree
 work/
 public/
 tngp-data

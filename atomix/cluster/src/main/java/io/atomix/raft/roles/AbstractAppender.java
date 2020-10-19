@@ -31,23 +31,27 @@ import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.RaftRequest;
 import io.atomix.raft.protocol.RaftResponse;
+import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.storage.snapshot.Snapshot;
-import io.atomix.raft.storage.snapshot.SnapshotChunk;
-import io.atomix.raft.storage.snapshot.SnapshotChunkReader;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
+import io.zeebe.snapshots.raft.SnapshotChunk;
+import io.zeebe.snapshots.raft.SnapshotChunkReader;
+import java.io.UncheckedIOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.slf4j.Logger;
 
 /** Abstract appender. */
 abstract class AbstractAppender implements AutoCloseable {
 
-  private static final int MAX_BATCH_SIZE = 1024 * 32;
+  protected final int maxBatchSizePerAppend;
   protected final Logger log;
   protected final RaftContext raft;
   protected boolean open = true;
@@ -56,10 +60,11 @@ abstract class AbstractAppender implements AutoCloseable {
 
   AbstractAppender(final RaftContext raft) {
     this.raft = checkNotNull(raft, "context cannot be null");
-    this.log =
+    log =
         ContextualLoggerFactory.getLogger(
             getClass(), LoggerContext.builder(RaftServer.class).addValue(raft.getName()).build());
-    this.metrics = new LeaderMetrics(raft.getName());
+    metrics = new LeaderMetrics(raft.getName());
+    maxBatchSizePerAppend = raft.getMaxAppendBatchSize();
   }
 
   /**
@@ -114,10 +119,11 @@ abstract class AbstractAppender implements AutoCloseable {
       prevIndex = prevEntry.index();
       prevTerm = prevEntry.entry().term();
     } else {
-      final Snapshot currentSnapshot = raft.getSnapshotStore().getCurrentSnapshot();
-      if (currentSnapshot != null) {
-        prevIndex = currentSnapshot.index();
-        prevTerm = currentSnapshot.term();
+      final var optCurrentSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
+      if (optCurrentSnapshot.isPresent()) {
+        final var currentSnapshot = optCurrentSnapshot.get();
+        prevIndex = currentSnapshot.getIndex();
+        prevTerm = currentSnapshot.getTerm();
       }
     }
     return AppendRequest.builder().withPrevLogTerm(prevTerm).withPrevLogIndex(prevIndex);
@@ -155,7 +161,7 @@ abstract class AbstractAppender implements AutoCloseable {
       final Indexed<RaftLogEntry> entry = reader.next();
       entries.add(entry.entry());
       size += entry.size();
-      if (entry.index() == lastIndex || size >= MAX_BATCH_SIZE) {
+      if (entry.index() == lastIndex || size >= maxBatchSizePerAppend) {
         break;
       }
     }
@@ -448,44 +454,60 @@ abstract class AbstractAppender implements AutoCloseable {
   }
 
   /** Builds an install request for the given member. */
-  protected InstallRequest buildInstallRequest(
-      final RaftMemberContext member, final Snapshot snapshot) {
-    if (member.getNextSnapshotIndex() != snapshot.index()) {
-      member.setNextSnapshotIndex(snapshot.index());
+  protected Optional<InstallRequest> buildInstallRequest(
+      final RaftMemberContext member, final PersistedSnapshot persistedSnapshot) {
+    if (member.getNextSnapshotIndex() != persistedSnapshot.getIndex()) {
+      try {
+        final SnapshotChunkReader snapshotChunkReader = persistedSnapshot.newChunkReader();
+        member.setSnapshotChunkReader(snapshotChunkReader);
+      } catch (final UncheckedIOException e) {
+        log.warn(
+            "Expected to send Snapshot {} to {}. But could not open SnapshotChunkReader. Will retry.",
+            persistedSnapshot.getId(),
+            e);
+        return Optional.empty();
+      }
+      member.setNextSnapshotIndex(persistedSnapshot.getIndex());
       member.setNextSnapshotChunk(null);
     }
 
-    final InstallRequest request;
-    synchronized (snapshot) {
-      // Open a new snapshot reader.
-      try (final SnapshotChunkReader reader = snapshot.newChunkReader()) {
-        reader.seek(member.getNextSnapshotChunk());
-        final SnapshotChunk chunk = reader.next();
-
-        // Create the install request, indicating whether this is the last chunk of data based on
-        // the number
-        // of bytes remaining in the buffer.
-        final DefaultRaftMember leader = raft.getLeader();
-        request =
-            InstallRequest.builder()
-                .withCurrentTerm(raft.getTerm())
-                .withLeader(leader.memberId())
-                .withIndex(snapshot.index())
-                .withTerm(snapshot.term())
-                .withTimestamp(snapshot.timestamp().unixTimestamp())
-                .withVersion(snapshot.version())
-                .withData(chunk.data())
-                .withChunkId(chunk.id())
-                .withInitial(member.getNextSnapshotChunk() == null)
-                .withComplete(!reader.hasNext())
-                .withNextChunkId(reader.nextId())
-                .build();
-      } catch (final Exception e) {
-        throw new RuntimeException(e);
-      }
+    final SnapshotChunkReader reader = member.getSnapshotChunkReader();
+    if (!reader.hasNext()) {
+      return Optional.empty();
     }
 
-    return request;
+    try {
+      final SnapshotChunk chunk = reader.next();
+
+      // Create the install request, indicating whether this is the last chunk of data based on
+      // the number of bytes remaining in the buffer.
+      final DefaultRaftMember leader = raft.getLeader();
+
+      final InstallRequest request =
+          InstallRequest.builder()
+              .withCurrentTerm(raft.getTerm())
+              .withLeader(leader.memberId())
+              .withIndex(persistedSnapshot.getIndex())
+              .withTerm(persistedSnapshot.getTerm())
+              .withTimestamp(persistedSnapshot.getTimestamp().unixTimestamp())
+              .withVersion(persistedSnapshot.version())
+              .withData(new SnapshotChunkImpl(chunk).toByteBuffer())
+              .withChunkId(ByteBuffer.wrap(chunk.getChunkName().getBytes()))
+              .withInitial(member.getNextSnapshotChunk() == null)
+              .withComplete(!reader.hasNext())
+              .withNextChunkId(reader.nextId())
+              .build();
+      return Optional.of(request);
+    } catch (final UncheckedIOException e) {
+      log.warn(
+          "Expected to send next chunk of Snapshot {} to {}. But could not read SnapshotChunk. Snapshot may have been deleted. Will retry.",
+          persistedSnapshot.getId(),
+          member.getMember().memberId(),
+          e);
+      // If snapshot was deleted, a new reader should be created with the new snapshot
+      member.setNextSnapshotIndex(0);
+      return Optional.empty();
+    }
   }
 
   /** Connects to the member and sends a snapshot request. */

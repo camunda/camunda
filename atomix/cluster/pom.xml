@@ -27,15 +27,27 @@
       <groupId>io.zeebe</groupId>
     </dependency>
     <dependency>
+      <artifactId>zeebe-util</artifactId>
+      <groupId>io.zeebe</groupId>
+    </dependency>
+    <dependency>
+      <artifactId>zeebe-protocol</artifactId>
+      <groupId>io.zeebe</groupId>
+    </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-snapshots</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.agrona</groupId>
+      <artifactId>agrona</artifactId>
+    </dependency>
+    <dependency>
       <artifactId>netty-transport</artifactId>
       <groupId>io.netty</groupId>
     </dependency>
     <dependency>
       <artifactId>netty-codec</artifactId>
-      <groupId>io.netty</groupId>
-    </dependency>
-    <dependency>
-      <artifactId>netty-handler</artifactId>
       <groupId>io.netty</groupId>
     </dependency>
     <dependency>
@@ -72,15 +84,9 @@
       <groupId>com.google.guava</groupId>
     </dependency>
     <dependency>
-      <artifactId>classgraph</artifactId>
-      <groupId>io.github.classgraph</groupId>
-    </dependency>
-    <dependency>
       <artifactId>simpleclient</artifactId>
       <groupId>io.prometheus</groupId>
     </dependency>
-
-
     <dependency>
       <artifactId>concurrentunit</artifactId>
       <groupId>net.jodah</groupId>
@@ -101,6 +107,27 @@
       <groupId>org.hamcrest</groupId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>uk.co.real-logic</groupId>
+      <artifactId>sbe-tool</artifactId>
+    </dependency>
   </dependencies>
 
   <modelVersion>4.0.0</modelVersion>
@@ -110,6 +137,73 @@
   <parent>
     <artifactId>atomix-parent</artifactId>
     <groupId>io.zeebe</groupId>
-    <version>0.24.0-SNAPSHOT</version>
+    <version>0.25.0-SNAPSHOT</version>
   </parent>
+
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources combine.children="append"><!-- merging with parent
+                  config for benchmarks -->
+                <source>${project.build.directory}/generated-sources/sbe</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>java</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <executableDependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>sbe</artifactId>
+          </executableDependency>
+          <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
+          <arguments>
+            <argument>${project.build.resources[0].directory}/snapshot-schema.xml</argument>
+          </arguments>
+          <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
+          <!-- system properties defined in zeebe-parent -->
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>uk.co.real-logic</groupId>
+            <artifactId>sbe-all</artifactId>
+            <version>${version.sbe}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <usedDependencies>
+            <!-- dependency used but plugin seems to report a false positive here -->
+            <dependency>uk.co.real-logic:sbe-tool</dependency>
+          </usedDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>

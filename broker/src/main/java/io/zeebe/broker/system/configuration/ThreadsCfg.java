@@ -16,7 +16,7 @@ public final class ThreadsCfg implements ConfigurationEntry {
   }
 
   public void setCpuThreadCount(final int cpuThreads) {
-    this.cpuThreadCount = cpuThreads;
+    cpuThreadCount = cpuThreads;
   }
 
   public int getIoThreadCount() {
@@ -24,7 +24,7 @@ public final class ThreadsCfg implements ConfigurationEntry {
   }
 
   public void setIoThreadCount(final int ioThreads) {
-    this.ioThreadCount = ioThreads;
+    ioThreadCount = ioThreads;
   }
 
   @Override

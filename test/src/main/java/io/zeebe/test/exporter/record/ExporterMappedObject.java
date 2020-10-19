@@ -30,7 +30,7 @@ class ExporterMappedObject {
   }
 
   public ExporterMappedObject setJson(final Object object) {
-    this.json = OBJECT_MAPPER.toJson(object);
+    json = OBJECT_MAPPER.toJson(object);
     return this;
   }
 }

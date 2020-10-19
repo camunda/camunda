@@ -15,4 +15,12 @@
  */
 package io.zeebe.client.api.response;
 
-public interface PublishMessageResponse {}
+public interface PublishMessageResponse {
+
+  /**
+   * Returns the record key of the message that was published.
+   *
+   * @return record key of the message.
+   */
+  long getMessageKey();
+}

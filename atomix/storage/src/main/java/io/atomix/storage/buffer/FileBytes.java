@@ -65,7 +65,7 @@ public class FileBytes extends AbstractBytes {
     this.mode = mode;
     this.size = size;
     try {
-      this.randomAccessFile = new RandomAccessFile(file, mode);
+      randomAccessFile = new RandomAccessFile(file, mode);
       if (size > randomAccessFile.length()) {
         randomAccessFile.setLength(size);
       }
@@ -145,8 +145,8 @@ public class FileBytes extends AbstractBytes {
       throw new IllegalArgumentException(
           "cannot decrease file bytes size; use zero() to decrease file size");
     }
-    final int oldSize = this.size;
-    this.size = newSize;
+    final int oldSize = size;
+    size = newSize;
     try {
       final long length = randomAccessFile.length();
       if (newSize > length) {
@@ -160,23 +160,13 @@ public class FileBytes extends AbstractBytes {
   }
 
   @Override
-  public boolean isFile() {
-    return true;
-  }
-
-  @Override
   public ByteOrder order() {
     return ByteOrder.BIG_ENDIAN;
   }
 
   @Override
-  public Bytes flush() {
-    try {
-      randomAccessFile.getFD().sync();
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
-    return this;
+  public boolean isFile() {
+    return true;
   }
 
   @Override
@@ -187,6 +177,16 @@ public class FileBytes extends AbstractBytes {
       throw new RuntimeException(e);
     }
     super.close();
+  }
+
+  @Override
+  public Bytes flush() {
+    try {
+      randomAccessFile.getFD().sync();
+    } catch (final IOException e) {
+      throw new RuntimeException(e);
+    }
+    return this;
   }
 
   /**

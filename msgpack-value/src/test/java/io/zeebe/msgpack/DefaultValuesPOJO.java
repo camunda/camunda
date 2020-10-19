@@ -17,7 +17,7 @@ public final class DefaultValuesPOJO extends UnpackedObject {
   public DefaultValuesPOJO(final long defaultValue) {
     defaultValueProperty = new LongProperty("defaultValueProp", defaultValue);
 
-    this.declareProperty(defaultValueProperty).declareProperty(noDefaultValueProperty);
+    declareProperty(defaultValueProperty).declareProperty(noDefaultValueProperty);
   }
 
   public long getDefaultValueProperty() {
@@ -25,7 +25,7 @@ public final class DefaultValuesPOJO extends UnpackedObject {
   }
 
   public void setDefaultValueProperty(final long value) {
-    this.defaultValueProperty.setValue(value);
+    defaultValueProperty.setValue(value);
   }
 
   public long getNoDefaultValueProperty() {
@@ -33,6 +33,6 @@ public final class DefaultValuesPOJO extends UnpackedObject {
   }
 
   public void setNoDefaultValueProperty(final long value) {
-    this.noDefaultValueProperty.setValue(value);
+    noDefaultValueProperty.setValue(value);
   }
 }

@@ -41,7 +41,7 @@ public class BlockPeek implements Iterable<DirectBuffer> {
       final int newPartitionId,
       final int newPartitionOffset) {
     this.byteBuffer = byteBuffer;
-    this.subscriberPosition = position;
+    subscriberPosition = position;
     this.dataConsumed = dataConsumed;
     this.streamId = streamId;
     this.bufferOffset = bufferOffset;

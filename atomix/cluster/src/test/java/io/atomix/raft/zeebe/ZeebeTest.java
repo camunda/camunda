@@ -44,7 +44,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.After;
@@ -72,7 +72,7 @@ public class ZeebeTest {
   @Parameter(1)
   public Collection<Function<TemporaryFolder, ZeebeTestNode>> nodeSuppliers;
 
-  private final Logger logger = LoggerFactory.getLogger(this.getClass());
+  private final Logger logger = LoggerFactory.getLogger(getClass());
   private final Stopwatch stopwatch = Stopwatch.createUnstarted();
   private final TestAppender appenderWrapper = new TestAppender();
 
@@ -253,7 +253,7 @@ public class ZeebeTest {
         // it may take a little bit before the listener is called as this is done
         // asynchronously
         helper.await(() -> listener.calledCount.get() == expectedCount);
-        assertTrue(helper.isEntryEqualTo(entry, listener.lastCommitted.get()));
+        assertEquals(entry.index(), listener.lastCommitted.get());
       }
     }
   }
@@ -281,15 +281,13 @@ public class ZeebeTest {
 
   static class CommitListener implements RaftCommitListener {
 
-    private final AtomicReference<Indexed<ZeebeEntry>> lastCommitted = new AtomicReference<>();
+    private final AtomicLong lastCommitted = new AtomicLong();
     private final AtomicInteger calledCount = new AtomicInteger(0);
 
     @Override
-    public <T extends RaftLogEntry> void onCommit(final Indexed<T> entry) {
-      if (entry.type() == ZeebeEntry.class) {
-        lastCommitted.set(entry.cast());
-        calledCount.incrementAndGet();
-      }
+    public <T extends RaftLogEntry> void onCommit(final long index) {
+      lastCommitted.set(index);
+      calledCount.incrementAndGet();
     }
   }
 }

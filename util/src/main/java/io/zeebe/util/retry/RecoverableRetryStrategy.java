@@ -22,7 +22,7 @@ public final class RecoverableRetryStrategy implements RetryStrategy {
 
   public RecoverableRetryStrategy(final ActorControl actor) {
     this.actor = actor;
-    this.retryMechanism = new ActorRetryMechanism(actor);
+    retryMechanism = new ActorRetryMechanism(actor);
   }
 
   @Override

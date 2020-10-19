@@ -25,6 +25,7 @@ final class RequestContext {
   private final Supplier<String> nodeAddressSupplier;
   private final int partitionId;
   private final byte[] requestBytes;
+  private final boolean shouldRetry;
   private final long startTime;
   private final Duration timeout;
   private final Predicate<DirectBuffer> responseValidator;
@@ -37,12 +38,14 @@ final class RequestContext {
       final int partitionId,
       final byte[] requestBytes,
       final Predicate<DirectBuffer> responseValidator,
+      final boolean shouldRetry,
       final Duration timeout) {
     this.currentFuture = currentFuture;
     this.nodeAddressSupplier = nodeAddressSupplier;
     this.partitionId = partitionId;
     this.requestBytes = requestBytes;
-    this.startTime = ActorClock.currentTimeMillis();
+    this.shouldRetry = shouldRetry;
+    startTime = ActorClock.currentTimeMillis();
     this.responseValidator = responseValidator;
     this.timeout = timeout;
   }
@@ -84,12 +87,12 @@ final class RequestContext {
     return responseValidator.test(response);
   }
 
-  public void complete(DirectBuffer buffer) {
+  public void complete(final DirectBuffer buffer) {
     currentFuture.complete(buffer);
     cancelTimer();
   }
 
-  public void completeExceptionally(Throwable throwable) {
+  public void completeExceptionally(final Throwable throwable) {
     currentFuture.completeExceptionally(throwable);
     cancelTimer();
   }
@@ -100,12 +103,16 @@ final class RequestContext {
     }
   }
 
-  public void setScheduledTimer(ScheduledTimer scheduledTimer) {
+  public void setScheduledTimer(final ScheduledTimer scheduledTimer) {
     this.scheduledTimer = scheduledTimer;
   }
 
   public void timeout() {
     currentFuture.completeExceptionally(
         new TimeoutException("Request timed out after " + timeout.toString()));
+  }
+
+  public boolean shouldRetry() {
+    return shouldRetry;
   }
 }

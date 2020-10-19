@@ -10,11 +10,11 @@ package io.zeebe.engine.util;
 import static io.zeebe.engine.util.Records.workflowInstance;
 
 import io.zeebe.db.ZeebeDbFactory;
-import io.zeebe.engine.processor.ReadonlyProcessingContext;
-import io.zeebe.engine.processor.StreamProcessor;
-import io.zeebe.engine.processor.TypedRecord;
-import io.zeebe.engine.processor.TypedRecordProcessorFactory;
-import io.zeebe.engine.processor.TypedRecordProcessors;
+import io.zeebe.engine.processing.streamprocessor.ReadonlyProcessingContext;
+import io.zeebe.engine.processing.streamprocessor.StreamProcessor;
+import io.zeebe.engine.processing.streamprocessor.TypedRecord;
+import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.msgpack.UnpackedObject;
@@ -74,12 +74,28 @@ public class StreamProcessingComposite {
         }));
   }
 
+  public void pauseProcessing(final int partitionId) {
+    streams.pauseProcessing(getLogName(partitionId));
+  }
+
+  public void resumeProcessing(final int partitionId) {
+    streams.resumeProcessing(getLogName(partitionId));
+  }
+
+  public void snapshot(final int partitionId) {
+    streams.snapshot(getLogName(partitionId));
+  }
+
   public void closeStreamProcessor(final int partitionId) {
     try {
       streams.closeProcessor(getLogName(partitionId));
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public StreamProcessor getStreamProcessor(final int partitionId) {
+    return streams.getStreamProcessor(getLogName(partitionId));
   }
 
   public ZeebeState getZeebeState() {

@@ -11,7 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.atomix.core.Atomix;
 import io.zeebe.broker.clustering.topology.TopologyManager;
 import io.zeebe.broker.clustering.topology.TopologyPartitionListenerImpl;
-import io.zeebe.engine.processor.workflow.message.command.PartitionCommandSender;
+import io.zeebe.engine.processing.message.command.PartitionCommandSender;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.MutableDirectBuffer;
@@ -27,7 +27,7 @@ public final class PartitionCommandSenderImpl implements PartitionCommandSender 
   public PartitionCommandSenderImpl(
       final Atomix atomix, final TopologyManager topologyManager, final ActorControl actor) {
     this.atomix = atomix;
-    this.partitionListener = new TopologyPartitionListenerImpl(actor);
+    partitionListener = new TopologyPartitionListenerImpl(actor);
     topologyManager.addTopologyPartitionListener(partitionListener);
   }
 

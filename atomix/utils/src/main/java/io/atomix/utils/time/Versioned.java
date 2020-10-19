@@ -135,9 +135,9 @@ public class Versioned<V> {
       return false;
     }
     final Versioned<V> that = (Versioned) other;
-    return Objects.equal(this.value, that.value)
-        && Objects.equal(this.version, that.version)
-        && Objects.equal(this.creationTime, that.creationTime);
+    return Objects.equal(value, that.value)
+        && Objects.equal(version, that.version)
+        && Objects.equal(creationTime, that.creationTime);
   }
 
   @Override

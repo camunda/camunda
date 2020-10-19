@@ -41,12 +41,30 @@ chmod 700 get_helm.sh
 ## add zeebe as helm repo
 helm version
 helm repo add zeebe https://helm.zeebe.io
+helm repo add stable https://kubernetes-charts.storage.googleapis.com
 helm repo update
 
 ## install kubens
 curl -LO https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens
 install kubens /usr/local/bin/
 ```
+
+## Best Practices Windows
+
+ Running the benchmarks on Windows is possible with the help of the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+The setup changes slightly compared to the Linux setup.
+
+These are the components to install on Windows:
+* Docker
+
+These are the components to install within the WSL:
+* gcloud https://cloud.google.com/sdk/install?hl=de
+* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
+* Helm 3.*  https://helm.sh/docs/intro/install/
+* kubens/kubectx https://github.com/ahmetb/kubectx
+
+When following the instructions above, execute all commands that deal with Docker in a Windows shell, and exeucte all other commands in the WSL shell.
+
 
 ## What's next?
 

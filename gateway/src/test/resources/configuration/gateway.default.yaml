@@ -1,11 +1,7 @@
 # Zeebe standalone gateway configuration file.
 
 # ! ! ! ! ! ! ! ! ! !
-# In order to activate the settings in this file, please choose one of the following ways:
-# a) rename this file to application.yaml
-# b) remove the *.template suffix and
-#      Set the following environment variable: export SPRING_CONFIG_LOCATION='file:./config/gateway.yaml'
-#      Alternatively, you can also pass it as a command line argument: ./bin/gateway --spring.config.location=file:./config/gateway.yaml
+# In order to activate the settings in this file, rename this file to application.yaml
 # ! ! ! ! ! ! ! ! ! !
 
 # For the configuration of the embedded gateway that is deployed alongside a broker see the gateway section of broker.yaml.template
@@ -106,3 +102,8 @@
 # Sets the path to the private key file location
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_PRIVATEKEYPATH.
 # privateKeyPath:
+
+# longPolling:
+# Enables long polling for available jobs
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_LONGPOLLING_ENABLED.
+# enabled: true

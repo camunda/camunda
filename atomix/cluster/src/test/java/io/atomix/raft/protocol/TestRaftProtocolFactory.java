@@ -27,21 +27,10 @@ import java.util.Map;
 public class TestRaftProtocolFactory {
 
   private final Map<MemberId, TestRaftServerProtocol> servers = Maps.newConcurrentMap();
-  private final Map<MemberId, TestRaftClientProtocol> clients = Maps.newConcurrentMap();
   private final ThreadContext context;
 
   public TestRaftProtocolFactory(final ThreadContext context) {
     this.context = context;
-  }
-
-  /**
-   * Returns a new test client protocol.
-   *
-   * @param memberId the client member identifier
-   * @return a new test client protocol
-   */
-  public TestRaftClientProtocol newClientProtocol(final MemberId memberId) {
-    return new TestRaftClientProtocol(memberId, servers, clients, context);
   }
 
   /**
@@ -52,7 +41,7 @@ public class TestRaftProtocolFactory {
    */
   public TestRaftServerProtocol newServerProtocol(final MemberId memberId) {
     final TestRaftServerProtocol spyProtocol =
-        spy(new TestRaftServerProtocol(memberId, servers, clients, context));
+        spy(new TestRaftServerProtocol(memberId, servers, context));
     servers.put(memberId, spyProtocol);
     return spyProtocol;
   }

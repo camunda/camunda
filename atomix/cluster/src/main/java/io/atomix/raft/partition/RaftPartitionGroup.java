@@ -17,6 +17,7 @@
 package io.atomix.raft.partition;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import com.google.common.collect.Lists;
@@ -25,7 +26,6 @@ import com.google.common.collect.Sets;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
-import io.atomix.primitive.Recovery;
 import io.atomix.primitive.partition.ManagedPartitionGroup;
 import io.atomix.primitive.partition.Partition;
 import io.atomix.primitive.partition.PartitionGroup;
@@ -33,13 +33,7 @@ import io.atomix.primitive.partition.PartitionGroupConfig;
 import io.atomix.primitive.partition.PartitionId;
 import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
-import io.atomix.primitive.protocol.PrimitiveProtocol;
-import io.atomix.primitive.protocol.ProxyProtocol;
-import io.atomix.raft.MultiRaftProtocol;
-import io.atomix.raft.RaftClient;
-import io.atomix.raft.RaftStateMachineFactory;
-import io.atomix.raft.impl.DefaultRaftClient;
-import io.atomix.raft.storage.snapshot.SnapshotStoreFactory;
+import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.storage.StorageLevel;
 import io.atomix.utils.concurrent.BlockingAwareThreadPoolContextFactory;
 import io.atomix.utils.concurrent.Futures;
@@ -47,12 +41,14 @@ import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.memory.MemorySize;
+import io.atomix.utils.serializer.FallbackNamespace;
 import io.atomix.utils.serializer.Namespace;
+import io.atomix.utils.serializer.NamespaceImpl;
 import io.atomix.utils.serializer.Namespaces;
+import io.zeebe.snapshots.raft.ReceivableSnapshotStoreFactory;
 import java.io.File;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -83,24 +79,24 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   public RaftPartitionGroup(final RaftPartitionGroupConfig config) {
     final Logger log =
         ContextualLoggerFactory.getLogger(
-            DefaultRaftClient.class,
-            LoggerContext.builder(RaftClient.class).addValue(config.getName()).build());
-    this.name = config.getName();
+            RaftPartitionGroup.class,
+            LoggerContext.builder(RaftPartitionGroup.class).addValue(config.getName()).build());
+    name = config.getName();
     this.config = config;
-    this.partitionSize = config.getPartitionSize();
+    partitionSize = config.getPartitionSize();
 
     final int threadPoolSize =
         Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 16), 4);
-    this.threadContextFactory =
+    threadContextFactory =
         new BlockingAwareThreadPoolContextFactory(
             "raft-partition-group-" + name + "-%d", threadPoolSize, log);
-    this.snapshotSubject = "raft-partition-group-" + name + "-snapshot";
+    snapshotSubject = "raft-partition-group-" + name + "-snapshot";
 
     buildPartitions(config, threadContextFactory)
         .forEach(
             p -> {
-              this.partitions.put(p.id(), p);
-              this.sortedPartitionIds.add(p.id());
+              partitions.put(p.id(), p);
+              sortedPartitionIds.add(p.id());
             });
     Collections.sort(sortedPartitionIds);
   }
@@ -134,24 +130,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   @Override
   public String name() {
     return name;
-  }
-
-  @Override
-  public PartitionGroup.Type type() {
-    return TYPE;
-  }
-
-  @Override
-  public PrimitiveProtocol.Type protocol() {
-    return MultiRaftProtocol.TYPE;
-  }
-
-  @Override
-  public ProxyProtocol newProtocol() {
-    return MultiRaftProtocol.builder(name)
-        .withRecoveryStrategy(Recovery.RECOVER)
-        .withMaxRetries(5)
-        .build();
   }
 
   @Override
@@ -213,7 +191,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
 
     // We expect to bootstrap partitions where leadership is equally distributed.
     // First member of a PartitionMetadata is the bootstrap leader
-    this.metadata = buildPartitions();
+    metadata = buildPartitions();
     // +------------------+----+----+----+---+
     // | Partition \ Node | 0  | 1  | 2  | 3 |
     // +------------------+----+----+----+---+
@@ -224,7 +202,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     // |                5 | L  | F  | F  |   |
     // +------------------+----+----+----+---+
 
-    this.communicationService = managementService.getMessagingService();
+    communicationService = managementService.getMessagingService();
     communicationService.<Void, Void>subscribe(snapshotSubject, m -> handleSnapshot());
     final List<CompletableFuture<Partition>> futures =
         metadata.stream()
@@ -302,13 +280,13 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
 
     @Override
     public Namespace namespace() {
-      return Namespace.builder()
-          .nextId(Namespaces.BEGIN_USER_CUSTOM_ID + 100)
-          .register(RaftPartitionGroupConfig.class)
-          .register(RaftStorageConfig.class)
-          .register(RaftCompactionConfig.class)
-          .register(StorageLevel.class)
-          .build();
+      return new FallbackNamespace(
+          new NamespaceImpl.Builder()
+              .nextId(Namespaces.BEGIN_USER_CUSTOM_ID + 100)
+              .register(RaftPartitionGroupConfig.class)
+              .register(RaftStorageConfig.class)
+              .register(Void.class) // RaftCompactionConfig
+              .register(StorageLevel.class));
     }
 
     @Override
@@ -336,32 +314,9 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
      * @return the Raft partition group builder
      * @throws NullPointerException if the members are null
      */
-    public Builder withMembers(final String... members) {
-      return withMembers(Arrays.asList(members));
-    }
-
-    /**
-     * Sets the Raft partition group members.
-     *
-     * @param members the Raft partition group members
-     * @return the Raft partition group builder
-     * @throws NullPointerException if the members are null
-     */
     public Builder withMembers(final Collection<String> members) {
       config.setMembers(Sets.newHashSet(checkNotNull(members, "members cannot be null")));
       return this;
-    }
-
-    /**
-     * Sets the Raft partition group members.
-     *
-     * @param members the Raft partition group members
-     * @return the Raft partition group builder
-     * @throws NullPointerException if the members are null
-     */
-    public Builder withMembers(final MemberId... members) {
-      return withMembers(
-          Stream.of(members).map(nodeId -> nodeId.id()).collect(Collectors.toList()));
     }
 
     /**
@@ -423,13 +378,26 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     /**
-     * Sets the default session timeout.
+     * Sets the maximum append requests which are sent per follower at once. Default is 2.
      *
-     * @param defaultSessionTimeout the default session timeout
-     * @return the Raft partition group configuration
+     * @param maxAppendsPerFollower the maximum appends send per follower
+     * @return the Raft partition group builder
      */
-    public Builder withDefaultSessionTimeout(final Duration defaultSessionTimeout) {
-      config.setDefaultSessionTimeout(defaultSessionTimeout);
+    public Builder withMaxAppendsPerFollower(final int maxAppendsPerFollower) {
+      checkArgument(maxAppendsPerFollower > 0, "maxAppendsPerFollower must be positive");
+      config.setMaxAppendsPerFollower(maxAppendsPerFollower);
+      return this;
+    }
+
+    /**
+     * Sets the maximum batch size, which is sent per append request. Default size is 32 KB.
+     *
+     * @param maxAppendBatchSize the maximum batch size per append
+     * @return the Raft partition group builder
+     */
+    public Builder withMaxAppendBatchSize(final int maxAppendBatchSize) {
+      checkArgument(maxAppendBatchSize > 0, "maxAppendBatchSize must be positive");
+      config.setMaxAppendBatchSize(maxAppendBatchSize);
       return this;
     }
 
@@ -500,44 +468,47 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     }
 
     /**
-     * Enables flush on commit.
+     * Set the minimum free disk space (in bytes) to leave when allocating a new segment
      *
+     * @param freeDiskSpace free disk space in bytes
      * @return the Raft partition group builder
      */
-    public Builder withFlushOnCommit() {
-      return withFlushOnCommit(true);
+    public Builder withFreeDiskSpace(final long freeDiskSpace) {
+      config.getStorageConfig().setFreeDiskSpace(freeDiskSpace);
+      return this;
     }
 
     /**
      * Sets whether to flush logs to disk on commit.
      *
-     * @param flushOnCommit whether to flush logs to disk on commit
+     * @param flushExplicitly whether to flush logs to disk on commit
      * @return the Raft partition group builder
      */
-    public Builder withFlushOnCommit(final boolean flushOnCommit) {
-      config.getStorageConfig().setFlushOnCommit(flushOnCommit);
-      return this;
-    }
-
-    /**
-     * Sets the Raft state machine factory to use.
-     *
-     * @param stateMachineFactory the new state machine factory to use
-     * @return the Raft partition group builder
-     */
-    public Builder withStateMachineFactory(final RaftStateMachineFactory stateMachineFactory) {
-      config.setStateMachineFactory(stateMachineFactory);
+    public Builder withFlushExplicitly(final boolean flushExplicitly) {
+      config.getStorageConfig().setFlushExplicitly(flushExplicitly);
       return this;
     }
 
     /**
      * Sets the Raft snapshot store factory to use.
      *
-     * @param snapshotStoreFactory the new snapshot store factory to use
+     * @param persistedSnapshotStoreFactory the new snapshot store factory to use
      * @return the Raft partition group builder
      */
-    public Builder withSnapshotStoreFactory(final SnapshotStoreFactory snapshotStoreFactory) {
-      config.getStorageConfig().setSnapshotStoreFactory(snapshotStoreFactory);
+    public Builder withSnapshotStoreFactory(
+        final ReceivableSnapshotStoreFactory persistedSnapshotStoreFactory) {
+      config.getStorageConfig().setPersistedSnapshotStoreFactory(persistedSnapshotStoreFactory);
+      return this;
+    }
+
+    /**
+     * Sets the entry validator to be called when an entry is appended.
+     *
+     * @param entryValidator the entry validator
+     * @return the Raft Partition group builder
+     */
+    public Builder withEntryValidator(final EntryValidator entryValidator) {
+      config.setEntryValidator(entryValidator);
       return this;
     }
 

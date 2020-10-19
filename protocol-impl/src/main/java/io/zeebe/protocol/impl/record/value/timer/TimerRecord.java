@@ -13,12 +13,10 @@ import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.zeebe.protocol.record.value.TimerRecordValue;
-import io.zeebe.protocol.record.value.WorkflowInstanceRelated;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public final class TimerRecord extends UnifiedRecordValue
-    implements WorkflowInstanceRelated, TimerRecordValue {
+public final class TimerRecord extends UnifiedRecordValue implements TimerRecordValue {
 
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
@@ -28,7 +26,7 @@ public final class TimerRecord extends UnifiedRecordValue
   private final LongProperty workflowKeyProp = new LongProperty("workflowKey");
 
   public TimerRecord() {
-    this.declareProperty(elementInstanceKeyProp)
+    declareProperty(elementInstanceKeyProp)
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(dueDateProp)
         .declareProperty(targetElementId)
@@ -46,7 +44,7 @@ public final class TimerRecord extends UnifiedRecordValue
   }
 
   public TimerRecord setWorkflowInstanceKey(final long workflowInstanceKey) {
-    this.workflowInstanceKeyProp.setValue(workflowInstanceKey);
+    workflowInstanceKeyProp.setValue(workflowInstanceKey);
     return this;
   }
 
@@ -76,7 +74,7 @@ public final class TimerRecord extends UnifiedRecordValue
   }
 
   public TimerRecord setRepetitions(final int repetitions) {
-    this.repetitionsProp.setValue(repetitions);
+    repetitionsProp.setValue(repetitions);
     return this;
   }
 
@@ -86,7 +84,7 @@ public final class TimerRecord extends UnifiedRecordValue
   }
 
   public TimerRecord setDueDate(final long dueDate) {
-    this.dueDateProp.setValue(dueDate);
+    dueDateProp.setValue(dueDate);
     return this;
   }
 
@@ -96,7 +94,7 @@ public final class TimerRecord extends UnifiedRecordValue
   }
 
   public TimerRecord setWorkflowKey(final long workflowKey) {
-    this.workflowKeyProp.setValue(workflowKey);
+    workflowKeyProp.setValue(workflowKey);
     return this;
   }
 }

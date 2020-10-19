@@ -23,7 +23,7 @@ public final class Topology {
   public Topology() {}
 
   public Topology(final Topology other) {
-    this.brokers = new HashMap<>(other.brokers);
+    brokers = new HashMap<>(other.brokers);
   }
 
   private TopologyBroker getBroker(final int nodeId, final InetSocketAddress brokerAddress) {

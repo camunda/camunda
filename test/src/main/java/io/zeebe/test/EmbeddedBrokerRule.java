@@ -8,8 +8,11 @@
 package io.zeebe.test;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.PartitionListener;
+import io.zeebe.broker.SpringBrokerBridge;
 import io.zeebe.broker.system.EmbeddedGatewayService;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
@@ -17,6 +20,7 @@ import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.test.util.TestConfigurationFactory;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -25,11 +29,16 @@ import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.assertj.core.util.Files;
@@ -48,13 +57,14 @@ public class EmbeddedBrokerRule extends ExternalResource {
   private static final String STATE_DIRECTORY = "state";
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-  protected final BrokerCfg brokerCfg;
-  protected final ControlledActorClock controlledActorClock = new ControlledActorClock();
   protected final Supplier<InputStream> configSupplier;
   protected final Consumer<BrokerCfg>[] configurators;
+  protected BrokerCfg brokerCfg;
   protected Broker broker;
+  protected final ControlledActorClock controlledActorClock = new ControlledActorClock();
+  protected final SpringBrokerBridge springBrokerBridge = new SpringBrokerBridge();
   protected long startTime;
-  private final int timeout;
+  private final Duration timeout;
   private final File newTemporaryFolder;
   private List<String> dataDirectories;
 
@@ -79,6 +89,14 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public EmbeddedBrokerRule(
       final Supplier<InputStream> configSupplier,
       final int timeout,
+      final Consumer<BrokerCfg>... configurators) {
+    this(configSupplier, Duration.ofSeconds(timeout), configurators);
+  }
+
+  @SafeVarargs
+  public EmbeddedBrokerRule(
+      final Supplier<InputStream> configSupplier,
+      final Duration timeout,
       final Consumer<BrokerCfg>... configurators) {
     this.configSupplier = configSupplier;
     this.configurators = configurators;
@@ -127,7 +145,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   @Override
-  protected void before() {
+  public void before() {
     startTime = System.currentTimeMillis();
     startBroker();
     LOG.info("\n====\nBroker startup time: {}\n====\n", (System.currentTimeMillis() - startTime));
@@ -135,7 +153,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   @Override
-  protected void after() {
+  public void after() {
     try {
       LOG.info("Test execution time: " + (System.currentTimeMillis() - startTime));
       startTime = System.currentTimeMillis();
@@ -154,6 +172,8 @@ public class EmbeddedBrokerRule extends ExternalResource {
       } catch (final IOException e) {
         LOG.error("Unexpected error on deleting data.", e);
       }
+
+      controlledActorClock.reset();
     }
   }
 
@@ -166,7 +186,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public Broker getBroker() {
-    return this.broker;
+    return broker;
   }
 
   public ControlledActorClock getClock() {
@@ -187,8 +207,29 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public void startBroker() {
-    broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
+    broker =
+        new Broker(
+            brokerCfg,
+            newTemporaryFolder.getAbsolutePath(),
+            controlledActorClock,
+            springBrokerBridge);
+
+    final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());
+    broker.addPartitionListener(new LeaderPartitionListener(latch));
+
     broker.start().join();
+
+    try {
+      final boolean hasLeaderPartition = latch.await(timeout.toMillis(), TimeUnit.MILLISECONDS);
+
+      assertThat(hasLeaderPartition)
+          .describedAs("Expected the broker to have a leader of the partition within %s", timeout)
+          .isTrue();
+
+    } catch (final InterruptedException e) {
+      LOG.info("Timeout. Broker was not started within {}", timeout, e);
+      Thread.currentThread().interrupt();
+    }
 
     final EmbeddedGatewayService embeddedGatewayService = broker.getEmbeddedGatewayService();
     if (embeddedGatewayService != null) {
@@ -233,6 +274,27 @@ public class EmbeddedBrokerRule extends ExternalResource {
           deleteSnapshots(stateDirectory);
         }
       }
+    }
+  }
+
+  private static class LeaderPartitionListener implements PartitionListener {
+
+    private final CountDownLatch latch;
+
+    LeaderPartitionListener(final CountDownLatch latch) {
+      this.latch = latch;
+    }
+
+    @Override
+    public ActorFuture<Void> onBecomingFollower(final int partitionId, final long term) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public ActorFuture<Void> onBecomingLeader(
+        final int partitionId, final long term, final LogStream logStream) {
+      latch.countDown();
+      return CompletableActorFuture.completed(null);
     }
   }
 }

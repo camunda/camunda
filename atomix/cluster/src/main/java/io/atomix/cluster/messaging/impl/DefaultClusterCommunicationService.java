@@ -47,12 +47,6 @@ import org.slf4j.LoggerFactory;
 /** Cluster communication service implementation. */
 public class DefaultClusterCommunicationService implements ManagedClusterCommunicationService {
 
-  private static final Exception CONNECT_EXCEPTION = new ConnectException();
-
-  static {
-    CONNECT_EXCEPTION.setStackTrace(new StackTraceElement[0]);
-  }
-
   protected final ClusterMembershipService membershipService;
   protected final MessagingService messagingService;
   protected final UnicastService unicastService;
@@ -225,8 +219,9 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
       final boolean reliable) {
     final Member member = membershipService.getMember(toMemberId);
     if (member == null) {
-      return Futures.exceptionalFuture(CONNECT_EXCEPTION);
+      return failOnMemberNotKnown(subject, toMemberId);
     }
+
     if (reliable) {
       return messagingService.sendAsync(member.address(), subject, payload);
     } else {
@@ -242,9 +237,19 @@ public class DefaultClusterCommunicationService implements ManagedClusterCommuni
       final Duration timeout) {
     final Member member = membershipService.getMember(toMemberId);
     if (member == null) {
-      return Futures.exceptionalFuture(CONNECT_EXCEPTION);
+      return failOnMemberNotKnown(subject, toMemberId);
     }
+
     return messagingService.sendAndReceive(member.address(), subject, payload, timeout);
+  }
+
+  private <T> CompletableFuture<T> failOnMemberNotKnown(
+      final String subject, final MemberId toMemberId) {
+    final var errorMessage =
+        String.format(
+            "Expected to send a message with subject '%s' to member '%s', but member is not known. Known members are '%s'.",
+            subject, toMemberId, membershipService.getMembers());
+    return Futures.exceptionalFuture(new ConnectException(errorMessage));
   }
 
   @Override

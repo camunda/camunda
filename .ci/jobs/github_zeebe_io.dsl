@@ -8,15 +8,23 @@ organizationFolder('zeebe-io') {
     organizations {
         github {
             repoOwner('zeebe-io')
-            credentialsId('camunda-jenkins-github')
+            credentialsId('github-zeebe-app')
 
             traits {
-                 cleanBeforeCheckoutTrait()
-                 gitHubBranchDiscovery {
+                cleanBeforeCheckoutTrait {
+                    extension {
+                        deleteUntrackedNestedRepositories(false)
+                    }
+                }
+                gitHubBranchDiscovery {
                     strategyId(3)
-                 }
-                 pruneStaleBranchTrait()
-                 localBranchTrait()
+                }
+                pruneStaleBranchTrait()
+                localBranchTrait()
+                sourceWildcardFilter {
+                  includes('*')
+                  excludes('zeebe-tasklist')
+                }
             }
         }
     }

@@ -27,7 +27,6 @@ public class MessagingConfig implements Config {
   private Integer port;
   private int connectionPoolSize = 8;
   private Duration connectTimeout = Duration.ofSeconds(10);
-  private TlsConfig tlsConfig = new TlsConfig();
 
   /**
    * Returns the local interfaces to which to bind the node.
@@ -106,26 +105,6 @@ public class MessagingConfig implements Config {
    */
   public MessagingConfig setConnectTimeout(final Duration connectTimeout) {
     this.connectTimeout = connectTimeout;
-    return this;
-  }
-
-  /**
-   * Returns the TLS configuration.
-   *
-   * @return the TLS configuration
-   */
-  public TlsConfig getTlsConfig() {
-    return tlsConfig;
-  }
-
-  /**
-   * Sets the TLS configuration.
-   *
-   * @param tlsConfig the TLS configuration
-   * @return the messaging configuration
-   */
-  public MessagingConfig setTlsConfig(final TlsConfig tlsConfig) {
-    this.tlsConfig = tlsConfig;
     return this;
   }
 }

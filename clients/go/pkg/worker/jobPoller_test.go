@@ -204,6 +204,30 @@ func (suite *JobPollerSuite) TestShouldIgnoreStreamFailure() {
 	suite.consumeJob()
 }
 
+func (suite *JobPollerSuite) TestShouldReportMetrics() {
+	// given
+	suite.poller.maxJobsActive = 10
+	suite.poller.remaining = 0
+	suite.poller.threshold = 4
+
+	metrics := mock_pb.NewMockJobWorkerMetrics(suite.ctrl)
+	suite.poller.metrics = metrics
+	gomock.InOrder(
+		suite.client.EXPECT().ActivateJobs(gomock.Any(), gomock.Any()).Return(suite.singleJobStream(), nil),
+		metrics.EXPECT().SetJobsRemainingCount(gomock.Any(), 1),
+		metrics.EXPECT().SetJobsRemainingCount(gomock.Any(), 0),
+		suite.client.EXPECT().ActivateJobs(gomock.Any(), gomock.Any()).Return(suite.singleJobStream(), nil),
+		metrics.EXPECT().SetJobsRemainingCount(gomock.Any(), 1),
+		metrics.EXPECT().SetJobsRemainingCount(gomock.Any(), 0),
+	)
+
+	// when
+	go suite.poller.poll(&suite.waitGroup)
+
+	// then signal job finished to poll again
+	suite.completeJob()
+}
+
 func (suite *JobPollerSuite) singleJobStream() pb.Gateway_ActivateJobsClient {
 	stream := mock_pb.NewMockGateway_ActivateJobsClient(suite.ctrl)
 	gomock.InOrder(

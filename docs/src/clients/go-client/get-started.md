@@ -34,22 +34,28 @@ First, we need a new Go project.
 Create a new project using your IDE, or create new Go module with:
 
 ```
-mkdir -p $GOPATH/src/github.com/{{your username}}/zb-example
-cd $GOPATH/src/github.com/{{your username}}/zb-example
+mkdir -p $GOPATH/src/github.com/zb-user/zb-example
+cd $GOPATH/src/github.com/zb-user/zb-example
+go mod init
 ```
 
-Install Zeebe Go client library:
+To use the Zeebe Go client library, add the following dependency to your `go.mod`:
 
 ```
-go get -u github.com/zeebe-io/zeebe/clients/go/...
+module github.com/zb-user/zb-example
+
+go 1.13
+
+require github.com/zeebe-io/zeebe/clients/go v0.24.1
 ```
 
-Create a main.go file inside the module and add the following lines to bootstrap the Zeebe client:
+Create a `main.go` file inside the module and add the following lines to bootstrap the Zeebe client:
 
 ```go
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/pb"
@@ -58,7 +64,7 @@ import (
 const BrokerAddr = "0.0.0.0:26500"
 
 func main() {
-	zbClient, err := zbc.NewClient(&zbc.ClientConfig{
+	client, err := zbc.NewClient(&zbc.ClientConfig{
       GatewayAddress:         BrokerAddr,
       UsePlaintextConnection: true,
 	})
@@ -67,7 +73,8 @@ func main() {
 		panic(err)
 	}
 
-	topology, err := zbClient.NewTopologyCommand().Send()
+	ctx := context.Background()
+	topology, err := client.NewTopologyCommand().Send(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -127,6 +134,7 @@ The broker stores the workflow under its BPMN process id and assigns a version (
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 )
@@ -134,7 +142,7 @@ import (
 const brokerAddr = "0.0.0.0:26500"
 
 func main() {
-	zbClient, err := zbc.NewClient(&zbc.ClientConfig{
+	client, err := zbc.NewClient(&zbc.ClientConfig{
       GatewayAddress:         brokerAddr,
       UsePlaintextConnection: true,
 	})
@@ -143,7 +151,8 @@ func main() {
 		panic(err)
 	}
 
-	response, err := zbClient.NewDeployWorkflowCommand().AddResourceFile("order-process.bpmn").Send()
+	ctx := context.Background()
+	response, err := client.NewDeployWorkflowCommand().AddResourceFile("order-process.bpmn").Send(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -169,8 +178,8 @@ be set on creation.
 package main
 
 import (
+	"context"
 	"fmt"
-
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
 )
 
@@ -195,7 +204,8 @@ func main() {
 		panic(err)
 	}
 
-	msg, err := request.Send()
+	ctx := context.Background()
+	msg, err := request.Send(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -242,28 +252,30 @@ complete a job of the first task type:
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
-
 	"github.com/zeebe-io/zeebe/clients/go/pkg/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/worker"
 	"github.com/zeebe-io/zeebe/clients/go/pkg/zbc"
+	"log"
 )
 
-const brokerAddr = "0.0.0.0:26500"
+const BrokerAddr = "0.0.0.0:26500"
+
+var readyClose = make(chan struct{})
 
 func main() {
 	client, err := zbc.NewClient(&zbc.ClientConfig{
-      GatewayAddress:          brokerAddr,
-      UsePlaintextConnection: true,
+		GatewayAddress:         BrokerAddr,
+		UsePlaintextConnection: true,
 	})
-
 	if err != nil {
 		panic(err)
 	}
 
 	// deploy workflow
-	response, err := client.NewDeployWorkflowCommand().AddResourceFile("order-process.bpmn").Send()
+	ctx := context.Background()
+	response, err := client.NewDeployWorkflowCommand().AddResourceFile("order-process-4.bpmn").Send(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -274,12 +286,12 @@ func main() {
 	variables := make(map[string]interface{})
 	variables["orderId"] = "31243"
 
-	request, err := client.NewCreateInstanceCommand().BPMNProcessId("order-process").LatestVersion().VariablesFromMap(variables)
+	request, err := client.NewCreateInstanceCommand().BPMNProcessId("order-process-4").LatestVersion().VariablesFromMap(variables)
 	if err != nil {
 		panic(err)
 	}
 
-	result, err := request.Send()
+	result, err := request.Send(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -287,8 +299,9 @@ func main() {
 	fmt.Println(result.String())
 
 	jobWorker := client.NewJobWorker().JobType("payment-service").Handler(handleJob).Open()
-	defer jobWorker.Close()
 
+	<-readyClose
+	jobWorker.Close()
 	jobWorker.AwaitClose()
 }
 
@@ -321,12 +334,24 @@ func handleJob(client worker.JobClient, job entities.Job) {
 	log.Println("Processing order:", variables["orderId"])
 	log.Println("Collect money using payment method:", headers["method"])
 
-	request.Send()
+	ctx := context.Background()
+	_, err = request.Send(ctx)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Println("Successfully completed job")
+	close(readyClose)
 }
 
 func failJob(client worker.JobClient, job entities.Job) {
 	log.Println("Failed to complete job", job.GetKey())
-	client.NewFailJobCommand().JobKey(job.GetKey()).Retries(job.Retries - 1).Send()
+
+	ctx := context.Background()
+	_, err := client.NewFailJobCommand().JobKey(job.GetKey()).Retries(job.Retries - 1).Send(ctx)
+	if err != nil {
+		panic(err)
+	}
 }
 ```
 

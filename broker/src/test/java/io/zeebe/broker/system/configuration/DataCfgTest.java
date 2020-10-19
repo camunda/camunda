@@ -9,6 +9,7 @@ package io.zeebe.broker.system.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.atomix.storage.StorageLevel;
 import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
@@ -29,5 +30,58 @@ public class DataCfgTest {
     final List<String> actual = sutDataCfg.getDirectories();
 
     assertThat(actual).isEqualTo(expected);
+  }
+
+  @Test
+  public void shouldGetMappedAtomixStorageLevel() {
+    // given
+    final var sutDataCfg = new DataCfg();
+
+    // when
+    sutDataCfg.setUseMmap(true);
+
+    // then
+    final var actual = sutDataCfg.getAtomixStorageLevel();
+    assertThat(actual).isEqualTo(StorageLevel.MAPPED);
+  }
+
+  @Test
+  public void shouldGetDiskAtomixStorageLevel() {
+    // given
+    final var sutDataCfg = new DataCfg();
+
+    // when
+    sutDataCfg.setUseMmap(false);
+
+    // then
+    final var actual = sutDataCfg.getAtomixStorageLevel();
+    assertThat(actual).isEqualTo(StorageLevel.DISK);
+  }
+
+  @Test
+  public void shouldGetDiskAtomixStorageLevelAsDefault() {
+    // given
+    final var sutDataCfg = new DataCfg();
+
+    // then
+    final var actual = sutDataCfg.getAtomixStorageLevel();
+    assertThat(actual).isEqualTo(StorageLevel.DISK);
+  }
+
+  @Test
+  public void shouldSetWatermarksTo1IfDisabled() {
+    // given
+    final DataCfg dataCfg = new DataCfg();
+    dataCfg.setDiskUsageCommandWatermark(0.1);
+    dataCfg.setDiskUsageReplicationWatermark(0.2);
+    dataCfg.setDiskUsageMonitoringEnabled(false);
+
+    // when
+    dataCfg.init(new BrokerCfg(), "/base");
+
+    // then
+    assertThat(dataCfg.isDiskUsageMonitoringEnabled()).isEqualTo(false);
+    assertThat(dataCfg.getDiskUsageCommandWatermark()).isEqualTo(1.0);
+    assertThat(dataCfg.getDiskUsageReplicationWatermark()).isEqualTo(1.0);
   }
 }

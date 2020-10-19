@@ -7,8 +7,8 @@
  */
 package io.zeebe.broker.system.partitions;
 
-import io.zeebe.engine.processor.ProcessingContext;
-import io.zeebe.engine.processor.TypedRecordProcessors;
+import io.zeebe.engine.processing.streamprocessor.ProcessingContext;
+import io.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.zeebe.engine.state.ZeebeState;
 import io.zeebe.util.sched.ActorControl;
 

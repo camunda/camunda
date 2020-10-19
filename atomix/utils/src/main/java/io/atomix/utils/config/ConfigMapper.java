@@ -718,7 +718,7 @@ public class ConfigMapper {
     SetterDescriptor(final String name, final Method setter) {
       this.name = name;
       this.setter = setter;
-      this.deprecated = setter.getAnnotation(Deprecated.class) != null;
+      deprecated = setter.getAnnotation(Deprecated.class) != null;
     }
   }
 
@@ -730,7 +730,7 @@ public class ConfigMapper {
     FieldDescriptor(final String name, final Field field) {
       this.name = name;
       this.field = field;
-      this.deprecated = field.getAnnotation(Deprecated.class) != null;
+      deprecated = field.getAnnotation(Deprecated.class) != null;
     }
   }
 }

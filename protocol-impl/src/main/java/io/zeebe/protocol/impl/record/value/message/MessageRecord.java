@@ -28,7 +28,7 @@ public final class MessageRecord extends UnifiedRecordValue implements MessageRe
   private final StringProperty messageIdProp = new StringProperty("messageId", "");
 
   public MessageRecord() {
-    this.declareProperty(nameProp)
+    declareProperty(nameProp)
         .declareProperty(correlationKeyProp)
         .declareProperty(timeToLiveProp)
         .declareProperty(variablesProp)

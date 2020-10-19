@@ -16,78 +16,71 @@
  */
 package io.atomix.raft.roles;
 
-import io.atomix.primitive.PrimitiveException;
 import io.atomix.raft.RaftError;
-import io.atomix.raft.RaftException;
 import io.atomix.raft.RaftServer;
-import io.atomix.raft.ReadConsistency;
-import io.atomix.raft.impl.OperationResult;
 import io.atomix.raft.impl.RaftContext;
 import io.atomix.raft.metrics.SnapshotReplicationMetrics;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
-import io.atomix.raft.protocol.CloseSessionRequest;
-import io.atomix.raft.protocol.CloseSessionResponse;
-import io.atomix.raft.protocol.CommandRequest;
-import io.atomix.raft.protocol.CommandResponse;
 import io.atomix.raft.protocol.InstallRequest;
 import io.atomix.raft.protocol.InstallResponse;
 import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.JoinResponse;
-import io.atomix.raft.protocol.KeepAliveRequest;
-import io.atomix.raft.protocol.KeepAliveResponse;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.LeaveResponse;
-import io.atomix.raft.protocol.MetadataRequest;
-import io.atomix.raft.protocol.MetadataResponse;
-import io.atomix.raft.protocol.OpenSessionRequest;
-import io.atomix.raft.protocol.OpenSessionResponse;
-import io.atomix.raft.protocol.OperationResponse;
 import io.atomix.raft.protocol.PollRequest;
 import io.atomix.raft.protocol.PollResponse;
-import io.atomix.raft.protocol.QueryRequest;
-import io.atomix.raft.protocol.QueryResponse;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.ReconfigureRequest;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
-import io.atomix.raft.session.RaftSession;
+import io.atomix.raft.snapshot.impl.SnapshotChunkImpl;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.RaftLogWriter;
-import io.atomix.raft.storage.log.entry.QueryEntry;
 import io.atomix.raft.storage.log.entry.RaftLogEntry;
-import io.atomix.raft.storage.snapshot.PendingSnapshot;
-import io.atomix.raft.storage.snapshot.Snapshot;
 import io.atomix.storage.StorageException;
 import io.atomix.storage.journal.Indexed;
-import io.atomix.utils.time.WallClockTimestamp;
+import io.atomix.utils.concurrent.ThreadContext;
+import io.zeebe.snapshots.raft.PersistedSnapshot;
+import io.zeebe.snapshots.raft.PersistedSnapshotListener;
+import io.zeebe.snapshots.raft.ReceivedSnapshot;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.slf4j.Logger;
 
 /** Passive state. */
 public class PassiveRole extends InactiveRole {
   private final SnapshotReplicationMetrics snapshotReplicationMetrics;
 
   private long pendingSnapshotStartTimestamp;
-  private PendingSnapshot pendingSnapshot;
+  private ReceivedSnapshot pendingSnapshot;
+  private PersistedSnapshotListener snapshotListener;
 
   public PassiveRole(final RaftContext context) {
     super(context);
 
-    this.snapshotReplicationMetrics = new SnapshotReplicationMetrics(context.getName());
-    this.snapshotReplicationMetrics.setCount(0);
+    snapshotReplicationMetrics = new SnapshotReplicationMetrics(context.getName());
+    snapshotReplicationMetrics.setCount(0);
   }
 
   @Override
   public CompletableFuture<RaftRole> start() {
-    return super.start().thenRun(this::truncateUncommittedEntries).thenApply(v -> this);
+    snapshotListener = createSnapshotListener();
+
+    return super.start()
+        .thenRun(this::truncateUncommittedEntries)
+        .thenRun(this::addSnapshotListener)
+        .thenApply(v -> this);
   }
 
   @Override
   public CompletableFuture<Void> stop() {
     abortPendingSnapshots();
+    if (snapshotListener != null) {
+      raft.getPersistedSnapshotStore().removeSnapshotListener(snapshotListener);
+    }
     return super.stop();
   }
 
@@ -97,107 +90,39 @@ public class PassiveRole extends InactiveRole {
       final RaftLogWriter writer = raft.getLogWriter();
       writer.truncate(raft.getCommitIndex());
     }
+
+    // to fix the edge case where we might have been stopped
+    // between persisting snapshot and truncating log we need to call on restart snapshot listener
+    // again, such that we truncate the log when necessary
+    final var latestSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
+    if (latestSnapshot.isPresent()) {
+      final var persistedSnapshot = latestSnapshot.get();
+      if (snapshotListener != null) {
+        snapshotListener.onNewSnapshot(persistedSnapshot);
+      }
+    }
+  }
+
+  /**
+   * Should be overwritten by sub classes to introduce different snapshot listener.
+   *
+   * <p>If null no snapshot listener will be installed
+   *
+   * @return the snapshot listener which will be installed
+   */
+  protected PersistedSnapshotListener createSnapshotListener() {
+    return new ResetWriterSnapshotListener(log, raft.getThreadContext(), raft.getLogWriter());
+  }
+
+  private void addSnapshotListener() {
+    if (snapshotListener != null) {
+      raft.getPersistedSnapshotStore().addSnapshotListener(snapshotListener);
+    }
   }
 
   @Override
   public RaftServer.Role role() {
     return RaftServer.Role.PASSIVE;
-  }
-
-  @Override
-  public CompletableFuture<MetadataResponse> onMetadata(final MetadataRequest request) {
-    raft.checkThread();
-    logRequest(request);
-
-    if (raft.getLeader() == null) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              MetadataResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.NO_LEADER)
-                  .build()));
-    } else {
-      return forward(request, raft.getProtocol()::metadata)
-          .exceptionally(
-              error ->
-                  MetadataResponse.builder()
-                      .withStatus(RaftResponse.Status.ERROR)
-                      .withError(RaftError.Type.NO_LEADER)
-                      .build())
-          .thenApply(this::logResponse);
-    }
-  }
-
-  @Override
-  public CompletableFuture<OpenSessionResponse> onOpenSession(final OpenSessionRequest request) {
-    raft.checkThread();
-    logRequest(request);
-
-    if (raft.getLeader() == null) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              OpenSessionResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.NO_LEADER)
-                  .build()));
-    } else {
-      return forward(request, raft.getProtocol()::openSession)
-          .exceptionally(
-              error ->
-                  OpenSessionResponse.builder()
-                      .withStatus(RaftResponse.Status.ERROR)
-                      .withError(RaftError.Type.NO_LEADER)
-                      .build())
-          .thenApply(this::logResponse);
-    }
-  }
-
-  @Override
-  public CompletableFuture<KeepAliveResponse> onKeepAlive(final KeepAliveRequest request) {
-    raft.checkThread();
-    logRequest(request);
-
-    if (raft.getLeader() == null) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              KeepAliveResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.NO_LEADER)
-                  .build()));
-    } else {
-      return forward(request, raft.getProtocol()::keepAlive)
-          .exceptionally(
-              error ->
-                  KeepAliveResponse.builder()
-                      .withStatus(RaftResponse.Status.ERROR)
-                      .withError(RaftError.Type.NO_LEADER)
-                      .build())
-          .thenApply(this::logResponse);
-    }
-  }
-
-  @Override
-  public CompletableFuture<CloseSessionResponse> onCloseSession(final CloseSessionRequest request) {
-    raft.checkThread();
-    logRequest(request);
-
-    if (raft.getLeader() == null) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              CloseSessionResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.NO_LEADER)
-                  .build()));
-    } else {
-      return forward(request, raft.getProtocol()::closeSession)
-          .exceptionally(
-              error ->
-                  CloseSessionResponse.builder()
-                      .withStatus(RaftResponse.Status.ERROR)
-                      .withError(RaftError.Type.NO_LEADER)
-                      .build())
-          .thenApply(this::logResponse);
-    }
   }
 
   @Override
@@ -223,7 +148,7 @@ public class PassiveRole extends InactiveRole {
     // If the index has already been applied, we have enough state to populate the state machine up
     // to this index.
     // Skip the snapshot and response successfully.
-    if (raft.getLastApplied() > request.index()) {
+    if (raft.getCommitIndex() > request.index()) {
       return CompletableFuture.completedFuture(
           logResponse(InstallResponse.builder().withStatus(RaftResponse.Status.OK).build()));
     }
@@ -242,8 +167,12 @@ public class PassiveRole extends InactiveRole {
     // If the snapshot already exists locally, do not overwrite it with a replicated snapshot.
     // Simply reply to the
     // request successfully.
-    final Snapshot existingSnapshot = raft.getSnapshotStore().getSnapshot(request.index());
-    if (existingSnapshot != null) {
+    final var latestIndex =
+        raft.getPersistedSnapshotStore()
+            .getLatestSnapshot()
+            .map(PersistedSnapshot::getIndex)
+            .orElse(Long.MIN_VALUE);
+    if (latestIndex >= request.index()) {
       abortPendingSnapshots();
 
       return CompletableFuture.completedFuture(
@@ -258,6 +187,17 @@ public class PassiveRole extends InactiveRole {
                   .withError(
                       RaftError.Type.PROTOCOL_ERROR,
                       "Snapshot installation is not complete but did not provide any next expected chunk")
+                  .build()));
+    }
+
+    final var snapshotChunk = new SnapshotChunkImpl();
+    final var snapshotChunkBuffer = new UnsafeBuffer(request.data());
+    if (!snapshotChunk.tryWrap(snapshotChunkBuffer)) {
+      return CompletableFuture.completedFuture(
+          logResponse(
+              InstallResponse.builder()
+                  .withStatus(RaftResponse.Status.ERROR)
+                  .withError(RaftError.Type.APPLICATION_ERROR, "Failed to parse request data")
                   .build()));
     }
 
@@ -276,9 +216,8 @@ public class PassiveRole extends InactiveRole {
       }
 
       pendingSnapshot =
-          raft.getSnapshotStore()
-              .newPendingSnapshot(
-                  request.index(), request.term(), WallClockTimestamp.from(request.timestamp()));
+          raft.getPersistedSnapshotStore().newReceivedSnapshot(snapshotChunk.getSnapshotId());
+      log.info("Started receiving new snapshot {} from {}", pendingSnapshot, request.leader());
       pendingSnapshotStartTimestamp = System.currentTimeMillis();
       snapshotReplicationMetrics.incrementCount();
     } else {
@@ -301,10 +240,15 @@ public class PassiveRole extends InactiveRole {
       }
     }
 
+    boolean snapshotChunkConsumptionFailed;
     try {
-      pendingSnapshot.write(request.chunkId(), request.data());
+      snapshotChunkConsumptionFailed = !pendingSnapshot.apply(snapshotChunk);
     } catch (final Exception e) {
       log.error("Failed to write pending snapshot chunk {}, rolling back", pendingSnapshot, e);
+      snapshotChunkConsumptionFailed = true;
+    }
+
+    if (snapshotChunkConsumptionFailed) {
       abortPendingSnapshots();
       return CompletableFuture.completedFuture(
           logResponse(
@@ -318,12 +262,11 @@ public class PassiveRole extends InactiveRole {
     // If the snapshot is complete, store the snapshot and reset state, otherwise update the next
     // snapshot offset.
     if (request.complete()) {
-      final long index = pendingSnapshot.index();
       final long elapsed = System.currentTimeMillis() - pendingSnapshotStartTimestamp;
-
       log.debug("Committing snapshot {}", pendingSnapshot);
       try {
-        pendingSnapshot.commit();
+        final var snapshot = pendingSnapshot.persist();
+        log.info("Committed snapshot {}", snapshot);
       } catch (final Exception e) {
         log.error("Failed to commit pending snapshot {}, rolling back", pendingSnapshot, e);
         abortPendingSnapshots();
@@ -340,11 +283,6 @@ public class PassiveRole extends InactiveRole {
       pendingSnapshotStartTimestamp = 0L;
       snapshotReplicationMetrics.decrementCount();
       snapshotReplicationMetrics.observeDuration(elapsed);
-
-      // Throw away existing log if it is not up-to-date with the snapshot index.
-      if (raft.getLogWriter().getLastIndex() < index) {
-        raft.getLogWriter().reset(index + 1);
-      }
     } else {
       pendingSnapshot.setNextExpected(request.nextChunkId());
     }
@@ -461,82 +399,9 @@ public class PassiveRole extends InactiveRole {
                 .build()));
   }
 
-  @Override
-  public CompletableFuture<CommandResponse> onCommand(final CommandRequest request) {
-    raft.checkThread();
-    logRequest(request);
-
-    if (raft.getLeader() == null) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              CommandResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.NO_LEADER)
-                  .build()));
-    } else {
-      return forward(request, raft.getProtocol()::command)
-          .exceptionally(
-              error ->
-                  CommandResponse.builder()
-                      .withStatus(RaftResponse.Status.ERROR)
-                      .withError(RaftError.Type.NO_LEADER)
-                      .build())
-          .thenApply(this::logResponse);
-    }
-  }
-
-  @Override
-  public CompletableFuture<QueryResponse> onQuery(final QueryRequest request) {
-    raft.checkThread();
-    logRequest(request);
-
-    // If this server has not yet applied entries up to the client's session ID, forward the
-    // query to the leader. This ensures that a follower does not tell the client its session
-    // doesn't exist if the follower hasn't had a chance to see the session's registration entry.
-    if (raft.getState() != RaftContext.State.READY || raft.getLastApplied() < request.session()) {
-      log.trace("State out of sync, forwarding query to leader");
-      return queryForward(request);
-    }
-
-    // Look up the client's session.
-    final RaftSession session = raft.getSessions().getSession(request.session());
-    if (session == null) {
-      log.trace("State out of sync, forwarding query to leader");
-      return queryForward(request);
-    }
-
-    // If the session's consistency level is SEQUENTIAL, handle the request here, otherwise forward
-    // it.
-    if (session.readConsistency() == ReadConsistency.SEQUENTIAL) {
-
-      // If the commit index is not in the log then we've fallen too far behind the leader to
-      // perform a local query.
-      // Forward the request to the leader.
-      if (raft.getLogWriter().getLastIndex() < raft.getCommitIndex()) {
-        log.trace("State out of sync, forwarding query to leader");
-        return queryForward(request);
-      }
-
-      final Indexed<QueryEntry> entry =
-          new Indexed<>(
-              request.index(),
-              new QueryEntry(
-                  raft.getTerm(),
-                  System.currentTimeMillis(),
-                  request.session(),
-                  request.sequenceNumber(),
-                  request.operation()),
-              0);
-
-      return applyQuery(entry).thenApply(this::logResponse);
-    } else {
-      return queryForward(request);
-    }
-  }
-
   private void abortPendingSnapshots() {
     if (pendingSnapshot != null) {
-      log.debug("Rolling back snapshot {}", pendingSnapshot);
+      log.info("Rolling back snapshot {}", pendingSnapshot);
       try {
         pendingSnapshot.abort();
       } catch (final Exception e) {
@@ -550,102 +415,11 @@ public class PassiveRole extends InactiveRole {
 
     // as a safe guard, we clean up any orphaned pending snapshots
     try {
-      raft.getSnapshotStore().purgePendingSnapshots();
+      raft.getPersistedSnapshotStore().purgePendingSnapshots();
     } catch (final IOException e) {
       log.error(
           "Failed to purge pending snapshots, which may result in unnecessary disk usage and should be monitored",
           e);
-    }
-  }
-
-  /** Forwards the query to the leader. */
-  private CompletableFuture<QueryResponse> queryForward(final QueryRequest request) {
-    if (raft.getLeader() == null) {
-      return CompletableFuture.completedFuture(
-          logResponse(
-              QueryResponse.builder()
-                  .withStatus(RaftResponse.Status.ERROR)
-                  .withError(RaftError.Type.NO_LEADER)
-                  .build()));
-    }
-
-    log.trace("Forwarding {}", request);
-    return forward(request, raft.getProtocol()::query)
-        .exceptionally(
-            error ->
-                QueryResponse.builder()
-                    .withStatus(RaftResponse.Status.ERROR)
-                    .withError(RaftError.Type.NO_LEADER)
-                    .build())
-        .thenApply(this::logResponse);
-  }
-
-  /** Applies a query to the state machine. */
-  protected CompletableFuture<QueryResponse> applyQuery(final Indexed<QueryEntry> entry) {
-    // In the case of the leader, the state machine is always up to date, so no queries will be
-    // queued and all query
-    // indexes will be the last applied index.
-    final CompletableFuture<QueryResponse> future = new CompletableFuture<>();
-    raft.getServiceManager()
-        .<OperationResult>apply(entry)
-        .whenComplete(
-            (result, error) -> {
-              completeOperation(result, QueryResponse.builder(), error, future);
-            });
-    return future;
-  }
-
-  /** Completes an operation. */
-  protected <T extends OperationResponse> void completeOperation(
-      final OperationResult result,
-      final OperationResponse.Builder<?, T> builder,
-      Throwable error,
-      final CompletableFuture<T> future) {
-    if (result != null) {
-      builder.withIndex(result.index());
-      builder.withEventIndex(result.eventIndex());
-      if (result.failed()) {
-        error = result.error();
-      }
-    }
-
-    if (error == null) {
-      if (result == null) {
-        future.complete(
-            builder
-                .withStatus(RaftResponse.Status.ERROR)
-                .withError(RaftError.Type.PROTOCOL_ERROR)
-                .build());
-      } else {
-        future.complete(
-            builder.withStatus(RaftResponse.Status.OK).withResult(result.result()).build());
-      }
-    } else if (error instanceof CompletionException && error.getCause() instanceof RaftException) {
-      future.complete(
-          builder
-              .withStatus(RaftResponse.Status.ERROR)
-              .withError(((RaftException) error.getCause()).getType(), error.getMessage())
-              .build());
-    } else if (error instanceof RaftException) {
-      future.complete(
-          builder
-              .withStatus(RaftResponse.Status.ERROR)
-              .withError(((RaftException) error).getType(), error.getMessage())
-              .build());
-    } else if (error instanceof PrimitiveException.ServiceException) {
-      log.warn("An application error occurred: {}", error.getCause());
-      future.complete(
-          builder
-              .withStatus(RaftResponse.Status.ERROR)
-              .withError(RaftError.Type.APPLICATION_ERROR)
-              .build());
-    } else {
-      log.warn("An unexpected error occurred: {}", error);
-      future.complete(
-          builder
-              .withStatus(RaftResponse.Status.ERROR)
-              .withError(RaftError.Type.PROTOCOL_ERROR, error.getMessage())
-              .build());
     }
   }
 
@@ -703,10 +477,12 @@ public class PassiveRole extends InactiveRole {
       if (lastEntry != null) {
         return checkPreviousEntry(request, lastEntry.index(), lastEntry.entry().term(), future);
       } else {
-        final Snapshot currentSnapshot = raft.getSnapshotStore().getCurrentSnapshot();
-        if (currentSnapshot != null) {
+        final var optCurrentSnapshot = raft.getPersistedSnapshotStore().getLatestSnapshot();
+
+        if (optCurrentSnapshot.isPresent()) {
+          final var currentSnapshot = optCurrentSnapshot.get();
           return checkPreviousEntry(
-              request, currentSnapshot.index(), currentSnapshot.term(), future);
+              request, currentSnapshot.getIndex(), currentSnapshot.getTerm(), future);
         } else {
           // If the previous log index is set and the last entry is null and there is no snapshot,
           // fail the append.
@@ -830,7 +606,12 @@ public class PassiveRole extends InactiveRole {
     final long previousCommitIndex = raft.setCommitIndex(commitIndex);
     if (previousCommitIndex < commitIndex) {
       log.trace("Committed entries up to index {}", commitIndex);
-      raft.getServiceManager().applyAll(commitIndex);
+      raft.notifyCommitListeners(commitIndex);
+    }
+
+    // Make sure all entries are flushed before ack to ensure we have persisted what we acknowledge
+    if (raft.getLog().shouldFlushExplicitly()) {
+      raft.getLogWriter().flush();
     }
 
     // Return a successful append response.
@@ -930,13 +711,14 @@ public class PassiveRole extends InactiveRole {
     try {
       final Indexed<RaftLogEntry> indexed = writer.append(entry);
       log.trace("Appended {}", indexed);
+      raft.getReplicationMetrics().setAppendIndex(indexed.index());
     } catch (final StorageException.TooLarge e) {
       log.warn(
           "Entry size exceeds maximum allowed bytes. Ensure Raft storage configuration is consistent on all nodes!");
       return false;
     } catch (final StorageException.OutOfDiskSpace e) {
       log.trace("Append failed: {}", e);
-      raft.getServiceManager().compact();
+      raft.getLogCompactor().compact();
       failAppend(index - 1, future);
       return false;
     }
@@ -986,13 +768,49 @@ public class PassiveRole extends InactiveRole {
                 .withTerm(raft.getTerm())
                 .withSucceeded(succeeded)
                 .withLastLogIndex(lastLogIndex)
-                .withLastSnapshotIndex(raft.getSnapshotStore().getCurrentSnapshotIndex())
+                .withLastSnapshotIndex(
+                    raft.getPersistedSnapshotStore()
+                        .getLatestSnapshot()
+                        .map(PersistedSnapshot::getIndex)
+                        .orElse(0L))
                 .build()));
     return succeeded;
   }
 
-  /** Performs a local query. */
-  protected CompletableFuture<QueryResponse> queryLocal(final Indexed<QueryEntry> entry) {
-    return applyQuery(entry);
+  private static final class ResetWriterSnapshotListener implements PersistedSnapshotListener {
+    private final ThreadContext threadContext;
+    private final RaftLogWriter logWriter;
+    private final Logger log;
+
+    ResetWriterSnapshotListener(
+        final Logger log, final ThreadContext threadContext, final RaftLogWriter logWriter) {
+      this.log = log;
+      this.threadContext = threadContext;
+      this.logWriter = logWriter;
+    }
+
+    @Override
+    public void onNewSnapshot(final PersistedSnapshot persistedSnapshot) {
+      if (threadContext.isCurrentContext()) {
+        // this is called after the snapshot is commited
+        // on install requests and on Zeebe snapshot replication
+
+        final var index = persistedSnapshot.getIndex();
+        // It might happen that the last index is far behind our current snapshot index.
+        // E. g. on slower followers, we need to throw away the existing log,
+        // otherwise we might end with an inconsistent log (gaps between last index and
+        // snapshot index)
+        final var lastIndex = logWriter.getLastIndex();
+        if (lastIndex < index) {
+          log.info(
+              "Delete existing log (lastIndex '{}') and replace with received snapshot (index '{}')",
+              lastIndex,
+              index);
+          logWriter.reset(index + 1);
+        }
+      } else {
+        threadContext.execute(() -> onNewSnapshot(persistedSnapshot));
+      }
+    }
   }
 }

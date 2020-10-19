@@ -122,7 +122,13 @@ spec:
             when { expression { return params.PUSH_CHANGES } }
             steps {
                 container('maven') {
-                    sh '.ci/scripts/release/github-release.sh'
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        sh '.ci/scripts/release/github-release.sh'
+                    }
+                }
+
+                container('golang') {
+                    sh '.ci/scripts/release/post-github.sh'
                 }
             }
         }
@@ -133,7 +139,8 @@ spec:
                 build job: 'zeebe-docker', parameters: [
                         string(name: 'BRANCH', value: env.RELEASE_BRANCH),
                         string(name: 'VERSION', value: params.RELEASE_VERSION),
-                        booleanParam(name: 'IS_LATEST', value: params.IS_LATEST)
+                        booleanParam(name: 'IS_LATEST', value: params.IS_LATEST),
+                        booleanParam(name: 'PUSH', value: true)
                 ]
             }
         }
@@ -146,6 +153,14 @@ spec:
                         booleanParam(name: 'LIVE', value: true)
                 ]
             }
+        }
+    }
+
+    post {
+        failure {
+            slackSend(
+                    channel: "#zeebe-ci${jenkins.model.JenkinsLocationConfiguration.get()?.getUrl()?.contains('stage') ? '-stage' : ''}",
+                    message: "Release job build ${currentBuild.absoluteUrl} failed!")
         }
     }
 }

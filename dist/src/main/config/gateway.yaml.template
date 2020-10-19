@@ -1,11 +1,7 @@
 # Zeebe standalone gateway configuration file.
 
 # ! ! ! ! ! ! ! ! ! !
-# In order to activate the settings in this file, please choose one of the following ways:
-# a) rename this file to application.yaml
-# b) remove the *.template suffix and
-#      Set the following environment variable: export SPRING_CONFIG_LOCATION='file:./config/gateway.yaml'
-#      Alternatively, you can also pass it as a command line argument: ./bin/gateway --spring.config.location=file:./config/gateway.yaml
+# In order to activate the settings in this file, rename this file to application.yaml
 # ! ! ! ! ! ! ! ! ! !
 
 # For the configuration of the embedded gateway that is deployed alongside a broker see the gateway section of broker.yaml.template
@@ -76,6 +72,53 @@
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CLUSTER_PORT.
       # port: 26502
 
+      # Configure parameters for SWIM protocol which is used to propagate cluster membership
+      # information among brokers and gateways
+      # membership:
+
+        # Configure whether to broadcast member updates to all members.
+        # If set to false updates will be gossiped among the members.
+        # If set to true the network traffic may increase but it reduce the time to detect membership changes.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTUPDATES
+        # broadcastUpdates: false
+
+        # Configure whether to broadcast disputes to all members.
+        # If set to true the network traffic may increase but it reduce the time to detect membership changes.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_BROADCASTDISPUTES
+        # broadcastDisputes: true
+
+        # Configure whether to notify a suspect node on state changes.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_NOTIFYSUSPECT
+        # notifySuspect: false
+
+        # Sets the interval at which the membership updates are sent to a random member.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_GOSSIPINTERVAL
+        # gossipInterval: 250ms
+
+        # Sets the number of members to which membership updates are sent at each gossip interval.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_GOSSIPFANOUT
+        # gossipFanout: 2
+
+        # Sets the interval at which to probe a random member.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBEINTERVAL
+        # probeInterval: 1s
+
+        # Sets the timeout for a probe response
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_PROBETIMEOUT
+        # probeTimeout: 2s
+
+        # Sets the number of probes failed before declaring a member is suspect
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SUSPECTPROBES
+        # suspectProbes: 3
+
+        # Sets the timeout for a suspect member is declared dead.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_FAILURETIMEOUT
+        # failureTimeout: 10s
+
+        # Sets the interval at which this member synchronizes its membership information with a random member.
+        # This setting can also be overridden using the environment variable ZEEBE_BROKER_CLUSTER_MEMBERSHIP_SYNCINTERVAL
+        # syncInterval: 10s
+
     # threads:
       # Sets the number of threads the gateway will use to communicate with the broker cluster
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_THREADS_MANAGEMENTTHREADS.
@@ -106,3 +149,8 @@
       # Sets the path to the private key file location
       # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_SECURITY_PRIVATEKEYPATH.
       # privateKeyPath:
+
+    # longPolling:
+      # Enables long polling for available jobs
+      # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_LONGPOLLING_ENABLED.
+      # enabled: true

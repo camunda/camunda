@@ -27,7 +27,8 @@ import org.junit.rules.Timeout;
 public final class TopologyClusterTest {
 
   private static final Timeout TEST_TIMEOUT = Timeout.seconds(120);
-  private static final ClusteringRule CLUSTERING_RULE = new ClusteringRule();
+  private static final ClusteringRule CLUSTERING_RULE =
+      new ClusteringRule(3, 3, 3, cfg -> cfg.getData().setUseMmap(false));
   private static final GrpcClientRule CLIENT_RULE = new GrpcClientRule(CLUSTERING_RULE);
 
   @ClassRule

@@ -26,7 +26,7 @@ public final class DeploymentResource extends UnpackedObject
   private final StringProperty resourceNameProp = new StringProperty("resourceName", "resource");
 
   public DeploymentResource() {
-    this.declareProperty(resourceTypeProp)
+    declareProperty(resourceTypeProp)
         .declareProperty(resourceNameProp)
         // the resource property is updated while iterating over the deployment record
         // when a YAML workflow is transformed into its XML representation
@@ -66,17 +66,17 @@ public final class DeploymentResource extends UnpackedObject
   }
 
   public DeploymentResource setResourceName(final String resourceName) {
-    this.resourceNameProp.setValue(resourceName);
+    resourceNameProp.setValue(resourceName);
     return this;
   }
 
   public DeploymentResource setResourceName(final DirectBuffer resourceName) {
-    this.resourceNameProp.setValue(resourceName);
+    resourceNameProp.setValue(resourceName);
     return this;
   }
 
   public DeploymentResource setResourceType(final ResourceType resourceType) {
-    this.resourceTypeProp.setValue(resourceType);
+    resourceTypeProp.setValue(resourceType);
     return this;
   }
 
@@ -112,7 +112,7 @@ public final class DeploymentResource extends UnpackedObject
 
   public DeploymentResource setResource(
       final DirectBuffer resource, final int offset, final int length) {
-    this.resourceProp.setValue(resource, offset, length);
+    resourceProp.setValue(resource, offset, length);
     return this;
   }
 }
