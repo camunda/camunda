@@ -17,7 +17,6 @@ import org.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.dto.optimize.rest.report.AuthorizedDecisionReportEvaluationResultDto;
 import org.camunda.optimize.service.es.report.decision.AbstractDecisionDefinitionIT;
-import org.camunda.optimize.test.util.annotations.RunOnlyForDmn13Engines;
 import org.camunda.optimize.test.util.decision.DecisionReportDataBuilder;
 import org.camunda.optimize.test.util.decision.DecisionReportDataType;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,7 +29,6 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@RunOnlyForDmn13Engines
 public class DmnCompatibilityIT extends AbstractDecisionDefinitionIT {
 
   private static final String INPUT_CUSTOMER_STATUS_ID = "input1";
