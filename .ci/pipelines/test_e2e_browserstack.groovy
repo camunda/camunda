@@ -79,8 +79,8 @@ spec:
         name: vault-output
         readOnly: true
   containers:
-    - name: maven
-      image: markhobson/maven-chrome:jdk-11
+    - name: node
+      image: node:13.13.0-alpine
       command: ["cat"]
       tty: true
       env:
@@ -90,11 +90,11 @@ spec:
               resource: limits.cpu
       resources:
         limits:
-          cpu: 4
-          memory: 8Gi
+          cpu: 2
+          memory: 2Gi
         requests:
-          cpu: 4
-          memory: 8Gi
+          cpu: 2
+          memory: 2Gi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.8.9
       env:
@@ -138,6 +138,8 @@ spec:
       env:
         - name: ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME
           value: io.zeebe.exporter.ElasticsearchExporter
+        - name: ZEEBE_BROKER_BACKPRESSURE_ENABLED
+          value: false
       resources:
         limits:
           cpu: 4
@@ -200,16 +202,17 @@ pipeline {
   stages {
     stage('Run E2E tests') {
       steps {
-         container('maven'){
-         	// checkout current operate
-            git url: 'git@github.com:camunda/camunda-operate',
-                branch: "master",
-                credentialsId: 'camunda-jenkins-github-ssh',
-                poll: false
-            // compile current operate
-            configFileProvider([configFile(fileId: 'maven-nexus-settings', variable: 'MAVEN_SETTINGS_XML')]) {
-                sh ('mvn -B -s $MAVEN_SETTINGS_XML -P client.e2etests-browserstack test')
-            }
+        container('node'){
+          git url: 'git@github.com:camunda/camunda-operate',
+            branch: "master",
+            credentialsId: 'camunda-jenkins-github-ssh',
+            poll: false
+         	sh '''
+            cd ./client/e2e
+            yarn install
+            sleep 60
+            yarn run test:ci-browserstack
+          '''
          }
       }
     }
