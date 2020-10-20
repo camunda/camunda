@@ -86,7 +86,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy()
       .getValue()).getUnit()).isEqualTo(AggregateByDateUnit.DAY);
-    assertThat(resultReportDataDto.getConfiguration()
+    assertThat(resultReportDataDto
                  .getDistributedBy()
                  .getType()).isEqualTo(DistributedByType.VARIABLE);
 
@@ -126,7 +126,7 @@ public abstract class AbstractProcessInstanceDurationByInstanceDateByVariableRep
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy()
       .getValue()).getUnit()).isEqualTo(AggregateByDateUnit.DAY);
-    assertThat(resultReportDataDto.getConfiguration()
+    assertThat(resultReportDataDto
                  .getDistributedBy()
                  .getType()).isEqualTo(DistributedByType.VARIABLE);
 

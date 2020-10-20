@@ -89,9 +89,8 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy()
       .getValue()).getUnit()).isEqualTo(AggregateByDateUnit.DAY);
-    assertThat(resultReportDataDto.getConfiguration()
-                 .getDistributedBy()
-                 .getType()).isEqualTo(DistributedByType.VARIABLE);
+    assertThat(resultReportDataDto.getDistributedBy().getType())
+      .isEqualTo(DistributedByType.VARIABLE);
 
     final ReportHyperMapResultDto result = evaluationResponse.getResult();
     ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
@@ -130,7 +129,7 @@ public abstract class AbstractProcessInstanceFrequencyByInstanceDateByVariableRe
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(getGroupByType());
     assertThat(((DateGroupByValueDto) resultReportDataDto.getGroupBy().getValue()).getUnit())
       .isEqualTo(AggregateByDateUnit.DAY);
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy().getType())
+    assertThat(resultReportDataDto.getDistributedBy().getType())
       .isEqualTo(DistributedByType.VARIABLE);
 
     final ReportHyperMapResultDto result = evaluationResponse.getResult();

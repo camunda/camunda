@@ -16,6 +16,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.decision.group.Deci
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.DecisionGroupByType;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByVariableValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.decision.view.DecisionViewDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.NoneDistributedByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.variable.VariableType;
 import org.camunda.optimize.service.util.TenantListHandlingUtil;
 
@@ -35,6 +37,7 @@ public class DecisionReportDataDto extends SingleReportDataDto implements Combin
   protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
   protected DecisionViewDto view;
   protected DecisionGroupByDto<?> groupBy;
+  protected ProcessDistributedByDto<?> distributedBy = new NoneDistributedByDto();
   protected DecisionVisualization visualization;
 
   @JsonIgnore

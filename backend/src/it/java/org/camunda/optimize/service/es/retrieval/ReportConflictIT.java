@@ -107,7 +107,7 @@ public class ReportConflictIT extends AbstractIT {
       .createReportData()
       .setReportDataType(ProcessReportDataType.USER_TASK_FREQUENCY_GROUP_BY_CANDIDATE_BY_USER_TASK)
       .build();
-    userTaskReport.getConfiguration().setDistributedBy(new UserTaskDistributedByDto());
+    userTaskReport.setDistributedBy(new UserTaskDistributedByDto());
     reportUpdate.setData(userTaskReport);
     ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(
       singleReportId,
@@ -198,7 +198,7 @@ public class ReportConflictIT extends AbstractIT {
     // when
     final SingleProcessReportDefinitionRequestDto firstSingleReport =
       (SingleProcessReportDefinitionRequestDto) reportClient.getReportById(firstSingleReportId);
-    firstSingleReport.getData().getConfiguration().setDistributedBy(new AssigneeDistributedByDto());
+    firstSingleReport.getData().setDistributedBy(new AssigneeDistributedByDto());
     ConflictResponseDto conflictResponseDto = updateReportFailWithConflict(
       firstSingleReportId,
       firstSingleReport,

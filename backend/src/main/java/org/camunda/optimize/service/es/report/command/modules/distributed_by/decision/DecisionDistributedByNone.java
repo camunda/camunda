@@ -45,6 +45,6 @@ public class DecisionDistributedByNone extends DecisionDistributedByPart {
 
   @Override
   protected void addAdjustmentsForCommandKeyGeneration(final DecisionReportDataDto dataForCommandKey) {
-    dataForCommandKey.getConfiguration().setDistributedBy(new NoneDistributedByDto());
+    dataForCommandKey.setDistributedBy(new NoneDistributedByDto());
   }
 }

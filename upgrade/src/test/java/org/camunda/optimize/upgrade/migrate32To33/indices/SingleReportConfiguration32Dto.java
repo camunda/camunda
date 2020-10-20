@@ -3,9 +3,8 @@
  * under one or more contributor license agreements. Licensed under a commercial license.
  * You may not use this file except in compliance with the commercial license.
  */
-package org.camunda.optimize.dto.optimize.query.report.single.configuration;
+package org.camunda.optimize.upgrade.migrate32To33.indices;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,21 +13,26 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationType;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.ColumnOrderDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.FlowNodeExecutionState;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.HiddenNodesDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.TableColumnDto;
+import org.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.custom_buckets.CustomBucketDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.heatmap_target_value.HeatmapTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.process_part.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.SingleReportTargetValueDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.ProcessDistributedByDto;
 import org.camunda.optimize.dto.optimize.query.sorting.ReportSortingDto;
-
-import java.util.Optional;
 
 @AllArgsConstructor
 @Builder
 @Data
 @FieldNameConstants(asEnum = true)
 @NoArgsConstructor
-public class SingleReportConfigurationDto {
+public class SingleReportConfiguration32Dto {
   @Builder.Default
   private String color = ReportConstants.DEFAULT_CONFIGURATION_COLOR;
   @Builder.Default
@@ -74,6 +78,8 @@ public class SingleReportConfigurationDto {
   @Builder.Default
   private HeatmapTargetValueDto heatmapTargetValue = new HeatmapTargetValueDto();
   @Builder.Default
+  private ProcessDistributedByDto<?> distributedBy = new ProcessDistributedByDto<>();
+  @Builder.Default
   @NonNull
   private AggregateByDateUnit groupByDateVariableUnit = AggregateByDateUnit.AUTOMATIC;
   @Builder.Default
@@ -87,18 +93,5 @@ public class SingleReportConfigurationDto {
   private ReportSortingDto sorting = null;
   @Builder.Default
   private ProcessPartDto processPart = null;
-
-  @JsonIgnore
-  public String createCommandKey() {
-    return getProcessPart().map(ProcessPartDto::createCommandKey).orElse(null);
-  }
-
-  public Optional<ReportSortingDto> getSorting() {
-    return Optional.ofNullable(sorting);
-  }
-
-  public Optional<ProcessPartDto> getProcessPart() {
-    return Optional.ofNullable(processPart);
-  }
 
 }

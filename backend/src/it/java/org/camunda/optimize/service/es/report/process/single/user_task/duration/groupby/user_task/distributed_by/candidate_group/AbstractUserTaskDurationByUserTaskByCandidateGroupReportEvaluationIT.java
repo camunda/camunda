@@ -107,7 +107,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
     assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime()).isEqualTo(getUserTaskDurationTime());
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy().getType())
+    assertThat(resultReportDataDto.getDistributedBy().getType())
       .isEqualTo(DistributedByType.CANDIDATE_GROUP);
 
     final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
@@ -162,7 +162,7 @@ public abstract class AbstractUserTaskDurationByUserTaskByCandidateGroupReportEv
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.USER_TASK);
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.DURATION);
     assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime()).isEqualTo(getUserTaskDurationTime());
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy().getType())
+    assertThat(resultReportDataDto.getDistributedBy().getType())
       .isEqualTo(DistributedByType.CANDIDATE_GROUP);
 
     final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();

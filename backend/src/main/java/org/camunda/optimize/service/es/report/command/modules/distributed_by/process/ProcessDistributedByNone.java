@@ -45,6 +45,6 @@ public class ProcessDistributedByNone extends ProcessDistributedByPart {
 
   @Override
   protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.getConfiguration().setDistributedBy(new NoneDistributedByDto());
+    dataForCommandKey.setDistributedBy(new NoneDistributedByDto());
   }
 }

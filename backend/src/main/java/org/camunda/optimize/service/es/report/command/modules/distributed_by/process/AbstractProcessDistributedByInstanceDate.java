@@ -95,7 +95,7 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
 
   @Override
   protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.getConfiguration().setDistributedBy(getDistributedBy());
+    dataForCommandKey.setDistributedBy(getDistributedBy());
   }
 
   protected abstract ProcessDistributedByDto<DateDistributedByValueDto> getDistributedBy();
@@ -103,7 +103,7 @@ public abstract class AbstractProcessDistributedByInstanceDate extends ProcessDi
   public abstract String getDateField();
 
   private AggregateByDateUnit getDistributedByDateUnit(final ProcessReportDataDto processReportData) {
-    return Optional.ofNullable(((DateDistributedByValueDto) processReportData.getConfiguration()
+    return Optional.ofNullable(((DateDistributedByValueDto) processReportData
       .getDistributedBy()
       .getValue()))
       .map(DateDistributedByValueDto::getUnit)

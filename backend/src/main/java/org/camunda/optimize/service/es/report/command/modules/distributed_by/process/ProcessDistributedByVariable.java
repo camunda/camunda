@@ -184,7 +184,7 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
 
   @Override
   protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.getConfiguration().setDistributedBy(new VariableDistributedByDto());
+    dataForCommandKey.setDistributedBy(new VariableDistributedByDto());
   }
 
   @Override
@@ -281,7 +281,7 @@ public class ProcessDistributedByVariable extends ProcessDistributedByPart {
   }
 
   private VariableDistributedByValueDto getVariableDistributedByValueDto(final ExecutionContext<ProcessReportDataDto> context) {
-    return ((VariableDistributedByDto) context.getReportData().getConfiguration().getDistributedBy()).getValue();
+    return ((VariableDistributedByDto) context.getReportData().getDistributedBy()).getValue();
   }
 
   private AggregateByDateUnit getDistributeByDateUnit(final ExecutionContext<ProcessReportDataDto> context) {

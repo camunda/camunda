@@ -308,7 +308,7 @@ public class TimeZoneAdjustmentRestServiceIT extends AbstractProcessDefinitionIT
     assertThat(result).isNotNull();
     if (result instanceof ReportHyperMapResultDto) {
       ReportHyperMapResultDto hyperMapResultDto = (ReportHyperMapResultDto) result;
-      if (reportData.getConfiguration().getDistributedBy().getValue() instanceof DateDistributedByValueDto) {
+      if (reportData.getDistributedBy().getValue() instanceof DateDistributedByValueDto) {
         return hyperMapResultDto.getData().stream()
           .flatMap(hyperEntry -> hyperEntry.getValue().stream())
           .map(MapResultEntryDto::getKey)

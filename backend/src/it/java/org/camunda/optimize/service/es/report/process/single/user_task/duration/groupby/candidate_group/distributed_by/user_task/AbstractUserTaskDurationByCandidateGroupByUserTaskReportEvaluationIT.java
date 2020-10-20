@@ -108,7 +108,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime(), is(getUserTaskDurationTime()));
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy().getType(), is(DistributedByType.USER_TASK));
+    assertThat(resultReportDataDto.getDistributedBy().getType(), is(DistributedByType.USER_TASK));
 
     final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
     // @formatter:off
@@ -160,7 +160,7 @@ public abstract class AbstractUserTaskDurationByCandidateGroupByUserTaskReportEv
     assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.USER_TASK));
     assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(resultReportDataDto.getConfiguration().getUserTaskDurationTime(), is(getUserTaskDurationTime()));
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy().getType(), is(DistributedByType.USER_TASK));
+    assertThat(resultReportDataDto.getDistributedBy().getType(), is(DistributedByType.USER_TASK));
 
     final ReportHyperMapResultDto actualResult = evaluationResponse.getResult();
     assertHyperMap_ForOneProcessWithUnassignedTasks(actualResult);

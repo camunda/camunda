@@ -71,9 +71,9 @@ public abstract class AbstractProcessInstanceFrequencyByVariableByInstanceDateRe
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy().getType()).isEqualTo(getDistributeByType());
-    assertThat(((DateDistributedByValueDto) resultReportDataDto.getConfiguration()
-      .getDistributedBy().getValue()).getUnit()).isEqualTo(AggregateByDateUnit.DAY);
+    assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributeByType());
+    assertThat(((DateDistributedByValueDto) resultReportDataDto.getDistributedBy().getValue()).getUnit())
+      .isEqualTo(AggregateByDateUnit.DAY);
 
     final ReportHyperMapResultDto result = evaluationResponse.getResult();
     final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);
@@ -109,9 +109,9 @@ public abstract class AbstractProcessInstanceFrequencyByVariableByInstanceDateRe
     assertThat(resultReportDataDto.getView().getEntity()).isEqualTo(ProcessViewEntity.PROCESS_INSTANCE);
     assertThat(resultReportDataDto.getView().getProperty()).isEqualTo(ProcessViewProperty.FREQUENCY);
     assertThat(resultReportDataDto.getGroupBy().getType()).isEqualTo(ProcessGroupByType.VARIABLE);
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy().getType()).isEqualTo(getDistributeByType());
-    assertThat(((DateDistributedByValueDto) resultReportDataDto.getConfiguration()
-      .getDistributedBy().getValue()).getUnit()).isEqualTo(AggregateByDateUnit.DAY);
+    assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(getDistributeByType());
+    assertThat(((DateDistributedByValueDto) resultReportDataDto.getDistributedBy().getValue()).getUnit())
+      .isEqualTo(AggregateByDateUnit.DAY);
 
     final ReportHyperMapResultDto result = evaluationResponse.getResult();
     final ZonedDateTime startOfToday = truncateToStartOfUnit(referenceDate, ChronoUnit.DAYS);

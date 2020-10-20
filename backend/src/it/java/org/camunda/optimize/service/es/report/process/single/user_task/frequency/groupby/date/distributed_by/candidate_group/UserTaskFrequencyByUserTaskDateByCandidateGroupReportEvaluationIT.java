@@ -100,7 +100,7 @@ public abstract class UserTaskFrequencyByUserTaskDateByCandidateGroupReportEvalu
       .extracting(DateGroupByValueDto.class::cast)
       .extracting(DateGroupByValueDto::getUnit)
       .isEqualTo(AggregateByDateUnit.DAY);
-    assertThat(resultReportDataDto.getConfiguration().getDistributedBy().getType()).isEqualTo(DistributedByType.CANDIDATE_GROUP);
+    assertThat(resultReportDataDto.getDistributedBy().getType()).isEqualTo(DistributedByType.CANDIDATE_GROUP);
 
     final ReportHyperMapResultDto result = evaluationResponse.getResult();
     // @formatter:off

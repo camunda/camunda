@@ -176,7 +176,7 @@ public abstract class AbstractProcessGroupByProcessInstanceDate extends GroupByP
   }
 
   private DistributedByType getDistributedByType(final ProcessReportDataDto processReportDataDto) {
-    return processReportDataDto.getConfiguration().getDistributedBy().getType();
+    return processReportDataDto.getDistributedBy().getType();
   }
 
   private AggregationBuilder addSiblingAggregationIfRequired(final ExecutionContext<ProcessReportDataDto> context,

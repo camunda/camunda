@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
+import lombok.experimental.FieldNameConstants;
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.single.configuration.DistributedByType;
 import org.camunda.optimize.dto.optimize.query.report.single.process.distributed.value.ProcessDistributedByValueDto;
@@ -39,6 +40,7 @@ import static org.camunda.optimize.dto.optimize.ReportConstants.DISTRIBUTED_BY_V
   @JsonSubTypes.Type(value = EndDateDistributedByDto.class, name = DISTRIBUTED_BY_END_DATE)
 })
 @Data
+@FieldNameConstants
 public class ProcessDistributedByDto<VALUE extends ProcessDistributedByValueDto> implements Combinable {
 
   @JsonProperty

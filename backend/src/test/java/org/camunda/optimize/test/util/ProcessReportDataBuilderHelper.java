@@ -78,7 +78,7 @@ public class ProcessReportDataBuilderHelper {
     reportData.setView(view);
     reportData.setGroupBy(groupBy);
     reportData.getConfiguration().setProcessPart(processPart);
-    reportData.getConfiguration().setDistributedBy(distributedBy);
+    reportData.setDistributedBy(distributedBy);
     return reportData;
   }
 

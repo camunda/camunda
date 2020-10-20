@@ -90,7 +90,7 @@ public abstract class ProcessDistributedByModelElement extends ProcessDistribute
 
   @Override
   protected void addAdjustmentsForCommandKeyGeneration(final ProcessReportDataDto dataForCommandKey) {
-    dataForCommandKey.getConfiguration().setDistributedBy(getDistributedBy());
+    dataForCommandKey.setDistributedBy(getDistributedBy());
   }
 
   protected abstract String getModelElementIdPath();
