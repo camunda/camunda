@@ -537,6 +537,7 @@
     "noAuthorization": "Fehlende Berechtigung",
     "noReportAccess": "Kein Zugriff auf Report",
     "filter": {
+      "viewButtonText": "Berichtsfilter",
       "label": "Berichtsfilter hinzufügen",
       "viewLabel": "Berichtsdaten filtern",
       "disabledVariable": "Variablenfilter sind nur für Dashboards mit mindestens einem Bericht verfügbar.",

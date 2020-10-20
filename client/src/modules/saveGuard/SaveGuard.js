@@ -118,3 +118,7 @@ export function nowDirty(label, saveHandler) {
 export function nowPristine() {
   instance.setDirty(false);
 }
+
+export function isDirty() {
+  return instance.state.dirty;
+}

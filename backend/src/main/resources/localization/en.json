@@ -537,6 +537,7 @@
     "noAuthorization": "Missing authorization",
     "noReportAccess": "No access to report",
     "filter": {
+      "viewButtonText": "Filters",
       "label": "Add a filter",
       "viewLabel": "Filter Report data",
       "disabledVariable": "Variable Filters are only available for Dashboards that contain at least one Report.",

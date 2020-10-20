@@ -7,7 +7,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {nowDirty} from 'saveGuard';
+import {nowDirty, isDirty} from 'saveGuard';
 import {EntityNameForm} from 'components';
 import {showPrompt} from 'prompt';
 
@@ -15,7 +15,11 @@ import {FiltersEdit} from './filters';
 
 import {DashboardEdit} from './DashboardEdit';
 
-jest.mock('saveGuard', () => ({nowDirty: jest.fn(), nowPristine: jest.fn()}));
+jest.mock('saveGuard', () => ({
+  nowDirty: jest.fn(),
+  nowPristine: jest.fn(),
+  isDirty: jest.fn().mockReturnValue(true),
+}));
 jest.mock('prompt', () => ({
   showPrompt: jest.fn().mockImplementation(async (config, cb) => await cb()),
 }));
@@ -113,5 +117,22 @@ it('should save the dashboard when going to the report edit mode', async () => {
   await flushPromises();
 
   expect(saveSpy).toHaveBeenCalled();
+  expect(historySpy).toHaveBeenCalledWith('report/1/edit');
+});
+
+it('should not prompt to save the dashboard when going to the edit mode when there are no changes', () => {
+  const report = {
+    position: {x: 0, y: 0},
+    dimensions: {height: 2, width: 2},
+    id: '1',
+  };
+  const historySpy = jest.fn();
+
+  const node = shallow(<DashboardEdit initialReports={[report]} history={{push: historySpy}} />);
+
+  isDirty.mockReturnValueOnce(false);
+  node.find('DashboardRenderer').prop('addons')[2].props.onClick(report);
+
+  expect(showPrompt).not.toHaveBeenCalled();
   expect(historySpy).toHaveBeenCalledWith('report/1/edit');
 });

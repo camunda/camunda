@@ -183,7 +183,7 @@ export function DashboardView(props) {
                     }
                   }}
                 >
-                  <Icon type="filter" /> {t('dashboard.filter.label')}
+                  <Icon type="filter" /> {t('dashboard.filter.viewButtonText')}
                 </Button>
               )}
 
