@@ -193,12 +193,16 @@ const Filters = observer(
       );
     };
 
-    handleControlledInputChange = (event, callback) => {
+    handleControlledInputChange = (
+      event,
+      callback,
+      options = {encodeFilterValue: false}
+    ) => {
       const {value, name} = event.target;
 
       this.setFilterState(
         {
-          [name]: value,
+          [name]: options.encodeFilterValue ? encodeURIComponent(value) : value,
         },
         callback
       );
@@ -289,7 +293,7 @@ const Filters = observer(
             </Styled.Field>
             <Styled.Field>
               <Styled.ValidationTextInput
-                value={ids}
+                value={decodeURIComponent(ids)}
                 name="ids"
                 placeholder="Instance Id(s) separated by space or comma"
                 onChange={this.handleControlledInputChange}
@@ -302,11 +306,15 @@ const Filters = observer(
             </Styled.Field>
             <Styled.Field>
               <Styled.ValidationTextInput
-                value={errorMessage}
+                value={decodeURIComponent(errorMessage)}
                 data-testid="error-message"
                 name="errorMessage"
                 placeholder="Error Message"
-                onChange={this.handleControlledInputChange}
+                onChange={(event) =>
+                  this.handleControlledInputChange(event, null, {
+                    encodeFilterValue: true,
+                  })
+                }
                 onFilterChange={() => this.waitForTimer(this.propagateFilter)}
               >
                 <Input />

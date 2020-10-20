@@ -40,7 +40,7 @@ const IncidentsByError = observer(
             const query = getFilterQueryString({
               workflow: item.bpmnProcessId,
               version: `${item.version}`,
-              errorMessage,
+              errorMessage: encodeURIComponent(errorMessage),
               incidents: true,
             });
             const title = concatTitle(
@@ -73,7 +73,7 @@ const IncidentsByError = observer(
 
     renderIncidentByError = (errorMessage, instancesWithErrorCount) => {
       const query = getFilterQueryString({
-        errorMessage: errorMessage,
+        errorMessage: encodeURIComponent(errorMessage),
         incidents: true,
       });
 

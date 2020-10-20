@@ -108,7 +108,7 @@ describe('IncidentsByError', () => {
         )
       );
       expect(historyMock.location.search).toBe(
-        '?filter={"errorMessage":"JSON path \'$.paid\' has no result.","incidents":true}'
+        '?filter={"errorMessage":"JSON%20path%20\'%24.paid\'%20has%20no%20result.","incidents":true}'
       );
 
       fireEvent.click(expandButton);
@@ -125,7 +125,7 @@ describe('IncidentsByError', () => {
 
       fireEvent.click(firstVersion);
       expect(historyMock.location.search).toBe(
-        '?filter={"workflow":"mockWorkflow","version":"1","errorMessage":"JSON path \'$.paid\' has no result.","incidents":true}'
+        '?filter={"workflow":"mockWorkflow","version":"1","errorMessage":"JSON%20path%20\'%24.paid\'%20has%20no%20result.","incidents":true}'
       );
     });
   });

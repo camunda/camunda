@@ -176,8 +176,8 @@ test('Error Message filter', async (t) => {
     .expect(await getPathname())
     .eql(
       `#/instances?filter={${encodeURI(
-        `"active":true,"incidents":true,"errorMessage":"${errorMessage}"`
-      )}}`
+        `"active":true,"incidents":true,"errorMessage":"`
+      )}${encodeURIComponent(errorMessage)}${encodeURI('"')}}`
     );
 
   await t.click(screen.getByRole('button', {name: /reset filters/i}));

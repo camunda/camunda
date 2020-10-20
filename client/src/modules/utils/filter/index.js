@@ -7,12 +7,7 @@
 import {isValid, addDays, startOfDay, addMinutes, format} from 'date-fns';
 
 import {compactObject} from '../index';
-import {
-  isValidJSON,
-  trimValue,
-  tryDecodeURIComponent,
-  tryDecodeURI,
-} from 'modules/utils';
+import {isValidJSON, trimValue, tryDecodeURI} from 'modules/utils';
 import {trimVariable} from 'modules/utils/variable';
 
 /**
@@ -41,10 +36,8 @@ export function parseQueryString(queryString = '') {
 
   queries.forEach((item, index) => {
     const [paramKey, paramValue] = queries[index].split('=');
-    const decodedValue = tryDecodeURIComponent(paramValue);
-
-    if (isValidJSON(decodedValue)) {
-      params[paramKey] = JSON.parse(decodedValue);
+    if (isValidJSON(paramValue)) {
+      params[paramKey] = JSON.parse(paramValue);
     }
   });
 
@@ -143,7 +136,11 @@ export function parseFilterForRequest(filter) {
   let parsedFilter = {...getInstanceStatePayload(filter)};
 
   for (let key in filter) {
-    const value = filter[key];
+    const value =
+      typeof filter[key] === 'string'
+        ? decodeURIComponent(filter[key])
+        : filter[key];
+
     const parsedField = fieldParser[key]
       ? fieldParser[key](key, value)
       : defaultFieldParser(key, value);
