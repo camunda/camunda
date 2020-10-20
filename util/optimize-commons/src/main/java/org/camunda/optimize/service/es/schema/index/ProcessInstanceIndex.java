@@ -106,7 +106,7 @@ public class ProcessInstanceIndex extends DefaultIndexMappingCreator implements 
   public static final String INCIDENT_ACTIVITY_ID = IncidentDto.Fields.activityId;
   private static final String INCIDENT_FAILED_ACTIVITY_ID = IncidentDto.Fields.failedActivityId;
   private static final String INCIDENT_MESSAGE = IncidentDto.Fields.incidentMessage;
-  private static final String INCIDENT_STATUS = IncidentDto.Fields.incidentStatus;
+  public static final String INCIDENT_STATUS = IncidentDto.Fields.incidentStatus;
 
   @Setter
   private String indexName = ElasticsearchConstants.PROCESS_INSTANCE_INDEX_NAME;

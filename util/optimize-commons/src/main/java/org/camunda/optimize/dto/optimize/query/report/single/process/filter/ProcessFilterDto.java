@@ -34,6 +34,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterD
   @JsonSubTypes.Type(value = FlowNodeDurationFilterDto.class, name = "flowNodeDuration"),
   @JsonSubTypes.Type(value = AssigneeFilterDto.class, name = "assignee"),
   @JsonSubTypes.Type(value = CandidateGroupFilterDto.class, name = "candidateGroup"),
+  @JsonSubTypes.Type(value = WithOpenIncidentsOnlyFilterDto.class, name = "withOpenIncidentsOnly"),
+  @JsonSubTypes.Type(value = WithResolvedIncidentsOnlyFilterDto.class, name = "withResolvedIncidentsOnly"),
 })
 @Data
 @NoArgsConstructor

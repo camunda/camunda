@@ -10,7 +10,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessRepo
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.process.filter.util.ProcessFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.process.result.raw.RawDataProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer;
+import org.camunda.optimize.test.util.ProcessReportDataType;
+import org.camunda.optimize.test.util.TemplatedProcessReportDataBuilder;
 import org.camunda.optimize.util.BpmnModels;
 import org.junit.jupiter.api.Test;
 
@@ -22,6 +26,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterOperator.IN;
+import static org.camunda.optimize.service.es.report.process.single.incident.duration.IncidentDataDeployer.IncidentProcessType.TWO_SEQUENTIAL_TASKS;
 import static org.camunda.optimize.util.BpmnModels.USER_TASK_1;
 
 public class MixedFilterIT extends AbstractFilterIT {
@@ -144,6 +149,51 @@ public class MixedFilterIT extends AbstractFilterIT {
     // then
     assertThat(rawDataReportResultDto.getData()).hasSize(1);
     assertThat(rawDataReportResultDto.getData().get(0).getProcessInstanceId()).isEqualTo(expectedInstanceId);
+  }
+
+  @Test
+  public void incidentFilterCombination() {
+    // given
+    // @formatter:off
+    IncidentDataDeployer.dataDeployer(incidentClient)
+      .deployProcess(TWO_SEQUENTIAL_TASKS)
+      .startProcessInstance()
+        .withResolvedIncident()
+      .startProcessInstance()
+        .withResolvedAndOpenIncident()
+      .startProcessInstance()
+        .withOpenIncident()
+      .executeDeployment();
+    // @formatter:on
+    importAllEngineEntitiesFromScratch();
+
+    // when I evaluate the report without filters
+    ProcessReportDataDto reportData = TemplatedProcessReportDataBuilder
+      .createReportData()
+      .setProcessDefinitionKey(IncidentDataDeployer.PROCESS_DEFINITION_KEY)
+      .setProcessDefinitionVersion("1")
+      .setReportDataType(ProcessReportDataType.INCIDENT_FREQUENCY_GROUP_BY_NONE)
+      .build();
+    NumberResultDto numberResult = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then
+    assertThat(numberResult.getInstanceCount()).isEqualTo(3L);
+    assertThat(numberResult.getData()).isEqualTo(4.);
+
+    // when I add a resolved + open incident filter
+    reportData.setFilter(
+      ProcessFilterBuilder.filter()
+        .withOpenIncidentsOnly()
+        .add()
+        .withResolvedIncidentsOnly()
+        .add()
+        .buildList());
+    numberResult = reportClient.evaluateNumberReport(reportData).getResult();
+
+    // then I get only the process instance with the resolved and the open incident pending
+    assertThat(numberResult.getInstanceCount()).isEqualTo(1L);
+    assertThat(numberResult.getInstanceCountWithoutFilters()).isEqualTo(3L);
+    assertThat(numberResult.getData()).isEqualTo(2.);
   }
 
   protected RawDataProcessReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
