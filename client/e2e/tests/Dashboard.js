@@ -24,10 +24,14 @@ fixture('Dashboard')
 
 test('Statistics', async (t) => {
   const incidentInstancesCount = Number(
-    await screen.getAllByTestId('incident-instances-badge').nth(0).textContent
+    await within(screen.getByTestId('metric-panel')).queryByTestId(
+      'incident-instances-badge'
+    ).textContent
   );
   const activeInstancesCount = Number(
-    await screen.getAllByTestId('active-instances-badge').nth(0).textContent
+    await within(screen.getByTestId('metric-panel')).queryByTestId(
+      'active-instances-badge'
+    ).textContent
   );
 
   await t

@@ -24,7 +24,7 @@ function getUrl({filter, hasFinishedInstances}) {
 const MetricPanel = observer(() => {
   const {running, active, withIncidents, isLoaded} = statistics.state;
   return (
-    <Styled.Panel>
+    <Styled.Panel data-testid="metric-panel">
       <Styled.Title
         data-testid="total-instances-link"
         to={getUrl({

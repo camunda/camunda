@@ -55,9 +55,9 @@ test('Selection of instances are removed on header navigation', async (t) => {
 test('Selection of instances are removed on filter selection', async (t) => {
   // select instances
   await t
-    .click(screen.getByRole('checkbox', {name: 'Select all instances'}))
+    .click(screen.queryByRole('checkbox', {name: 'Select all instances'}))
     .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
     )
     .ok();
 
@@ -94,7 +94,7 @@ test('Selection of instances are removed on filter selection', async (t) => {
 
   await t
     .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
     )
     .notOk();
 
@@ -119,7 +119,7 @@ test('Selection of instances are removed on filter selection', async (t) => {
 
   await t
     .expect(
-      screen.getByRole('checkbox', {name: 'Select all instances'}).checked
+      screen.queryByRole('checkbox', {name: 'Select all instances'}).checked
     )
     .notOk();
 });
