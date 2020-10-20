@@ -35,9 +35,7 @@ import io.atomix.primitive.partition.PartitionManagementService;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.zeebe.EntryValidator;
 import io.atomix.storage.StorageLevel;
-import io.atomix.utils.concurrent.BlockingAwareThreadPoolContextFactory;
 import io.atomix.utils.concurrent.Futures;
-import io.atomix.utils.concurrent.ThreadContextFactory;
 import io.atomix.utils.logging.ContextualLoggerFactory;
 import io.atomix.utils.logging.LoggerContext;
 import io.atomix.utils.memory.MemorySize;
@@ -69,7 +67,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
   private final String name;
   private final RaftPartitionGroupConfig config;
   private final int partitionSize;
-  private final ThreadContextFactory threadContextFactory;
   private final Map<PartitionId, RaftPartition> partitions = Maps.newConcurrentMap();
   private final List<PartitionId> sortedPartitionIds = Lists.newCopyOnWriteArrayList();
   private final String snapshotSubject;
@@ -87,12 +84,9 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
 
     final int threadPoolSize =
         Math.max(Math.min(Runtime.getRuntime().availableProcessors() * 2, 16), 4);
-    threadContextFactory =
-        new BlockingAwareThreadPoolContextFactory(
-            "raft-partition-group-" + name + "-%d", threadPoolSize, log);
     snapshotSubject = "raft-partition-group-" + name + "-snapshot";
 
-    buildPartitions(config, threadContextFactory)
+    buildPartitions(config)
         .forEach(
             p -> {
               partitions.put(p.id(), p);
@@ -101,8 +95,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     Collections.sort(sortedPartitionIds);
   }
 
-  private static Collection<RaftPartition> buildPartitions(
-      final RaftPartitionGroupConfig config, final ThreadContextFactory threadContextFactory) {
+  private static Collection<RaftPartition> buildPartitions(final RaftPartitionGroupConfig config) {
     final File partitionsDir =
         new File(config.getStorageConfig().getDirectory(config.getName()), "partitions");
     final List<RaftPartition> partitions = new ArrayList<>(config.getPartitions());
@@ -111,8 +104,7 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
           new RaftPartition(
               PartitionId.from(config.getName(), i + 1),
               config,
-              new File(partitionsDir, String.valueOf(i + 1)),
-              threadContextFactory));
+              new File(partitionsDir, String.valueOf(i + 1))));
     }
     return partitions;
   }
@@ -233,7 +225,6 @@ public class RaftPartitionGroup implements ManagedPartitionGroup {
     return CompletableFuture.allOf(futures.toArray(new CompletableFuture[futures.size()]))
         .thenRun(
             () -> {
-              threadContextFactory.close();
               if (communicationService != null) {
                 communicationService.unsubscribe(snapshotSubject);
               }

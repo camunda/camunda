@@ -39,7 +39,6 @@ import io.atomix.raft.utils.Quorum;
 import io.atomix.storage.journal.Indexed;
 import io.atomix.utils.concurrent.Scheduled;
 import java.time.Duration;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -48,7 +47,6 @@ import java.util.stream.Collectors;
 /** Follower state. */
 public final class FollowerRole extends ActiveRole {
 
-  private final Random random = new Random();
   private Scheduled heartbeatTimer;
   private final ClusterMembershipEventListener clusterListener = this::handleClusterEvent;
   private long lastHeartbeat;
@@ -241,7 +239,9 @@ public final class FollowerRole extends ActiveRole {
     // being election timeout and 2 * election timeout.
     final Duration delay =
         raft.getElectionTimeout()
-            .plus(Duration.ofMillis(random.nextInt((int) raft.getElectionTimeout().toMillis())));
+            .plus(
+                Duration.ofMillis(
+                    raft.getRandom().nextInt((int) raft.getElectionTimeout().toMillis())));
     heartbeatTimer = raft.getThreadContext().schedule(delay, () -> onHeartbeatTimeout(delay));
   }
 
