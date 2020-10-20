@@ -41,6 +41,7 @@ import io.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.zeebe.broker.system.partitions.PartitionContext;
+import io.zeebe.broker.system.partitions.PartitionHealthBroadcaster;
 import io.zeebe.broker.system.partitions.PartitionStep;
 import io.zeebe.broker.system.partitions.TypedRecordProcessorsFactory;
 import io.zeebe.broker.system.partitions.ZeebePartition;
@@ -407,8 +408,9 @@ public final class Broker implements AutoCloseable {
             final PartitionTransitionImpl transitionBehavior =
                 new PartitionTransitionImpl(context, LEADER_STEPS, FOLLOWER_STEPS);
             final ZeebePartition zeebePartition = new ZeebePartition(context, transitionBehavior);
-
             scheduleActor(zeebePartition);
+            zeebePartition.addFailureListener(
+                new PartitionHealthBroadcaster(partitionId, topologyManager::onHealthChanged));
             healthCheckService.registerMonitoredPartition(
                 owningPartition.id().id(), zeebePartition);
             diskSpaceUsageListeners.add(zeebePartition);
