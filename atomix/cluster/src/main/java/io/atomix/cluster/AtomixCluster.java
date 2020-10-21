@@ -107,18 +107,6 @@ public class AtomixCluster implements BootstrapService, Managed<Void> {
   private final ThreadContext threadContext = new SingleThreadContext("atomix-cluster-%d");
   private final AtomicBoolean started = new AtomicBoolean();
 
-  public AtomixCluster(final String configFile) {
-    this(
-        loadConfig(
-            new File(System.getProperty("atomix.root", System.getProperty("user.dir")), configFile),
-            Thread.currentThread().getContextClassLoader()),
-        null);
-  }
-
-  public AtomixCluster(final File configFile) {
-    this(loadConfig(configFile, Thread.currentThread().getContextClassLoader()), null);
-  }
-
   public AtomixCluster(final ClusterConfig config, final Version version) {
     this(config, version, buildMessagingService(config), buildUnicastService(config));
   }

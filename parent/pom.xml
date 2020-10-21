@@ -1,4 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Parent</name>
@@ -89,7 +91,6 @@
     <version.spring-framework>5.2.9.RELEASE</version.spring-framework>
     <version.spring-boot>2.3.4.RELEASE</version.spring-boot>
     <version.tomcat>9.0.39</version.tomcat>
-    <version.classgraph>4.8.90</version.classgraph>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.config>1.4.0</version.config>
     <version.kryo>4.0.2</version.kryo>
@@ -689,11 +690,6 @@
         <groupId>com.typesafe</groupId>
         <version>${version.config}</version>
       </dependency>
-      <dependency>
-        <artifactId>classgraph</artifactId>
-        <groupId>io.github.classgraph</groupId>
-        <version>${version.classgraph}</version>
-      </dependency>
 
       <dependency>
         <groupId>net.jodah</groupId>
@@ -1009,7 +1005,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore />
+                    <ignore/>
                   </action>
                 </pluginExecution>
               </pluginExecutions>
@@ -1102,7 +1098,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <dependencyConvergence />
+                  <dependencyConvergence/>
                 </rules>
               </configuration>
             </execution>
@@ -1113,7 +1109,7 @@
               </goals>
               <configuration>
                 <rules>
-                  <banDuplicatePomDependencyVersions />
+                  <banDuplicatePomDependencyVersions/>
                 </rules>
               </configuration>
             </execution>

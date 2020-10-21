@@ -87,7 +87,7 @@ public final class AtomixRule extends ExternalResource {
                 })
             .collect(Collectors.toList());
 
-    return Atomix.builder()
+    return Atomix.builder(new AtomixConfig())
         .withClusterId("test")
         .withMemberId(String.valueOf(id))
         .withHost("localhost")
