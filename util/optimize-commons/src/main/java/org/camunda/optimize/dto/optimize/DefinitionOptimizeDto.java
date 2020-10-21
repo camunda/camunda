@@ -26,10 +26,11 @@ public abstract class DefinitionOptimizeDto implements Serializable, OptimizeDto
   private String name;
   private String engine;
   private String tenantId;
+  private Boolean deleted;
   @JsonIgnore
   private DefinitionType type;
 
-  public DefinitionOptimizeDto(final String id, final String engine) {
+  protected DefinitionOptimizeDto(final String id, final String engine) {
     this.id = id;
     this.engine = engine;
   }

@@ -48,7 +48,7 @@ import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 @Slf4j
 public class EventProcessInstanceWriter {
 
-  public static final Script VARIABLE_CLEAR_SCRIPT = new Script(
+  private static final Script VARIABLE_CLEAR_SCRIPT = new Script(
     MessageFormat.format("ctx._source.{0} = new ArrayList();\n", VARIABLES)
   );
 

@@ -22,23 +22,34 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Slf4j
 public class DecisionDefinitionImportService implements ImportService<DecisionDefinitionEngineDto> {
+
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final DecisionDefinitionWriter decisionDefinitionWriter;
+  private final DecisionDefinitionResolverService decisionDefinitionResolverService;
 
   @Override
   public void executeImport(final List<DecisionDefinitionEngineDto> pageOfEngineEntities,
                             final Runnable importCompleteCallback) {
-    log.trace("Importing entities from engine...");
+    log.trace("Importing decision definitions from engine...");
     final boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<DecisionDefinitionOptimizeDto> optimizeDtos = mapEngineEntitiesToOptimizeEntities(
         pageOfEngineEntities
       );
+      markImportedDefinitionsAsDeleted(optimizeDtos);
       final ElasticsearchImportJob<DecisionDefinitionOptimizeDto> elasticsearchImportJob = createElasticsearchImportJob(
         optimizeDtos, importCompleteCallback
       );
       elasticsearchImportJobExecutor.executeImportJob(elasticsearchImportJob);
+    }
+  }
+
+  private void markImportedDefinitionsAsDeleted(final List<DecisionDefinitionOptimizeDto> definitionsToImport) {
+    final boolean definitionsDeleted = decisionDefinitionWriter.markRedeployedDefinitionsAsDeleted(definitionsToImport);
+    // We only resync the cache if at least one existing definition has been marked as deleted
+    if (definitionsDeleted) {
+      decisionDefinitionResolverService.syncCache();
     }
   }
 

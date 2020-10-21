@@ -5,10 +5,10 @@
  */
 package org.camunda.optimize.service.importing;
 
-import org.assertj.core.groups.Tuple;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.dto.engine.definition.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.optimize.DefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.ProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.event.process.FlowNodeInstanceDto;
@@ -43,12 +43,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static javax.ws.rs.HttpMethod.GET;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 import static org.camunda.optimize.dto.optimize.ProcessInstanceConstants.EXTERNALLY_TERMINATED_STATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.END_DATE;
 import static org.camunda.optimize.service.es.schema.index.ProcessInstanceIndex.EVENTS;
+import static org.camunda.optimize.test.optimize.CollectionClient.DEFAULT_TENANT;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_INDEX_NAME;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.PROCESS_DEFINITION_INDEX_NAME;
@@ -186,8 +189,8 @@ public class ProcessImportIT extends AbstractImportIT {
     assertThat(allProcessInstances.get(0).getEvents())
       .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
       .containsExactlyInAnyOrder(
-        Tuple.tuple(START_EVENT, false),
-        Tuple.tuple(USER_TASK_1, true)
+        tuple(START_EVENT, false),
+        tuple(USER_TASK_1, true)
       );
   }
 
@@ -203,8 +206,8 @@ public class ProcessImportIT extends AbstractImportIT {
     assertThat(allProcessInstances.get(0).getEvents())
       .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
       .containsExactlyInAnyOrder(
-        Tuple.tuple(START_EVENT, false),
-        Tuple.tuple(USER_TASK_1, false)
+        tuple(START_EVENT, false),
+        tuple(USER_TASK_1, false)
       );
 
     // when
@@ -218,8 +221,8 @@ public class ProcessImportIT extends AbstractImportIT {
     assertThat(allProcessInstances.get(0).getEvents())
       .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
       .containsExactlyInAnyOrder(
-        Tuple.tuple(START_EVENT, false),
-        Tuple.tuple(USER_TASK_1, true)
+        tuple(START_EVENT, false),
+        tuple(USER_TASK_1, true)
       );
   }
 
@@ -235,8 +238,8 @@ public class ProcessImportIT extends AbstractImportIT {
     assertThat(allProcessInstances.get(0).getEvents())
       .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
       .containsExactlyInAnyOrder(
-        Tuple.tuple(START_EVENT, false),
-        Tuple.tuple(USER_TASK_1, false)
+        tuple(START_EVENT, false),
+        tuple(USER_TASK_1, false)
       );
 
     // when the process instance is canceled
@@ -250,8 +253,8 @@ public class ProcessImportIT extends AbstractImportIT {
     assertThat(allProcessInstances.get(0).getEvents())
       .extracting(FlowNodeInstanceDto::getActivityId, FlowNodeInstanceDto::getCanceled)
       .containsExactlyInAnyOrder(
-        Tuple.tuple(START_EVENT, false),
-        Tuple.tuple(USER_TASK_1, true)
+        tuple(START_EVENT, false),
+        tuple(USER_TASK_1, true)
       );
   }
 
@@ -600,6 +603,276 @@ public class ProcessImportIT extends AbstractImportIT {
     engineMockServer.verify(requestMatcher, VerificationTimes.exactly(2));
     List<ProcessDefinitionOptimizeDto> processDefinitions = definitionClient.getAllProcessDefinitions();
     assertThat(processDefinitions).hasSize(1);
+  }
+
+  private static Stream<String> tenants() {
+    return Stream.of("someTenant", DEFAULT_TENANT);
+  }
+
+  @ParameterizedTest
+  @MethodSource("tenants")
+  public void processDefinitionMarkedAsDeletedIfNewDefinitionIdButSameKeyVersionTenant(String tenantId) {
+    // given
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    final ProcessDefinitionEngineDto originalDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, tenantId);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allProcessDefinitions).singleElement()
+      .satisfies(definition -> {
+        assertThat(definition.getId()).isEqualTo(originalDefinition.getId());
+        assertThat(definition.getDeleted()).isFalse();
+      });
+
+    // when the original definition is deleted and a new one deployed with the same key, version and tenant
+    engineIntegrationExtension.deleteProcessDefinition(originalDefinition.getId());
+    final ProcessDefinitionEngineDto newDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(
+        processModel,
+        tenantId
+      );
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the original definition is marked as deleted
+    final List<ProcessDefinitionOptimizeDto> updatedDefinitions =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(updatedDefinitions).hasSize(2)
+      .allSatisfy(definition -> {
+        assertThat(definition.getKey()).isEqualTo(originalDefinition.getKey());
+        assertThat(definition.getVersion()).isEqualTo(originalDefinition.getVersionAsString());
+        assertThat(definition.getTenantId()).isEqualTo(tenantId);
+      })
+      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::getDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinition.getId(), true),
+        tuple(newDefinition.getId(), false)
+      );
+    // and the definition cache includes the deleted and new definition
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(newDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+  }
+
+  @Test
+  public void processDefinitiosnMarkedAsDeletedIfMultipleNewDeployments() {
+    // given
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    final ProcessDefinitionEngineDto firstDeletedDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, DEFAULT_TENANT);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<ProcessDefinitionOptimizeDto> firstDefinitionImported =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(firstDefinitionImported).singleElement()
+      .satisfies(definition -> {
+        assertThat(definition.getId()).isEqualTo(firstDeletedDefinition.getId());
+        assertThat(definition.getDeleted()).isFalse();
+      });
+
+    // when the original definition is deleted and a new one deployed with the same key, version and tenant
+    engineIntegrationExtension.deleteProcessDefinition(firstDeletedDefinition.getId());
+    final ProcessDefinitionEngineDto secondDeletedDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, DEFAULT_TENANT);
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the original definition is marked as deleted
+    final List<ProcessDefinitionOptimizeDto> firstTwoDefinitionsImported =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(firstTwoDefinitionsImported).hasSize(2)
+      .allSatisfy(definition -> {
+        assertThat(definition.getKey()).isEqualTo(firstDeletedDefinition.getKey());
+        assertThat(definition.getVersion()).isEqualTo(firstDeletedDefinition.getVersionAsString());
+        assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
+      })
+      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::getDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(firstDeletedDefinition.getId(), true),
+        tuple(secondDeletedDefinition.getId(), false)
+      );
+    // and the definition cache includes the deleted and new definition
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(firstDeletedDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(secondDeletedDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+
+    // when the second definition is deleted and a new one deployed with the same key, version and tenant
+    engineIntegrationExtension.deleteProcessDefinition(secondDeletedDefinition.getId());
+    final ProcessDefinitionEngineDto nonDeletedDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, DEFAULT_TENANT);
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the first two definitions are marked as deleted
+    final List<ProcessDefinitionOptimizeDto> allDefinitionsImported =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allDefinitionsImported).hasSize(3)
+      .allSatisfy(definition -> {
+        assertThat(definition.getKey()).isEqualTo(firstDeletedDefinition.getKey());
+        assertThat(definition.getVersion()).isEqualTo(firstDeletedDefinition.getVersionAsString());
+        assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
+      })
+      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::getDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(firstDeletedDefinition.getId(), true),
+        tuple(secondDeletedDefinition.getId(), true),
+        tuple(nonDeletedDefinition.getId(), false)
+      );
+    // and the definition cache includes correct deletion states
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(firstDeletedDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(secondDeletedDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(nonDeletedDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+  }
+
+  @Test
+  public void processDefinitionMarkedAsDeletedOtherTenantUnaffected() {
+    // given
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    final ProcessDefinitionEngineDto originalDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, DEFAULT_TENANT);
+    final ProcessDefinitionEngineDto originalDefinitionWithTenant =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel, "someTenant");
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allProcessDefinitions).hasSize(2)
+      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::getDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinition.getId(), false),
+        tuple(originalDefinitionWithTenant.getId(), false)
+      );
+
+    // when the original definition is deleted and a new one deployed with the same key, version and tenant
+    engineIntegrationExtension.deleteProcessDefinition(originalDefinition.getId());
+    final ProcessDefinitionEngineDto newDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the original definition is marked as deleted, the new one exists and the one with tenant is unaffected
+    final List<ProcessDefinitionOptimizeDto> updatedDefinitions =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(updatedDefinitions).hasSize(3)
+      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::getDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinition.getId(), true),
+        tuple(originalDefinitionWithTenant.getId(), false),
+        tuple(newDefinition.getId(), false)
+      );
+    // and the definition cache includes the deleted and new definition
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinitionWithTenant.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(newDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+  }
+
+  @Test
+  public void processDefinitionMarkedAsDeletedOtherVersionUnaffected() {
+    // given
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    final ProcessDefinitionEngineDto originalDefinitionV1 =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    final ProcessDefinitionEngineDto originalDefinitionV2 =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allProcessDefinitions).hasSize(2)
+      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::getDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinitionV1.getId(), false),
+        tuple(originalDefinitionV2.getId(), false)
+      );
+
+    // when the v2 definition is deleted and a new one deployed with the same key, version and tenant
+    engineIntegrationExtension.deleteProcessDefinition(originalDefinitionV2.getId());
+    final ProcessDefinitionEngineDto newDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the original definition is unaffected, the original v2 is marked as deleted, and the new one exists
+    final List<ProcessDefinitionOptimizeDto> updatedDefinitions =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(updatedDefinitions).hasSize(3)
+      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::getDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinitionV1.getId(), false),
+        tuple(originalDefinitionV2.getId(), true),
+        tuple(newDefinition.getId(), false)
+      );
+    // and the definition cache includes the deleted and new definition
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinitionV1.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinitionV2.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(newDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+  }
+
+  @Test
+  public void processDefinitionMarkedAsDeletedOtherDefinitionKeyUnaffected() {
+    // given
+    BpmnModelInstance processModel = getSingleServiceTaskProcess();
+    final ProcessDefinitionEngineDto originalDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    final ProcessDefinitionEngineDto originalDefinitionWithOtherKey =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(getSimpleBpmnDiagram("otherKey"));
+
+    // when
+    importAllEngineEntitiesFromScratch();
+
+    // then
+    final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(allProcessDefinitions).hasSize(2)
+      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::getDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinition.getId(), false),
+        tuple(originalDefinitionWithOtherKey.getId(), false)
+      );
+
+    // when the original definition is deleted and a new one deployed with the same key, version and tenant
+    engineIntegrationExtension.deleteProcessDefinition(originalDefinition.getId());
+    final ProcessDefinitionEngineDto newDefinition =
+      engineIntegrationExtension.deployProcessAndGetProcessDefinition(processModel);
+    importAllEngineEntitiesFromLastIndex();
+
+    // then the original definition is marked as deleted, the other key is unaffected, and the new one exists
+    final List<ProcessDefinitionOptimizeDto> updatedDefinitions =
+      elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
+    assertThat(updatedDefinitions).hasSize(3)
+      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::getDeleted)
+      .containsExactlyInAnyOrder(
+        tuple(originalDefinition.getId(), true),
+        tuple(originalDefinitionWithOtherKey.getId(), false),
+        tuple(newDefinition.getId(), false)
+      );
+    // and the definition cache includes the deleted and new definition
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinitionWithOtherKey.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+    assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(newDefinition.getId()))
+      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
   }
 
   @Test

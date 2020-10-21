@@ -10,6 +10,8 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
+import org.camunda.optimize.dto.optimize.DecisionDefinitionOptimizeDto;
+import org.camunda.optimize.dto.optimize.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.EngineContext;
@@ -38,6 +40,8 @@ import org.camunda.optimize.service.importing.engine.mediator.StoreIndexesEngine
 import org.camunda.optimize.service.importing.engine.mediator.factory.CamundaEventImportServiceFactory;
 import org.camunda.optimize.service.importing.engine.service.ImportObserver;
 import org.camunda.optimize.service.importing.engine.service.RunningActivityInstanceImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.DecisionDefinitionResolverService;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.importing.event.EventTraceStateProcessingScheduler;
 import org.camunda.optimize.service.importing.eventprocess.EventBasedProcessesInstanceImportScheduler;
 import org.camunda.optimize.service.importing.eventprocess.EventProcessInstanceImportMediatorManager;
@@ -63,6 +67,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -235,6 +240,34 @@ public class EmbeddedOptimizeExtension
       service.executeImport(activities, () -> done.complete(null));
       done.get();
     }
+  }
+
+  @SneakyThrows
+  public Optional<DecisionDefinitionOptimizeDto> getDecisionDefinitionFromResolverService(final String definitionId) {
+    DecisionDefinitionResolverService resolverService =
+      getApplicationContext().getBean(DecisionDefinitionResolverService.class);
+    for (EngineContext configuredEngine : getConfiguredEngines()) {
+      final Optional<DecisionDefinitionOptimizeDto> definition =
+        resolverService.getDefinition(definitionId, configuredEngine);
+      if (definition.isPresent()) {
+        return definition;
+      }
+    }
+    return Optional.empty();
+  }
+
+  @SneakyThrows
+  public Optional<ProcessDefinitionOptimizeDto> getProcessDefinitionFromResolverService(final String definitionId) {
+    ProcessDefinitionResolverService resolverService =
+      getApplicationContext().getBean(ProcessDefinitionResolverService.class);
+    for (EngineContext configuredEngine : getConfiguredEngines()) {
+      final Optional<ProcessDefinitionOptimizeDto> definition =
+        resolverService.getDefinition(definitionId, configuredEngine);
+      if (definition.isPresent()) {
+        return definition;
+      }
+    }
+    return Optional.empty();
   }
 
   @SneakyThrows

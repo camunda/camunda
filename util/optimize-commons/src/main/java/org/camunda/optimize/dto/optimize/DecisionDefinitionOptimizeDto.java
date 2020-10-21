@@ -35,7 +35,7 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeDto {
                                        final String name,
                                        final String engine,
                                        final String tenantId) {
-    super(id, key, version, versionTag, name, engine, tenantId, DefinitionType.DECISION);
+    super(id, key, version, versionTag, name, engine, tenantId, false, DefinitionType.DECISION);
   }
 
   public DecisionDefinitionOptimizeDto(final String id,
@@ -60,7 +60,7 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeDto {
                                        final String dmn10Xml,
                                        final List<DecisionVariableNameDto> inputVariableNames,
                                        final List<DecisionVariableNameDto> outputVariableNames) {
-    super(id, key, version, versionTag, name, engine, tenantId, DefinitionType.DECISION);
+    super(id, key, version, versionTag, name, engine, tenantId, false, DefinitionType.DECISION);
     this.dmn10Xml = dmn10Xml;
     this.inputVariableNames = inputVariableNames;
     this.outputVariableNames = outputVariableNames;

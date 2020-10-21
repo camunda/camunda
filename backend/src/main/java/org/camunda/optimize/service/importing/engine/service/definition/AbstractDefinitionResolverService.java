@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @AllArgsConstructor
 @Slf4j
-public abstract class AbstractDefinitionResolverService <T extends DefinitionOptimizeDto> {
+public abstract class AbstractDefinitionResolverService<T extends DefinitionOptimizeDto> {
 
   // map contains not xml
   private final Map<String, T> idToDefinitionMap = new ConcurrentHashMap<>();
@@ -57,7 +57,7 @@ public abstract class AbstractDefinitionResolverService <T extends DefinitionOpt
 
   protected void addToCacheIfNotNull(final T newEntry) {
     Optional.ofNullable(newEntry)
-      .ifPresent(definition -> idToDefinitionMap.putIfAbsent(definition.getId(), definition));
+      .ifPresent(definition -> idToDefinitionMap.put(definition.getId(), definition));
   }
 
 }

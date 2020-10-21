@@ -17,6 +17,7 @@ import org.camunda.optimize.service.importing.engine.handler.EngineImportIndexHa
 import org.camunda.optimize.service.importing.engine.mediator.ProcessDefinitionEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.mediator.ProcessDefinitionXmlEngineImportMediator;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionImportService;
+import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionResolverService;
 import org.camunda.optimize.service.importing.engine.service.definition.ProcessDefinitionXmlImportService;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -29,15 +30,18 @@ import java.util.List;
 public class ProcessDefinitionEngineImportMediatorFactory extends AbstractImportMediatorFactory {
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessDefinitionXmlWriter processDefinitionXmlWriter;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   public ProcessDefinitionEngineImportMediatorFactory(final ProcessDefinitionWriter processDefinitionWriter,
                                                       final BeanFactory beanFactory,
                                                       final ConfigurationService configurationService,
                                                       final EngineImportIndexHandlerRegistry importIndexHandlerRegistry,
-                                                      final ProcessDefinitionXmlWriter processDefinitionXmlWriter) {
+                                                      final ProcessDefinitionXmlWriter processDefinitionXmlWriter,
+                                                      final ProcessDefinitionResolverService processDefinitionResolverService) {
     super(beanFactory, importIndexHandlerRegistry, configurationService);
     this.processDefinitionWriter = processDefinitionWriter;
     this.processDefinitionXmlWriter = processDefinitionXmlWriter;
+    this.processDefinitionResolverService = processDefinitionResolverService;
   }
 
   @Override
@@ -48,7 +52,7 @@ public class ProcessDefinitionEngineImportMediatorFactory extends AbstractImport
     );
   }
 
-  public ProcessDefinitionEngineImportMediator createProcessDefinitionEngineImportMediator(
+  private ProcessDefinitionEngineImportMediator createProcessDefinitionEngineImportMediator(
     EngineContext engineContext) {
     final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
       beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);
@@ -59,14 +63,15 @@ public class ProcessDefinitionEngineImportMediatorFactory extends AbstractImport
       new ProcessDefinitionImportService(
         elasticsearchImportJobExecutor,
         engineContext,
-        processDefinitionWriter
+        processDefinitionWriter,
+        processDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
     );
   }
 
-  public ProcessDefinitionXmlEngineImportMediator createProcessDefinitionXmlEngineImportMediator(
+  private ProcessDefinitionXmlEngineImportMediator createProcessDefinitionXmlEngineImportMediator(
     EngineContext engineContext) {
     final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor =
       beanFactory.getBean(ElasticsearchImportJobExecutor.class, configurationService);

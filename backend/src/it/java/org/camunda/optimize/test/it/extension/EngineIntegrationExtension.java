@@ -984,7 +984,7 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   private HttpPost createDeploymentRequest(String process, String fileName, String tenantId) {
-    HttpPost post = new HttpPost(getDeploymentUri());
+    HttpPost post = new HttpPost(getCreateDeploymentUri());
     final MultipartEntityBuilder multipartEntityBuilder = MultipartEntityBuilder
       .create()
       .addTextBody("deployment-name", "deployment")
@@ -1006,8 +1006,12 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     return post;
   }
 
+  private String getCreateDeploymentUri() {
+    return getDeploymentUri() + "/create";
+  }
+
   private String getDeploymentUri() {
-    return getEngineUrl() + "/deployment/create";
+    return getEngineUrl() + "/deployment";
   }
 
   private String getStartProcessInstanceUri(String procDefId) {
@@ -1448,6 +1452,46 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
     }
   }
 
+  @SneakyThrows
+  public void deleteProcessDefinition(final String definitionId) {
+    HttpDelete delete = new HttpDelete(getProcessDefinitionUri() + "/" + definitionId);
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(delete)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.OK.getStatusCode()) {
+        throw new OptimizeIntegrationTestException(
+          String.format(
+            "Could not delete process definition with id [%s]. Status-code: %s",
+            definitionId,
+            response.getStatusLine().getStatusCode()
+          )
+        );
+      }
+    } catch (IOException e) {
+      String message = "Could not delete process instance!";
+      log.error(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
+    }
+  }
+
+  @SneakyThrows
+  public void deleteDeploymentById(final String deploymentId) {
+    HttpDelete delete = new HttpDelete(getDeploymentUri() + "/" + deploymentId);
+    try (CloseableHttpResponse response = HTTP_CLIENT.execute(delete)) {
+      if (response.getStatusLine().getStatusCode() != Response.Status.NO_CONTENT.getStatusCode()) {
+        throw new OptimizeIntegrationTestException(
+          String.format(
+            "Could not delete deployment with id [%s]. Status-code: %s",
+            deploymentId,
+            response.getStatusLine().getStatusCode()
+          )
+        );
+      }
+    } catch (IOException e) {
+      String message = "Could not delete deployment!";
+      log.error(message, e);
+      throw new OptimizeIntegrationTestException(message, e);
+    }
+  }
+
   private DecisionDefinitionEngineDto getDecisionDefinitionByDeployment(DeploymentDto deployment) {
     HttpRequestBase get = new HttpGet(getDecisionDefinitionUri());
     try {
@@ -1827,7 +1871,6 @@ public class EngineIntegrationExtension implements BeforeEachCallback, AfterEach
   }
 
   public DecisionDefinitionEngineDto deployDecisionDefinition(DmnModelInstance dmnModelInstance, String tenantId) {
-
     DeploymentDto deploymentDto = deployDefinition(dmnModelInstance, tenantId);
     return getDecisionDefinitionByDeployment(deploymentDto);
   }

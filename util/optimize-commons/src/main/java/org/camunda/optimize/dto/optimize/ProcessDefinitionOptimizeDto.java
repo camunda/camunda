@@ -37,7 +37,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
                                       final String name,
                                       final String engine,
                                       final String tenantId) {
-    super(id, key, version, versionTag, name, engine, tenantId, DefinitionType.PROCESS);
+    super(id, key, version, versionTag, name, engine, tenantId, false, DefinitionType.PROCESS);
   }
 
   public ProcessDefinitionOptimizeDto(final String id,
@@ -62,7 +62,7 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
                                       final String bpmn20Xml,
                                       final Map<String, String> flowNodeNames,
                                       final Map<String, String> userTaskNames) {
-    super(id, key, version, versionTag, name, engine, tenantId, DefinitionType.PROCESS);
+    super(id, key, version, versionTag, name, engine, tenantId, false, DefinitionType.PROCESS);
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeNames = flowNodeNames;
     this.userTaskNames = userTaskNames;

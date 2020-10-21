@@ -19,6 +19,7 @@ public abstract class AbstractDefinitionIndex extends DefaultIndexMappingCreator
   public static final String DEFINITION_NAME = DefinitionOptimizeDto.Fields.name;
   public static final String DEFINITION_ENGINE = DefinitionOptimizeDto.Fields.engine;
   public static final String DEFINITION_TENANT_ID = DefinitionOptimizeDto.Fields.tenantId;
+  public static final String DEFINITION_DELETED = DefinitionOptimizeDto.Fields.deleted;
 
   @Override
   public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
@@ -44,6 +45,9 @@ public abstract class AbstractDefinitionIndex extends DefaultIndexMappingCreator
       .endObject()
       .startObject(DEFINITION_NAME)
         .field("type", "keyword")
+      .endObject()
+      .startObject(DEFINITION_DELETED)
+        .field("type", "boolean")
       .endObject();
     // @formatter:on
   }

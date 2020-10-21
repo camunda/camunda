@@ -22,22 +22,33 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @Slf4j
 public class ProcessDefinitionImportService implements ImportService<ProcessDefinitionEngineDto> {
+
   private final ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
   private final EngineContext engineContext;
   private final ProcessDefinitionWriter processDefinitionWriter;
+  private final ProcessDefinitionResolverService processDefinitionResolverService;
 
   @Override
   public void executeImport(final List<ProcessDefinitionEngineDto> pageOfEngineEntities,
                             final Runnable importCompleteCallback) {
-    log.trace("Importing entities from engine...");
+    log.trace("Importing process definitions from engine...");
 
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       final List<ProcessDefinitionOptimizeDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities
         (pageOfEngineEntities);
+      markImportedDefinitionsAsDeleted(newOptimizeEntities);
       final ElasticsearchImportJob<ProcessDefinitionOptimizeDto> elasticsearchImportJob =
         createElasticsearchImportJob(newOptimizeEntities, importCompleteCallback);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
+    }
+  }
+
+  private void markImportedDefinitionsAsDeleted(final List<ProcessDefinitionOptimizeDto> definitionsToImport) {
+    final boolean definitionsDeleted = processDefinitionWriter.markRedeployedDefinitionsAsDeleted(definitionsToImport);
+    // We only resync the cache if at least one existing definition has been marked as deleted
+    if (definitionsDeleted) {
+      processDefinitionResolverService.syncCache();
     }
   }
 

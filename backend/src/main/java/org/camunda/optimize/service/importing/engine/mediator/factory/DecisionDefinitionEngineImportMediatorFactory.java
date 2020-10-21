@@ -66,7 +66,8 @@ public class DecisionDefinitionEngineImportMediatorFactory extends AbstractImpor
       new DecisionDefinitionImportService(
         elasticsearchImportJobExecutor,
         engineContext,
-        decisionDefinitionWriter
+        decisionDefinitionWriter,
+        decisionDefinitionResolverService
       ),
       configurationService,
       new BackoffCalculator(configurationService)
