@@ -22,7 +22,7 @@ export default function MultiValueInput({
   const input = useRef();
 
   function handleKeyPress(evt) {
-    if (['Enter', ' ', 'Tab', ...extraSeperators].includes(evt.key)) {
+    if (['Enter', 'Tab', ...extraSeperators].includes(evt.key)) {
       if (value) {
         evt.preventDefault();
       }

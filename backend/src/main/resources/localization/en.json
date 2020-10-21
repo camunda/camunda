@@ -892,7 +892,7 @@
           "isNullOrUndefined": "is null or undefined"
         },
         "enterValue": "Add a single value",
-        "enterMultipleValues": "Add multiple values by separating with a space",
+        "enterMultipleValues": "Add multiple values by separating with a tab",
         "addValue": "Add Value",
         "invalidInput": "Input must be a number",
         "multiSelect": {

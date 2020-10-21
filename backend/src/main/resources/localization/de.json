@@ -892,7 +892,7 @@
           "isNullOrUndefined": "ist null oder nicht definiert"
         },
         "enterValue": "Einen einzigen Wert eingeben",
-        "enterMultipleValues": "Mehrere Werte durch Trennen mit einem Leerzeichen eingeben",
+        "enterMultipleValues": "Mehrere Werte durch Trennen mit einem Tabulator eingeben",
         "addValue": "Wert hinzufügen",
         "invalidInput": "Eingabe muss eine Zahl sein",
         "multiSelect": {

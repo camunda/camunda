@@ -66,7 +66,7 @@ export default function MultiEmailInput({emails, onChange, placeholder}) {
       onAdd={addEmail}
       onRemove={removeEmail}
       values={emails.map((email) => ({value: email, invalid: errors.includes(email)}))}
-      extraSeperators={[',', ';']}
+      extraSeperators={[',', ';', ' ']}
     />
   );
 }
