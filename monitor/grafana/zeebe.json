@@ -83,7 +83,7 @@
   "gnetId": null,
   "graphTooltip": 1,
   "id": null,
-  "iteration": 1601901661063,
+  "iteration": 1603290773510,
   "links": [],
   "panels": [
     {
@@ -3391,7 +3391,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 4
+            "y": 5
           },
           "hiddenSeries": false,
           "id": 33,
@@ -3497,7 +3497,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 4
+            "y": 5
           },
           "hiddenSeries": false,
           "id": 98,
@@ -3609,7 +3609,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 13
           },
           "hiddenSeries": false,
           "id": 64,
@@ -3638,8 +3638,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (pod_name) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=\"\", namespace=~\"$namespace\", image!=\"\", pod_name=~\"$pod\", container_name!=\"POD\"}[1m]))",
-              "legendFormat": "{{pod_name}}",
+              "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{job=\"kubelet\", cluster=\"\", namespace=~\"$namespace\", image!=\"\", pod_name=~\"$pod\", container_name!=\"POD\"}[1m]))",
+              "interval": "",
+              "legendFormat": "{{pod}}",
               "refId": "A"
             }
           ],
@@ -3705,7 +3706,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 13
           },
           "hiddenSeries": false,
           "id": 35,
@@ -3795,7 +3796,7 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 20
+            "y": 21
           },
           "hiddenSeries": false,
           "id": 37,
@@ -3893,7 +3894,7 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 20
+            "y": 21
           },
           "hiddenSeries": false,
           "id": 40,
@@ -3983,7 +3984,7 @@
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 28
+            "y": 29
           },
           "hiddenSeries": false,
           "id": 39,
@@ -9265,5 +9266,5 @@
   "variables": {
     "list": []
   },
-  "version": 16
+  "version": 17
 }
