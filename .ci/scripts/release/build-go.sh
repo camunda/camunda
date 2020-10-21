@@ -8,6 +8,14 @@ GOBINDATA_VERSION="3.1.3"
 mkdir -p ${ORG_DIR}
 ln -s ${PWD} ${ORG_DIR}/zeebe
 
+# update go client API
+if [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  gocompat save --path=clients/go/.gocompat.json clients/go/...
+  git commit -am "chore(project): update Go client API data"
+else
+  echo "Version $RELEASE_VERSION"
+fi
+
 curl -sL https://github.com/go-bindata/go-bindata/archive/v${GOBINDATA_VERSION}.tar.gz | tar xz 
 cd go-bindata-${GOBINDATA_VERSION}
 go install ./...

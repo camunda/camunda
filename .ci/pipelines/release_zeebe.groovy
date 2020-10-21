@@ -88,7 +88,9 @@ spec:
 
                 container('maven') {
                     sh '.ci/scripts/release/prepare.sh'
-                    sh '.ci/scripts/release/compat-update.sh'
+                }
+                container('golang') {
+                    sh '.ci/scripts/release/prepare-go.sh'
                 }
             }
         }
