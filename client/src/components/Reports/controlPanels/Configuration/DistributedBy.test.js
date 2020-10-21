@@ -154,34 +154,6 @@ it('should invoke onChange with the selected variable', () => {
   );
 });
 
-it('should reset process part if defined when selection an option', () => {
-  const spy = jest.fn();
-  const node = shallow(
-    <DistributedBy
-      report={{
-        data: {
-          ...data,
-          configuration: {...data.configuration, processPart: {}},
-        },
-      }}
-      onChange={spy}
-    />
-  );
-
-  node.find(Select).prop('onChange')('assignee');
-
-  expect(spy).toHaveBeenCalledWith(
-    {
-      configuration: {
-        distributedBy: {$set: {type: 'assignee', value: null}},
-        processPart: {$set: null},
-      },
-      visualization: {$set: 'bar'},
-    },
-    true
-  );
-});
-
 it('should invoke onChange with correct start date configuration', () => {
   const spy = jest.fn();
   const node = shallow(

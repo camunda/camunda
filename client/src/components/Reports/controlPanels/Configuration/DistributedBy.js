@@ -81,10 +81,6 @@ export function DistributedBy({
               change.visualization = {$set: 'bar'};
             }
 
-            if (configuration.processPart) {
-              change.configuration.processPart = {$set: null};
-            }
-
             onChange(change, true);
           }}
         >

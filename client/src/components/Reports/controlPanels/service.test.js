@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {isDurationHeatmap, shouldShowProcessPart} from './service';
+import {isDurationHeatmap, isProcessInstanceDuration} from './service';
 
 it('Should correctly check for duration heatmap', () => {
   expect(
@@ -37,15 +37,8 @@ it('should work for user task reports', () => {
   ).toBeFalsy();
 });
 
-it('should correclty check for not distributed process instance duration reports', () => {
+it('should correclty check for process instance duration reports', () => {
   expect(
-    shouldShowProcessPart({view: {entity: 'processInstance', property: 'duration'}})
+    isProcessInstanceDuration({view: {entity: 'processInstance', property: 'duration'}})
   ).toBeTruthy();
-
-  expect(
-    shouldShowProcessPart({
-      view: {entity: 'processInstance', property: 'duration'},
-      configuration: {distributedBy: {type: 'variable'}},
-    })
-  ).toBeFalsy();
 });

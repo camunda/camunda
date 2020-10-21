@@ -18,7 +18,7 @@ import ReportSelect from './ReportSelect';
 import {TargetValueComparison} from './targetValue';
 import {ProcessPart} from './ProcessPart';
 import {Configuration} from './Configuration';
-import {isDurationHeatmap, shouldShowProcessPart} from './service';
+import {isDurationHeatmap, isProcessInstanceDuration} from './service';
 
 import './ReportControlPanel.scss';
 
@@ -227,7 +227,7 @@ export default withErrorHandling(
                 />
               </li>
             )}
-            {shouldShowProcessPart(data) && (
+            {isProcessInstanceDuration(data) && (
               <li>
                 <ProcessPart
                   flowNodeNames={this.state.flowNodeNames}
