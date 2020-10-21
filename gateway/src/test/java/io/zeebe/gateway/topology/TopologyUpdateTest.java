@@ -174,6 +174,23 @@ public final class TopologyUpdateTest {
     assertThat(topologyManager.getTopology().getLeaderForPartition(1)).isEqualTo(leaderId);
   }
 
+  @Test
+  public void shouldUpdateTopologyOnPartitionHealth() {
+    final int brokerId = 0;
+    final int partition = 0;
+    final BrokerInfo broker = createBroker(brokerId);
+    broker.setPartitionHealthy(partition);
+    topologyManager.event(createMemberAddedEvent(broker));
+    waitUntil(() -> topologyManager.getTopology() != null);
+    assertThat(topologyManager.getTopology().isPartitionHealthy(brokerId, partition)).isTrue();
+
+    final BrokerInfo updatedBroker = createBroker(0);
+    updatedBroker.setPartitionUnhealthy(partition);
+    topologyManager.event(createMemberUpdateEvent(updatedBroker));
+    waitUntil(() -> !topologyManager.getTopology().isPartitionHealthy(brokerId, partition));
+    assertThat(topologyManager.getTopology().isPartitionHealthy(brokerId, partition)).isFalse();
+  }
+
   private BrokerInfo createBroker(final int brokerId) {
     final BrokerInfo broker =
         new BrokerInfo()

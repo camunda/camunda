@@ -441,6 +441,27 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
     return this;
   }
 
+  public BrokerInfo consumePartitionsHealth(
+      final IntConsumer partitionConsumer,
+      final IntConsumer partitionHealthyConsumer,
+      final IntConsumer partitionUnhealthyConsumer) {
+    partitionHealthStatuses.forEach(
+        (partition, health) -> {
+          partitionConsumer.accept(partition);
+          switch (health) {
+            case HEALTHY:
+              partitionHealthyConsumer.accept(partition);
+              break;
+            case UNHEALTHY:
+              partitionUnhealthyConsumer.accept(partition);
+              break;
+            default:
+              LOG.warn("Failed to decode broker info, found unknown health status: {}", health);
+          }
+        });
+    return this;
+  }
+
   @Override
   public String toString() {
     return "BrokerInfo{"
