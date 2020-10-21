@@ -7,7 +7,7 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/spf13/cobra v1.1.1
 	github.com/zeebe-io/zeebe/clients/go v0.24.2
-	google.golang.org/grpc v1.32.0
+	google.golang.org/grpc v1.33.1
 )
 
 replace github.com/zeebe-io/zeebe/clients/go => ../../../clients/go
