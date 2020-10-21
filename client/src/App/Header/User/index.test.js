@@ -24,16 +24,25 @@ const mockUser = {
   firstname: 'Franz',
   lastname: 'Kafka',
   username: 'franzkafka',
+  canLogout: true,
 };
 const mockUserWithOnlyUsername = {
   firstname: null,
   lastname: null,
   username: 'franzkafka',
+  canLogout: true,
 };
 const mockSsoUser = {
   firstname: '',
   lastname: 'Michael Jordan',
   username: 'michaeljordan',
+  canLogout: false,
+};
+const previouslyLoggedInUser = {
+  firstname: 'Sponge',
+  lastname: 'Bob',
+  username: 'bob',
+  canLogout: true,
 };
 
 describe('User', () => {
@@ -41,13 +50,8 @@ describe('User', () => {
     clearStateLocally();
   });
 
-  it('renders with locally stored User data', async () => {
-    mockServer.use(
-      rest.get('/api/authentications/user', (_, res, ctx) =>
-        res.once(ctx.json({}))
-      )
-    );
-    storeStateLocally({firstname: 'Sponge', lastname: 'Bob'});
+  it('should handle a previously logged in user', async () => {
+    storeStateLocally(previouslyLoggedInUser);
 
     render(<User />, {
       wrapper: ThemeProvider,
@@ -56,7 +60,7 @@ describe('User', () => {
     expect(await screen.findByText('Sponge Bob')).toBeInTheDocument();
   });
 
-  it('renders with User data', async () => {
+  it('should render a the user name and last name', async () => {
     mockServer.use(
       rest.get('/api/authentications/user', (_, res, ctx) =>
         res.once(ctx.json(mockUser))
@@ -70,7 +74,7 @@ describe('User', () => {
     expect(await screen.findByText('Franz Kafka')).toBeInTheDocument();
   });
 
-  it('renders with username', async () => {
+  it('should handle render the username', async () => {
     mockServer.use(
       rest.get('/api/authentications/user', (_, res, ctx) =>
         res.once(ctx.json(mockUserWithOnlyUsername))
@@ -84,7 +88,7 @@ describe('User', () => {
     expect(await screen.findByText('franzkafka')).toBeInTheDocument();
   });
 
-  it('renders without User data', async () => {
+  it('should render a skeleton', async () => {
     mockServer.use(
       rest.get('/api/authentications/user', (_, res, ctx) =>
         res.once(ctx.json(mockUser))
@@ -99,7 +103,7 @@ describe('User', () => {
     await waitForElementToBeRemoved(screen.getByTestId('username-skeleton'));
   });
 
-  it('renders with SSO User data (firstname field is empty)', async () => {
+  it('should handle a SSO user', async () => {
     mockServer.use(
       rest.get('/api/authentications/user', (_, res, ctx) =>
         res.once(ctx.json(mockSsoUser))
@@ -111,6 +115,10 @@ describe('User', () => {
     });
 
     expect(await screen.findByText('Michael Jordan')).toBeInTheDocument();
+
+    fireEvent.click(await screen.findByText('Michael Jordan'));
+
+    expect(screen.queryByText('Logout')).not.toBeInTheDocument();
   });
 
   it('should handle logout', async () => {

@@ -6,11 +6,13 @@
 
 import {get, post} from 'modules/request';
 
-export const logout = async () => {
-  await post('/api/logout');
-};
+function logout() {
+  return post('/api/logout');
+}
 
-export const fetchUser = async () => {
+async function fetchUser() {
   const response = await get('/api/authentications/user');
-  return await response.json();
-};
+  return response.json();
+}
+
+export {logout, fetchUser};
