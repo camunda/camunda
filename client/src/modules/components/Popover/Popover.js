@@ -123,13 +123,15 @@ export default class Popover extends React.Component {
       <div onClick={this.catchClick}>
         <span className="Popover__dialog-arrow-border"> </span>
         <span className="Popover__dialog-arrow" />
-        <div
-          ref={this.storePopoverDialogRef}
-          onMouseDown={this.onPopoverDialogMouseDown}
-          style={this.state.dialogStyles}
-          className={classnames('Popover__dialog', {scrollable: this.state.scrollable})}
-        >
-          {this.props.children}{' '}
+        <div className="dialogContainer" style={this.state.dialogStyles}>
+          <div
+            ref={this.storePopoverDialogRef}
+            onMouseDown={this.onPopoverDialogMouseDown}
+            style={this.state.dialogStyles}
+            className={classnames('Popover__dialog', {scrollable: this.state.scrollable})}
+          >
+            {this.props.children}{' '}
+          </div>
         </div>
       </div>
     );

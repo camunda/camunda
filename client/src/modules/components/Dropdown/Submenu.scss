@@ -42,6 +42,8 @@
     }
 
     &.scrollable {
+      overflow-x: hidden;
+      margin: 0;
       @include scrollable;
     }
   }

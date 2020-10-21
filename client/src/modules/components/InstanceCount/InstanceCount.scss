@@ -75,11 +75,13 @@
       position: absolute;
       left: 50%;
 
-      .Popover__dialog {
+      .dialogContainer {
         margin-left: -40px;
-        padding-top: 20px;
         min-width: 397px;
         transform: translate(16px, 0);
+        .Popover__dialog {
+          padding-top: 20px;
+        }
       }
     }
 

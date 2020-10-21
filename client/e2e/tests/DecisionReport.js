@@ -15,16 +15,20 @@ import * as ProcessReport from './ProcessReport.elements.js';
 fixture('Decision Report').page(config.endpoint).beforeEach(u.login).afterEach(cleanEntities);
 
 test('create a dmn js table report', async (t) => {
+  await t.resizeWindow(1400, 700);
+
   await t.click(Homepage.createNewMenu);
   await t.click(Homepage.option('New Report'));
 
   await t.hover(Homepage.submenuOption('Decision Report'));
 
-  await t
-    .resizeWindow(1400, 700)
-    .takeElementScreenshot(Homepage.entityList, 'decision/single-report/dmn_report_create.png', {
+  await t.takeElementScreenshot(
+    Homepage.entityList,
+    'decision/single-report/dmn_report_create.png',
+    {
       crop: {left: 1000, bottom: 300},
-    });
+    }
+  );
 
   await t.click(Homepage.submenuOption('Decision Report'));
 

@@ -19,19 +19,7 @@
     }
 
     .Dropdown {
-      position: static;
       width: 130px;
-
-      .menu {
-        bottom: 0px;
-        right: 25px;
-        left: auto !important;
-        height: 250px;
-
-        > ul.scrollable {
-          overflow: auto;
-        }
-      }
     }
   }
 

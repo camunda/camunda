@@ -53,16 +53,6 @@ export function DistributedBy({
         <legend>{t('report.config.userTaskDistributedBy')}</legend>
         <Select
           key={variables.length}
-          onOpen={() => {
-            const popover = document.querySelector('.Popover__dialog.scrollable');
-            if (
-              popover &&
-              (isInstanceDateReport(view, groupBy) || isInstanceVariableReport(view, groupBy))
-            ) {
-              popover.style.overflow = 'visible';
-              popover.style.height = 'auto';
-            }
-          }}
           value={getValue(distributedBy)}
           onChange={(value) => {
             const change = {distributedBy: {$set: {type: value, value: null}}};

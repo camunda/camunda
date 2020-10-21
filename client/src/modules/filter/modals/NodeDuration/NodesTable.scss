@@ -19,18 +19,8 @@
     }
 
     .Dropdown {
-      position: static;
       min-width: 0;
       width: 130px;
-
-      .menu {
-        bottom: 0px;
-        left: auto !important;
-
-        > ul.scrollable {
-          overflow: auto;
-        }
-      }
 
       &.operator {
         margin-right: 10px;

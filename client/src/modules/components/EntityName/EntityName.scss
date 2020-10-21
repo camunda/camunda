@@ -76,23 +76,25 @@
       }
     }
 
-    .Popover__dialog {
+    .dialogContainer {
       margin-left: -20px;
-      padding-top: 20px;
       width: 277px;
+      .Popover__dialog {
+        padding-top: 20px;
 
-      dl {
-        margin: 0;
+        dl {
+          margin: 0;
 
-        dt {
-          font-size: 12px;
-          color: $grey-lighten-56;
-        }
+          dt {
+            font-size: 12px;
+            color: $grey-lighten-56;
+          }
 
-        dd {
-          margin: 3px 0 10px;
-          font-size: 14px;
-          color: $grey-darken-33;
+          dd {
+            margin: 3px 0 10px;
+            font-size: 14px;
+            color: $grey-darken-33;
+          }
         }
       }
     }

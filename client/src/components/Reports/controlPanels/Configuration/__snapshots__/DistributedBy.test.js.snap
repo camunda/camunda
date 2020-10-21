@@ -10,7 +10,6 @@ exports[`should load and render variables for process instance count reports 1`]
   <Select
     key="3"
     onChange={[Function]}
-    onOpen={[Function]}
   >
     <Option
       value="none"
@@ -54,7 +53,6 @@ exports[`should match snapshot 1`] = `
   <Select
     key="0"
     onChange={[Function]}
-    onOpen={[Function]}
   >
     <Option
       value="none"

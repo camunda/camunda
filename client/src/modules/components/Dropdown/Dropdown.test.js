@@ -32,6 +32,15 @@ jest.mock('./Submenu', () => (props) => (
 
 jest.mock('./service', () => ({findLetterOption: jest.fn()}));
 
+Object.defineProperty(window.HTMLElement.prototype, 'offsetParent', {
+  value: {
+    getBoundingClientRect: () => ({
+      top: 0,
+      left: 0,
+    }),
+  },
+});
+
 function setupRefs(node) {
   const footer = document.createElement('div');
   footer.getBoundingClientRect = () => ({});
@@ -52,6 +61,13 @@ function simulateDropdown(
     querySelector: () => ({
       offsetHeight: buttonHeight,
       getBoundingClientRect: () => buttonPosition,
+      offsetParent: {
+        getBoundingClientRect: () => ({
+          top: 0,
+          left: 0,
+        }),
+      },
+      offsetHeight: 10,
     }),
   };
 
@@ -340,7 +356,7 @@ it('should add scrollable class when there is no enough space to show all items'
 
   const specs = {
     oneItemHeight: 30,
-    buttonPosition: {bottom: 0},
+    buttonPosition: {bottom: 0, top: 0, left: 0, height: 10, width: 100},
     menuHeight: 160,
     menuPosition: {top: 0},
     footerTop: 150,
@@ -356,7 +372,7 @@ it('should add scrollable class when there is no enough space to show all items'
   expect(node.find('.menu > ul').first()).toHaveClassName('scrollable');
 });
 
-it('flip dropdown vertically when there is no enough space for four items', () => {
+it('flip dropdown vertically when there is no enough space', () => {
   const node = mount(
     <Dropdown>
       <Dropdown.Option>1</Dropdown.Option>
@@ -369,7 +385,7 @@ it('flip dropdown vertically when there is no enough space for four items', () =
 
   const specs = {
     oneItemHeight: 30,
-    buttonPosition: {bottom: 50},
+    buttonPosition: {bottom: 50, top: 200, left: 0, height: 10, width: 100},
     menuHeight: 70,
     menuPosition: {top: 53},
     footerTop: 110,
@@ -382,7 +398,7 @@ it('flip dropdown vertically when there is no enough space for four items', () =
   node.instance().calculateMenuStyle(true);
   node.update();
 
-  expect(node.state().menuStyle.bottom).toBe(specs.buttonHeight);
+  expect(node.state().menuStyle.top).toBe(specs.buttonPosition.top - specs.menuHeight - 6);
 });
 
 it('should not add scrollable class when the item is flipped and there is enough space above the item', () => {
@@ -398,7 +414,7 @@ it('should not add scrollable class when the item is flipped and there is enough
 
   simulateDropdown(node, {
     oneItemHeight: 30,
-    buttonPosition: {top: 500, bottom: 535},
+    buttonPosition: {top: 500, bottom: 535, left: 0, height: 10, width: 100},
     menuHeight: 400,
     menuPosition: {top: 503},
     footerTop: 550,

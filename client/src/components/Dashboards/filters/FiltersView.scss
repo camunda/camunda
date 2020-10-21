@@ -21,7 +21,7 @@
   }
 
   .Popover {
-    .Popover__dialog {
+    .dialogContainer {
       background-color: $grey-darken-33;
 
       color: #ffffff;
@@ -122,12 +122,15 @@
   }
 
   .Popover {
-    .Popover__dialog {
+    .dialogContainer {
       box-shadow: 0 2px 7px 0 rgba(0, 0, 0, 0.2);
       border-radius: 3px;
       margin-top: 4px;
-      padding: 0;
       border: none;
+
+      .Popover__dialog {
+        padding: 0;
+      }
     }
 
     .Popover__dialog-arrow-border,

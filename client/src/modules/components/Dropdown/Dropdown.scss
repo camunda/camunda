@@ -8,7 +8,6 @@
 
 .Dropdown {
   display: inline-block;
-  position: relative;
 
   .activateButton {
     position: relative;
@@ -33,7 +32,6 @@
       visibility: visible;
       opacity: 1;
       transition: opacity 0.2s ease-in;
-      top: auto;
     }
   }
 
