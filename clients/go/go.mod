@@ -11,7 +11,7 @@ require (
 	github.com/docker/docker v17.12.0-ce-rc1.0.20200916142827-bd33bbf0497b+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/docker/go-units v0.4.0 // indirect
-	github.com/go-ozzo/ozzo-validation/v4 v4.2.2
+	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3
@@ -22,7 +22,7 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/stretchr/testify v1.6.1
 	github.com/testcontainers/testcontainers-go v0.9.0
-	golang.org/x/net v0.0.0-20201010224723-4f7140c49acb
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.25.0
