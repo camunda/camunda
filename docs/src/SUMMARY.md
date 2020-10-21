@@ -92,6 +92,7 @@
     * [Health Status](operations/health.md)
     * [Configuring Backpressure](operations/backpressure.md)
     * [Disk Space](operations/disk-space.md)
+    * [Upgrade Zeebe](operations/upgrade.md)
 * [Zeebe on Kubernetes](kubernetes/index.md)
     * [Prerequisites](kubernetes/prerequisites.md)
     * [Installing HELM Charts](kubernetes/installing-helm.md)
