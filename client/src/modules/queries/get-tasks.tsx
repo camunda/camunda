@@ -77,6 +77,20 @@ const mockGetAllOpenTasks = {
   },
 } as const;
 
+const mockGetAllOpenTasksUnclaimed = {
+  request: {
+    query: GET_TASKS,
+    variables: {
+      state: TaskStates.Created,
+    },
+  },
+  result: {
+    data: {
+      tasks: unclaimedTasks,
+    },
+  },
+} as const;
+
 const mockGetEmptyTasks = {
   request: {
     query: GET_TASKS,
@@ -143,4 +157,5 @@ export {
   mockGetClaimedByMe,
   mockGetUnclaimed,
   mockGetCompleted,
+  mockGetAllOpenTasksUnclaimed,
 };

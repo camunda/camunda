@@ -16,7 +16,10 @@ import {
   mockGetTaskDetailsCompleted,
   mockGetTaskDetailsClaimed,
 } from 'modules/queries/get-task-details';
-import {mockGetAllOpenTasks} from 'modules/queries/get-tasks';
+import {
+  mockGetAllOpenTasks,
+  mockGetAllOpenTasksUnclaimed,
+} from 'modules/queries/get-tasks';
 import {mockClaimTask} from 'modules/mutations/claim-task';
 import {mockUnclaimTask} from 'modules/mutations/unclaim-task';
 import {MockThemeProvider} from 'modules/theme/MockProvider';
@@ -109,7 +112,7 @@ describe('<Details />', () => {
         mocks: [
           mockGetTaskDetailsClaimed,
           mockUnclaimTask,
-          mockGetAllOpenTasks,
+          mockGetAllOpenTasksUnclaimed,
         ],
       }),
     });
