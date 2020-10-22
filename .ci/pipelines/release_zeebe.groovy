@@ -89,6 +89,9 @@ spec:
                 container('maven') {
                     sh '.ci/scripts/release/prepare.sh'
                 }
+                container('golang') {
+                    sh '.ci/scripts/release/prepare-go.sh'
+                }
             }
         }
 
@@ -133,6 +136,7 @@ spec:
                 }
             }
         }
+
 
         stage('GitHub Release') {
             when { expression { return params.PUSH_CHANGES } }
