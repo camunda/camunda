@@ -10,6 +10,7 @@ if [[ "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
   gocompat save --path=clients/go/.gocompat.json clients/go/...
 
   git commit -am "chore(project): update go versions"
+  git push origin ${RELEASE_BRANCH}
 else
   echo "Skipping updating the compat version as $RELEASE_VERSION is not a stable version"
 fi

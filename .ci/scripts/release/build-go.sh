@@ -25,6 +25,7 @@ mkdir -p ~/.ssh/
 ssh-keyscan github.com >> ~/.ssh/known_hosts
 
 git commit -am "chore(project): update go embedded version data"
+git push origin ${RELEASE_BRANCH} 
 
 cd ${ORG_DIR}/zeebe/clients/go/cmd/zbctl
 ./build.sh
