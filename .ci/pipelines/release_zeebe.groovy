@@ -120,6 +120,24 @@ spec:
             }
         }
 
+        stage('Update Compat Version') {
+            steps {
+                container('golang') {
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        sh '.ci/scripts/release/compat-update-go.sh'
+                    }
+                }
+                container('maven') {
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                            sh '.ci/scripts/release/compat-update-java.sh'
+                        }
+                    }
+                }
+            }
+        }
+
+
         stage('GitHub Release') {
             when { expression { return params.PUSH_CHANGES } }
             steps {
