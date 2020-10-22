@@ -88,7 +88,6 @@ spec:
 
                 container('maven') {
                     sh '.ci/scripts/release/prepare.sh'
-                    sh '.ci/scripts/release/compat-update.sh'
                 }
             }
         }
@@ -113,6 +112,23 @@ spec:
                         configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
                             sh '.ci/scripts/release/maven-release.sh'
                         }
+                    }
+                }
+            }
+        }
+
+        stage('Update Compat Version') {
+            steps {
+                container('maven') {
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        configFileProvider([configFile(fileId: 'maven-nexus-settings-zeebe', variable: 'MAVEN_SETTINGS_XML')]) {
+                            sh '.ci/scripts/release/compat-update-java.sh'
+                        }
+                    }
+                }
+                container('golang') {
+                    sshagent(['camunda-jenkins-github-ssh']) {
+                        sh '.ci/scripts/release/compat-update-go.sh'
                     }
                 }
             }
