@@ -44,7 +44,8 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
 
     assertThat(eventProcessDefinition)
       .get()
-      .isEqualToComparingFieldByField(
+      .usingRecursiveComparison()
+      .isEqualTo(
         EventProcessDefinitionDto.eventProcessBuilder()
           .id(expectedProcessDefinitionId)
           .key(eventProcessMappingId)
@@ -54,12 +55,12 @@ public class EventProcessDefinitionImportIT extends AbstractEventProcessIT {
           .engine(null)
           .tenantId(null)
           .bpmn20Xml(simpleEventProcessMappingDto.getXml())
+          .deleted(false)
           .userTaskNames(ImmutableMap.of(USER_TASK_ID_ONE, USER_TASK_ID_ONE))
           .flowNodeNames(ImmutableMap.of(
             BPMN_START_EVENT_ID, BPMN_START_EVENT_ID,
             BPMN_END_EVENT_ID, BPMN_END_EVENT_ID,
             USER_TASK_ID_ONE, USER_TASK_ID_ONE
-
           ))
           .build()
       );

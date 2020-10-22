@@ -23,9 +23,9 @@ public class EventProcessDefinitionDto extends ProcessDefinitionOptimizeDto {
   public EventProcessDefinitionDto(@NonNull final String id, @NonNull final String key,
                                    @NonNull final String version,
                                    final String versionTag, @NonNull final String name, final String engine,
-                                   final String tenantId, @NonNull final String bpmn20Xml,
+                                   final String tenantId, @NonNull final String bpmn20Xml, final boolean deleted,
                                    @NonNull final Map<String, String> flowNodeNames,
                                    @NonNull final Map<String, String> userTaskNames) {
-    super(id, key, version, versionTag, name, engine, tenantId, bpmn20Xml, flowNodeNames, userTaskNames);
+    super(id, key, version, versionTag, name, engine, tenantId, bpmn20Xml, deleted, flowNodeNames, userTaskNames);
   }
 }

@@ -252,7 +252,7 @@ public class DecisionImportIT extends AbstractImportIT {
     assertThat(allDecisionDefinitions).singleElement()
       .satisfies(definition -> {
         assertThat(definition.getId()).isEqualTo(originalDefinition.getId());
-        assertThat(definition.getDeleted()).isFalse();
+        assertThat(definition.isDeleted()).isFalse();
       });
 
     // when the original definition is deleted and a new one deployed with the same key, version and tenant
@@ -270,16 +270,16 @@ public class DecisionImportIT extends AbstractImportIT {
         assertThat(definition.getVersion()).isEqualTo(originalDefinition.getVersionAsString());
         assertThat(definition.getTenantId()).isEqualTo(tenantId);
       })
-      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::getDeleted)
+      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinition.getId(), true),
         tuple(newDefinition.getId(), false)
       );
     // and the definition cache includes the deleted and new definition
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(newDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -298,7 +298,7 @@ public class DecisionImportIT extends AbstractImportIT {
     assertThat(firstDefinitionImported).singleElement()
       .satisfies(definition -> {
         assertThat(definition.getId()).isEqualTo(firstDeletedDefinition.getId());
-        assertThat(definition.getDeleted()).isFalse();
+        assertThat(definition.isDeleted()).isFalse();
       });
 
     // when the original definition is deleted and a new one deployed with the same key, version and tenant
@@ -316,16 +316,16 @@ public class DecisionImportIT extends AbstractImportIT {
         assertThat(definition.getVersion()).isEqualTo(firstDeletedDefinition.getVersionAsString());
         assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
       })
-      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::getDeleted)
+      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(firstDeletedDefinition.getId(), true),
         tuple(secondDeletedDefinition.getId(), false)
       );
     // and the definition cache includes the deleted and new definition
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(firstDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(secondDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
 
     // when the second definition is deleted and a new one deployed with the same key, version and tenant
     engineIntegrationExtension.deleteDeploymentById(secondDeletedDefinition.getDeploymentId());
@@ -342,7 +342,7 @@ public class DecisionImportIT extends AbstractImportIT {
         assertThat(definition.getVersion()).isEqualTo(firstDeletedDefinition.getVersionAsString());
         assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
       })
-      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::getDeleted)
+      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(firstDeletedDefinition.getId(), true),
         tuple(secondDeletedDefinition.getId(), true),
@@ -350,11 +350,11 @@ public class DecisionImportIT extends AbstractImportIT {
       );
     // and the definition cache includes all definitions with correct deletion state
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(firstDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(secondDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(nonDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -373,7 +373,7 @@ public class DecisionImportIT extends AbstractImportIT {
     final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
       elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
     assertThat(allDecisionDefinitions).hasSize(2)
-      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::getDeleted)
+      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinitionV1.getId(), false),
         tuple(originalDefinitionV2.getId(), false)
@@ -389,7 +389,7 @@ public class DecisionImportIT extends AbstractImportIT {
     final List<DecisionDefinitionOptimizeDto> updatedDefinitions =
       elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
     assertThat(updatedDefinitions).hasSize(3)
-      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::getDeleted)
+      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinitionV1.getId(), false),
         tuple(originalDefinitionV2.getId(), true),
@@ -397,11 +397,11 @@ public class DecisionImportIT extends AbstractImportIT {
       );
     // and the definition cache includes all definitions
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinitionV1.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinitionV2.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(newDefinitionV1.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -420,7 +420,7 @@ public class DecisionImportIT extends AbstractImportIT {
     final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
       elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
     assertThat(allDecisionDefinitions).hasSize(2)
-      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::getDeleted)
+      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinition.getId(), false),
         tuple(originalDefinitionWithTenant.getId(), false)
@@ -436,7 +436,7 @@ public class DecisionImportIT extends AbstractImportIT {
     final List<DecisionDefinitionOptimizeDto> updatedDefinitions =
       elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
     assertThat(updatedDefinitions).hasSize(3)
-      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::getDeleted)
+      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinition.getId(), true),
         tuple(originalDefinitionWithTenant.getId(), false),
@@ -444,11 +444,11 @@ public class DecisionImportIT extends AbstractImportIT {
       );
     // and the definition cache includes all definitions
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinitionWithTenant.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(newDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -467,7 +467,7 @@ public class DecisionImportIT extends AbstractImportIT {
     final List<DecisionDefinitionOptimizeDto> allDecisionDefinitions =
       elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
     assertThat(allDecisionDefinitions).hasSize(2)
-      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::getDeleted)
+      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinition.getId(), false),
         tuple(originalDefinitionWithOtherKey.getId(), false)
@@ -483,7 +483,7 @@ public class DecisionImportIT extends AbstractImportIT {
     final List<DecisionDefinitionOptimizeDto> updatedDefinitions =
       elasticSearchIntegrationTestExtension.getAllDecisionDefinitions();
     assertThat(updatedDefinitions).hasSize(3)
-      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::getDeleted)
+      .extracting(DecisionDefinitionOptimizeDto::getId, DecisionDefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinition.getId(), true),
         tuple(originalDefinitionWithOtherKey.getId(), false),
@@ -491,11 +491,11 @@ public class DecisionImportIT extends AbstractImportIT {
       );
     // and the definition cache includes all definitions
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(originalDefinitionWithOtherKey.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
     assertThat(embeddedOptimizeExtension.getDecisionDefinitionFromResolverService(newDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test

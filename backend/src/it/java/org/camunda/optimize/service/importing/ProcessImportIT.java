@@ -626,7 +626,7 @@ public class ProcessImportIT extends AbstractImportIT {
     assertThat(allProcessDefinitions).singleElement()
       .satisfies(definition -> {
         assertThat(definition.getId()).isEqualTo(originalDefinition.getId());
-        assertThat(definition.getDeleted()).isFalse();
+        assertThat(definition.isDeleted()).isFalse();
       });
 
     // when the original definition is deleted and a new one deployed with the same key, version and tenant
@@ -647,16 +647,16 @@ public class ProcessImportIT extends AbstractImportIT {
         assertThat(definition.getVersion()).isEqualTo(originalDefinition.getVersionAsString());
         assertThat(definition.getTenantId()).isEqualTo(tenantId);
       })
-      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::getDeleted)
+      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinition.getId(), true),
         tuple(newDefinition.getId(), false)
       );
     // and the definition cache includes the deleted and new definition
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(newDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -675,7 +675,7 @@ public class ProcessImportIT extends AbstractImportIT {
     assertThat(firstDefinitionImported).singleElement()
       .satisfies(definition -> {
         assertThat(definition.getId()).isEqualTo(firstDeletedDefinition.getId());
-        assertThat(definition.getDeleted()).isFalse();
+        assertThat(definition.isDeleted()).isFalse();
       });
 
     // when the original definition is deleted and a new one deployed with the same key, version and tenant
@@ -693,16 +693,16 @@ public class ProcessImportIT extends AbstractImportIT {
         assertThat(definition.getVersion()).isEqualTo(firstDeletedDefinition.getVersionAsString());
         assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
       })
-      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::getDeleted)
+      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(firstDeletedDefinition.getId(), true),
         tuple(secondDeletedDefinition.getId(), false)
       );
     // and the definition cache includes the deleted and new definition
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(firstDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(secondDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
 
     // when the second definition is deleted and a new one deployed with the same key, version and tenant
     engineIntegrationExtension.deleteProcessDefinition(secondDeletedDefinition.getId());
@@ -719,7 +719,7 @@ public class ProcessImportIT extends AbstractImportIT {
         assertThat(definition.getVersion()).isEqualTo(firstDeletedDefinition.getVersionAsString());
         assertThat(definition.getTenantId()).isEqualTo(DEFAULT_TENANT);
       })
-      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::getDeleted)
+      .extracting(DefinitionOptimizeDto::getId, DefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(firstDeletedDefinition.getId(), true),
         tuple(secondDeletedDefinition.getId(), true),
@@ -727,11 +727,11 @@ public class ProcessImportIT extends AbstractImportIT {
       );
     // and the definition cache includes correct deletion states
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(firstDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(secondDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(nonDeletedDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -750,7 +750,7 @@ public class ProcessImportIT extends AbstractImportIT {
     final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
       elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
     assertThat(allProcessDefinitions).hasSize(2)
-      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::getDeleted)
+      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinition.getId(), false),
         tuple(originalDefinitionWithTenant.getId(), false)
@@ -766,7 +766,7 @@ public class ProcessImportIT extends AbstractImportIT {
     final List<ProcessDefinitionOptimizeDto> updatedDefinitions =
       elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
     assertThat(updatedDefinitions).hasSize(3)
-      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::getDeleted)
+      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinition.getId(), true),
         tuple(originalDefinitionWithTenant.getId(), false),
@@ -774,11 +774,11 @@ public class ProcessImportIT extends AbstractImportIT {
       );
     // and the definition cache includes the deleted and new definition
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinitionWithTenant.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(newDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -797,7 +797,7 @@ public class ProcessImportIT extends AbstractImportIT {
     final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
       elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
     assertThat(allProcessDefinitions).hasSize(2)
-      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::getDeleted)
+      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinitionV1.getId(), false),
         tuple(originalDefinitionV2.getId(), false)
@@ -813,7 +813,7 @@ public class ProcessImportIT extends AbstractImportIT {
     final List<ProcessDefinitionOptimizeDto> updatedDefinitions =
       elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
     assertThat(updatedDefinitions).hasSize(3)
-      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::getDeleted)
+      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinitionV1.getId(), false),
         tuple(originalDefinitionV2.getId(), true),
@@ -821,11 +821,11 @@ public class ProcessImportIT extends AbstractImportIT {
       );
     // and the definition cache includes the deleted and new definition
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinitionV1.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinitionV2.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(newDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test
@@ -844,7 +844,7 @@ public class ProcessImportIT extends AbstractImportIT {
     final List<ProcessDefinitionOptimizeDto> allProcessDefinitions =
       elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
     assertThat(allProcessDefinitions).hasSize(2)
-      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::getDeleted)
+      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinition.getId(), false),
         tuple(originalDefinitionWithOtherKey.getId(), false)
@@ -860,7 +860,7 @@ public class ProcessImportIT extends AbstractImportIT {
     final List<ProcessDefinitionOptimizeDto> updatedDefinitions =
       elasticSearchIntegrationTestExtension.getAllProcessDefinitions();
     assertThat(updatedDefinitions).hasSize(3)
-      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::getDeleted)
+      .extracting(ProcessDefinitionOptimizeDto::getId, ProcessDefinitionOptimizeDto::isDeleted)
       .containsExactlyInAnyOrder(
         tuple(originalDefinition.getId(), true),
         tuple(originalDefinitionWithOtherKey.getId(), false),
@@ -868,11 +868,11 @@ public class ProcessImportIT extends AbstractImportIT {
       );
     // and the definition cache includes the deleted and new definition
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isTrue());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isTrue());
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(originalDefinitionWithOtherKey.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
     assertThat(embeddedOptimizeExtension.getProcessDefinitionFromResolverService(newDefinition.getId()))
-      .isPresent().get().satisfies(definition -> assertThat(definition.getDeleted()).isFalse());
+      .isPresent().get().satisfies(definition -> assertThat(definition.isDeleted()).isFalse());
   }
 
   @Test

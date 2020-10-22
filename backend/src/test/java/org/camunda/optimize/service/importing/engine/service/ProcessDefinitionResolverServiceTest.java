@@ -152,14 +152,21 @@ public class ProcessDefinitionResolverServiceTest {
 
   private void mockProcessDefinitionsOnReaderLevel(final String id) {
     List<ProcessDefinitionOptimizeDto> mockedDefinitions = Lists.newArrayList(
-      new ProcessDefinitionOptimizeDto(id, TEST_KEY, "2", "aVersionTag", "name", "", "engine", null, null, null)
+      ProcessDefinitionOptimizeDto.builder()
+        .id(id)
+        .version("2")
+        .versionTag("aVersionTag")
+        .name("name")
+        .engine("")
+        .deleted(false)
+        .build()
     );
     when(processDefinitionReader.getProcessDefinitions(false, false)).thenReturn(mockedDefinitions);
   }
 
   private void mockProcessDefinitionForEngineContext(final String id) {
     ProcessDefinitionOptimizeDto mockedDefinition =
-      new ProcessDefinitionOptimizeDto(id, TEST_KEY, "1", "aVersionTag", "name", "", "engine", null, null, null);
+      new ProcessDefinitionOptimizeDto(id, TEST_KEY, "1", "aVersionTag", "name", "", "engine", null, false, null, null);
     when(engineContext.fetchProcessDefinition(any())).thenReturn(mockedDefinition);
   }
 

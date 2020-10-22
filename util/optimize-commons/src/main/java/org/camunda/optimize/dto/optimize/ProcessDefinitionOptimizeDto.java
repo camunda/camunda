@@ -60,9 +60,10 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeDto {
                                       final String engine,
                                       final String tenantId,
                                       final String bpmn20Xml,
+                                      final boolean deleted,
                                       final Map<String, String> flowNodeNames,
                                       final Map<String, String> userTaskNames) {
-    super(id, key, version, versionTag, name, engine, tenantId, false, DefinitionType.PROCESS);
+    super(id, key, version, versionTag, name, engine, tenantId, deleted, DefinitionType.PROCESS);
     this.bpmn20Xml = bpmn20Xml;
     this.flowNodeNames = flowNodeNames;
     this.userTaskNames = userTaskNames;

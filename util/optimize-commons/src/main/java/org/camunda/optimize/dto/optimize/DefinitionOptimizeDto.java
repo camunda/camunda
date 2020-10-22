@@ -26,7 +26,7 @@ public abstract class DefinitionOptimizeDto implements Serializable, OptimizeDto
   private String name;
   private String engine;
   private String tenantId;
-  private Boolean deleted;
+  private boolean deleted;
   @JsonIgnore
   private DefinitionType type;
 
