@@ -4,38 +4,39 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import styled, {css} from 'styled-components';
 import BasicMultiRow from 'modules/components/MultiRow';
 import {BaseBlock} from 'modules/components/Skeleton';
 
-export const MultiRow = themed(styled(BasicMultiRow)`
+const MultiRow = styled(BasicMultiRow)`
   width: 100%;
   overflow: hidden;
-`);
+`;
 
-export const Row = themed(styled.div`
-  display: flex;
+const Row = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.variables.skeleton.row;
 
-  border-top: 1px solid
-    ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05,
-    })};
-  padding: 13px 10px;
-`);
+    return css`
+      display: flex;
+      border-top: 1px solid ${colors.borderColor};
+      padding: 13px 10px;
+    `;
+  }}
+`;
 
-export const VariableBlock = styled(BaseBlock)`
+const VariableBlock = styled(BaseBlock)`
   margin-left: 4px;
   height: 14px;
   max-width: 200px;
   flex-grow: 1;
 `;
 
-export const ValueBlock = styled(BaseBlock)`
+const ValueBlock = styled(BaseBlock)`
   margin-left: 30px;
   margin-right: 40px;
   height: 14px;
-
   flex-grow: 2;
 `;
+
+export {MultiRow, Row, VariableBlock, ValueBlock};

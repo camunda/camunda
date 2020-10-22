@@ -8,7 +8,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {STATE} from 'modules/constants';
-import {themed} from 'modules/theme';
 
 import * as Styled from './styled';
 
@@ -25,9 +24,8 @@ function StateIcon({state, ...props}) {
   return <TargetComponent data-testid={`${state}-icon`} {...props} />;
 }
 
-export default themed(StateIcon);
+export default StateIcon;
 
 StateIcon.propTypes = {
   state: PropTypes.oneOf(Object.values(STATE)).isRequired,
-  theme: PropTypes.string.isRequired,
 };

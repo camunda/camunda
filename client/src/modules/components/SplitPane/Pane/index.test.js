@@ -7,7 +7,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import {PANE_ID, EXPAND_STATE, DIRECTION} from 'modules/constants';
 

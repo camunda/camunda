@@ -5,74 +5,62 @@
  */
 
 import styled, {css} from 'styled-components';
-import {themed, themeStyle} from 'modules/theme';
+
 import Menu from './Menu';
 
-const openDropdownTransitionStyle = css`
-  &.transition-enter {
-    opacity: 0;
-  }
-  &.transition-enter-active {
-    opacity: 1;
-    transition: opacity ${({transitionTiming}) => transitionTiming.enter + 'ms'}
-      ease-out;
-  }
-  &.transition-enter-done {
-    opacity: 1;
-  }
-  &.transition-exit {
-    opacity: 0;
-    transition: opacity ${({transitionTiming}) => transitionTiming.exit + 'ms'};
-  }
+const MenuComponent = styled(Menu)`
+  ${({transitionTiming}) => {
+    return css`
+      &.transition-enter {
+        opacity: 0;
+      }
+      &.transition-enter-active {
+        opacity: 1;
+        transition: opacity ${transitionTiming.enter}ms ease-out;
+      }
+      &.transition-enter-done {
+        opacity: 1;
+      }
+      &.transition-exit {
+        opacity: 0;
+        transition: opacity ${transitionTiming.exit}ms;
+      }
+    `;
+  }}
 `;
 
-export const MenuComponent = styled(Menu)`
-  ${openDropdownTransitionStyle};
-`;
-
-export const Dropdown = styled.div`
+const Dropdown = styled.div`
   position: relative;
 `;
 
-export const Button = themed(styled.button`
-  /* Positioning */
-  position: relative;
-  display: flex;
-  align-items: center;
+const Button = styled.button`
+  ${({theme, disabled, buttonStyles}) => {
+    const colors = theme.colors.modules.dropdown.button;
 
-  /* Display & Box Model */
-  border: none;
-  padding-right: 0px;
+    return css`
+      position: relative;
+      display: flex;
+      align-items: center;
+      border: none;
+      padding-right: 0px;
+      color: ${disabled ? colors.disabled.color : colors.default.color};
+      background: none;
+      font-family: IBMPlexSans;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: ${disabled ? 'default' : 'pointer'};
 
-  /* Color */
-  color: ${({disabled}) =>
-    disabled
-      ? themeStyle({
-          dark: 'rgba(255, 255, 255, 0.6)',
-          light: 'rgba(98, 98, 110, 0.6);',
-        })
-      : themeStyle({
-          dark: 'rgba(255, 255, 255, 0.9)',
-          light: 'rgba(98, 98, 110, 0.9)',
-        })};
+      & > svg {
+        vertical-align: text-bottom;
+      }
 
-  background: none;
+      ${buttonStyles};
+    `;
+  }}
+`;
 
-  /* Text */
-  font-family: IBMPlexSans;
-  font-size: 15px;
-  font-weight: 600;
-
-  /* Other */
-  cursor: ${({disabled}) => (disabled ? 'default' : 'pointer')};
-
-  & > svg {
-    vertical-align: text-bottom;
-  }
-
-  ${(props) => props.buttonStyles};
-`);
-
-export const LabelWrapper = styled.div`
+const LabelWrapper = styled.div`
   margin-right: 8px;
 `;
+
+export {MenuComponent, Dropdown, Button, LabelWrapper};

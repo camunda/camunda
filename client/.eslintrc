@@ -2,7 +2,6 @@
   "plugins": ["testing-library", "prettier"],
   "rules": {
     "prettier/prettier": "warn",
-    "react/sort-comp": [2],
     "react/prop-types": [2],
     "testing-library/await-async-query": "error",
     "testing-library/await-async-utils": "error",

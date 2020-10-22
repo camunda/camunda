@@ -8,17 +8,22 @@ import React from 'react';
 import {render, screen} from '@testing-library/react';
 import Pill from './index';
 import {PILL_TYPE} from 'modules/constants';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('Pill', () => {
   const labelString = 'Some Label';
 
   it('should render label', () => {
-    render(<Pill isActive={true}>{labelString}</Pill>);
+    render(<Pill isActive={true}>{labelString}</Pill>, {
+      wrapper: ThemeProvider,
+    });
     expect(screen.getByText(labelString)).toBeInTheDocument();
   });
 
   it('should render without icon if no type is passed', () => {
-    render(<Pill isActive={true}>{labelString}</Pill>);
+    render(<Pill isActive={true}>{labelString}</Pill>, {
+      wrapper: ThemeProvider,
+    });
     expect(screen.queryByTestId('target-icon')).not.toBeInTheDocument();
   });
 
@@ -29,7 +34,10 @@ describe('Pill', () => {
     render(
       <Pill isActive={true} type={'someUnknownType'}>
         {labelString}
-      </Pill>
+      </Pill>,
+      {
+        wrapper: ThemeProvider,
+      }
     );
     expect(screen.queryByTestId('target-icon')).not.toBeInTheDocument();
     global.console.error = originalConsoleError;
@@ -39,7 +47,10 @@ describe('Pill', () => {
     render(
       <Pill isActive={true} type={PILL_TYPE.TIMESTAMP}>
         {labelString}
-      </Pill>
+      </Pill>,
+      {
+        wrapper: ThemeProvider,
+      }
     );
 
     expect(screen.getByTestId('target-icon')).toBeInTheDocument();
@@ -49,7 +60,10 @@ describe('Pill', () => {
     render(
       <Pill isActive={true} type={PILL_TYPE.FILTER} count={10}>
         {labelString}
-      </Pill>
+      </Pill>,
+      {
+        wrapper: ThemeProvider,
+      }
     );
     expect(screen.getByText('10')).toBeInTheDocument();
   });

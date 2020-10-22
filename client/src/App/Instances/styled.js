@@ -11,13 +11,13 @@ import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/s
 
 import {HEADER_HEIGHT} from './../Header/styled';
 
-export const Instances = styled.main`
+const Instances = styled.main`
   height: calc(100vh - ${HEADER_HEIGHT}px);
   position: relative;
   overflow: hidden;
 `;
 
-export const Content = styled.div`
+const Content = styled.div`
   display: flex;
   flex-direction: row;
   position: absolute;
@@ -27,19 +27,21 @@ export const Content = styled.div`
   width: calc(100% - ${COLLAPSABLE_PANEL_MIN_WIDTH});
 `;
 
-export const FilterSection = styled.div`
+const FilterSection = styled.div`
   margin-right: 1px;
 `;
 
-export const SplitPane = styled(SplitPaneComponent)`
+const SplitPane = styled(SplitPaneComponent)`
   border-radius: 3px 0 0 0;
   width: 100%;
 `;
 
-export const Pane = styled(SplitPane.Pane)`
+const Pane = styled(SplitPane.Pane)`
   border-radius: inherit;
 `;
 
-export const PaneHeader = styled(SplitPane.Pane.Header)`
+const PaneHeader = styled(SplitPane.Pane.Header)`
   border-radius: inherit;
 `;
+
+export {Instances, Content, FilterSection, SplitPane, Pane, PaneHeader};

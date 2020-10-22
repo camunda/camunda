@@ -6,6 +6,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {observer} from 'mobx-react';
 
 import {ReactComponent as IncidentIcon} from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import {ReactComponent as ActiveIcon} from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
@@ -14,7 +15,7 @@ import {ReactComponent as CompletedDarkIcon} from 'modules/components/Icon/diagr
 import {ReactComponent as CanceledLightIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled-light.svg';
 import {ReactComponent as CanceledDarkIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
 import {STATISTICS_OVERLAY_ID} from 'modules/constants';
-
+import {currentTheme, THEME_NAME} from 'modules/stores/currentTheme';
 import Overlay from '../Overlay';
 
 import * as Styled from './styled';
@@ -38,15 +39,15 @@ const positions = {
   },
 };
 
-export default function StatisticOverlay(props) {
+function StatisticOverlay(props) {
   const {
     statistic,
     state,
     onOverlayAdd,
     onOverlayClear,
     isViewerLoaded,
-    theme,
   } = props;
+  const isLightTheme = currentTheme.state.selectedTheme === THEME_NAME.LIGHT;
 
   if (!statistic[state]) {
     return null;
@@ -62,10 +63,10 @@ export default function StatisticOverlay(props) {
       TargetIcon = IncidentIcon;
       break;
     case 'canceled':
-      TargetIcon = theme === 'light' ? CanceledLightIcon : CanceledDarkIcon;
+      TargetIcon = isLightTheme ? CanceledLightIcon : CanceledDarkIcon;
       break;
     case 'completed':
-      TargetIcon = theme === 'light' ? CompletedLightIcon : CompletedDarkIcon;
+      TargetIcon = isLightTheme ? CompletedLightIcon : CompletedDarkIcon;
       break;
     default:
       TargetIcon = () => null;
@@ -80,7 +81,7 @@ export default function StatisticOverlay(props) {
       type={STATISTICS_OVERLAY_ID}
       position={positions[state]}
     >
-      <Styled.Statistic state={state} theme={theme}>
+      <Styled.Statistic state={state}>
         <TargetIcon width={24} height={24} />
         <Styled.StatisticSpan>{statistic[state]}</Styled.StatisticSpan>
       </Styled.Statistic>
@@ -97,5 +98,6 @@ StatisticOverlay.propTypes = {
   onOverlayAdd: PropTypes.func.isRequired,
   onOverlayClear: PropTypes.func.isRequired,
   isViewerLoaded: PropTypes.bool.isRequired,
-  theme: PropTypes.oneOf(['dark', 'light']).isRequired,
 };
+
+export default observer(StatisticOverlay);

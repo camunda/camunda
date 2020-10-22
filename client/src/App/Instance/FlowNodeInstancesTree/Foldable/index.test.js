@@ -7,6 +7,7 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import noop from 'lodash/noop';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import {Foldable} from './index';
 
@@ -24,7 +25,8 @@ describe('<Foldable />', () => {
         >
           {mockContent}
         </Foldable.Summary>
-      </Foldable>
+      </Foldable>,
+      {wrapper: ThemeProvider}
     );
 
     expect(screen.getByText(mockContent)).toBeInTheDocument();
@@ -44,7 +46,8 @@ describe('<Foldable />', () => {
         >
           {mockContent}
         </Foldable.Summary>
-      </Foldable>
+      </Foldable>,
+      {wrapper: ThemeProvider}
     );
 
     fireEvent.click(screen.getByText(mockContent));
@@ -68,7 +71,8 @@ describe('<Foldable />', () => {
           {mockContent}
         </Foldable.Summary>
         <Foldable.Details>{mockDetails}</Foldable.Details>
-      </Foldable>
+      </Foldable>,
+      {wrapper: ThemeProvider}
     );
 
     expect(screen.getByText(mockContent)).toBeInTheDocument();
@@ -102,7 +106,8 @@ describe('<Foldable />', () => {
           {mockContent}
         </Foldable.Summary>
         <Foldable.Details>{mockDetails}</Foldable.Details>
-      </Foldable>
+      </Foldable>,
+      {wrapper: ThemeProvider}
     );
 
     expect(screen.getByText(mockContent)).toBeInTheDocument();

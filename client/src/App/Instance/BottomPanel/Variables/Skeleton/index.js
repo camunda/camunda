@@ -9,7 +9,7 @@ import * as Styled from './styled';
 import {Rows} from './Rows';
 import EmptyPanel from 'modules/components/EmptyPanel';
 import {PropTypes} from 'prop-types';
-import {TH, TR} from '../../VariablesTable';
+import {TH, TR} from '../VariablesTable';
 
 const Skeleton = ({type, label, rowHeight}) => {
   return (

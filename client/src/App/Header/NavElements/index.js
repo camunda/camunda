@@ -7,9 +7,8 @@
 import React, {memo} from 'react';
 import PropTypes from 'prop-types';
 import Badge from 'modules/components/Badge';
-import * as Styled from './styled.js';
+import * as Styled from './styled';
 
-// export default React.memo(function Skeleton(props) {
 export const BrandNavElement = memo((props) => (
   <Styled.ListItem>
     <Styled.Brand
@@ -34,12 +33,12 @@ export const LinkElement = memo((props) => (
   <Styled.ListItem aria-label={props.label}>
     <Styled.DashboardLink
       to={props.to}
-      isActive={props.isActive}
+      $isActive={props.isActive}
       title={props.title}
       data-testid={props.dataTest}
     >
       <Styled.DashboardLabel
-        isActive={props.isActive}
+        $isActive={props.isActive}
         data-testid="dashboard-label"
       >
         {props.label}
@@ -59,15 +58,15 @@ LinkElement.propTypes = {
 export const NavElement = memo((props) => (
   <Styled.ListItem className={props.className} aria-label={props.label}>
     <Styled.ListLink
-      isActive={props.isActive}
+      $isActive={props.isActive}
       title={props.title}
       data-testid={props.dataTest}
       {...props.linkProps}
     >
-      <Styled.NavigationLabel isActive={props.isActive}>
+      <Styled.NavigationLabel $isActive={props.isActive}>
         {props.label}
       </Styled.NavigationLabel>
-      <Badge isActive={props.isActive} type={props.type}>
+      <Badge $isActive={props.isActive} type={props.type}>
         {props.count}
       </Badge>
     </Styled.ListLink>

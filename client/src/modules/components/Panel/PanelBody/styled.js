@@ -4,11 +4,17 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
-export const Body = styled.div`
-  overflow: ${({scrollable}) => (scrollable ? 'auto' : 'hidden')};
-  flex-grow: 1;
-  display: flex;
-  flex-direction: column;
+const Body = styled.div`
+  ${({scrollable}) => {
+    return css`
+      overflow: ${scrollable ? 'auto' : 'hidden'};
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    `;
+  }}
 `;
+
+export {Body};

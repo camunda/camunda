@@ -12,7 +12,7 @@ import {
   within,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {mockUseOperationApply} from './index.setup';
 import CreateOperationDropdown from './index';
@@ -21,7 +21,11 @@ import PropTypes from 'prop-types';
 jest.mock('./useOperationApply', () => () => mockUseOperationApply);
 
 const Wrapper = ({children}) => {
-  return <CollapsablePanelProvider>{children}</CollapsablePanelProvider>;
+  return (
+    <ThemeProvider>
+      <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
+    </ThemeProvider>
+  );
 };
 Wrapper.propTypes = {
   children: PropTypes.oneOfType([

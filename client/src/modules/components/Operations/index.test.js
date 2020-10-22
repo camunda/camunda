@@ -5,22 +5,17 @@
  */
 
 import React from 'react';
+import {render, screen, fireEvent, waitFor} from '@testing-library/react';
+import {rest} from 'msw';
+import {createMemoryHistory} from 'history';
 import {STATE, OPERATION_STATE} from 'modules/constants';
 import {filters} from 'modules/stores/filters';
 import {instances} from 'modules/stores/instances';
 import {Operations} from './index';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  waitForElementToBeRemoved,
-} from '@testing-library/react';
-import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 import {INSTANCE, ACTIVE_INSTANCE, mockOperationCreated} from './index.setup';
-import {createMemoryHistory} from 'history';
 import {groupedWorkflowsMock} from 'modules/testUtils';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('Operations', () => {
   describe('Operation Buttons', () => {
@@ -28,7 +23,8 @@ describe('Operations', () => {
       render(
         <Operations
           instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
-        />
+        />,
+        {wrapper: ThemeProvider}
       );
 
       expect(
@@ -42,7 +38,8 @@ describe('Operations', () => {
       render(
         <Operations
           instance={{id: 'instance_1', state: STATE.ACTIVE, operations: []}}
-        />
+        />,
+        {wrapper: ThemeProvider}
       );
 
       expect(
@@ -56,7 +53,8 @@ describe('Operations', () => {
       render(
         <Operations
           instance={{id: 'instance_1', state: STATE.COMPLETED, operations: []}}
-        />
+        />,
+        {wrapper: ThemeProvider}
       );
 
       expect(
@@ -70,7 +68,8 @@ describe('Operations', () => {
       render(
         <Operations
           instance={{id: 'instance_1', state: STATE.COMPLETED, operations: []}}
-        />
+        />,
+        {wrapper: ThemeProvider}
       );
 
       expect(
@@ -93,7 +92,8 @@ describe('Operations', () => {
         <Operations
           instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
           onButtonClick={jest.fn()}
-        />
+        />,
+        {wrapper: ThemeProvider}
       );
 
       expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -113,7 +113,8 @@ describe('Operations', () => {
         <Operations
           instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
           onButtonClick={jest.fn()}
-        />
+        />,
+        {wrapper: ThemeProvider}
       );
 
       expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -126,7 +127,8 @@ describe('Operations', () => {
       render(
         <Operations
           instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
-        />
+        />,
+        {wrapper: ThemeProvider}
       );
 
       expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
@@ -136,7 +138,8 @@ describe('Operations', () => {
         <Operations
           instance={{id: 'instance_1', state: STATE.INCIDENT, operations: []}}
           forceSpinner={true}
-        />
+        />,
+        {wrapper: ThemeProvider}
       );
 
       expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
@@ -150,7 +153,8 @@ describe('Operations', () => {
             state: STATE.INCIDENT,
             operations: [{type: 'Retry', state: OPERATION_STATE.SCHEDULED}],
           }}
-        />
+        />,
+        {wrapper: ThemeProvider}
       );
 
       expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
@@ -202,7 +206,8 @@ describe('Operations', () => {
             state: STATE.INCIDENT,
             operations: [],
           }}
-        />
+        />,
+        {wrapper: ThemeProvider}
       );
 
       expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();

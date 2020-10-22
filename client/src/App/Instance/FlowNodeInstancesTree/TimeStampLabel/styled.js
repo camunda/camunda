@@ -4,27 +4,21 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import styled, {css} from 'styled-components';
 
-export const TimeStamp = themed(styled.span`
-  margin-left: 14px;
-  padding: 2px 4px;
-  color: ${themeStyle({
-    dark: '#fff',
-    light: Colors.uiLight06,
-  })};
-  background: ${({isSelected}) =>
-    isSelected
-      ? themeStyle({
-          dark: 'rgba(247, 248, 250, 0.15)',
-          light: 'rgba(253, 253, 254, 0.55)',
-        })
-      : themeStyle({
-          dark: Colors.darkScopeLabel,
-          light: Colors.lightScopeLabel,
-        })};
+const TimeStamp = styled.span`
+  ${({theme, isSelected}) => {
+    const colors = theme.colors.flowNodeInstancesTree.timeStampLabel;
 
-  font-size: 11px;
-  border-radius: 2px;
-`);
+    return css`
+      margin-left: 14px;
+      padding: 2px 4px;
+      color: ${colors.color};
+      background: ${isSelected ? colors.backgroundColor : theme.colors.label};
+      font-size: 11px;
+      border-radius: 2px;
+    `;
+  }}
+`;
+
+export {TimeStamp};

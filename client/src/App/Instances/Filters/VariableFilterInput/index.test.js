@@ -8,7 +8,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 import {act} from 'react-dom/test-utils';
 
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import VariableFilterInput from './index';
 import * as Styled from './styled';

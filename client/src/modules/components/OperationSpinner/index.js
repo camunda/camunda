@@ -4,22 +4,23 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
+import styled, {css} from 'styled-components';
+
 import Spinner from 'modules/components/Spinner';
-import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
 
-const OperationSpinner = themed(styled(Spinner)`
-  margin: 0 5px;
-  width: 14px;
-  height: 14px;
+const OperationSpinner = styled(Spinner)`
+  ${({theme, selected}) => {
+    const colors = theme.colors.modules.operations;
 
-  border: 2px solid
-    ${({selected}) =>
-      themeStyle({
-        dark: '#ffffff',
-        light: selected ? Colors.selections : Colors.uiLight06,
-      })};
-  border-right-color: transparent;
-`);
+    return css`
+      margin: 0 5px;
+      width: 14px;
+      height: 14px;
+      border: 2px solid
+        ${selected ? colors.selected.borderColor : colors.default.borderColor};
+      border-right-color: transparent;
+    `;
+  }}
+`;
 
 export {OperationSpinner};

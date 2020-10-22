@@ -4,14 +4,13 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
-import {Colors, themed, themeStyle} from 'modules/theme';
 import {ReactComponent as BaseLogo} from 'modules/components/Icon/logo.svg';
 import Input from 'modules/components/Input';
 import BasicCopyright from 'modules/components/Copyright';
 
-export const Login = styled.div`
+const Login = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -20,46 +19,55 @@ export const Login = styled.div`
   height: 100%;
 `;
 
-export const LoginHeader = themed(styled.div`
+const LoginHeader = styled.div`
   align-self: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-`);
+`;
 
-export const Logo = themed(styled(BaseLogo)`
-  margin-bottom: 12px;
-  width: 96px;
-  height: 33px;
+const Logo = styled(BaseLogo)`
+  ${({theme}) => {
+    const colors = theme.colors.login.logo;
 
-  color: ${themeStyle({
-    dark: '#ffffff',
-    light: Colors.uiLight06,
-  })};
-`);
+    return css`
+      margin-bottom: 12px;
+      width: 96px;
+      height: 33px;
+      color: ${colors.color};
+    `;
+  }}
+`;
 
-export const LoginTitle = themed(styled.span`
-  font-family: IBMPlexSans;
-  font-size: 28px;
-  font-weight: normal;
-  color: ${themeStyle({
-    dark: '#ffffff',
-    light: Colors.uiLight06,
-  })};
-`);
+const LoginTitle = styled.span`
+  ${({theme}) => {
+    const colors = theme.colors.login.loginTitle;
 
-export const LoginForm = styled.form`
+    return css`
+      font-family: IBMPlexSans;
+      font-size: 28px;
+      font-weight: normal;
+      color: ${colors.color};
+    `;
+  }}
+`;
+
+const LoginForm = styled.form`
   display: flex;
   flex-direction: column;
   margin-top: 53px;
 `;
 
-export const FormError = styled.div`
-  font-size: 15px;
-  font-weight: 500;
-  color: ${Colors.incidentsAndErrors};
-  margin-bottom: 10px;
-  height: 15px;
+const FormError = styled.div`
+  ${({theme}) => {
+    return css`
+      font-size: 15px;
+      font-weight: 500;
+      color: ${theme.colors.incidentsAndErrors};
+      margin-bottom: 10px;
+      height: 15px;
+    `;
+  }}
 `;
 
 const LoginInput = styled(Input)`
@@ -68,20 +76,31 @@ const LoginInput = styled(Input)`
   padding-right: 10px;
   padding-top: 12.6px;
   padding-bottom: 16.4px;
-
   font-size: 15px;
 `;
 
-export const UsernameInput = themed(styled(LoginInput)`
+const UsernameInput = styled(LoginInput)`
   margin-bottom: 16px;
-`);
+`;
 
-export const PasswordInput = themed(styled(LoginInput)`
+const PasswordInput = styled(LoginInput)`
   margin-bottom: 32px;
-`);
+`;
 
-export const Copyright = styled(BasicCopyright)`
+const Copyright = styled(BasicCopyright)`
   margin-top: auto;
   padding-bottom: 8px;
   padding-top: 70px;
 `;
+
+export {
+  Login,
+  LoginHeader,
+  Logo,
+  LoginTitle,
+  LoginForm,
+  FormError,
+  UsernameInput,
+  PasswordInput,
+  Copyright,
+};

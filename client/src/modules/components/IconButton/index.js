@@ -7,8 +7,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {IconButtonThemes} from 'modules/theme';
-
 import * as Styled from './styled';
 import {SIZES} from './constants';
 
@@ -27,7 +25,8 @@ const IconButton = React.forwardRef(function ExpandButton(
 });
 
 IconButton.propTypes = {
-  iconButtonTheme: PropTypes.oneOf(Object.keys(IconButtonThemes)).isRequired,
+  iconButtonTheme: PropTypes.oneOf(['default', 'incidentsBanner', 'foldable'])
+    .isRequired,
   size: PropTypes.oneOf(Object.keys(SIZES)),
   children: PropTypes.node,
   icon: PropTypes.node,

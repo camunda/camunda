@@ -131,7 +131,6 @@ export default class PopoverOverlay extends React.Component {
       onOverlayClear,
       isViewerLoaded,
       selectedFlowNodeId,
-      theme,
     } = this.props;
 
     return (
@@ -144,11 +143,7 @@ export default class PopoverOverlay extends React.Component {
         position={this.props.position}
       >
         <Styled.PopoverOverlayStyle side={this.props.position.side} />
-        <Styled.Popover
-          theme={theme}
-          side={this.props.position.side}
-          data-testid="popover"
-        >
+        <Styled.Popover side={this.props.position.side} data-testid="popover">
           {this.renderSummary()}
           {Boolean(metadata.data) && (
             <LinkButton
@@ -175,7 +170,6 @@ PopoverOverlay.propTypes = {
   onOverlayClear: PropTypes.func.isRequired,
   onFlowNodeSelection: PropTypes.func.isRequired,
   isViewerLoaded: PropTypes.bool.isRequired,
-  theme: PropTypes.oneOf(['dark', 'light']).isRequired,
   position: PropTypes.shape({
     top: PropTypes.number,
     right: PropTypes.number,

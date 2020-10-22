@@ -6,6 +6,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {observer} from 'mobx-react';
 
 import {ReactComponent as IncidentIcon} from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import {ReactComponent as ActiveIcon} from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
@@ -14,23 +15,16 @@ import {ReactComponent as CompletedDarkIcon} from 'modules/components/Icon/diagr
 import {ReactComponent as CanceledLightIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled-light.svg';
 import {ReactComponent as CanceledDarkIcon} from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
 import {FLOW_NODE_STATE_OVERLAY_ID, STATE} from 'modules/constants';
-
 import Overlay from '../Overlay';
+import {currentTheme} from 'modules/stores/currentTheme';
 
 const position = {
   bottom: 17,
   left: -7,
 };
 
-export default function StateOverlay(props) {
-  const {
-    id,
-    state,
-    onOverlayAdd,
-    onOverlayClear,
-    isViewerLoaded,
-    theme,
-  } = props;
+function StateOverlay(props) {
+  const {id, state, onOverlayAdd, onOverlayClear, isViewerLoaded} = props;
 
   let TargetIcon;
 
@@ -42,10 +36,16 @@ export default function StateOverlay(props) {
       TargetIcon = ActiveIcon;
       break;
     case STATE.COMPLETED:
-      TargetIcon = theme === 'light' ? CompletedLightIcon : CompletedDarkIcon;
+      TargetIcon =
+        currentTheme.state.selectedTheme === 'light'
+          ? CompletedLightIcon
+          : CompletedDarkIcon;
       break;
     case STATE.TERMINATED:
-      TargetIcon = theme === 'light' ? CanceledLightIcon : CanceledDarkIcon;
+      TargetIcon =
+        currentTheme.state.selectedTheme === 'light'
+          ? CanceledLightIcon
+          : CanceledDarkIcon;
       break;
     default:
       TargetIcon = () => null;
@@ -71,5 +71,6 @@ StateOverlay.propTypes = {
   onOverlayAdd: PropTypes.func.isRequired,
   onOverlayClear: PropTypes.func.isRequired,
   isViewerLoaded: PropTypes.bool.isRequired,
-  theme: PropTypes.oneOf(['dark', 'light']).isRequired,
 };
+
+export default observer(StateOverlay);

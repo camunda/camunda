@@ -5,7 +5,6 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
 
 import Panel from 'modules/components/Panel';
 import {OperationSpinner} from 'modules/components/OperationSpinner';
@@ -23,24 +22,25 @@ import {ReactComponent as DefaultPlus} from 'modules/components/Icon/plus.svg';
 import EmptyPanelComponent from 'modules/components/EmptyPanel';
 import DefaultButton from 'modules/components/Button';
 
-export const Spinner = styled(OperationSpinner)`
+const Spinner = styled(OperationSpinner)`
   margin-top: 4px;
 `;
 
-export const Variables = themed(styled(Panel)`
-  flex: 1;
-  font-size: 14px;
+const Variables = styled(Panel)`
+  ${({theme}) => {
+    const colors = theme.colors.variables;
 
-  border-left: none;
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.8)',
-    light: 'rgba(98, 98, 110, 0.8)',
-  })};
-`);
+    return css`
+      flex: 1;
+      font-size: 14px;
+      border-left: none;
+      color: ${colors.color};
+    `;
+  }}
+`;
 
-export const VariablesContent = styled(Panel.Body)`
+const VariablesContent = styled(Panel.Body)`
   position: absolute;
-
   width: 100%;
   height: 100%;
   top: 0;
@@ -48,79 +48,81 @@ export const VariablesContent = styled(Panel.Body)`
   border-top: none;
 `;
 
-export const TableScroll = styled.div`
+const TableScroll = styled.div`
   overflow-y: auto;
   height: 100%;
   margin-top: 45px;
   margin-bottom: 40px;
 `;
 
-export const Placeholder = themed(styled.span`
-  position: absolute;
-  text-align: center;
-  top: 40%;
-  width: 100%;
-  font-size: 14px;
-  color: ${themeStyle({
-    dark: '#dedede',
-    light: Colors.uiLight06,
-  })};
-  padding: 0 20px;
-`);
+const Placeholder = styled.span`
+  ${({theme}) => {
+    const colors = theme.colors.variables.placeholder;
 
-export const TD = themed(styled.td`
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)',
-  })};
-  font-weight: ${(props) => (props.isBold ? 'bold' : 'normal')};
+    return css`
+      position: absolute;
+      text-align: center;
+      top: 40%;
+      width: 100%;
+      font-size: 14px;
+      color: ${colors.color};
+      padding: 0 20px;
+    `;
+  }}
+`;
 
-  padding-top: 5px;
-  padding-bottom: 5px;
-  padding-left: 17px;
-  padding-right: 9px;
+const TD = styled.td`
+  ${({theme, isBold}) => {
+    const colors = theme.colors.variables.td;
 
-  &:not(:nth-child(2)) {
-    white-space: nowrap;
-  }
-  vertical-align: top;
-`);
+    return css`
+      color: ${colors.color};
+      font-weight: ${isBold ? 'bold' : 'normal'};
 
-export const THead = themed(styled.thead`
-  tr:first-child {
-    position: absolute;
-    width: 100%;
-    top: 0;
+      padding-top: 5px;
+      padding-bottom: 5px;
+      padding-left: 17px;
+      padding-right: 9px;
 
-    border-bottom: 1px solid
-      ${themeStyle({
-        dark: Colors.uiDark04,
-        light: Colors.uiLight05,
-      })};
-    background: ${themeStyle({
-      dark: Colors.uiDark02,
-      light: Colors.uiLight04,
-    })};
-    z-index: 2;
-    border-top: none;
-    height: 45px;
-    border-top: none;
-    > th {
-      padding-top: 21px;
-    }
-    > th:first-child {
-      min-width: 226px;
-    }
-  }
-`);
+      &:not(:nth-child(2)) {
+        white-space: nowrap;
+      }
+      vertical-align: top;
+    `;
+  }}
+`;
 
-export const VariableName = styled.span`
+const THead = styled.thead`
+  ${({theme}) => {
+    const colors = theme.colors.variables.tHead;
+
+    return css`
+      tr:first-child {
+        position: absolute;
+        width: 100%;
+        top: 0;
+        border-bottom: 1px solid ${colors.borderColor};
+        background: ${colors.backgroundColor};
+        z-index: 2;
+        border-top: none;
+        height: 45px;
+        border-top: none;
+        > th {
+          padding-top: 21px;
+        }
+        > th:first-child {
+          min-width: 226px;
+        }
+      }
+    `;
+  }}
+`;
+
+const VariableName = styled.span`
   height: 100%;
-
   padding-top: 4px;
   margin-top: 3px;
   line-height: 18px;
-
   display: block;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -130,23 +132,19 @@ const inputMargin = css`
   margin: 4px 0 4px 7px;
 `;
 
-export const TextInput = styled(BasicInput)`
+const TextInput = styled(BasicInput)`
   height: 30px;
-
   padding-top: 7px;
-  ${inputMargin};
-
   font-size: 14px;
   max-width: 181px;
+  ${inputMargin};
 `;
 
-export const DisplayText = styled.div`
+const DisplayText = styled.div`
   line-height: 18px;
   word-break: break-word;
-
   margin: 11px 94px 11px 0;
   max-height: 76px;
-
   overflow-y: auto;
   overflow-wrap: break-word;
 `;
@@ -155,23 +153,21 @@ const textAreaStyles = css`
   line-height: 18px;
   resize: vertical;
   font-size: 14px;
-
   min-height: 30px;
   max-height: 84px;
-
-  ${inputMargin};
   width: 100%;
+  ${inputMargin};
 `;
 
-export const AddTextarea = styled(BasicTextarea)`
+const AddTextarea = styled(BasicTextarea)`
   ${textAreaStyles};
 `;
 
-export const EditTextarea = styled(BasicTextarea)`
+const EditTextarea = styled(BasicTextarea)`
   ${textAreaStyles};
 `;
 
-export const EditButtonsTD = styled.td`
+const EditButtonsTD = styled.td`
   padding-right: 21px;
   padding-top: 8px;
   display: flex;
@@ -179,11 +175,11 @@ export const EditButtonsTD = styled.td`
   width: 100px;
 `;
 
-export const AddButtonsTD = styled(EditButtonsTD)`
+const AddButtonsTD = styled(EditButtonsTD)`
   padding-top: 9px;
 `;
 
-export const EditInputTD = styled.td`
+const EditInputTD = styled.td`
   position: relative;
 
   &:not(:nth-child(2)) {
@@ -197,61 +193,65 @@ export const EditInputTD = styled.td`
   vertical-align: top;
 `;
 
-export const DisplayTextTD = styled(TD)`
+const DisplayTextTD = styled(TD)`
   width: 100%;
 `;
 
-export const EditButton = styled(IconButton)`
-  margin-left: 10px;
-  z-index: 0;
+const EditButton = styled(IconButton)`
+  ${({theme}) => {
+    const colors = theme.colors.variables.editButton;
 
-  svg {
-    margin-top: 4px;
-  }
+    return css`
+      margin-left: 10px;
+      z-index: 0;
 
-  &:disabled,
-  &:disabled :hover {
-    svg {
-      color: ${themeStyle({
-        dark: Colors.uiLight02,
-        light: Colors.uiDark05,
-      })};
-      opacity: 0.5;
-    }
+      svg {
+        margin-top: 4px;
+      }
 
-    &:before {
-      background-color: transparent;
-    }
-  }
+      &:disabled,
+      &:disabled :hover {
+        svg {
+          color: ${colors.disabled.color};
+          opacity: 0.5;
+        }
+
+        &:before {
+          background-color: transparent;
+        }
+      }
+    `;
+  }}
 `;
 
-const iconStyle = css`
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-  color: ${themeStyle({
-    dark: Colors.uiLight02,
-    light: Colors.uiDark04,
-  })};
+const iconStyle = ({theme}) => {
+  const colors = theme.colors.variables.icons;
+
+  return css`
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    color: ${colors.color};
+  `;
+};
+
+const CloseIcon = styled(DefaultClose)`
+  ${iconStyle}
 `;
 
-export const CloseIcon = themed(styled(DefaultClose)`
+const CheckIcon = styled(DefaultCheck)`
   ${iconStyle}
-`);
+`;
 
-export const CheckIcon = themed(styled(DefaultCheck)`
+const EditIcon = styled(DefaultEdit)`
   ${iconStyle}
-`);
+`;
 
-export const EditIcon = themed(styled(DefaultEdit)`
+const ModalIcon = styled(DefaultModal)`
   ${iconStyle}
-`);
+`;
 
-export const ModalIcon = themed(styled(DefaultModal)`
-  ${iconStyle}
-`);
-
-export const ModalBody = themed(styled(Modal.Body)`
+const ModalBody = styled(Modal.Body)`
   padding: 0;
   position: relative;
   counter-reset: line;
@@ -260,59 +260,60 @@ export const ModalBody = themed(styled(Modal.Body)`
   & pre {
     margin: 0;
   }
-`);
+`;
 
-export const CodeLine = themed(styled.p`
-  margin: 3px;
-  margin-left: 0;
-  line-height: 14px;
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: Colors.uiLight06,
-  })};
-  font-family: IBMPlexMono;
-  font-size: 14px;
+const CodeLine = styled.p`
+  ${({theme}) => {
+    const colors = theme.colors.variables.codeLine;
+    const opacity = theme.opacity.variables.codeLine;
 
-  &:before {
-    font-size: 12px;
-    box-sizing: border-box;
-    text-align: right;
-    counter-increment: line;
-    content: counter(line);
-    color: ${themeStyle({
-      dark: '#ffffff',
-      light: Colors.uiLight06,
-    })};
-    display: inline-block;
-    width: 35px;
-    opacity: ${themeStyle({
-      dark: 0.5,
-      light: 0.65,
-    })};
-    padding-right: 11px;
-    -webkit-user-select: none;
-  }
-`);
+    return css`
+      margin: 3px;
+      margin-left: 0;
+      line-height: 14px;
+      color: ${colors.color};
+      font-family: IBMPlexMono;
+      font-size: 14px;
 
-export const LinesSeparator = themed(styled.span`
-  position: absolute;
-  top: 0;
-  left: 33px;
-  height: 100%;
-  width: 1px;
-  background-color: ${themeStyle({
-    dark: Colors.uiDark02,
-    light: Colors.uiLight05,
-  })};
-`);
+      &:before {
+        font-size: 12px;
+        box-sizing: border-box;
+        text-align: right;
+        counter-increment: line;
+        content: counter(line);
+        color: ${colors.before.color};
+        display: inline-block;
+        width: 35px;
+        opacity: ${opacity.before};
+        padding-right: 11px;
+        -webkit-user-select: none;
+      }
+    `;
+  }}
+`;
 
-export const EmptyPanel = styled(EmptyPanelComponent)`
+const LinesSeparator = styled.span`
+  ${({theme}) => {
+    const colors = theme.colors.variables.linesSeparator;
+
+    return css`
+      position: absolute;
+      top: 0;
+      left: 33px;
+      height: 100%;
+      width: 1px;
+      background-color: ${colors.backgroundColor};
+    `;
+  }}
+`;
+
+const EmptyPanel = styled(EmptyPanelComponent)`
   position: absolute;
   top: 20px;
   z-index: 1;
 `;
 
-export const Button = styled(DefaultButton)`
+const Button = styled(DefaultButton)`
   display: flex;
   justify-content: center;
   align-items: center;
@@ -321,12 +322,12 @@ export const Button = styled(DefaultButton)`
   margin-left: 16px;
 `;
 
-export const Plus = styled(DefaultPlus)`
+const Plus = styled(DefaultPlus)`
   height: 16px;
   margin-right: 4px;
 `;
 
-export const Footer = styled(Panel.Footer)`
+const Footer = styled(Panel.Footer)`
   position: absolute;
   bottom: 0;
 
@@ -335,3 +336,34 @@ export const Footer = styled(Panel.Footer)`
   justify-content: flex-start;
   height: 41px;
 `;
+
+export {
+  Spinner,
+  Variables,
+  VariablesContent,
+  TableScroll,
+  Placeholder,
+  TD,
+  THead,
+  VariableName,
+  TextInput,
+  DisplayText,
+  AddTextarea,
+  EditTextarea,
+  EditButtonsTD,
+  AddButtonsTD,
+  EditInputTD,
+  DisplayTextTD,
+  EditButton,
+  CloseIcon,
+  CheckIcon,
+  EditIcon,
+  ModalIcon,
+  ModalBody,
+  CodeLine,
+  LinesSeparator,
+  EmptyPanel,
+  Button,
+  Plus,
+  Footer,
+};

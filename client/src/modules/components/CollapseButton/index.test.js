@@ -31,7 +31,6 @@ describe('CollapseButton', () => {
 
     // then
     expect(node.find(Styled.Up)).toHaveLength(1);
-    expect(node).toMatchSnapshot();
   });
 
   it('should render Down icon if icon direction is DOWN', () => {
@@ -40,7 +39,6 @@ describe('CollapseButton', () => {
 
     // then
     expect(node.find(Styled.Down)).toHaveLength(1);
-    expect(node).toMatchSnapshot();
   });
 
   it('should render Left icon if icon direction is LEFT', () => {
@@ -49,7 +47,6 @@ describe('CollapseButton', () => {
 
     // then
     expect(node.find(Styled.Left)).toHaveLength(1);
-    expect(node).toMatchSnapshot();
   });
 
   it('should render Right icon if icon direction is RIGHT', () => {
@@ -58,6 +55,5 @@ describe('CollapseButton', () => {
 
     // then
     expect(node.find(Styled.Right)).toHaveLength(1);
-    expect(node).toMatchSnapshot();
   });
 });

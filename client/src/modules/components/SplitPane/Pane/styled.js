@@ -4,31 +4,27 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
 import Panel from 'modules/components/Panel';
 import CollapseButton from 'modules/components/CollapseButton';
 import {EXPAND_STATE} from 'modules/constants';
-import withStrippedProps from 'modules/utils/withStrippedProps';
 
-const isCollapsed = (expandState) => expandState === EXPAND_STATE.COLLAPSED;
-
-export const Pane = styled(
-  withStrippedProps([
-    'onAddToOpenSelection',
-    'onAddNewSelection',
-    'onAddToSelectionById',
-    'onFlowNodeSelection',
-  ])(Panel)
-)`
-  ${({expandState}) => (isCollapsed(expandState) ? '' : `flex-grow: 1;`)};
+const Pane = styled(Panel)`
+  ${({expandState}) => {
+    if (expandState !== EXPAND_STATE.COLLAPSED) {
+      return css`
+        flex-grow: 1;
+      `;
+    }
+  }}
 `;
 
-export const Body = Panel.Body;
+const Body = Panel.Body;
 
-export const Footer = Panel.Footer;
+const Footer = Panel.Footer;
 
-export const PaneCollapseButton = styled(CollapseButton)`
+const PaneCollapseButton = styled(CollapseButton)`
   margin: 0;
   margin-top: 3px;
   border-top: none;
@@ -36,9 +32,11 @@ export const PaneCollapseButton = styled(CollapseButton)`
   border-right: none;
 `;
 
-export const ButtonsContainer = styled.div`
+const ButtonsContainer = styled.div`
   position: absolute;
   top: 0;
   right: 0;
   display: flex;
 `;
+
+export {Pane, Body, Footer, PaneCollapseButton, ButtonsContainer};

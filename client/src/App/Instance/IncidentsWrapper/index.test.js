@@ -9,7 +9,7 @@ import {render, screen, fireEvent} from '@testing-library/react';
 
 import {IncidentsWrapper} from './index';
 import PropTypes from 'prop-types';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {testData, mockIncidents, mockResolvedIncidents} from './index.setup';
 import {Router, Route} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
@@ -48,9 +48,11 @@ const history = createMemoryHistory({initialEntries: ['/instances/1']});
 
 const Wrapper = ({children}) => {
   return (
-    <Router history={history}>
-      <Route path="/instances/:id">{children}</Route>
-    </Router>
+    <ThemeProvider>
+      <Router history={history}>
+        <Route path="/instances/:id">{children}</Route>
+      </Router>
+    </ThemeProvider>
   );
 };
 Wrapper.propTypes = {

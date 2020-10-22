@@ -4,7 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {getPopoverPostion} from './service';
+import {getPopoverPosition} from './service';
 import {POPOVER_SIDE} from 'modules/constants';
 
 function generateBoundary({top, left, height, width}) {
@@ -19,7 +19,7 @@ function generateBoundary({top, left, height, width}) {
 }
 
 describe('diagram service', () => {
-  describe('getPopoverPostion', () => {
+  describe('getPopoverPosition', () => {
     it('should give BOTTOM position', () => {
       // given
       const diagramContainerBoundary = generateBoundary({
@@ -51,7 +51,7 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPostion({
+      const position = getPopoverPosition({
         diagramContainer,
         flowNode,
         minHeight: 100,
@@ -95,7 +95,7 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPostion({
+      const position = getPopoverPosition({
         diagramContainer,
         flowNode,
         minHeight: 100,
@@ -139,7 +139,7 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPostion({
+      const position = getPopoverPosition({
         diagramContainer,
         flowNode,
         minHeight: 100,
@@ -183,7 +183,7 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPostion({
+      const position = getPopoverPosition({
         diagramContainer,
         flowNode,
         minHeight: 100,
@@ -227,7 +227,7 @@ describe('diagram service', () => {
       };
 
       // when
-      const position = getPopoverPostion({
+      const position = getPopoverPosition({
         diagramContainer,
         flowNode,
         minHeight: 100,

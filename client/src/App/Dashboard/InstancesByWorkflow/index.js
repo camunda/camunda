@@ -55,7 +55,7 @@ const InstancesByWorkflow = observer(
                     totalInstancesCount,
                     item.version
                   )}
-                  boxSize="small"
+                  $boxSize="small"
                 >
                   <InstancesBar
                     label={concatLabel(

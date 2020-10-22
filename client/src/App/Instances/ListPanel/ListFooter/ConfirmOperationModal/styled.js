@@ -7,9 +7,11 @@
 import styled from 'styled-components';
 import Modal from 'modules/components/Modal';
 
-export const BodyText = styled(Modal.BodyText)`
+const BodyText = styled(Modal.BodyText)`
   margin-top: 2px;
   > div:not(:last-child) {
     margin-bottom: 22px;
   }
 `;
+
+export {BodyText};

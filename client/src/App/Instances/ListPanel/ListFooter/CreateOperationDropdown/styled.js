@@ -5,43 +5,55 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Colors} from 'modules/theme';
 
 const MENU_WIDTH = 165;
 const MENU_RIGHT_OFFSET = 52;
 
-export const DropdownContainer = styled.div`
-  position: relative;
-  width: fit-content;
+const DropdownContainer = styled.div`
+  ${({dropdownWidth}) => {
+    return css`
+      position: relative;
+      width: fit-content;
 
-  ul {
-    max-width: ${MENU_WIDTH}px;
-    min-width: ${MENU_WIDTH}px;
-    position: absolute;
-    bottom: 30px;
-    left: ${({dropdownWidth}) =>
-      dropdownWidth && `calc(${dropdownWidth}px - ${MENU_RIGHT_OFFSET}px)`};
-  }
+      ul {
+        max-width: ${MENU_WIDTH}px;
+        min-width: ${MENU_WIDTH}px;
+        position: absolute;
+        bottom: 30px;
+        ${dropdownWidth
+          ? css`
+              left: calc(${dropdownWidth}px - ${MENU_RIGHT_OFFSET}px);
+            `
+          : ''}
+      }
+    `;
+  }}
 `;
 
-export const dropdownButtonStyles = css`
-  font-size: 13px;
-  font-weight: 600;
+const dropdownButtonStyles = ({theme}) => {
+  const colors = theme.colors.createOperationDropdown.dropdownButtonStyles;
 
-  background-color: ${Colors.selections};
-  color: ${Colors.uiLight04};
+  return css`
+    font-size: 13px;
+    font-weight: 600;
 
-  &:hover {
-    background-color: ${Colors.primaryButton04};
-  }
+    background-color: ${theme.colors.selections};
+    color: ${colors.color};
 
-  &:active,
-  &[data-button-open='true'] {
-    background-color: #1a70ff;
-  }
+    &:hover {
+      background-color: ${theme.colors.primaryButton04};
+    }
 
-  height: 26px;
-  border-radius: 13px;
-  border: none;
-  padding: 4px 11px 5px 11px;
-`;
+    &:active,
+    &[data-button-open='true'] {
+      background-color: ${theme.colors.primaryButton04};
+    }
+
+    height: 26px;
+    border-radius: 13px;
+    border: none;
+    padding: 4px 11px 5px 11px;
+  `;
+};
+
+export {DropdownContainer, dropdownButtonStyles};

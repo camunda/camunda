@@ -11,7 +11,7 @@ import {Router, Route} from 'react-router-dom';
 import {createMemoryHistory} from 'history';
 
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Instances} from './index';
 import {
   groupedWorkflowsMock,
@@ -34,15 +34,17 @@ jest.mock('modules/api/diagram');
 
 const Wrapper = ({children}) => {
   return (
-    <CollapsablePanelProvider>
-      <Router
-        history={createMemoryHistory({
-          initialEntries: ['/instances'],
-        })}
-      >
-        <Route path="/instances">{children} </Route>
-      </Router>
-    </CollapsablePanelProvider>
+    <ThemeProvider>
+      <CollapsablePanelProvider>
+        <Router
+          history={createMemoryHistory({
+            initialEntries: ['/instances'],
+          })}
+        >
+          <Route path="/instances">{children} </Route>
+        </Router>
+      </CollapsablePanelProvider>
+    </ThemeProvider>
   );
 };
 

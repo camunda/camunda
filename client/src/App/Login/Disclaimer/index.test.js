@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {render, screen} from '@testing-library/react';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Disclaimer} from './index';
 
 const DISCLAIMER_TEXT =
@@ -14,7 +14,7 @@ const DISCLAIMER_TEXT =
 
 describe('<Disclaimer />', () => {
   it('should show the disclaimer', () => {
-    const {rerender} = render(<Disclaimer />);
+    const {rerender} = render(<Disclaimer />, {wrapper: ThemeProvider});
 
     // we need this custom selector because the text contains a link
     expect(
@@ -45,7 +45,7 @@ describe('<Disclaimer />', () => {
   });
 
   it('should not render the disclaimer', () => {
-    render(<Disclaimer isEnterprise={true} />);
+    render(<Disclaimer isEnterprise={true} />, {wrapper: ThemeProvider});
 
     expect(
       screen.queryByText((content, element) => {

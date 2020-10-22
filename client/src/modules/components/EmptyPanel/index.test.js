@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {render, screen} from '@testing-library/react';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import EmptyPanel, {WithRowCount} from './index';
 import PropTypes from 'prop-types';
 
@@ -20,14 +21,16 @@ SkeletonMock.propTypes = {
 
 describe('EmptyPanel', () => {
   it('should display a warning message', () => {
-    render(<EmptyPanel label={label} type="warning" />);
+    render(<EmptyPanel label={label} type="warning" />, {
+      wrapper: ThemeProvider,
+    });
 
     expect(screen.getByText(label)).toBeInTheDocument();
     expect(screen.getByTestId('warning-icon')).toBeInTheDocument();
   });
 
   it('should display a success message', () => {
-    render(<EmptyPanel label={label} type="info" />);
+    render(<EmptyPanel label={label} type="info" />, {wrapper: ThemeProvider});
     expect(screen.getByText(label)).toBeInTheDocument();
     expect(screen.queryByTestId('warning-icon')).not.toBeInTheDocument();
   });
@@ -42,7 +45,8 @@ describe('EmptyPanel', () => {
         label={label}
         type="skeleton"
         Skeleton={SkeletonMock}
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
 
     expect(screen.getByTestId('Skeleton')).toBeInTheDocument();
@@ -54,7 +58,8 @@ describe('EmptyPanel', () => {
     render(
       <WithRowCount rowHeight={12} containerRef={containerRef}>
         <SkeletonMock />
-      </WithRowCount>
+      </WithRowCount>,
+      {wrapper: ThemeProvider}
     );
 
     expect(screen.getByText('16')).toBeInTheDocument();

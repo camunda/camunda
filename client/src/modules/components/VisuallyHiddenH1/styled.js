@@ -6,7 +6,7 @@
 
 import styled from 'styled-components';
 
-export const VisuallyHiddenH1 = styled.h1`
+const VisuallyHiddenH1 = styled.h1`
   border: 0;
   clip: rect(0 0 0 0);
   height: 1px;
@@ -16,3 +16,5 @@ export const VisuallyHiddenH1 = styled.h1`
   position: absolute;
   width: 1px;
 `;
+
+export {VisuallyHiddenH1};

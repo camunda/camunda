@@ -8,51 +8,34 @@ import styled, {css} from 'styled-components';
 
 import BasicTextareaAutosize from 'react-textarea-autosize';
 
-import {Colors, themed, themeStyle} from 'modules/theme';
+const TextareaStyles = ({theme}) => {
+  const colors = theme.colors.modules.textarea;
 
-const placeholderStyle = css`
-  &::placeholder {
-    color: ${themeStyle({
-      light: 'rgba(98, 98, 110, 0.9)',
-      dark: 'rgba(255, 255, 255, 0.7)',
-    })};
-    font-style: italic;
-  }
+  return css`
+    display: block;
+    width: 100%;
+    height: 52px;
+    padding: 6px 13px 4px 8px;
+    border: solid 1px ${theme.colors.ui05};
+    border-radius: 3px;
+    background-color: ${colors.backgroundColor};
+    color: ${colors.color};
+    font-family: IBMPlexSans;
+    font-size: 13px;
+
+    &::placeholder {
+      color: ${colors.placeholder.color};
+      font-style: italic;
+    }
+  `;
+};
+
+const Textarea = styled.textarea`
+  ${TextareaStyles}
 `;
 
-const TextareaStyles = css`
-  display: block;
-
-  width: 100%;
-  height: 52px;
-  padding: 6px 13px 4px 8px;
-
-  border: solid 1px
-    ${themeStyle({
-      dark: Colors.uiDark05,
-      light: Colors.uiLight05,
-    })};
-  border-radius: 3px;
-
-  background-color: ${themeStyle({
-    dark: Colors.uiDark02,
-    light: Colors.uiLight04,
-  })};
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: Colors.uiDark03,
-  })};
-
-  font-family: IBMPlexSans;
-  font-size: 13px;
-
-  ${placeholderStyle};
+const TextareaAutosize = styled(BasicTextareaAutosize)`
+  ${TextareaStyles}
 `;
 
-export const Textarea = themed(styled.textarea`
-  ${TextareaStyles}
-`);
-
-export const TextareaAutosize = themed(styled(BasicTextareaAutosize)`
-  ${TextareaStyles}
-`);
+export {Textarea, TextareaAutosize};

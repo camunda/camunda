@@ -4,36 +4,37 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import styled, {css} from 'styled-components';
+
 import {Transition as TransitionComponent} from 'modules/components/Transition';
 
 import Table from 'modules/components/Table';
 const {TH, TR} = Table;
 
-export const FirstCell = styled.div`
+const FirstCell = styled.div`
   position: relative;
   padding-left: 23px;
   z-index: 0;
 `;
 
-export const Index = styled.span`
-  position: absolute;
-  top: 0;
-  left: -54px;
-  width: 35px;
+const Index = styled.span`
+  ${({theme}) => {
+    const colors = theme.colors.incidentsTable.index;
 
-  text-align: right;
-
-  font-size: 11px;
-  opacity: 0.6;
-  color: ${themeStyle({
-    dark: Colors.white,
-    light: Colors.uiLight06,
-  })};
+    return css`
+      position: absolute;
+      top: 0;
+      left: -54px;
+      width: 35px;
+      text-align: right;
+      font-size: 11px;
+      opacity: 0.6;
+      color: ${colors.color};
+    `;
+  }}
 `;
 
-export const ErrorMessageCell = styled.div`
+const ErrorMessageCell = styled.div`
   margin-right: 10px;
   width: 404px;
   white-space: nowrap;
@@ -41,145 +42,145 @@ export const ErrorMessageCell = styled.div`
   text-overflow: ellipsis;
 `;
 
-export const Flex = styled.div`
+const Flex = styled.div`
   display: flex;
   align-items: center;
 `;
 
-export const FirstTH = themed(styled(TH)`
-  position: relative;
-  height: 100%;
-  padding-left: 27px;
-  z-index: 0;
+const FirstTH = styled(TH)`
+  ${({theme}) => {
+    const colors = theme.colors.incidentsTable.firstTh;
 
-  &:before {
-    content: ' ';
-    float: left;
-    height: 31px;
-    margin-top: 3px;
-    margin-right: 5px;
-    width: 1px;
-    background: ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05,
-    })};
-  }
+    return css`
+      position: relative;
+      height: 100%;
+      padding-left: 27px;
+      z-index: 0;
 
-  &:after {
-    content: ' ';
-    float: right;
-    height: 31px;
-    margin-top: 3px;
-    width: 1px;
-    background: ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05,
-    })};
-  }
-`);
+      &:before {
+        content: ' ';
+        float: left;
+        height: 31px;
+        margin-top: 3px;
+        margin-right: 5px;
+        width: 1px;
+        background: ${colors.before.backgroundColor};
+      }
 
-export const IncidentTR = themed(styled(TR)`
-  cursor: pointer;
-  transition: background-color 200ms, opacity 200ms;
-  opacity: ${({theme, isSelected}) =>
-    theme === 'light' && !isSelected ? 0.9 : 1};
+      &:after {
+        content: ' ';
+        float: right;
+        height: 31px;
+        margin-top: 3px;
+        width: 1px;
+        background: ${colors.after.backgroundColor};
+      }
+    `;
+  }}
+`;
 
-  &:nth-child(odd) {
-    background-color: ${themeStyle({
-      dark: ({isSelected}) => {
-        return isSelected ? Colors.darkSelectedOdd : Colors.darkItemOd;
-      },
-      light: ({isSelected}) => {
-        return isSelected ? Colors.lightSelectedOdd : Colors.lightItemOdd;
-      },
-    })};
-  }
-  &:nth-child(even) {
-    background-color: ${themeStyle({
-      dark: ({isSelected}) => {
-        return isSelected ? Colors.darkSelectedEven : Colors.darkItemEven;
-      },
-      light: ({isSelected}) => {
-        return isSelected ? Colors.lightSelectedEven : Colors.lightItemEven;
-      },
-    })};
-  }
+const IncidentTR = styled(TR)`
+  ${({theme, isSelected}) => {
+    const colors = theme.colors.incidentsTable.incidentTr;
+    const opacity = theme.opacity.incidentsTable.incidentTr;
 
-  &:hover {
-    background-color: ${({isSelected}) => {
-      return (
-        !isSelected &&
-        themeStyle({
-          dark: Colors.darkTreeHover,
-          light: Colors.lightButton05,
-        })
-      );
-    }};
-    transition: background-color 150ms ease-out;
-  }
-`);
+    return css`
+      cursor: pointer;
+      transition: background-color 200ms, opacity 200ms;
+      opacity: ${isSelected ? opacity.selected : opacity.default};
 
-export const Fake = themed(styled.span`
-  background: yellow;
-  position: absolute;
+      &:nth-child(odd) {
+        background-color: ${isSelected
+          ? theme.colors.selectedOdd
+          : theme.colors.itemOdd};
+      }
+      &:nth-child(even) {
+        background-color: ${isSelected
+          ? theme.colors.selectedEven
+          : theme.colors.itemEven};
+      }
 
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 0;
+      &:hover {
+        transition: background-color 150ms ease-out;
+        ${isSelected
+          ? ''
+          : css`
+              background-color: ${colors.hover.backgroundColor};
+            `};
+      }
+    `;
+  }}
+`;
 
-  &:before {
-    content: '';
-    position: absolute;
-    top: -1px;
-    left: -52px;
-    width: 52px;
-    height: 100%;
+const Fake = styled.span`
+  ${({theme}) => {
+    const colors = theme.colors.incidentsTable.fake;
 
-    border-bottom: 1px solid
-      ${themeStyle({
-        dark: Colors.uiDark04,
-        light: Colors.uiLight05,
-      })};
-    border-top: 1px solid
-      ${themeStyle({
-        dark: Colors.uiDark04,
-        light: Colors.uiLight05,
-      })};
+    return css`
+      background: ${colors.backgroundColor};
+      position: absolute;
 
-    background-color: ${themeStyle({
-      dark: Colors.uiDark03,
-      light: Colors.uiLight02,
-    })};
-  }
-`);
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 0;
 
-export const Transition = themed(styled(TransitionComponent)`
-  &.transition-enter > td > div {
-    opacity: 0.25;
-  }
-  &.transition-enter-active > td > div {
-    opacity: 1;
-    transition: opacity ${({timeout}) => timeout.enter + 'ms'};
-  }
+      &:before {
+        content: '';
+        position: absolute;
+        top: -1px;
+        left: -52px;
+        width: 52px;
+        height: 100%;
+        border-bottom: 1px solid ${colors.before.borderColor};
+        border-top: 1px solid ${colors.before.borderColor};
+        background-color: ${colors.before.backgroundColor};
+      }
+    `;
+  }}
+`;
 
-  &.transition-exit > td > div {
-    height: 0px;
-    overflow: hidden;
-    border-width: 0px;
-    background-color: transparent;
-  }
+const Transition = styled(TransitionComponent)`
+  ${({timeout}) => {
+    return css`
+      &.transition-enter > td > div {
+        opacity: 0.25;
+      }
+      &.transition-enter-active > td > div {
+        opacity: 1;
+        transition: opacity ${timeout.enter}ms;
+      }
 
-  &.transition-exit-active {
-    height: 0px;
-    overflow: hidden;
-    background-color: transparent;
-    border-width: 0px;
-    transition: all ${({timeout}) => timeout.exit + 'ms'};
-  }
+      &.transition-exit > td > div {
+        height: 0px;
+        overflow: hidden;
+        border-width: 0px;
+        background-color: transparent;
+      }
 
-  &.transition-exit-done {
-    border-width: 0px;
-    background-color: transparent;
-  }
-`);
+      &.transition-exit-active {
+        height: 0px;
+        overflow: hidden;
+        background-color: transparent;
+        border-width: 0px;
+        transition: all ${timeout.exit}ms;
+      }
+
+      &.transition-exit-done {
+        border-width: 0px;
+        background-color: transparent;
+      }
+    `;
+  }}
+`;
+
+export {
+  FirstCell,
+  Index,
+  ErrorMessageCell,
+  Flex,
+  FirstTH,
+  IncidentTR,
+  Fake,
+  Transition,
+};

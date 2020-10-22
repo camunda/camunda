@@ -24,6 +24,7 @@ import {
   mockInstanceWithoutOperations,
   mockOperationCreated,
 } from './index.setup';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('InstanceHeader', () => {
   afterEach(() => {
@@ -39,7 +40,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<InstanceHeader />);
+    render(<InstanceHeader />, {wrapper: ThemeProvider});
 
     expect(screen.getByTestId('instance-header-skeleton')).toBeInTheDocument();
 
@@ -56,7 +57,7 @@ describe('InstanceHeader', () => {
         res.once(ctx.json(mockInstanceWithActiveOperation))
       )
     );
-    render(<InstanceHeader />);
+    render(<InstanceHeader />, {wrapper: ThemeProvider});
 
     currentInstance.init(mockInstanceWithActiveOperation.id);
     await waitForElementToBeRemoved(
@@ -79,7 +80,7 @@ describe('InstanceHeader', () => {
   });
 
   it('should show spinner based on instance having active operations', async () => {
-    render(<InstanceHeader />);
+    render(<InstanceHeader />, {wrapper: ThemeProvider});
 
     mockServer.use(
       rest.get('/api/workflow-instances/:id', (_, res, ctx) =>
@@ -115,7 +116,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<InstanceHeader />);
+    render(<InstanceHeader />, {wrapper: ThemeProvider});
 
     currentInstance.init(mockInstanceWithoutOperations.id);
     await waitForElementToBeRemoved(
@@ -152,7 +153,7 @@ describe('InstanceHeader', () => {
       )
     );
 
-    render(<InstanceHeader />);
+    render(<InstanceHeader />, {wrapper: ThemeProvider});
     currentInstance.init(mockInstanceWithActiveOperation.id);
     await waitForElementToBeRemoved(
       screen.getByTestId('instance-header-skeleton')

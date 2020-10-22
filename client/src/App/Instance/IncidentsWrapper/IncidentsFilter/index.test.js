@@ -17,6 +17,7 @@ import {
 import {incidents as incidentsStore} from 'modules/stores/incidents';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('IncidentsFilter', () => {
   afterAll(() => {
@@ -31,7 +32,7 @@ describe('IncidentsFilter', () => {
 
     await incidentsStore.fetchIncidents(1);
 
-    render(<IncidentsFilter {...defaultProps} />);
+    render(<IncidentsFilter {...defaultProps} />, {wrapper: ThemeProvider});
 
     expect(screen.getByText('Incident type:')).toBeInTheDocument();
     expect(
@@ -50,7 +51,7 @@ describe('IncidentsFilter', () => {
     );
     await incidentsStore.fetchIncidents(1);
 
-    render(<IncidentsFilter {...defaultProps} />);
+    render(<IncidentsFilter {...defaultProps} />, {wrapper: ThemeProvider});
     expect(screen.getByText('Flow Node:')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: 'flowNodeId_exclusiveGateway 1'})
@@ -68,7 +69,7 @@ describe('IncidentsFilter', () => {
     );
     await incidentsStore.fetchIncidents(1);
 
-    render(<IncidentsFilter {...defaultProps} />);
+    render(<IncidentsFilter {...defaultProps} />, {wrapper: ThemeProvider});
     expect(
       screen.queryByRole('button', {name: 'error type 6 1'})
     ).not.toBeInTheDocument();
@@ -88,7 +89,9 @@ describe('IncidentsFilter', () => {
     );
     await incidentsStore.fetchIncidents(1);
 
-    const {rerender} = render(<IncidentsFilter {...defaultProps} />);
+    const {rerender} = render(<IncidentsFilter {...defaultProps} />, {
+      wrapper: ThemeProvider,
+    });
     expect(screen.getByRole('button', {name: 'Clear All'})).toBeDisabled();
     fireEvent.click(screen.getByRole('button', {name: 'Clear All'}));
     expect(defaultProps.onClearAll).not.toHaveBeenCalled();

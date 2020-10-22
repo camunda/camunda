@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {render, screen} from '@testing-library/react';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import ColumnHeader from './index';
 
 describe('ColumnHeader', () => {
@@ -18,7 +19,9 @@ describe('ColumnHeader', () => {
   };
 
   it('should render a button if the column is sortable', () => {
-    render(<ColumnHeader {...mockPropsWithSorting} />);
+    render(<ColumnHeader {...mockPropsWithSorting} />, {
+      wrapper: ThemeProvider,
+    });
     expect(screen.getByText(mockPropsWithSorting.label)).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: 'Sort by startDate'})
@@ -26,7 +29,7 @@ describe('ColumnHeader', () => {
   });
 
   it('should only render the text if the column is not sortable', () => {
-    render(<ColumnHeader label="Start time" />);
+    render(<ColumnHeader label="Start time" />, {wrapper: ThemeProvider});
     expect(screen.getByText('Start time')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: 'Sort by startDate'})

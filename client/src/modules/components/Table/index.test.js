@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {render, screen} from '@testing-library/react';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import Table from './index';
 const {THead, TBody, TH, TR, TD} = Table;
 
@@ -29,7 +30,8 @@ describe('Table', () => {
             <TD>cell 2 b</TD>
           </TR>
         </TBody>
-      </Table>
+      </Table>,
+      {wrapper: ThemeProvider}
     );
 
     expect(screen.getByRole('columnheader', {name: 'header 1'}));

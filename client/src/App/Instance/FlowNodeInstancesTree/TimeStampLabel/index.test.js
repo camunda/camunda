@@ -6,9 +6,8 @@
 
 import React from 'react';
 import {render, screen} from '@testing-library/react';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {flowNodeTimeStamp} from 'modules/stores/flowNodeTimeStamp';
-
 import {TimeStampLabel} from './index';
 
 describe('TimeStampLabel', () => {
@@ -17,7 +16,8 @@ describe('TimeStampLabel', () => {
       <TimeStampLabel
         isSelected={false}
         timeStamp={'2020-07-09T12:26:22.237+0000'}
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
     expect(screen.queryByText('12 Dec 2018 00:00:00')).not.toBeInTheDocument();
     flowNodeTimeStamp.toggleTimeStampVisibility();

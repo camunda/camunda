@@ -19,10 +19,7 @@ export default class Overlay extends React.PureComponent {
     children: PropTypes.node,
   };
 
-  constructor(props) {
-    super(props);
-    this.domElement = document.createElement('div');
-  }
+  domElement = document.createElement('div');
 
   componentDidMount() {
     this.props.isViewerLoaded && this.addOverlay();

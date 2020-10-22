@@ -4,22 +4,20 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {Link} from 'react-router-dom';
 import Table from 'modules/components/Table';
 
-import {Colors, themed, themeStyle} from 'modules/theme';
-
-export const List = styled.div`
+const List = styled.div`
   flex-grow: 1;
   position: relative;
 `;
 
-export const TR = styled(Table.TR)`
+const TR = styled(Table.TR)`
   border-top: none;
 `;
 
-export const TableContainer = styled.div`
+const TableContainer = styled.div`
   position: absolute;
   opacity: 0.9;
   height: 100%;
@@ -28,30 +26,42 @@ export const TableContainer = styled.div`
   top: 0;
 `;
 
-export const OperationsTH = styled(Table.TH)`
+const OperationsTH = styled(Table.TH)`
   width: 90px;
 `;
 
-export const SelectionStatusIndicator = themed(styled.div`
-  display: inline-block;
-  height: 36px;
-  width: 9px;
-  ${({selected}) => selected && `background-color: ${Colors.selections};`};
-  vertical-align: bottom;
-  margin-left: -5px;
-  margin-right: 12px;
+const SelectionStatusIndicator = styled.div`
+  ${({theme, selected}) => {
+    const colors = theme.colors.list.selectionStatusIndicator;
 
-  border-right: 1px solid
-    ${themeStyle({dark: Colors.uiDark04, light: Colors.uiLight05})};
-`);
-
-export const CheckAll = styled.div`
-  display: inline-block;
-  margin-left: ${({shouldShowOffset}) => (shouldShowOffset ? '15' : '16')}px;
-  margin-right: 28px;
+    return css`
+      display: inline-block;
+      height: 36px;
+      width: 9px;
+      vertical-align: bottom;
+      margin-left: -5px;
+      margin-right: 12px;
+      border-right: 1px solid ${colors.borderColor};
+      ${selected
+        ? css`
+            background-color: ${theme.colors.selections};
+          `
+        : ''}
+    `;
+  }}
 `;
 
-export const Cell = styled.div`
+const CheckAll = styled.div`
+  ${({shouldShowOffset}) => {
+    return css`
+      display: inline-block;
+      margin-left: ${shouldShowOffset ? 15 : 16}px;
+      margin-right: 28px;
+    `;
+  }}
+`;
+
+const Cell = styled.div`
   position: relative;
   display: flex;
   align-items: center;
@@ -61,47 +71,53 @@ export const Cell = styled.div`
   }
 `;
 
-export const InstanceAnchor = themed(styled(Link)`
-  text-decoration: underline;
+const InstanceAnchor = styled(Link)`
+  ${({theme}) => {
+    return css`
+      text-decoration: underline;
 
-  &:link {
-    color: ${themeStyle({
-      dark: Colors.darkLinkDefault,
-      light: Colors.lightLinkDefault,
-    })};
-  }
+      &:link {
+        color: ${theme.colors.linkDefault};
+      }
 
-  &:hover {
-    color: ${themeStyle({
-      dark: Colors.darkLinkHover,
-      light: Colors.lightLinkHover,
-    })};
-  }
+      &:hover {
+        color: ${theme.colors.linkHover};
+      }
 
-  &:active {
-    color: ${themeStyle({
-      dark: Colors.darkLinkActive,
-      light: Colors.lightLinkActive,
-    })};
-  }
+      &:active {
+        color: ${theme.colors.linkActive};
+      }
 
-  &:visited {
-    color: ${themeStyle({
-      dark: Colors.darkLinkVisited,
-      light: Colors.lightLinkVisited,
-    })};
-  }
-`);
+      &:visited {
+        color: ${theme.colors.linkVisited};
+      }
+    `;
+  }}
+`;
 
-export const WorkflowName = styled.span`
+const WorkflowName = styled.span`
   margin-left: 6px;
 `;
 
-export const EmptyTR = styled(Table.TR)`
+const EmptyTR = styled(Table.TR)`
   border: 0;
   padding: 0;
 `;
 
-export const EmptyTD = styled(Table.TD)`
+const EmptyTD = styled(Table.TD)`
   padding: 0;
 `;
+
+export {
+  List,
+  TR,
+  TableContainer,
+  OperationsTH,
+  SelectionStatusIndicator,
+  CheckAll,
+  Cell,
+  InstanceAnchor,
+  WorkflowName,
+  EmptyTR,
+  EmptyTD,
+};

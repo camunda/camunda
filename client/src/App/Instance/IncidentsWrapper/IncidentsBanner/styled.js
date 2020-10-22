@@ -4,32 +4,37 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {INCIDENTS_BAR_HEIGHT} from 'modules/constants.js';
-import {Colors} from 'modules/theme';
 
 import BasicExpandButton from 'modules/components/ExpandButton';
 
-export const IncidentsBanner = styled(BasicExpandButton)`
-  display: flex;
-  align-items: center;
-  position: relative;
-  z-index: 4;
-  border-radius: 0;
+const IncidentsBanner = styled(BasicExpandButton)`
+  ${({theme}) => {
+    return css`
+      display: flex;
+      align-items: center;
+      position: relative;
+      z-index: 4;
+      border-radius: 0;
 
-  height: ${INCIDENTS_BAR_HEIGHT}px;
-  padding: 0 20px 0 17px;
-  font-size: 15px;
-  font-weight: bold;
-  opacity: 1;
+      height: ${INCIDENTS_BAR_HEIGHT}px;
+      padding: 0 20px 0 17px;
+      font-size: 15px;
+      font-weight: bold;
+      opacity: 1;
 
-  background-color: ${Colors.incidentsAndErrors};
-  color: #ffffff;
+      background-color: ${theme.colors.incidentsAndErrors};
+      color: ${theme.colors.white};
 
-  cursor: pointer;
+      cursor: pointer;
 
-  > :first-child {
-    margin-right: 11px;
-    margin-bottom: 1px;
-  }
+      > :first-child {
+        margin-right: 11px;
+        margin-bottom: 1px;
+      }
+    `;
+  }}
 `;
+
+export {IncidentsBanner};

@@ -6,16 +6,18 @@
 
 import styled from 'styled-components';
 
-export const Li = styled.li`
+const Li = styled.li`
   margin: 0 10px 10px 0;
 `;
 
-export const VersionList = styled.ul`
+const VersionList = styled.ul`
   margin-top: 8px;
   margin-bottom: 16px;
 `;
 
-export const VersionLi = styled.li`
+const VersionLi = styled.li`
   margin: 6px 0 0;
   padding: 0;
 `;
+
+export {Li, VersionList, VersionLi};

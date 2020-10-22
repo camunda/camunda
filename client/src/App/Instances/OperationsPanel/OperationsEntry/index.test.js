@@ -10,6 +10,7 @@ import {DEFAULT_FILTER_CONTROLLED_VALUES} from 'modules/constants';
 import {OPERATIONS, mockProps} from './index.setup';
 import OperationsEntry from './index';
 import {filters} from 'modules/stores/filters';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('OperationsEntry', () => {
   it('should render retry operation', () => {
@@ -20,7 +21,8 @@ describe('OperationsEntry', () => {
           ...OPERATIONS.RETRY,
           instancesCount: 1,
         }}
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
 
     expect(screen.getByTestId('progress-bar')).toBeInTheDocument();
@@ -37,7 +39,8 @@ describe('OperationsEntry', () => {
           ...OPERATIONS.CANCEL,
           instancesCount: 1,
         }}
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
 
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
@@ -55,7 +58,8 @@ describe('OperationsEntry', () => {
           ...OPERATIONS.EDIT,
           instancesCount: 1,
         }}
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
 
     expect(screen.queryByTestId('progress-bar')).not.toBeInTheDocument();
@@ -73,7 +77,8 @@ describe('OperationsEntry', () => {
           ...OPERATIONS.EDIT,
           instancesCount: 1,
         }}
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
 
     expect(screen.getByText('1 Instance')).toBeInTheDocument();
@@ -87,7 +92,8 @@ describe('OperationsEntry', () => {
           ...OPERATIONS.EDIT,
           instancesCount: 3,
         }}
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
 
     expect(screen.getByText('3 Instances')).toBeInTheDocument();
@@ -101,7 +107,8 @@ describe('OperationsEntry', () => {
           ...OPERATIONS.EDIT,
           instancesCount: 3,
         }}
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
 
     expect(filters.state.filter).toEqual({});

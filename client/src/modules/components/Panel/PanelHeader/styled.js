@@ -4,33 +4,25 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import styled, {css} from 'styled-components';
 
-export const Header = themed(styled.div`
-  background-color: ${themeStyle({
-    dark: Colors.uiDark03,
-    light: Colors.uiLight02,
-  })};
-  color: ${themeStyle({
-    dark: '#ffffff',
-    light: Colors.uiLight06,
-  })};
+const Header = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.modules.panel.panelHeader;
 
-  border-bottom: solid 1px
-    ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05,
-    })};
+    return css`
+      background-color: ${colors.backgroundColor};
+      color: ${colors.color};
+      border-bottom: solid 1px ${colors.borderColor};
+      font-size: 15px;
+      font-weight: bold;
+      padding: 9px 10px;
+      padding-left: 20px;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+    `;
+  }}
+`;
 
-  font-size: 15px;
-  font-weight: bold;
-  padding: 9px 10px;
-  padding-left: 20px;
-  min-height: 38px;
-
-  display: flex;
-  align-items: center;
-`);
-
-export const Headline = themed(styled.span``);
+export {Header};

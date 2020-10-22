@@ -11,12 +11,10 @@ import {
   screen,
 } from '@testing-library/react';
 import {MemoryRouter, Route} from 'react-router-dom';
-
-import {mockSequenceFlows, mockEvents, mockIncidents} from './index.setup';
 import PropTypes from 'prop-types';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {mockSequenceFlows, mockEvents, mockIncidents} from './index.setup';
 import SplitPane from 'modules/components/SplitPane';
-
 import {TopPanel} from './index';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
@@ -34,14 +32,16 @@ jest.mock('./InstanceHeader', () => {
 
 const Wrapper = ({children}) => {
   return (
-    <MemoryRouter initialEntries={['/instances/1']}>
-      <Route path="/instances/:id">
-        <SplitPane>
-          {children}
-          <SplitPane.Pane />
-        </SplitPane>
-      </Route>
-    </MemoryRouter>
+    <ThemeProvider>
+      <MemoryRouter initialEntries={['/instances/1']}>
+        <Route path="/instances/:id">
+          <SplitPane>
+            {children}
+            <SplitPane.Pane />
+          </SplitPane>
+        </Route>
+      </MemoryRouter>
+    </ThemeProvider>
   );
 };
 

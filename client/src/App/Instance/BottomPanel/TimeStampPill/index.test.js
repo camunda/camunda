@@ -12,6 +12,7 @@ import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 jest.mock('modules/utils/bpmn');
 
@@ -34,7 +35,7 @@ describe('TimeStampPill', () => {
   });
 
   it('should render "Show" / "Hide" label', () => {
-    render(<TimeStampPill />);
+    render(<TimeStampPill />, {wrapper: ThemeProvider});
 
     expect(screen.getByText('Show End Time')).toBeInTheDocument();
     flowNodeTimeStamp.toggleTimeStampVisibility();
@@ -42,7 +43,7 @@ describe('TimeStampPill', () => {
   });
 
   it('should be disabled if diagram and instance execution history is not loaded', async () => {
-    render(<TimeStampPill />);
+    render(<TimeStampPill />, {wrapper: ThemeProvider});
 
     expect(screen.getByRole('button')).toBeDisabled();
     await flowNodeInstance.fetchInstanceExecutionHistory(1);

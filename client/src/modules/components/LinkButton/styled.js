@@ -4,36 +4,28 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import styled, {css} from 'styled-components';
 
-const LinkButton = themed(styled.button`
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  border: 0;
+const LinkButton = styled.button`
+  ${({theme, size}) => {
+    return css`
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      border: 0;
+      font-size: ${size === 'small' ? 12 : 14}px;
+      text-decoration: underline;
+      color: ${theme.colors.linkDefault};
 
-  font-size:  ${({size}) => (size === 'small' ? '12px' : '14px')}};
-  text-decoration: underline;
+      &:hover {
+        color: ${theme.colors.linkHover};
+      }
 
-  color: ${themeStyle({
-    dark: Colors.darkLinkDefault,
-    light: Colors.lightLinkDefault,
-  })};
-
-  &:hover {
-    color: ${themeStyle({
-      dark: Colors.darkLinkHover,
-      light: Colors.lightLinkHover,
-    })};
-  }
-
-  &:active {
-    color: ${themeStyle({
-      dark: Colors.darkLinkActive,
-      light: Colors.lightLinkActive,
-    })};
-  }
-`);
+      &:active {
+        color: ${theme.colors.linkActive};
+      }
+    `;
+  }}
+`;
 
 export {LinkButton};

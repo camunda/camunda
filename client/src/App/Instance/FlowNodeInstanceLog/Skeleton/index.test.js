@@ -6,13 +6,13 @@
 
 import React from 'react';
 import {render, screen} from '@testing-library/react';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Skeleton} from './index';
 
 describe('<Skeleton />', () => {
   it('should render the correct amount of rows', () => {
     const rowCount = 10;
-    render(<Skeleton rowsToDisplay={10} />);
+    render(<Skeleton rowsToDisplay={10} />, {wrapper: ThemeProvider});
 
     expect(
       screen.getAllByTestId('flow-node-instance-log-skeleton-row')

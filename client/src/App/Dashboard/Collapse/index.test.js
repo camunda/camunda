@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Collapse} from './index';
 
 describe('<Collapse />', () => {
@@ -20,7 +20,8 @@ describe('<Collapse />', () => {
         content={mockContent}
         header={mockHeader}
         buttonTitle={mockButtonTitle}
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
 
     expect(screen.getByText(mockHeader)).toBeInTheDocument();
@@ -40,7 +41,8 @@ describe('<Collapse />', () => {
         content={mockContent}
         header={mockHeader}
         buttonTitle={mockButtonTitle}
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
 
     fireEvent.click(screen.getByRole('button', {name: mockButtonTitle}));

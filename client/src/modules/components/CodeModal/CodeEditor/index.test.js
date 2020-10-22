@@ -10,7 +10,7 @@ import {mount} from 'enzyme';
 
 import {testData} from './index.setup';
 
-import {ThemeProvider} from 'modules/theme';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import CodeModal from './index';
 

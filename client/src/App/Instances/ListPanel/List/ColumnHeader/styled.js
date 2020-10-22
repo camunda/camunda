@@ -4,97 +4,66 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import styled, {css} from 'styled-components';
 import DefaultSortIcon from 'modules/components/SortIcon';
 
-const opacityLabel = {
-  dark: {
-    default: '0.7',
-    active: '0.9',
-    disabled: '0.5',
-  },
-  light: {
-    default: '0.8',
-    active: '1',
-    disabled: '0.6',
-  },
-};
-const opacityIcon = {
-  dark: {
-    default: '0.6',
-    active: '0.9',
-    disabled: '0.3',
-  },
-  light: {
-    default: '0.6',
-    active: '1',
-    disabled: '0.3',
-  },
-};
+const ColumnHeader = styled.span`
+  ${({theme}) => {
+    const colors = theme.colors.columnHeader;
 
-export const ColumnHeader = themed(
-  styled.span`
-    color: ${themeStyle({
-      dark: '#fff',
-      light: Colors.uiLight06,
-    })};
+    return css`
+      color: ${colors.color};
+      cursor: default;
+    `;
+  }}
+`;
 
-    cursor: default;
-  `
-);
+const SortColumnHeader = styled.button`
+  ${({theme, disabled}) => {
+    const colors = theme.colors.columnHeader;
 
-export const SortColumnHeader = themed(
-  styled.button`
-    color: ${themeStyle({
-      dark: '#fff',
-      light: Colors.uiLight06,
-    })};
-    cursor: ${({disabled}) => (disabled ? 'default' : 'pointer')};
+    return css`
+      color: ${colors.color};
+      cursor: ${disabled ? 'default' : 'pointer'};
 
-    padding: 0;
-    margin: 0;
-    background: transparent;
-    border: 0;
-    display: inline-block;
-    font-weight: bold;
-    font-size: 14px;
-    line-height: 37px;
-  `
-);
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      border: 0;
+      display: inline-block;
+      font-weight: bold;
+      font-size: 14px;
+      line-height: 37px;
+    `;
+  }}
+`;
 
-export const Label = themed(
-  styled.span`
-    opacity: ${themeStyle({
-      dark: ({active, disabled}) => {
-        return active || disabled
-          ? opacityLabel.dark[disabled ? 'disabled' : 'active']
-          : opacityLabel.dark.default;
-      },
-      light: ({active, disabled}) => {
-        return active || disabled
-          ? opacityLabel.light[disabled ? 'disabled' : 'active']
-          : opacityLabel.light.default;
-      },
-    })};
-  `
-);
+const Label = styled.span`
+  ${({theme, active, disabled}) => {
+    const opacity = theme.opacity.columnHeader.label;
 
-export const SortIcon = themed(styled(DefaultSortIcon)`
-  position: relative;
-  top: 2px;
-  margin-left: 4px;
+    return css`
+      opacity: ${active || disabled
+        ? opacity[disabled ? 'disabled' : 'active']
+        : opacity.default};
+    `;
+  }}
+`;
 
-  opacity: ${themeStyle({
-    dark: ({active, disabled}) => {
-      return active || disabled
-        ? opacityIcon.dark[disabled ? 'disabled' : 'active']
-        : opacityIcon.dark.default;
-    },
-    light: ({active, disabled}) => {
-      return active || disabled
-        ? opacityIcon.light[disabled ? 'disabled' : 'active']
-        : opacityIcon.light.default;
-    },
-  })};
-`);
+const SortIcon = styled(DefaultSortIcon)`
+  ${({theme, active, disabled}) => {
+    const opacity = theme.opacity.columnHeader.sortIcon;
+
+    return css`
+      position: relative;
+      top: 2px;
+      margin-left: 4px;
+
+      opacity: ${active || disabled
+        ? opacity[disabled ? 'disabled' : 'active']
+        : opacity.default};
+    `;
+  }}
+`;
+
+export {ColumnHeader, SortColumnHeader, Label, SortIcon};

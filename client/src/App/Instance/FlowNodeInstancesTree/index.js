@@ -37,7 +37,7 @@ function Node({isSelected, node, treeDepth}) {
         showConnectionDot={treeDepth >= 3}
         data-testid={`treeDepth:${treeDepth}`}
       >
-        <NodeStateIcon state={node.state} indentationMultiplier={treeDepth} />
+        <NodeStateIcon state={node.state} $indentationMultiplier={treeDepth} />
       </NodeDetails>
       <Foldable
         isFolded={treeDepth >= 2}

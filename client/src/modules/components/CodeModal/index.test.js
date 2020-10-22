@@ -8,10 +8,11 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import {testData} from './index.setup';
-import {ThemeProvider} from 'modules/theme';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import Modal from 'modules/components/Modal';
 import CodeModal from './index';
+import * as Styled from './styled';
 
 const elementMock = {
   addEventListener: jest.fn((event, cb) => {
@@ -36,7 +37,7 @@ describe('CodeModal', () => {
     const node = mountNode(testData.pageMounts);
 
     expect(node.find(Modal.Header)).not.toExist();
-    expect(node.find(Modal.Body)).not.toExist();
+    expect(node.find(Styled.ModalBody)).not.toExist();
     expect(node.find(Modal.Footer)).not.toExist();
   });
 
@@ -47,24 +48,21 @@ describe('CodeModal', () => {
     const node = mountNode(testData.userOpensModalWithUnknownMode);
 
     expect(node.find(Modal.Header)).toExist();
-    expect(node.find(Modal.Body)).toExist();
+    expect(node.find(Styled.ModalBody)).toExist();
     expect(node.find(Modal.Footer)).toExist();
 
     global.console.error = originalConsoleError;
   });
 
   describe('view', () => {
-    let node;
-
-    beforeEach(() => {
-      node = mountNode(testData.userOpensViewModal);
-    });
-
     it('should render not editable code editor', () => {
+      const node = mountNode(testData.userOpensViewModal);
+
       expect(node.find('code').props().contentEditable).toBe(false);
     });
 
     it('should render close button', () => {
+      const node = mountNode(testData.userOpensViewModal);
       const closebtn = node.find('button[data-testid="primary-close-btn"]');
 
       expect(closebtn).toExist();

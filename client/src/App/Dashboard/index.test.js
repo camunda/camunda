@@ -13,9 +13,14 @@ import {Dashboard} from './index';
 import PropTypes from 'prop-types';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 const Wrapper = ({children}) => {
-  return <MemoryRouter>{children} </MemoryRouter>;
+  return (
+    <ThemeProvider>
+      <MemoryRouter>{children} </MemoryRouter>
+    </ThemeProvider>
+  );
 };
 Wrapper.propTypes = {
   children: PropTypes.oneOfType([

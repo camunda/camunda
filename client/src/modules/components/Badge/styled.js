@@ -6,73 +6,61 @@
 
 import styled, {css} from 'styled-components';
 import {BADGE_TYPE} from 'modules/constants';
-import {Colors, themed, themeStyle} from 'modules/theme';
 
-const runningInstancesStyle = css`
-  background-color: ${themeStyle({
-    light: Colors.uiDark04,
-    dark: Colors.uiLight05,
-  })};
-  color: ${themeStyle({
-    light: '#ffffff',
-    dark: Colors.uiDark04,
-  })};
-`;
+function getVariant({theme, type}) {
+  const colors = theme.colors.modules.badge;
 
-const filtersStyle = css`
-  background-color: ${Colors.filtersAndWarnings};
-  color: ${Colors.uiDark02};
-`;
-
-const incidentsStyle = css`
-  background-color: ${Colors.incidentsAndErrors};
-  color: #ffffff;
-`;
-
-const badgeStyle = (props) => {
-  switch (props.type) {
+  switch (type) {
     case BADGE_TYPE.FILTERS:
-      return filtersStyle;
-    case BADGE_TYPE.INCIDENTS:
-      return incidentsStyle;
-    default:
-      return runningInstancesStyle;
-  }
-};
-
-const opacityStyle = (props) =>
-  props.isActive
-    ? ''
-    : css`
-        opacity: ${themeStyle({
-          dark: '0.8',
-          light: '0.7',
-        })};
+      return css`
+        background-color: ${theme.colors.filtersAndWarnings};
+        color: ${colors.filters.color};
       `;
+    case BADGE_TYPE.INCIDENTS:
+      return css`
+        background-color: ${theme.colors.incidentsAndErrors};
+        color: ${theme.colors.white};
+      `;
+    default:
+      return css`
+        background-color: ${colors.default.backgroundColor};
+        color: ${colors.default.color};
+      `;
+  }
+}
 
-const badgeCss = css`
-  display: inline-block;
-  height: 17px;
-  margin-left: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.5;
-  ${badgeStyle};
-  ${opacityStyle};
+const BaseBadge = styled.div`
+  ${({theme, $isActive}) => {
+    const opacity = theme.opacity.modules.badge;
+
+    return css`
+      display: inline-block;
+      height: 17px;
+      margin-left: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.5;
+      ${getVariant}
+      ${$isActive
+        ? ''
+        : css`
+            opacity: ${opacity};
+          `}
+    `;
+  }}
 `;
 
-export const Badge = themed(styled.div`
+const Badge = styled(BaseBadge)`
   padding: 0 9px;
   min-width: 17px;
-
   border-radius: 8.5px;
-  ${badgeCss};
-`);
+`;
 
-export const BadgeCircle = themed(styled.div`
+const BadgeCircle = styled(BaseBadge)`
   width: 17px;
   padding: 0;
   text-align: center;
   border-radius: 50%;
-  ${badgeCss};
-`);
+`;
+
+export {Badge, BadgeCircle};

@@ -10,28 +10,30 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
-
+import PropTypes from 'prop-types';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 import {createMemoryHistory} from 'history';
-
 import {mockProps} from './index.setup';
 import {
   groupedWorkflowsMock,
   mockWorkflowStatistics,
   mockWorkflowInstances,
 } from 'modules/testUtils';
-
 import {DiagramPanel} from './index';
 import {instancesDiagram} from 'modules/stores/instancesDiagram';
 import {filters} from 'modules/stores/filters';
-import PropTypes from 'prop-types';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
 jest.mock('modules/utils/bpmn');
 
 const Wrapper = ({children}) => {
-  return <CollapsablePanelProvider>{children} </CollapsablePanelProvider>;
+  return (
+    <ThemeProvider>
+      <CollapsablePanelProvider>{children} </CollapsablePanelProvider>
+    </ThemeProvider>
+  );
 };
 Wrapper.propTypes = {
   children: PropTypes.oneOfType([

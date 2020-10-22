@@ -4,83 +4,103 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
-import {themed, getIconButtonTheme as getTheme} from 'modules/theme';
 import {SIZES, DEFAULT_SIZE} from './constants';
 
-function setSize(props) {
-  const size = SIZES[props.size] ? SIZES[props.size] : SIZES[DEFAULT_SIZE];
-  return `height: ${size}px; width: ${size}px;`;
+function setSize({size}) {
+  const length = SIZES[size] ?? SIZES[DEFAULT_SIZE];
+
+  return css`
+    height: ${length}px;
+    width: ${length}px;
+  `;
 }
 
-export const Icon = themed(styled.div`
-  border-radius: 50%;
-  border-color: none;
-  ${setSize}
+const Icon = styled.div`
+  ${({theme, iconButtonTheme}) => {
+    const variant = iconButtonTheme ?? 'default';
+    const colors = theme.colors.modules.iconButton;
+    const opacity = theme.opacity.modules.iconButton;
 
-  position: relative;
-  z-index: 1;
+    return css`
+      border-radius: 50%;
+      position: relative;
+      z-index: 1;
+      ${setSize}
 
-  svg {
-    // default icon color/opacity
-    ${(props) => getTheme(props.iconButtonTheme).default.icon[props.theme]}
-  }
-
-  &:before {
-    border-radius: 50%;
-    position: absolute;
-    left: 0;
-    content: '';
-    ${setSize}
-
-    z-index: -1;
-
-    // default background color/opacity
-    ${(props) =>
-      getTheme(props.iconButtonTheme).default.background[props.theme]}
-  }
-`);
-
-export const Button = themed(styled.button`
-  display: flex;
-  padding: 0;
-  background: transparent;
-
-  border-radius: 50%;
-
-  &:hover {
-    ${Icon.WrappedComponent}::before {
-      // hover background color/opacity
-      ${(props) =>
-        !props.disabled &&
-        getTheme(props.iconButtonTheme).hover.background[props.theme]}
-
-      transition: background 0.15s ease-out;
-    }
-
-    ${Icon.WrappedComponent} {
       svg {
-        // hover icon color/opacity
-        ${(props) =>
-          !props.disabled &&
-          getTheme(props.iconButtonTheme).hover.icon[props.theme]}
+        color: ${colors.icon[variant].svg.color};
+        opacity: ${opacity.icon[variant].svg};
       }
-    }
-  }
 
-  &:active {
-    ${Icon.WrappedComponent}::before {
-      // active background color/opacity
-      ${(props) =>
-        getTheme(props.iconButtonTheme).active.background[props.theme]}
-    }
+      &:before {
+        border-radius: 50%;
+        position: absolute;
+        left: 0;
+        content: '';
+        z-index: -1;
+        ${setSize}
 
-    ${Icon.WrappedComponent} {
-      svg {
-        // active icon color/opacity
-        ${(props) => getTheme(props.iconButtonTheme).active.icon[props.theme]}
+        background-color: ${colors.icon[variant].before.backgroundColor};
       }
-    }
-  }
-`);
+    `;
+  }}
+`;
+
+const Button = styled.button`
+  ${({theme, disabled, iconButtonTheme}) => {
+    const variant = iconButtonTheme ?? 'default';
+    const colors = theme.colors.modules.iconButton;
+    const opacity = theme.opacity.modules.iconButton;
+
+    return css`
+      display: flex;
+      padding: 0;
+      background: transparent;
+      border-radius: 50%;
+
+      &:hover {
+        ${Icon}::before {
+          ${disabled
+            ? ''
+            : css`
+                background-color: ${colors.button[variant].hover.before
+                  .backgroundColor};
+                opacity: ${opacity.button[variant].hover.before};
+              `}
+
+          transition: background 0.15s ease-out;
+        }
+
+        ${Icon} {
+          svg {
+            ${disabled
+              ? ''
+              : css`
+                  color: ${colors.button[variant].hover.svg.color};
+                  opacity: ${opacity.button[variant].hover.svg};
+                `}
+          }
+        }
+      }
+
+      &:active {
+        ${Icon}::before {
+          background-color: ${colors.button[variant].active.before
+            .backgroundColor};
+          opacity: ${opacity.button[variant].active.before};
+        }
+
+        ${Icon} {
+          svg {
+            color: ${colors.button[variant].active.svg.color};
+            opacity: ${opacity.button[variant].active.svg};
+          }
+        }
+      }
+    `;
+  }}
+`;
+
+export {Icon, Button};

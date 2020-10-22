@@ -4,44 +4,36 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import styled, {css} from 'styled-components';
 
-export const OptionButton = themed(styled.button`
-  /* Positioning */
-  position: relative;
-  height: 36px;
+const OptionButton = styled.button`
+  ${({theme}) => {
+    const colors = theme.colors.modules.dropdown.subOption.optionButton;
 
-  /* Display & Box Model */
-  display: flex;
-  align-items: center;
-  width: 100%;
-  padding: 0 10px;
-  border: none;
+    return css`
+      position: relative;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      padding: 0 10px;
+      border: none;
+      background: none;
+      color: ${colors.color};
+      text-align: left;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 36px;
 
-  /* Color */
-  background: none;
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)',
-  })};
-  /* Text */
-  text-align: left;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 36px;
+      &:hover {
+        background: ${colors.hover.backgroundColor};
+      }
 
-  &:hover {
-    background: ${themeStyle({
-      dark: Colors.uiDark06,
-      light: Colors.uiLight05,
-    })};
-  }
+      &:active {
+        background: ${theme.colors.active};
+      }
+    `;
+  }}
+`;
 
-  &:active {
-    background: ${themeStyle({
-      dark: Colors.darkActive,
-      light: Colors.lightActive,
-    })};
-  }
-`);
+export {OptionButton};

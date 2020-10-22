@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {VariablePanel} from './index';
 import {render, screen} from '@testing-library/react';
 import {FAILED_PLACEHOLDER, MULTI_SCOPE_PLACEHOLDER} from './constants';

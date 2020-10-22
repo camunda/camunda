@@ -4,23 +4,20 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-const storeStateLocally = (state, storageKey) => {
-  const current = JSON.parse(
-    localStorage.getItem(storageKey || 'sharedState') || '{}'
-  );
+const DEFAULT_STORAGE_KEY = 'sharedState';
 
-  localStorage.setItem(
-    storageKey || 'sharedState',
-    JSON.stringify({...current, ...state})
-  );
-};
+function storeStateLocally(state, storageKey = DEFAULT_STORAGE_KEY) {
+  const current = JSON.parse(localStorage.getItem(storageKey) || '{}');
 
-const clearStateLocally = (storageKey = 'sharedState') => {
+  localStorage.setItem(storageKey, JSON.stringify({...current, ...state}));
+}
+
+function clearStateLocally(storageKey = DEFAULT_STORAGE_KEY) {
   localStorage.removeItem(storageKey);
-};
+}
 
-const getStateLocally = (storageKey) => {
-  return JSON.parse(localStorage.getItem(storageKey || 'sharedState') || '{}');
-};
+function getStateLocally(storageKey = DEFAULT_STORAGE_KEY) {
+  return JSON.parse(localStorage.getItem(storageKey) || '{}');
+}
 
 export {storeStateLocally, clearStateLocally, getStateLocally};

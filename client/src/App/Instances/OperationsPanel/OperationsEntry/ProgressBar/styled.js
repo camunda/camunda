@@ -4,32 +4,39 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-
-import {Colors, themed, themeStyle} from 'modules/theme';
+import styled, {css} from 'styled-components';
 
 const HEIGHT = 4;
 
-export const Container = styled.div`
+const Container = styled.div`
   position: relative;
   height: ${HEIGHT}px;
   width: 100%;
 `;
 
-export const Background = themed(styled.div`
-  background-color: ${Colors.selections};
-  opacity: ${themeStyle({
-    dark: '0.2',
-    light: '0.3',
-  })};
-  position: absolute;
-  height: ${HEIGHT}px;
-  width: 100%;
-`);
+const Background = styled.div`
+  ${({theme}) => {
+    const opacity = theme.opacity.progressBar.background;
 
-export const Bar = styled.div`
-  background-color: ${Colors.selections};
-  position: absolute;
-  height: ${HEIGHT}px;
-  width: ${({width}) => width}%;
+    return css`
+      background-color: ${theme.colors.selections};
+      opacity: ${opacity};
+      position: absolute;
+      height: ${HEIGHT}px;
+      width: 100%;
+    `;
+  }}
 `;
+
+const Bar = styled.div`
+  ${({theme, width}) => {
+    return css`
+      background-color: ${theme.colors.selections};
+      position: absolute;
+      height: ${HEIGHT}px;
+      width: ${width}%;
+    `;
+  }}
+`;
+
+export {Container, Background, Bar};

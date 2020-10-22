@@ -8,7 +8,7 @@ import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {filters} from 'modules/stores/filters';
 import {instances} from 'modules/stores/instances';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {Paginator} from './index';
 
 describe('Paginator', () => {
@@ -22,7 +22,7 @@ describe('Paginator', () => {
     filters.setPage(1);
     instances.setInstances({filteredInstancesCount: 150});
 
-    render(<Paginator maxPage={15} />);
+    render(<Paginator maxPage={15} />, {wrapper: ThemeProvider});
 
     [1, 2, 3, 4, 5, 15].forEach((pageNumber) => {
       expect(
@@ -41,7 +41,7 @@ describe('Paginator', () => {
     filters.setPage(15);
     instances.setInstances({filteredInstancesCount: 150});
 
-    render(<Paginator maxPage={15} />);
+    render(<Paginator maxPage={15} />, {wrapper: ThemeProvider});
     [15, 14, 13, 12, 11, 1].forEach((pageNumber) => {
       expect(
         screen.getByRole('button', {name: `Page ${pageNumber}`})
@@ -58,7 +58,7 @@ describe('Paginator', () => {
     filters.setPage(10);
     instances.setInstances({filteredInstancesCount: 150});
 
-    render(<Paginator maxPage={20} />);
+    render(<Paginator maxPage={20} />, {wrapper: ThemeProvider});
     expect(screen.getAllByText('…').length).toBe(2);
   });
 
@@ -66,7 +66,7 @@ describe('Paginator', () => {
     filters.setEntriesPerPage(10);
     filters.setPage(1);
     instances.setInstances({filteredInstancesCount: 20});
-    render(<Paginator maxPage={2} />);
+    render(<Paginator maxPage={2} />, {wrapper: ThemeProvider});
     expect(screen.queryByText('…')).not.toBeInTheDocument();
   });
 
@@ -74,7 +74,7 @@ describe('Paginator', () => {
     filters.setEntriesPerPage(10);
     filters.setPage(1);
     instances.setInstances({filteredInstancesCount: 30});
-    render(<Paginator maxPage={3} />);
+    render(<Paginator maxPage={3} />, {wrapper: ThemeProvider});
 
     expect(screen.getByRole('button', {name: 'First page'})).toBeDisabled();
     expect(screen.getByRole('button', {name: 'Previous page'})).toBeDisabled();

@@ -8,11 +8,11 @@ import styled from 'styled-components';
 import EmptyMessage from '../EmptyMessage';
 import {default as SplitPaneComponent} from 'modules/components/SplitPane';
 
-export const EmptyMessageWrapper = styled.div`
+const EmptyMessageWrapper = styled.div`
   position: relative;
 `;
 
-export const DiagramEmptyMessage = styled(EmptyMessage)`
+const DiagramEmptyMessage = styled(EmptyMessage)`
   position: absolute;
   height: 100%;
   width: 100%;
@@ -20,6 +20,8 @@ export const DiagramEmptyMessage = styled(EmptyMessage)`
   top: 0;
 `;
 
-export const PaneHeader = styled(SplitPaneComponent.Pane.Header)`
+const PaneHeader = styled(SplitPaneComponent.Pane.Header)`
   border-radius: inherit;
 `;
+
+export {EmptyMessageWrapper, DiagramEmptyMessage, PaneHeader};

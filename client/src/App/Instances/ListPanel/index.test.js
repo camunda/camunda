@@ -12,19 +12,14 @@ import {
   waitForElementToBeRemoved,
 } from '@testing-library/react';
 import {createMemoryHistory} from 'history';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
-
 import {groupedWorkflowsMock, mockWorkflowStatistics} from 'modules/testUtils';
-
 import {filters} from 'modules/stores/filters';
-
 import {INSTANCE, ACTIVE_INSTANCE} from './index.setup';
-
 import {ListPanel} from './index';
 import {MemoryRouter} from 'react-router-dom';
 import PropTypes from 'prop-types';
-
 import {DEFAULT_FILTER, DEFAULT_SORTING} from 'modules/constants';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
@@ -36,9 +31,11 @@ describe('ListPanel', () => {
 
   const Wrapper = ({children}) => {
     return (
-      <MemoryRouter>
-        <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
-      </MemoryRouter>
+      <ThemeProvider>
+        <MemoryRouter>
+          <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
+        </MemoryRouter>
+      </ThemeProvider>
     );
   };
   Wrapper.propTypes = {

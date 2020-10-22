@@ -5,151 +5,178 @@
  */
 
 import styled, {css} from 'styled-components';
+import {rgba} from 'polished';
 
-import {Colors, themed, themeStyle} from 'modules/theme';
 import BasicCollapseButton from 'modules/components/CollapseButton';
-
 import {DIRECTION, PANEL_POSITION} from 'modules/constants';
-
 import BasicPanel from '../Panel';
 
-export const COLLAPSABLE_PANEL_MIN_WIDTH = '56px';
+const COLLAPSABLE_PANEL_MIN_WIDTH = '56px';
 
-const overlayStyles = css`
-  position: absolute;
-  z-index: 2;
-  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.5);
+const Collapsable = styled.div`
+  ${({theme, panelPosition, isOverlay, maxWidth, isCollapsed}) => {
+    const colors = theme.colors.modules.collapsablePanel.collapsable;
+    const isLeft = panelPosition === PANEL_POSITION.LEFT;
+    const isRight = panelPosition === PANEL_POSITION.RIGHT;
 
+    return css`
+      border-radius: ${isRight ? '3px 0 0 0' : '0 3px 0 0'};
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      width: ${isCollapsed ? COLLAPSABLE_PANEL_MIN_WIDTH : `${maxWidth}px`};
+      height: 100%;
+      background-color: ${colors.backgroundColor};
+      transition: width 0.2s ease-out;
+
+      ${isOverlay
+        ? css`
+            position: absolute;
+            z-index: 2;
+            box-shadow: 0 2px 4px 0 ${rgba(theme.colors.black, 0.5)};
+            ${isRight
+              ? css`
+                  right: 0;
+                `
+              : ''}
+            ${isLeft
+              ? css`
+                  left: 0;
+                `
+              : ''}
+          `
+        : ''};
+    `;
+  }}
+`;
+
+const panelStyle = ({transitionTimeout}) => {
+  return css`
+    border-radius: inherit;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    transition: visibility ${transitionTimeout}ms ease-out,
+      opacity ${transitionTimeout}ms ease-out;
+  `;
+};
+
+const ExpandedPanel = styled(BasicPanel)`
+  ${({theme, isCollapsed, panelPosition, hasBackgroundColor}) => {
+    return css`
+      opacity: ${isCollapsed ? 0 : 1};
+      visibility: ${isCollapsed ? 'hidden' : 'visible'};
+      z-index: ${isCollapsed ? 0 : 1};
+      ${panelStyle}
+      ${panelPosition === PANEL_POSITION.RIGHT
+        ? css`
+            border-right: none;
+          `
+        : ''}
+      ${hasBackgroundColor
+        ? css`
+            background-color: ${theme.colors.ui02};
+          `
+        : ''}
+    `;
+  }}
+`;
+
+const CollapsedPanel = styled(BasicPanel)`
+  ${({isCollapsed}) => {
+    return css`
+      opacity: ${isCollapsed ? 1 : 0};
+      visibility: ${isCollapsed ? 'visible' : 'hidden'};
+      z-index: ${isCollapsed ? 1 : 0};
+      ${panelStyle}
+    `;
+  }}
+`;
+
+const Header = styled(BasicPanel.Header)`
   ${({panelPosition}) => {
-    if (panelPosition === PANEL_POSITION.RIGHT) return 'right: 0;';
-    if (panelPosition === PANEL_POSITION.LEFT) return 'left: 0;';
+    return css`
+      border-radius: inherit;
+      ${panelPosition === PANEL_POSITION.RIGHT
+        ? css`
+            padding-left: 55px;
+          `
+        : ''}
+    `;
   }}
 `;
 
-export const Collapsable = themed(styled.div`
-  border-radius: ${({panelPosition}) => {
-    if (panelPosition === PANEL_POSITION.RIGHT) return '3px 0 0 0;';
-    if (panelPosition === PANEL_POSITION.LEFT) return '0 3px 0 0;';
-  }};
-
-  position: relative;
-  display: flex;
-  flex-direction: column;
-
-  ${({isOverlay}) => (isOverlay ? overlayStyles : '')};
-
-  overflow: hidden;
-  width: ${({isCollapsed, maxWidth}) =>
-    isCollapsed ? COLLAPSABLE_PANEL_MIN_WIDTH : `${maxWidth}px`};
-  height: 100%;
-
-  background-color: ${themeStyle({
-    dark: Colors.uiDark03,
-    light: Colors.uiLight02,
-  })};
-
-  transition: width 0.2s ease-out;
-`);
-
-const panelStyle = css`
-  border-radius: inherit;
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-  transition: ${({transitionTimeout}) =>
-    `visibility  ${transitionTimeout}ms ease-out, opacity ${transitionTimeout}ms ease-out`};
-`;
-
-const backgroundColors = css`
-  background-color: ${themeStyle({
-    dark: Colors.uiDark02,
-    light: Colors.uiLight02,
-  })};
-`;
-
-export const ExpandedPanel = themed(styled(BasicPanel)`
-  ${panelStyle}
-  opacity: ${({isCollapsed}) => (isCollapsed ? '0' : '1')};
-  visibility: ${({isCollapsed}) => (isCollapsed ? 'hidden' : 'visible')};
-  z-index: ${({isCollapsed}) => (isCollapsed ? '0' : '1')};
-  ${({panelPosition}) => {
-    return panelPosition === PANEL_POSITION.RIGHT ? 'border-right: none;' : '';
-  }}
-  ${({hasBackgroundColor}) => {
-    return hasBackgroundColor ? backgroundColors : '';
-  }}
-`);
-
-export const CollapsedPanel = styled(BasicPanel)`
-  ${panelStyle}
-  opacity: ${({isCollapsed}) => (isCollapsed ? '1' : '0')};
-  visibility: ${({isCollapsed}) => (isCollapsed ? 'visible' : 'hidden')};
-  z-index: ${({isCollapsed}) => (isCollapsed ? '1' : '0')};
-`;
-
-export const Header = styled(BasicPanel.Header)`
-  border-radius: inherit;
-  ${({panelPosition}) =>
-    panelPosition === PANEL_POSITION.RIGHT && 'padding-left: 55px;'}
-`;
-
-const CollapsedButtonLeft = css`
-  border-right: none;
-  right: 0;
-`;
-
-const CollapsedButtonRight = css`
-  border-left: none;
-  left: 0;
-`;
-
-export const CollapseButton = styled(BasicCollapseButton)`
-  position: absolute;
-  top: 0;
-  border-top: none;
-  border-bottom: none;
-
+const CollapseButton = styled(BasicCollapseButton)`
   ${({direction}) => {
-    if (direction === DIRECTION.LEFT) return CollapsedButtonLeft;
-    if (direction === DIRECTION.RIGHT) return CollapsedButtonRight;
+    return css`
+      position: absolute;
+      top: 0;
+      border-top: none;
+      border-bottom: none;
+      border-radius: inherit;
+      z-index: 2;
+
+      ${direction === DIRECTION.LEFT
+        ? css`
+            border-right: none;
+            right: 0;
+          `
+        : ''}
+      ${direction === DIRECTION.RIGHT
+        ? css`
+            border-left: none;
+            left: 0;
+          `
+        : ''}
+    `;
   }}
-
-  border-radius: inherit;
-  z-index: 2;
 `;
 
-export const ExpandButton = themed(styled.button`
-  height: 100%;
-  padding: 11px;
+const ExpandButton = styled.button`
+  ${({theme}) => {
+    const colors = theme.colors.modules.collapsablePanel.expandButton;
 
-  background: ${themeStyle({
-    dark: Colors.uiDark03,
-    light: Colors.uiLight02,
-  })};
-  color: ${themeStyle({
-    dark: '#fff',
-    light: Colors.uiLight06,
-  })};
-  border: none;
-  border-radius: inherit;
-
-  opacity: 0.9;
-  font-size: 15px;
-  font-weight: bold;
-
-  position: relative;
-`);
-
-export const Vertical = styled.span`
-  padding-right: ${({offset}) => offset}px;
-  position: absolute;
-  top: 0;
-  left: 0;
-  transform: rotate(-90deg) translateX(-100%) translateY(100%);
-  transform-origin: 0 0;
-  display: flex;
-  align-items: center;
-  margin-top: 11px;
+    return css`
+      height: 100%;
+      padding: 11px;
+      background: ${colors.backgroundColor};
+      color: ${colors.color};
+      border: none;
+      border-radius: inherit;
+      opacity: 0.9;
+      font-size: 15px;
+      font-weight: bold;
+      position: relative;
+    `;
+  }}
 `;
+
+const Vertical = styled.span`
+  ${({offset}) => {
+    return css`
+      padding-right: ${offset}px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform: rotate(-90deg) translateX(-100%) translateY(100%);
+      transform-origin: 0 0;
+      display: flex;
+      align-items: center;
+      margin-top: 11px;
+    `;
+  }}
+`;
+
+export {
+  COLLAPSABLE_PANEL_MIN_WIDTH,
+  Collapsable,
+  ExpandedPanel,
+  CollapsedPanel,
+  Header,
+  CollapseButton,
+  ExpandButton,
+  Vertical,
+};

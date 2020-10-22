@@ -9,7 +9,7 @@ import {render, screen} from '@testing-library/react';
 
 import {instances} from 'modules/stores/instances';
 import {filters} from 'modules/stores/filters';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import ListFooter from './index';
 import {instanceSelection} from 'modules/stores/instanceSelection';
 
@@ -38,7 +38,7 @@ describe('ListFooter', () => {
   it('should show pagination, copyright, no dropdown', () => {
     instances.setInstances({filteredInstancesCount: 11});
 
-    render(<ListFooter {...defaultProps} />);
+    render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
 
     const pageOneButton = screen.getByText(/^1$/i);
     const pageTwoButton = screen.getByText(/^2$/i);
@@ -54,7 +54,7 @@ describe('ListFooter', () => {
 
   it('should show copyright, no dropdown, no pagination', () => {
     instances.setInstances({filteredInstancesCount: 9});
-    render(<ListFooter {...defaultProps} />);
+    render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
 
     expect(screen.queryByText(/^1$/i)).toBeNull();
     expect(screen.queryByText(/^2$/i)).toBeNull();
@@ -68,7 +68,7 @@ describe('ListFooter', () => {
 
   it('should show Dropdown when there is selection', () => {
     instances.setInstances({filteredInstancesCount: 9});
-    render(<ListFooter {...defaultProps} />);
+    render(<ListFooter {...defaultProps} />, {wrapper: ThemeProvider});
     instanceSelection.selectInstance('1');
     instanceSelection.selectInstance('2');
     const dropdownButton = screen.getByText(
@@ -82,7 +82,9 @@ describe('ListFooter', () => {
 
   it('should not show the pagination buttons when there is no content', () => {
     instances.setInstances({filteredInstancesCount: 11});
-    render(<ListFooter {...defaultProps} hasContent={false} />);
+    render(<ListFooter {...defaultProps} hasContent={false} />, {
+      wrapper: ThemeProvider,
+    });
 
     const pageOneButton = screen.queryByText(/^1$/i);
     const pageTwoButton = screen.queryByText(/^2$/i);

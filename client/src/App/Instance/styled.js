@@ -7,103 +7,113 @@
 import styled, {css} from 'styled-components';
 
 import {HEADER_HEIGHT} from './../Header/styled';
-import {Colors, themed, themeStyle} from 'modules/theme';
-
-import bgBlack from 'modules/components/ZeebraStripe/tree-view-bg-dark.png';
-import bgLight from 'modules/components/ZeebraStripe/tree-view-bg-light.png';
-
 import SplitPane from 'modules/components/SplitPane';
 
-export const Instance = styled.main`
+const Instance = styled.main`
   display: flex;
   flex-direction: column;
   height: calc(100vh - ${HEADER_HEIGHT}px);
   position: relative;
 `;
 
-export const PaneBody = styled(SplitPane.Pane.Body)`
+const PaneBody = styled(SplitPane.Pane.Body)`
   flex-direction: row;
 `;
 
-export const Section = themed(styled.div`
-  flex: 1;
-  border: solid 1px
-    ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05,
-    })};
-  border-top: none;
-  border-bottom: none;
-`);
+const Section = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.instance.section;
 
-export const PaneFooter = styled(SplitPane.Pane.Footer)`
+    return css`
+      flex: 1;
+      border: solid 1px ${colors.borderColor};
+      border-top: none;
+      border-bottom: none;
+    `;
+  }}
+`;
+
+const PaneFooter = styled(SplitPane.Pane.Footer)`
   text-align: right;
 `;
 
-export const FlowNodeInstanceLog = themed(styled.div`
-  position: relative;
-  width: auto;
-  display: flex;
-  flex: 1;
-  overflow: hidden;
-  border: solid 1px
-    ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05,
-    })};
-  border-top: none;
-  border-left: none;
-  border-bottom: none;
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)',
-  })};
-`);
+const FlowNodeInstanceLog = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.instance.flowNodeInstanceLog;
 
-export const NodeContainer = themed(styled.div`
-  background-image: ${themeStyle({
-    dark: `url(${bgBlack})`,
-    light: `url(${bgLight})`,
-  })};
-
-  position: absolute;
-  width: inherit;
-  min-width: 100%;
-  min-height: min-content;
-  margin: 0;
-  padding: 0;
-  padding-left: 8px;
-`);
-
-const pseudoBorder = css`
-  /* Border with individual z-index to be layered above child */
-  &:before {
-    position: absolute;
-    content: '';
-    height: 1px;
-    width: 100%;
-    z-index: 5;
-    top: 0px;
-    left: 0px;
-    border-top: solid 1px
-      ${themeStyle({
-        dark: Colors.uiDark04,
-        light: Colors.uiLight05,
-      })};
-  }
+    return css`
+      position: relative;
+      width: auto;
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      border: solid 1px ${colors.borderColor};
+      border-top: none;
+      border-left: none;
+      border-bottom: none;
+      color: ${colors.color};
+    `;
+  }}
 `;
 
-export const SplitPaneTop = themed(styled(SplitPane.Pane)`
-  border-top: none;
-  background-color: ${themeStyle({
-    dark: Colors.uiDark02,
-    light: Colors.uiLight04,
-  })};
-  ${pseudoBorder}
-`);
+const NodeContainer = styled.div`
+  ${({theme}) => {
+    return css`
+      background-image: url(${theme.images.zeebraStripe});
+      position: absolute;
+      width: inherit;
+      min-width: 100%;
+      min-height: min-content;
+      margin: 0;
+      padding: 0;
+      padding-left: 8px;
+    `;
+  }}
+`;
 
-export const SplitPaneBody = themed(styled(SplitPane.Pane.Body)`
+const pseudoBorder = ({theme}) => {
+  const colors = theme.colors.instance.pseudoBorder;
+
+  return css`
+    /* Border with individual z-index to be layered above child */
+    &:before {
+      position: absolute;
+      content: '';
+      height: 1px;
+      width: 100%;
+      z-index: 5;
+      top: 0px;
+      left: 0px;
+      border-top: solid 1px ${colors.borderColor};
+    }
+  `;
+};
+
+const SplitPaneTop = styled(SplitPane.Pane)`
+  ${({theme}) => {
+    const colors = theme.colors.instance.splitPaneTop;
+
+    return css`
+      border-top: none;
+      background-color: ${colors.backgroundColor};
+      ${pseudoBorder}
+    `;
+  }}
+`;
+
+const SplitPaneBody = styled(SplitPane.Pane.Body)`
   position: relative;
   border: none;
   ${pseudoBorder}
-`);
+`;
+
+export {
+  Instance,
+  PaneBody,
+  Section,
+  PaneFooter,
+  FlowNodeInstanceLog,
+  NodeContainer,
+  SplitPaneTop,
+  SplitPaneBody,
+};

@@ -4,8 +4,7 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled, {keyframes} from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import styled, {keyframes, css} from 'styled-components';
 
 const SpinnerKeyframe = keyframes`
   0% {
@@ -16,21 +15,21 @@ const SpinnerKeyframe = keyframes`
   }
 `;
 
-export const Spinner = themed(styled.div`
-  border-radius: 50%;
+const Spinner = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.modules.spinner;
 
-  // intentionally sized based on the parent's font-size
-  width: 1em;
-  height: 1em;
+    return css`
+      /* intentionally sized based on the parent's font-size */
+      width: 1em;
+      height: 1em;
+      border-radius: 50%;
+      position: relative;
+      border: 3px solid ${colors.borderColor};
+      border-right-color: transparent;
+      animation: ${SpinnerKeyframe} 0.7s infinite linear;
+    `;
+  }}
+`;
 
-  position: relative;
-
-  border: 3px solid
-    ${themeStyle({
-      dark: '#ffffff',
-      light: Colors.badge02,
-    })};
-  border-right-color: transparent;
-
-  animation: ${SpinnerKeyframe} 0.7s infinite linear;
-`);
+export {Spinner};

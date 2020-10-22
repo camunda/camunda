@@ -6,6 +6,7 @@
 
 import React from 'react';
 import {render, screen, within} from '@testing-library/react';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import InstancesBar from './index';
 
 describe('InstancesBar', () => {
@@ -17,7 +18,8 @@ describe('InstancesBar', () => {
         activeCount={8}
         barHeight={5}
         size="small"
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
 
     expect(
@@ -37,7 +39,8 @@ describe('InstancesBar', () => {
         activeCount={-1}
         barHeight={5}
         size="small"
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
 
     expect(

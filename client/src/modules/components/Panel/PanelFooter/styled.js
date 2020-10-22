@@ -4,31 +4,26 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import styled, {css} from 'styled-components';
 
-export const Footer = themed(styled.div`
-  z-index: 1;
-  min-height: 38px;
-  max-height: 38px;
-  width: 100%;
+const Footer = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.modules.panel.panelFooter;
 
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 20px;
+    return css`
+      z-index: 1;
+      min-height: 38px;
+      max-height: 38px;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 20px;
+      border-top: solid 1px ${colors.borderColor};
+      background-color: ${colors.backgroundColor};
+      color: ${colors.color};
+    `;
+  }}
+`;
 
-  border-top: solid 1px
-    ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05,
-    })};
-  background-color: ${themeStyle({
-    dark: Colors.uiDark03,
-    light: Colors.uiLight02,
-  })};
-  color: ${themeStyle({
-    dark: '#ffffff',
-    light: Colors.uiLight06,
-  })};
-`);
+export {Footer};

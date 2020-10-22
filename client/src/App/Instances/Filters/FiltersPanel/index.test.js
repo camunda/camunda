@@ -6,9 +6,8 @@
 
 import React from 'react';
 import {render, screen} from '@testing-library/react';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {FiltersPanel} from '.';
-
 import {instances} from 'modules/stores/instances';
 
 const props = {
@@ -25,7 +24,7 @@ describe('<FiltersPanel />', () => {
       workflowInstances: [],
     });
 
-    render(<FiltersPanel {...props} />);
+    render(<FiltersPanel {...props} />, {wrapper: ThemeProvider});
 
     const filterBadges = screen.getAllByTestId('filter-panel-header-badge');
 

@@ -53,7 +53,7 @@ const Paginator = observer(
             <Left />
           </Styled.Page>
           {!pageRange.includes(1) && (
-            <React.Fragment>
+            <>
               <Styled.Page
                 title="Page 1"
                 aria-label="Page 1"
@@ -64,7 +64,7 @@ const Paginator = observer(
               {!pageRange.includes(2) && (
                 <Styled.PageSeparator>…</Styled.PageSeparator>
               )}
-            </React.Fragment>
+            </>
           )}
           {pageRange.map((page) => (
             <Styled.Page
@@ -78,7 +78,7 @@ const Paginator = observer(
             </Styled.Page>
           ))}
           {!pageRange.includes(maxPage) && (
-            <React.Fragment>
+            <>
               {!pageRange.includes(maxPage - 1) && (
                 <Styled.PageSeparator>…</Styled.PageSeparator>
               )}
@@ -89,7 +89,7 @@ const Paginator = observer(
               >
                 {maxPage}
               </Styled.Page>
-            </React.Fragment>
+            </>
           )}
           <Styled.Page
             data-testid="next-page"

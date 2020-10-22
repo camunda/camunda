@@ -10,15 +10,17 @@ import Table from 'modules/components/Table';
 import SplitPane from 'modules/components/SplitPane';
 import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 
-export const Spinner = styled(SpinnerSkeleton)`
+const Spinner = styled(SpinnerSkeleton)`
   margin-top: 39px;
 `;
 
-export const PaneBody = styled(SplitPane.Pane.Body)`
+const PaneBody = styled(SplitPane.Pane.Body)`
   border-top: none;
 `;
 
-export const EmptyTR = styled(Table.TR)`
+const EmptyTR = styled(Table.TR)`
   border: 0;
   padding: 0;
 `;
+
+export {Spinner, PaneBody, EmptyTR};

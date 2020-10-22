@@ -4,29 +4,12 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {Colors, themeStyle} from 'modules/theme';
 import {POPOVER_SIDE} from 'modules/constants';
 import {isFlowNode} from 'modules/utils/flowNodes';
 
 const POPOVER_TO_FLOWNODE_SPACE = 16;
 
-export function getDiagramColors(theme) {
-  return {
-    defaultFillColor: themeStyle({
-      dark: Colors.uiDark02,
-      light: Colors.uiLight04,
-    })({theme}),
-    defaultStrokeColor: themeStyle({
-      dark: Colors.darkDiagram,
-      light: Colors.uiLight06,
-    })({theme}),
-  };
-}
-
-export function getPopoverPostion(
-  {diagramContainer, flowNode},
-  isSummaryPopover
-) {
+function getPopoverPosition({diagramContainer, flowNode}, isSummaryPopover) {
   // we only know the popover dimensions after it's render, so we approximate
   const POPOVER_APROXIMATE_HEIGHT = isSummaryPopover
     ? POPOVER_TO_FLOWNODE_SPACE + 54 // 80
@@ -124,10 +107,12 @@ export function getPopoverPostion(
   };
 }
 
-export function isNonSelectableFlowNode(element, selectableFlowNodes) {
+function isNonSelectableFlowNode(element, selectableFlowNodes) {
   return (
     !selectableFlowNodes.includes(element.id) &&
     element.type !== 'label' &&
     isFlowNode(element)
   );
 }
+
+export {getPopoverPosition, isNonSelectableFlowNode};

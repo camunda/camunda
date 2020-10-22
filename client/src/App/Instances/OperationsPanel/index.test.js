@@ -6,7 +6,6 @@
 
 import React from 'react';
 import {
-  fireEvent,
   render,
   screen,
   within,
@@ -15,7 +14,7 @@ import {
 import PropTypes from 'prop-types';
 
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import OperationsPanel from './index';
 import * as CONSTANTS from './constants';
 import {mockOperationFinished, mockOperationRunning} from './index.setup';
@@ -23,7 +22,11 @@ import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 
 const Wrapper = ({children}) => {
-  return <CollapsablePanelProvider>{children}</CollapsablePanelProvider>;
+  return (
+    <ThemeProvider>
+      <CollapsablePanelProvider>{children}</CollapsablePanelProvider>
+    </ThemeProvider>
+  );
 };
 
 Wrapper.propTypes = {

@@ -8,9 +8,10 @@ import styled, {css, createGlobalStyle} from 'styled-components';
 import {POPOVER_SIDE} from 'modules/constants';
 
 import Modal from 'modules/components/Modal';
-import {Colors, themed, themeStyle} from 'modules/theme';
 
-const arrowStyle = ({side}) => {
+const arrowStyle = ({side, theme}) => {
+  const colors = theme.colors.modules.diagram.popoverOverlay.arrowStyle;
+
   switch (side) {
     case POPOVER_SIDE.BOTTOM:
       return css`
@@ -26,18 +27,12 @@ const arrowStyle = ({side}) => {
         }
 
         &:before {
-          border-bottom-color: ${themeStyle({
-            dark: Colors.uiDark06,
-            light: Colors.uiLight05,
-          })};
+          border-bottom-color: ${colors.before.borderColor};
           left: calc(50% - 9px);
         }
 
         &:after {
-          border-bottom-color: ${themeStyle({
-            dark: Colors.uiDark04,
-            light: Colors.uiLight02,
-          })};
+          border-bottom-color: ${colors.after.borderColor};
           left: calc(50% - 8px);
         }
       `;
@@ -56,18 +51,12 @@ const arrowStyle = ({side}) => {
         }
 
         &:before {
-          border-left-color: ${themeStyle({
-            dark: Colors.uiDark06,
-            light: Colors.uiLight05,
-          })};
+          border-left-color: ${colors.before.borderColor};
           top: calc(50% - 9px);
         }
 
         &:after {
-          border-left-color: ${themeStyle({
-            dark: Colors.uiDark04,
-            light: Colors.uiLight02,
-          })};
+          border-left-color: ${colors.after.borderColor};
           top: calc(50% - 8px);
         }
       `;
@@ -86,18 +75,12 @@ const arrowStyle = ({side}) => {
         }
 
         &:before {
-          border-right-color: ${themeStyle({
-            dark: Colors.uiDark06,
-            light: Colors.uiLight05,
-          })};
+          border-right-color: ${colors.before.borderColor};
           top: calc(50% - 9px);
         }
 
         &:after {
-          border-right-color: ${themeStyle({
-            dark: Colors.uiDark04,
-            light: Colors.uiLight02,
-          })};
+          border-right-color: ${colors.after.borderColor};
           top: calc(50% - 8px);
         }
       `;
@@ -116,116 +99,97 @@ const arrowStyle = ({side}) => {
         }
 
         &:before {
-          border-top-color: ${themeStyle({
-            dark: Colors.uiDark06,
-            light: Colors.uiLight05,
-          })};
+          border-top-color: ${colors.before.borderColor};
           left: calc(50% - 9px);
         }
 
         &:after {
-          border-top-color: ${themeStyle({
-            dark: Colors.uiDark04,
-            light: Colors.uiLight02,
-          })};
+          border-top-color: ${colors.after.borderColor};
           left: calc(50% - 8px);
         }
       `;
   }
 };
 
-export const Popover = styled.div`
-  ${arrowStyle}
+const Popover = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.modules.diagram.popoverOverlay.popOver;
+    const shadow = theme.shadows.modules.diagram.popoverOverlay.popOver;
 
-  background-color: ${themeStyle({
-    dark: Colors.uiDark04,
-    light: Colors.uiLight02,
-  })};
-
-  color: ${themeStyle({
-    dark: '#ffffff',
-    light: Colors.uiLight06,
-  })};
-
-  font-size: 12px;
-  border: 1px solid
-    ${themeStyle({
-      dark: Colors.uiDark06,
-      light: Colors.uiLight05,
-    })};
-
-  border-radius: 3px;
-
-  box-shadow: 0 0 2px 0
-    ${themeStyle({
-      dark: 'rgba(0, 0, 0, 0.6)',
-      light: 'rgba(0, 0, 0, 0.2)',
-    })};
-
-  padding: 11px;
-  padding-top: 12px;
+    return css`
+      background-color: ${colors.backgroundColor};
+      color: ${colors.color};
+      font-size: 12px;
+      border: 1px solid ${colors.borderColor};
+      border-radius: 3px;
+      box-shadow: ${shadow};
+      padding: 11px;
+      padding-top: 12px;
+      ${arrowStyle}
+    `;
+  }}
 `;
 
-export const PopoverOverlayStyle = createGlobalStyle`
-    .djs-overlay.djs-overlay-popover {
-      z-index: 2;
-      ${({side}) => {
-        if (side === POPOVER_SIDE.RIGHT) {
-          return css`
-            transform: translate(0, calc(-6px - 50%));
-          `;
-        }
-
-        if (side === POPOVER_SIDE.BOTTOM) {
-          return css`
-            transform: translate(calc(-6px - 50%), 0);
-          `;
-        }
-
-        if (side === POPOVER_SIDE.LEFT) {
-          return css`
-            transform: translate(-100%, calc(-6px - 50%));
-          `;
-        }
-
+const PopoverOverlayStyle = createGlobalStyle`
+  .djs-overlay.djs-overlay-popover {
+    z-index: 2;
+    ${({side}) => {
+      if (side === POPOVER_SIDE.RIGHT) {
         return css`
-          transform: translate(calc(-6px - 50%), -100%);
+          transform: translate(0, calc(-6px - 50%));
         `;
-      }}
-    }
+      }
+
+      if (side === POPOVER_SIDE.BOTTOM) {
+        return css`
+          transform: translate(calc(-6px - 50%), 0);
+        `;
+      }
+
+      if (side === POPOVER_SIDE.LEFT) {
+        return css`
+          transform: translate(-100%, calc(-6px - 50%));
+        `;
+      }
+
+      return css`
+        transform: translate(calc(-6px - 50%), -100%);
+      `;
+    }}
+  }
 `;
 
-export const PeterCaseSummaryHeader = styled.div`
+const PeterCaseSummaryHeader = styled.div`
   font-weight: bold;
   text-align: center;
   white-space: nowrap;
 `;
 
-export const PeterCaseSummaryBody = styled.div`
+const PeterCaseSummaryBody = styled.div`
   margin-top: 3px;
   text-align: center;
   width: 293px;
 `;
 
-export const SummaryHeader = styled.div`
+const SummaryHeader = styled.div`
   margin-bottom: 12px;
   white-space: nowrap;
 `;
 
-export const SummaryDataKey = styled.dt`
+const SummaryDataKey = styled.dt`
   white-space: nowrap;
   line-height: 18px;
   text-align: right;
   font-weight: normal;
 `;
 
-export const SummaryDataValue = styled.dd`
+const SummaryDataValue = styled.dd`
   white-space: nowrap;
   line-height: 18px;
   margin: 0;
 `;
 
-export const SummaryData = styled.dl`
+const SummaryData = styled.dl`
   margin: 0;
   padding: 0;
   font-weight: 600;
@@ -237,7 +201,7 @@ export const SummaryData = styled.dl`
   margin-bottom: 8px;
 `;
 
-export const ModalBody = themed(styled(Modal.Body)`
+const ModalBody = styled(Modal.Body)`
   padding: 0;
   position: relative;
   counter-reset: line;
@@ -246,48 +210,63 @@ export const ModalBody = themed(styled(Modal.Body)`
   & pre {
     margin: 0;
   }
-`);
+`;
 
-export const CodeLine = themed(styled.p`
-  margin: 3px;
-  margin-left: 0;
-  line-height: 14px;
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: Colors.uiLight06,
-  })};
-  font-family: IBMPlexMono;
-  font-size: 14px;
+const CodeLine = styled.p`
+  ${({theme}) => {
+    const colors = theme.colors.modules.diagram.popoverOverlay.codeLine;
+    const opacity = theme.opacity.modules.diagram.popoverOverlay.codeLine;
 
-  &:before {
-    font-size: 12px;
-    box-sizing: border-box;
-    text-align: right;
-    counter-increment: line;
-    content: counter(line);
-    color: ${themeStyle({
-      dark: '#ffffff',
-      light: Colors.uiLight06,
-    })};
-    display: inline-block;
-    width: 35px;
-    opacity: ${themeStyle({
-      dark: 0.5,
-      light: 0.65,
-    })};
-    padding-right: 11px;
-    -webkit-user-select: none;
-  }
-`);
+    return css`
+      margin: 3px;
+      margin-left: 0;
+      line-height: 14px;
+      color: ${colors.color};
+      font-family: IBMPlexMono;
+      font-size: 14px;
 
-export const LinesSeparator = themed(styled.span`
-  position: absolute;
-  top: 0;
-  left: 33px;
-  height: 100%;
-  width: 1px;
-  background-color: ${themeStyle({
-    dark: Colors.uiDark02,
-    light: Colors.uiLight05,
-  })};
-`);
+      &:before {
+        font-size: 12px;
+        box-sizing: border-box;
+        text-align: right;
+        counter-increment: line;
+        content: counter(line);
+        color: ${colors.before.color};
+        display: inline-block;
+        width: 35px;
+        opacity: ${opacity};
+        padding-right: 11px;
+        -webkit-user-select: none;
+      }
+    `;
+  }}
+`;
+
+const LinesSeparator = styled.span`
+  ${({theme}) => {
+    const colors = theme.colors.modules.diagram.popoverOverlay.linesSeparator;
+
+    return css`
+      position: absolute;
+      top: 0;
+      left: 33px;
+      height: 100%;
+      width: 1px;
+      background-color: ${colors.backgroundColor};
+    `;
+  }}
+`;
+
+export {
+  Popover,
+  PopoverOverlayStyle,
+  PeterCaseSummaryHeader,
+  PeterCaseSummaryBody,
+  SummaryHeader,
+  SummaryDataKey,
+  SummaryDataValue,
+  SummaryData,
+  ModalBody,
+  CodeLine,
+  LinesSeparator,
+};

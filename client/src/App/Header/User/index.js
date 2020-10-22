@@ -5,22 +5,20 @@
  */
 
 import React, {useState, useEffect} from 'react';
-import {ThemeConsumer} from 'modules/theme';
+import PropTypes from 'prop-types';
 
 import Dropdown from 'modules/components/Dropdown';
 import {storeStateLocally, getStateLocally} from 'modules/utils/localStorage';
-
-import PropTypes from 'prop-types';
-
 import * as api from 'modules/api/header';
 import * as Styled from './styled';
 import {getDisplayName} from './getDisplayName';
+import {currentTheme} from 'modules/stores/currentTheme';
 
 User.propTypes = {
   handleRedirect: PropTypes.func,
 };
 
-export default function User({handleRedirect}) {
+function User({handleRedirect}) {
   const [{firstname, lastname, username, canLogout}, setUser] = useState(
     getStateLocally()
   );
@@ -44,32 +42,30 @@ export default function User({handleRedirect}) {
 
   return (
     <Styled.ProfileDropdown data-testid="profile-dropdown">
-      <ThemeConsumer>
-        {({toggleTheme}) =>
-          displayName ? (
-            <Styled.Dropdown label={displayName}>
-              <Dropdown.Option
-                label="Toggle Theme"
-                data-testid="toggle-theme-button"
-                onClick={toggleTheme}
-              />
+      {displayName ? (
+        <Styled.Dropdown label={displayName}>
+          <Dropdown.Option
+            label="Toggle Theme"
+            data-testid="toggle-theme-button"
+            onClick={currentTheme.toggle}
+          />
 
-              {canLogout && (
-                <Dropdown.Option
-                  label="Logout"
-                  data-testid="logout-button"
-                  onClick={async () => {
-                    await api.logout();
-                    handleRedirect({forceRedirect: true});
-                  }}
-                />
-              )}
-            </Styled.Dropdown>
-          ) : (
-            <Styled.SkeletonBlock data-testid="username-skeleton" />
-          )
-        }
-      </ThemeConsumer>
+          {canLogout && (
+            <Dropdown.Option
+              label="Logout"
+              data-testid="logout-button"
+              onClick={async () => {
+                await api.logout();
+                handleRedirect({forceRedirect: true});
+              }}
+            />
+          )}
+        </Styled.Dropdown>
+      ) : (
+        <Styled.SkeletonBlock data-testid="username-skeleton" />
+      )}
     </Styled.ProfileDropdown>
   );
 }
+
+export {User};

@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {mount} from 'enzyme';
-import {ThemeProvider} from 'modules/theme';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 import {ReactComponent as Batch} from 'modules/components/Icon/batch.svg';
 import {DROPDOWN_PLACEMENT} from 'modules/constants';

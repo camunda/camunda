@@ -8,8 +8,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 import {flatMap, isEqual} from 'lodash';
-
-import {themed, Colors} from 'modules/theme';
+import {withTheme} from 'styled-components';
 
 import {STATE, EXPAND_STATE} from 'modules/constants';
 
@@ -19,15 +18,11 @@ import StateOverlay from './StateOverlay';
 import StatisticOverlay from './StatisticOverlay';
 import PopoverOverlay from './PopoverOverlay';
 
-import {
-  getDiagramColors,
-  getPopoverPostion,
-  isNonSelectableFlowNode,
-} from './service';
+import {getPopoverPosition, isNonSelectableFlowNode} from './service';
 
 class Diagram extends React.PureComponent {
   static propTypes = {
-    theme: PropTypes.string.isRequired,
+    theme: PropTypes.object,
     definitions: PropTypes.object.isRequired,
     onDiagramLoaded: PropTypes.func,
     clickableFlowNodes: PropTypes.arrayOf(PropTypes.string),
@@ -55,11 +50,8 @@ class Diagram extends React.PureComponent {
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)).isRequired,
   };
 
-  constructor(props) {
-    super(props);
-    this.Viewer = null;
-    this.myRef = React.createRef();
-  }
+  Viewer = null;
+  myRef = React.createRef();
 
   state = {
     isViewerLoaded: false,
@@ -165,7 +157,7 @@ class Diagram extends React.PureComponent {
 
     this.Viewer = new BPMNViewer({
       container: this.myRef.current,
-      bpmnRenderer: getDiagramColors(this.props.theme),
+      bpmnRenderer: this.props.theme.colors.modules.diagram,
     });
 
     this.Viewer.importDefinitions(this.props.definitions)
@@ -177,7 +169,7 @@ class Diagram extends React.PureComponent {
 
   resetViewer = () => {
     if (this.Viewer) {
-      // if there is a viewer detatch it, update the state then init a new viewer
+      // if there is a viewer detach it, update the state then init a new viewer
       this.Viewer.detach();
       return this.setState(
         {
@@ -238,8 +230,10 @@ class Diagram extends React.PureComponent {
   };
 
   handleProcessedSequenceFlows = (processedSequenceFlows) => {
+    const {theme} = this.props;
+
     processedSequenceFlows.forEach((id) => {
-      this.colorElement(id, Colors.selections);
+      this.colorElement(id, theme.colors.selections);
     });
   };
 
@@ -252,7 +246,9 @@ class Diagram extends React.PureComponent {
     });
 
     currentSequenceFlows.forEach((id) => {
-      this.colorElement(id, Colors.selections);
+      const {theme} = this.props;
+
+      this.colorElement(id, theme.colors.selections);
     });
   };
 
@@ -346,12 +342,12 @@ class Diagram extends React.PureComponent {
     });
   };
 
-  getPopoverPostion = (isSummaryPopover) => {
+  getPopoverPosition = (isSummaryPopover) => {
     const flowNode = this.Viewer.get('elementRegistry').getGraphics(
       this.props.selectedFlowNodeId
     );
 
-    return getPopoverPostion(
+    return getPopoverPosition(
       {
         diagramContainer: this.myRef.current,
         flowNode,
@@ -392,7 +388,7 @@ class Diagram extends React.PureComponent {
               selectedFlowNodeName={selectedFlowNodeName}
               metadata={metadata}
               onFlowNodeSelection={onFlowNodeSelection}
-              position={this.getPopoverPostion(metadata.isMultiRowPeterCase)}
+              position={this.getPopoverPosition(metadata.isMultiRowPeterCase)}
               {...overlayProps}
             />
           )}
@@ -403,4 +399,4 @@ class Diagram extends React.PureComponent {
   }
 }
 
-export default themed(Diagram);
+export default withTheme(Diagram);

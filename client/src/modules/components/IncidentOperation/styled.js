@@ -6,7 +6,9 @@
 
 import styled from 'styled-components';
 
-export const Operations = styled.div`
+const Operations = styled.div`
   display: flex;
   align-items: center;
 `;
+
+export {Operations};

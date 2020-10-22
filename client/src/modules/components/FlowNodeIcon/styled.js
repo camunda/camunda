@@ -6,8 +6,6 @@
 
 import styled, {css} from 'styled-components';
 
-import {Colors, themed, themeStyle} from 'modules/theme';
-
 import {ReactComponent as FlowNodeWorkFlow} from 'modules/components/Icon/flow-node-workflow-root.svg';
 
 /**
@@ -54,183 +52,210 @@ import {ReactComponent as FlowNodeEventErrorEnd} from 'modules/components/Icon/f
 
 import {ReactComponent as FlowNodeEventSubprocess} from 'modules/components/Icon/flow-node-subprocess-event.svg';
 
-const newIconStyle = css`
-  position: relative;
-  color: ${themeStyle({
-    dark: '#ffffff',
-    light: Colors.uiLight06,
-  })};
+const newIconStyle = ({theme}) => {
+  const colors = theme.colors.modules.flowNodeIcon;
 
-  top: 0px;
-  left: 3px;
-`;
+  return css`
+    position: relative;
+    color: ${colors.color};
+    top: 0px;
+    left: 3px;
+  `;
+};
 
-export const WORKFLOW = themed(styled(FlowNodeWorkFlow)`
+const WORKFLOW = styled(FlowNodeWorkFlow)`
   ${newIconStyle}
-`);
+`;
 
 /**
  * Gateways
  */
 
-export const GATEWAY_EXCLUSIVE = themed(styled(FlowNodeGatewayExclusive)`
+const GATEWAY_EXCLUSIVE = styled(FlowNodeGatewayExclusive)`
   ${newIconStyle}
   top: 3px;
   left: 0px;
-`);
+`;
 
-export const GATEWAY_PARALLEL = themed(styled(FlowNodeGatewayParallel)`
+const GATEWAY_PARALLEL = styled(FlowNodeGatewayParallel)`
   ${newIconStyle}
   top: 3px;
   left: 0px;
-`);
+`;
 
-export const GATEWAY_EVENT_BASED = themed(styled(FlowNodeGatewayEventBased)`
+const GATEWAY_EVENT_BASED = styled(FlowNodeGatewayEventBased)`
   ${newIconStyle}
   left: 3px;
-`);
+`;
 
 /**
  * Task Icons
  */
 
-export const TASK_SERVICE = themed(styled(FlowNodeTaskService)`
+const TASK_SERVICE = styled(FlowNodeTaskService)`
   ${newIconStyle};
   top: 3px;
   left: 0px;
-`);
+`;
 
-export const TASK_RECEIVE = themed(styled(FlowNodeTaskReceive)`
+const TASK_RECEIVE = styled(FlowNodeTaskReceive)`
   ${newIconStyle};
-`);
+`;
 
-export const TASK_SEND = themed(styled(FlowNodeTaskSend)`
+const TASK_SEND = styled(FlowNodeTaskSend)`
   ${newIconStyle};
-`);
+`;
 
-export const TASK_DEFAULT = themed(styled(FlowNodeTask)`
+const TASK_DEFAULT = styled(FlowNodeTask)`
   ${newIconStyle};
-`);
+`;
 
-export const TASK_SUBPROCESS = themed(styled(FlowNodeTaskSubProcess)`
+const TASK_SUBPROCESS = styled(FlowNodeTaskSubProcess)`
   ${newIconStyle};
-`);
+`;
 
-export const TASK_CALL_ACTIVITY = themed(
-  styled(FlowNodeCallActivity)`
-    ${newIconStyle};
-  `
-);
+const TASK_CALL_ACTIVITY = styled(FlowNodeCallActivity)`
+  ${newIconStyle};
+`;
 
 /**
  * Multi Instance Icons
  */
 
-export const MULTI_SEQUENTIAL = themed(styled(FlowNodeTaskMulti)`
+const MULTI_SEQUENTIAL = styled(FlowNodeTaskMulti)`
   ${newIconStyle};
-`);
+`;
 
-export const MULTI_PARALLEL = themed(styled(FlowNodeTaskParallel)`
+const MULTI_PARALLEL = styled(FlowNodeTaskParallel)`
   ${newIconStyle};
-`);
+`;
 
 /**
  * Event Icons
  */
 
-export const START = themed(styled(FlowNodeEventStart)`
+const START = styled(FlowNodeEventStart)`
   ${newIconStyle}
-`);
+`;
 
-export const END = themed(styled(FlowNodeEventEnd)`
+const END = styled(FlowNodeEventEnd)`
   ${newIconStyle}
   padding: 1px;
-`);
+`;
 
 /**
  * Message Event Icons
  */
 
-export const EVENT_MESSAGE_START = themed(styled(FlowNodeEventMessageStart)`
+const EVENT_MESSAGE_START = styled(FlowNodeEventMessageStart)`
   ${newIconStyle}
-`);
+`;
 
-export const EVENT_MESSAGE_END = themed(styled(FlowNodeEventMessageEnd)`
+const EVENT_MESSAGE_END = styled(FlowNodeEventMessageEnd)`
   ${newIconStyle}
-`);
+`;
 
 /**
  * Error Event Icons
  */
-export const EVENT_ERROR_START = themed(styled(FlowNodeEventErrorStart)`
+const EVENT_ERROR_START = styled(FlowNodeEventErrorStart)`
   ${newIconStyle}
-`);
+`;
 
-export const EVENT_ERROR_BOUNDARY_INTERRUPTING = themed(styled(
-  FlowNodeEventErrorBoundary
-)`
+const EVENT_ERROR_BOUNDARY_INTERRUPTING = styled(FlowNodeEventErrorBoundary)`
   ${newIconStyle}
-`);
+`;
 
-export const EVENT_ERROR_END = themed(styled(FlowNodeEventErrorEnd)`
+const EVENT_ERROR_END = styled(FlowNodeEventErrorEnd)`
   ${newIconStyle}
-`);
+`;
 
 /**
  * Other Icons
  */
 
-export const EVENT_SUBPROCESS = themed(styled(FlowNodeEventSubprocess)`
+const EVENT_SUBPROCESS = styled(FlowNodeEventSubprocess)`
   ${newIconStyle}
-`);
+`;
 
-// uses the same style as bondary interrupting
-export const EVENT_MESSAGE_INTERMEDIATE_CATCH = themed(styled(
+// uses the same style as boundary interrupting
+const EVENT_MESSAGE_INTERMEDIATE_CATCH = styled(
   FlowNodeEventMessageBoundaryInterrupting
 )`
   ${newIconStyle}
-`);
+`;
 
-export const EVENT_MESSAGE_INTERMEDIATE_THROW = themed(styled(
+const EVENT_MESSAGE_INTERMEDIATE_THROW = styled(
   FlowNodeEventMessageIntermediateThrow
 )`
   ${newIconStyle}
-`);
+`;
 
-export const EVENT_MESSAGE_BOUNDARY_INTERRUPTING = themed(styled(
+const EVENT_MESSAGE_BOUNDARY_INTERRUPTING = styled(
   FlowNodeEventMessageBoundaryInterrupting
 )`
   ${newIconStyle}
-`);
+`;
 
-export const EVENT_MESSAGE_BOUNDARY_NON_INTERRUPTING = themed(styled(
+const EVENT_MESSAGE_BOUNDARY_NON_INTERRUPTING = styled(
   FlowNodeEventMessageBoundaryNonInterrupting
 )`
   ${newIconStyle}
-`);
+`;
 
 /**
  * Timer Event Icons
  */
 
-export const EVENT_TIMER_START = themed(styled(FlowNodeEventTimerStart)`
+const EVENT_TIMER_START = styled(FlowNodeEventTimerStart)`
   ${newIconStyle}
-`);
+`;
 
-export const EVENT_TIMER_INTERMEDIATE_CATCH = themed(styled(
+const EVENT_TIMER_INTERMEDIATE_CATCH = styled(
   FlowNodeEventTimerBoundaryInterrupting
 )`
   ${newIconStyle}
-`);
+`;
 
-export const EVENT_TIMER_BOUNDARY_NON_INTERRUPTING = themed(styled(
+const EVENT_TIMER_BOUNDARY_NON_INTERRUPTING = styled(
   FlowNodeEventTimerBoundaryNonInerrupting
 )`
   ${newIconStyle}
-`);
+`;
 
-export const EVENT_TIMER_BOUNDARY_INTERRUPTING = themed(styled(
+const EVENT_TIMER_BOUNDARY_INTERRUPTING = styled(
   FlowNodeEventTimerBoundaryInterrupting
 )`
   ${newIconStyle}
-`);
+`;
+
+export {
+  WORKFLOW,
+  GATEWAY_EXCLUSIVE,
+  GATEWAY_PARALLEL,
+  GATEWAY_EVENT_BASED,
+  TASK_SERVICE,
+  TASK_RECEIVE,
+  TASK_SEND,
+  TASK_DEFAULT,
+  TASK_SUBPROCESS,
+  TASK_CALL_ACTIVITY,
+  MULTI_SEQUENTIAL,
+  MULTI_PARALLEL,
+  START,
+  END,
+  EVENT_MESSAGE_START,
+  EVENT_MESSAGE_END,
+  EVENT_ERROR_START,
+  EVENT_ERROR_BOUNDARY_INTERRUPTING,
+  EVENT_ERROR_END,
+  EVENT_SUBPROCESS,
+  EVENT_MESSAGE_INTERMEDIATE_CATCH,
+  EVENT_MESSAGE_INTERMEDIATE_THROW,
+  EVENT_MESSAGE_BOUNDARY_INTERRUPTING,
+  EVENT_MESSAGE_BOUNDARY_NON_INTERRUPTING,
+  EVENT_TIMER_START,
+  EVENT_TIMER_INTERMEDIATE_CATCH,
+  EVENT_TIMER_BOUNDARY_NON_INTERRUPTING,
+  EVENT_TIMER_BOUNDARY_INTERRUPTING,
+};

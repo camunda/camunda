@@ -19,7 +19,7 @@ import SpinnerSkeleton from 'modules/components/SpinnerSkeleton';
 import {Skeleton} from './Skeleton';
 import {VARIABLE_MODE} from './constants';
 import {STATE} from 'modules/constants';
-import {Table, TH, TR} from '../VariablesTable';
+import {Table, TH, TR} from './VariablesTable';
 import {useParams} from 'react-router-dom';
 
 const Variables = observer(function Variables() {

@@ -7,7 +7,7 @@
 import React from 'react';
 import {HashRouter as Router, Route, Switch} from 'react-router-dom';
 
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
 import Authentication from './Authentication';

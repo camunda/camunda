@@ -4,41 +4,54 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors} from 'modules/theme';
+import styled, {css} from 'styled-components';
 import BasicTextInput from 'modules/components/Input';
 import {ReactComponent as Warning} from 'modules/components/Icon/warning-message-icon.svg';
 
-export const VariableFilterInput = styled.div`
+const VariableFilterInput = styled.div`
   position: relative;
   display: flex;
   justify-content: space-between;
 `;
 
-export const TextInput = styled(BasicTextInput)`
-  min-width: 0;
-  &:first-child {
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-  }
+const TextInput = styled(BasicTextInput)`
+  ${({hasError}) => {
+    return css`
+      min-width: 0;
+      &:first-child {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
 
-  &:nth-child(2) {
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-    margin-left: -1px;
-  }
+      &:nth-child(2) {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        margin-left: -1px;
+      }
 
-  ${(props) => props.hasError && 'z-index: 2;'}
+      & :focus {
+        z-index: 3;
+      }
 
-  & :focus {
-    z-index: 3;
-  }
+      ${hasError
+        ? css`
+            z-index: 2;
+          `
+        : ''}
+    `;
+  }}
 `;
 
-export const WarningIcon = styled(Warning)`
-  position: absolute;
-  width: 16px;
-  fill: ${Colors.incidentsAndErrors};
-  top: 3px;
-  right: -21px;
+const WarningIcon = styled(Warning)`
+  ${({theme}) => {
+    return css`
+      position: absolute;
+      width: 16px;
+      fill: ${theme.colors.incidentsAndErrors};
+      top: 3px;
+      right: -21px;
+    `;
+  }}
 `;
+
+export {VariableFilterInput, TextInput, WarningIcon};

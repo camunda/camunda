@@ -4,105 +4,88 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import styled, {css} from 'styled-components';
 
-export const Table = themed(styled.table`
+const Table = styled.table`
   width: 100%;
   font-size: 14px;
   border-spacing: 0;
   border-collapse: collapse;
-`);
+`;
 
-export const TH = themed(styled.th`
-  font-weight: 600;
-  padding: 0 0 0 5px;
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.8)',
-    light: 'rgba(98, 98, 110, 0.8)',
-  })};
+const TH = styled.th`
+  ${({theme}) => {
+    const colors = theme.colors.modules.table.th;
 
-  &:not(:last-child):after {
-    content: ' ';
-    float: right;
-    height: 31px;
-    margin-top: 3px;
-    width: 1px;
-    background: ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05,
-    })};
-  }
-`);
+    return css`
+      font-weight: 600;
+      padding: 0 0 0 5px;
+      color: ${colors.color};
 
-export const TD = themed(styled.td`
-  padding: 0 0 0 5px;
-  white-space: nowrap;
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)',
-  })};
-`);
-
-export const TR = themed(styled.tr`
-  height: 36px;
-  line-height: 37px;
-
-  border-width: 1px 0;
-  border-style: solid;
-  border-color: ${themeStyle({
-    dark: Colors.uiDark04,
-    light: Colors.uiLight05,
-  })};
-
-  &:nth-child(odd) {
-    background-color: ${({theme, selected}) => {
-      if (selected) {
-        if (theme === 'dark') {
-          return Colors.darkSelectedOdd;
-        } else {
-          return Colors.lightSelectedOdd;
-        }
-      } else {
-        if (theme === 'dark') {
-          return Colors.uiDark02;
-        } else {
-          return Colors.uiLight04;
-        }
+      &:not(:last-child):after {
+        content: ' ';
+        float: right;
+        height: 31px;
+        margin-top: 3px;
+        width: 1px;
+        background: ${colors.after.backgroundColor};
       }
-    }};
-  }
+    `;
+  }}
+`;
 
-  &:nth-child(even) {
-    background-color: ${({theme, selected}) => {
-      if (selected) {
-        if (theme === 'dark') {
-          return Colors.darkSelectedEven;
-        } else {
-          return Colors.lightSelectedEven;
-        }
-      } else {
-        if (theme === 'dark') {
-          return '#37383e';
-        } else {
-          return '#f9fafc';
-        }
+const TD = styled.td`
+  ${({theme}) => {
+    const colors = theme.colors.modules.table.td;
+
+    return css`
+      padding: 0 0 0 5px;
+      white-space: nowrap;
+      color: ${colors.color};
+    `;
+  }}
+`;
+
+const TR = styled.tr`
+  ${({theme, selected}) => {
+    const colors = theme.colors.modules.table.tr;
+
+    return css`
+      height: 36px;
+      line-height: 37px;
+
+      border-width: 1px 0;
+      border-style: solid;
+      border-color: ${colors.borderColor};
+
+      &:nth-child(odd) {
+        background-color: ${selected
+          ? theme.colors.selectedOdd
+          : colors.odd.backgroundColor};
       }
-    }};
-  }
-`);
 
-export const THead = themed(styled.thead`
-  text-align: left;
-  background-color: ${themeStyle({
-    dark: Colors.uiDark04,
-    light: Colors.uiLight02,
-  })};
+      &:nth-child(even) {
+        background-color: ${selected
+          ? theme.colors.selectedEven
+          : theme.colors.itemEven};
+      }
+    `;
+  }}
+`;
 
-  ${TR.WrappedComponent} {
-    background-color: ${themeStyle({
-      dark: Colors.uiDark03,
-      light: Colors.uiLight02,
-    })};
-  }
-`);
+const THead = styled.thead`
+  ${({theme}) => {
+    const colors = theme.colors.modules.table.thead;
+
+    return css`
+      text-align: left;
+      background-color: ${colors.backgroundColor};
+
+      ${TR} {
+        background-color: ${colors.tr.backgroundColor};
+      }
+    `;
+  }}
+`;
+
+export {Table, TH, TD, TR, THead};

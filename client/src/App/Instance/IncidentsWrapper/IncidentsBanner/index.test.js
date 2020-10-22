@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {IncidentsBanner} from './index';
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {EXPAND_STATE} from 'modules/constants';
 import {MemoryRouter, Route} from 'react-router-dom';
 import {render, screen} from '@testing-library/react';

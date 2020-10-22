@@ -8,6 +8,8 @@ import styled from 'styled-components';
 
 import defaultPill from 'modules/components/Pill';
 
-export const Pill = styled(defaultPill)`
+const Pill = styled(defaultPill)`
   height: 25px;
 `;
+
+export {Pill};

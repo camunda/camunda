@@ -21,7 +21,7 @@ import {
   mockWorkflowInstances,
 } from 'modules/testUtils';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import Filters from './index';
 import {FiltersPanel} from './FiltersPanel';
 import * as Styled from './styled';

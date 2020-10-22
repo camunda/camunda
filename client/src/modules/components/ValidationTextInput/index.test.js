@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {mount} from 'enzyme';
-import {ThemeProvider} from 'modules/theme';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {act} from 'react-dom/test-utils';
 
 import Input from 'modules/components/Input';

@@ -6,62 +6,76 @@
 
 import styled, {css} from 'styled-components';
 
-import {Colors, themed, themeStyle} from 'modules/theme';
 import SplitPane from 'modules/components/SplitPane';
 
-const BorderColors = css`
-  ${themeStyle({
-    dark: Colors.uiDark04,
-    light: Colors.uiLight05,
-  })};
+const Pane = styled(SplitPane.Pane)`
+  ${({expandState}) => {
+    return css`
+      ${expandState === 'DEFAULT'
+        ? css`
+            height: 50%;
+          `
+        : ''}
+    `;
+  }}
 `;
 
-export const Pane = styled(SplitPane.Pane)`
-  ${({expandState}) => expandState === 'DEFAULT' && 'height: 50%;'}
-`;
-
-export const PaneBody = themed(styled(SplitPane.Pane.Body)`
+const PaneBody = styled(SplitPane.Pane.Body)`
   flex-direction: row;
   /* defines the space children take */
   > * {
     width: 50%;
   }
-`);
+`;
 
-export const Headline = themed(styled.span`
-  padding-right: 15px;
-  position: relative;
+const Headline = styled.span`
+  ${({theme}) => {
+    const colors = theme.colors.bottomPanel;
 
-  &:after {
-    content: '';
-    position: absolute;
-    top: -5px;
-    right: 0px;
-    height: 30px;
-    width: 1px;
-    background: ${BorderColors};
-  }
-`);
+    return css`
+      padding-right: 15px;
+      position: relative;
 
-export const Pills = styled.div`
+      &:after {
+        content: '';
+        position: absolute;
+        top: -5px;
+        right: 0px;
+        height: 30px;
+        width: 1px;
+        background: ${colors.borderColor};
+      }
+    `;
+  }}
+`;
+
+const Pills = styled.div`
   display: flex;
   align-items: center;
   margin-left: 15px;
 `;
 
-export const PaneHeader = styled(SplitPane.Pane.Header)`
+const PaneHeader = styled(SplitPane.Pane.Header)`
   display: flex;
   align-items: center;
   border-bottom: none;
 `;
 
-export const Section = themed(styled.div`
-  flex: 1;
-  border: solid 1px ${BorderColors};
-  border-top: none;
-  border-bottom: none;
-`);
+const Section = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.bottomPanel;
 
-export const PaneFooter = styled(SplitPane.Pane.Footer)`
+    return css`
+      flex: 1;
+      border: solid 1px ${colors.borderColor};
+      border-top: none;
+      border-bottom: none;
+    `;
+  }}
+`;
+
+const PaneFooter = styled(SplitPane.Pane.Footer)`
   text-align: right;
 `;
+
+export {Pane, PaneBody, Headline, Pills, PaneHeader, Section, PaneFooter};

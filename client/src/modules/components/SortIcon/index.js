@@ -15,7 +15,7 @@ export default function SortIcon(props) {
     props.sortOrder === SORT_ORDER.ASC ? Styled.Up : Styled.Down;
   return (
     <Styled.SortIcon {...props} data-testid={`${props.sortOrder}-icon`}>
-      <TargetIcon data-testid="sort-icon" sortOrder={props.sortOrder} />
+      <TargetIcon data-testid="sort-icon" $sortOrder={props.sortOrder} />
     </Styled.SortIcon>
   );
 }

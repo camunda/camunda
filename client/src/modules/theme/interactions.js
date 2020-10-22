@@ -5,24 +5,23 @@
  */
 
 import {css} from 'styled-components';
-import {Colors, themeStyle} from 'modules/theme';
 
-const focusTransition = 'box-shadow 0.05s ease-out';
-const focusCss = (theme) => {
+const focusCss = ({theme}) => {
+  const shadow = theme.shadows.modules.focus;
+
   return css`
-    box-shadow: ${themeStyle({
-      dark: `0 0 0 1px ${Colors.lightFocusInner}, 0 0 0 4px ${Colors.focusOuter}`,
-      light: `0 0 0 1px ${Colors.darkFocusInner}, 0 0 0 4px ${Colors.focusOuter}`,
-    })};
+    box-shadow: ${shadow};
     outline: none;
 
-    // the transition is here because we want an effect only when we
-    // enter the element for focus, not for leaving it
-    transition: ${focusTransition};
+    /*
+     the transition is here because we want an effect only when we
+     enter the element for focus, not for leaving it
+    */
+    transition: box-shadow 0.05s ease-out;
   `;
 };
 
-const focusSelector = (theme) => {
+const focusSelector = () => {
   return css`
     &:focus {
       ${focusCss};
@@ -35,18 +34,26 @@ const focus = {
   selector: focusSelector,
 };
 
-export const errorBorders = css`
-  &:not(:focus) {
-    ${(props) =>
-      props.hasError && `border-color: ${Colors.incidentsAndErrors};`}
-  }
+const errorBorders = ({theme, hasError}) => {
+  return css`
+    &:not(:focus) {
+      ${hasError
+        ? css`
+            border-color: ${theme.colors.incidentsAndErrors};
+          `
+        : ''}
+    }
 
-  &:focus {
-    ${(props) =>
-      props.hasError &&
-      `box-shadow: 0 0 0 1px ${Colors.incidentsAndErrors}, 0 0 0 4px #ffafaf; 
-  `}
-  }
-`;
+    &:focus {
+      ${hasError
+        ? css`
+            box-shadow: 0 0 0 1px ${theme.colors.incidentsAndErrors},
+              0 0 0 4px ${theme.colors.outlineError};
+          `
+        : ''}
+    }
+  `;
+};
 
 export default {focus};
+export {errorBorders};

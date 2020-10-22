@@ -17,9 +17,12 @@ import {
 } from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 const createWrapper = (historyMock = createMemoryHistory()) => ({children}) => (
-  <Router history={historyMock}>{children}</Router>
+  <ThemeProvider>
+    <Router history={historyMock}>{children}</Router>
+  </ThemeProvider>
 );
 
 describe('InstancesByWorkflow', () => {

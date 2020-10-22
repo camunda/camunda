@@ -9,7 +9,7 @@ import {render, screen} from '@testing-library/react';
 import BottomPanel from './index';
 import PropTypes from 'prop-types';
 import {EXPAND_STATE} from 'modules/constants';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 const COPYRIGHT_REGEX = /^© Camunda Services GmbH \d{4}. All rights reserved./;
 
 describe('BottomPanel', () => {
@@ -35,7 +35,8 @@ describe('BottomPanel', () => {
     render(
       <BottomPanel expandState={EXPAND_STATE.DEFAULT}>
         <ChildNode />
-      </BottomPanel>
+      </BottomPanel>,
+      {wrapper: ThemeProvider}
     );
     expect(screen.getByText('Instance History')).toBeInTheDocument();
     expect(screen.getByText('Show End Time')).toBeInTheDocument();
@@ -47,7 +48,8 @@ describe('BottomPanel', () => {
     render(
       <BottomPanel expandState={EXPAND_STATE.EXPANDED}>
         <ChildNode />
-      </BottomPanel>
+      </BottomPanel>,
+      {wrapper: ThemeProvider}
     );
     expect(screen.getByText('expanded content')).toBeInTheDocument();
   });
@@ -56,7 +58,8 @@ describe('BottomPanel', () => {
     render(
       <BottomPanel expandState={EXPAND_STATE.COLLAPSED}>
         <ChildNode />
-      </BottomPanel>
+      </BottomPanel>,
+      {wrapper: ThemeProvider}
     );
     expect(screen.getByText('collapsed content')).toBeInTheDocument();
   });

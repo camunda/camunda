@@ -4,14 +4,15 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import {render, screen, fireEvent} from '@testing-library/react';
 import React from 'react';
+import {render, screen, fireEvent} from '@testing-library/react';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import ConfirmOperationModal from './index';
 import {mockProps} from './index.setup';
 
 describe('ConfirmOperationModal', () => {
   it('should render', () => {
-    render(<ConfirmOperationModal {...mockProps} />);
+    render(<ConfirmOperationModal {...mockProps} />, {wrapper: ThemeProvider});
     expect(screen.getByText(mockProps.bodyText)).toBeInTheDocument();
     expect(screen.getByText('Click "Apply" to proceed.')).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Apply'})).toBeInTheDocument();
@@ -20,19 +21,19 @@ describe('ConfirmOperationModal', () => {
   });
 
   it('should call apply function on apply button click', () => {
-    render(<ConfirmOperationModal {...mockProps} />);
+    render(<ConfirmOperationModal {...mockProps} />, {wrapper: ThemeProvider});
     fireEvent.click(screen.getByRole('button', {name: 'Apply'}));
     expect(mockProps.onApplyClick).toHaveBeenCalledTimes(1);
   });
 
   it('should call cancel function on cancel button click', () => {
-    render(<ConfirmOperationModal {...mockProps} />);
+    render(<ConfirmOperationModal {...mockProps} />, {wrapper: ThemeProvider});
     fireEvent.click(screen.getByRole('button', {name: 'Cancel'}));
     expect(mockProps.onCancelClick).toHaveBeenCalledTimes(1);
   });
 
   it('should call close modal function on close button click', () => {
-    render(<ConfirmOperationModal {...mockProps} />);
+    render(<ConfirmOperationModal {...mockProps} />, {wrapper: ThemeProvider});
     fireEvent.click(screen.getByTestId('cross-button'));
     expect(mockProps.onModalClose).toHaveBeenCalledTimes(1);
   });

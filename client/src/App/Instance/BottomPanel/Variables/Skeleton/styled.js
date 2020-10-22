@@ -4,9 +4,9 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
-import {Table as DefaultTable} from '../../VariablesTable';
+import styled, {css} from 'styled-components';
+
+import {Table as DefaultTable} from '../VariablesTable';
 
 const SkeletonTD = styled.td`
   height: 100%;
@@ -21,32 +21,30 @@ const Table = styled(DefaultTable)`
   border-collapse: collapse;
 `;
 
-const THead = themed(styled.thead`
-  tr:first-child {
-    position: absolute;
-    width: 100%;
-    top: 0;
+const THead = styled.thead`
+  ${({theme}) => {
+    const colors = theme.colors.variables.skeleton;
 
-    border-bottom: 1px solid
-      ${themeStyle({
-        dark: Colors.uiDark04,
-        light: Colors.uiLight05,
-      })};
-    background: ${themeStyle({
-      dark: Colors.uiDark02,
-      light: Colors.uiLight04,
-    })};
-    z-index: 2;
-    border-top: none;
-    height: 45px;
-    border-top: none;
-    > th {
-      padding-top: 21px;
-    }
-    > th:first-child {
-      min-width: 226px;
-    }
-  }
-`);
+    return css`
+      tr:first-child {
+        position: absolute;
+        width: 100%;
+        top: 0;
+        border-bottom: 1px solid ${colors.borderColor};
+        background: ${colors.backgroundColor};
+        z-index: 2;
+        border-top: none;
+        height: 45px;
+
+        > th {
+          padding-top: 21px;
+        }
+        > th:first-child {
+          min-width: 226px;
+        }
+      }
+    `;
+  }}
+`;
 
 export {SkeletonTD, Table, THead};

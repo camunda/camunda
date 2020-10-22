@@ -22,10 +22,6 @@ describe('DropdownMenu', () => {
     );
   });
 
-  it('should match snapshot', async () => {
-    expect(node).toMatchSnapshot();
-  });
-
   it('should renders its children', () => {
     expect(node.find(Styled.Li)).toExist();
 

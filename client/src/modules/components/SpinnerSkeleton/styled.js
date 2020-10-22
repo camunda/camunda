@@ -4,30 +4,39 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import Spinner from 'modules/components/Spinner';
-import {Colors, themed, themeStyle} from 'modules/theme';
 
-export const Skeleton = themed(styled.div`
-  background-color: ${themeStyle({
-    dark: 'rgba(0, 0, 0, 0.65)',
-    light: 'rgba(255, 255, 255, 0.75)',
-  })};
+const Skeleton = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.modules.spinnerSkeleton.skeleton;
 
-  z-index: 2;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 100%;
-  height: 100%;
-  position: absolute;
-`);
+    return css`
+      background-color: ${colors.backgroundColor};
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+    `;
+  }}
+`;
 
-export const SkeletonSpinner = themed(styled(Spinner)`
-  position: absolute;
-  top: 40.7%;
-  height: 30px;
-  width: 30px;
-  border: 4px solid ${themeStyle({dark: '#ffffff', light: Colors.uiLight06})};
-  border-right-color: transparent;
-`);
+const SkeletonSpinner = styled(Spinner)`
+  ${({theme}) => {
+    const colors = theme.colors.modules.spinnerSkeleton.skeletonSpinner;
+
+    return css`
+      position: absolute;
+      top: 40.7%;
+      height: 30px;
+      width: 30px;
+      border: 4px solid ${colors.borderColor};
+      border-right-color: transparent;
+    `;
+  }}
+`;
+
+export {Skeleton, SkeletonSpinner};

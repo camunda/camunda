@@ -13,6 +13,7 @@ import {
   within,
   waitForElementToBeRemoved,
 } from '@testing-library/react';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {variables} from 'modules/stores/variables';
 import {currentInstance} from 'modules/stores/currentInstance';
 import Variables from './index';
@@ -26,9 +27,11 @@ const EMPTY_PLACEHOLDER = 'The Flow Node has no variables.';
 
 const Wrapper = ({children}) => {
   return (
-    <MemoryRouter initialEntries={[`/instances/1`]}>
-      <Route path="/instances/:id">{children} </Route>
-    </MemoryRouter>
+    <ThemeProvider>
+      <MemoryRouter initialEntries={[`/instances/1`]}>
+        <Route path="/instances/:id">{children} </Route>
+      </MemoryRouter>
+    </ThemeProvider>
   );
 };
 Wrapper.propTypes = {

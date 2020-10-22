@@ -7,7 +7,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import {TYPE} from 'modules/constants';
-import {themed} from 'modules/theme';
 
 import * as Styled from './styled';
 
@@ -55,8 +54,7 @@ function FlowNodeIcon({types, isSelected, ...props}) {
 
 FlowNodeIcon.propTypes = {
   types: PropTypes.object.isRequired,
-  theme: PropTypes.string.isRequired,
   isSelected: PropTypes.bool,
 };
 
-export default themed(FlowNodeIcon);
+export default FlowNodeIcon;

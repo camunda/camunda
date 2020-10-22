@@ -5,24 +5,24 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
 
-const colors = css`
-  background: ${themeStyle({
-    dark: 'rgba(136, 136, 141)',
-    light: Colors.uiLight06,
-  })};
-  opacity: ${themeStyle({
-    dark: 0.2,
-    light: 0.09,
-  })};
+const colors = ({theme}) => {
+  const colors = theme.colors.modules.skeleton;
+  const opacity = theme.opacity.modules.skeleton;
+
+  return css`
+    background: ${colors.backgroundColor};
+    opacity: ${opacity};
+  `;
+};
+
+const BaseBlock = styled.div`
+  ${colors}
 `;
 
-export const BaseBlock = themed(styled.div`
-  ${colors}
-`);
-
-export const BaseCircle = themed(styled.div`
+const BaseCircle = styled.div`
   border-radius: 50%;
   ${colors}
-`);
+`;
+
+export {BaseBlock, BaseCircle};

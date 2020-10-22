@@ -6,43 +6,30 @@
 
 import styled, {css} from 'styled-components';
 
-import {Colors, themed, themeStyle} from 'modules/theme';
 import {errorBorders} from 'modules/theme/interactions';
 
-const placeholderStyle = css`
-  &::placeholder {
-    color: ${themeStyle({
-      light: 'rgba(98, 98, 110, 0.9)',
-      dark: 'rgba(255, 255, 255, 0.7)',
-    })};
-    font-style: italic;
-  }
+const Input = styled.input`
+  ${({theme}) => {
+    const colors = theme.colors.modules.input;
+
+    return css`
+      ${errorBorders};
+      &::placeholder {
+        color: ${colors.placeholder.color};
+        font-style: italic;
+      }
+
+      font-family: IBMPlexSans;
+      font-size: 13px;
+      height: 26px;
+      width: 100%;
+      padding: 4px 11px 5px 8px;
+      border: solid 1px ${theme.colors.ui05};
+      border-radius: 3px;
+      background-color: ${colors.backgroundColor};
+      color: ${colors.color};
+    `;
+  }}
 `;
 
-export const Input = themed(styled.input`
-  ${errorBorders};
-  ${placeholderStyle};
-
-  font-family: IBMPlexSans;
-  font-size: 13px;
-
-  height: 26px;
-  width: 100%;
-  padding: 4px 11px 5px 8px;
-  border: solid 1px
-    ${themeStyle({
-      dark: Colors.uiDark05,
-      light: Colors.uiLight05,
-    })};
-  border-radius: 3px;
-
-  background-color: ${themeStyle({
-    dark: Colors.uiDark02,
-    light: Colors.uiLight04,
-  })};
-
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: Colors.uiDark03,
-  })};
-`);
+export {Input};

@@ -5,10 +5,9 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
 import DefaultDropdown from 'modules/components/Dropdown';
 
-export const Dropdown = styled(DefaultDropdown)`
+const Dropdown = styled(DefaultDropdown)`
   > button > div {
     white-space: nowrap;
     text-overflow: ellipsis;
@@ -22,7 +21,7 @@ export const Dropdown = styled(DefaultDropdown)`
   }
 `;
 
-export const ProfileDropdown = styled.span`
+const ProfileDropdown = styled.span`
   margin-top: 7px;
   display: flex;
   align-items: center;
@@ -31,20 +30,17 @@ export const ProfileDropdown = styled.span`
   height: 50%;
 `;
 
-const colors = css`
-  background: ${themeStyle({
-    dark: 'rgba(136, 136, 141)',
-    light: Colors.uiLight06,
-  })};
-  opacity: ${themeStyle({
-    dark: 0.2,
-    light: 0.09,
-  })};
+const SkeletonBlock = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.header.user;
+
+    return css`
+      height: 12px;
+      width: 120px;
+      margin-right: 10px;
+      background: ${colors.backgroundColor};
+    `;
+  }}
 `;
 
-export const SkeletonBlock = themed(styled.div`
-  height: 12px;
-  width: 120px;
-  margin-right: 10px;
-  ${colors};
-`);
+export {Dropdown, ProfileDropdown, SkeletonBlock};

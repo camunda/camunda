@@ -9,7 +9,7 @@ import {Router} from 'react-router-dom';
 
 import {currentInstance} from 'modules/stores/currentInstance';
 import Header from './index';
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {createMemoryHistory} from 'history';
 import PropTypes from 'prop-types';
 import {render, within, fireEvent, screen} from '@testing-library/react';
@@ -30,11 +30,11 @@ const waitForComponentToLoad = async () => {
 
 describe('Header', () => {
   const MockApp = (props) => (
-    <Router history={props.history ? props.history : createMemoryHistory()}>
-      <ThemeProvider>
+    <ThemeProvider>
+      <Router history={props.history ? props.history : createMemoryHistory()}>
         <Header.WrappedComponent {...props} />
-      </ThemeProvider>
-    </Router>
+      </Router>
+    </ThemeProvider>
   );
 
   MockApp.propTypes = {

@@ -4,18 +4,21 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {themed, themeStyle} from 'modules/theme';
+import styled, {css} from 'styled-components';
 
 import Panel from 'modules/components/Panel';
 
-export const VariablesPanel = themed(styled(Panel)`
-  flex: 1;
-  font-size: 14px;
+const VariablesPanel = styled(Panel)`
+  ${({theme}) => {
+    const colors = theme.colors.variablesPanel;
 
-  border-left: none;
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.8)',
-    light: 'rgba(98, 98, 110, 0.8)',
-  })};
-`);
+    return css`
+      flex: 1;
+      font-size: 14px;
+      border-left: none;
+      color: ${colors.color};
+    `;
+  }}
+`;
+
+export {VariablesPanel};

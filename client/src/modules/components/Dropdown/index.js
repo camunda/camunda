@@ -29,7 +29,7 @@ export default class Dropdown extends React.Component {
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node,
     ]),
-    buttonStyles: PropTypes.array,
+    buttonStyles: PropTypes.func,
     disabled: PropTypes.bool,
     onOpen: PropTypes.func,
     className: PropTypes.string,

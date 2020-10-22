@@ -7,7 +7,7 @@
 import styled from 'styled-components';
 import BasicCopyright from 'modules/components/Copyright';
 
-export const Footer = styled.div`
+const Footer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -22,11 +22,13 @@ export const Footer = styled.div`
   }
 `;
 
-export const Copyright = styled(BasicCopyright)`
+const Copyright = styled(BasicCopyright)`
   text-align: right;
 `;
 
-export const OperationButtonContainer = styled.div`
+const OperationButtonContainer = styled.div`
   height: 100%;
   padding: 5px 0 6px 0;
 `;
+
+export {Footer, Copyright, OperationButtonContainer};

@@ -22,7 +22,7 @@ import {FILTER_SELECTION, BADGE_TYPE, DEFAULT_FILTER} from 'modules/constants';
 import {isEqual} from 'lodash';
 import {labels, createTitle, PATHNAME} from './constants';
 
-import User from './User';
+import {User} from './User';
 import {NavElement, BrandNavElement, LinkElement} from './NavElements';
 import * as Styled from './styled.js';
 

@@ -9,6 +9,7 @@ import {mount} from 'enzyme';
 
 import {PANEL_POSITION} from 'modules/constants';
 import CollapsablePanel from './index';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('CollapsablePanel', () => {
   it('should render children when expanded', () => {
@@ -21,7 +22,8 @@ describe('CollapsablePanel', () => {
         toggle={() => {}}
       >
         <div data-testid="cool-panel-content">Cool Panel Content</div>
-      </CollapsablePanel>
+      </CollapsablePanel>,
+      {wrappingComponent: ThemeProvider}
     );
 
     // then
@@ -45,7 +47,8 @@ describe('CollapsablePanel', () => {
         toggle={() => {}}
       >
         <div data-testid="cool-panel-content">Cool Panel Content</div>
-      </CollapsablePanel>
+      </CollapsablePanel>,
+      {wrappingComponent: ThemeProvider}
     );
 
     // then
@@ -69,7 +72,8 @@ describe('CollapsablePanel', () => {
         toggle={toggleMock}
       >
         <div data-testid="cool-panel-content">Cool Panel Content</div>
-      </CollapsablePanel>
+      </CollapsablePanel>,
+      {wrappingComponent: ThemeProvider}
     );
 
     // then
@@ -94,12 +98,13 @@ it('should have background color style rule when hasBackgroundColor is true', ()
       toggle={() => {}}
     >
       <div data-testid="cool-panel-content">Cool Panel Content</div>
-    </CollapsablePanel>
+    </CollapsablePanel>,
+    {wrappingComponent: ThemeProvider}
   );
 
   // then
   const expandedPanel = node.find('[data-testid="expanded-panel"]').first();
-  expect(expandedPanel).toHaveStyleRule('background-color', '#313238');
+  expect(expandedPanel).toHaveStyleRule('background-color', '#f7f8fa');
 });
 
 it('should have border-right rule when panel position is RIGHT', () => {
@@ -112,7 +117,8 @@ it('should have border-right rule when panel position is RIGHT', () => {
       toggle={() => {}}
     >
       <div data-testid="cool-panel-content">Cool Panel Content</div>
-    </CollapsablePanel>
+    </CollapsablePanel>,
+    {wrappingComponent: ThemeProvider}
   );
 
   // then
@@ -129,7 +135,8 @@ it('should not have border-right rule when panel position is not RIGHT', () => {
       toggle={() => {}}
     >
       <div data-testid="cool-panel-content">Cool Panel Content</div>
-    </CollapsablePanel>
+    </CollapsablePanel>,
+    {wrappingComponent: ThemeProvider}
   );
 
   // then

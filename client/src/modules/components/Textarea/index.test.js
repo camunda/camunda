@@ -5,12 +5,13 @@
  */
 
 import React from 'react';
-import Textarea from './index';
 import {render, screen} from '@testing-library/react';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import Textarea from './index';
 
 describe('Textarea', () => {
   it('should render default textarea', () => {
-    render(<Textarea placeholder="someLabel" />);
+    render(<Textarea placeholder="someLabel" />, {wrapper: ThemeProvider});
 
     expect(
       screen.getByRole('textbox', {name: 'someLabel'})
@@ -18,7 +19,9 @@ describe('Textarea', () => {
   });
 
   it('should render autosize textarea', () => {
-    render(<Textarea placeholder="someLabel" hasAutosize />);
+    render(<Textarea placeholder="someLabel" hasAutosize />, {
+      wrapper: ThemeProvider,
+    });
 
     expect(
       screen.getByRole('textbox', {name: 'someLabel'})

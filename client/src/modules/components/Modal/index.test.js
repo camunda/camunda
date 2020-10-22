@@ -7,7 +7,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {ReactComponent as CloseLarge} from 'modules/components/Icon/close-large.svg';
 
 import Modal from './index';

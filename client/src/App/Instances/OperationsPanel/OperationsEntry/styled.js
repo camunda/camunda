@@ -5,113 +5,110 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
 
 import {ReactComponent as RetryOperation} from 'modules/components/Icon/retry.svg';
 import {ReactComponent as CancelOperation} from 'modules/components/Icon/stop.svg';
 import {ReactComponent as EditOperation} from 'modules/components/Icon/edit.svg';
 
-const runningEntryStyles = css`
-  background-color: ${themeStyle({
-    dark: Colors.uiDark03,
-    light: Colors.uiLight04,
-  })};
+const Entry = styled.li`
+  ${({theme, isRunning}) => {
+    const colors = theme.colors.operationsEntry.entry;
+
+    return css`
+      color: ${colors.color};
+      border-top: 1px solid ${colors.borderColor};
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 130px;
+      padding: 17px 27px 26px 27px;
+      background-color: ${isRunning
+        ? colors.isRunning.backgroundColor
+        : theme.colors.ui02};
+    `;
+  }}
 `;
 
-const finishedEntryStyles = css`
-  background-color: ${themeStyle({
-    dark: Colors.uiDark02,
-    light: Colors.uiLight02,
-  })};
-`;
-
-export const Entry = themed(styled.li`
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)',
-  })};
-
-  ${({isRunning}) => (isRunning ? runningEntryStyles : finishedEntryStyles)}
-
-  border-top: ${themeStyle({
-    dark: `solid 1px ${Colors.uiDark04}`,
-    light: `solid 1px ${Colors.uiLight05}`,
-  })};
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: 130px;
-  padding: 17px 27px 26px 27px;
-`);
-
-export const EntryStatus = themed(styled.div`
+const EntryStatus = styled.div`
   display: flex;
   flex-direction: row;
   justify-content: space-between;
-`);
+`;
 
-export const Type = styled.div`
+const Type = styled.div`
   font-size: 15px;
   line-height: 19px;
   font-weight: 600;
-
   margin-bottom: 6px;
 `;
 
-export const Id = styled.div`
+const Id = styled.div`
   font-size: 11px;
 `;
 
-export const EntryDetails = styled.div`
+const EntryDetails = styled.div`
   display: flex;
   flex-direction: row;
   justify-content: space-between;
 `;
 
-export const EndDate = styled.div`
+const EndDate = styled.div`
   font-size: 14px;
 `;
 
-export const InstancesCount = themed(styled.div`
-  font-size: 14px;
-  color: ${themeStyle({
-    dark: `${Colors.darkLinkDefault}`,
-    light: `${Colors.lightLinkDefault}`,
-  })};
-  text-decoration: underline;
+const InstancesCount = styled.div`
+  ${({theme}) => {
+    return css`
+      font-size: 14px;
+      color: ${theme.colors.linkDefault};
+      text-decoration: underline;
+      cursor: pointer;
+    `;
+  }}
+`;
 
-  cursor: pointer;
-`);
-
-export const OperationIcon = themed(styled.div`
+const OperationIcon = styled.div`
   cursor: default;
   width: 16px;
   height: 16px;
   margin-top: 10px;
-`);
-
-const iconStyle = css`
-  width: 16px;
-  height: 16px;
-  object-fit: contain;
-  opacity: ${themeStyle({
-    dark: 0.9,
-    light: 0.8,
-  })};
-  color: ${themeStyle({
-    dark: '#ffffff',
-    light: Colors.uiDark02,
-  })};
 `;
 
-export const Retry = themed(styled(RetryOperation)`
-  ${iconStyle};
-`);
+const iconStyle = ({theme}) => {
+  const colors = theme.colors.operationsEntry.iconStyle;
+  const opacity = theme.opacity.operationsEntry.iconStyle;
 
-export const Cancel = themed(styled(CancelOperation)`
-  ${iconStyle};
-`);
+  return css`
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    opacity: ${opacity};
+    color: ${colors.color};
+  `;
+};
 
-export const Edit = themed(styled(EditOperation)`
+const Retry = styled(RetryOperation)`
   ${iconStyle};
-`);
+`;
+
+const Cancel = styled(CancelOperation)`
+  ${iconStyle};
+`;
+
+const Edit = styled(EditOperation)`
+  ${iconStyle};
+`;
+
+export {
+  Entry,
+  EntryStatus,
+  Type,
+  Id,
+  EntryDetails,
+  EndDate,
+  InstancesCount,
+  OperationIcon,
+  Retry,
+  Cancel,
+  Edit,
+};

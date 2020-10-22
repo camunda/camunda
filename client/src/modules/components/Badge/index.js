@@ -14,9 +14,9 @@ import * as Styled from './styled';
 export default function Badge(props) {
   const {children, position} = props;
 
-  const isRoundBagde =
+  const isRoundBadge =
     children && children.toString().length === 1 && position === 0;
-  const Component = isRoundBagde ? Styled.BadgeCircle : Styled.Badge;
+  const Component = isRoundBadge ? Styled.BadgeCircle : Styled.Badge;
 
   return <Component data-testid="badge" {...props} />;
 }
@@ -27,12 +27,12 @@ Badge.propTypes = {
     PropTypes.node,
   ]),
   type: PropTypes.oneOf(Object.keys(BADGE_TYPE)),
-  isActive: PropTypes.bool,
+  $isActive: PropTypes.bool,
   position: PropTypes.number,
 };
 
 Badge.defaultProps = {
-  isActive: true,
+  $isActive: true,
   /* position of Badge in ComboBadge; independent Badges have position 0 */
   position: 0,
 };

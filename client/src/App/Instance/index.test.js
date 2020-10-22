@@ -11,7 +11,7 @@ import {
   waitForElementToBeRemoved,
   screen,
 } from '@testing-library/react';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {testData} from './index.setup';
 import {mockSequenceFlows, mockEvents} from './TopPanel/index.setup';
 import {mockSuccessResponseForActivityTree} from './FlowNodeInstanceLog/index.setup';
@@ -39,9 +39,11 @@ jest.mock('modules/api/activityInstances');
 
 const Wrapper = ({children}) => {
   return (
-    <MemoryRouter initialEntries={['/instances/1']}>
-      <Route path="/instances/:id">{children} </Route>
-    </MemoryRouter>
+    <ThemeProvider>
+      <MemoryRouter initialEntries={['/instances/1']}>
+        <Route path="/instances/:id">{children}</Route>
+      </MemoryRouter>
+    </ThemeProvider>
   );
 };
 Wrapper.propTypes = {
@@ -132,13 +134,7 @@ describe('Instance', () => {
       fetchWorkflowInstance.mockResolvedValue(
         testData.fetch.onPageLoad.workflowInstanceCompleted
       );
-      render(
-        <MemoryRouter initialEntries={['/instances/1']}>
-          <Route path="/instances/:id">
-            <Instance />
-          </Route>
-        </MemoryRouter>
-      );
+      render(<Instance />, {wrapper: Wrapper});
       jest.useFakeTimers();
 
       await waitForElementToBeRemoved(screen.getByTestId('skeleton-rows'));

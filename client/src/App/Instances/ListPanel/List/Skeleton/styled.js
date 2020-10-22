@@ -7,26 +7,26 @@
 import styled from 'styled-components';
 import {BaseBlock, BaseCircle} from 'modules/components/Skeleton';
 
-export const Row = styled.div`
+const Row = styled.div`
   display: flex;
   margin-left: 20px;
   padding-top: 20px;
 `;
 
-export const td = styled.td`
+const td = styled.td`
   padding: 9px 0 9px 5px;
 `;
 
-export const Block = styled(BaseBlock)`
+const Block = styled(BaseBlock)`
   height: 14px;
 `;
 
-export const WorkflowContainer = styled.div`
+const WorkflowContainer = styled.div`
   padding-left: 15px;
   display: flex;
 `;
 
-export const SkeletonCheckboxBlock = styled(BaseBlock)`
+const SkeletonCheckboxBlock = styled(BaseBlock)`
   height: 14px;
   width: 14px;
   border-radius: 3px;
@@ -34,7 +34,7 @@ export const SkeletonCheckboxBlock = styled(BaseBlock)`
   margin-bottom: -2px;
 `;
 
-export const CircleBlock = styled(BaseCircle)`
+const CircleBlock = styled(BaseCircle)`
   width: 14px;
   height: 14px;
   margin-left: 12px;
@@ -42,26 +42,40 @@ export const CircleBlock = styled(BaseCircle)`
   flex-shrink: 0;
 `;
 
-export const WorkflowBlock = styled(Block)`
+const WorkflowBlock = styled(Block)`
   margin-left: 5px;
   flex-shrink: 0;
   width: 13vw;
 `;
 
-export const InstanceIdBlock = styled(Block)`
+const InstanceIdBlock = styled(Block)`
   width: 11vw;
 `;
 
-export const VersionBlock = styled(Block)`
+const VersionBlock = styled(Block)`
   width: 5vw;
 `;
 
-export const TimeBlock = styled(Block)`
+const TimeBlock = styled(Block)`
   width: 8vw;
 `;
 
-export const OperationsBlock = styled(Block)`
+const OperationsBlock = styled(Block)`
   width: 50px;
   height: 20px;
   border-radius: 12px;
 `;
+
+export {
+  Row,
+  td,
+  Block,
+  WorkflowContainer,
+  SkeletonCheckboxBlock,
+  CircleBlock,
+  WorkflowBlock,
+  InstanceIdBlock,
+  VersionBlock,
+  TimeBlock,
+  OperationsBlock,
+};

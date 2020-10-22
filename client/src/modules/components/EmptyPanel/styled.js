@@ -5,60 +5,63 @@
  */
 
 import styled, {css} from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+
 import {ReactComponent as Check} from 'modules/components/Icon/check.svg';
 import {ReactComponent as Warning} from 'modules/components/Icon/warning-message-icon.svg';
 
-export const EmptyPanel = themed(styled.div`
+const EmptyPanel = styled.div`
   height: 100%;
   width: 100%;
-`);
-
-const errorStyle = css`
-  color: ${Colors.incidentsAndErrors};
-  opacity: 0.9;
 `;
 
-const infoDarkStyle = css`
-  color: #ffffff;
-  opacity: 0.8;
-`;
-
-const infoLightStyle = css`
-  color: ${Colors.uiLight08};
-  opacity: 0.8;
-`;
-
-export const LabelContainer = styled.div`
+const LabelContainer = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
   height: 58%;
 `;
 
-export const Label = themed(styled.span`
-  ${({type}) =>
-    type === 'info'
-      ? themeStyle({
-          dark: infoDarkStyle,
-          light: infoLightStyle,
-        })
-      : errorStyle}
+const Label = styled.span`
+  ${({theme, type}) => {
+    const colors = theme.colors.modules.emptyPanel;
 
-  font-family: IBMPlexSans;
-  font-size: 16px;
-  padding-top: 5px;
-`);
+    return css`
+      ${type === 'info'
+        ? css`
+            color: ${colors.color};
+            opacity: 0.8;
+          `
+        : css`
+            color: ${theme.colors.incidentsAndErrors};
+            opacity: 0.9;
+          `}
 
-export const CheckIcon = styled(Check)`
-  width: 18px;
-  height: 14px;
-  fill: ${Colors.allIsWell};
-  margin-right: 13px;
+      font-family: IBMPlexSans;
+      font-size: 16px;
+      padding-top: 5px;
+    `;
+  }}
 `;
-export const WarningIcon = styled(Warning)`
-  width: 20px;
-  height: 18px;
-  fill: ${Colors.incidentsAndErrors};
-  margin-right: 15px;
+
+const CheckIcon = styled(Check)`
+  ${({theme}) => {
+    return css`
+      width: 18px;
+      height: 14px;
+      fill: ${theme.colors.allIsWell};
+      margin-right: 13px;
+    `;
+  }}
 `;
+const WarningIcon = styled(Warning)`
+  ${({theme}) => {
+    return css`
+      width: 20px;
+      height: 18px;
+      fill: ${theme.colors.incidentsAndErrors};
+      margin-right: 15px;
+    `;
+  }}
+`;
+
+export {EmptyPanel, LabelContainer, Label, CheckIcon, WarningIcon};

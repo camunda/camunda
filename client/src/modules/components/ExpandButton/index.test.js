@@ -8,12 +8,14 @@ import React from 'react';
 import {mount} from 'enzyme';
 import ExpandButton from './index';
 import * as Styled from './styled';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('ExpandButton', () => {
   it('should render arrow icon', () => {
     // given
     const node = mount(
-      <ExpandButton isExpanded={false} iconButtonTheme="default" />
+      <ExpandButton isExpanded={false} iconButtonTheme="default" />,
+      {wrappingComponent: ThemeProvider}
     );
 
     // when
@@ -29,7 +31,8 @@ describe('ExpandButton', () => {
       <ExpandButton iconButtonTheme="default">
         <div id="child1">child node 1</div>
         <div id="child2">child node 2</div>
-      </ExpandButton>
+      </ExpandButton>,
+      {wrappingComponent: ThemeProvider}
     );
 
     // when

@@ -4,18 +4,20 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import FlowNodeIcon from './index';
 import React from 'react';
-
-import {TYPE, MULTI_INSTANCE_TYPE} from 'modules/constants';
 import {mount} from 'enzyme';
+import FlowNodeIcon from './index';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
+import {TYPE, MULTI_INSTANCE_TYPE} from 'modules/constants';
 
 function getName(node) {
   return node.find('svg').text();
 }
 
 function mountIcon(types) {
-  return mount(<FlowNodeIcon types={types} />);
+  return mount(<FlowNodeIcon types={types} />, {
+    wrappingComponent: ThemeProvider,
+  });
 }
 
 describe('FlowNodeIcon', () => {

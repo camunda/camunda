@@ -6,10 +6,12 @@
 
 import styled from 'styled-components';
 
-export const FiltersHeader = styled.div`
+const FiltersHeader = styled.div`
   display: flex;
   justify-content: flex-start;
 
   align-items: center;
   flex-shrink: 0;
 `;
+
+export {FiltersHeader};

@@ -4,11 +4,19 @@
  * You may not use this file except in compliance with the commercial license.
  */
 
-import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import styled, {css} from 'styled-components';
 
-export const Copyright = themed(styled.div`
-  color: ${themeStyle({dark: '#fff', light: Colors.uiLight06})};
-  opacity: ${themeStyle({dark: 0.7, light: 0.9})};
-  font-size: 12px;
-`);
+const Copyright = styled.div`
+  ${({theme}) => {
+    const colors = theme.colors.modules.copyright;
+    const opacity = theme.opacity.modules.copyright;
+
+    return css`
+      color: ${colors.color};
+      opacity: ${opacity};
+      font-size: 12px;
+    `;
+  }}
+`;
+
+export {Copyright};

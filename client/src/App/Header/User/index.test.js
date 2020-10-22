@@ -13,10 +13,10 @@ import {
   waitFor,
 } from '@testing-library/react';
 
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {storeStateLocally, clearStateLocally} from 'modules/utils/localStorage';
 
-import User from './index';
+import {User} from './index';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
 

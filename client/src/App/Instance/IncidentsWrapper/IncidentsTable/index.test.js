@@ -6,7 +6,7 @@
 
 import React from 'react';
 import {IncidentsTable} from './index';
-import {ThemeProvider} from 'modules/contexts/ThemeContext';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {createIncident} from 'modules/testUtils';
 import {formatDate} from 'modules/utils/date';
 import {SORT_ORDER} from 'modules/constants';

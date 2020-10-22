@@ -55,7 +55,7 @@ const IncidentsByError = observer(
                 <PanelListItem
                   to={`/instances${query}`}
                   title={title}
-                  boxSize="small"
+                  $boxSize="small"
                 >
                   <Styled.VersionLiInstancesBar
                     label={label}
@@ -106,36 +106,37 @@ const IncidentsByError = observer(
             errorType={INCIDENTS_BY_ERROR}
           />
         );
-      } else
-        return (
-          <ul data-testid="incidents-by-error">
-            {incidents.map((item, index) => {
-              const buttonTitle = concatButtonTitle(
-                item.instancesWithErrorCount,
-                item.errorMessage
-              );
+      }
 
-              return (
-                <Styled.Li
-                  key={item.errorMessage}
-                  data-testid={`incident-byError-${index}`}
-                >
-                  <Collapse
-                    content={this.renderIncidentsPerWorkflow(
-                      item.errorMessage,
-                      item.workflows
-                    )}
-                    header={this.renderIncidentByError(
-                      item.errorMessage,
-                      item.instancesWithErrorCount
-                    )}
-                    buttonTitle={buttonTitle}
-                  />
-                </Styled.Li>
-              );
-            })}
-          </ul>
-        );
+      return (
+        <ul data-testid="incidents-by-error">
+          {incidents.map((item, index) => {
+            const buttonTitle = concatButtonTitle(
+              item.instancesWithErrorCount,
+              item.errorMessage
+            );
+
+            return (
+              <Styled.Li
+                key={item.errorMessage}
+                data-testid={`incident-byError-${index}`}
+              >
+                <Collapse
+                  content={this.renderIncidentsPerWorkflow(
+                    item.errorMessage,
+                    item.workflows
+                  )}
+                  header={this.renderIncidentByError(
+                    item.errorMessage,
+                    item.instancesWithErrorCount
+                  )}
+                  buttonTitle={buttonTitle}
+                />
+              </Styled.Li>
+            );
+          })}
+        </ul>
+      );
     }
   }
 );

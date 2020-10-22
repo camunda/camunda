@@ -9,7 +9,6 @@ import Adapter from 'enzyme-adapter-react-16';
 import 'jest-enzyme';
 import 'jest-styled-components';
 import '@testing-library/jest-dom';
-import {configure} from '@testing-library/dom';
 import MutationObserver from '@sheerun/mutationobserver-shim';
 import {mockServer} from 'modules/mockServer';
 

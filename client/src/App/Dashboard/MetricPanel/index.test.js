@@ -13,7 +13,7 @@ import {
   screen,
 } from '@testing-library/react';
 import {createMemoryHistory} from 'history';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {MetricPanel} from './index';
 import PropTypes from 'prop-types';
 import {statistics} from 'modules/stores/statistics';
@@ -38,9 +38,11 @@ describe('<MetricPanel />', () => {
   });
 
   const MockApp = ({history = createMemoryHistory()}) => (
-    <Router history={history}>
-      <MetricPanel />
-    </Router>
+    <ThemeProvider>
+      <Router history={history}>
+        <MetricPanel />
+      </Router>
+    </ThemeProvider>
   );
 
   MockApp.propTypes = {

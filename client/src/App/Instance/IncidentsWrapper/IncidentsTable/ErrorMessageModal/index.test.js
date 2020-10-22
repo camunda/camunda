@@ -5,33 +5,35 @@
  */
 
 import React from 'react';
+import {render, screen, fireEvent} from '@testing-library/react';
 import {ErrorMessageModal} from './index';
 import {mockProps, mockHiddenModalProps} from './index.setup';
-
-import {render, screen, fireEvent} from '@testing-library/react';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 it('should render modal', () => {
-  render(<ErrorMessageModal {...mockProps} />);
+  render(<ErrorMessageModal {...mockProps} />, {wrapper: ThemeProvider});
   expect(screen.getByText('modal title')).toBeInTheDocument();
   expect(screen.getByText('some modal content')).toBeInTheDocument();
 });
 
 it('should hide modal', () => {
-  render(<ErrorMessageModal {...mockHiddenModalProps} />);
+  render(<ErrorMessageModal {...mockHiddenModalProps} />, {
+    wrapper: ThemeProvider,
+  });
 
   expect(screen.queryByText('modal title')).not.toBeInTheDocument();
   expect(screen.queryByText('some modal content')).not.toBeInTheDocument();
 });
 
 it('should close modal on modal close click', () => {
-  render(<ErrorMessageModal {...mockProps} />);
+  render(<ErrorMessageModal {...mockProps} />, {wrapper: ThemeProvider});
 
   fireEvent.click(screen.getByText('Close'));
   expect(mockProps.toggleModal).toBeCalled();
 });
 
 it('should close modal on close button click', () => {
-  render(<ErrorMessageModal {...mockProps} />);
+  render(<ErrorMessageModal {...mockProps} />, {wrapper: ThemeProvider});
 
   fireEvent.click(screen.getByTestId('cross-button'));
   expect(mockProps.toggleModal).toBeCalled();

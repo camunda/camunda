@@ -6,7 +6,6 @@
 
 import styled, {css} from 'styled-components';
 
-import {themed, themeStyle, Colors} from 'modules/theme';
 import BasicExpandButton from 'modules/components/ExpandButton';
 
 const ExpandButton = styled(BasicExpandButton)`
@@ -16,65 +15,61 @@ const ExpandButton = styled(BasicExpandButton)`
   z-index: 2;
 `;
 
-const SummaryContainer = themed(styled.div`
+const SummaryContainer = styled.div`
   position: relative;
   height: 27px;
-`);
-
-const partialBorder = css`
-  &:before {
-    content: '';
-    position: absolute;
-    height: 1px;
-    width: 32px;
-    bottom: -1px;
-    z-index: 1;
-    background: ${({isSelected}) =>
-      isSelected
-        ? 'none'
-        : themeStyle({
-            dark: Colors.uiDark04,
-            light: Colors.uiLight05,
-          })};
-  }
 `;
 
-const fullBorder = css`
-  border-bottom-color: ${themeStyle({
-    dark: Colors.uiDark04,
-    light: Colors.uiLight05,
-  })};
-  border-bottom-width: 1px;
-  border-bottom-style: solid;
+const SummaryLabel = styled.div`
+  ${({theme, showFullBorder, isSelected, showPartialBorder}) => {
+    const colors = theme.colors.flowNodeInstancesTree.foldable.summaryLabel;
+
+    return css`
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      border: none;
+      font-size: 14px;
+      text-align: left;
+      ${showFullBorder && !isSelected
+        ? css`
+            border-bottom: 1px solid ${colors.borderColor};
+          `
+        : ''};
+      ${showPartialBorder
+        ? css`
+            &:before {
+              content: '';
+              position: absolute;
+              height: 1px;
+              width: 32px;
+              bottom: -1px;
+              z-index: 1;
+              background: ${isSelected ? 'none' : colors.backgroundColor};
+            }
+          `
+        : ''};
+    `;
+  }}
 `;
 
-const SummaryLabel = themed(styled.div`
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  margin: 0;
-  padding: 0;
-  border: none;
-  font-size: 14px;
-  text-align: left;
-  ${({showFullBorder, isSelected}) =>
-    showFullBorder && !isSelected && fullBorder};
-  ${({showPartialBorder}) => showPartialBorder && partialBorder};
-`);
-
-const FocusButton = themed(styled.button`
-  background: transparent;
-
-  /* Apply hover style to <Bar/>*/
-  &:hover + div > div {
-    background: ${({showHoverState}) =>
-      showHoverState &&
-      themeStyle({
-        dark: Colors.darkTreeHover,
-        light: Colors.lightButton05,
-      })};
-  }
-`);
+const FocusButton = styled.button`
+  ${({theme, showHoverState}) => {
+    return css`
+      background: transparent;
+      ${showHoverState
+        ? css`
+            /* Apply hover style to <Bar/>*/
+            &:hover + div > div {
+              background: ${theme.colors.treeHover};
+            }
+          `
+        : ''};
+    `;
+  }}
+`;
 
 export {ExpandButton, SummaryContainer, SummaryLabel, FocusButton};

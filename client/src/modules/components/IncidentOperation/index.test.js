@@ -12,6 +12,7 @@ import {operationsStore} from 'modules/stores/operations';
 import {mockOperationCreated, mockProps} from './index.setup';
 import {rest} from 'msw';
 import {mockServer} from 'modules/mockServer';
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 
 describe('IncidentOperation', () => {
   afterEach(() => {
@@ -19,12 +20,14 @@ describe('IncidentOperation', () => {
   });
 
   it('should not render a spinner', () => {
-    render(<IncidentOperation {...mockProps} />);
+    render(<IncidentOperation {...mockProps} />, {wrapper: ThemeProvider});
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
   });
 
   it('should render a spinner if it is forced', () => {
-    render(<IncidentOperation {...mockProps} showSpinner={true} />);
+    render(<IncidentOperation {...mockProps} showSpinner={true} />, {
+      wrapper: ThemeProvider,
+    });
     expect(screen.getByTestId('operation-spinner')).toBeInTheDocument();
   });
 
@@ -40,7 +43,10 @@ describe('IncidentOperation', () => {
       <IncidentOperation
         incident={createIncident()}
         instanceId={'instance_1'}
-      />
+      />,
+      {
+        wrapper: ThemeProvider,
+      }
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
@@ -54,7 +60,8 @@ describe('IncidentOperation', () => {
       <IncidentOperation
         incident={createIncident()}
         instanceId={'instance_1'}
-      />
+      />,
+      {wrapper: ThemeProvider}
     );
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 

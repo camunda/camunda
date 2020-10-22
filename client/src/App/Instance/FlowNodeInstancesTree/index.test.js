@@ -7,13 +7,12 @@
 import React from 'react';
 import {render, screen, fireEvent} from '@testing-library/react';
 import {rest} from 'msw';
-
+import {ThemeProvider} from 'modules/theme/ThemeProvider';
 import {FlowNodeInstancesTree} from './index';
 import {mockServer} from 'modules/mockServer';
 import {currentInstance} from 'modules/stores/currentInstance';
 import {flowNodeInstance} from 'modules/stores/flowNodeInstance';
 import {singleInstanceDiagram} from 'modules/stores/singleInstanceDiagram';
-
 import {DIAGRAM, CURRENT_INSTANCE, mockNode} from './index.setup';
 
 const instanceId = 1;
@@ -43,7 +42,9 @@ describe('<FlowNodeInstancesTree />', () => {
   });
 
   it('should load the instance history', async () => {
-    render(<FlowNodeInstancesTree treeDepth={1} node={mockNode} />);
+    render(<FlowNodeInstancesTree treeDepth={1} node={mockNode} />, {
+      wrapper: ThemeProvider,
+    });
 
     expect(screen.getByText('Multi-Instance Process')).toBeInTheDocument();
     expect(screen.getByText('Peter Fork')).toBeInTheDocument();
@@ -53,7 +54,9 @@ describe('<FlowNodeInstancesTree />', () => {
   });
 
   it('should be able to unfold and unfold subprocesses', async () => {
-    render(<FlowNodeInstancesTree treeDepth={1} node={mockNode} />);
+    render(<FlowNodeInstancesTree treeDepth={1} node={mockNode} />, {
+      wrapper: ThemeProvider,
+    });
 
     expect(
       screen.queryByRole('button', {
@@ -103,7 +106,9 @@ describe('<FlowNodeInstancesTree />', () => {
   });
 
   it('should handle clicks on the history', async () => {
-    render(<FlowNodeInstancesTree treeDepth={1} node={mockNode} />);
+    render(<FlowNodeInstancesTree treeDepth={1} node={mockNode} />, {
+      wrapper: ThemeProvider,
+    });
     expect(flowNodeInstance.state.selection).toEqual({
       flowNodeId: null,
       treeRowIds: [],
