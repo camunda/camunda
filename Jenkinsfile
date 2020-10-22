@@ -286,6 +286,12 @@ pipeline {
 
                     build job: currentBuild.projectName, propagate: false, quietPeriod: 60, wait: false
                 }
+
+                String userReason = null
+                if (currentBuild.description ==~ /.*Flaky Tests.*/) {
+                    userReason = 'flaky-tests'
+                }
+                org.camunda.helper.CIAnalytics.trackBuildStatus(this, userReason)
             }
         }
         changed {
